@@ -1,0 +1,12 @@
+# Misc
+.DS_Store
+Desktop.ini
+node_modules
+
+# Coda
+.coda.json
+.coda-credentials.json
+.coda.json
+.coda-credentials.json
+.coda.json
+.coda-credentials.json

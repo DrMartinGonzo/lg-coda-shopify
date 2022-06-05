@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "name": "📌 Root",
+      "path": "../"
+    },
+    {
+      "name": "Vs Code",
+      "path": "../.vscode"
+    }
+  ],
+  "settings": {
+    "peacock.color": "#ee5a29",
+    "peacock.remoteColor": "#95bf47",
+    "workbench.colorCustomizations": {
+      "activityBar.activeBackground": "#f27e58",
+      "activityBar.activeBorder": "#a6f8ba",
+      "activityBar.background": "#f27e58",
+      "activityBar.foreground": "#15202b",
+      "activityBar.inactiveForeground": "#15202b99",
+      "activityBarBadge.background": "#a6f8ba",
+      "activityBarBadge.foreground": "#15202b",
+      "statusBar.background": "#ee5a29",
+      "statusBar.foreground": "#15202b",
+      "statusBarItem.hoverBackground": "#d34111",
+      "titleBar.activeBackground": "#ee5a29",
+      "titleBar.activeForeground": "#15202b",
+      "titleBar.inactiveBackground": "#ee5a2999",
+      "titleBar.inactiveForeground": "#15202b99",
+      "sash.hoverBorder": "#f27e58",
+      "statusBarItem.remoteBackground": "#ee5a29",
+      "statusBarItem.remoteForeground": "#15202b"
+    },
+    "todo-tree.tree.scanMode": "workspace"
+  }
+}
