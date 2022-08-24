@@ -29,7 +29,8 @@
       "titleBar.inactiveForeground": "#15202b99",
       "sash.hoverBorder": "#f27e58",
       "statusBarItem.remoteBackground": "#ee5a29",
-      "statusBarItem.remoteForeground": "#15202b"
+      "statusBarItem.remoteForeground": "#15202b",
+      "commandCenter.border": "#15202b99"
     },
     "todo-tree.tree.scanMode": "workspace"
   }
