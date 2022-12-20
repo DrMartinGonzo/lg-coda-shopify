@@ -147,7 +147,7 @@ export const setupProducts = (pack) => {
         description: 'The id of the product.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: ProductSchema,
     execute: fetchProduct,

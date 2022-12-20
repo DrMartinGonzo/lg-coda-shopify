@@ -147,7 +147,7 @@ export const setupProductVariants = (pack) => {
         description: 'The id of the product variant.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: ProductVariantSchema,
     execute: fetchProductVariant,

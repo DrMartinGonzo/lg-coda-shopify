@@ -8,7 +8,7 @@ export const fetchProductMetafields = async ([productId], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
-    cacheTtlSec: 0,
+    cacheTtlSecs: 10,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -46,7 +46,7 @@ export const fetchMetafield = async ([metafieldId], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
-    cacheTtlSec: 0,
+    cacheTtlSecs: 10,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -95,6 +95,7 @@ export const createProductMetafield = async ([productId, namespace, key, value],
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 0,
   });
 };
 
@@ -112,6 +113,7 @@ export const updateProductMetafield = async ([productId, metafieldId, value], co
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 0,
   });
 };
 
@@ -124,5 +126,6 @@ export const deleteMetafield = async ([metafieldId], context) => {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 0,
   });
 };

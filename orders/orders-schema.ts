@@ -153,6 +153,24 @@ const DutySchema = coda.makeObjectSchema({
 
 const LineItemSchema = coda.makeObjectSchema({
   properties: {
+    /**
+     * ! Deprecated
+     */
+    /*
+      origin_location: {
+        type: coda.ValueType.Object,
+        properties: {
+          address1: { type: coda.ValueType.String },
+          address2: { type: coda.ValueType.String },
+          city: { type: coda.ValueType.String },
+          country_code: { type: coda.ValueType.String },
+          location_id: { type: coda.ValueType.Number, fromKey: 'id' },
+          name: { type: coda.ValueType.String },
+          province_code: { type: coda.ValueType.String },
+          zip: { type: coda.ValueType.String },
+        },
+      },
+     */
     line_item_id: { type: coda.ValueType.Number, fromKey: 'id' },
     fulfillable_quantity: { type: coda.ValueType.Number },
     fulfillment_service: { type: coda.ValueType.String },
@@ -178,19 +196,7 @@ const LineItemSchema = coda.makeObjectSchema({
     total_discount: { type: coda.ValueType.String },
     total_discount_set: PriceSetSchema,
     discount_allocations: { type: coda.ValueType.Array, items: DiscountAllocationSchema },
-    origin_location: {
-      type: coda.ValueType.Object,
-      properties: {
-        address1: { type: coda.ValueType.String },
-        address2: { type: coda.ValueType.String },
-        city: { type: coda.ValueType.String },
-        country_code: { type: coda.ValueType.String },
-        location_id: { type: coda.ValueType.Number, fromKey: 'id' },
-        name: { type: coda.ValueType.String },
-        province_code: { type: coda.ValueType.String },
-        zip: { type: coda.ValueType.String },
-      },
-    },
+
     duties: {
       type: coda.ValueType.Array,
       items: DutySchema,
@@ -483,6 +489,7 @@ export const OrderSchema = coda.makeObjectSchema({
     /*
     // The payment gateway used.
     gateway: { type: coda.ValueType.String },
+
     // An object containing information about the payment.
     payment_details: {
       type: coda.ValueType.Object,
@@ -494,6 +501,8 @@ export const OrderSchema = coda.makeObjectSchema({
         cvv_result_code: { type: coda.ValueType.String },
       },
     },
+
+    total_price_usd: { type: coda.ValueType.String },
     */
 
     /**
@@ -686,8 +695,6 @@ export const OrderSchema = coda.makeObjectSchema({
     contact_email: { type: coda.ValueType.String, codaType: coda.ValueHintType.Email },
     // ????
     reference: { type: coda.ValueType.String },
-    // ??
-    total_price_usd: { type: coda.ValueType.String },
   },
 
   displayProperty: 'name',

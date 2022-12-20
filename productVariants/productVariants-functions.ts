@@ -22,7 +22,7 @@ export const fetchProductVariant = async ([productVariantID], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: `${context.endpoint}/admin/api/2022-07/variants/${productVariantID}.json`,
-    cacheTtlSec: 0,
+    cacheTtlSecs: 10,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -98,6 +98,7 @@ export const fetchAllProductVariants = async (
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 0,
   });
 
   const { body } = response;

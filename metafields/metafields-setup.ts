@@ -25,7 +25,7 @@ export const setupMetafields = (pack) => {
         description: 'The id of the product.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Array,
     items: ProductMetafieldSchema,
     execute: fetchProductMetafields,
@@ -33,7 +33,7 @@ export const setupMetafields = (pack) => {
 
   pack.addFormula({
     name: 'Metafield',
-    description: 'Get a single  metafield by its id.',
+    description: 'Get a single metafield by its id.',
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -41,7 +41,7 @@ export const setupMetafields = (pack) => {
         description: 'The id of the metafield.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: ProductMetafieldSchema,
     execute: fetchMetafield,
@@ -58,6 +58,7 @@ export const setupMetafields = (pack) => {
       }),
     ],
     isAction: true,
+    cacheTtlSecs: 0,
     resultType: coda.ValueType.Boolean,
     execute: async ([metafieldId], context) => {
       const response = await deleteMetafield([metafieldId], context);
@@ -86,6 +87,7 @@ export const setupMetafields = (pack) => {
       }),
     ],
     isAction: true,
+    cacheTtlSecs: 0,
     resultType: coda.ValueType.Boolean,
     execute: async ([productId, metafieldId, value], context) => {
       const response = await updateProductMetafield([productId, metafieldId, value], context);
@@ -119,6 +121,7 @@ export const setupMetafields = (pack) => {
       }),
     ],
     isAction: true,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Number,
     execute: async ([productId, namespace, key, value], context) => {
       const response = await createProductMetafield([productId, namespace, key, value], context);

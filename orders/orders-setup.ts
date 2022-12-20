@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
-import { fetchAllOrders, fetchOrder } from './orders-functions';
+import { fetchAllOrders, fetchOrder, formatOrderForDocExport } from './orders-functions';
 
 import { OrderSchema } from './orders-schema';
 
@@ -119,10 +119,28 @@ export const setupOrders = (pack) => {
         description: 'The id of the order.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: OrderSchema,
     execute: fetchOrder,
+  });
+
+  pack.addFormula({
+    name: 'OrderExportFormat',
+    description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'orderID',
+        description: 'The id of the order.',
+      }),
+    ],
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.String,
+    execute: async ([orderID], context) => {
+      const order = await fetchOrder([orderID], context);
+      return formatOrderForDocExport(order);
+    },
   });
 
   /**====================================================================================================================

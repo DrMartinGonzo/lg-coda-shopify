@@ -31,6 +31,7 @@ export const fetchProductIdsInCollections = async ([id, limit], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
+    cacheTtlSecs: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -71,6 +72,7 @@ export const fetchProductsInCollection = async ([id, limit], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
+    cacheTtlSecs: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -113,6 +115,7 @@ export const fetchCollection = async ([id, fields], context) => {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 10,
   });
 
   const { body } = response;
@@ -130,6 +133,7 @@ export const fetchAllCollects = async ([fields, limit, since_id], context) => {
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
+    cacheTtlSecs: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
@@ -172,6 +176,7 @@ export const fetchCollect = async ([id, fields], context) => {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 10,
   });
 
   const { body } = response;
@@ -192,6 +197,7 @@ export const fetchCustomCollection = async ([id, fields], context) => {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 10,
   });
 
   const { body } = response;
@@ -243,6 +249,7 @@ export const fetchAllCustomCollections = async (
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 0,
   });
 
   const { body } = response;
@@ -273,6 +280,7 @@ export const fetchSmartCollection = async ([id, fields], context) => {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),
     },
+    cacheTtlSecs: 10,
   });
 
   const { body } = response;
@@ -324,6 +332,7 @@ export const fetchAllSmartCollections = async (
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
+    cacheTtlSecs: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': getTokenPlaceholder(context),

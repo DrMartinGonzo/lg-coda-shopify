@@ -83,7 +83,7 @@ export const setupCustomers = (pack) => {
         description: 'The id of the customer.',
       }),
     ],
-    cacheTtlSecs: 0,
+    cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: CustomerSchema,
     execute: fetchCustomer,

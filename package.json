@@ -1,6 +1,6 @@
 {
   "name": "lg-coda-shopify",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "push": "npx coda upload pack.ts",
@@ -10,7 +10,7 @@
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",
   "license": "MIT",
   "dependencies": {
-    "@codahq/packs-sdk": "^0.12.0"
+    "@codahq/packs-sdk": "^1.0.5"
   },
   "devDependencies": {
     "@types/chai": "^4.3.1",

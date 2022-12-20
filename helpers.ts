@@ -1,3 +1,7 @@
+export const convertTTCtoHT = (price, taxRate) => {
+  return taxRate ? price / (1 + taxRate) : price;
+};
+
 export const getTokenPlaceholder = (context) => {
   const invocationToken = context.invocationToken;
   return '{{token-' + invocationToken + '}}';
