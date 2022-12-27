@@ -28,18 +28,25 @@ function getRefundQuantity(item, refunds) {
   return quantity;
 }
 
-const formatMultilineAddress = (address) => {
+const formatMultilineAddress = (address, fallback = '') => {
+  if (address) {
+    return {
+      name: address?.name ?? '',
+      company: address?.company ?? '',
+      address:
+        [
+          address?.address1,
+          address?.address2,
+          [address?.zip, address?.city].filter((value) => value && value !== '').join(' '),
+        ]
+          .filter((value) => value && value !== '')
+          .join('\n') ?? '',
+    };
+  }
   return {
-    name: address?.name ?? '',
-    company: address?.company ?? '',
-    address:
-      [
-        address?.address1,
-        address?.address2,
-        [address?.zip, address?.city].filter((value) => value && value !== '').join(' '),
-      ]
-        .filter((value) => value && value !== '')
-        .join('\n') ?? '',
+    name: fallback,
+    company: '',
+    address: '',
   };
 };
 
@@ -262,9 +269,8 @@ export const formatOrderForDocExport = (order) => {
     reference: order.name,
     notes: order.note,
     timestamp: new Date(order.created_at).getTime() / 1000,
-    billingAddress: formatMultilineAddress(order.billing_address),
-    shippingAddress: formatMultilineAddress(order.shipping_address),
-
+    billingAddress: formatMultilineAddress(order.billing_address, order.contact_email),
+    shippingAddress: formatMultilineAddress(order.shipping_address, order.contact_email),
     items,
     discounts,
     shipping,
