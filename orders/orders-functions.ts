@@ -178,7 +178,7 @@ export const formatOrderForDocExport = (order) => {
           break;
 
         default:
-          name = discountApplication.type;
+          name = discountApplication.title ?? discountApplication.type;
           break;
       }
 

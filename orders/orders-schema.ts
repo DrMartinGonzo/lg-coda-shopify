@@ -170,10 +170,10 @@ const LineItemSchema = coda.makeObjectSchema({
           zip: { type: coda.ValueType.String },
         },
       },
+      fulfillment_service: { type: coda.ValueType.String },
      */
     line_item_id: { type: coda.ValueType.Number, fromKey: 'id' },
     fulfillable_quantity: { type: coda.ValueType.Number },
-    fulfillment_service: { type: coda.ValueType.String },
     fulfillment_status: { type: coda.ValueType.String },
     grams: { type: coda.ValueType.Number },
     price: { type: coda.ValueType.Number },
