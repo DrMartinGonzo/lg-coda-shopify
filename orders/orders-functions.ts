@@ -253,6 +253,43 @@ export const formatOrderForDocExport = (order) => {
     };
   });
 
+  // Refunds not linked to a specific line item
+  // Pour le moment, on joute le remboursement avec une TVA de 0,
+  // TODO: le mieux serait de checker si les produits avec tel taux de taxe ont
+  // une somme suffisante pour couvrir l'intégralité du remboursement et
+  // appliquer cete taxe au remboursement. SInon il faudrait splitter entre les
+  // taxes.
+
+  // Remarque de Francys : "Mais, bon, applique le taux de TA que tu veux au
+  // remboursement, à condition que dans la facture il y ait pour 20 € de
+  // produit avec de la TVA à 20 % ou 20 € de TVA à 5,5 % ce qui revient
+  // finalement à faire une réduction… HT avec de la TVA…"
+  let refundDiscrepancyAmount = 0;
+  if (refunds.length) {
+    const refundedDiscrepancy = order.refunds.flatMap((refund) => {
+      return refund.order_adjustments.filter((order_adjustment) => {
+        return order_adjustment.kind === 'refund_discrepancy';
+      });
+    });
+
+    if (refundedDiscrepancy.length) {
+      refundDiscrepancyAmount = Math.abs(
+        refundedDiscrepancy.reduce((previous, current) => {
+          return previous + parseFloat(current.amount);
+        }, 0)
+      );
+    }
+  }
+  if (refundDiscrepancyAmount > 0) {
+    items.push({
+      name: 'Remboursement',
+      price: refundDiscrepancyAmount,
+      quantity: -1,
+      refunded: true,
+      tax: 0,
+    });
+  }
+
   const shipping = order.shipping_lines.map((data) => {
     const taxRate = data.tax_lines[0]?.rate;
 
