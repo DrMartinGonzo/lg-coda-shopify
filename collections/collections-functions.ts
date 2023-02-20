@@ -127,6 +127,11 @@ export const fetchCollection = async ([id, fields], context) => {
 export const fetchAllCollects = async ([limit, since_id], context) => {
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  // replace product with product_id if present
+  const productFieldindex = syncedFields.indexOf('product');
+  if (productFieldindex !== -1) {
+    syncedFields[productFieldindex] = 'product_id';
+  }
 
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),

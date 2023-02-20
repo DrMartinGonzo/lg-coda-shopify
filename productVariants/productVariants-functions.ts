@@ -8,7 +8,7 @@ export const formatProductVariant = (variant, product) => {
       id: variant.product_id,
     };
   }
-  if (variant.image_id && product.images.length > 0) {
+  if (variant.image_id && product.images && product.images.length > 0) {
     const variantImage = product.images.filter((image) => image.id === variant.image_id);
     if (variantImage.length === 1) {
       variant.image = variantImage[0].src;
@@ -60,6 +60,19 @@ export const fetchAllProductVariants = async (
 ) => {
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  // always add variants field
+  syncedFields.push('variants');
+  // replace product with product_id if present
+  const productFieldindex = syncedFields.indexOf('product');
+  if (productFieldindex !== -1) {
+    syncedFields[productFieldindex] = 'product_id';
+  }
+  // replace image with images if present
+  const ImageFieldindex = syncedFields.indexOf('image');
+  if (ImageFieldindex !== -1) {
+    syncedFields[ImageFieldindex] = 'images';
+  }
+
   const params = cleanQueryParams({
     collection_id,
     created_at_max,
