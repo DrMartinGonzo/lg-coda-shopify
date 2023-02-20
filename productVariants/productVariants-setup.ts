@@ -38,12 +38,6 @@ export const setupProductVariants = (pack) => {
         }),
         coda.makeParameter({
           type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
           name: 'handle',
           description: 'Return only products specified by a comma-separated list of product handles.',
           optional: true,

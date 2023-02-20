@@ -1,3 +1,9 @@
+/**
+ * Imported defintions from gas-coda-export-bills package
+ */
+/// <reference path="../node_modules/gas-coda-export-bills/types/ActionsInterfaces.d.ts"/>
+/// <reference path="../node_modules/gas-coda-export-bills/types/SheetExportInterfaces.d.ts"/>
+
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
@@ -28,11 +34,10 @@ function getRefundQuantity(item, refunds) {
   return quantity;
 }
 
-const formatMultilineAddress = (address, fallback = '') => {
+const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => {
   if (address) {
     return {
-      name: address?.name ?? '',
-      company: address?.company ?? '',
+      name: address?.name ?? '' + (address?.company != '' ? `\n${address?.company}` : ''),
       address:
         [
           address?.address1,
@@ -45,7 +50,6 @@ const formatMultilineAddress = (address, fallback = '') => {
   }
   return {
     name: fallback,
-    company: '',
     address: '',
   };
 };
@@ -81,7 +85,6 @@ export const fetchAllOrders = async (
     status,
     created_at_max,
     created_at_min,
-    fields,
     financial_status,
     fulfillment_status,
     ids,
@@ -94,10 +97,14 @@ export const fetchAllOrders = async (
   ],
   context
 ) => {
+  // Only fetch the selected columns.
+  // TODO: apply this to other sync tables
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+
   const params = cleanQueryParams({
     created_at_max,
     created_at_min,
-    fields,
+    fields: syncedFields.join(', '),
     financial_status,
     fulfillment_status,
     ids,
@@ -152,8 +159,7 @@ export const fetchAllOrders = async (
 export const formatOrderForDocExport = (order) => {
   const discountApplications = order.discount_applications;
   const refunds = order.refunds;
-
-  const discounts = [];
+  const items: SheetExport.Invoice.Item[] = [];
 
   discountApplications.forEach((discountApplication, index) => {
     const collectedAmounts = [];
@@ -164,7 +170,6 @@ export const formatOrderForDocExport = (order) => {
       if (quantityAfterRefunds > 0) {
         item.discount_allocations.forEach((discountAllocation) => {
           if (discountAllocation.discount_application_index === index) {
-            // totalAmount += discountAllocation.amount;
             collectedAmounts.push({
               amount: parseFloat(discountAllocation.amount),
               tax: taxRate,
@@ -194,23 +199,23 @@ export const formatOrderForDocExport = (order) => {
         .filter((value, index, array) => array.indexOf(value) == index);
       if (uniqueTaxes.length) {
         uniqueTaxes.forEach((tax) => {
-          discounts.push({
+          items.push({
             name,
             price: collectedAmounts
               .filter((a) => a.tax === tax)
               .reduce((prev, curr) => prev + convertTTCtoHT(curr.amount, tax), 0),
             quantity: -1,
             tax: tax ?? null,
-            type: discountApplication.type,
+            discount_type: discountApplication.type,
           });
         });
       } else {
-        discounts.push({
+        items.push({
           name,
           price: collectedAmounts.reduce((prev, curr) => prev + curr.amount, 0),
           quantity: -1,
           tax: null,
-          type: discountApplication.type,
+          discount_type: discountApplication.type,
         });
       }
     }
@@ -240,21 +245,20 @@ export const formatOrderForDocExport = (order) => {
     }
   }
 
-  const items = order.line_items.map((data) => {
+  order.line_items.forEach((data) => {
     const taxRate = data.tax_lines[0]?.rate;
     const quantityAfterRefunds = data.quantity - getRefundQuantity(data, refunds);
 
-    return {
+    items.push({
       name: data.title + (data.variant_title ? ' - ' + data.variant_title : ''),
       price: convertTTCtoHT(parseFloat(data.price), taxRate),
       quantity: quantityAfterRefunds ?? 0,
-      refunded: false,
       tax: taxRate,
-    };
+    });
   });
 
   // Refunds not linked to a specific line item
-  // Pour le moment, on joute le remboursement avec une TVA de 0,
+  // Pour le moment, on ajoute le remboursement avec une TVA de 0,
   // TODO: le mieux serait de checker si les produits avec tel taux de taxe ont
   // une somme suffisante pour couvrir l'intégralité du remboursement et
   // appliquer cete taxe au remboursement. SInon il faudrait splitter entre les
@@ -264,6 +268,8 @@ export const formatOrderForDocExport = (order) => {
   // remboursement, à condition que dans la facture il y ait pour 20 € de
   // produit avec de la TVA à 20 % ou 20 € de TVA à 5,5 % ce qui revient
   // finalement à faire une réduction… HT avec de la TVA…"
+
+  // TODO: L'idéal si le client a acheté 20 € de produits avec TVA à 5,5% serait d'émette un avoir (une facture avec des moins...) de 47,39 € HT / 2,61 TVA : 20 € TTC
   let refundDiscrepancyAmount = 0;
   if (refunds.length) {
     const refundedDiscrepancy = order.refunds.flatMap((refund) => {
@@ -285,34 +291,30 @@ export const formatOrderForDocExport = (order) => {
       name: 'Remboursement',
       price: refundDiscrepancyAmount,
       quantity: -1,
-      refunded: true,
       tax: 0,
     });
   }
 
-  const shipping = order.shipping_lines.map((data) => {
+  const shipping: SheetExport.Invoice.ShippingLineInterface[] = order.shipping_lines.map((data) => {
     const taxRate = data.tax_lines[0]?.rate;
 
     return {
       name: data.title,
       price: convertTTCtoHT(parseFloat(data.price), taxRate) - refundedShippingAmount,
       quantity: 1,
-      refunded: false,
       tax: taxRate ?? '',
     };
   });
 
-  const payload = {
+  const payload: SheetExport.Invoice.Data = {
     reference: order.name,
     notes: order.note,
     timestamp: new Date(order.created_at).getTime() / 1000,
     billingAddress: formatMultilineAddress(order.billing_address, order.contact_email),
     shippingAddress: formatMultilineAddress(order.shipping_address, order.contact_email),
     items,
-    discounts,
     shipping,
   };
 
   return JSON.stringify(payload);
-  // return JSON.stringify(payload, null, 4);
 };

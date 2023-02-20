@@ -41,7 +41,6 @@ export const fetchAllProductVariants = async (
     collection_id,
     created_at_max,
     created_at_min,
-    fields,
     handle,
     ids,
     limit,
@@ -59,11 +58,13 @@ export const fetchAllProductVariants = async (
   ],
   context
 ) => {
+  // Only fetch the selected columns.
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
     collection_id,
     created_at_max,
     created_at_min,
-    fields,
+    fields: syncedFields.join(', '),
     handle,
     ids,
     limit,

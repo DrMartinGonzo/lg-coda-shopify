@@ -33,13 +33,15 @@ export const fetchCustomer = async ([customerID], context) => {
 };
 
 export const fetchAllCustomers = async (
-  [created_at_max, created_at_min, fields, ids, limit, since_id, updated_at_max, updated_at_min],
+  [created_at_max, created_at_min, ids, limit, since_id, updated_at_max, updated_at_min],
   context
 ) => {
+  // Only fetch the selected columns.
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
     created_at_max,
     created_at_min,
-    fields,
+    fields: syncedFields.join(', '),
     ids,
     limit,
     since_id,

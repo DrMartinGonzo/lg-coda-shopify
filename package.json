@@ -1,6 +1,6 @@
 {
   "name": "lg-coda-shopify",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "push": "npx coda upload pack.ts",
@@ -28,6 +28,7 @@
     "eslint-plugin-filenames": "^1.3.2",
     "eslint-plugin-local": "^1.0.0",
     "eslint-plugin-prefer-let": "^3.0.1",
+    "gas-coda-export-bills": "github:DrMartinGonzo/gas-coda-export-bills.git#^0.1.0",
     "json-schema": "^0.4.0",
     "mocha": "^10.0.0",
     "sinon": "^14.0.0",

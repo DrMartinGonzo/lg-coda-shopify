@@ -39,12 +39,6 @@ export const setupOrders = (pack) => {
         }),
         coda.makeParameter({
           type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
           name: 'financial_status',
           autocomplete: OPTIONS_ORDER_FINANCIAL_STATUS,
           suggestedValue: 'any',

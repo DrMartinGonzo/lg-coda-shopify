@@ -1,3 +1,6 @@
+/// <reference path="./node_modules/gas-coda-export-bills/types/ActionsInterfaces.d.ts"/>
+/// <reference path="./node_modules/gas-coda-export-bills/types/SheetExportInterfaces.d.ts"/>
+
 import * as coda from '@codahq/packs-sdk';
 
 import { setupCollections } from './collections/collections-setup';
@@ -6,6 +9,7 @@ import { setupMetafields } from './metafields/metafields-setup';
 import { setupOrders } from './orders/orders-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupProducts } from './products/products-setup';
+import { setupShop } from './shop/shop-setup';
 
 export const pack = coda.newPack();
 
@@ -33,3 +37,4 @@ setupMetafields(pack);
 setupOrders(pack);
 setupProducts(pack);
 setupProductVariants(pack);
+setupShop(pack);

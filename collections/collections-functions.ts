@@ -124,8 +124,15 @@ export const fetchCollection = async ([id, fields], context) => {
   }
 };
 
-export const fetchAllCollects = async ([fields, limit, since_id], context) => {
-  const params = cleanQueryParams({ fields, limit, since_id });
+export const fetchAllCollects = async ([limit, since_id], context) => {
+  // Only fetch the selected columns.
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+
+  const params = cleanQueryParams({
+    fields: syncedFields.join(', '),
+    limit,
+    since_id,
+  });
 
   let url =
     context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collects.json`, params);
@@ -208,7 +215,6 @@ export const fetchCustomCollection = async ([id, fields], context) => {
 
 export const fetchAllCustomCollections = async (
   [
-    fields,
     handle,
     ids,
     limit,
@@ -223,8 +229,10 @@ export const fetchAllCustomCollections = async (
   ],
   context
 ) => {
+  // Only fetch the selected columns.
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
-    fields,
+    fields: syncedFields.join(', '),
     handle,
     ids,
     limit,
@@ -291,7 +299,6 @@ export const fetchSmartCollection = async ([id, fields], context) => {
 
 export const fetchAllSmartCollections = async (
   [
-    fields,
     handle,
     ids,
     limit,
@@ -306,8 +313,10 @@ export const fetchAllSmartCollections = async (
   ],
   context
 ) => {
+  // Only fetch the selected columns.
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
-    fields,
+    fields: syncedFields.join(', '),
     handle,
     ids,
     limit,

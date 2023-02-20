@@ -31,12 +31,6 @@ export const setupCustomers = (pack) => {
         }),
         coda.makeParameter({
           type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
           name: 'ids',
           description: 'Retrieve only customers specified by a comma-separated list of order IDs.',
           optional: true,

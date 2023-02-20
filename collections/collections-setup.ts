@@ -36,12 +36,6 @@ export const setupCollections = (pack) => {
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
         coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
-        coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'limit',
           description: 'The maximum number of results to fetch by page. (max: 250)',
@@ -117,12 +111,6 @@ export const setupCollections = (pack) => {
       name: 'SyncCustomCollections',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
         coda.makeParameter({
           type: coda.ParameterType.String,
           name: 'handle',
@@ -204,12 +192,6 @@ export const setupCollections = (pack) => {
       name: 'SyncSmartCollections',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'fields',
-          description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-          optional: true,
-        }),
         coda.makeParameter({
           type: coda.ParameterType.String,
           name: 'handle',
@@ -331,7 +313,7 @@ export const setupCollections = (pack) => {
 
   pack.addFormula({
     name: 'CustomCollection',
-    description: 'Get a single collect data.',
+    description: 'Get a single Custom Collection data.',
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
