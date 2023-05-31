@@ -29,7 +29,7 @@ pack.setUserAuthentication({
   // Determines the display name of the connected account.
   getConnectionName: async (context) => new URL(context.endpoint).hostname,
 });
-pack.addNetworkDomain('myshopify.com');
+// pack.addNetworkDomain('myshopify.com');
 
 setupCollections(pack);
 setupCustomers(pack);
