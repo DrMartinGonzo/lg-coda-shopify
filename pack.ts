@@ -6,6 +6,7 @@ import * as coda from '@codahq/packs-sdk';
 import { setupCollections } from './collections/collections-setup';
 import { setupCustomers } from './customers/customers-setup';
 import { setupMetafields } from './metafields/metafields-setup';
+import { setupMetaObjects } from './metaobjects/metaobjects-setup';
 import { setupOrders } from './orders/orders-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupProducts } from './products/products-setup';
@@ -34,6 +35,7 @@ pack.setUserAuthentication({
 setupCollections(pack);
 setupCustomers(pack);
 setupMetafields(pack);
+setupMetaObjects(pack);
 setupOrders(pack);
 setupProducts(pack);
 setupProductVariants(pack);
