@@ -8,7 +8,7 @@ export const ProductIdsCollectionSchema = coda.makeObjectSchema({
     collection_id: { type: coda.ValueType.Number, required: true },
     unique_id: { type: coda.ValueType.String, required: true },
   },
-  displayProperty: 'collection_id',
+  displayProperty: 'unique_id',
   idProperty: 'unique_id',
   featuredProperties: ['product_id'],
 });

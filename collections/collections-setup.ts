@@ -54,7 +54,7 @@ export const setupCollections = (pack) => {
 
   pack.addSyncTable({
     name: 'ProductIdsInCollection',
-    description: 'All product ids belonging to a specified collection id.',
+    description: 'Retrieve a list of products IDs belonging to a collection.',
     identityName: 'ProductIdInCollection',
     schema: ProductIdsCollectionSchema,
     formula: {
