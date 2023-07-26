@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { getTokenPlaceholder } from '../helpers';
 
-export const fetchShopDetails = async (fields, context: coda.SyncExecutionContext) => {
+export const fetchShopDetails = async (fields, context: coda.ExecutionContext) => {
   const params = {};
   if (fields) {
     params['fields'] = fields.join(',');

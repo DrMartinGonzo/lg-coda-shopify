@@ -1,6 +1,6 @@
 {
   "name": "lg-coda-shopify",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "push": "npx coda upload pack.ts",

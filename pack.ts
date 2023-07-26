@@ -11,6 +11,7 @@ import { setupOrders } from './orders/orders-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupProducts } from './products/products-setup';
 import { setupShop } from './shop/shop-setup';
+import { fetchShopDetails } from './shop/shop-functions';
 
 export const pack = coda.newPack();
 
@@ -28,7 +29,10 @@ pack.setUserAuthentication({
     },
   ],
   // Determines the display name of the connected account.
-  getConnectionName: async (context) => new URL(context.endpoint).hostname,
+  getConnectionName: async (context) => {
+    const shop = await fetchShopDetails(['myshopify_domain'], context);
+    if (shop && shop['myshopify_domain']) return shop['myshopify_domain'];
+  },
 });
 pack.addNetworkDomain('myshopify.com');
 
