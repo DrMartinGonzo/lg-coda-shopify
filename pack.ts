@@ -4,6 +4,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { setupCollections } from './collections/collections-setup';
+import { setupArticles } from './articles/articles-setup';
 import { setupCustomers } from './customers/customers-setup';
 import { setupMetafields } from './metafields/metafields-setup';
 import { setupMetaObjects } from './metaobjects/metaobjects-setup';
@@ -12,6 +13,7 @@ import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupProducts } from './products/products-setup';
 import { setupShop } from './shop/shop-setup';
 import { fetchShopDetails } from './shop/shop-functions';
+import { setupBlogs } from './blogs/blogs-setup';
 
 export const pack = coda.newPack();
 
@@ -36,6 +38,8 @@ pack.setUserAuthentication({
 });
 pack.addNetworkDomain('myshopify.com');
 
+setupArticles(pack);
+setupBlogs(pack);
 setupCollections(pack);
 setupCustomers(pack);
 setupMetafields(pack);
