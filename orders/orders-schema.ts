@@ -509,9 +509,9 @@ export const OrderSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
+     */
 
+    admin_graphql_api_id: { type: coda.ValueType.String },
     // The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.'
     order_id: { type: coda.ValueType.Number, fromKey: 'id' },
     // The ID of the app that created the order.

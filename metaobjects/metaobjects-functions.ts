@@ -140,7 +140,7 @@ export const deleteMetaObject = async ([id], context) => {
   return body.data.metaobjectDelete.deletedId;
 };
 
-export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFields, limit = 100], context) => {
+export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFields = [], limit = 100], context) => {
   const query = `
     query ($numObjects: Int!, $cursor: String) {
       metaobjects(type: "${type}", first: $numObjects, after: $cursor) {

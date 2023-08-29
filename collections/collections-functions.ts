@@ -6,6 +6,7 @@ import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { formatProduct } from '../products/products-functions';
 
 function formatCustomCollection(collection) {
+  collection.body = collection.body_html;
   if (collection.image) {
     collection.image = collection.image.src;
   }
@@ -13,6 +14,7 @@ function formatCustomCollection(collection) {
 }
 
 function formatSmartCollection(collection) {
+  collection.body = collection.body_html;
   if (collection.image) {
     collection.image = collection.image.src;
   }

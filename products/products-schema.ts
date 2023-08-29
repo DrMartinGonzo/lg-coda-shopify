@@ -58,7 +58,11 @@ export const ProductSchema = coda.makeObjectSchema({
     // An unsigned 64-bit integer that's used as a unique identifier for the product. Each id is unique across the Shopify system. No two products will have the same id, even if they're from different shops.
     product_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // A description of the product. Supports HTML formatting.
-    body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
+    body: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
+    body_html: {
+      type: coda.ValueType.String,
+      description: 'A description of the product in raw html. Supports HTML formatting',
+    },
     // The date and time (ISO 8601 format) when the product was created.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     // A unique human-friendly string for the product. Automatically generated from the product's title. Used by the Liquid templating language to refer to objects.

@@ -1,36 +1,22 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
-  createProductMetafield,
-  deleteMetafield,
+  createResourceMetafield,
+  deleteResourceMetafield,
   fetchMetafield,
-  fetchProductMetafields,
-  updateProductMetafield,
+  fetchResourceMetafields,
+  updateResourceMetafield,
 } from './metafields-functions';
 
-import { ProductMetafieldSchema } from './metafields-schema';
+import { MetafieldSchema } from './metafields-schema';
+
+import { METAFIELDS_RESOURCE_TYPES } from '../constants';
 
 export const setupMetafields = (pack) => {
   /**====================================================================================================================
    *    Formulas
    *===================================================================================================================== */
-  // A formula to fetch a product metafields.
-  pack.addFormula({
-    name: 'ProductMetafields',
-    description: 'Get product metafields data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'productId',
-        description: 'The id of the product.',
-      }),
-    ],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Array,
-    items: ProductMetafieldSchema,
-    execute: fetchProductMetafields,
-  });
-
+  // Fetch Single Metafields
   pack.addFormula({
     name: 'Metafield',
     description: 'Get a single metafield by its id.',
@@ -41,68 +27,53 @@ export const setupMetafields = (pack) => {
         description: 'The id of the metafield.',
       }),
     ],
-    cacheTtlSecs: 10,
+    cacheTtlSecs: 0,
     resultType: coda.ValueType.Object,
-    schema: ProductMetafieldSchema,
+    schema: MetafieldSchema,
     execute: fetchMetafield,
   });
 
+  // Fetch Resource Metafields
   pack.addFormula({
-    name: 'DeleteMetafield',
-    description: 'delete metafield.',
+    name: 'Metafields',
+    description: 'Get metafields from a specific resource.',
     parameters: [
       coda.makeParameter({
+        type: coda.ParameterType.Number,
+        name: 'resourceId',
+        description: 'The id of the resource.',
+      }),
+      coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'metafieldId',
-        description: 'The id of the metafield.',
+        name: 'resourceType',
+        description: 'The type of resource.',
+        autocomplete: METAFIELDS_RESOURCE_TYPES,
       }),
     ],
-    isAction: true,
     cacheTtlSecs: 0,
-    resultType: coda.ValueType.Boolean,
-    execute: async ([metafieldId], context) => {
-      const response = await deleteMetafield([metafieldId], context);
-      return true;
-    },
+    resultType: coda.ValueType.Array,
+    items: MetafieldSchema,
+    execute: fetchResourceMetafields,
   });
 
+  /**====================================================================================================================
+   *    Actions
+   *===================================================================================================================== */
+  // Create single Resource Metafield
   pack.addFormula({
-    name: 'UpdateProductMetafield',
-    description: 'update product metafield.',
+    name: 'CreateMetafield',
+    description: 'create resource metafield.',
     parameters: [
       coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'productId',
-        description: 'The id of the product.',
+        type: coda.ParameterType.Number,
+        name: 'resourceId',
+        description: 'The id of the resource.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'metafieldId',
-        description: 'The id of the metafield.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'value',
-        description: 'The value of the metafield.',
-      }),
-    ],
-    isAction: true,
-    cacheTtlSecs: 0,
-    resultType: coda.ValueType.Boolean,
-    execute: async ([productId, metafieldId, value], context) => {
-      const response = await updateProductMetafield([productId, metafieldId, value], context);
-      return true;
-    },
-  });
-
-  pack.addFormula({
-    name: 'CreateProductMetafield',
-    description: 'create product metafield.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'productId',
-        description: 'The id of the product.',
+        name: 'resourceType',
+        description: 'The type of resource.',
+        autocomplete: METAFIELDS_RESOURCE_TYPES,
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -119,26 +90,82 @@ export const setupMetafields = (pack) => {
         name: 'value',
         description: 'The value of the metafield.',
       }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'type',
+        description: 'The value type of the metafield.',
+        optional: true,
+      }),
     ],
     isAction: true,
-    cacheTtlSecs: 10,
+    cacheTtlSecs: 0,
     resultType: coda.ValueType.Number,
-    execute: async ([productId, namespace, key, value], context) => {
-      const response = await createProductMetafield([productId, namespace, key, value], context);
+    execute: async ([resourceId, resourceType, namespace, key, value, type], context) => {
+      const response = await createResourceMetafield([resourceId, resourceType, namespace, key, value, type], context);
       const { body } = response;
       return body.metafield.id;
+    },
+  });
+
+  // Update single Resource Metafield
+  pack.addFormula({
+    name: 'UpdateMetafield',
+    description: 'update resource metafield.',
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.Number,
+        name: 'metafieldId',
+        description: 'The id of the metafield.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Number,
+        name: 'resourceId',
+        description: 'The id of the resource.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'resourceType',
+        description: 'The type of resource.',
+        autocomplete: METAFIELDS_RESOURCE_TYPES,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'value',
+        description: 'The value of the metafield.',
+      }),
+    ],
+    isAction: true,
+    cacheTtlSecs: 0,
+    resultType: coda.ValueType.Boolean,
+    execute: async ([metafieldId, resourceId, resourceType, value], context) => {
+      const response = await updateResourceMetafield([metafieldId, resourceId, resourceType, value], context);
+      return true;
+    },
+  });
+
+  // Delete single Resource Metafield
+  pack.addFormula({
+    name: 'DeleteMetafield',
+    description: 'delete metafield.',
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'metafieldId',
+        description: 'The id of the metafield.',
+      }),
+    ],
+    isAction: true,
+    cacheTtlSecs: 0,
+    resultType: coda.ValueType.Boolean,
+    execute: async ([metafieldId], context) => {
+      const response = await deleteResourceMetafield([metafieldId], context);
+      return true;
     },
   });
 
   /**====================================================================================================================
    *    Column formats
    *===================================================================================================================== */
-  pack.addColumnFormat({
-    name: 'ProductMetafields',
-    instructions: 'Retrieve all product metafields',
-    formulaName: 'ProductMetafields',
-  });
-
   pack.addColumnFormat({
     name: 'Metafield',
     instructions: 'Retrieve a single metafield',

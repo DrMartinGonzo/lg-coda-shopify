@@ -93,9 +93,9 @@ export const CustomerSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
+     */
 
+    admin_graphql_api_id: { type: coda.ValueType.String },
     // A unique identifier for the customer.
     customer_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // Formatted display name. @See formatCustomer function

@@ -4,6 +4,7 @@ import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { cleanQueryParams, extractNextUrlPagination, getTokenPlaceholder } from '../helpers';
 
 export const formatProduct = (product) => {
+  product.body = product.body_html;
   if (product.images) {
     const primaryImage = product.images.filter((image) => image.position === 1);
     if (primaryImage.length === 1) {

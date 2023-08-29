@@ -21,3 +21,17 @@ export const OPTIONS_ORDER_FULFILLMENT_STATUS = ['any', 'shipped', 'partial', 'u
 
 export const OPTIONS_PUBLISHED_STATUS = ['any', 'published', 'unpublished'];
 export const OPTIONS_PRODUCT_STATUS = ['any', 'active', 'archived', 'draft'];
+
+export const METAFIELDS_RESOURCE_TYPES = [
+  'article',
+  'blog',
+  'collection',
+  'customer',
+  'draft_order',
+  'order',
+  'page',
+  'product_image',
+  'product',
+  'shop',
+  'variant',
+];

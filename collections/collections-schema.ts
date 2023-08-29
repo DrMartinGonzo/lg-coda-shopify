@@ -54,9 +54,9 @@ export const CollectionSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
+     */
+
     admin_graphql_api_id: { type: coda.ValueType.String },
-    */
-    //
     // A description of the collection, complete with HTML markup. Many templates display this on their collection pages.
     body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
     // A unique, human-readable string for the collection automatically generated from its title. This is used in themes by the Liquid templating language to refer to the collection. (limit: 255 characters)
@@ -106,11 +106,18 @@ export const CustomCollectionSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
+     */
     //
-    // The description of the custom collection, complete with HTML markup. Many templates display this on their custom collection pages.
-    body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
+    admin_graphql_api_id: { type: coda.ValueType.String },
+    body: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Html,
+      description: 'The description of the custom collection.',
+    },
+    body_html: {
+      type: coda.ValueType.String,
+      description: 'The description of the custom collection, in raw HTML.',
+    },
     // A human-friendly unique string for the custom collection automatically generated from its title. This is used in shop themes by the Liquid templating language to refer to the custom collection. (limit: 255 characters)
     handle: { type: coda.ValueType.String },
     // Image associated with the custom collection.
@@ -202,9 +209,8 @@ export const SmartCollectionSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
+     */
     admin_graphql_api_id: { type: coda.ValueType.String },
-    */
-    //
     // The description of the smart collection. Includes HTML markup. Many shop themes display this on the smart collection page.
     body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
     // A human-friendly unique string for the smart collection. Automatically generated from the title. Used in shop themes by the Liquid templating language to refer to the smart collection. (maximum: 255 characters)
@@ -260,9 +266,9 @@ export const CollectSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
+     */
+
     admin_graphql_api_id: { type: coda.ValueType.String },
-    */
-    //
     collect_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     collection_id: { type: coda.ValueType.Number },
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
