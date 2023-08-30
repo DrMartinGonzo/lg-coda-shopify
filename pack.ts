@@ -3,17 +3,19 @@
 
 import * as coda from '@codahq/packs-sdk';
 
-import { setupCollections } from './collections/collections-setup';
 import { setupArticles } from './articles/articles-setup';
+import { setupBlogs } from './blogs/blogs-setup';
+import { setupCollections } from './collections/collections-setup';
 import { setupCustomers } from './customers/customers-setup';
 import { setupMetafields } from './metafields/metafields-setup';
 import { setupMetaObjects } from './metaobjects/metaobjects-setup';
 import { setupOrders } from './orders/orders-setup';
-import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupProducts } from './products/products-setup';
+import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupShop } from './shop/shop-setup';
+import { setupTranslations } from './translations/translations-setup';
+
 import { fetchShopDetails } from './shop/shop-functions';
-import { setupBlogs } from './blogs/blogs-setup';
 
 export const pack = coda.newPack();
 
@@ -48,3 +50,4 @@ setupOrders(pack);
 setupProducts(pack);
 setupProductVariants(pack);
 setupShop(pack);
+setupTranslations(pack);
