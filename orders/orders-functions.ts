@@ -310,6 +310,7 @@ export const formatOrderForDocExport = (order) => {
     reference: order.name,
     notes: order.note,
     timestamp: new Date(order.created_at).getTime() / 1000,
+    exportedDate: new Date(order.created_at).toISOString(),
     billingAddress: formatMultilineAddress(order.billing_address, order.contact_email),
     shippingAddress: formatMultilineAddress(order.shipping_address, order.contact_email),
     items,
