@@ -1,4 +1,4 @@
-import { getTokenPlaceholder } from '../helpers';
+import { getTokenPlaceholder, maybeDelayNextExecution } from '../helpers';
 
 export const createMetaObject = async ([type, ...varargs], context) => {
   const fields = [];
@@ -177,7 +177,12 @@ export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFiel
   });
 
   const { body } = response;
-  const { nodes, pageInfo } = body.data.metaobjects;
+  const { data, errors, extensions } = body;
+  const { actualQueryCost, requestedQueryCost } = extensions.cost;
+  const { maximumAvailable, currentlyAvailable, restoreRate } = extensions.cost.throttleStatus;
+  maybeDelayNextExecution(requestedQueryCost, currentlyAvailable, restoreRate, errors);
+
+  const { nodes, pageInfo } = data.metaobjects;
 
   return {
     result: nodes.map((node) => {

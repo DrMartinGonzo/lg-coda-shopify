@@ -172,30 +172,67 @@ const LineItemSchema = coda.makeObjectSchema({
       },
       fulfillment_service: { type: coda.ValueType.String },
      */
-    line_item_id: { type: coda.ValueType.Number, fromKey: 'id' },
-    fulfillable_quantity: { type: coda.ValueType.Number },
-    fulfillment_status: { type: coda.ValueType.String },
-    grams: { type: coda.ValueType.Number },
-    price: { type: coda.ValueType.Number },
+    line_item_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'The ID of the line item' },
+    fulfillable_quantity: {
+      type: coda.ValueType.Number,
+      description: 'The amount available to fulfill, calculated as follows',
+    },
+    fulfillment_status: {
+      type: coda.ValueType.String,
+      description: 'How far along an order is in terms line items fulfilled',
+    },
+    grams: { type: coda.ValueType.Number, description: 'The weight of the item in grams' },
+    price: {
+      type: coda.ValueType.Number,
+      description: 'The price of the item before discounts have been applied in the shop currency',
+    },
     price_set: PriceSetSchema,
-    product_id: { type: coda.ValueType.Number },
-    quantity: { type: coda.ValueType.Number },
-    requires_shipping: { type: coda.ValueType.Boolean },
-    sku: { type: coda.ValueType.Boolean },
-    title: { type: coda.ValueType.String },
-    variant_id: { type: coda.ValueType.Number },
-    variant_title: { type: coda.ValueType.String },
-    vendor: { type: coda.ValueType.String },
-    name: { type: coda.ValueType.String },
-    gift_card: { type: coda.ValueType.Boolean },
-    properties: { type: coda.ValueType.Array, items: NameValueSchema },
-    taxable: { type: coda.ValueType.Boolean },
-    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema },
-    tip_payment_gateway: { type: coda.ValueType.String },
-    tip_payment_method: { type: coda.ValueType.String },
-    total_discount: { type: coda.ValueType.String },
-    total_discount_set: PriceSetSchema,
-    discount_allocations: { type: coda.ValueType.Array, items: DiscountAllocationSchema },
+    product_id: {
+      type: coda.ValueType.Number,
+      description:
+        'The ID of the product that the line item belongs to. Can be null if the original product associated with the order is deleted at a later date',
+    },
+    quantity: { type: coda.ValueType.Number, description: 'The number of items that were purchased' },
+    requires_shipping: { type: coda.ValueType.Boolean, description: 'Whether the item requires shipping' },
+    sku: { type: coda.ValueType.String, description: "The item's SKU" },
+    title: { type: coda.ValueType.String, description: 'The title of the product' },
+    variant_id: { type: coda.ValueType.Number, description: 'The ID of the product variant' },
+    variant_title: { type: coda.ValueType.String, description: 'The title of the product variant' },
+    vendor: { type: coda.ValueType.String, description: "The name of the item's supplier" },
+    name: { type: coda.ValueType.String, description: 'The name of the product variant' },
+    gift_card: { type: coda.ValueType.Boolean, description: 'Whether the item is a gift card' },
+    properties: {
+      type: coda.ValueType.Array,
+      items: NameValueSchema,
+      description:
+        'An array of custom information for the item that has been added to the cart. Often used to provide product customization options.',
+    },
+    taxable: { type: coda.ValueType.Boolean, description: 'Whether the item was taxable' },
+    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema, description: 'A list of tax line objects' },
+    tip_payment_gateway: {
+      type: coda.ValueType.String,
+      description: 'The payment gateway used to tender the tip, such as shopify_payments. Present only on tips',
+    },
+    tip_payment_method: {
+      type: coda.ValueType.String,
+      description: 'The payment method used to tender the tip, such as Visa. Present only on tips.',
+    },
+    total_discount: {
+      type: coda.ValueType.String,
+      description:
+        'The total amount of the discount allocated to the line item in the shop currency. This field must be explicitly set using draft orders, Shopify scripts, or the API. Instead of using this field, Shopify recommends using discount_allocations, which provides the same information.',
+    },
+    total_discount_set: {
+      ...PriceSetSchema,
+      description:
+        'The total amount allocated to the line item in the presentment currency. Instead of using this field, Shopify recommends using discount_allocations, which provides the same information.',
+    },
+    discount_allocations: {
+      type: coda.ValueType.Array,
+      items: DiscountAllocationSchema,
+      description:
+        'An ordered list of amounts allocated by discount applications. Each discount allocation is associated with a particular discount application',
+    },
 
     duties: {
       type: coda.ValueType.Array,
@@ -513,7 +550,7 @@ export const OrderSchema = coda.makeObjectSchema({
 
     admin_graphql_api_id: { type: coda.ValueType.String },
     // The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.'
-    order_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    order_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // The ID of the app that created the order.
     app_id: { type: coda.ValueType.Number },
     // The mailing address associated with the payment method. This address is an optional field that won't be available on orders that do not require a payment method.
@@ -599,7 +636,7 @@ export const OrderSchema = coda.makeObjectSchema({
     // The ID of the physical location where the order was processed. To determine the locations where the line items are assigned for fulfillment please use the FulfillmentOrder resource.
     location_id: { type: coda.ValueType.Number },
     // The order name, generated by combining the order_number property with the order prefix and suffix that are set in the merchant's general settings. This is different from the id property, which is the ID of the order used by the API. This field can also be set by the API to be any string value.
-    name: { type: coda.ValueType.String },
+    name: { type: coda.ValueType.String, required: true },
     // An optional note that a shop owner can attach to the order.
     note: { type: coda.ValueType.String },
     // Extra information that is added to the order. Appears in the Additional details section of an order details page. Each array entry must contain a hash with name and value keys.

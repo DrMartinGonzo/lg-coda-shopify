@@ -1,8 +1,7 @@
 /**
  * Imported defintions from gas-coda-export-bills package
  */
-/// <reference path="../node_modules/gas-coda-export-bills/types/ActionsInterfaces.d.ts"/>
-/// <reference path="../node_modules/gas-coda-export-bills/types/SheetExportInterfaces.d.ts"/>
+/// <reference path="../node_modules/gas-coda-export-bills/Interfaces.d.ts"/>
 
 import * as coda from '@codahq/packs-sdk';
 
@@ -43,6 +42,7 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
           address?.address1,
           address?.address2,
           [address?.zip, address?.city].filter((value) => value && value !== '').join(' '),
+          address.country,
         ]
           .filter((value) => value && value !== '')
           .join('\n') ?? '',
@@ -80,31 +80,28 @@ export const fetchOrder = async ([orderID], context) => {
   }
 };
 
-export const fetchAllOrders = async (
-  [
-    status,
-    created_at_max,
-    created_at_min,
-    financial_status,
-    fulfillment_status,
-    ids,
-    limit,
-    processed_at_max,
-    processed_at_min,
-    since_id,
-    updated_at_max,
-    updated_at_min,
-  ],
+export const fetchOrders = async (
+  status: string,
+  created_at_max: string,
+  created_at_min: string,
+  financial_status: string,
+  fulfillment_status: string,
+  ids: string,
+  limit: number,
+  processed_at_max: string,
+  processed_at_min: string,
+  since_id: number,
+  updated_at_max: string,
+  updated_at_min: string,
+  fields: string,
+
+  nextUrl: string,
   context
 ) => {
-  // Only fetch the selected columns.
-  // TODO: apply this to other sync tables
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-
   const params = cleanQueryParams({
     created_at_max,
     created_at_min,
-    fields: syncedFields.join(', '),
+    fields,
     financial_status,
     fulfillment_status,
     ids,
@@ -127,8 +124,7 @@ export const fetchAllOrders = async (
     throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.financial_status);
   }
 
-  let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/orders.json`, params);
+  let url = nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/orders.json`, params);
 
   const response = await context.fetcher.fetch({
     method: 'GET',
@@ -142,17 +138,57 @@ export const fetchAllOrders = async (
 
   const { body } = response;
 
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
+  return {
+    items: body.orders ? body.orders.map(formatOrder) : [],
+    // Check if we have paginated results
+    nextUrl: extractNextUrlPagination(response),
+  };
+};
 
-  let items = [];
-  if (body.orders) {
-    items = body.orders.map(formatOrder);
-  }
+export const syncAllOrders = async (
+  [
+    status,
+    created_at_max,
+    created_at_min,
+    financial_status,
+    fulfillment_status,
+    ids,
+    limit,
+    processed_at_max,
+    processed_at_min,
+    since_id,
+    updated_at_max,
+    updated_at_min,
+  ],
+  context
+) => {
+  // Only fetch the selected columns.
+  // TODO: apply this to other sync tables
+  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema).join(', ');
+
+  const res = await fetchOrders(
+    status,
+    created_at_max,
+    created_at_min,
+    financial_status,
+    fulfillment_status,
+    ids,
+    limit,
+    processed_at_max,
+    processed_at_min,
+    since_id,
+    updated_at_max,
+    updated_at_min,
+
+    syncedFields,
+    context.sync.continuation,
+
+    context
+  );
 
   return {
-    result: items,
-    continuation: nextUrl,
+    result: res.items,
+    continuation: res.nextUrl,
   };
 };
 
@@ -309,7 +345,6 @@ export const formatOrderForDocExport = (order) => {
   const payload: SheetExport.Invoice.Data = {
     reference: order.name,
     notes: order.note,
-    timestamp: new Date(order.created_at).getTime() / 1000,
     exportedDate: new Date(order.created_at).toISOString(),
     billingAddress: formatMultilineAddress(order.billing_address, order.contact_email),
     shippingAddress: formatMultilineAddress(order.shipping_address, order.contact_email),

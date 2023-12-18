@@ -1,5 +1,4 @@
-/// <reference path="./node_modules/gas-coda-export-bills/types/ActionsInterfaces.d.ts"/>
-/// <reference path="./node_modules/gas-coda-export-bills/types/SheetExportInterfaces.d.ts"/>
+/// <reference path="./node_modules/gas-coda-export-bills/Interfaces.d.ts"/>
 
 import * as coda from '@codahq/packs-sdk';
 
