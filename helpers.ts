@@ -1,3 +1,5 @@
+import * as coda from '@codahq/packs-sdk';
+
 export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
@@ -33,6 +35,16 @@ export const cleanQueryParams = (params) => {
 
   return params;
 };
+
+type ShopifyGraphQlUserError = {
+  field: string[];
+  code: string;
+  message: string;
+};
+export function handleGraphQlUserError(userErrors: [ShopifyGraphQlUserError]) {
+  const errorMsg = userErrors.map((error) => `• ${error.code}\n${error.message}`).join('\n\n');
+  throw new coda.UserVisibleError(errorMsg);
+}
 
 /**
  * Delays the execution of subsequent code for a specified number of milliseconds.

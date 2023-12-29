@@ -1,7 +1,13 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetaObjectSchema } from './metaobjects-schema';
-import { createMetaObject, deleteMetaObject, fetchAllMetaObjects, updateMetaObject } from './metaobjects-functions';
+import {
+  createMetaObject,
+  deleteMetaObject,
+  fetchAllMetaObjects,
+  fetchMetaObjectFieldDefinition,
+  updateMetaObject,
+} from './metaobjects-functions';
 
 export const setupMetaObjects = (pack) => {
   /**====================================================================================================================
@@ -45,12 +51,27 @@ export const setupMetaObjects = (pack) => {
         name: 'id',
         description: 'The id of the metaobject to update.',
       }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'handle',
+        description: 'The new handle of the metaobject. A blank value will leave the handle unchanged.',
+        optional: true,
+      }),
     ],
     varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
         description: 'The key of the field.',
+        autocomplete: async function (context, search, { id, handle }) {
+          if (!id || id === '') {
+            throw new coda.UserVisibleError(
+              'You need to define the ID of the metaobject first before setting the fields.'
+            );
+          }
+          const results = await fetchMetaObjectFieldDefinition(id, context);
+          return coda.autocompleteSearchObjects(search, results, 'name', 'key');
+        },
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,

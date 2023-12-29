@@ -1,4 +1,5 @@
-import { getTokenPlaceholder, maybeDelayNextExecution } from '../helpers';
+import * as coda from '@codahq/packs-sdk';
+import { getTokenPlaceholder, handleGraphQlUserError, maybeDelayNextExecution } from '../helpers';
 
 export const createMetaObject = async ([type, ...varargs], context) => {
   const fields = [];
@@ -53,7 +54,7 @@ export const createMetaObject = async ([type, ...varargs], context) => {
   return body.data.metaobjectCreate.metaobject.id;
 };
 
-export const updateMetaObject = async ([id, ...varargs], context) => {
+export const updateMetaObject = async ([id, handle, ...varargs], context) => {
   const fields = [];
   while (varargs.length > 0) {
     let key: string, value: string;
@@ -91,6 +92,11 @@ export const updateMetaObject = async ([id, ...varargs], context) => {
       },
     },
   };
+
+  if (handle && handle !== '') {
+    payload.variables.metaobject['handle'] = handle;
+  }
+
   const response = await context.fetcher.fetch({
     method: 'POST',
     url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
@@ -103,6 +109,11 @@ export const updateMetaObject = async ([id, ...varargs], context) => {
   });
 
   const { body } = response;
+
+  if (body.data.metaobjectUpdate.userErrors.length) {
+    handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
+  }
+
   return body.data.metaobjectUpdate.metaobject.id;
 };
 
@@ -140,12 +151,62 @@ export const deleteMetaObject = async ([id], context) => {
   return body.data.metaobjectDelete.deletedId;
 };
 
+export async function fetchMetaObjectFieldDefinition(metaObjectGid: string, context: coda.ExecutionContext) {
+  const query = `
+    query metaobject($id: ID!) {
+      metaobject(id: $id) {
+        definition {
+          fieldDefinitions {
+            description
+            key
+            name
+            required
+            type {
+              category
+              name
+              supportedValidations {
+                name
+                type
+              }
+              supportsDefinitionMigrations
+            }
+            validations {
+              name
+              type
+              value
+            }
+          }
+        }
+      }
+    }`;
+
+  const payload = {
+    query,
+    variables: {
+      id: metaObjectGid,
+    },
+  };
+
+  const response = await context.fetcher.fetch({
+    method: 'POST',
+    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': getTokenPlaceholder(context),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return response.body.data.metaobject.definition.fieldDefinitions;
+}
+
 export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFields = [], limit = 100], context) => {
   const query = `
     query ($numObjects: Int!, $cursor: String) {
       metaobjects(type: "${type}", first: $numObjects, after: $cursor) {
         nodes {
           id
+          handle
           name: field(key: "${objectFieldName}") { value }
           ${additionalFields.map((key) => `${key}: field(key: "${key}") { value }`).join('\n')}
         }
@@ -193,6 +254,7 @@ export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFiel
 
       return {
         gid: node.id,
+        handle: node.handle,
         name: node.name.value,
         type: type,
 
