@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ProductReference, ProductSchema } from '../products/products-schema';
+import { IDENTITY_CUSTOM_COLLECTION } from '../constants';
 
 export const ProductIdsCollectionSchema = coda.makeObjectSchema({
   properties: {
@@ -56,7 +57,11 @@ export const CollectionSchema = coda.makeObjectSchema({
     /*
      */
 
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the collection.',
+    },
     // A description of the collection, complete with HTML markup. Many templates display this on their collection pages.
     body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
     // A unique, human-readable string for the collection automatically generated from its title. This is used in themes by the Liquid templating language to refer to the collection. (limit: 255 characters)
@@ -108,7 +113,11 @@ export const CustomCollectionSchema = coda.makeObjectSchema({
     /*
      */
     //
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the custom collection.',
+    },
     body: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Html,
@@ -146,7 +155,7 @@ export const CustomCollectionSchema = coda.makeObjectSchema({
     // The suffix of the liquid template being used. For example, if the value is custom, then the collection is using the collection.custom.liquid template. If the value is null, then the collection is using the default collection.liquid.
     template_suffix: { type: coda.ValueType.String },
     // The name of the custom collection. (limit: 255 characters)
-    title: { type: coda.ValueType.String },
+    title: { type: coda.ValueType.String, required: true },
     // The date and time (ISO 8601 format) when the custom collection was last modified.
     updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
   },
@@ -154,6 +163,10 @@ export const CustomCollectionSchema = coda.makeObjectSchema({
   idProperty: 'custom_collection_id',
   featuredProperties: ['custom_collection_id', 'title', 'handle'],
 });
+export const CustomCollectionReference = coda.makeReferenceSchemaFromObjectSchema(
+  CustomCollectionSchema,
+  IDENTITY_CUSTOM_COLLECTION
+);
 
 export const SmartCollectionRuleSchema = coda.makeObjectSchema({
   properties: {
@@ -210,7 +223,11 @@ export const SmartCollectionSchema = coda.makeObjectSchema({
      */
     /*
      */
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the smart collection.',
+    },
     // The description of the smart collection. Includes HTML markup. Many shop themes display this on the smart collection page.
     body_html: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
     // A human-friendly unique string for the smart collection. Automatically generated from the title. Used in shop themes by the Liquid templating language to refer to the smart collection. (maximum: 255 characters)
@@ -268,7 +285,11 @@ export const CollectSchema = coda.makeObjectSchema({
     /*
      */
 
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the collect.',
+    },
     collect_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     collection_id: { type: coda.ValueType.Number },
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },

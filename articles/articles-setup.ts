@@ -4,6 +4,7 @@ import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { createArticle, deleteArticle, fetchAllArticles, fetchArticle, updateArticle } from './articles-functions';
 
 import { ArticleSchema } from './articles-schema';
+import { sharedParameters } from '../shared-parameters';
 
 const parameters = {
   articleID: coda.makeParameter({
@@ -53,12 +54,6 @@ const parameters = {
     type: coda.ParameterType.String,
     name: 'imageAlt',
     description: 'Alternative text that describes the image.',
-  }),
-  limit: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'limit',
-    description: 'The maximum number of results to retrieve. (max: 250)',
-    optional: true,
   }),
   published: coda.makeParameter({
     type: coda.ParameterType.Boolean,
@@ -155,7 +150,7 @@ export const setupArticles = (pack) => {
         { ...parameters.created_at_max, optional: true },
         { ...parameters.created_at_min, optional: true },
         { ...parameters.handle, optional: true },
-        { ...parameters.limit, optional: true },
+        sharedParameters.maxEntriesPerRun,
         { ...parameters.published_at_max, optional: true },
         { ...parameters.published_at_min, optional: true },
         { ...parameters.published_status, optional: true },

@@ -21,9 +21,9 @@ function formatSmartCollection(collection) {
   return collection;
 }
 
-export const fetchProductIdsInCollections = async ([id, limit], context) => {
+export const fetchProductIdsInCollections = async ([id, maxEntriesPerRun], context) => {
   const params = cleanQueryParams({
-    limit,
+    limit: maxEntriesPerRun,
   });
 
   let url =
@@ -62,9 +62,9 @@ export const fetchProductIdsInCollections = async ([id, limit], context) => {
   };
 };
 
-export const fetchProductsInCollection = async ([id, limit], context) => {
+export const fetchProductsInCollection = async ([id, maxEntriesPerRun], context) => {
   const params = cleanQueryParams({
-    limit,
+    limit: maxEntriesPerRun,
   });
 
   let url =
@@ -126,7 +126,7 @@ export const fetchCollection = async ([id, fields], context) => {
   }
 };
 
-export const fetchAllCollects = async ([limit, since_id], context) => {
+export const fetchAllCollects = async ([maxEntriesPerRun, since_id], context) => {
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   // replace product with product_id if present
@@ -137,7 +137,7 @@ export const fetchAllCollects = async ([limit, since_id], context) => {
 
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),
-    limit,
+    limit: maxEntriesPerRun,
     since_id,
   });
 
@@ -224,7 +224,7 @@ export const fetchAllCustomCollections = async (
   [
     handle,
     ids,
-    limit,
+    maxEntriesPerRun,
     product_id,
     published_at_max,
     published_at_min,
@@ -242,7 +242,7 @@ export const fetchAllCustomCollections = async (
     fields: syncedFields.join(', '),
     handle,
     ids,
-    limit,
+    limit: maxEntriesPerRun,
     product_id,
     published_at_max,
     published_at_min,
@@ -308,7 +308,7 @@ export const fetchAllSmartCollections = async (
   [
     handle,
     ids,
-    limit,
+    maxEntriesPerRun,
     product_id,
     published_at_max,
     published_at_min,
@@ -326,7 +326,7 @@ export const fetchAllSmartCollections = async (
     fields: syncedFields.join(', '),
     handle,
     ids,
-    limit,
+    limit: maxEntriesPerRun,
     product_id,
     published_at_max,
     published_at_min,

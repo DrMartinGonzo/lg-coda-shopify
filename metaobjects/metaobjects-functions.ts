@@ -1,155 +1,200 @@
 import * as coda from '@codahq/packs-sdk';
-import { getTokenPlaceholder, handleGraphQlUserError, maybeDelayNextExecution } from '../helpers';
+import * as accents from 'remove-accents';
+import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-export const createMetaObject = async ([type, ...varargs], context) => {
-  const fields = [];
-  while (varargs.length > 0) {
-    let key: string, value: string;
-    // Pull the first set of varargs off the list, and leave the rest.
-    [key, value, ...varargs] = varargs;
-    fields.push({ key, value });
+import {
+  capitalizeFirstChar,
+  getObjectSchemaItemProp,
+  graphQlIdToId,
+  graphQlRequest,
+  handleGraphQlError,
+  handleGraphQlUserError,
+  maybeDelayNextExecution,
+  unitToShortName,
+} from '../helpers';
+import {
+  IDENTITY_CUSTOM_COLLECTION,
+  IDENTITY_FILE,
+  IDENTITY_METAOBJECT_NEW,
+  IDENTITY_PAGE,
+  IDENTITY_PRODUCT,
+  IDENTITY_PRODUCT_VARIANT,
+  NOT_FOUND,
+} from '../constants';
+import {
+  buildQueryAllMetaObjectsWithFields,
+  createMetaobjectMutation,
+  deleteMetaobjectMutation,
+  queryMetaobjectDefinitionByType,
+  queryMetaobjectDynamicUrls,
+  querySyncTableDetails,
+  updateMetaobjectMutation,
+} from './metaobjects-graphql';
+import { mapMetaobjectFieldToSchemaProperty } from './metaobjects-schema';
+
+export async function autocompleteMetaobjectFieldkey(id: string, context: coda.ExecutionContext, search: string) {
+  if (!id || id === '') {
+    throw new coda.UserVisibleError(
+      'You need to define the GraphQl ID of the metaobject first for autocomplete to work.'
+    );
+  }
+  const results = await fetchMetaObjectFieldDefinition(id, context);
+  return coda.autocompleteSearchObjects(search, results, 'name', 'key');
+}
+
+function formatMetaobjectField(value: any, schemaItemProp) {
+  const { type, codaType } = schemaItemProp;
+  let formattedValue = value;
+
+  // REFERENCE
+  // console.log('schemaItemProp', JSON.stringify(schemaItemProp));
+
+  if (codaType === coda.ValueHintType.Reference && schemaItemProp.identity?.name) {
+    switch (schemaItemProp.identity.name) {
+      case IDENTITY_CUSTOM_COLLECTION:
+        formattedValue = {
+          id: graphQlIdToId(value),
+          title: NOT_FOUND,
+        };
+        break;
+      case IDENTITY_FILE:
+        formattedValue = {
+          id: value,
+          name: NOT_FOUND,
+        };
+        break;
+      case IDENTITY_METAOBJECT_NEW:
+        formattedValue = {
+          graphql_id: value,
+          name: NOT_FOUND,
+        };
+        break;
+      case IDENTITY_PAGE:
+        formattedValue = {
+          id: graphQlIdToId(value),
+          title: NOT_FOUND,
+        };
+        break;
+      case IDENTITY_PRODUCT:
+        formattedValue = {
+          id: graphQlIdToId(value),
+          title: NOT_FOUND,
+        };
+        break;
+      case IDENTITY_PRODUCT_VARIANT:
+        formattedValue = {
+          id: graphQlIdToId(value),
+          title: NOT_FOUND,
+        };
+        break;
+
+      default:
+        break;
+    }
+  }
+  // MONEY
+  else if (codaType === coda.ValueHintType.Currency) {
+    formattedValue = value.amount;
+  }
+  // MEASUREMENT
+  else if (type === coda.ValueType.Object && value.value !== undefined && value.unit !== undefined) {
+    formattedValue = {
+      ...value,
+      display: `${value.value}${unitToShortName(value.unit)}`,
+    };
+  }
+  // RATING
+  else if (type === coda.ValueType.Number && value.scale_min !== undefined && value.scale_max !== undefined) {
+    formattedValue = value.value;
+  }
+  // TEXT: rich_text_field
+  else if (type === coda.ValueType.String && codaType === coda.ValueHintType.Html) {
+    formattedValue = convertSchemaToHtml(value);
   }
 
-  const mutationQuery = `
-    mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {
-      metaobjectCreate(metaobject: $metaobject) {
-        metaobject {
-          id
-        }
-        userErrors {
-          field
-          message
-          code
-        }
-      }
-    }
-  `;
+  return formattedValue;
+}
 
+// TODO: fetch all and not only first 20
+export async function listMetaobjectDynamicUrls(context: coda.SyncExecutionContext) {
   const payload = {
-    query: mutationQuery,
+    query: queryMetaobjectDynamicUrls,
     variables: {
-      metaobject: {
-        type,
-        capabilities: {
-          publishable: {
-            status: 'ACTIVE',
-          },
-        },
-        fields,
-      },
+      cursor: context.sync.continuation,
     },
   };
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
-  });
 
-  const { body } = response;
-  return body.data.metaobjectCreate.metaobject.id;
-};
+  const response = await graphQlRequest(context, payload);
 
-export const updateMetaObject = async ([id, handle, ...varargs], context) => {
-  const fields = [];
-  while (varargs.length > 0) {
-    let key: string, value: string;
-    // Pull the first set of varargs off the list, and leave the rest.
-    [key, value, ...varargs] = varargs;
-    fields.push({ key, value });
+  handleGraphQlError(response.body.errors);
+
+  const { myshopifyDomain } = response.body.data.shop;
+  const metaobjectDefinitions = response.body.data.metaobjectDefinitions.nodes;
+  if (metaobjectDefinitions) {
+    return (
+      metaobjectDefinitions
+        // .sort(sortUpdatedAt)
+        .map((definition) => ({
+          display: definition.name,
+          value: definition.id,
+        }))
+    );
   }
+}
 
-  const mutationQuery = `
-    mutation metaobjectUpdate($id: ID!, $metaobject: MetaobjectUpdateInput!) {
-      metaobjectUpdate(id: $id, metaobject: $metaobject) {
-        metaobject {
-          id
-        }
-        userErrors {
-          field
-          message
-          code
-        }
-      }
-    }
-  `;
+export async function getMetaobjectSyncTableName(context: coda.SyncExecutionContext) {
+  const { type } = await getSyncTableDetails(context.sync.dynamicUrl, context);
+  return `Metaobject_${capitalizeFirstChar(type)}`;
+}
 
-  const payload = {
-    query: mutationQuery,
-    variables: {
-      id,
-      metaobject: {
-        capabilities: {
-          publishable: {
-            status: 'ACTIVE',
-          },
-        },
-        fields,
-      },
-    },
+export async function getMetaobjectSyncTableDisplayUrl(context) {
+  const { myshopifyDomain, type } = await getSyncTableDetails(context.sync.dynamicUrl, context);
+  return `https://${myshopifyDomain}/admin/content/entries/${type}`;
+}
+
+export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
+  const { type } = await getSyncTableDetails(context.sync.dynamicUrl, context);
+
+  const metaobjectDefinition = await fetchMetaObjectDefinitionByType(type, context);
+  const { displayNameKey, fieldDefinitions } = metaobjectDefinition;
+  let displayProperty = 'graphql_id';
+
+  const properties: coda.ObjectSchemaProperties = {
+    graphql_id: { type: coda.ValueType.String, fromKey: 'id', required: true },
+    handle: { type: coda.ValueType.String, required: true },
   };
+  const featuredProperties = ['graphql_id', 'handle'];
 
-  if (handle && handle !== '') {
-    payload.variables.metaobject['handle'] = handle;
-  }
+  fieldDefinitions.forEach((fieldDefinition) => {
+    const name = accents.remove(fieldDefinition.name);
+    properties[name] = mapMetaobjectFieldToSchemaProperty(fieldDefinition);
 
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const { body } = response;
-
-  if (body.data.metaobjectUpdate.userErrors.length) {
-    handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
-  }
-
-  return body.data.metaobjectUpdate.metaobject.id;
-};
-
-export const deleteMetaObject = async ([id], context) => {
-  const mutationQuery = `
-    mutation metaobjectDelete($id: ID!) {
-      metaobjectDelete(id: $id) {
-        deletedId
-        userErrors {
-          field
-          message
-        }
-      }
+    if (displayNameKey === fieldDefinition.key) {
+      displayProperty = name;
+      properties[name].required = true;
+      featuredProperties.unshift(displayProperty);
     }
-  `;
-
-  const payload = {
-    query: mutationQuery,
-    variables: {
-      id,
-    },
-  };
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
   });
 
-  const { body } = response;
-  return body.data.metaobjectDelete.deletedId;
-};
+  return coda.makeObjectSchema({
+    properties,
+    displayProperty,
+    idProperty: 'graphql_id',
+    featuredProperties,
+  });
+}
+
+export async function getSyncTableDetails(metaobjectDefinitionId: string, context: coda.SyncExecutionContext) {
+  const payload = { query: querySyncTableDetails, variables: { id: metaobjectDefinitionId } };
+  const response = await graphQlRequest(context, payload);
+
+  const { data } = response.body;
+  return {
+    myshopifyDomain: data.shop.myshopifyDomain,
+    id: metaobjectDefinitionId,
+    type: data.metaobjectDefinition.type,
+  };
+}
 
 export async function fetchMetaObjectFieldDefinition(metaObjectGid: string, context: coda.ExecutionContext) {
   const query = `
@@ -187,80 +232,178 @@ export async function fetchMetaObjectFieldDefinition(metaObjectGid: string, cont
     },
   };
 
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await graphQlRequest(context, payload);
 
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
-export const fetchAllMetaObjects = async ([type, objectFieldName, additionalFields = [], limit = 100], context) => {
-  const query = `
-    query ($numObjects: Int!, $cursor: String) {
-      metaobjects(type: "${type}", first: $numObjects, after: $cursor) {
-        nodes {
-          id
-          handle
-          name: field(key: "${objectFieldName}") { value }
-          ${additionalFields.map((key) => `${key}: field(key: "${key}") { value }`).join('\n')}
-        }
-
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  `;
-
+export async function fetchMetaObjectDefinitionByType(type: string, context: coda.ExecutionContext) {
   const payload = {
-    query,
+    query: queryMetaobjectDefinitionByType,
     variables: {
-      numObjects: limit,
+      type,
+    },
+  };
+
+  const response = await graphQlRequest(context, payload);
+
+  return response.body.data.metaobjectDefinitionByType;
+}
+
+/*
+async function fetchAllMetaObjectDefinitions(batchSize = 20, context: coda.ExecutionContext) {
+  const payload = {
+    query: queryAllMetaobjectDefinitions,
+    variables: {
+      batchSize,
       cursor: context.sync.continuation,
     },
   };
 
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
+  const response = await graphQlRequest(context, payload);
+  return response.body.data.metaobjectDefinitions.nodes;
+}
+*/
+
+export const fetchAllMetaObjects = async ([maxEntriesPerRun = 100], context: coda.SyncExecutionContext) => {
+  const { type } = context.sync.continuation ?? (await getSyncTableDetails(context.sync.dynamicUrl, context));
+  const cursor = context.sync.continuation?.cursor;
+
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const constantFieldsKeys = ['id']; // will always be fetched
+  const optionalFieldsKeys = effectivePropertyKeys.filter((key) => !constantFieldsKeys.includes(key));
+
+  const payload = {
+    query: buildQueryAllMetaObjectsWithFields(optionalFieldsKeys),
+    variables: {
+      type: type,
+      maxEntriesPerRun,
+      cursor,
     },
-    body: JSON.stringify(payload),
-  });
+  };
+
+  const response = await graphQlRequest(context, payload);
 
   const { body } = response;
   const { data, errors, extensions } = body;
-  const { actualQueryCost, requestedQueryCost } = extensions.cost;
-  const { maximumAvailable, currentlyAvailable, restoreRate } = extensions.cost.throttleStatus;
-  maybeDelayNextExecution(requestedQueryCost, currentlyAvailable, restoreRate, errors);
+
+  handleGraphQlError(errors);
+  maybeDelayNextExecution(extensions.cost, errors);
 
   const { nodes, pageInfo } = data.metaobjects;
 
+  const result = nodes.map((node) => {
+    const data = {
+      ...node,
+    };
+    optionalFieldsKeys.forEach((key) => {
+      // special case for handle key
+      const value = key === 'handle' ? node[key] : node[key].value;
+      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
+
+      let parsedValue = value;
+      try {
+        parsedValue = JSON.parse(value);
+      } catch (error) {
+        // console.log('not a parsable json string');
+      }
+
+      data[key] =
+        schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
+          ? parsedValue.map((v) => formatMetaobjectField(v, schemaItemProp.items))
+          : formatMetaobjectField(parsedValue, schemaItemProp);
+    });
+
+    return data;
+  });
+
   return {
-    result: nodes.map((node) => {
-      const data = {};
-      additionalFields.forEach((key) => {
-        data[key] = node[key].value;
-      });
-
-      return {
-        gid: node.id,
-        handle: node.handle,
-        name: node.name.value,
-        type: type,
-
-        data: JSON.stringify(data),
-      };
-    }),
-    continuation: pageInfo.hasNextPage ? pageInfo.endCursor : null,
+    result,
+    continuation: pageInfo.hasNextPage
+      ? {
+          cursor: pageInfo.endCursor,
+          type,
+        }
+      : null,
   };
+};
+
+export const createMetaObject = async ([type, ...varargs], context: coda.ExecutionContext) => {
+  const fields = [];
+  while (varargs.length > 0) {
+    let key: string, value: string;
+    // Pull the first set of varargs off the list, and leave the rest.
+    [key, value, ...varargs] = varargs;
+    fields.push({ key, value });
+  }
+
+  const payload = {
+    query: createMetaobjectMutation,
+    variables: {
+      metaobject: {
+        type,
+        capabilities: {
+          publishable: {
+            status: 'ACTIVE',
+          },
+        },
+        fields,
+      },
+    },
+  };
+
+  const response = await graphQlRequest(context, payload);
+
+  const { body } = response;
+  return body.data.metaobjectCreate.metaobject.id;
+};
+
+export const updateMetaObject = async ([id, handle, ...varargs], context: coda.ExecutionContext) => {
+  const fields = [];
+  while (varargs.length > 0) {
+    let key: string, value: string;
+    // Pull the first set of varargs off the list, and leave the rest.
+    [key, value, ...varargs] = varargs;
+    fields.push({ key, value });
+  }
+
+  const payload = {
+    query: updateMetaobjectMutation,
+    variables: {
+      id,
+      metaobject: {
+        capabilities: {
+          publishable: {
+            status: 'ACTIVE',
+          },
+        },
+        fields,
+      },
+    },
+  };
+
+  if (handle && handle !== '') {
+    payload.variables.metaobject['handle'] = handle;
+  }
+
+  const response = await graphQlRequest(context, payload);
+  const { body } = response;
+
+  handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
+
+  return body.data.metaobjectUpdate.metaobject.id;
+};
+
+export const deleteMetaObject = async ([id], context: coda.ExecutionContext) => {
+  const payload = {
+    query: deleteMetaobjectMutation,
+    variables: {
+      id,
+    },
+  };
+
+  const response = await graphQlRequest(context, payload);
+  const { body } = response;
+
+  return body.data.metaobjectDelete.deletedId;
 };

@@ -2,7 +2,11 @@ import * as coda from '@codahq/packs-sdk';
 
 export const MetafieldSchema = coda.makeObjectSchema({
   properties: {
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the metafield.',
+    },
     metafield_id: { type: coda.ValueType.String, required: true, fromKey: 'id' },
     lookup: { type: coda.ValueType.String, required: true },
     key: {

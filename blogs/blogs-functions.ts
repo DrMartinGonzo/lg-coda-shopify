@@ -37,13 +37,13 @@ export const fetchBlog = async ([blogID], context) => {
   }
 };
 
-export const fetchAllBlogs = async ([handle, limit, since_id], context) => {
+export const fetchAllBlogs = async ([handle, maxEntriesPerRun, since_id], context) => {
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),
     handle,
-    limit,
+    limit: maxEntriesPerRun,
     since_id,
   });
 

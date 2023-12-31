@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
 import { syncAllOrders, fetchOrder, fetchOrders, formatOrderForDocExport } from './orders-functions';
 import { OrderSchema } from './orders-schema';
+import { sharedParameters } from '../shared-parameters';
 
 const requiredParameters = {
   orderId: coda.makeParameter({
@@ -53,12 +54,6 @@ const optionalParameters = {
     type: coda.ParameterType.String,
     name: 'ids',
     description: 'Retrieve only orders specified by a comma-separated list of order IDs.',
-    optional: true,
-  }),
-  limit: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'limit',
-    description: 'The maximum number of results to fetch by page.',
     optional: true,
   }),
   processed_at_max: coda.makeParameter({
@@ -119,7 +114,7 @@ export const setupOrders = (pack) => {
         optionalParameters.financial_status,
         optionalParameters.fulfillment_status,
         optionalParameters.ids,
-        optionalParameters.limit,
+        sharedParameters.maxEntriesPerRun,
         optionalParameters.processed_at_max,
         optionalParameters.processed_at_min,
         optionalParameters.since_id,
@@ -155,7 +150,7 @@ export const setupOrders = (pack) => {
       optionalParameters.financial_status,
       optionalParameters.fulfillment_status,
       optionalParameters.ids,
-      optionalParameters.limit,
+      sharedParameters.maxEntriesPerRun,
       optionalParameters.processed_at_max,
       optionalParameters.processed_at_min,
       optionalParameters.since_id,
@@ -174,7 +169,7 @@ export const setupOrders = (pack) => {
         financial_status,
         fulfillment_status,
         ids,
-        limit,
+        maxEntriesPerRun,
         processed_at_max,
         processed_at_min,
         since_id,
@@ -195,7 +190,7 @@ export const setupOrders = (pack) => {
           financial_status,
           fulfillment_status,
           ids,
-          limit,
+          maxEntriesPerRun,
           processed_at_max,
           processed_at_min,
           since_id,

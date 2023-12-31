@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { fetchAllCustomers, fetchCustomer } from './customers-functions';
 
 import { CustomerSchema } from './customers-schema';
+import { sharedParameters } from '../shared-parameters';
 
 export const setupCustomers = (pack) => {
   /**====================================================================================================================
@@ -35,12 +36,7 @@ export const setupCustomers = (pack) => {
           description: 'Retrieve only customers specified by a comma-separated list of order IDs.',
           optional: true,
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to fetch by page.',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'since_id',

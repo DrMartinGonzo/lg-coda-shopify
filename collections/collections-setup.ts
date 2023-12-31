@@ -20,7 +20,8 @@ import {
   fetchSmartCollection,
 } from './collections-functions';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { IDENTITY_CUSTOM_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { sharedParameters } from '../shared-parameters';
 
 export const setupCollections = (pack) => {
   /**====================================================================================================================
@@ -35,12 +36,7 @@ export const setupCollections = (pack) => {
       name: 'SyncProductsInCollection',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to fetch by page. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'since_id',
@@ -66,12 +62,7 @@ export const setupCollections = (pack) => {
           name: 'id',
           description: 'The id of the collection.',
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The number of products to retrieve. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
       ],
       execute: fetchProductIdsInCollections,
     },
@@ -91,12 +82,7 @@ export const setupCollections = (pack) => {
           name: 'id',
           description: 'The id of the collection.',
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to fetch by page. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
       ],
       execute: fetchProductsInCollection,
     },
@@ -105,7 +91,7 @@ export const setupCollections = (pack) => {
   pack.addSyncTable({
     name: 'CustomCollections',
     description: 'All custom Collections.',
-    identityName: 'CustomCollection',
+    identityName: IDENTITY_CUSTOM_COLLECTION,
     schema: CustomCollectionSchema,
     formula: {
       name: 'SyncCustomCollections',
@@ -123,12 +109,7 @@ export const setupCollections = (pack) => {
           description: 'Show only collections specified by a comma-separated list of IDs.',
           optional: true,
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to retrieve. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'product_id',
@@ -204,12 +185,7 @@ export const setupCollections = (pack) => {
           description: 'Show only the smart collections specified by a comma-separated list of IDs.',
           optional: true,
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The number of results to show. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'product_id',

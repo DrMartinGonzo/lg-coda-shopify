@@ -239,7 +239,11 @@ const LineItemSchema = coda.makeObjectSchema({
       items: DutySchema,
     },
 
-    // admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the line item.',
+    },
     product_exists: { type: coda.ValueType.Boolean },
     variant_inventory_management: { type: coda.ValueType.String },
   },
@@ -253,9 +257,12 @@ const FulfillmentSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
-
+     */
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the fulfillment.',
+    },
     // The date and time when the fulfillment was created. The API returns this value in ISO 8601 format.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     // The ID for the fulfillment.
@@ -548,7 +555,11 @@ export const OrderSchema = coda.makeObjectSchema({
     /*
      */
 
-    admin_graphql_api_id: { type: coda.ValueType.String },
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the order.',
+    },
     // The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.'
     order_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // The ID of the app that created the order.

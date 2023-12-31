@@ -1,9 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { IDENTITY_PRODUCT, OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { fetchAllProducts, fetchProduct } from './products-functions';
 
 import { ProductSchema } from './products-schema';
+import { sharedParameters } from '../shared-parameters';
 
 export const setupProducts = (pack) => {
   /**====================================================================================================================
@@ -12,7 +13,7 @@ export const setupProducts = (pack) => {
   pack.addSyncTable({
     name: 'Products',
     description: 'All Shopify products',
-    identityName: 'Product',
+    identityName: IDENTITY_PRODUCT,
     schema: ProductSchema,
     formula: {
       name: 'SyncProducts',
@@ -48,12 +49,7 @@ export const setupProducts = (pack) => {
           description: 'Return only products specified by a comma-separated list of product IDs.',
           optional: true,
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to fetch by page. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.String,
           name: 'presentment_currencies',

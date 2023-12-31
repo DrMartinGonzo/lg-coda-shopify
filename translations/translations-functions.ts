@@ -1,4 +1,3 @@
-import { getTokenPlaceholder } from '../helpers';
 
 export const translateResource = async ([resourceId, ...varargs], context) => {
   const translations = [];
@@ -38,16 +37,7 @@ export const translateResource = async ([resourceId, ...varargs], context) => {
     },
   };
 
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await graphQlRequest(context, payload);
 
   const { body } = response;
   console.log('body', body);
@@ -82,16 +72,7 @@ export const getTranslatableResource = async ([resourceId, locale], context) => 
     },
   };
 
-  const response = await context.fetcher.fetch({
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/2023-04/graphql.json`,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await graphQlRequest(context, payload);
 
   const { body } = response;
   return body.data.translatableResource;

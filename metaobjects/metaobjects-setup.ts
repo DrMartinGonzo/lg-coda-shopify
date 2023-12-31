@@ -1,17 +1,42 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { MetaObjectSchema } from './metaobjects-schema';
 import {
   createMetaObject,
   deleteMetaObject,
-  fetchAllMetaObjects,
-  fetchMetaObjectFieldDefinition,
+  getMetaobjectSyncTableName,
+  listMetaobjectDynamicUrls,
   updateMetaObject,
+  fetchAllMetaObjects,
+  getMetaobjectSyncTableDisplayUrl,
+  autocompleteMetaobjectFieldkey,
+  getMetaobjectSyncTableSchema,
 } from './metaobjects-functions';
+import { IDENTITY_METAOBJECT_NEW } from '../constants';
+import { sharedParameters } from '../shared-parameters';
 
 export const setupMetaObjects = (pack) => {
   /**====================================================================================================================
-   *    Formulas
+   *    SyncTables
+   *===================================================================================================================== */
+  // MetaObjects Dynamic SyncTable
+  pack.addDynamicSyncTable({
+    name: 'Metaobjects',
+    description: 'All Metaobjects.',
+    identityName: IDENTITY_METAOBJECT_NEW,
+    listDynamicUrls: listMetaobjectDynamicUrls,
+    getName: getMetaobjectSyncTableName,
+    getDisplayUrl: getMetaobjectSyncTableDisplayUrl,
+    getSchema: getMetaobjectSyncTableSchema,
+    formula: {
+      name: 'SyncMetaObjects',
+      description: '<Help text for the sync formula, not show to the user>',
+      parameters: [sharedParameters.maxEntriesPerRun],
+      execute: fetchAllMetaObjects,
+    },
+  });
+
+  /**====================================================================================================================
+   *    Actions
    *===================================================================================================================== */
   // An action to create a metaobject
   pack.addFormula({
@@ -49,7 +74,7 @@ export const setupMetaObjects = (pack) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'id',
-        description: 'The id of the metaobject to update.',
+        description: 'The GraphQl ID of the metaobject to update.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -63,15 +88,7 @@ export const setupMetaObjects = (pack) => {
         type: coda.ParameterType.String,
         name: 'key',
         description: 'The key of the field.',
-        autocomplete: async function (context, search, { id, handle }) {
-          if (!id || id === '') {
-            throw new coda.UserVisibleError(
-              'You need to define the ID of the metaobject first before setting the fields.'
-            );
-          }
-          const results = await fetchMetaObjectFieldDefinition(id, context);
-          return coda.autocompleteSearchObjects(search, results, 'name', 'key');
-        },
+        autocomplete: async (context, search, { id }) => autocompleteMetaobjectFieldkey(id, context, search),
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -92,55 +109,11 @@ export const setupMetaObjects = (pack) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'id',
-        description: 'The id of the metaobject to delete.',
+        description: 'The GraphQl ID of the metaobject to delete.',
       }),
     ],
     isAction: true,
     resultType: coda.ValueType.String,
     execute: deleteMetaObject,
   });
-
-  /**====================================================================================================================
-   *    SyncTables
-   *===================================================================================================================== */
-  pack.addSyncTable({
-    name: 'MetaObjects',
-    description: 'All metaobjects.',
-    identityName: 'MetaObject',
-    schema: MetaObjectSchema,
-    formula: {
-      name: 'SyncMetaObjects',
-      description: '<Help text for the sync formula, not show to the user>',
-      parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'type',
-          description: 'The type of metaobject to fetch',
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'objectFieldName',
-          description: 'the field to use as display name',
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.StringArray,
-          name: 'additionalFields',
-          description: 'additional fields to fetch (defaut is id + name)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description:
-            'limit of objects to return for each sync. (all objects will always be fetched, this is just to adjust for Shopify query cost)',
-          optional: true,
-        }),
-      ],
-      execute: fetchAllMetaObjects,
-    },
-  });
-
-  /**====================================================================================================================
-   *    Column formats
-   *===================================================================================================================== */
 };

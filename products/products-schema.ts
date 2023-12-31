@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import { IDENTITY_PRODUCT } from '../constants';
 
 // Product image object
 const ProductImageSchema = coda.makeObjectSchema({
@@ -52,9 +53,13 @@ export const ProductSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
+     */
 
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the product.',
+    },
     // An unsigned 64-bit integer that's used as a unique identifier for the product. Each id is unique across the Shopify system. No two products will have the same id, even if they're from different shops.
     product_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // A description of the product. Supports HTML formatting.
@@ -102,4 +107,4 @@ export const ProductSchema = coda.makeObjectSchema({
   featuredProperties: ['title', 'options', 'product_type', 'tags'],
 });
 
-export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSchema, 'Product');
+export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSchema, IDENTITY_PRODUCT);

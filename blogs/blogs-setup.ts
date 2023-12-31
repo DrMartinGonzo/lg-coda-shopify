@@ -4,6 +4,7 @@ import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { fetchAllBlogs, fetchBlog } from './blogs-functions';
 
 import { BlogSchema } from './blogs-schema';
+import { sharedParameters } from '../shared-parameters';
 
 export const setupBlogs = (pack) => {
   /**====================================================================================================================
@@ -24,12 +25,7 @@ export const setupBlogs = (pack) => {
           description: 'Filter by blog handle.',
           optional: true,
         }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'limit',
-          description: 'The maximum number of results to retrieve. (max: 250)',
-          optional: true,
-        }),
+        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.Number,
           name: 'since_id',

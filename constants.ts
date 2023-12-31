@@ -22,6 +22,12 @@ export const OPTIONS_ORDER_FULFILLMENT_STATUS = ['any', 'shipped', 'partial', 'u
 export const OPTIONS_PUBLISHED_STATUS = ['any', 'published', 'unpublished'];
 export const OPTIONS_PRODUCT_STATUS = ['any', 'active', 'archived', 'draft'];
 
+export const OPTIONS_FILE_TYPE = [
+  { display: 'Generic files', value: 'GENERIC_FILE' },
+  { display: 'Images', value: 'IMAGE' },
+  { display: 'Videos', value: 'VIDEO' },
+];
+
 export const METAFIELDS_RESOURCE_TYPES = [
   'article',
   'blog',
@@ -35,3 +41,14 @@ export const METAFIELDS_RESOURCE_TYPES = [
   'shop',
   'variant',
 ];
+
+export const PACK_ID = 11612;
+export const NOT_FOUND = 'NOT_FOUND';
+
+export const IDENTITY_CUSTOM_COLLECTION = 'CustomCollection';
+export const IDENTITY_FILE = 'File';
+export const IDENTITY_IMAGE = 'Image';
+export const IDENTITY_METAOBJECT_NEW = 'Metaobject';
+export const IDENTITY_PAGE = 'Page';
+export const IDENTITY_PRODUCT = 'Product';
+export const IDENTITY_PRODUCT_VARIANT = 'ProductVariant';

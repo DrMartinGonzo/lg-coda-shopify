@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ProductReference } from '../products/products-schema';
+import { IDENTITY_PRODUCT_VARIANT } from '../constants';
 
 const MoneySchema = coda.makeObjectSchema({
   properties: {
@@ -25,10 +26,17 @@ export const ProductVariantSchema = coda.makeObjectSchema({
      * Disabled
      */
     /*
-    admin_graphql_api_id: { type: coda.ValueType.String },
-    */
-    // The barcode, UPC, or ISBN number for the product.
-    barcode: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+     */
+    graphql_id: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID of the product variant.',
+    },
+    barcode: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The barcode, UPC, or ISBN number for the product.',
+    },
     // The original price of the item before an adjustment or a sale.
     compare_at_price: { type: coda.ValueType.Number, codaType: coda.ValueHintType.Currency },
     // The date and time (ISO 8601 format) when the product variant was created.
@@ -86,4 +94,7 @@ export const ProductVariantSchema = coda.makeObjectSchema({
   featuredProperties: ['title', 'sku', 'price'],
 });
 
-export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(ProductVariantSchema, 'ProductVariant');
+export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(
+  ProductVariantSchema,
+  IDENTITY_PRODUCT_VARIANT
+);
