@@ -1,9 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_METAOBJECT_NEW, IDENTITY_PRODUCT, PACK_ID } from '../constants';
+import { IDENTITY_METAOBJECT, IDENTITY_PRODUCT, PACK_ID } from '../constants';
 import { ProductReference } from '../products/products-schema';
 import { PageReference } from '../pages/pages-schema';
-import { CustomCollectionReference } from '../collections/collections-schema';
+import { CollectionReference } from '../collections/collections-schema';
 import { ProductVariantReference } from '../productVariants/productVariants-schema';
 import { FileReference } from '../files/files-schema';
 
@@ -16,18 +16,29 @@ export const MeasurementSchema = coda.makeObjectSchema({
   displayProperty: 'display',
 });
 
-export const MetaObjectSchema = coda.makeObjectSchema({
-  properties: {
-    gid: { type: coda.ValueType.String, required: true },
-    handle: { type: coda.ValueType.String, required: true },
-    name: { type: coda.ValueType.String },
-    type: { type: coda.ValueType.String },
-    data: { type: coda.ValueType.String },
-  },
-  displayProperty: 'name',
-  idProperty: 'gid',
-  featuredProperties: ['gid', 'handle', 'name', 'type', 'data'],
-});
+// export const MetaObjectSchema = coda.makeObjectSchema({
+//   properties: {
+//     gid: { type: coda.ValueType.String, required: true },
+//     handle: { type: coda.ValueType.String, required: true },
+//     name: { type: coda.ValueType.String },
+//     type: { type: coda.ValueType.String },
+//     data: { type: coda.ValueType.String },
+//   },
+//   displayProperty: 'name',
+//   idProperty: 'gid',
+//   featuredProperties: ['gid', 'handle', 'name', 'type', 'data'],
+// });
+
+// const MetaObjectBaseSchema = coda.makeObjectSchema({
+//   properties: {
+//     metaobject_id: { type: coda.ValueType.String, fromKey: 'id', required: true },
+//     handle: { type: coda.ValueType.String, required: true },
+//   },
+//   displayProperty: 'metaobject_id',
+//   idProperty: 'metaobject_id',
+//   featuredProperties: ['metaobject_id', 'handle'],
+// });
+
 
 export function getMetaobjectReferenceSchema(fieldDefinition) {
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
@@ -37,14 +48,14 @@ export function getMetaobjectReferenceSchema(fieldDefinition) {
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,
     properties: {
-      graphql_id: { type: coda.ValueType.String, required: true },
+      graphql_gid: { type: coda.ValueType.String, required: true },
       name: { type: coda.ValueType.String, required: true },
     },
     displayProperty: 'name',
-    idProperty: 'graphql_id',
+    idProperty: 'graphql_gid',
     identity: {
       packId: PACK_ID,
-      name: IDENTITY_METAOBJECT_NEW,
+      name: IDENTITY_METAOBJECT,
       dynamicUrl: metaobjectReferenceDefinitionId,
     },
   });
@@ -127,7 +138,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
 
     // REFERENCE
     case 'collection_reference':
-      extraProps = CustomCollectionReference;
+      extraProps = CollectionReference;
       break;
     case 'metaobject_reference':
       extraProps = getMetaobjectReferenceSchema(fieldDefinition);

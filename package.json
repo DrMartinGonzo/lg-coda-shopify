@@ -3,7 +3,7 @@
   "version": "0.0.20",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
-    "push": "npx coda upload pack.ts",
+    "push": "npx coda upload --timerStrategy=fake pack.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "npx patch-package"
   },
@@ -12,7 +12,8 @@
   "dependencies": {
     "@codahq/packs-sdk": "^1.0.5",
     "@thebeyondgroup/shopify-rich-text-renderer": "^1.0.0",
-    "remove-accents": "^0.5.0"
+    "remove-accents": "^0.5.0",
+    "striptags": "^3.2.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.1",

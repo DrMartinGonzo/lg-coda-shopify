@@ -1,26 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CollectSchema,
-  CollectionSchema,
-  CustomCollectionSchema,
-  ProductIdsCollectionSchema,
-  ProductInCollectionSchema,
-  SmartCollectionSchema,
-} from './collections-schema';
-import {
-  fetchAllCollects,
-  fetchAllCustomCollections,
-  fetchAllSmartCollections,
-  fetchCollect,
-  fetchCollection,
-  fetchCustomCollection,
-  fetchProductIdsInCollections,
-  fetchProductsInCollection,
-  fetchSmartCollection,
-} from './collections-functions';
+import { CollectSchema, CollectionSchema } from './collections-schema';
+import { fetchAllCollections, fetchAllCollects, fetchCollection, updateCollection } from './collections-functions';
 
-import { IDENTITY_CUSTOM_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { IDENTITY_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { sharedParameters } from '../shared-parameters';
 
 export const setupCollections = (pack) => {
@@ -38,9 +21,9 @@ export const setupCollections = (pack) => {
       parameters: [
         sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'since_id',
-          description: 'Return only products after the specified ID.',
+          type: coda.ParameterType.String,
+          name: 'collection_gid',
+          description: 'Retrieve only collects for a certain collection identified by its graphQL GID.',
           optional: true,
         }),
       ],
@@ -49,52 +32,12 @@ export const setupCollections = (pack) => {
   });
 
   pack.addSyncTable({
-    name: 'ProductIdsInCollection',
-    description: 'Retrieve a list of products IDs belonging to a collection.',
-    identityName: 'ProductIdInCollection',
-    schema: ProductIdsCollectionSchema,
+    name: 'Collections',
+    description: 'All Collections.',
+    identityName: IDENTITY_COLLECTION,
+    schema: CollectionSchema,
     formula: {
-      name: 'SyncProductIdsInCollection',
-      description: '<Help text for the sync formula, not show to the user>',
-      parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'id',
-          description: 'The id of the collection.',
-        }),
-        sharedParameters.maxEntriesPerRun,
-      ],
-      execute: fetchProductIdsInCollections,
-    },
-  });
-
-  pack.addSyncTable({
-    name: 'ProductsInCollection',
-    description: 'All products belonging to a specified collection id.',
-    identityName: 'ProductInCollection',
-    schema: ProductInCollectionSchema,
-    formula: {
-      name: 'SyncProductsInCollection',
-      description: '<Help text for the sync formula, not show to the user>',
-      parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'id',
-          description: 'The id of the collection.',
-        }),
-        sharedParameters.maxEntriesPerRun,
-      ],
-      execute: fetchProductsInCollection,
-    },
-  });
-
-  pack.addSyncTable({
-    name: 'CustomCollections',
-    description: 'All custom Collections.',
-    identityName: IDENTITY_CUSTOM_COLLECTION,
-    schema: CustomCollectionSchema,
-    formula: {
-      name: 'SyncCustomCollections',
+      name: 'SyncCollections',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
         coda.makeParameter({
@@ -160,111 +103,47 @@ export const setupCollections = (pack) => {
           optional: true,
         }),
       ],
-      execute: fetchAllCustomCollections,
-    },
-  });
+      execute: fetchAllCollections,
+      maxUpdateBatchSize: 10,
+      executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
+        const jobs = updates.map(async (update) => {
+          const { updatedFields } = update;
+          // console.log('updatedFields', updatedFields);
+          // console.log('update.previousValue', update.previousValue);
+          const collectionGid = update.previousValue.admin_graphql_api_id;
 
-  pack.addSyncTable({
-    name: 'SmartCollections',
-    description: 'All SmartCollections.',
-    identityName: 'SmartCollection',
-    schema: SmartCollectionSchema,
-    formula: {
-      name: 'SyncSmartCollections',
-      description: '<Help text for the sync formula, not show to the user>',
-      parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'handle',
-          description: 'Filter results by smart collection handle.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'ids',
-          description: 'Show only the smart collections specified by a comma-separated list of IDs.',
-          optional: true,
-        }),
-        sharedParameters.maxEntriesPerRun,
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'product_id',
-          description: 'Show smart collections that includes the specified product.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'published_at_max',
-          description: 'Show smart collections published before this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'published_at_min',
-          description: 'Show smart collections published after this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'published_status',
-          description: 'Filter results based on the published status of smart collections.',
-          optional: true,
-          autocomplete: OPTIONS_PUBLISHED_STATUS,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'since_id',
-          description: 'Restrict results to after the specified ID.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'title',
-          description: 'Show smart collections with the specified title.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'updated_at_max',
-          description: 'Show smart collections last updated before this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'updated_at_min',
-          description: 'Show smart collections last updated after this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-      ],
-      execute: fetchAllSmartCollections,
+          const fields = {};
+          updatedFields.forEach((key) => {
+            fields[key] = update.newValue[key];
+          });
+          const newValues = await updateCollection(collectionGid, fields, context);
+          return {
+            ...newValues,
+            ...update.newValue,
+          };
+        });
+
+        // Wait for all of the jobs to finish .
+        let completed = await Promise.allSettled(jobs);
+
+        return {
+          // For each update, return either the updated row
+          // or an error if the update failed.
+          result: completed.map((job) => {
+            if (job.status === 'fulfilled') {
+              return job.value;
+            } else {
+              return job.reason;
+            }
+          }),
+        };
+      },
     },
   });
 
   /**====================================================================================================================
    *    Formulas
    *===================================================================================================================== */
-  pack.addFormula({
-    name: 'Collect',
-    description: 'Get a single collect data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'collectID',
-        description: 'The id of the collection.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'fields',
-        description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-        optional: true,
-      }),
-    ],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Object,
-    schema: CollectSchema,
-    execute: fetchCollect,
-  });
-
   pack.addFormula({
     name: 'Collection',
     description: 'Get a single collection data.',
@@ -287,71 +166,63 @@ export const setupCollections = (pack) => {
     execute: fetchCollection,
   });
 
+  // TODO: finish adding all updatable parameters
   pack.addFormula({
-    name: 'CustomCollection',
-    description: 'Get a single Custom Collection data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'customCollectionID',
-        description: 'The id of the custom collection.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'fields',
-        description: 'Show only certain fields, specified by a comma-separated list of field names.',
-        optional: true,
-      }),
-    ],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Object,
-    schema: CustomCollectionSchema,
-    execute: fetchCustomCollection,
-  });
+    name: 'UpdateCollection',
+    description: 'Update collection.',
 
-  pack.addFormula({
-    name: 'SmartCollection',
-    description: 'Get a single smart collect data.',
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'smartCollectionID',
-        description: 'The id of the smart collection.',
+        name: 'collectionGid',
+        description: 'The GraphQL GID of the collection.',
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'fields',
-        description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
+        name: 'body_html',
+        description: 'The description of the collection, including any HTML tags and formatting.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'handle',
+        description: 'A unique string that identifies the collection.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'template_suffix',
+        description: 'The suffix of the Liquid template being used to show the collection in an online store.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'title',
+        description: 'The name of the collection.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Boolean,
+        name: 'published',
+        description: 'The published status of the collection on the online store.',
         optional: true,
       }),
     ],
-    cacheTtlSecs: 10,
+    isAction: true,
     resultType: coda.ValueType.Object,
-    schema: SmartCollectionSchema,
-    execute: fetchSmartCollection,
+    schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
+
+    execute: async ([collectionGid, body_html, handle, template_suffix, title, published], context) => {
+      return await updateCollection(collectionGid, { body_html, handle, template_suffix, published }, context);
+    },
   });
 
   /**====================================================================================================================
    *    Column formats
    *===================================================================================================================== */
   pack.addColumnFormat({
-    name: 'Collect',
-    instructions: 'Get a single collect data.',
-    formulaName: 'Collect',
-  });
-  pack.addColumnFormat({
     name: 'Collection',
     instructions: 'Get a single collection data.',
     formulaName: 'Collection',
-  });
-  pack.addColumnFormat({
-    name: 'CustomCollection',
-    instructions: 'Get a single custom collection data.',
-    formulaName: 'CustomCollection',
-  });
-  pack.addColumnFormat({
-    name: 'SmartCollection',
-    instructions: 'Get a single smart collection data.',
-    formulaName: 'SmartCollection',
   });
 };

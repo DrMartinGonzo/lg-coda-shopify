@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getTokenPlaceholder } from '../helpers';
+import { restGetRequest } from '../helpers-rest';
 
 export const fetchShopDetails = async (fields, context: coda.ExecutionContext) => {
   const params = {};
@@ -8,17 +8,7 @@ export const fetchShopDetails = async (fields, context: coda.ExecutionContext) =
     params['fields'] = fields.join(',');
   }
   const url = coda.withQueryParams(`${context.endpoint}/admin/api/2022-10/shop.json`, params);
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url,
-    cacheTtlSecs: 10,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.shop) {

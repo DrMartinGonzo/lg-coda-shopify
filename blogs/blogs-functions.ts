@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { cleanQueryParams, extractNextUrlPagination, getTokenPlaceholder } from '../helpers';
+import { getShopifyRequestHeaders } from '../helpers';
+import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
 
 export const formatBlog = (article) => {
   // if (article.images) {
@@ -20,16 +21,8 @@ export const formatBlog = (article) => {
 };
 
 export const fetchBlog = async ([blogID], context) => {
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: `${context.endpoint}/admin/api/2023-01/blogs/${blogID}.json`,
-    cacheTtlSecs: 10,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const url = `${context.endpoint}/admin/api/2023-01/blogs/${blogID}.json`;
+  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.blog) {
@@ -57,10 +50,7 @@ export const fetchAllBlogs = async ([handle, maxEntriesPerRun, since_id], contex
   const response = await context.fetcher.fetch({
     method: 'GET',
     url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
+    headers: getShopifyRequestHeaders(context),
     cacheTtlSecs: 0,
   });
 

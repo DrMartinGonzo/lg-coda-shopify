@@ -1,9 +1,5 @@
 export const queryMetaobjectDynamicUrls = `#graphql
   query queryMetaobjectDynamicUrls($cursor: String) {
-    shop {
-      myshopifyDomain
-    }
-
     metaobjectDefinitions(first: 20, after: $cursor) {
       nodes {
         id
@@ -47,12 +43,41 @@ export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
 }
 
 export const querySyncTableDetails = `#graphql
-  query metaobjectDefinitionAndShopifyDomain($id: ID!) {
-    shop {
-      myshopifyDomain
-    }
+  query metaobjectDefinitionType($id: ID!) {
     metaobjectDefinition(id: $id) {
       type
+    }
+  }
+`;
+
+const fieldDefinitionFields = `#graphql
+  description
+  key
+  name
+  required
+  type {
+    category
+    name
+    supportedValidations {
+      name
+      type
+    }
+    supportsDefinitionMigrations
+  }
+  validations {
+    name
+    type
+    value
+  }
+`;
+export const queryMetaObjectFieldDefinition = `#graphql
+  query queryMetaObjectFieldDefinition($id: ID!) {
+    metaobject(id: $id) {
+      definition {
+        fieldDefinitions {
+          ${fieldDefinitionFields}
+        }
+      }
     }
   }
 `;
@@ -62,28 +87,12 @@ export const queryMetaobjectDefinitionByType = `#graphql
     metaobjectDefinitionByType(type: $type) {
       displayNameKey
       fieldDefinitions {
-        description
-        key
-        name
-        required
-        type {
-          category
-          name
-          supportedValidations {
-            name
-            type
-          }
-          supportsDefinitionMigrations
-        }
-        validations {
-          name
-          type
-          value
-        }
+        ${fieldDefinitionFields}
       }
     }
   }
 `;
+
 export const queryAllMetaobjectDefinitions = `#graphql
   query queryAllMetaobjectDefinitions($batchSize: Int!, $cursor: String) {
     metaobjectDefinitions(first: $batchSize, after: $cursor) {

@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 export const MetafieldSchema = coda.makeObjectSchema({
   properties: {
-    graphql_id: {
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the metafield.',

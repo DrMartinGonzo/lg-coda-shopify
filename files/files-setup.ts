@@ -1,9 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { FileSchema } from './files-schema';
-import { syncAllFiles, deleteFile } from './files-functions';
+import { syncFiles, deleteFile } from './files-functions';
 import { IDENTITY_FILE, OPTIONS_FILE_TYPE } from '../constants';
-import { sharedParameters } from '../shared-parameters';
 
 export const setupFiles = (pack) => {
   /**====================================================================================================================
@@ -20,7 +19,6 @@ export const setupFiles = (pack) => {
       name: 'SyncFiles',
       description: '<Help text for the sync formula, not shown to the user>',
       parameters: [
-        sharedParameters.maxEntriesPerRun,
         coda.makeParameter({
           type: coda.ParameterType.String,
           name: 'type',
@@ -29,7 +27,7 @@ export const setupFiles = (pack) => {
           autocomplete: OPTIONS_FILE_TYPE,
         }),
       ],
-      execute: syncAllFiles,
+      execute: syncFiles,
     },
   });
 
@@ -43,8 +41,8 @@ export const setupFiles = (pack) => {
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'id',
-        description: 'The GraphQl ID of the file to delete.',
+        name: 'fileGid',
+        description: 'The GraphQl GID of the file to delete.',
       }),
     ],
     isAction: true,

@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, extractNextUrlPagination, getTokenPlaceholder } from '../helpers';
+import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
 
 export const formatCustomer = (data) => {
   if (data.first_name && data.last_name) {
@@ -15,16 +15,8 @@ export const formatCustomer = (data) => {
 };
 
 export const fetchCustomer = async ([customerID], context) => {
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: `${context.endpoint}/admin/api/2022-07/customers/${customerID}.json`,
-    cacheTtlSecs: 10,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const url = `${context.endpoint}/admin/api/2022-07/customers/${customerID}.json`;
+  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.customer) {
@@ -52,16 +44,7 @@ export const fetchAllCustomers = async (
   let url =
     context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/customers.json`, params);
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results

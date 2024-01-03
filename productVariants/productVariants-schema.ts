@@ -27,7 +27,7 @@ export const ProductVariantSchema = coda.makeObjectSchema({
      */
     /*
      */
-    graphql_id: {
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the product variant.',

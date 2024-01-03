@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { cleanQueryParams, extractNextUrlPagination, getTokenPlaceholder } from '../helpers';
+import { getShopifyRequestHeaders } from '../helpers';
+import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
 
 export const formatArticle = (article) => {
   // if (article.images) {
@@ -20,16 +21,8 @@ export const formatArticle = (article) => {
 };
 
 export const fetchArticle = async ([blogID, articleID], context) => {
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: `${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles/${articleID}.json`,
-    cacheTtlSecs: 10,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const url = `${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles/${articleID}.json`;
+  const response = await restGetRequest({ url, cacheTtlSecs: 100 }, context);
   const { body } = response;
 
   if (body.article) {
@@ -81,16 +74,7 @@ export const fetchAllArticles = async (
     context.sync.continuation ??
     coda.withQueryParams(`${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles.json`, params);
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results
@@ -147,10 +131,7 @@ export const createArticle = async (
     method: 'POST',
     url: url,
     body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
+    headers: getShopifyRequestHeaders(context),
     cacheTtlSecs: 0,
   });
 };
@@ -196,10 +177,7 @@ export const updateArticle = async (
     method: 'PUT',
     url: url,
     body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
+    headers: getShopifyRequestHeaders(context),
   });
 };
 
@@ -208,10 +186,7 @@ export const deleteArticle = async ([blogID, articleId], context) => {
   return context.fetcher.fetch({
     method: 'DELETE',
     url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
+    headers: getShopifyRequestHeaders(context),
     cacheTtlSecs: 0,
   });
 };

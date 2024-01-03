@@ -4,14 +4,14 @@ import {
   createMetaObject,
   deleteMetaObject,
   getMetaobjectSyncTableName,
-  listMetaobjectDynamicUrls,
+  getMetaobjectSyncTableDynamicUrls,
   updateMetaObject,
-  fetchAllMetaObjects,
+  syncMetaObjects,
   getMetaobjectSyncTableDisplayUrl,
   autocompleteMetaobjectFieldkey,
   getMetaobjectSyncTableSchema,
 } from './metaobjects-functions';
-import { IDENTITY_METAOBJECT_NEW } from '../constants';
+import { IDENTITY_METAOBJECT } from '../constants';
 import { sharedParameters } from '../shared-parameters';
 
 export const setupMetaObjects = (pack) => {
@@ -22,8 +22,8 @@ export const setupMetaObjects = (pack) => {
   pack.addDynamicSyncTable({
     name: 'Metaobjects',
     description: 'All Metaobjects.',
-    identityName: IDENTITY_METAOBJECT_NEW,
-    listDynamicUrls: listMetaobjectDynamicUrls,
+    identityName: IDENTITY_METAOBJECT,
+    listDynamicUrls: getMetaobjectSyncTableDynamicUrls,
     getName: getMetaobjectSyncTableName,
     getDisplayUrl: getMetaobjectSyncTableDisplayUrl,
     getSchema: getMetaobjectSyncTableSchema,
@@ -31,7 +31,7 @@ export const setupMetaObjects = (pack) => {
       name: 'SyncMetaObjects',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [sharedParameters.maxEntriesPerRun],
-      execute: fetchAllMetaObjects,
+      execute: syncMetaObjects,
     },
   });
 

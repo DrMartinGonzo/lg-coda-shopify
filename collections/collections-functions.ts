@@ -1,132 +1,47 @@
 import * as coda from '@codahq/packs-sdk';
+// @ts-ignore
+import striptags from 'striptags';
 
-import { cleanQueryParams, extractNextUrlPagination, getTokenPlaceholder } from '../helpers';
+import { getThumbnailUrlFromFullUrl, graphQlGidToId, idToGraphQlGid } from '../helpers';
+import { cleanQueryParams, extractNextUrlPagination, restGetRequest, restPutRequest } from '../helpers-rest';
+import { graphQlRequest, handleGraphQlError } from '../helpers-graphql';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import {
+  COLLECTION_TYPE__CUSTOM,
+  COLLECTION_TYPE__SMART,
+  NOT_FOUND,
+  OPTIONS_PUBLISHED_STATUS,
+  RESOURCE_COLLECTION,
+  RESOURCE_PRODUCT,
+} from '../constants';
 import { formatProduct } from '../products/products-functions';
+import { buildUpdateCollection, isSmartCollection } from './collections-graphql';
 
-function formatCustomCollection(collection) {
-  collection.body = collection.body_html;
+export function formatCollection(collection) {
+  collection.body = striptags(collection.body_html);
   if (collection.image) {
+    collection.thumbnail = getThumbnailUrlFromFullUrl(collection.image.src);
     collection.image = collection.image.src;
   }
   return collection;
 }
 
-function formatSmartCollection(collection) {
-  collection.body = collection.body_html;
-  if (collection.image) {
-    collection.image = collection.image.src;
-  }
-  return collection;
-}
-
-export const fetchProductIdsInCollections = async ([id, maxEntriesPerRun], context) => {
-  const params = cleanQueryParams({
-    limit: maxEntriesPerRun,
-  });
-
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collections/${id}/products.json`, params);
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
+export const getCollectionType = async (gid: string, context: coda.ExecutionContext) => {
+  const payload = {
+    query: isSmartCollection,
+    variables: {
+      gid,
     },
-  });
-
-  const { body } = response;
-
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.products) {
-    items = body.products.map((product) => {
-      return {
-        product_id: product.id,
-        collection_id: id,
-        unique_id: `${id}_${product.id}`,
-      };
-    });
-  }
-
-  return {
-    result: items,
-    continuation: nextUrl,
   };
-};
 
-export const fetchProductsInCollection = async ([id, maxEntriesPerRun], context) => {
-  const params = cleanQueryParams({
-    limit: maxEntriesPerRun,
-  });
-
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collections/${id}/products.json`, params);
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const response = await graphQlRequest(context, payload);
   const { body } = response;
+  handleGraphQlError(body.errors);
 
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.products) {
-    if (body.products) {
-      items = body.products.map((product) => {
-        return {
-          collection_id: id,
-          product: { id: product.id },
-          unique_id: `${id}_${product.id}`,
-        };
-      });
-    }
-  }
-
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
+  return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
 };
 
-export const fetchCollection = async ([id, fields], context) => {
-  const params = cleanQueryParams({
-    fields,
-  });
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collections/${id}.json`, params),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 10,
-  });
-
-  const { body } = response;
-  if (body.collection) {
-    return body.collection;
-  }
-};
-
-export const fetchAllCollects = async ([maxEntriesPerRun, since_id], context) => {
+export const fetchAllCollects = async ([maxEntriesPerRun, collection_gid], context) => {
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   // replace product with product_id if present
@@ -135,25 +50,29 @@ export const fetchAllCollects = async ([maxEntriesPerRun, since_id], context) =>
     syncedFields[productFieldindex] = 'product_id';
   }
 
+  if (
+    (syncedFields.includes('product') || syncedFields.includes('product_graphql_gid')) &&
+    !syncedFields.includes('product_id')
+  ) {
+    syncedFields.push('product_id');
+  }
+  if (
+    (syncedFields.includes('collection') || syncedFields.includes('collection_graphql_gid')) &&
+    !syncedFields.includes('collection_id')
+  ) {
+    syncedFields.push('collection_id');
+  }
+
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),
     limit: maxEntriesPerRun,
-    since_id,
+    collection_id: collection_gid ? graphQlGidToId(collection_gid) : undefined,
   });
 
   let url =
     context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collects.json`, params);
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results
@@ -167,8 +86,17 @@ export const fetchAllCollects = async ([maxEntriesPerRun, since_id], context) =>
     items = body.collects.map((collect) => {
       return {
         ...collect,
+        collection_graphql_gid: idToGraphQlGid(RESOURCE_COLLECTION, collect.collection_id),
+        product_graphql_gid: idToGraphQlGid(RESOURCE_PRODUCT, collect.product_id),
         ...{
-          product: { id: collect.product_id },
+          product: {
+            id: collect.product_id,
+            title: NOT_FOUND,
+          },
+          collection: {
+            admin_graphql_api_id: idToGraphQlGid(RESOURCE_COLLECTION, collect.collection_id),
+            title: NOT_FOUND,
+          },
         },
       };
     });
@@ -180,47 +108,21 @@ export const fetchAllCollects = async ([maxEntriesPerRun, since_id], context) =>
   };
 };
 
-export const fetchCollect = async ([id, fields], context) => {
-  const params = cleanQueryParams({ fields });
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collects/${id}.json`, params),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 10,
-  });
-
-  const { body } = response;
-  if (body.collect) {
-    return body.collect;
-  }
-};
-
-export const fetchCustomCollection = async ([id, fields], context) => {
+export const fetchCollection = async ([id, fields], context) => {
   const params = cleanQueryParams({
     fields,
   });
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/custom_collections/${id}.json`, params),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 10,
-  });
+  const url = coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collections/${id}.json`, params);
+  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
 
   const { body } = response;
-  if (body.custom_collection) {
-    return body.custom_collection;
+  if (body.collection) {
+    return body.collection;
   }
 };
 
-export const fetchAllCustomCollections = async (
+export const fetchAllCollections = async (
   [
     handle,
     ids,
@@ -236,92 +138,14 @@ export const fetchAllCustomCollections = async (
   ],
   context
 ) => {
+  let type = context.sync.continuation?.type ?? 'custom_collections';
+
   // Only fetch the selected columns.
   const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-  const params = cleanQueryParams({
-    fields: syncedFields.join(', '),
-    handle,
-    ids,
-    limit: maxEntriesPerRun,
-    product_id,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    title,
-    updated_at_max,
-    updated_at_min,
-  });
-
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/custom_collections.json`, params);
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
-
-  const { body } = response;
-
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.custom_collections) {
-    items = body.custom_collections.map(formatCustomCollection);
+  // we need to fetch image field if image thumbnail is requested
+  if (syncedFields.includes('thumbnail') && !syncedFields.includes('image')) {
+    syncedFields.push('image');
   }
-
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
-};
-
-export const fetchSmartCollection = async ([id, fields], context) => {
-  const params = cleanQueryParams({
-    fields,
-  });
-
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/smart_collections/${id}.json`, params),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 10,
-  });
-
-  const { body } = response;
-  if (body.smart_collection) {
-    return body.smart_collection;
-  }
-};
-
-export const fetchAllSmartCollections = async (
-  [
-    handle,
-    ids,
-    maxEntriesPerRun,
-    product_id,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    title,
-    updated_at_max,
-    updated_at_min,
-  ],
-  context
-) => {
-  // Only fetch the selected columns.
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),
     handle,
@@ -338,35 +162,125 @@ export const fetchAllSmartCollections = async (
   });
 
   if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
-    throw new coda.UserVisibleError('Unknown status: ' + params.published_status);
+    throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
   }
 
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/smart_collections.json`, params);
+  let url = context.sync.continuation?.nextUrl
+    ? context.sync.continuation.nextUrl
+    : coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/${type}.json`, params);
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
+  let nextUrl = extractNextUrlPagination(response);
 
   let items = [];
-  if (body.smart_collections) {
-    items = body.smart_collections.map(formatSmartCollection);
+  if (body[type]) {
+    items = body[type].map(formatCollection);
+  }
+
+  if (type === 'custom_collections' && !nextUrl) {
+    type = 'smart_collections';
+    nextUrl = coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/${type}.json`, params);
   }
 
   return {
     result: items,
-    continuation: nextUrl,
+    continuation: nextUrl
+      ? {
+          type,
+          nextUrl,
+        }
+      : null,
   };
+};
+
+export const updateCollection = async (collectionGid: string, fields, context) => {
+  let newValues = {};
+  const restAdminOnlyKeys = ['published'];
+
+  const keysToUpdateGraphQl = Object.keys(fields).filter(
+    (key) => !restAdminOnlyKeys.includes(key) && fields[key] !== undefined
+  );
+  const keysToUpdateRest = Object.keys(fields).filter(
+    (key) => restAdminOnlyKeys.includes(key) && fields[key] !== undefined
+  );
+
+  if (keysToUpdateGraphQl.length) {
+    const mutationInput = {
+      id: collectionGid,
+    };
+
+    keysToUpdateGraphQl.forEach((key) => {
+      let graphQlKey = key;
+      switch (key) {
+        case 'body_html':
+          graphQlKey = 'descriptionHtml';
+          break;
+        case 'template_suffix':
+          graphQlKey = 'templateSuffix';
+          break;
+
+        default:
+          break;
+      }
+
+      mutationInput[graphQlKey] = fields[key];
+    });
+
+    const payload = {
+      query: buildUpdateCollection(),
+      variables: {
+        input: mutationInput,
+      },
+    };
+
+    const response = await graphQlRequest(context, payload, undefined, '2023-07');
+
+    const { body } = response;
+    const { errors, extensions } = body;
+    handleGraphQlError(errors);
+
+    // TODO: need a formatCollection function for graphQL responses
+    newValues = formatCollection({
+      admin_graphql_api_id: collectionGid,
+      ...body.data.collectionUpdate.collection,
+    });
+  }
+
+  if (keysToUpdateRest.length) {
+    const fieldsPayload = {};
+    keysToUpdateRest.forEach((key) => {
+      const updatedValue = fields[key];
+      fieldsPayload[key] = updatedValue;
+    });
+
+    const collectionId = graphQlGidToId(collectionGid);
+    const collectionType = await getCollectionType(collectionGid, context);
+
+    let url = `${context.endpoint}/admin/api/2023-07/custom_collections/${collectionId}.json`;
+    let payload = {
+      custom_collection: {
+        ...fieldsPayload,
+      },
+    };
+    if (collectionType === COLLECTION_TYPE__SMART) {
+      url = `${context.endpoint}/admin/api/2023-07/smart_collections/${collectionId}.json`;
+      payload = {
+        // @ts-ignore
+        smart_collection: {
+          ...fieldsPayload,
+        },
+      };
+    }
+
+    const response = await restPutRequest({ url, payload }, context);
+    const { body } = response;
+    newValues = formatCollection(
+      collectionType === COLLECTION_TYPE__SMART ? body.smart_collection : body.custom_collection
+    );
+  }
+
+  return newValues;
 };

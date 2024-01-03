@@ -4,7 +4,7 @@ import { IDENTITY_FILE } from '../constants';
 export const FileSchema = coda.makeObjectSchema({
   properties: {
     name: { type: coda.ValueType.String, required: true },
-    file_id: { type: coda.ValueType.String, required: true, fromKey: 'id' },
+    graphql_gid: { type: coda.ValueType.String, required: true, fromKey: 'id' },
     alt: { type: coda.ValueType.String },
     createdAt: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     updatedAt: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
@@ -18,7 +18,7 @@ export const FileSchema = coda.makeObjectSchema({
     type: { type: coda.ValueType.String },
   },
   displayProperty: 'name',
-  idProperty: 'file_id',
+  idProperty: 'graphql_gid',
   featuredProperties: ['name', 'thumbnail', 'url'],
 });
 

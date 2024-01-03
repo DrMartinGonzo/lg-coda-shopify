@@ -54,14 +54,17 @@ export const ProductSchema = coda.makeObjectSchema({
      */
     /*
      */
-
-    graphql_id: {
+    product_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'id',
+      required: true,
+      description: 'unique identifier for the product',
+    },
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the product.',
     },
-    // An unsigned 64-bit integer that's used as a unique identifier for the product. Each id is unique across the Shopify system. No two products will have the same id, even if they're from different shops.
-    product_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // A description of the product. Supports HTML formatting.
     body: { type: coda.ValueType.String, codaType: coda.ValueHintType.Html },
     body_html: {

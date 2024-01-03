@@ -239,7 +239,7 @@ const LineItemSchema = coda.makeObjectSchema({
       items: DutySchema,
     },
 
-    graphql_id: {
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the line item.',
@@ -258,7 +258,7 @@ const FulfillmentSchema = coda.makeObjectSchema({
      */
     /*
      */
-    graphql_id: {
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the fulfillment.',
@@ -531,22 +531,14 @@ export const OrderSchema = coda.makeObjectSchema({
      * ! Deprecated
      */
     /*
-    // The payment gateway used.
-    gateway: { type: coda.ValueType.String },
-
-    // An object containing information about the payment.
-    payment_details: {
-      type: coda.ValueType.Object,
-      properties: {
-        avs_result_code: { type: coda.ValueType.String },
-        credit_card_bin: { type: coda.ValueType.String },
-        credit_card_company: { type: coda.ValueType.String },
-        credit_card_number: { type: coda.ValueType.String },
-        cvv_result_code: { type: coda.ValueType.String },
-      },
-    },
-
-    total_price_usd: { type: coda.ValueType.String },
+    // How the payment was processed. It has the following valid values:
+    //  - checkout: The order was processed using the Shopify checkout.
+    //  - direct: The order was processed using a direct payment provider.
+    //  - manual: The order was processed using a manual payment method.
+    //  - offsite: The order was processed by an external payment provider to the Shopify checkout.
+    //  - express: The order was processed using PayPal Express Checkout.
+    //  - free: The order was processed as a free order using a discount code.
+    processing_method: { type: coda.ValueType.String },
     */
 
     /**
@@ -555,7 +547,7 @@ export const OrderSchema = coda.makeObjectSchema({
     /*
      */
 
-    graphql_id: {
+    graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the order.',
@@ -670,14 +662,6 @@ export const OrderSchema = coda.makeObjectSchema({
     presentment_currency: { type: coda.ValueType.String },
     // The date and time (ISO 8601 format) when an order was processed. This value is the date that appears on your orders and that's used in the analytic reports. If you're importing orders from an app or another platform, then you can set processed_at to a date and time in the past to match when the original order was created.
     processed_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    // How the payment was processed. It has the following valid values:
-    //  - checkout: The order was processed using the Shopify checkout.
-    //  - direct: The order was processed using a direct payment provider.
-    //  - manual: The order was processed using a manual payment method.
-    //  - offsite: The order was processed by an external payment provider to the Shopify checkout.
-    //  - express: The order was processed using PayPal Express Checkout.
-    //  - free: The order was processed as a free order using a discount code.
-    processing_method: { type: coda.ValueType.String },
     // The website where the customer clicked a link to the shop.
     referring_site: { type: coda.ValueType.String },
     // A list of refunds applied to the order. For more information, see the Refund API.
