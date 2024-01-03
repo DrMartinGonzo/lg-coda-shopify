@@ -160,7 +160,7 @@ export async function getMetaobjectSyncTableDynamicUrls(context: coda.SyncExecut
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
 
   handleGraphQlError(response.body.errors);
 
@@ -224,7 +224,7 @@ export async function getMetaobjectSyncTableDetails(
   context: coda.SyncExecutionContext
 ) {
   const payload = { query: querySyncTableDetails, variables: { id: metaobjectDefinitionId } };
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
 
   const { data } = response.body;
   return {
@@ -241,7 +241,7 @@ export async function getMetaObjectFieldDefinition(metaObjectGid: string, contex
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
@@ -253,7 +253,7 @@ export async function fetchMetaObjectDefinitionByType(type: string, context: cod
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
   return response.body.data.metaobjectDefinitionByType;
 }
 
@@ -267,7 +267,7 @@ async function fetchAllMetaObjectDefinitions(batchSize = 20, context: coda.Execu
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({payload}, context);
   return response.body.data.metaobjectDefinitions.nodes;
 }
 */
@@ -298,14 +298,17 @@ export const syncMetaObjects = async ([defaultMaxEntriesPerRun = 100], context: 
     },
   };
 
-  return syncTableGraphQlRequest(context, {
-    payload,
-    formatFunction: makeFormatMetaobjectFunction(optionalFieldsKeys, context),
-    maxEntriesPerRun,
-    prevContinuation,
-    mainDataKey: 'metaobjects',
-    extraContinuationData: { type },
-  });
+  return syncTableGraphQlRequest(
+    {
+      payload,
+      formatFunction: makeFormatMetaobjectFunction(optionalFieldsKeys, context),
+      maxEntriesPerRun,
+      prevContinuation,
+      mainDataKey: 'metaobjects',
+      extraContinuationData: { type },
+    },
+    context
+  );
 };
 
 export const createMetaObject = async ([type, ...varargs], context: coda.ExecutionContext) => {
@@ -332,7 +335,7 @@ export const createMetaObject = async ([type, ...varargs], context: coda.Executi
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
 
   const { body } = response;
   return body.data.metaobjectCreate.metaobject.id;
@@ -366,7 +369,7 @@ export const updateMetaObject = async ([id, handle, ...varargs], context: coda.E
     payload.variables.metaobject['handle'] = handle;
   }
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
   const { body } = response;
 
   handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
@@ -382,7 +385,7 @@ export const deleteMetaObject = async ([id], context: coda.ExecutionContext) => 
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
   const { body } = response;
 
   return body.data.metaobjectDelete.deletedId;

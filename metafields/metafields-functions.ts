@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { METAFIELDS_RESOURCE_TYPES } from '../constants';
-import { getTokenPlaceholder, graphQlRequest, maybeDelayNextExecution } from '../helpers';
+import { maybeDelayNextExecution } from '../helpers';
+import { restDeleteRequest, restGetRequest, restPostRequest, restPutRequest } from '../helpers-rest';
 
 function resourceEndpointFromResourceType(resourceType) {
   switch (resourceType) {
@@ -75,16 +76,7 @@ export const fetchResourceMetafields = async ([resourceId, resourceType], contex
     url = `${context.endpoint}/admin/api/2023-07/metafields.json`;
   }
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    cacheTtlSecs: 0,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   let items = [];
@@ -118,16 +110,7 @@ export const createResourceMetafield = async ([resourceId, resourceType, namespa
     },
   };
 
-  return context.fetcher.fetch({
-    method: 'POST',
-    url: url,
-    body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
+  return restPostRequest({ url, payload }, context);
 };
 
 export const updateResourceMetafield = async ([metafieldId, resourceId, resourceType, value], context) => {
@@ -145,27 +128,10 @@ export const updateResourceMetafield = async ([metafieldId, resourceId, resource
     metafield: { value },
   };
 
-  return context.fetcher.fetch({
-    method: 'PUT',
-    url: url,
-    body: JSON.stringify(payload),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
+  return restPutRequest({ url, payload }, context);
 };
 
 export const deleteResourceMetafield = async ([metafieldId], context) => {
   const url = `${context.endpoint}/admin/api/2022-07/metafields/${metafieldId}.json`;
-  return context.fetcher.fetch({
-    method: 'DELETE',
-    url: url,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': getTokenPlaceholder(context),
-    },
-    cacheTtlSecs: 0,
-  });
+  return restDeleteRequest({ url }, context);
 };

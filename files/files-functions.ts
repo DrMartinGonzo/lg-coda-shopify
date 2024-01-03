@@ -71,14 +71,17 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
     },
   };
 
-  return syncTableGraphQlRequest(context, {
-    apiVersion: '2023-07',
-    formatFunction: formatFileNode,
-    maxEntriesPerRun,
-    payload,
-    prevContinuation,
-    mainDataKey: 'files',
-  });
+  return syncTableGraphQlRequest(
+    {
+      apiVersion: '2023-07',
+      formatFunction: formatFileNode,
+      maxEntriesPerRun,
+      payload,
+      prevContinuation,
+      mainDataKey: 'files',
+    },
+    context
+  );
 };
 
 /**
@@ -96,7 +99,7 @@ export const deleteFile = async ([fileGid], context: coda.SyncExecutionContext) 
     variables,
   };
 
-  const response = await graphQlRequest(context, payload, undefined, '2023-07');
+  const response = await graphQlRequest({ payload, apiVersion: '2023-07' }, context);
   const { body } = response;
 
   handleGraphQlError(body.errors);

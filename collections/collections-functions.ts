@@ -1,5 +1,4 @@
 import * as coda from '@codahq/packs-sdk';
-// @ts-ignore
 import striptags from 'striptags';
 
 import { getThumbnailUrlFromFullUrl, graphQlGidToId, idToGraphQlGid } from '../helpers';
@@ -34,7 +33,7 @@ export const getCollectionType = async (gid: string, context: coda.ExecutionCont
     },
   };
 
-  const response = await graphQlRequest(context, payload);
+  const response = await graphQlRequest({ payload }, context);
   const { body } = response;
   handleGraphQlError(body.errors);
 
@@ -236,7 +235,7 @@ export const updateCollection = async (collectionGid: string, fields, context) =
       },
     };
 
-    const response = await graphQlRequest(context, payload, undefined, '2023-07');
+    const response = await graphQlRequest({ payload, apiVersion: '2023-07' }, context);
 
     const { body } = response;
     const { errors, extensions } = body;

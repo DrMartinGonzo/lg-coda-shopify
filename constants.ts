@@ -64,3 +64,4 @@ export const RESOURCE_PRODUCT = 'Product';
 export const GRAPHQL_BUDGET__MAX = 500;
 export const GRAPHQL_RETRIES__MAX = 5;
 export const GRAPHQL_DEFAULT_RESTORE_RATE = 50;
+export const GRAPHQL_DEFAULT_API_VERSION = '2023-04';

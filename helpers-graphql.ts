@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, wait } from './helpers';
-import { GRAPHQL_BUDGET__MAX, GRAPHQL_RETRIES__MAX } from './constants';
+import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import {
   ShopifyGraphQlError,
   ShopifyGraphQlUserError,
@@ -190,26 +190,27 @@ export function handleGraphQlError(errors: ShopifyGraphQlError[]) {
  *    GraphQL Request functions
  *===================================================================================================================== */
 export async function graphQlRequest(
-  context: coda.ExecutionContext,
-  payload: any,
-  cacheTtlSecs?: number,
-  apiVersion: string = '2023-04'
+  params: {
+    payload: any;
+    cacheTtlSecs?: number;
+    apiVersion?: string;
+  },
+  context: coda.ExecutionContext
 ) {
   const options: coda.FetchRequest = {
     method: 'POST',
-    url: `${context.endpoint}/admin/api/${apiVersion}/graphql.json`,
+    url: `${context.endpoint}/admin/api/${params.apiVersion ?? GRAPHQL_DEFAULT_API_VERSION}/graphql.json`,
     headers: getShopifyRequestHeaders(context),
-    body: JSON.stringify(payload),
+    body: JSON.stringify(params.payload),
   };
-  if (cacheTtlSecs !== undefined) {
-    options.cacheTtlSecs = cacheTtlSecs;
+  if (params.cacheTtlSecs !== undefined) {
+    options.cacheTtlSecs = params.cacheTtlSecs;
   }
 
   return context.fetcher.fetch(options);
 }
 
 export async function syncTableGraphQlRequest(
-  context: coda.ExecutionContext,
   params: {
     payload: any;
     cacheTtlSecs?: number;
@@ -219,23 +220,21 @@ export async function syncTableGraphQlRequest(
     prevContinuation: SyncTableGraphQlContinuation;
     extraContinuationData?: any;
     mainDataKey: string;
-  }
+  },
+  context: coda.ExecutionContext
 ) {
   console.log('prevContinuation', params.prevContinuation);
   console.log('maxEntriesPerRun', params.maxEntriesPerRun);
 
-  const options: coda.FetchRequest = {
-    method: 'POST',
-    url: `${context.endpoint}/admin/api/${params.apiVersion ?? '2023-04'}/graphql.json`,
-    headers: getShopifyRequestHeaders(context),
-    body: JSON.stringify(params.payload),
-  };
-  if (params.cacheTtlSecs !== undefined) {
-    options.cacheTtlSecs = params.cacheTtlSecs;
-  }
-
   try {
-    const response = await context.fetcher.fetch(options);
+    const response = await graphQlRequest(
+      {
+        payload: params.payload,
+        cacheTtlSecs: params.cacheTtlSecs,
+        apiVersion: params.apiVersion,
+      },
+      context
+    );
     const { body } = response;
     const { errors, extensions } = body;
 

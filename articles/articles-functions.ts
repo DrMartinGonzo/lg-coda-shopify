@@ -1,8 +1,14 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { getShopifyRequestHeaders } from '../helpers';
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import {
+  cleanQueryParams,
+  extractNextUrlPagination,
+  restDeleteRequest,
+  restGetRequest,
+  restPostRequest,
+  restPutRequest,
+} from '../helpers-rest';
 
 export const formatArticle = (article) => {
   // if (article.images) {
@@ -127,13 +133,7 @@ export const createArticle = async (
     },
   };
 
-  return context.fetcher.fetch({
-    method: 'POST',
-    url: url,
-    body: JSON.stringify(payload),
-    headers: getShopifyRequestHeaders(context),
-    cacheTtlSecs: 0,
-  });
+  return restPostRequest({ url, payload }, context);
 };
 
 export const updateArticle = async (
@@ -173,20 +173,10 @@ export const updateArticle = async (
     },
   };
 
-  return context.fetcher.fetch({
-    method: 'PUT',
-    url: url,
-    body: JSON.stringify(payload),
-    headers: getShopifyRequestHeaders(context),
-  });
+  return restPutRequest({ url, payload }, context);
 };
 
 export const deleteArticle = async ([blogID, articleId], context) => {
   const url = `${context.endpoint}/admin/api/2023-04/blogs/${blogID}/articles/${articleId}.json`;
-  return context.fetcher.fetch({
-    method: 'DELETE',
-    url: url,
-    headers: getShopifyRequestHeaders(context),
-    cacheTtlSecs: 0,
-  });
+  return restDeleteRequest({ url }, context);
 };

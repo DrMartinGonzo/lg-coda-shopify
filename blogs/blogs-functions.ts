@@ -1,7 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { getShopifyRequestHeaders } from '../helpers';
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
 
 export const formatBlog = (article) => {
@@ -47,13 +46,7 @@ export const fetchAllBlogs = async ([handle, maxEntriesPerRun, since_id], contex
   let url =
     context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2023-01/blogs.json`, params);
 
-  const response = await context.fetcher.fetch({
-    method: 'GET',
-    url: url,
-    headers: getShopifyRequestHeaders(context),
-    cacheTtlSecs: 0,
-  });
-
+  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results
