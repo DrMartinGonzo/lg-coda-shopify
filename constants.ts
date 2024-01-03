@@ -61,6 +61,8 @@ export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 export const RESOURCE_COLLECTION = 'Collection';
 export const RESOURCE_PRODUCT = 'Product';
 
+export const REST_DEFAULT_VERSION = '2023-10';
+
 export const GRAPHQL_BUDGET__MAX = 500;
 export const GRAPHQL_RETRIES__MAX = 5;
 export const GRAPHQL_DEFAULT_RESTORE_RATE = 50;

@@ -1,6 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import { REST_DEFAULT_VERSION } from '../constants';
+
+// const API_VERSION = '2022-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatProductVariant = (variant, product) => {
   if (variant.product_id) {
@@ -19,7 +23,7 @@ export const formatProductVariant = (variant, product) => {
 };
 
 export const fetchProductVariant = async ([productVariantID], context) => {
-  const url = `${context.endpoint}/admin/api/2022-07/variants/${productVariantID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/variants/${productVariantID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
@@ -95,7 +99,8 @@ export const fetchAllProductVariants = async (
   // }
 
   let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/products.json`, params);
+    context.sync.continuation ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/products.json`, params);
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 

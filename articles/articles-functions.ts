@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
 import {
   cleanQueryParams,
   extractNextUrlPagination,
@@ -9,6 +9,9 @@ import {
   restPostRequest,
   restPutRequest,
 } from '../helpers-rest';
+
+// const API_VERSION = '2023-01';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatArticle = (article) => {
   // if (article.images) {
@@ -27,7 +30,7 @@ export const formatArticle = (article) => {
 };
 
 export const fetchArticle = async ([blogID, articleID], context) => {
-  const url = `${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles/${articleID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 100 }, context);
   const { body } = response;
 
@@ -78,7 +81,7 @@ export const fetchAllArticles = async (
 
   let url =
     context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles.json`, params);
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
@@ -154,7 +157,7 @@ export const updateArticle = async (
   ],
   context
 ) => {
-  const url = `${context.endpoint}/admin/api/2023-04/blogs/${blogID}/articles/${articleId}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleId}.json`;
   const payload = {
     article: {
       title,
@@ -177,6 +180,6 @@ export const updateArticle = async (
 };
 
 export const deleteArticle = async ([blogID, articleId], context) => {
-  const url = `${context.endpoint}/admin/api/2023-04/blogs/${blogID}/articles/${articleId}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleId}.json`;
   return restDeleteRequest({ url }, context);
 };

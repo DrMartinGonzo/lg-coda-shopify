@@ -1,8 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { METAFIELDS_RESOURCE_TYPES } from '../constants';
+import { METAFIELDS_RESOURCE_TYPES, REST_DEFAULT_VERSION } from '../constants';
 import { maybeDelayNextExecution } from '../helpers';
 import { restDeleteRequest, restGetRequest, restPostRequest, restPutRequest } from '../helpers-rest';
+// const API_VERSION = '2023-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 function resourceEndpointFromResourceType(resourceType) {
   switch (resourceType) {
@@ -70,10 +72,10 @@ export const fetchResourceMetafields = async ([resourceId, resourceType], contex
   }
 
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/2023-07/${endpointType}/${resourceId}/metafields.json`;
+  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/2023-07/metafields.json`;
+    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields.json`;
   }
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
@@ -94,10 +96,10 @@ export const createResourceMetafield = async ([resourceId, resourceType, namespa
   }
 
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/2023-07/${endpointType}/${resourceId}/metafields.json`;
+  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/2023-07/metafields.json`;
+    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields.json`;
   }
 
   const value_type = type ?? (value.indexOf('{') === 0 ? 'json_string' : 'string');
@@ -118,10 +120,10 @@ export const updateResourceMetafield = async ([metafieldId, resourceId, resource
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
   }
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/2023-07/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
+  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/2023-07/metafields/${metafieldId}.json`;
+    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields/${metafieldId}.json`;
   }
 
   const payload = {

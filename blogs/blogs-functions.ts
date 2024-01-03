@@ -1,7 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+
+// const API_VERSION = '2023-01';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatBlog = (article) => {
   // if (article.images) {
@@ -20,7 +23,7 @@ export const formatBlog = (article) => {
 };
 
 export const fetchBlog = async ([blogID], context) => {
-  const url = `${context.endpoint}/admin/api/2023-01/blogs/${blogID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
@@ -44,7 +47,8 @@ export const fetchAllBlogs = async ([handle, maxEntriesPerRun, since_id], contex
   }
 
   let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2023-01/blogs.json`, params);
+    context.sync.continuation ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/blogs.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;

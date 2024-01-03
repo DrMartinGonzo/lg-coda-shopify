@@ -5,11 +5,19 @@
 
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
+import {
+  OPTIONS_ORDER_FINANCIAL_STATUS,
+  OPTIONS_ORDER_FULFILLMENT_STATUS,
+  OPTIONS_ORDER_STATUS,
+  REST_DEFAULT_VERSION,
+} from '../constants';
 import { convertTTCtoHT } from '../helpers';
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
 
 import { formatCustomer } from '../customers/customers-functions';
+
+// const API_VERSION = '2022-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 function getItemRefundLineItems(refunds, line_item_id) {
   let refund_line_items = [];
@@ -64,7 +72,7 @@ export const formatOrder = (data) => {
 };
 
 export const fetchOrder = async ([orderID], context) => {
-  const url = `${context.endpoint}/admin/api/2022-07/orders/${orderID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/orders/${orderID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
@@ -117,7 +125,7 @@ export const fetchOrders = async (
     throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.financial_status);
   }
 
-  let url = nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/orders.json`, params);
+  let url = nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/orders.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;

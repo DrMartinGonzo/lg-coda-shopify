@@ -89,7 +89,7 @@ export const CollectionSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Html,
       description:
-        'Text-only description of the collection, stripped of any HTML tags and formatting that were included in the description.',
+        'Text-only description of the collection, stripped of any HTML tags and formatting that were included.',
     },
     body_html: {
       type: coda.ValueType.String,

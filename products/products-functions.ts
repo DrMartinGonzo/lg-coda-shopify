@@ -1,7 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+
+// const API_VERSION = '2022-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatProduct = (product) => {
   product.body = product.body_html;
@@ -21,7 +24,7 @@ export const formatProduct = (product) => {
 };
 
 export const fetchProduct = async ([productID], context) => {
-  const url = `${context.endpoint}/admin/api/2022-07/products/${productID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/products/${productID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
@@ -84,7 +87,8 @@ export const fetchAllProducts = async (
   }
 
   let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/products.json`, params);
+    context.sync.continuation ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/products.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;

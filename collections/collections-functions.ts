@@ -12,9 +12,13 @@ import {
   OPTIONS_PUBLISHED_STATUS,
   RESOURCE_COLLECTION,
   RESOURCE_PRODUCT,
+  REST_DEFAULT_VERSION,
 } from '../constants';
 import { formatProduct } from '../products/products-functions';
 import { buildUpdateCollection, isSmartCollection } from './collections-graphql';
+
+// const API_VERSION = '2022-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export function formatCollection(collection) {
   collection.body = striptags(collection.body_html);
@@ -69,7 +73,8 @@ export const fetchAllCollects = async ([maxEntriesPerRun, collection_gid], conte
   });
 
   let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collects.json`, params);
+    context.sync.continuation ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/collects.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
@@ -112,7 +117,7 @@ export const fetchCollection = async ([id, fields], context) => {
     fields,
   });
 
-  const url = coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/collections/${id}.json`, params);
+  const url = coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/collections/${id}.json`, params);
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
 
   const { body } = response;
@@ -166,7 +171,7 @@ export const fetchAllCollections = async (
 
   let url = context.sync.continuation?.nextUrl
     ? context.sync.continuation.nextUrl
-    : coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/${type}.json`, params);
+    : coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/${type}.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
@@ -181,7 +186,7 @@ export const fetchAllCollections = async (
 
   if (type === 'custom_collections' && !nextUrl) {
     type = 'smart_collections';
-    nextUrl = coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/${type}.json`, params);
+    nextUrl = coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/${type}.json`, params);
   }
 
   return {
@@ -258,14 +263,14 @@ export const updateCollection = async (collectionGid: string, fields, context) =
     const collectionId = graphQlGidToId(collectionGid);
     const collectionType = await getCollectionType(collectionGid, context);
 
-    let url = `${context.endpoint}/admin/api/2023-07/custom_collections/${collectionId}.json`;
+    let url = `${context.endpoint}/admin/api/${API_VERSION}/custom_collections/${collectionId}.json`;
     let payload = {
       custom_collection: {
         ...fieldsPayload,
       },
     };
     if (collectionType === COLLECTION_TYPE__SMART) {
-      url = `${context.endpoint}/admin/api/2023-07/smart_collections/${collectionId}.json`;
+      url = `${context.endpoint}/admin/api/${API_VERSION}/smart_collections/${collectionId}.json`;
       payload = {
         // @ts-ignore
         smart_collection: {

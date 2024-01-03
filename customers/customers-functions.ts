@@ -1,6 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import { REST_DEFAULT_VERSION } from '../constants';
+
+// const API_VERSION = '2022-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatCustomer = (data) => {
   if (data.first_name && data.last_name) {
@@ -15,7 +19,7 @@ export const formatCustomer = (data) => {
 };
 
 export const fetchCustomer = async ([customerID], context) => {
-  const url = `${context.endpoint}/admin/api/2022-07/customers/${customerID}.json`;
+  const url = `${context.endpoint}/admin/api/${API_VERSION}/customers/${customerID}.json`;
   const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
@@ -42,7 +46,8 @@ export const fetchAllCustomers = async (
   });
 
   let url =
-    context.sync.continuation ?? coda.withQueryParams(`${context.endpoint}/admin/api/2022-07/customers.json`, params);
+    context.sync.continuation ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/customers.json`, params);
 
   const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;

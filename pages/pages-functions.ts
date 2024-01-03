@@ -1,8 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
 import { cleanQueryParams, restGetRequest, restPutRequest, syncTableRestGetRequest } from '../helpers-rest';
+
+// const API_VERSION = '2023-07';
+const API_VERSION = REST_DEFAULT_VERSION;
 
 export const formatPage = (page) => {
   page.body = striptags(page.body_html);
@@ -50,7 +53,7 @@ export const syncPages = async (
   validatePageParams(params);
 
   let url = (context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/2023-07/pages.json`, params)) as string;
+    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/pages.json`, params)) as string;
 
   return await syncTableRestGetRequest(
     {
