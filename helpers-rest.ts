@@ -1,5 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders } from './helpers';
+import { FormatFunction } from './types/misc';
+import { SyncTableRestContinuation } from './types/tableSync';
 
 export const cleanQueryParams = (params) => {
   Object.keys(params).forEach((key) => {
@@ -28,7 +30,49 @@ export const extractNextUrlPagination = (response) => {
   return nextUrl;
 };
 
-export async function restGetRequest(
+export async function makeSyncTableGetRequest(
+  params: {
+    url: string;
+    cacheTtlSecs?: number;
+    formatFunction: FormatFunction;
+    mainDataKey: string;
+    extraContinuationData?: any;
+  },
+  context: coda.SyncExecutionContext
+) {
+  let continuation: SyncTableRestContinuation = null;
+  const response = await makeGetRequest({ url: params.url, cacheTtlSecs: params.cacheTtlSecs }, context);
+  const { body } = response;
+
+  // Check if we have paginated results
+  const nextUrl = extractNextUrlPagination(response);
+  if (nextUrl) {
+    continuation = {
+      nextUrl,
+      extraContinuationData: params.extraContinuationData,
+    };
+  }
+
+  let items = [];
+  if (body[params.mainDataKey]) {
+    items = body[params.mainDataKey].map((item) => params.formatFunction(item, context));
+  }
+
+  return {
+    result: items,
+    continuation,
+  };
+}
+
+async function doRequest(options: coda.FetchRequest, context: coda.ExecutionContext) {
+  try {
+    return await context.fetcher.fetch(options);
+  } catch (error) {
+    throw new coda.UserVisibleError(error);
+  }
+}
+
+export async function makeGetRequest(
   params: {
     url: string;
     cacheTtlSecs?: number;
@@ -40,68 +84,38 @@ export async function restGetRequest(
     url: params.url,
     headers: getShopifyRequestHeaders(context),
   };
-
   if (params.cacheTtlSecs !== undefined) {
     options.cacheTtlSecs = params.cacheTtlSecs;
   }
 
-  return context.fetcher.fetch(options);
+  return doRequest(options, context);
 }
 
-export async function syncTableRestGetRequest(
-  params: {
-    url: string;
-    cacheTtlSecs?: number;
-    formatFunction: CallableFunction;
-    mainDataKey: string;
-  },
-  context: coda.SyncExecutionContext
-) {
-  const response = await restGetRequest({ url: params.url, cacheTtlSecs: params.cacheTtlSecs }, context);
-  const { body } = response;
-
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body[params.mainDataKey]) {
-    items = body[params.mainDataKey].map(params.formatFunction);
-  }
-
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
-}
-
-export async function restPutRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
+export async function makePutRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'PUT',
     url: params.url,
-    body: JSON.stringify(params.payload),
     headers: getShopifyRequestHeaders(context),
+    body: JSON.stringify(params.payload),
   };
-
-  return context.fetcher.fetch(options);
+  return doRequest(options, context);
 }
 
-export async function restPostRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
+export async function makePostRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'POST',
     url: params.url,
-    body: JSON.stringify(params.payload),
     headers: getShopifyRequestHeaders(context),
+    body: JSON.stringify(params.payload),
   };
-
-  return context.fetcher.fetch(options);
+  return doRequest(options, context);
 }
 
-export async function restDeleteRequest(params: { url: string }, context: coda.ExecutionContext) {
+export async function makeDeleteRequest(params: { url: string }, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'DELETE',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
   };
-
-  return context.fetcher.fetch(options);
+  return doRequest(options, context);
 }

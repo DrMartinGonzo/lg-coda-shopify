@@ -1,10 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { METAFIELDS_RESOURCE_TYPES, REST_DEFAULT_VERSION } from '../constants';
+import { METAFIELDS_RESOURCE_TYPES, REST_DEFAULT_API_VERSION } from '../constants';
 import { maybeDelayNextExecution } from '../helpers';
-import { restDeleteRequest, restGetRequest, restPostRequest, restPutRequest } from '../helpers-rest';
-// const API_VERSION = '2023-07';
-const API_VERSION = REST_DEFAULT_VERSION;
+import { makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
+import { makeGraphQlRequest } from '../helpers-graphql';
+import { FormatFunction } from '../types/misc';
+
 
 function resourceEndpointFromResourceType(resourceType) {
   switch (resourceType) {
@@ -35,13 +36,13 @@ function resourceEndpointFromResourceType(resourceType) {
   }
 }
 
-function formatMetafield(metafield) {
+const formatMetafield: FormatFunction = (metafield) => {
   if (metafield.namespace && metafield.key) {
     metafield.lookup = `${metafield.namespace}.${metafield.key}`;
   }
 
   return metafield;
-}
+};
 
 export const fetchMetafield = async ([metafieldId], context) => {
   let url = context.sync.continuation ?? `${context.endpoint}/admin/api/2022-01/metafields/${metafieldId}.json`;
@@ -72,13 +73,13 @@ export const fetchResourceMetafields = async ([resourceId, resourceType], contex
   }
 
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
+  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields.json`;
+    url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
   }
 
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   let items = [];
@@ -96,10 +97,10 @@ export const createResourceMetafield = async ([resourceId, resourceType, namespa
   }
 
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
+  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields.json`;
+    url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
   }
 
   const value_type = type ?? (value.indexOf('{') === 0 ? 'json_string' : 'string');
@@ -112,7 +113,7 @@ export const createResourceMetafield = async ([resourceId, resourceType, namespa
     },
   };
 
-  return restPostRequest({ url, payload }, context);
+  return makePostRequest({ url, payload }, context);
 };
 
 export const updateResourceMetafield = async ([metafieldId, resourceId, resourceType, value], context) => {
@@ -120,20 +121,20 @@ export const updateResourceMetafield = async ([metafieldId, resourceId, resource
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
   }
   const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${API_VERSION}/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
+  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
   // edge case
   if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/${API_VERSION}/metafields/${metafieldId}.json`;
+    url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields/${metafieldId}.json`;
   }
 
   const payload = {
     metafield: { value },
   };
 
-  return restPutRequest({ url, payload }, context);
+  return makePutRequest({ url, payload }, context);
 };
 
 export const deleteResourceMetafield = async ([metafieldId], context) => {
   const url = `${context.endpoint}/admin/api/2022-07/metafields/${metafieldId}.json`;
-  return restDeleteRequest({ url }, context);
+  return makeDeleteRequest({ url }, context);
 };

@@ -94,7 +94,11 @@ export const CustomerSchema = coda.makeObjectSchema({
      */
     /*
      */
-
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the customer in the Shopify admin.',
+    },
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
@@ -159,7 +163,14 @@ export const CustomerSchema = coda.makeObjectSchema({
   },
   displayProperty: 'display',
   idProperty: 'customer_id',
-  featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent'],
+  featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent', 'admin_url'],
 });
 
 export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSchema, 'Customer');
+
+export const customerFieldDependencies = [
+  {
+    field: 'id',
+    dependencies: ['admin_url'],
+  },
+];

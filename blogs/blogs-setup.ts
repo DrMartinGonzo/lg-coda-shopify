@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { fetchAllBlogs, fetchBlog } from './blogs-functions';
+import { IDENTITY_BLOG } from '../constants';
+import { syncBlogs, fetchBlog } from './blogs-functions';
 
 import { BlogSchema } from './blogs-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -12,8 +12,8 @@ export const setupBlogs = (pack) => {
    *===================================================================================================================== */
   pack.addSyncTable({
     name: 'Blogs',
-    description: 'All Shopify products',
-    identityName: 'Blog',
+    description: 'Return blogs from this shop.',
+    identityName: IDENTITY_BLOG,
     schema: BlogSchema,
     formula: {
       name: 'SyncBlogs',
@@ -25,15 +25,8 @@ export const setupBlogs = (pack) => {
           description: 'Filter by blog handle.',
           optional: true,
         }),
-        sharedParameters.maxEntriesPerRun,
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'since_id',
-          description: 'Restrict results to after the specified ID.',
-          optional: true,
-        }),
       ],
-      execute: fetchAllBlogs,
+      execute: syncBlogs,
     },
   });
 
@@ -42,14 +35,8 @@ export const setupBlogs = (pack) => {
    *===================================================================================================================== */
   pack.addFormula({
     name: 'Blog',
-    description: 'Get a single blog data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'blogID',
-        description: 'The id of the blog.',
-      }),
-    ],
+    description: 'Return a single blog from this shop.',
+    parameters: [sharedParameters.blog_gid],
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: BlogSchema,

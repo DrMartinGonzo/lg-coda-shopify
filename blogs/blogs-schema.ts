@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import { IDENTITY_BLOG } from '../constants';
 
 /**====================================================================================================================
  *    Exported schemas
@@ -16,8 +17,20 @@ export const BlogSchema = coda.makeObjectSchema({
      */
     /*
      */
-
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the blog in the Shopify admin.',
+    },
+    /* NOT NEEDED
     blog_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'A unique numeric identifier for the blog.' },
+    */
+    graphql_gid: {
+      type: coda.ValueType.String,
+      fromKey: 'admin_graphql_api_id',
+      description: 'The GraphQL GID for the blog.',
+      required: true,
+    },
     commentable: {
       type: coda.ValueType.String,
       description: 'Indicates whether readers can post comments to the blog and if comments are moderated or not.',
@@ -37,7 +50,7 @@ export const BlogSchema = coda.makeObjectSchema({
       description:
         'A list of tags associated with the 200 most recent blog articles. Tags are additional short descriptors formatted as a string of comma-separated values. For example, if an article has three tags: tag1, tag2, tag3. Tags are limited to 255 characters.',
     },
-    title: { type: coda.ValueType.String, description: 'The title of the blog.' },
+    title: { type: coda.ValueType.String, description: 'The title of the blog.', required: true },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
@@ -46,10 +59,17 @@ export const BlogSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'blog_id',
-  featuredProperties: ['title', 'handle', 'tags'],
+  idProperty: 'graphql_gid',
+  featuredProperties: ['title', 'handle', 'tags', 'admin_url'],
 
   // Card fields.
-  subtitleProperties: ['handle', 'blog_id', 'tags', 'created_at', 'updated_at'],
-  snippetProperty: 'commentable',
+  subtitleProperties: ['handle', 'tags', 'commentable'],
+  linkProperty: 'admin_url',
 });
+export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSchema, IDENTITY_BLOG);
+export const blogFieldDependencies = [
+  {
+    field: 'id',
+    dependencies: ['graphql_gid', 'admin_url'],
+  },
+];

@@ -1,3 +1,5 @@
+export const IS_ADMIN_RELEASE = true;
+
 /**
  open: Show only open orders.
  closed: Show only closed orders.
@@ -47,6 +49,8 @@ export const METAFIELDS_RESOURCE_TYPES = [
 export const PACK_ID = 11612;
 export const NOT_FOUND = 'NOT_FOUND';
 
+export const IDENTITY_ARTICLE = 'Article';
+export const IDENTITY_BLOG = 'Blog';
 export const IDENTITY_COLLECTION = 'Collection';
 export const IDENTITY_FILE = 'File';
 export const IDENTITY_IMAGE = 'Image';
@@ -58,10 +62,13 @@ export const IDENTITY_PRODUCT_VARIANT = 'ProductVariant';
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 
+export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
+export const RESOURCE_BLOG = 'OnlineStoreBlog';
 export const RESOURCE_COLLECTION = 'Collection';
 export const RESOURCE_PRODUCT = 'Product';
 
-export const REST_DEFAULT_VERSION = '2023-10';
+export const REST_DEFAULT_API_VERSION = '2023-10';
+export const REST_DEFAULT_LIMIT = 250;
 
 export const GRAPHQL_BUDGET__MAX = 500;
 export const GRAPHQL_RETRIES__MAX = 5;

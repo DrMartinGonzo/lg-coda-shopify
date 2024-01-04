@@ -124,13 +124,6 @@ export function getObjectSchemaItemProp(objectSchema, key: string) {
   }
 }
 
-export function idToGraphQlGid(resourceType: string, id: number) {
-  return `gid://shopify/${resourceType}/${id}`;
-}
-export function graphQlGidToId(graphQlId: string) {
-  return graphQlId.split('/').pop();
-}
-
 const getShopifyAccessToken = (context) => {
   const invocationToken = context.invocationToken;
   return '{{token-' + invocationToken + '}}';
@@ -141,3 +134,28 @@ export const getShopifyRequestHeaders = (context) => {
     'X-Shopify-Access-Token': getShopifyAccessToken(context),
   };
 };
+
+/**
+ * Some fields are not returned directly by the API but are derived from a
+ * calculation on another field. Since the user may choose not to synchronize
+ * this parent field, this function allows adding it according to a dependency
+ * array defined next to the entity schema
+ */
+export function handleFieldDependencies(
+  effectivePropertyKeys: string[],
+  fieldDependencies: {
+    field: string;
+    dependencies: string[];
+  }[]
+) {
+  fieldDependencies.forEach((def) => {
+    if (
+      def.dependencies.some((key) => effectivePropertyKeys.includes(key) && !effectivePropertyKeys.includes(def.field))
+    ) {
+      effectivePropertyKeys.push(def.field);
+    }
+  });
+
+  // Return only unique values
+  return Array.from(new Set(effectivePropertyKeys));
+}

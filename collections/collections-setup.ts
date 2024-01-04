@@ -1,10 +1,18 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CollectSchema, CollectionSchema } from './collections-schema';
-import { fetchAllCollections, fetchAllCollects, fetchCollection, updateCollection } from './collections-functions';
+import { syncCollections, syncCollects, fetchCollection, updateCollection } from './collections-functions';
 
 import { IDENTITY_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { sharedParameters } from '../shared-parameters';
+
+const parameters = {
+  collectionGID: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'collectionGid',
+    description: 'The GraphQL GID of the collection.',
+  }),
+};
 
 export const setupCollections = (pack) => {
   /**====================================================================================================================
@@ -12,7 +20,7 @@ export const setupCollections = (pack) => {
    *===================================================================================================================== */
   pack.addSyncTable({
     name: 'Collects',
-    description: 'All collect.',
+    description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
     identityName: 'Collect',
     schema: CollectSchema,
     formula: {
@@ -27,83 +35,32 @@ export const setupCollections = (pack) => {
           optional: true,
         }),
       ],
-      execute: fetchAllCollects,
+      execute: syncCollects,
     },
   });
 
   pack.addSyncTable({
     name: 'Collections',
-    description: 'All Collections.',
+    description:
+      'Return Collectionss from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse.',
     identityName: IDENTITY_COLLECTION,
     schema: CollectionSchema,
     formula: {
       name: 'SyncCollections',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'handle',
-          description: 'Filter results by custom collection handle.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'ids',
-          description: 'Show only collections specified by a comma-separated list of IDs.',
-          optional: true,
-        }),
-        sharedParameters.maxEntriesPerRun,
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'product_id',
-          description: 'Show custom collections that includes the specified product.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'published_at_max',
-          description: 'Show custom collections published before this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'published_at_min',
-          description: 'Show custom collections published after this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'published_status',
-          description: 'Filter results based on the published status of custom collections.',
-          optional: true,
-          autocomplete: OPTIONS_PUBLISHED_STATUS,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Number,
-          name: 'since_id',
-          description: 'Restrict results to after the specified ID.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'title',
-          description: 'Show custom collections with the specified title.',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'updated_at_max',
-          description: 'Show custom collections last updated before this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
-        coda.makeParameter({
-          type: coda.ParameterType.Date,
-          name: 'updated_at_min',
-          description: 'Show custom collections last updated after this date. (format: 2014-04-25T16:15:47-04:00)',
-          optional: true,
-        }),
+        { ...sharedParameters.filterHandle, optional: true },
+        { ...sharedParameters.filterIds, optional: true },
+        { ...sharedParameters.filterProductId, optional: true },
+        { ...sharedParameters.filterPublishedAtMax, optional: true },
+        { ...sharedParameters.filterPublishedAtMin, optional: true },
+        { ...sharedParameters.filterPublishedStatus, optional: true },
+        { ...sharedParameters.filterSinceId, optional: true },
+        { ...sharedParameters.filterTitle, optional: true },
+        { ...sharedParameters.filterUpdatedAtMax, optional: true },
+        { ...sharedParameters.filterUpdatedAtMin, optional: true },
       ],
-      execute: fetchAllCollections,
+      execute: syncCollections,
       maxUpdateBatchSize: 10,
       executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
         const jobs = updates.map(async (update) => {
@@ -117,10 +74,7 @@ export const setupCollections = (pack) => {
             fields[key] = update.newValue[key];
           });
           const newValues = await updateCollection(collectionGid, fields, context);
-          return {
-            ...newValues,
-            ...update.newValue,
-          };
+          return newValues;
         });
 
         // Wait for all of the jobs to finish .
@@ -142,44 +96,18 @@ export const setupCollections = (pack) => {
   });
 
   /**====================================================================================================================
-   *    Formulas
+   *    Actions
    *===================================================================================================================== */
-  pack.addFormula({
-    name: 'Collection',
-    description: 'Get a single collection data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'collectionID',
-        description: 'The id of the collection.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'fields',
-        description: 'Retrieve only certain fields, specified by a comma-separated list of fields names.',
-        optional: true,
-      }),
-    ],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Object,
-    schema: CollectionSchema,
-    execute: fetchCollection,
-  });
-
   // TODO: finish adding all updatable parameters
   pack.addFormula({
     name: 'UpdateCollection',
-    description: 'Update collection.',
+    description: 'Update an existing Shopify collection and return the updated data.',
 
     parameters: [
+      parameters.collectionGID,
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'collectionGid',
-        description: 'The GraphQL GID of the collection.',
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'body_html',
+        name: 'bodyHtml',
         description: 'The description of the collection, including any HTML tags and formatting.',
         optional: true,
       }),
@@ -191,7 +119,7 @@ export const setupCollections = (pack) => {
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'template_suffix',
+        name: 'templateSuffix',
         description: 'The suffix of the Liquid template being used to show the collection in an online store.',
         optional: true,
       }),
@@ -211,10 +139,26 @@ export const setupCollections = (pack) => {
     isAction: true,
     resultType: coda.ValueType.Object,
     schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
-
     execute: async ([collectionGid, body_html, handle, template_suffix, title, published], context) => {
-      return await updateCollection(collectionGid, { body_html, handle, template_suffix, published }, context);
+      return await updateCollection(collectionGid, { body_html, handle, template_suffix, published, title }, context);
     },
+  });
+
+  /**====================================================================================================================
+   *    Formulas
+   *===================================================================================================================== */
+  pack.addFormula({
+    name: 'Collection',
+    description: 'Return a single collection from this shop.',
+    parameters: [
+      parameters.collectionGID,
+      //! field filter Doesn't seem to work
+      // { ...sharedParameters.filterFields, optional: true }
+    ],
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.Object,
+    schema: CollectionSchema,
+    execute: fetchCollection,
   });
 
   /**====================================================================================================================
@@ -222,7 +166,7 @@ export const setupCollections = (pack) => {
    *===================================================================================================================== */
   pack.addColumnFormat({
     name: 'Collection',
-    instructions: 'Get a single collection data.',
+    instructions: 'Paste the GraphQL GID of the collection into the column.',
     formulaName: 'Collection',
   });
 };

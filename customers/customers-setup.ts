@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { fetchAllCustomers, fetchCustomer } from './customers-functions';
+import { syncCustomers, fetchCustomer } from './customers-functions';
 
 import { CustomerSchema } from './customers-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -56,7 +56,7 @@ export const setupCustomers = (pack) => {
           optional: true,
         }),
       ],
-      execute: fetchAllCustomers,
+      execute: syncCustomers,
     },
   });
 

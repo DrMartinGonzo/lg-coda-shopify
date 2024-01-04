@@ -9,15 +9,13 @@ import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
-  REST_DEFAULT_VERSION,
+  REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { convertTTCtoHT } from '../helpers';
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
 
 import { formatCustomer } from '../customers/customers-functions';
-
-// const API_VERSION = '2022-07';
-const API_VERSION = REST_DEFAULT_VERSION;
+import { FormatFunction } from '../types/misc';
 
 function getItemRefundLineItems(refunds, line_item_id) {
   let refund_line_items = [];
@@ -63,7 +61,7 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
   };
 };
 
-export const formatOrder = (data) => {
+export const formatOrder: FormatFunction = (data) => {
   if (data.customer) {
     data.customer = formatCustomer(data.customer);
   }
@@ -72,8 +70,8 @@ export const formatOrder = (data) => {
 };
 
 export const fetchOrder = async ([orderID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/orders/${orderID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderID}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.order) {
@@ -125,9 +123,10 @@ export const fetchOrders = async (
     throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.financial_status);
   }
 
-  let url = nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/orders.json`, params);
+  let url =
+    nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, params);
 
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   return {

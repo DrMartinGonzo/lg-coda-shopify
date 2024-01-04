@@ -2,19 +2,20 @@ import * as coda from '@codahq/packs-sdk';
 
 import { getThumbnailUrlFromFullUrl } from '../helpers';
 import {
-  graphQlRequest,
+  makeGraphQlRequest,
   handleGraphQlError,
   handleGraphQlUserError,
   calcSyncTableMaxEntriesPerRun,
-  syncTableGraphQlRequest,
+  makeSyncTableGraphQlRequest,
 } from '../helpers-graphql';
 import { buildQueryAllFiles, deleteFiles } from './files-graphql';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import { FormatFunction } from '../types/misc';
 
 /**====================================================================================================================
  *    Formatting functions
  *===================================================================================================================== */
-function formatFileNode(fileNode: any) {
+const formatFileNode: FormatFunction = (fileNode) => {
   const file = {
     ...fileNode,
     type: fileNode.__typename,
@@ -46,7 +47,7 @@ function formatFileNode(fileNode: any) {
       break;
   }
   return file;
-}
+};
 
 /**====================================================================================================================
  *    Pack functions
@@ -71,7 +72,7 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
     },
   };
 
-  return syncTableGraphQlRequest(
+  return makeSyncTableGraphQlRequest(
     {
       apiVersion: '2023-07',
       formatFunction: formatFileNode,
@@ -99,7 +100,7 @@ export const deleteFile = async ([fileGid], context: coda.SyncExecutionContext) 
     variables,
   };
 
-  const response = await graphQlRequest({ payload, apiVersion: '2023-07' }, context);
+  const response = await makeGraphQlRequest({ payload, apiVersion: '2023-07' }, context);
   const { body } = response;
 
   handleGraphQlError(body.errors);

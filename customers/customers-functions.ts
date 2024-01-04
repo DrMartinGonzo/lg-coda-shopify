@@ -1,26 +1,28 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
-import { REST_DEFAULT_VERSION } from '../constants';
+import { cleanQueryParams, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
+import { REST_DEFAULT_API_VERSION } from '../constants';
+import { FormatFunction } from '../types/misc';
+import { SyncTableRestContinuation } from '../types/tableSync';
+import { handleFieldDependencies } from '../helpers';
+import { customerFieldDependencies } from './customers-schema';
 
-// const API_VERSION = '2022-07';
-const API_VERSION = REST_DEFAULT_VERSION;
-
-export const formatCustomer = (data) => {
-  if (data.first_name && data.last_name) {
-    data.display = data.first_name + ' ' + data.last_name;
-  } else if (data.email) {
-    data.display = data.email;
+export const formatCustomer: FormatFunction = (customer, context) => {
+  customer.admin_url = `${context.endpoint}/admin/customers/${customer.id}`;
+  if (customer.first_name && customer.last_name) {
+    customer.display = customer.first_name + ' ' + customer.last_name;
+  } else if (customer.email) {
+    customer.display = customer.email;
   } else {
-    data.display = data.id;
+    customer.display = customer.id;
   }
 
-  return data;
+  return customer;
 };
 
-export const fetchCustomer = async ([customerID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/customers/${customerID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
+export const fetchCustomer = async ([customerID], context: coda.ExecutionContext) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerID}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.customer) {
@@ -28,12 +30,14 @@ export const fetchCustomer = async ([customerID], context) => {
   }
 };
 
-export const fetchAllCustomers = async (
+export const syncCustomers = async (
   [created_at_max, created_at_min, ids, maxEntriesPerRun, since_id, updated_at_max, updated_at_min],
-  context
+  context: coda.SyncExecutionContext
 ) => {
-  // Only fetch the selected columns.
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const syncedFields = handleFieldDependencies(effectivePropertyKeys, customerFieldDependencies);
+
   const params = cleanQueryParams({
     created_at_max,
     created_at_min,
@@ -46,22 +50,15 @@ export const fetchAllCustomers = async (
   });
 
   let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/customers.json`, params);
+    prevContinuation?.nextUrl ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`, params);
 
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
-  const { body } = response;
-
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.customers) {
-    items = body.customers.map(formatCustomer);
-  }
-
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
+  return await makeSyncTableGetRequest(
+    {
+      url,
+      formatFunction: formatCustomer,
+      mainDataKey: 'customers',
+    },
+    context
+  );
 };

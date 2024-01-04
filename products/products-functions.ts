@@ -1,12 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
+import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
+import { FormatFunction } from '../types/misc';
 
-// const API_VERSION = '2022-07';
-const API_VERSION = REST_DEFAULT_VERSION;
-
-export const formatProduct = (product) => {
+export const formatProduct: FormatFunction = (product) => {
   product.body = product.body_html;
   if (product.images) {
     const primaryImage = product.images.filter((image) => image.position === 1);
@@ -24,8 +22,8 @@ export const formatProduct = (product) => {
 };
 
 export const fetchProduct = async ([productID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/products/${productID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.product) {
@@ -33,7 +31,7 @@ export const fetchProduct = async ([productID], context) => {
   }
 };
 
-export const fetchAllProducts = async (
+export const syncProducts = async (
   [
     collection_id,
     created_at_max,
@@ -88,9 +86,9 @@ export const fetchAllProducts = async (
 
   let url =
     context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/products.json`, params);
+    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`, params);
 
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results

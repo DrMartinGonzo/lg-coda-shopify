@@ -1,123 +1,195 @@
 import * as coda from '@codahq/packs-sdk';
+import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
+import {
+  NOT_FOUND,
+  OPTIONS_PUBLISHED_STATUS,
+  RESOURCE_ARTICLE,
+  RESOURCE_BLOG,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
 import {
   cleanQueryParams,
-  extractNextUrlPagination,
-  restDeleteRequest,
-  restGetRequest,
-  restPostRequest,
-  restPutRequest,
+  makeDeleteRequest,
+  makeGetRequest,
+  makePostRequest,
+  makePutRequest,
+  makeSyncTableGetRequest,
 } from '../helpers-rest';
+import { articleFieldDependencies } from './articles-schema';
+import { getThumbnailUrlFromFullUrl, handleFieldDependencies } from '../helpers';
+import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
+import { FormatFunction } from '../types/misc';
+import { SyncTableRestContinuation } from '../types/tableSync';
 
-// const API_VERSION = '2023-01';
-const API_VERSION = REST_DEFAULT_VERSION;
+export const formatArticle: FormatFunction = (article, context) => {
+  article.body = striptags(article.body_html);
+  article.summary = striptags(article.summary_html);
+  article.admin_url = `${context.endpoint}/admin/articles/${article.id}`;
+  article.published = !!article.published_at;
 
-export const formatArticle = (article) => {
-  // if (article.images) {
-  //   const primaryImage = article.images.filter((image) => image.position === 1);
-  //   if (primaryImage.length === 1) {
-  //     article.primary_image = primaryImage[0].src;
-  //   }
-  // }
-  // if (article.variants) {
-  //   article.variants = article.variants.map((variant) => {
-  //     return { product_variant_id: variant.id };
-  //   });
-  // }
+  if (article.blog_id) {
+    article.blog_gid = idToGraphQlGid(RESOURCE_BLOG, article.blog_id);
+    article.pseudo_graphql_gid = genArticlePeudoGid(article.blog_id, article.id);
+    article.blog = {
+      admin_graphql_api_id: idToGraphQlGid(RESOURCE_BLOG, article.blog_id),
+      title: NOT_FOUND,
+    };
+  }
+
+  if (article.image) {
+    article.thumbnail = getThumbnailUrlFromFullUrl(article.image.src);
+    article.image_alt_text = article.image.alt;
+    article.image = article.image.src;
+  }
 
   return article;
 };
 
-export const fetchArticle = async ([blogID, articleID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 100 }, context);
-  const { body } = response;
+export function getBlogIdFromArticlePseudoGid(articleGid: string): number {
+  return parseInt(articleGid.split('=').pop(), 10);
+}
+export function genArticlePeudoGid(blogGid: number, articleId: number): string {
+  return `gid://shopify/${RESOURCE_ARTICLE}/${articleId}?blog_id=${blogGid}`;
+}
 
-  if (body.article) {
-    return formatArticle(body.article);
-  }
-};
-
-export const fetchAllArticles = async (
-  [
-    blogID,
-    author,
-    created_at_max,
-    created_at_min,
-    handle,
-    maxEntriesPerRun,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    tag,
-    updated_at_max,
-    updated_at_min,
-  ],
-  context
-) => {
-  // Only fetch the selected columns.
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-  const params = cleanQueryParams({
-    author,
-    tag,
-    created_at_max,
-    created_at_min,
-    fields: syncedFields.join(', '),
-    handle,
-    limit: maxEntriesPerRun,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    updated_at_max,
-    updated_at_min,
-  });
-
+function validateArticleParams(params: any) {
   if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
     throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
   }
+}
 
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles.json`, params);
+export async function autocompleteBlogGidParameter(context: coda.ExecutionContext, search: string, args: any) {
+  const params = cleanQueryParams({
+    limit: REST_DEFAULT_LIMIT,
+    fields: ['admin_graphql_api_id', 'title'].join(','),
+  });
+  let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
 
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
+  return coda.autocompleteSearchObjects(search, body.blogs, 'title', 'admin_graphql_api_id');
+}
 
-  let items = [];
-  if (body.articles) {
-    items = body.articles.map(formatArticle);
+export const fetchArticle = async ([articlePseudoGID], context: coda.ExecutionContext) => {
+  const blogId = getBlogIdFromArticlePseudoGid(articlePseudoGID);
+  const articleId = graphQlGidToId(articlePseudoGID);
+
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}/articles/${articleId}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
+  if (response.body.article) {
+    return formatArticle(response.body.article, context);
+  }
+};
+
+export const syncArticles = async (
+  [
+    restrictToBlogGids,
+    author,
+    createdAtMax,
+    createdAtMin,
+    handle,
+    publishedAtMax,
+    publishedAtMin,
+    publishedStatus,
+    tag,
+    updatedAtMax,
+    updatedAtMin,
+  ],
+  context: coda.SyncExecutionContext
+) => {
+  const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const syncedFields = handleFieldDependencies(effectivePropertyKeys, articleFieldDependencies);
+
+  const params = cleanQueryParams({
+    author,
+    tag,
+    created_at_max: createdAtMax,
+    created_at_min: createdAtMin,
+    fields: syncedFields.join(', '),
+    handle,
+    limit: REST_DEFAULT_LIMIT,
+    published_at_max: publishedAtMax,
+    published_at_min: publishedAtMin,
+    published_status: publishedStatus,
+    updated_at_max: updatedAtMax,
+    updated_at_min: updatedAtMin,
+  });
+
+  validateArticleParams(params);
+
+  let currentBlogId: number;
+  let blogIdsLeft = prevContinuation?.extraContinuationData?.blogIdsLeft;
+
+  if (!blogIdsLeft) {
+    // User has specified the blogs he wants to sync articles from
+    if (restrictToBlogGids && restrictToBlogGids.length) {
+      blogIdsLeft = restrictToBlogGids.map(graphQlGidToId);
+    }
+    // Sync articles from all blogs
+    else {
+      let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, {
+        fields: 'id',
+        limit: REST_DEFAULT_LIMIT,
+      });
+      const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+      blogIdsLeft = response.body.blogs.map((blog) => blog.id);
+    }
   }
 
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
+  currentBlogId = blogIdsLeft[0];
+
+  let url =
+    prevContinuation?.nextUrl ??
+    coda.withQueryParams(
+      `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${currentBlogId}/articles.json`,
+      params
+    );
+  const results = await makeSyncTableGetRequest(
+    {
+      url,
+      formatFunction: formatArticle,
+      mainDataKey: 'articles',
+    },
+    context
+  );
+
+  const blogIdsLeftUpdated = blogIdsLeft.filter((id) => id != currentBlogId);
+  if (blogIdsLeftUpdated.length && !results.continuation?.nextUrl) {
+    results.continuation = {
+      nextUrl: undefined, // reset nextUrl to undefined so that it doesn't get used in the next sync
+      extraContinuationData: {
+        blogIdsLeft: blogIdsLeftUpdated,
+      },
+    };
+  }
+
+  return results;
 };
 
 export const createArticle = async (
   [
-    blogID,
+    blogGID,
     title,
     author,
     body_html,
     handle,
-    imageSrc,
     imageAlt,
-    summary_html,
-    template_suffix,
-    tags,
-    published,
+    imageSrc,
     published_at,
+    published,
+    summary_html,
+    tags,
+    template_suffix,
   ],
   context
 ) => {
-  const url = `${context.endpoint}/admin/api/2023-01/blogs/${blogID}/articles.json`;
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${graphQlGidToId(
+    blogGID
+  )}/articles.json`;
   const payload = {
     article: {
       title,
@@ -129,35 +201,40 @@ export const createArticle = async (
       tags,
       published,
       published_at,
-      image: {
-        src: imageSrc,
-        alt: imageAlt,
-      },
     },
   };
 
-  return restPostRequest({ url, payload }, context);
+  if (imageSrc || imageAlt) {
+    payload.article['image'] = {
+      src: imageSrc,
+      alt: imageAlt,
+    };
+  }
+
+  return makePostRequest({ url, payload }, context);
 };
 
 export const updateArticle = async (
   [
-    blogID,
-    articleId,
-    title,
+    articlePseudoGID,
     author,
     body_html,
     handle,
-    imageSrc,
     imageAlt,
-    summary_html,
-    template_suffix,
-    tags,
-    published,
+    imageSrc,
     published_at,
+    published,
+    summary_html,
+    tags,
+    template_suffix,
+    title,
   ],
   context
 ) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleId}.json`;
+  const blogId = getBlogIdFromArticlePseudoGid(articlePseudoGID);
+  const articleId = graphQlGidToId(articlePseudoGID);
+
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}/articles/${articleId}.json`;
   const payload = {
     article: {
       title,
@@ -169,17 +246,25 @@ export const updateArticle = async (
       tags,
       published,
       published_at,
-      image: {
-        src: imageSrc,
-        alt: imageAlt,
-      },
     },
   };
 
-  return restPutRequest({ url, payload }, context);
+  if (imageSrc || imageAlt) {
+    payload.article['image'] = {
+      src: imageSrc,
+      alt: imageAlt,
+    };
+  }
+
+  const response = await makePutRequest({ url, payload }, context);
+  if (response.body.article) {
+    return formatArticle(response.body.article, context);
+  }
 };
 
-export const deleteArticle = async ([blogID, articleId], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}/articles/${articleId}.json`;
-  return restDeleteRequest({ url }, context);
+export const deleteArticle = async ([articlePseudoGID], context) => {
+  const blogId = getBlogIdFromArticlePseudoGid(articlePseudoGID);
+  const articleId = graphQlGidToId(articlePseudoGID);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}/articles/${articleId}.json`;
+  return makeDeleteRequest({ url }, context);
 };

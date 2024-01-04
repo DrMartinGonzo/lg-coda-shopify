@@ -79,12 +79,19 @@ export const CollectionSchema = coda.makeObjectSchema({
       description: 'The GraphQL GID of the collection.',
       required: true,
     },
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the collection in the Shopify admin.',
+    },
+    /* NOT NEEDED
     collection_id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,
       description: 'The ID for the collection.',
     },
+    */
     body: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Html,
@@ -101,16 +108,22 @@ export const CollectionSchema = coda.makeObjectSchema({
       description: 'A unique string that identifies the collection.',
       mutable: true,
     },
-    // image: CollectionImageSchema,
     image: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
       description: 'The image associated with the collection.',
     },
-    thumbnail: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
-      description: `The thumbnail (${DEFAULT_THUMBNAIL_SIZE}x${DEFAULT_THUMBNAIL_SIZE}px) image associated with the collection.`,
+    // TODO: maybe thumbnail are never needed ?
+    // thumbnail: {
+    //   type: coda.ValueType.String,
+    //   codaType: coda.ValueHintType.ImageReference,
+    //   description: `The thumbnail (${DEFAULT_THUMBNAIL_SIZE}x${DEFAULT_THUMBNAIL_SIZE}px) image associated with the collection.`,
+    // },
+    published: {
+      type: coda.ValueType.Boolean,
+      codaType: coda.ValueHintType.Toggle,
+      description: 'Whether the collection is visible.',
+      mutable: true,
     },
     published_at: {
       type: coda.ValueType.String,
@@ -150,31 +163,31 @@ export const CollectionSchema = coda.makeObjectSchema({
   },
   displayProperty: 'title',
   idProperty: 'graphql_gid',
-  featuredProperties: ['title', 'handle'],
+  featuredProperties: ['title', 'handle', 'admin_url'],
+
+  // Card fields.
+  subtitleProperties: ['handle', 'published_at', 'published_scope', 'template_suffix'],
+  snippetProperty: 'body',
+  imageProperty: 'image',
+  linkProperty: 'admin_url',
 });
+export const collectionFieldDependencies = [
+  // {
+  //   field: 'image',
+  //   dependencies: ['thumbnail'],
+  // },
+  {
+    field: 'id',
+    dependencies: ['admin_url'],
+  },
+];
 
 export const CollectionReference = coda.makeReferenceSchemaFromObjectSchema(CollectionSchema, IDENTITY_COLLECTION);
 
 export const CollectSchema = coda.makeObjectSchema({
   properties: {
-    /**
-     * ! Deprecated
-     */
-    /*
-     */
+    //! admin_graphql_api_id DOES NOT EXIST
 
-    /**
-     * Disabled
-     */
-    /*
-     */
-
-    //! DOES NOT EXIST
-    // graphql_gid: {
-    //   type: coda.ValueType.String,
-    //   fromKey: 'admin_graphql_api_id',
-    //   description: 'The GraphQL GID of the collect.',
-    // },
     collect_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     collection_graphql_gid: {
       type: coda.ValueType.String,
@@ -198,3 +211,17 @@ export const CollectSchema = coda.makeObjectSchema({
   idProperty: 'collect_id',
   featuredProperties: ['collect_id', 'collection', 'product'],
 });
+export const collectFieldDependencies = [
+  {
+    field: 'product_id',
+    dependencies: ['product', 'product_graphql_gid'],
+  },
+  {
+    field: 'collection_id',
+    dependencies: ['collection', 'collection_graphql_gid'],
+  },
+  {
+    field: 'published_at',
+    dependencies: ['published'],
+  },
+];

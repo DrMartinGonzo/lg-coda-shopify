@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_PRODUCT, OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { fetchAllProducts, fetchProduct } from './products-functions';
+import { syncProducts, fetchProduct } from './products-functions';
 
 import { ProductSchema } from './products-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -120,7 +120,7 @@ export const setupProducts = (pack) => {
           optional: true,
         }),
       ],
-      execute: fetchAllProducts,
+      execute: syncProducts,
     },
   });
 

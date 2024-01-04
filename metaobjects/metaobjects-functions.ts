@@ -2,13 +2,14 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-import { capitalizeFirstChar, getObjectSchemaItemProp, graphQlGidToId, unitToShortName } from '../helpers';
+import { capitalizeFirstChar, getObjectSchemaItemProp, unitToShortName } from '../helpers';
 import {
   calcSyncTableMaxEntriesPerRun,
-  graphQlRequest,
+  makeGraphQlRequest,
   handleGraphQlError,
   handleGraphQlUserError,
-  syncTableGraphQlRequest,
+  makeSyncTableGraphQlRequest,
+  graphQlGidToId,
 } from '../helpers-graphql';
 import {
   IDENTITY_COLLECTION,
@@ -31,17 +32,18 @@ import {
 } from './metaobjects-graphql';
 import { mapMetaobjectFieldToSchemaProperty } from './metaobjects-schema';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import { FormatFunction } from '../types/misc';
 
 /**====================================================================================================================
  *    Autocomplete functions
  *===================================================================================================================== */
-export async function autocompleteMetaobjectFieldkey(id: string, context: coda.ExecutionContext, search: string) {
-  if (!id || id === '') {
+export async function autocompleteMetaobjectFieldkey(context: coda.ExecutionContext, search: string, args: any) {
+  if (!args.id || args.id === '') {
     throw new coda.UserVisibleError(
-      'You need to define the GraphQl ID of the metaobject first for autocomplete to work.'
+      'You need to define the GraphQl GID of the metaobject first for autocomplete to work.'
     );
   }
-  const results = await getMetaObjectFieldDefinition(id, context);
+  const results = await getMetaObjectFieldDefinition(args.id, context);
   return coda.autocompleteSearchObjects(search, results, 'name', 'key');
 }
 
@@ -50,12 +52,12 @@ export async function autocompleteMetaobjectFieldkey(id: string, context: coda.E
  *===================================================================================================================== */
 function formatMetaobjectField(value: any, schemaItemProp) {
   const { type, codaType } = schemaItemProp;
-  let formattedValue = value;
+  let formattedValue: any;
 
   // REFERENCE
-  // console.log('schemaItemProp', JSON.stringify(schemaItemProp));
-
   if (codaType === coda.ValueHintType.Reference && schemaItemProp.identity?.name) {
+    if (!value) return;
+
     switch (schemaItemProp.identity.name) {
       case IDENTITY_COLLECTION:
         formattedValue = {
@@ -77,7 +79,7 @@ function formatMetaobjectField(value: any, schemaItemProp) {
         break;
       case IDENTITY_PAGE:
         formattedValue = {
-          id: graphQlGidToId(value),
+          admin_graphql_api_id: value,
           title: NOT_FOUND,
         };
         break;
@@ -116,19 +118,27 @@ function formatMetaobjectField(value: any, schemaItemProp) {
   // TEXT: rich_text_field
   else if (type === coda.ValueType.String && codaType === coda.ValueHintType.Html) {
     formattedValue = convertSchemaToHtml(value);
+  } else {
+    formattedValue = value;
   }
 
   return formattedValue;
 }
 
-function makeFormatMetaobjectFunction(optionalFieldsKeys: string[], context: coda.SyncExecutionContext) {
+function makeFormatMetaobjectFunction(
+  type: string,
+  optionalFieldsKeys: string[],
+  context: coda.SyncExecutionContext
+): FormatFunction {
   return function (node: any) {
     const data = {
       ...node,
+      admin_url: `${context.endpoint}/admin/content/entries/${type}/${graphQlGidToId(node.id)}`,
     };
     optionalFieldsKeys.forEach((key) => {
-      // special case for handle key
-      const value = key === 'handle' ? node[key] : node[key].value;
+      // check if node[key] has 'value' property
+      const value = node[key].hasOwnProperty('value') ? node[key].value : node[key];
+
       const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
 
       let parsedValue = value;
@@ -160,7 +170,7 @@ export async function getMetaobjectSyncTableDynamicUrls(context: coda.SyncExecut
     },
   };
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
 
   handleGraphQlError(response.body.errors);
 
@@ -197,6 +207,11 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
   const properties: coda.ObjectSchemaProperties = {
     graphql_gid: { type: coda.ValueType.String, fromKey: 'id', required: true },
     handle: { type: coda.ValueType.String, required: true },
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the metaobject in the Shopify admin.',
+    },
   };
   const featuredProperties = ['graphql_gid', 'handle'];
 
@@ -224,7 +239,7 @@ export async function getMetaobjectSyncTableDetails(
   context: coda.SyncExecutionContext
 ) {
   const payload = { query: querySyncTableDetails, variables: { id: metaobjectDefinitionId } };
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
 
   const { data } = response.body;
   return {
@@ -241,7 +256,7 @@ export async function getMetaObjectFieldDefinition(metaObjectGid: string, contex
     },
   };
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
@@ -253,7 +268,7 @@ export async function fetchMetaObjectDefinitionByType(type: string, context: cod
     },
   };
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
   return response.body.data.metaobjectDefinitionByType;
 }
 
@@ -287,7 +302,10 @@ export const syncMetaObjects = async ([defaultMaxEntriesPerRun = 100], context: 
     (prevContinuation?.lastThrottleStatus ? calcSyncTableMaxEntriesPerRun(prevContinuation) : initialEntriesPerRun);
 
   const constantFieldsKeys = ['id']; // will always be fetched
-  const optionalFieldsKeys = effectivePropertyKeys.filter((key) => !constantFieldsKeys.includes(key));
+  const calculatedKeys = ['admin_url']; // will never be fetched
+  const optionalFieldsKeys = effectivePropertyKeys
+    .filter((key) => !constantFieldsKeys.includes(key))
+    .filter((key) => !calculatedKeys.includes(key));
 
   const payload = {
     query: buildQueryAllMetaObjectsWithFields(optionalFieldsKeys),
@@ -298,10 +316,10 @@ export const syncMetaObjects = async ([defaultMaxEntriesPerRun = 100], context: 
     },
   };
 
-  return syncTableGraphQlRequest(
+  return makeSyncTableGraphQlRequest(
     {
       payload,
-      formatFunction: makeFormatMetaobjectFunction(optionalFieldsKeys, context),
+      formatFunction: makeFormatMetaobjectFunction(type, optionalFieldsKeys, context),
       maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'metaobjects',
@@ -335,7 +353,7 @@ export const createMetaObject = async ([type, ...varargs], context: coda.Executi
     },
   };
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
 
   const { body } = response;
   return body.data.metaobjectCreate.metaobject.id;
@@ -369,7 +387,7 @@ export const updateMetaObject = async ([id, handle, ...varargs], context: coda.E
     payload.variables.metaobject['handle'] = handle;
   }
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
   const { body } = response;
 
   handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
@@ -385,7 +403,7 @@ export const deleteMetaObject = async ([id], context: coda.ExecutionContext) => 
     },
   };
 
-  const response = await graphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload }, context);
   const { body } = response;
 
   return body.data.metaobjectDelete.deletedId;

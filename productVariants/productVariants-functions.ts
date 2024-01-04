@@ -1,19 +1,17 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
-import { REST_DEFAULT_VERSION } from '../constants';
+import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
+import { REST_DEFAULT_API_VERSION } from '../constants';
+import { FormatFunction } from '../types/misc';
 
-// const API_VERSION = '2022-07';
-const API_VERSION = REST_DEFAULT_VERSION;
-
-export const formatProductVariant = (variant, product) => {
+export const formatProductVariant: FormatFunction = (variant) => {
   if (variant.product_id) {
     variant.product = {
       id: variant.product_id,
     };
   }
-  if (variant.image_id && product.images && product.images.length > 0) {
-    const variantImage = product.images.filter((image) => image.id === variant.image_id);
+  if (variant.image_id && variant.parentProduct.images && variant.parentProduct.images.length > 0) {
+    const variantImage = variant.parentProduct.images.filter((image) => image.id === variant.image_id);
     if (variantImage.length === 1) {
       variant.image = variantImage[0].src;
     }
@@ -23,8 +21,8 @@ export const formatProductVariant = (variant, product) => {
 };
 
 export const fetchProductVariant = async ([productVariantID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/variants/${productVariantID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
   if (body.variant) {
@@ -32,7 +30,7 @@ export const fetchProductVariant = async ([productVariantID], context) => {
   }
 };
 
-export const fetchAllProductVariants = async (
+export const syncProductVariants = async (
   [
     collection_id,
     created_at_max,
@@ -100,8 +98,8 @@ export const fetchAllProductVariants = async (
 
   let url =
     context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/products.json`, params);
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`, params);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
   const { body } = response;
 
   // Check if we have paginated results
@@ -110,8 +108,10 @@ export const fetchAllProductVariants = async (
   let items = [];
   if (body.products) {
     if (body.products) {
-      items = body.products.reduce((previous, current) => {
-        return previous.concat(current.variants.map((variant) => formatProductVariant(variant, current)));
+      items = body.products.reduce((previous, currProduct) => {
+        return previous.concat(
+          currProduct.variants.map((variant) => formatProductVariant({ ...variant, parentProduct: currProduct }))
+        );
       }, []);
     }
   }

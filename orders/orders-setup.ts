@@ -1,6 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
+import {
+  IS_ADMIN_RELEASE,
+  OPTIONS_ORDER_FINANCIAL_STATUS,
+  OPTIONS_ORDER_FULFILLMENT_STATUS,
+  OPTIONS_ORDER_STATUS,
+} from '../constants';
 import { syncAllOrders, fetchOrder, fetchOrders, formatOrderForDocExport } from './orders-functions';
 import { OrderSchema } from './orders-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -210,18 +215,20 @@ export const setupOrders = (pack) => {
     },
   });
 
-  // OrderExportFormat formula
-  pack.addFormula({
-    name: 'OrderExportFormat',
-    description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
-    parameters: [requiredParameters.orderId],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.String,
-    execute: async ([orderID], context) => {
-      const order = await fetchOrder([orderID], context);
-      return formatOrderForDocExport(order);
-    },
-  });
+  if (IS_ADMIN_RELEASE) {
+    // OrderExportFormat formula
+    pack.addFormula({
+      name: 'OrderExportFormat',
+      description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
+      parameters: [requiredParameters.orderId],
+      cacheTtlSecs: 10,
+      resultType: coda.ValueType.String,
+      execute: async ([orderID], context) => {
+        const order = await fetchOrder([orderID], context);
+        return formatOrderForDocExport(order);
+      },
+    });
+  }
 
   /**====================================================================================================================
    *    Column formats

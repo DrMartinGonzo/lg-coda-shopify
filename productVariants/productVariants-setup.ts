@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_PRODUCT_VARIANT, OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { fetchAllProductVariants, fetchProductVariant } from './productVariants-functions';
+import { syncProductVariants, fetchProductVariant } from './productVariants-functions';
 
 import { ProductVariantSchema } from './productVariants-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -120,7 +120,7 @@ export const setupProductVariants = (pack) => {
           optional: true,
         }),
       ],
-      execute: fetchAllProductVariants,
+      execute: syncProductVariants,
     },
   });
 

@@ -87,13 +87,14 @@ export const setupMetaObjects = (pack) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
-        description: 'The key of the field.',
-        autocomplete: async (context, search, { id }) => autocompleteMetaobjectFieldkey(id, context, search),
+        description:
+          'The key of the metaobject field (GraphQl GID of the metaobject must be provided for autocomplete to work).',
+        autocomplete: autocompleteMetaobjectFieldkey,
       }),
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'value',
-        description: 'the field value.',
+        description: 'the metaobject field value.',
       }),
     ],
     isAction: true,

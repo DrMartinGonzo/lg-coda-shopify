@@ -9,6 +9,7 @@ import {
 } from './metafields-functions';
 
 import { MetafieldSchema } from './metafields-schema';
+import { makeGraphQlRequest } from '../helpers-graphql';
 
 import { METAFIELDS_RESOURCE_TYPES } from '../constants';
 

@@ -11,3 +11,8 @@ export interface SyncTableGraphQlContinuation extends coda.Continuation {
   lastThrottleStatus: ShopifyGraphQlThrottleStatus;
   extraContinuationData: any;
 }
+
+export interface SyncTableRestContinuation extends coda.Continuation {
+  nextUrl: string;
+  extraContinuationData: any;
+}

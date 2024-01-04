@@ -1,68 +1,59 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_VERSION } from '../constants';
-import { cleanQueryParams, extractNextUrlPagination, restGetRequest } from '../helpers-rest';
+import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION } from '../constants';
+import { cleanQueryParams, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
+import { blogFieldDependencies } from './blogs-schema';
+import { handleFieldDependencies } from '../helpers';
+import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
+import { FormatFunction } from '../types/misc';
+import { SyncTableRestContinuation } from '../types/tableSync';
 
-// const API_VERSION = '2023-01';
-const API_VERSION = REST_DEFAULT_VERSION;
+export const formatBlog: FormatFunction = (blog, context) => {
+  blog.admin_url = `${context.endpoint}/admin/blogs/${blog.id}`;
+  blog.graphql_gid = idToGraphQlGid(RESOURCE_BLOG, blog.blog_id);
 
-export const formatBlog = (article) => {
-  // if (article.images) {
-  //   const primaryImage = article.images.filter((image) => image.position === 1);
-  //   if (primaryImage.length === 1) {
-  //     article.primary_image = primaryImage[0].src;
-  //   }
-  // }
-  // if (article.variants) {
-  //   article.variants = article.variants.map((variant) => {
-  //     return { product_variant_id: variant.id };
-  //   });
-  // }
-
-  return article;
+  return blog;
 };
 
-export const fetchBlog = async ([blogID], context) => {
-  const url = `${context.endpoint}/admin/api/${API_VERSION}/blogs/${blogID}.json`;
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
-  const { body } = response;
-
-  if (body.blog) {
-    return formatBlog(body.blog);
-  }
-};
-
-export const fetchAllBlogs = async ([handle, maxEntriesPerRun, since_id], context) => {
-  // Only fetch the selected columns.
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-  const params = cleanQueryParams({
-    fields: syncedFields.join(', '),
-    handle,
-    limit: maxEntriesPerRun,
-    since_id,
-  });
-
+function validateBlogParams(params: any) {
   if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
     throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
   }
+}
 
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/blogs.json`, params);
-
-  const response = await restGetRequest({ url, cacheTtlSecs: 0 }, context);
+export const fetchBlog = async ([blogGid], context: coda.ExecutionContext) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${graphQlGidToId(blogGid)}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
   const { body } = response;
 
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.blogs) {
-    items = body.blogs.map(formatBlog);
+  if (body.blog) {
+    return formatBlog(body.blog, context);
   }
+};
 
-  return {
-    result: items,
-    continuation: nextUrl,
-  };
+export const syncBlogs = async ([handle], context: coda.SyncExecutionContext) => {
+  const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const syncedFields = handleFieldDependencies(effectivePropertyKeys, blogFieldDependencies);
+
+  const params = cleanQueryParams({
+    fields: syncedFields.join(', '),
+    handle,
+    limit: REST_DEFAULT_LIMIT,
+  });
+
+  validateBlogParams(params);
+
+  let url =
+    prevContinuation?.nextUrl ??
+    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
+
+  return await makeSyncTableGetRequest(
+    {
+      url,
+      formatFunction: formatBlog,
+      mainDataKey: 'blogs',
+    },
+    context
+  );
 };
