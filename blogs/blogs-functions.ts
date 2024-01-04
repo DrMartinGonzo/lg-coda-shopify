@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { cleanQueryParams, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { blogFieldDependencies } from './blogs-schema';
 import { handleFieldDependencies } from '../helpers';

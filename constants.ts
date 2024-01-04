@@ -52,6 +52,7 @@ export const NOT_FOUND = 'NOT_FOUND';
 export const IDENTITY_ARTICLE = 'Article';
 export const IDENTITY_BLOG = 'Blog';
 export const IDENTITY_COLLECTION = 'Collection';
+export const IDENTITY_CUSTOMER = 'Customer';
 export const IDENTITY_FILE = 'File';
 export const IDENTITY_IMAGE = 'Image';
 export const IDENTITY_METAOBJECT = 'Metaobject';
@@ -74,3 +75,8 @@ export const GRAPHQL_BUDGET__MAX = 500;
 export const GRAPHQL_RETRIES__MAX = 5;
 export const GRAPHQL_DEFAULT_RESTORE_RATE = 50;
 export const GRAPHQL_DEFAULT_API_VERSION = '2023-04';
+
+// TODO: rename these
+export const CACHE_DAY = 86400; // 1 day
+export const CACHE_MINUTE = 60; // 1 minute
+export const CACHE_SINGLE_FETCH = 10; // 10s

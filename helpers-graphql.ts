@@ -220,6 +220,7 @@ export async function makeGraphQlRequest(
   };
   if (params.cacheTtlSecs !== undefined) {
     options.cacheTtlSecs = params.cacheTtlSecs;
+    options.forceCache = true;
   }
 
   return context.fetcher.fetch(options);

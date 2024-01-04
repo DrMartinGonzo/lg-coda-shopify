@@ -4,7 +4,7 @@ import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../h
 import { REST_DEFAULT_API_VERSION } from '../constants';
 import { FormatFunction } from '../types/misc';
 
-export const formatProductVariant: FormatFunction = (variant) => {
+export const formatProductVariant: FormatFunction = (variant, context) => {
   if (variant.product_id) {
     variant.product = {
       id: variant.product_id,
@@ -110,7 +110,9 @@ export const syncProductVariants = async (
     if (body.products) {
       items = body.products.reduce((previous, currProduct) => {
         return previous.concat(
-          currProduct.variants.map((variant) => formatProductVariant({ ...variant, parentProduct: currProduct }))
+          currProduct.variants.map((variant) =>
+            formatProductVariant({ ...variant, parentProduct: currProduct }, context)
+          )
         );
       }, []);
     }

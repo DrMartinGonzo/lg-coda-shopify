@@ -12,7 +12,7 @@ export const setupBlogs = (pack) => {
    *===================================================================================================================== */
   pack.addSyncTable({
     name: 'Blogs',
-    description: 'Return blogs from this shop.',
+    description: 'Return Blogs from this shop.',
     identityName: IDENTITY_BLOG,
     schema: BlogSchema,
     formula: {
@@ -35,7 +35,7 @@ export const setupBlogs = (pack) => {
    *===================================================================================================================== */
   pack.addFormula({
     name: 'Blog',
-    description: 'Return a single blog from this shop.',
+    description: 'Return a single Blog from this shop.',
     parameters: [sharedParameters.blog_gid],
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,

@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import { IDENTITY_CUSTOMER } from '../constants';
 
 const CustomerAddressSchema = coda.makeObjectSchema({
   properties: {
@@ -77,23 +78,6 @@ const SmsMarketingConsentSchema = coda.makeObjectSchema({
  *===================================================================================================================== */
 export const CustomerSchema = coda.makeObjectSchema({
   properties: {
-    /**
-     * ! Deprecated
-     */
-    /*
-    // As of API version 2022-04, this property is deprecated. Use email_marketing_consent instead. Whether the customer has consented to receive marketing material by email.
-    accepts_marketing: { type: coda.ValueType.Boolean },
-    // As of API version 2022-04, this property is deprecated. Use email_marketing_consent instead. The date and time (ISO 8601 format) when the customer consented or objected to receiving marketing material by email. Set this value whenever the customer consents or objects to marketing materials.
-    accepts_marketing_updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    // As of API version 2022-04, this property is deprecated. Use email_marketing_consent instead. The marketing subscription opt-in level, as described in the M3AAWG Sender Best Common Practices, that the customer gave when they consented to receive marketing material by email. If the customer does not accept email marketing, then this property will be set to null. Valid values:
-    marketing_opt_in_level: { type: coda.ValueType.String },
-    */
-
-    /**
-     * Disabled
-     */
-    /*
-     */
     admin_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Url,
@@ -103,70 +87,104 @@ export const CustomerSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the customer.',
+      required: true,
     },
     // A unique identifier for the customer.
     customer_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
-    // Formatted display name. @See formatCustomer function
-    display: { type: coda.ValueType.String, required: true },
-    // A list of the ten most recently updated addresses for the customer.
-    addresses: { type: coda.ValueType.Array, items: CustomerAddressSchema },
-    // The three-letter code (ISO 4217 format) for the currency that the customer used when they paid for their last order. Defaults to the shop currency. Returns the shop currency for test orders.
-    currency: { type: coda.ValueType.String },
-    // The date and time (ISO 8601 format) when the customer was created.
-    created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    // The default address for the customer.
-    default_address: CustomerAddressSchema,
-    // The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.
-    email: { type: coda.ValueType.String, codaType: coda.ValueHintType.Email },
-    // The marketing consent information when the customer consented to receiving marketing material by email. The email property is required to create a customer with email consent information and to update a customer for email consent that doesn't have an email recorded. The customer must have a unique email address associated to the record.
-    email_marketing_consent: EmailMarketingConsentSchema,
-    // The customer's first name.
-    first_name: { type: coda.ValueType.String },
-    // The customer's last name.
-    last_name: { type: coda.ValueType.String },
-    // The ID of the customer's last order.
-    last_order_id: { type: coda.ValueType.Number },
-    // The name of the customer's last order. This is directly related to the name field on the Order resource.
-    last_order_name: { type: coda.ValueType.String },
-    // A unique identifier for the customer that's used with Multipass login.
-    multipass_identifier: { type: coda.ValueType.String },
-    // A note about the customer.
-    note: { type: coda.ValueType.String },
-    // The number of orders associated with this customer. Test and archived orders aren't counted.
-    orders_count: { type: coda.ValueType.Number },
-    // The customer's password.
-    password: { type: coda.ValueType.String },
-    // The customer's password that's confirmed.
-    password_confirmation: { type: coda.ValueType.String },
-    // The unique phone number (E.164 format) for this customer. Attempting to assign the same phone number to multiple customers returns an error. The property can be set using different formats, but each format must represent a number that can be dialed from anywhere in the world.
-    phone: { type: coda.ValueType.String },
-    // The marketing consent information when the customer consented to receiving marketing material by SMS. The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer that doesn't have a phone number recorded. The customer must have a unique phone number associated to the record.
-    sms_marketing_consent: SmsMarketingConsentSchema,
-    // The state of the customer's account with a shop. Default value: disabled. Valid values:
-    //  - disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.
-    //  - invited: The customer has received an email invite to create an account.
-    //  - enabled: The customer has created an account.
-    //  - declined: The customer declined the email invite to create an account.
-    state: { type: coda.ValueType.String },
-    // Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values. A customer can have up to 250 tags. Each tag can have up to 255 characters.
-    tags: { type: coda.ValueType.String },
-    // Whether the customer is exempt from paying taxes on their order. If true, then taxes won't be applied to an order at checkout. If false, then taxes will be applied at checkout.
-    tax_exempt: { type: coda.ValueType.Boolean },
-    // Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.
-    tax_exemptions: { type: coda.ValueType.Array, items: { type: coda.ValueType.String } },
-    // The total amount of money that the customer has spent across their order history.
-    total_spent: { type: coda.ValueType.Number, codaType: coda.ValueHintType.Currency },
-    // The date and time (ISO 8601 format) when the customer information was last updated.
-    updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    // Whether the customer has verified their email address.
-    verified_email: { type: coda.ValueType.Boolean },
+    // @See formatCustomer function
+    display: { type: coda.ValueType.String, description: 'Formatted display name.', required: true },
+    addresses: {
+      type: coda.ValueType.Array,
+      items: CustomerAddressSchema,
+      description: 'A list of the ten most recently updated addresses for the customer.',
+    },
+    created_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The date and time when the customer was created.',
+    },
+    default_address: { ...CustomerAddressSchema, description: 'The default address for the customer.' },
+    email: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Email,
+      description:
+        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
+      mutable: true,
+    },
+    // The email property is required to create a customer with email consent information and to update a customer for email consent that doesn't have an email recorded. The customer must have a unique email address associated to the record.
+    email_marketing_consent: {
+      ...EmailMarketingConsentSchema,
+      description:
+        'The marketing consent information when the customer consented to receiving marketing material by email.',
+    },
+    first_name: { type: coda.ValueType.String, description: "The customer's first name.", mutable: true },
+    last_name: { type: coda.ValueType.String, description: "The customer's first last.", mutable: true },
+    last_order_id: { type: coda.ValueType.Number, description: 'The ID of the customer’s last order.' },
+    last_order_name: { type: coda.ValueType.String, description: 'The name of the customer’s last order.' },
+    multipass_identifier: {
+      type: coda.ValueType.String,
+      description: "A unique identifier for the customer that's used with Multipass login.",
+    },
+    note: { type: coda.ValueType.String, description: 'A note about the customer.', mutable: true },
+    orders_count: { type: coda.ValueType.Number, description: 'The number of orders associated with the customer.' },
+    phone: {
+      type: coda.ValueType.String,
+      description:
+        'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error. The property can be set using different formats, but each format must represent a number that can be dialed from anywhere in the world.',
+      mutable: true,
+    },
+    // The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer that doesn't have a phone number recorded. The customer must have a unique phone number associated to the record.
+    sms_marketing_consent: {
+      ...SmsMarketingConsentSchema,
+      description:
+        'The marketing consent information when the customer consented to receiving marketing material by SMS.',
+    },
+    state: {
+      type: coda.ValueType.String,
+      description:
+        "The state of the customer's account with a shop. Default value: disabled. Valid values:\n- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.\n- invited: The customer has received an email invite to create an account.\n- enabled: The customer has created an account.\n- declined: The customer declined the email invite to create an account.",
+    },
+    tags: {
+      type: coda.ValueType.String,
+      description:
+        'Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
+      mutable: true,
+    },
+    tax_exempt: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the customer is exempt from paying taxes on their order.',
+    },
+    tax_exemptions: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+      description: 'Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.',
+    },
+    total_spent: {
+      type: coda.ValueType.Number,
+      codaType: coda.ValueHintType.Currency,
+      description: 'The total amount of money that the customer has spent across their order history.',
+    },
+    updated_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The date and time when the customer information was last updated.',
+    },
+    verified_email: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the customer has verified their email address.',
+    },
   },
   displayProperty: 'display',
   idProperty: 'customer_id',
   featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent', 'admin_url'],
+
+  // Card fields.
+  subtitleProperties: ['email', 'total_spent', 'tags', 'created_at'],
+  snippetProperty: 'note',
+  linkProperty: 'admin_url',
 });
 
-export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSchema, 'Customer');
+export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSchema, IDENTITY_CUSTOMER);
 
 export const customerFieldDependencies = [
   {

@@ -36,7 +36,7 @@ function resourceEndpointFromResourceType(resourceType) {
   }
 }
 
-const formatMetafield: FormatFunction = (metafield) => {
+const formatMetafield: FormatFunction = (metafield, context) => {
   if (metafield.namespace && metafield.key) {
     metafield.lookup = `${metafield.namespace}.${metafield.key}`;
   }
@@ -61,7 +61,7 @@ export const fetchMetafield = async ([metafieldId], context) => {
 
   if (body.metafield) {
     const { metafield } = body;
-    return formatMetafield(metafield);
+    return formatMetafield(metafield, context);
   }
 };
 
@@ -84,7 +84,7 @@ export const fetchResourceMetafields = async ([resourceId, resourceType], contex
 
   let items = [];
   if (body.metafields) {
-    items = body.metafields.map(formatMetafield);
+    items = body.metafields.map((m) => formatMetafield(m, context));
   }
 
   return items;

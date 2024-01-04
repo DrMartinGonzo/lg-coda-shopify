@@ -5,6 +5,7 @@ import { getThumbnailUrlFromFullUrl, handleFieldDependencies } from '../helpers'
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest, handleGraphQlError } from '../helpers-graphql';
 import { cleanQueryParams, makeGetRequest, makePutRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import {
+  CACHE_DAY,
   COLLECTION_TYPE__CUSTOM,
   COLLECTION_TYPE__SMART,
   NOT_FOUND,
@@ -62,7 +63,7 @@ export const getCollectionType = async (gid: string, context: coda.ExecutionCont
     },
   };
 
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: 100 }, context);
+  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
   const { body } = response;
   handleGraphQlError(body.errors);
 

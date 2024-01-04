@@ -12,6 +12,7 @@ import {
   graphQlGidToId,
 } from '../helpers-graphql';
 import {
+  CACHE_DAY,
   IDENTITY_COLLECTION,
   IDENTITY_FILE,
   IDENTITY_METAOBJECT,
@@ -239,7 +240,7 @@ export async function getMetaobjectSyncTableDetails(
   context: coda.SyncExecutionContext
 ) {
   const payload = { query: querySyncTableDetails, variables: { id: metaobjectDefinitionId } };
-  const response = await makeGraphQlRequest({ payload }, context);
+  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
 
   const { data } = response.body;
   return {

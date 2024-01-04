@@ -49,6 +49,7 @@ setupFiles(pack);
 setupMetafields(pack);
 setupMetaObjects(pack);
 setupOrders(pack);
+setupPages(pack);
 setupProducts(pack);
 setupProductVariants(pack);
 setupShop(pack);

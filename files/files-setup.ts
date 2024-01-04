@@ -11,7 +11,7 @@ export const setupFiles = (pack) => {
   // Sync all Shopify files
   pack.addSyncTable({
     name: 'Files',
-    description: 'Sync all Shopify files',
+    description: 'Return Files from this shop.',
     identityName: IDENTITY_FILE,
     schema: FileSchema,
 
@@ -37,7 +37,7 @@ export const setupFiles = (pack) => {
   // Delete single File
   pack.addFormula({
     name: 'DeleteFile',
-    description: 'Delete file.',
+    description: 'Delete an existing Shopify File and return true on success.',
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -46,7 +46,10 @@ export const setupFiles = (pack) => {
       }),
     ],
     isAction: true,
-    resultType: coda.ValueType.String,
-    execute: deleteFile,
+    resultType: coda.ValueType.Boolean,
+    execute: async function ([fileGid], context) {
+      await deleteFile([fileGid], context);
+      return true;
+    },
   });
 };

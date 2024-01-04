@@ -116,25 +116,15 @@ export const setupPages = (pack) => {
   });
 
   /**====================================================================================================================
-   *    Formulas
+   *    Actions
    *===================================================================================================================== */
-  pack.addFormula({
-    name: 'Page',
-    description: 'Return a single page from this shop.',
-    parameters: [parameters.pageGID],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Object,
-    schema: PageSchema,
-    execute: fetchPage,
-  });
-
   // an action to update a page
   pack.addFormula({
     name: 'UpdatePage',
     description: 'Update an existing Shopify page and return the updated data.',
     parameters: [
       parameters.pageGID,
-      // optional input parameters
+      // Optional input parameters
       parameters.inputHandle,
       parameters.inputPublished,
       parameters.inputPublishedAt,
@@ -173,7 +163,7 @@ export const setupPages = (pack) => {
     parameters: [
       { ...parameters.inputTitle, optional: false },
 
-      // optional input parameters
+      // Optional input parameters
       parameters.inputHandle,
       parameters.inputPublished,
       parameters.inputPublishedAt,
@@ -212,6 +202,19 @@ export const setupPages = (pack) => {
       await deletePage([pageGID], context);
       return true;
     },
+  });
+
+  /**====================================================================================================================
+   *    Formulas
+   *===================================================================================================================== */
+  pack.addFormula({
+    name: 'Page',
+    description: 'Return a single page from this shop.',
+    parameters: [parameters.pageGID],
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.Object,
+    schema: PageSchema,
+    execute: fetchPage,
   });
 
   /**====================================================================================================================

@@ -15,7 +15,8 @@ import { FormatFunction } from '../types/misc';
 /**====================================================================================================================
  *    Formatting functions
  *===================================================================================================================== */
-const formatFileNode: FormatFunction = (fileNode) => {
+
+const formatFileNodeForSchema: FormatFunction = (fileNode) => {
   const file = {
     ...fileNode,
     type: fileNode.__typename,
@@ -75,7 +76,7 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
   return makeSyncTableGraphQlRequest(
     {
       apiVersion: '2023-07',
-      formatFunction: formatFileNode,
+      formatFunction: formatFileNodeForSchema,
       maxEntriesPerRun,
       payload,
       prevContinuation,

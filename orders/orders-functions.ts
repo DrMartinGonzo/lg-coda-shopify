@@ -61,9 +61,9 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
   };
 };
 
-export const formatOrder: FormatFunction = (data) => {
+export const formatOrder: FormatFunction = (data, context) => {
   if (data.customer) {
-    data.customer = formatCustomer(data.customer);
+    data.customer = formatCustomer(data.customer, context);
   }
 
   return data;
@@ -75,7 +75,7 @@ export const fetchOrder = async ([orderID], context) => {
   const { body } = response;
 
   if (body.order) {
-    return formatOrder(body.order);
+    return formatOrder(body.order, context);
   }
 };
 
@@ -130,7 +130,7 @@ export const fetchOrders = async (
   const { body } = response;
 
   return {
-    items: body.orders ? body.orders.map(formatOrder) : [],
+    items: body.orders ? body.orders.map((order) => formatOrder(order, context)) : [],
     // Check if we have paginated results
     nextUrl: extractNextUrlPagination(response),
   };

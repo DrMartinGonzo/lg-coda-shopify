@@ -4,7 +4,7 @@ import { OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERS
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
 import { FormatFunction } from '../types/misc';
 
-export const formatProduct: FormatFunction = (product) => {
+export const formatProduct: FormatFunction = (product, context) => {
   product.body = product.body_html;
   if (product.images) {
     const primaryImage = product.images.filter((image) => image.position === 1);
@@ -96,7 +96,7 @@ export const syncProducts = async (
 
   let items = [];
   if (body.products) {
-    items = body.products.map(formatProduct);
+    items = body.products.map((p) => formatProduct(p, context));
   }
 
   return {
