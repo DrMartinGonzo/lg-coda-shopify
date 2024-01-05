@@ -49,7 +49,7 @@ const parameters = {
     type: coda.ParameterType.String,
     name: 'tags',
     description:
-      'Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
+      'Tags attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
     optional: true,
   }),
 };

@@ -1,7 +1,14 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { cleanQueryParams, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
+import {
+  cleanQueryParams,
+  makeDeleteRequest,
+  makeGetRequest,
+  makePostRequest,
+  makePutRequest,
+  makeSyncTableGetRequest,
+} from '../helpers-rest';
 import { blogFieldDependencies } from './blogs-schema';
 import { handleFieldDependencies } from '../helpers';
 import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
@@ -56,4 +63,31 @@ export const syncBlogs = async ([handle], context: coda.SyncExecutionContext) =>
     },
     context
   );
+};
+
+export const createBlog = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {
+  // validateBlogParams(fields);
+
+  const payload = { blog: cleanQueryParams(fields) };
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`;
+
+  return makePostRequest({ url, payload }, context);
+};
+
+export const updateBlog = async (blogGid, fields: { [key: string]: any }, context: coda.ExecutionContext) => {
+  const params = cleanQueryParams(fields);
+  // validateBlogParams(params);
+
+  const blogId = graphQlGidToId(blogGid);
+  const payload = { blog: params };
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
+  const response = await makePutRequest({ url, payload }, context);
+
+  return formatBlog(response.body.blog, context);
+};
+
+export const deleteBlog = async ([blogGid], context) => {
+  const blogId = graphQlGidToId(blogGid);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
+  return makeDeleteRequest({ url }, context);
 };
