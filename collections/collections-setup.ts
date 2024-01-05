@@ -1,7 +1,14 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CollectSchema, CollectionSchema } from './collections-schema';
-import { syncCollections, syncCollects, fetchCollection, updateCollection } from './collections-functions';
+import {
+  syncCollections,
+  syncCollects,
+  fetchCollection,
+  updateCollection,
+  deleteCollection,
+  createCollection,
+} from './collections-functions';
 
 import { IDENTITY_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { sharedParameters } from '../shared-parameters';
@@ -141,6 +148,72 @@ export const setupCollections = (pack) => {
     schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
     execute: async ([collectionGid, body_html, handle, template_suffix, title, published], context) => {
       return await updateCollection(collectionGid, { body_html, handle, template_suffix, published, title }, context);
+    },
+  });
+
+  pack.addFormula({
+    name: 'CreateCollection',
+    description: `Create a new Shopify Collection and return GraphQl GID.`,
+
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'title',
+        description: 'The name of the collection.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'handle',
+        description: 'A unique string that identifies the collection.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'bodyHtml',
+        description: 'The description of the collection, including any HTML tags and formatting.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'templateSuffix',
+        description: 'The suffix of the Liquid template being used to show the collection in an online store.',
+        optional: true,
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.Boolean,
+        name: 'published',
+        description: 'The published status of the collection on the online store.',
+        optional: true,
+      }),
+    ],
+    isAction: true,
+    resultType: coda.ValueType.String,
+    execute: async ([title, handle, body_html, template_suffix, published], context) => {
+      const response = await createCollection(
+        {
+          title,
+          handle,
+          body_html,
+          template_suffix,
+          published,
+        },
+        context
+      );
+      const { body } = response;
+      return body.custom_collection.admin_graphql_api_id;
+    },
+  });
+
+  // an action to delete a collection
+  pack.addFormula({
+    name: 'DeleteCollection',
+    description: 'Delete an existing Shopify Collection and return true on success.',
+    parameters: [parameters.collectionGID],
+    isAction: true,
+    resultType: coda.ValueType.Boolean,
+    execute: async function ([collectionGid], context) {
+      await deleteCollection([collectionGid], context);
+      return true;
     },
   });
 

@@ -3,7 +3,14 @@ import striptags from 'striptags';
 
 import { getThumbnailUrlFromFullUrl, handleFieldDependencies } from '../helpers';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest, handleGraphQlError } from '../helpers-graphql';
-import { cleanQueryParams, makeGetRequest, makePutRequest, makeSyncTableGetRequest } from '../helpers-rest';
+import {
+  cleanQueryParams,
+  makeDeleteRequest,
+  makeGetRequest,
+  makePostRequest,
+  makePutRequest,
+  makeSyncTableGetRequest,
+} from '../helpers-rest';
 import {
   CACHE_DAY,
   COLLECTION_TYPE__CUSTOM,
@@ -163,12 +170,16 @@ export const syncCollections = async (
     context
   );
 
-  // finisehd syncing custom collections, we will sync smart collections in the next run
+  // finished syncing custom collections, we will sync smart collections in the next run
   if (type === 'custom_collections' && !results.continuation?.nextUrl) {
+    const nextType = 'smart_collections';
     results.continuation = {
-      nextUrl: coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${type}.json`, params),
+      nextUrl: coda.withQueryParams(
+        `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${nextType}.json`,
+        params
+      ),
       extraContinuationData: {
-        type: 'smart_collections',
+        type: nextType,
       },
     };
   }
@@ -267,4 +278,25 @@ export const updateCollection = async (collectionGid: string, fields, context: c
   }
 
   return newValues;
+};
+
+export const createCollection = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {
+  // validateCollectionParams(fields);
+
+  const collectionType = 'custom_collections';
+  const payload = { custom_collection: cleanQueryParams(fields) };
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${collectionType}.json`;
+
+  return makePostRequest({ url, payload }, context);
+};
+
+export const deleteCollection = async ([collectionGid], context) => {
+  const collectionId = graphQlGidToId(collectionGid);
+  const collectionType = await getCollectionType(collectionGid, context);
+
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${
+    collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections'
+  }/${collectionId}.json`;
+
+  return makeDeleteRequest({ url }, context);
 };
