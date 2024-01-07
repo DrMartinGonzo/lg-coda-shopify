@@ -67,6 +67,7 @@ export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
 export const RESOURCE_BLOG = 'OnlineStoreBlog';
 export const RESOURCE_COLLECTION = 'Collection';
 export const RESOURCE_PRODUCT = 'Product';
+export const RESOURCE_PRODUCT_VARIANT = 'ProductVariant';
 
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;

@@ -81,17 +81,17 @@ export const fetchOrder = async ([orderID], context) => {
 
 export const fetchOrders = async (
   status: string,
-  created_at_max: string,
-  created_at_min: string,
+  created_at_max: Date,
+  created_at_min: Date,
   financial_status: string,
   fulfillment_status: string,
   ids: string,
   maxEntriesPerRun: number,
-  processed_at_max: string,
-  processed_at_min: string,
+  processed_at_max: Date,
+  processed_at_min: Date,
   since_id: number,
-  updated_at_max: string,
-  updated_at_min: string,
+  updated_at_max: Date,
+  updated_at_min: Date,
   fields: string,
 
   nextUrl: string,

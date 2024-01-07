@@ -4,7 +4,7 @@ import { FileSchema } from './files-schema';
 import { syncFiles, deleteFile } from './files-functions';
 import { IDENTITY_FILE, OPTIONS_FILE_TYPE } from '../constants';
 
-export const setupFiles = (pack) => {
+export const setupFiles = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */

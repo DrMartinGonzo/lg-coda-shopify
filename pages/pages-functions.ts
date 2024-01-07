@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
   cleanQueryParams,
   makeDeleteRequest,
@@ -42,7 +42,6 @@ export const syncPages = async (
     created_at_max,
     created_at_min,
     handle,
-    maxEntriesPerRun,
     published_at_max,
     published_at_min,
     published_status,
@@ -62,7 +61,7 @@ export const syncPages = async (
     created_at_max,
     created_at_min,
     handle,
-    limit: maxEntriesPerRun,
+    limit: REST_DEFAULT_LIMIT,
     published_at_max,
     published_at_min,
     published_status,

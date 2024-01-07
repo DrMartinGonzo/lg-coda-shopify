@@ -15,6 +15,21 @@ export const queryMetaobjectDynamicUrls = `#graphql
   }
 `;
 
+export const queryMetaobjectTypes = `#graphql
+  query queryMetaobjectTypes($cursor: String) {
+    metaobjectDefinitions(first: 20, after: $cursor) {
+      nodes {
+        name
+        type
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
   return `#graphql
     query ($type: String!, $maxEntriesPerRun: Int!, $cursor: String) {
@@ -70,8 +85,19 @@ const fieldDefinitionFields = `#graphql
     value
   }
 `;
-export const queryMetaObjectFieldDefinition = `#graphql
-  query queryMetaObjectFieldDefinition($id: ID!) {
+
+export const queryMetaObjectFieldDefinitionsFromMetaobjectDefinition = `#graphql
+  query queryMetaObjectFieldDefinitionsFromMetaobjectDefinition($id: ID!) {
+    metaobjectDefinition(id: $id) {
+      fieldDefinitions {
+        ${fieldDefinitionFields}
+      }
+    }
+  }
+`;
+
+export const queryMetaObjectFieldDefinitions = `#graphql
+  query queryMetaObjectFieldDefinitions($id: ID!) {
     metaobject(id: $id) {
       definition {
         fieldDefinitions {
@@ -82,7 +108,7 @@ export const queryMetaObjectFieldDefinition = `#graphql
   }
 `;
 
-export const queryMetaobjectDefinitionByType = `#graphql
+export const queryMetaobjectDefinitionsByType = `#graphql
   query metaobjectDefinitionByType($type: String!) {
     metaobjectDefinitionByType(type: $type) {
       displayNameKey

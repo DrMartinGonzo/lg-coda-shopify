@@ -189,7 +189,7 @@ export const CollectSchema = coda.makeObjectSchema({
     //! admin_graphql_api_id DOES NOT EXIST
 
     collect_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
-    collection_graphql_gid: {
+    collection_gid: {
       type: coda.ValueType.String,
       description: 'The GraphQL GID of the related collection.',
     },
@@ -200,7 +200,7 @@ export const CollectSchema = coda.makeObjectSchema({
       description:
         'The position of this product in a manually sorted custom collection. The first position is 1. This value is applied only when the custom collection is sorted manually.',
     },
-    product_graphql_gid: {
+    product_gid: {
       type: coda.ValueType.String,
       description: 'The GraphQL GID of the product in the custom collection.',
     },
@@ -214,11 +214,11 @@ export const CollectSchema = coda.makeObjectSchema({
 export const collectFieldDependencies = [
   {
     field: 'product_id',
-    dependencies: ['product', 'product_graphql_gid'],
+    dependencies: ['product', 'product_gid'],
   },
   {
     field: 'collection_id',
-    dependencies: ['collection', 'collection_graphql_gid'],
+    dependencies: ['collection', 'collection_gid'],
   },
   {
     field: 'published_at',

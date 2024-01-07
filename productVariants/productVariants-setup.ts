@@ -6,7 +6,7 @@ import { syncProductVariants, fetchProductVariant } from './productVariants-func
 import { ProductVariantSchema } from './productVariants-schema';
 import { sharedParameters } from '../shared-parameters';
 
-export const setupProductVariants = (pack) => {
+export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */

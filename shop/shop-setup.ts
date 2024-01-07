@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { fetchShopDetails } from './shop-functions';
 
-export const setupShop = (pack) => {
+export const setupShop = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Formulas
    *===================================================================================================================== */

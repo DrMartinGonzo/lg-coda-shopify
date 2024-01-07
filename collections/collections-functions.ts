@@ -28,17 +28,17 @@ import { FormatFunction } from '../types/misc';
 import { SyncTableRestContinuation } from '../types/tableSync';
 
 const formatCollect: FormatFunction = (collect, context) => {
-  collect.collection_graphql_gid = idToGraphQlGid(RESOURCE_COLLECTION, collect.collection_id);
-  collect.product_graphql_gid = idToGraphQlGid(RESOURCE_PRODUCT, collect.product_id);
   if (collect.product_id) {
+    collect.product_gid = idToGraphQlGid(RESOURCE_PRODUCT, collect.product_id);
     collect.product = {
       id: collect.product_id,
       title: NOT_FOUND,
     };
   }
   if (collect.collection_id) {
+    collect.collection_gid = idToGraphQlGid(RESOURCE_COLLECTION, collect.collection_id);
     collect.collection = {
-      admin_graphql_api_id: collect.collection_id,
+      admin_graphql_api_id: collect.collection_gid,
       title: NOT_FOUND,
     };
   }
@@ -77,14 +77,14 @@ export const getCollectionType = async (gid: string, context: coda.ExecutionCont
   return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
 };
 
-export const syncCollects = async ([maxEntriesPerRun, collection_gid], context: coda.SyncExecutionContext) => {
+export const syncCollects = async ([collection_gid], context: coda.SyncExecutionContext) => {
   const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const syncedFields = handleFieldDependencies(effectivePropertyKeys, collectFieldDependencies);
 
   const params = cleanQueryParams({
     fields: syncedFields.join(', '),
-    limit: maxEntriesPerRun,
+    limit: REST_DEFAULT_LIMIT,
     collection_id: collection_gid ? graphQlGidToId(collection_gid) : undefined,
   });
 

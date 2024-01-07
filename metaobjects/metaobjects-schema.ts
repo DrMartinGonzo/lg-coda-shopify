@@ -39,7 +39,6 @@ export const MeasurementSchema = coda.makeObjectSchema({
 //   featuredProperties: ['metaobject_id', 'handle'],
 // });
 
-
 export function getMetaobjectReferenceSchema(fieldDefinition) {
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
     (v) => v.name === 'metaobject_definition_id'
@@ -79,7 +78,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
     // TEXT
     case 'single_line_text_field':
     case 'multi_line_text_field':
-      extraProps = { type: coda.ValueType.String } as coda.StringSchema;
+      extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
       break;
     case 'rich_text_field':
       extraProps = { type: coda.ValueType.String, codaType: coda.ValueHintType.Html } as coda.StringSchema;
@@ -90,12 +89,13 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.Url,
+        mutable: true,
       } as coda.LinkSchema;
       break;
 
     // COLOR
     case 'color':
-      extraProps = { type: coda.ValueType.String } as coda.StringSchema;
+      extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
       break;
 
     // RATING
@@ -105,6 +105,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
         type: coda.ValueType.Number,
         // codaType: coda.ValueHintType.Scale,
         // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
+        mutable: true,
       } as coda.NumberSchema;
       break;
 
@@ -113,11 +114,13 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       extraProps = {
         type: coda.ValueType.Number,
         precision: 0,
+        mutable: true,
       } as coda.NumberSchema;
       break;
     case 'number_decimal':
       extraProps = {
         type: coda.ValueType.Number,
+        mutable: true,
       } as coda.NumberSchema;
       break;
 
@@ -126,6 +129,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       extraProps = {
         type: coda.ValueType.Number,
         codaType: coda.ValueHintType.Currency,
+        mutable: true,
       } as coda.CurrencySchema;
       break;
 
@@ -133,27 +137,28 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
     case 'boolean':
       extraProps = {
         type: coda.ValueType.Boolean,
+        mutable: true,
       } as coda.BooleanSchema;
       break;
 
     // REFERENCE
     case 'collection_reference':
-      extraProps = CollectionReference;
+      extraProps = { ...CollectionReference, mutable: true };
       break;
     case 'metaobject_reference':
-      extraProps = getMetaobjectReferenceSchema(fieldDefinition);
+      extraProps = { ...getMetaobjectReferenceSchema(fieldDefinition), mutable: true };
       break;
     case 'page_reference':
-      extraProps = PageReference;
+      extraProps = { ...PageReference, mutable: true };
       break;
     case 'product_reference':
-      extraProps = ProductReference;
+      extraProps = { ...ProductReference, mutable: true };
       break;
     case 'variant_reference':
-      extraProps = ProductVariantReference;
+      extraProps = { ...ProductVariantReference, mutable: true };
       break;
     case 'file_reference':
-      extraProps = FileReference;
+      extraProps = { ...FileReference, mutable: true };
       break;
 
     // DATE_TIME
@@ -161,6 +166,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.Date,
+        mutable: true,
       } as coda.StringDateSchema;
       break;
 
@@ -168,6 +174,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.DateTime,
+        mutable: true,
       } as coda.StringDateTimeSchema;
       break;
 

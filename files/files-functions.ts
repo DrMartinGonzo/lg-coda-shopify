@@ -91,7 +91,7 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
  * @param fileGid - The GraphQL GID of the file to be deleted.
  * @param context - The context object containing necessary information.
  */
-export const deleteFile = async ([fileGid], context: coda.SyncExecutionContext) => {
+export const deleteFile = async ([fileGid], context: coda.ExecutionContext) => {
   const variables = {
     fileIds: [fileGid],
   };

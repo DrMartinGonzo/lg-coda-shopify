@@ -21,7 +21,7 @@ const parameters = {
   }),
 };
 
-export const setupCollections = (pack) => {
+export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */
@@ -31,16 +31,14 @@ export const setupCollections = (pack) => {
     identityName: 'Collect',
     schema: CollectSchema,
     formula: {
-      name: 'SyncProductsInCollection',
+      name: 'SyncCollects',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        sharedParameters.maxEntriesPerRun,
-        coda.makeParameter({
-          type: coda.ParameterType.String,
-          name: 'collection_gid',
+        {
+          ...parameters.collectionGID,
           description: 'Retrieve only collects for a certain collection identified by its graphQL GID.',
           optional: true,
-        }),
+        },
       ],
       execute: syncCollects,
     },

@@ -4,6 +4,10 @@ import { ShopifyGraphQlError } from './shopifyErrors';
 import { ShopifyGraphQlRequestCost } from './types/Shopify';
 import { willThrottle, isThrottled } from './helpers-graphql';
 
+export function isString(value: any) {
+  return typeof value === 'string' || value instanceof String;
+}
+
 export function capitalizeFirstChar(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

@@ -6,7 +6,7 @@ import { syncProducts, fetchProduct } from './products-functions';
 import { ProductSchema } from './products-schema';
 import { sharedParameters } from '../shared-parameters';
 
-export const setupProducts = (pack) => {
+export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */

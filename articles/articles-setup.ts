@@ -20,7 +20,7 @@ import { sharedParameters } from '../shared-parameters';
 
 const parameters = {
   articleID: coda.makeParameter({
-    type: coda.ParameterType.String,
+    type: coda.ParameterType.Number,
     name: 'articleID',
     description: 'The id of the article.',
   }),
@@ -150,7 +150,7 @@ const parameters = {
   }),
 };
 
-export const setupArticles = (pack) => {
+export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */
@@ -203,7 +203,7 @@ export const setupArticles = (pack) => {
             }
             // edge case: blog
             else if (key === 'blog') {
-              payload.article['blog_id'] = graphQlGidToId(update.newValue[key].admin_graphql_api_id);
+              payload.article['blog_id'] = graphQlGidToId(update.newValue[key].admin_graphql_api_id as string);
             } else {
               payload.article[key] = update.newValue[key];
             }
