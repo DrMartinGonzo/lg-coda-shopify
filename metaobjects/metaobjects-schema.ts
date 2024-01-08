@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_METAOBJECT, IDENTITY_PRODUCT, PACK_ID } from '../constants';
+import { FIELD_TYPES, IDENTITY_METAOBJECT, IDENTITY_PRODUCT, PACK_ID } from '../constants';
 import { ProductReference } from '../products/products-schema';
 import { PageReference } from '../pages/pages-schema';
 import { CollectionReference } from '../collections/collections-schema';
@@ -78,19 +78,20 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
   let extraProps = {};
   switch (fieldType) {
     // TEXT
-    case 'single_line_text_field':
-    case 'multi_line_text_field':
+    case FIELD_TYPES.single_line_text_field:
+    case FIELD_TYPES.multi_line_text_field:
+    case FIELD_TYPES.json:
       extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
       break;
 
-    case 'rich_text_field':
+    case FIELD_TYPES.rich_text_field:
       extraProps = { type: coda.ValueType.String, codaType: coda.ValueHintType.Html } as coda.StringSchema;
       break;
 
     // MEASUREMENT
-    case 'weight':
-    case 'dimension':
-    case 'volume':
+    case FIELD_TYPES.weight:
+    case FIELD_TYPES.dimension:
+    case FIELD_TYPES.volume:
       extraProps = {
         type: coda.ValueType.String,
         mutable: true,
@@ -101,7 +102,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // URL
-    case 'url':
+    case FIELD_TYPES.url:
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.Url,
@@ -110,12 +111,12 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // COLOR
-    case 'color':
+    case FIELD_TYPES.color:
       extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
       break;
 
     // RATING
-    case 'rating':
+    case FIELD_TYPES.rating:
       // const maximumStr = fieldDefinition.validations.find((v) => v.name === 'scale_max')?.scale_max;
       extraProps = {
         type: coda.ValueType.Number,
@@ -126,14 +127,14 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // NUMBER
-    case 'number_integer':
+    case FIELD_TYPES.number_integer:
       extraProps = {
         type: coda.ValueType.Number,
         precision: 0,
         mutable: true,
       } as coda.NumberSchema;
       break;
-    case 'number_decimal':
+    case FIELD_TYPES.number_decimal:
       extraProps = {
         type: coda.ValueType.Number,
         mutable: true,
@@ -141,7 +142,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // MONEY
-    case 'money':
+    case FIELD_TYPES.money:
       extraProps = {
         type: coda.ValueType.Number,
         codaType: coda.ValueHintType.Currency,
@@ -150,7 +151,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // TRUE_FALSE
-    case 'boolean':
+    case FIELD_TYPES.boolean:
       extraProps = {
         type: coda.ValueType.Boolean,
         mutable: true,
@@ -158,27 +159,27 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       break;
 
     // REFERENCE
-    case 'collection_reference':
+    case FIELD_TYPES.collection_reference:
       extraProps = { ...CollectionReference, mutable: true };
       break;
-    case 'metaobject_reference':
+    case FIELD_TYPES.metaobject_reference:
       extraProps = { ...getMetaobjectReferenceSchema(fieldDefinition), mutable: true };
       break;
-    case 'page_reference':
+    case FIELD_TYPES.page_reference:
       extraProps = { ...PageReference, mutable: true };
       break;
-    case 'product_reference':
+    case FIELD_TYPES.product_reference:
       extraProps = { ...ProductReference, mutable: true };
       break;
-    case 'variant_reference':
+    case FIELD_TYPES.variant_reference:
       extraProps = { ...ProductVariantReference, mutable: true };
       break;
-    case 'file_reference':
+    case FIELD_TYPES.file_reference:
       extraProps = { ...FileReference, mutable: true };
       break;
 
     // DATE_TIME
-    case 'date':
+    case FIELD_TYPES.date:
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.Date,
@@ -186,7 +187,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       } as coda.StringDateSchema;
       break;
 
-    case 'date_time':
+    case FIELD_TYPES.date_time:
       extraProps = {
         type: coda.ValueType.String,
         codaType: coda.ValueHintType.DateTime,

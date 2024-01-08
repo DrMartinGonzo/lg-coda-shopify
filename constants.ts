@@ -66,6 +66,9 @@ export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
 export const RESOURCE_BLOG = 'OnlineStoreBlog';
 export const RESOURCE_COLLECTION = 'Collection';
+export const RESOURCE_CUSTOMER = 'Customer';
+export const RESOURCE_ORDER = 'Order';
+export const RESOURCE_PAGE = 'OnlineStorePage';
 export const RESOURCE_PRODUCT = 'Product';
 export const RESOURCE_PRODUCT_VARIANT = 'ProductVariant';
 
@@ -81,3 +84,49 @@ export const GRAPHQL_DEFAULT_API_VERSION = '2023-04';
 export const CACHE_DAY = 86400; // 1 day
 export const CACHE_MINUTE = 60; // 1 minute
 export const CACHE_SINGLE_FETCH = 10; // 10s
+
+export const FIELD_TYPES = {
+  single_line_text_field: 'single_line_text_field',
+  multi_line_text_field: 'multi_line_text_field',
+  rich_text_field: 'rich_text_field',
+  number_integer: 'number_integer',
+  number_decimal: 'number_decimal',
+  date: 'date',
+  date_time: 'date_time',
+  boolean: 'boolean',
+  url: 'url',
+  color: 'color',
+  weight: 'weight',
+  dimension: 'dimension',
+  volume: 'volume',
+  rating: 'rating',
+  money: 'money',
+  json: 'json',
+  mixed_reference: 'mixed_reference',
+  collection_reference: 'collection_reference',
+  page_reference: 'page_reference',
+  file_reference: 'file_reference',
+  metaobject_reference: 'metaobject_reference',
+  product_reference: 'product_reference',
+  variant_reference: 'variant_reference',
+
+  // ++ list variants
+  // list.collection_reference,
+  // list.color,
+  // list.date,
+  // list.date_time,
+  // list.dimension,
+  // list.file_reference,
+  // list.metaobject_reference,
+  // list.mixed_reference,
+  // list.number_integer,
+  // list.number_decimal,
+  // list.page_reference,
+  // list.product_reference,
+  // list.rating,
+  // list.single_line_text_field,
+  // list.url,
+  // list.variant_reference,
+  // list.volume,
+  // list.weight'
+};

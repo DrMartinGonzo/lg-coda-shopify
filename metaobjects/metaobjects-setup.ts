@@ -16,7 +16,7 @@ import {
   getMetaObjectFieldDefinitionsByMetaobjectDefinition,
 } from './metaobjects-functions';
 import { IDENTITY_METAOBJECT } from '../constants';
-import { getObjectSchemaItemProp, isString } from '../helpers';
+import { isString } from '../helpers';
 
 const parameters = {
   metaobjectGID: coda.makeParameter({

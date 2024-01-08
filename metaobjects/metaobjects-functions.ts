@@ -20,6 +20,7 @@ import {
 import {
   CACHE_DAY,
   CACHE_SINGLE_FETCH,
+  FIELD_TYPES,
   IDENTITY_COLLECTION,
   IDENTITY_FILE,
   IDENTITY_METAOBJECT,
@@ -81,81 +82,83 @@ export async function autocompleteMetaobjectType(context: coda.ExecutionContext,
 /**====================================================================================================================
  *    Formatting functions
  *===================================================================================================================== */
-function formatMetaobjectFieldForSchema(value: any, schemaItemProp) {
+function formatMetaobjectFieldForSchema(value: any, schemaItemProp, fieldDefinition) {
   if (!value) return;
 
   const { type, codaType } = schemaItemProp;
-  let formattedValue: any;
+  const isArrayCoda = schemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
+  const isArrayApi = fieldDefinition.type.name.startsWith('list.');
+  const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
+  // let formattedValue: any;
 
-  // REFERENCE
-  if (codaType === coda.ValueHintType.Reference && schemaItemProp.identity?.name) {
-    switch (schemaItemProp.identity.name) {
-      case IDENTITY_COLLECTION:
-        formattedValue = {
-          admin_graphql_api_id: value,
-          title: NOT_FOUND,
-        };
-        break;
-      case IDENTITY_FILE:
-        formattedValue = {
-          id: value,
-          name: NOT_FOUND,
-        };
-        break;
-      case IDENTITY_METAOBJECT:
-        formattedValue = {
-          graphql_gid: value,
-          name: NOT_FOUND,
-        };
-        break;
-      case IDENTITY_PAGE:
-        formattedValue = {
-          admin_graphql_api_id: value,
-          title: NOT_FOUND,
-        };
-        break;
-      case IDENTITY_PRODUCT:
-        formattedValue = {
-          id: graphQlGidToId(value),
-          title: NOT_FOUND,
-        };
-        break;
-      case IDENTITY_PRODUCT_VARIANT:
-        formattedValue = {
-          id: graphQlGidToId(value),
-          title: NOT_FOUND,
-        };
-        break;
+  switch (fieldType) {
+    // TEXT
+    // URL
+    // COLOR
+    // NUMBER
+    // DATE_TIME
+    // TRUE_FALSE
+    case FIELD_TYPES.single_line_text_field:
+    case FIELD_TYPES.multi_line_text_field:
+    case FIELD_TYPES.url:
+    case FIELD_TYPES.color:
+    case FIELD_TYPES.number_integer:
+    case FIELD_TYPES.number_decimal:
+    case FIELD_TYPES.date:
+    case FIELD_TYPES.date_time:
+    case FIELD_TYPES.boolean:
+      return value;
 
-      default:
-        break;
-    }
-  }
-  // MONEY
-  else if (codaType === coda.ValueHintType.Currency) {
-    formattedValue = value.amount;
-  }
-  // MEASUREMENT
-  else if (type === coda.ValueType.String && value.value !== undefined && value.unit !== undefined) {
-    formattedValue = `${value.value}${unitToShortName(value.unit)}`;
-  }
-  // RATING
-  else if (type === coda.ValueType.Number && value.scale_min !== undefined && value.scale_max !== undefined) {
-    formattedValue = value.value;
-  }
-  // TEXT: rich_text_field
-  else if (type === coda.ValueType.String && codaType === coda.ValueHintType.Html) {
-    formattedValue = convertSchemaToHtml(value);
-  } else {
-    formattedValue = value;
-  }
+    case FIELD_TYPES.rich_text_field:
+      return convertSchemaToHtml(value);
 
-  return formattedValue;
+    case FIELD_TYPES.json:
+      return JSON.stringify(value);
+
+    // RATING
+    case FIELD_TYPES.rating:
+      return value.value;
+
+    // MONEY
+    case FIELD_TYPES.money:
+      return value.amount;
+
+    // REFERENCE
+    case FIELD_TYPES.collection_reference:
+    case FIELD_TYPES.page_reference:
+      return {
+        admin_graphql_api_id: value,
+        title: NOT_FOUND,
+      };
+    case FIELD_TYPES.file_reference:
+      return {
+        id: value,
+        name: NOT_FOUND,
+      };
+    case FIELD_TYPES.metaobject_reference:
+      return {
+        graphql_gid: value,
+        name: NOT_FOUND,
+      };
+    case FIELD_TYPES.product_reference:
+    case FIELD_TYPES.variant_reference:
+      return {
+        id: graphQlGidToId(value),
+        title: NOT_FOUND,
+      };
+
+    // MEASUREMENT
+    case FIELD_TYPES.weight:
+    case FIELD_TYPES.dimension:
+    case FIELD_TYPES.volume:
+      return `${value.value}${unitToShortName(value.unit)}`;
+  }
 }
 
 function makeFormatMetaobjectForSchemaFunction(
   type: string,
   optionalFieldsKeys: string[],
+  fieldDefinitions,
   context: coda.SyncExecutionContext
 ): FormatFunction {
   return function (node: any) {
@@ -164,10 +167,18 @@ function makeFormatMetaobjectForSchemaFunction(
       admin_url: `${context.endpoint}/admin/content/entries/${type}/${graphQlGidToId(node.id)}`,
     };
     optionalFieldsKeys.forEach((key) => {
+      // edge case for handle field
+      if (key === 'handle') {
+        data[key] = node[key].value;
+        return;
+      }
+
       // check if node[key] has 'value' property
       const value = node[key].hasOwnProperty('value') ? node[key].value : node[key];
 
       const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
+      const fieldDefinition = fieldDefinitions.find((f) => f.key === key);
+      if (!fieldDefinition) throw new Error('fieldDefinition not found');
 
       let parsedValue = value;
       try {
@@ -178,8 +189,8 @@ function makeFormatMetaobjectForSchemaFunction(
 
       data[key] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaobjectFieldForSchema(v, schemaItemProp.items))
-          : formatMetaobjectFieldForSchema(parsedValue, schemaItemProp);
+          ? parsedValue.map((v) => formatMetaobjectFieldForSchema(v, schemaItemProp.items, fieldDefinition))
+          : formatMetaobjectFieldForSchema(parsedValue, schemaItemProp, fieldDefinition);
     });
 
     return data;
@@ -248,22 +259,23 @@ export function formatMetaobjectFieldForApi(
     // NUMBER
     // DATE_TIME
     // TRUE_FALSE
-    case 'single_line_text_field':
-    case 'multi_line_text_field':
-    case 'url':
-    case 'color':
-    case 'number_integer':
-    case 'number_decimal':
-    case 'date':
-    case 'date_time':
-    case 'boolean':
+    case FIELD_TYPES.single_line_text_field:
+    case FIELD_TYPES.multi_line_text_field:
+    case FIELD_TYPES.url:
+    case FIELD_TYPES.color:
+    case FIELD_TYPES.number_integer:
+    case FIELD_TYPES.number_decimal:
+    case FIELD_TYPES.date:
+    case FIELD_TYPES.date_time:
+    case FIELD_TYPES.boolean:
+    case FIELD_TYPES.json:
       return isArrayBoth ? JSON.stringify(value) : value;
 
-    case 'rich_text_field':
+    case FIELD_TYPES.rich_text_field:
       break;
 
     // RATING
-    case 'rating':
+    case FIELD_TYPES.rating:
       const scale_min = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_min').value);
       const scale_max = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_max').value);
       return JSON.stringify(
@@ -273,7 +285,7 @@ export function formatMetaobjectFieldForApi(
       );
 
     // MONEY
-    case 'money':
+    case FIELD_TYPES.money:
       // TODO: dynamic get currency_code from shop
       const currencyCode = 'EUR';
       return JSON.stringify(
@@ -281,30 +293,30 @@ export function formatMetaobjectFieldForApi(
       );
 
     // REFERENCE
-    case 'collection_reference':
-    case 'page_reference':
+    case FIELD_TYPES.collection_reference:
+    case FIELD_TYPES.page_reference:
       return isArrayBoth ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
 
-    case 'file_reference':
+    case FIELD_TYPES.file_reference:
       return isArrayBoth ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
 
-    case 'metaobject_reference':
+    case FIELD_TYPES.metaobject_reference:
       return isArrayBoth ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
 
-    case 'product_reference':
+    case FIELD_TYPES.product_reference:
       return isArrayBoth
         ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT, v?.id)))
         : idToGraphQlGid(RESOURCE_PRODUCT, value?.id);
 
-    case 'variant_reference':
+    case FIELD_TYPES.variant_reference:
       return isArrayBoth
         ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, v?.id)))
         : idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, value?.id);
 
     // MEASUREMENT
-    case 'weight':
-    case 'dimension':
-    case 'volume':
+    case FIELD_TYPES.weight:
+    case FIELD_TYPES.dimension:
+    case FIELD_TYPES.volume:
       return JSON.stringify(
         isArrayBoth
           ? value.map((v) => JSON.stringify(formatMeasurementForApi(v, fieldType)))
@@ -500,6 +512,9 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const { type } =
     prevContinuation?.extraContinuationData ?? (await getMetaobjectSyncTableDetails(context.sync.dynamicUrl, context));
+  const fieldDefinitions =
+    prevContinuation?.extraContinuationData?.fieldDefinitions ??
+    (await getMetaObjectFieldDefinitionsByMetaobjectDefinition(context.sync.dynamicUrl, context));
 
   // TODO: get an approximation for first run by using count of relation columns ?
   const initialEntriesPerRun = 50;
@@ -526,11 +541,11 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
   return makeSyncTableGraphQlRequest(
     {
       payload,
-      formatFunction: makeFormatMetaobjectForSchemaFunction(type, optionalFieldsKeys, context),
+      formatFunction: makeFormatMetaobjectForSchemaFunction(type, optionalFieldsKeys, fieldDefinitions, context),
       maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'metaobjects',
-      extraContinuationData: { type },
+      extraContinuationData: { type, fieldDefinitions },
     },
     context
   );
