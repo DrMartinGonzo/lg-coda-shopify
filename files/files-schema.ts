@@ -3,19 +3,65 @@ import { IDENTITY_FILE } from '../constants';
 
 export const FileSchema = coda.makeObjectSchema({
   properties: {
-    name: { type: coda.ValueType.String, required: true },
-    graphql_gid: { type: coda.ValueType.String, required: true, fromKey: 'id' },
-    alt: { type: coda.ValueType.String },
-    createdAt: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    updatedAt: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    thumbnail: { type: coda.ValueType.String, codaType: coda.ValueHintType.ImageReference },
-    mimeType: { type: coda.ValueType.String },
-    fileSize: { type: coda.ValueType.Number },
-    url: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
-    width: { type: coda.ValueType.Number },
-    height: { type: coda.ValueType.Number },
-    duration: { type: coda.ValueType.Number },
-    type: { type: coda.ValueType.String },
+    name: {
+      type: coda.ValueType.String,
+      required: true,
+      fixedId: 'name',
+    },
+    graphql_gid: {
+      type: coda.ValueType.String,
+      required: true,
+      fromKey: 'id',
+      fixedId: 'graphql_gid',
+    },
+    alt: {
+      type: coda.ValueType.String,
+      fixedId: 'alt',
+    },
+    createdAt: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'createdAt',
+    },
+    updatedAt: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'updatedAt',
+    },
+    thumbnail: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.ImageReference,
+      fixedId: 'thumbnail',
+    },
+    mimeType: {
+      type: coda.ValueType.String,
+      fixedId: 'mimeType',
+    },
+    fileSize: {
+      type: coda.ValueType.Number,
+      fixedId: 'fileSize',
+    },
+    url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fixedId: 'url',
+    },
+    width: {
+      type: coda.ValueType.Number,
+      fixedId: 'width',
+    },
+    height: {
+      type: coda.ValueType.Number,
+      fixedId: 'height',
+    },
+    duration: {
+      type: coda.ValueType.Number,
+      fixedId: 'duration',
+    },
+    type: {
+      type: coda.ValueType.String,
+      fixedId: 'type',
+    },
   },
   displayProperty: 'name',
   idProperty: 'graphql_gid',

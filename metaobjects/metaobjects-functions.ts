@@ -379,7 +379,6 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
   fieldDefinitions.forEach((fieldDefinition) => {
     const name = accents.remove(fieldDefinition.name);
     properties[name] = mapMetaobjectFieldToSchemaProperty(fieldDefinition);
-    properties[name]['fixedId'] = fieldDefinition.key;
 
     if (displayNameKey === fieldDefinition.key) {
       displayProperty = name;

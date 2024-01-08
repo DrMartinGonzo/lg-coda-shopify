@@ -35,19 +35,19 @@ import * as coda from '@codahq/packs-sdk';
 
 const TranslationSchema = coda.makeObjectSchema({
   properties: {
-    key: { type: coda.ValueType.String },
-    value: { type: coda.ValueType.String },
-    digest: { type: coda.ValueType.String },
-    locale: { type: coda.ValueType.String },
+    key: { type: coda.ValueType.String, fixedId: 'key' },
+    value: { type: coda.ValueType.String, fixedId: 'value' },
+    digest: { type: coda.ValueType.String, fixedId: 'digest' },
+    locale: { type: coda.ValueType.String, fixedId: 'locale' },
   },
   displayProperty: 'value',
 });
 
 export const TranslatableResourceSchema = coda.makeObjectSchema({
   properties: {
-    translatableResourceId: { type: coda.ValueType.String, fromKey: 'resourceId' },
-    translations: { type: coda.ValueType.Array, items: TranslationSchema },
-    translatableContent: { type: coda.ValueType.Array, items: TranslationSchema },
+    translatableResourceId: { type: coda.ValueType.String, fromKey: 'resourceId', fixedId: 'translatableResourceId' },
+    translations: { type: coda.ValueType.Array, items: TranslationSchema, fixedId: 'translations' },
+    translatableContent: { type: coda.ValueType.Array, items: TranslationSchema, fixedId: 'translatableContent' },
   },
   idProperty: 'translatableResourceId',
   featuredProperties: ['translations', 'translatableContent'],

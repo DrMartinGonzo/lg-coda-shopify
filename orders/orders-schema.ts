@@ -172,80 +172,150 @@ const LineItemSchema = coda.makeObjectSchema({
       },
       fulfillment_service: { type: coda.ValueType.String },
      */
-    line_item_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'The ID of the line item' },
+    line_item_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'id',
+      description: 'The ID of the line item',
+      fixedId: 'line_item_id',
+    },
     fulfillable_quantity: {
       type: coda.ValueType.Number,
       description: 'The amount available to fulfill, calculated as follows',
+      fixedId: 'fulfillable_quantity',
     },
     fulfillment_status: {
       type: coda.ValueType.String,
       description: 'How far along an order is in terms line items fulfilled',
+      fixedId: 'fulfillment_status',
     },
-    grams: { type: coda.ValueType.Number, description: 'The weight of the item in grams' },
+    grams: {
+      type: coda.ValueType.Number,
+      description: 'The weight of the item in grams',
+      fixedId: 'grams',
+    },
     price: {
       type: coda.ValueType.Number,
       description: 'The price of the item before discounts have been applied in the shop currency',
+      fixedId: 'price',
     },
-    price_set: PriceSetSchema,
+    price_set: { ...PriceSetSchema, fixedId: 'price_set' },
     product_id: {
       type: coda.ValueType.Number,
       description:
         'The ID of the product that the line item belongs to. Can be null if the original product associated with the order is deleted at a later date',
+      fixedId: 'product_id',
     },
-    quantity: { type: coda.ValueType.Number, description: 'The number of items that were purchased' },
-    requires_shipping: { type: coda.ValueType.Boolean, description: 'Whether the item requires shipping' },
-    sku: { type: coda.ValueType.String, description: "The item's SKU" },
-    title: { type: coda.ValueType.String, description: 'The title of the product' },
-    variant_id: { type: coda.ValueType.Number, description: 'The ID of the product variant' },
-    variant_title: { type: coda.ValueType.String, description: 'The title of the product variant' },
-    vendor: { type: coda.ValueType.String, description: "The name of the item's supplier" },
-    name: { type: coda.ValueType.String, description: 'The name of the product variant' },
-    gift_card: { type: coda.ValueType.Boolean, description: 'Whether the item is a gift card' },
+    quantity: {
+      type: coda.ValueType.Number,
+      description: 'The number of items that were purchased',
+      fixedId: 'quantity',
+    },
+    requires_shipping: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the item requires shipping',
+      fixedId: 'requires_shipping',
+    },
+    sku: {
+      type: coda.ValueType.String,
+      description: "The item's SKU",
+      fixedId: 'sku',
+    },
+    title: {
+      type: coda.ValueType.String,
+      description: 'The title of the product',
+      fixedId: 'title',
+    },
+    variant_id: {
+      type: coda.ValueType.Number,
+      description: 'The ID of the product variant',
+      fixedId: 'variant_id',
+    },
+    variant_title: {
+      type: coda.ValueType.String,
+      description: 'The title of the product variant',
+      fixedId: 'variant_title',
+    },
+    vendor: {
+      type: coda.ValueType.String,
+      description: "The name of the item's supplier",
+      fixedId: 'vendor',
+    },
+    name: {
+      type: coda.ValueType.String,
+      description: 'The name of the product variant',
+      fixedId: 'name',
+    },
+    gift_card: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the item is a gift card',
+      fixedId: 'gift_card',
+    },
     properties: {
       type: coda.ValueType.Array,
       items: NameValueSchema,
       description:
         'An array of custom information for the item that has been added to the cart. Often used to provide product customization options.',
+      fixedId: 'properties',
     },
-    taxable: { type: coda.ValueType.Boolean, description: 'Whether the item was taxable' },
-    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema, description: 'A list of tax line objects' },
+    taxable: {
+      type: coda.ValueType.Boolean,
+      description: 'Whether the item was taxable',
+      fixedId: 'taxable',
+    },
+    tax_lines: {
+      type: coda.ValueType.Array,
+      items: TaxLineSchema,
+      description: 'A list of tax line objects',
+      fixedId: 'tax_lines',
+    },
     tip_payment_gateway: {
       type: coda.ValueType.String,
       description: 'The payment gateway used to tender the tip, such as shopify_payments. Present only on tips',
+      fixedId: 'tip_payment_gateway',
     },
     tip_payment_method: {
       type: coda.ValueType.String,
       description: 'The payment method used to tender the tip, such as Visa. Present only on tips.',
+      fixedId: 'tip_payment_method',
     },
     total_discount: {
       type: coda.ValueType.String,
       description:
         'The total amount of the discount allocated to the line item in the shop currency. This field must be explicitly set using draft orders, Shopify scripts, or the API. Instead of using this field, Shopify recommends using discount_allocations, which provides the same information.',
+      fixedId: 'total_discount',
     },
     total_discount_set: {
       ...PriceSetSchema,
       description:
         'The total amount allocated to the line item in the presentment currency. Instead of using this field, Shopify recommends using discount_allocations, which provides the same information.',
+      fixedId: 'total_discount_set',
     },
     discount_allocations: {
       type: coda.ValueType.Array,
       items: DiscountAllocationSchema,
       description:
         'An ordered list of amounts allocated by discount applications. Each discount allocation is associated with a particular discount application',
+      fixedId: 'discount_allocations',
     },
-
     duties: {
       type: coda.ValueType.Array,
       items: DutySchema,
+      fixedId: 'duties',
     },
-
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the line item.',
+      fixedId: 'graphql_gid',
     },
-    product_exists: { type: coda.ValueType.Boolean },
-    variant_inventory_management: { type: coda.ValueType.String },
+    product_exists: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'product_exists',
+    },
+    variant_inventory_management: {
+      type: coda.ValueType.String,
+      fixedId: 'variant_inventory_management',
+    },
   },
   displayProperty: 'name',
   idProperty: 'line_item_id',
@@ -459,9 +529,9 @@ const RefundLineItemSchema = coda.makeObjectSchema({
 const RefundDutySchema = coda.makeObjectSchema({
   properties: {
     // The unique identifier of the duty.
-    duty_id: { type: coda.ValueType.Number },
+    duty_id: { type: coda.ValueType.Number, fixedId: 'duty_id' },
     // Specifies how you want the duty refunded
-    refund_type: { type: coda.ValueType.String },
+    refund_type: { type: coda.ValueType.String, fixedId: 'refund_type' },
   },
   displayProperty: 'duty_id',
 });
@@ -470,25 +540,25 @@ const RefundDutySchema = coda.makeObjectSchema({
 const RefundSchema = coda.makeObjectSchema({
   properties: {
     // The unique identifier for the refund.
-    refund_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    refund_id: { type: coda.ValueType.Number, fromKey: 'id', fixedId: 'refund_id' },
     // The date and time (ISO 8601 format) when the refund was created.
-    created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime, fixedId: 'created_at' },
     // A list of duties that have been reimbursed as part of the refund.
-    duties: { type: coda.ValueType.Array, items: DutySchema },
+    duties: { type: coda.ValueType.Array, items: DutySchema, fixedId: 'duties' },
     // An optional note attached to a refund.
-    note: { type: coda.ValueType.String },
+    note: { type: coda.ValueType.String, fixedId: 'note' },
     // A list of order adjustments attached to the refund. Order adjustments are generated to account for refunded shipping costs and differences between calculated and actual refund amounts.
-    order_adjustments: { type: coda.ValueType.Array, items: OrderAdjustmentSchema },
+    order_adjustments: { type: coda.ValueType.Array, items: OrderAdjustmentSchema, fixedId: 'order_adjustments' },
     // The date and time (ISO 8601 format) when the refund was imported. This value can be set to a date in the past when importing from other systems. If no value is provided, then it will be auto-generated as the current time in Shopify. Public apps need to be granted permission by Shopify to import orders with the processed_at timestamp set to a value earlier the created_at timestamp. Private apps can't be granted permission by Shopify.
-    processed_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    processed_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime, fixedId: 'processed_at' },
     // A list of refunded duties.
-    refund_duties: { type: coda.ValueType.Array, items: RefundDutySchema },
+    refund_duties: { type: coda.ValueType.Array, items: RefundDutySchema, fixedId: 'refund_duties' },
     // A list of refunded line items.
-    refund_line_items: { type: coda.ValueType.Array, items: RefundLineItemSchema },
+    refund_line_items: { type: coda.ValueType.Array, items: RefundLineItemSchema, fixedId: 'refund_line_items' },
     // A list of transactions involved in the refund. A single order can have multiple transactions associated with it. For more information, see the Transaction resource.
-    transactions: { type: coda.ValueType.Array, items: TransactionSchema },
+    transactions: { type: coda.ValueType.Array, items: TransactionSchema, fixedId: 'transactions' },
     // The unique identifier of the user who performed the refund.
-    user_id: { type: coda.ValueType.Number },
+    user_id: { type: coda.ValueType.Number, fixedId: 'user_id' },
   },
   displayProperty: 'refund_id',
 });
@@ -498,25 +568,25 @@ const ShippingLineSchema = coda.makeObjectSchema({
   // requested_fulfillment_service_id: A reference to the fulfillment service that is being requested for the shipping method. Present if the shipping method requires processing by a third party fulfillment service; null otherwise.
   properties: {
     // The ID of shipping line
-    shipping_line_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    shipping_line_id: { type: coda.ValueType.Number, fromKey: 'id', fixedId: 'shipping_line_id' },
     // A reference to the shipping method.
-    code: { type: coda.ValueType.String },
+    code: { type: coda.ValueType.String, fixedId: 'code' },
     // A reference to the carrier service that provided the rate. Present when the rate was computed by a third-party carrier service.
-    carrier_identifier: { type: coda.ValueType.String },
+    carrier_identifier: { type: coda.ValueType.String, fixedId: 'carrier_identifier' },
     // The price of the shipping method after line-level discounts have been applied. Doesn't reflect cart-level or order-level discounts.
-    discounted_price: { type: coda.ValueType.Number },
+    discounted_price: { type: coda.ValueType.Number, fixedId: 'discounted_price' },
     // The price of the shipping method in both shop and presentment currencies after line-level discounts have been applied.
-    discounted_price_set: PriceSetSchema,
+    discounted_price_set: { ...PriceSetSchema, fixedId: 'discounted_price_set' },
     // The price of this shipping method in the shop currency. Can't be negative.
-    price: { type: coda.ValueType.Number },
+    price: { type: coda.ValueType.Number, fixedId: 'price' },
     // The price of the shipping method in shop and presentment currencies.
-    price_set: PriceSetSchema,
+    price_set: { ...PriceSetSchema, fixedId: 'price_set' },
     // The source of the shipping method.
-    source: { type: coda.ValueType.String },
+    source: { type: coda.ValueType.String, fixedId: 'source' },
     // The title of the shipping method.
-    title: { type: coda.ValueType.String },
+    title: { type: coda.ValueType.String, fixedId: 'title' },
     // A list of tax line objects, each of which details a tax applicable to this shipping line.
-    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema },
+    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema, fixedId: 'tax_lines' },
   },
   displayProperty: 'title',
   idProperty: 'shipping_line_id',
@@ -551,17 +621,32 @@ export const OrderSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the order.',
+      fixedId: 'graphql_gid',
     },
     // The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.'
-    order_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
+    order_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'id',
+      required: true,
+      fixedId: 'order_id',
+    },
     // The ID of the app that created the order.
-    app_id: { type: coda.ValueType.Number },
+    app_id: {
+      type: coda.ValueType.Number,
+      fixedId: 'app_id',
+    },
     // The mailing address associated with the payment method. This address is an optional field that won't be available on orders that do not require a payment method.
-    billing_address: AddressSchema,
+    billing_address: { ...AddressSchema, fixedId: 'billing_address' },
     // The IP address of the browser used by the customer when they placed the order. Both IPv4 and IPv6 are supported.
-    browser_ip: { type: coda.ValueType.String },
+    browser_ip: {
+      type: coda.ValueType.String,
+      fixedId: 'browser_ip',
+    },
     // Whether the customer consented to receive email updates from the shop.
-    buyer_accepts_marketing: { type: coda.ValueType.Boolean },
+    buyer_accepts_marketing: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'buyer_accepts_marketing',
+    },
     // The reason why the order was canceled. Valid values:
     //  - Hide cancel_reason properties
     //  - customer: The customer canceled the order.
@@ -569,51 +654,105 @@ export const OrderSchema = coda.makeObjectSchema({
     //  - inventory: Items in the order were not in inventory.
     //  - declined: The payment was declined.
     //  - other: A reason not in this list.
-    cancel_reason: { type: coda.ValueType.String },
+    cancel_reason: {
+      type: coda.ValueType.String,
+      fixedId: 'cancel_reason',
+    },
     // The date and time when the order was canceled. Returns null if the order isn't canceled.
-    cancelled_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    cancelled_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'cancelled_at',
+    },
     // A unique value when referencing the cart that's associated with the order.
-    cart_token: { type: coda.ValueType.String },
+    cart_token: {
+      type: coda.ValueType.String,
+      fixedId: 'cart_token',
+    },
     // A unique value when referencing the checkout that's associated with the order.
-    checkout_token: { type: coda.ValueType.String },
+    checkout_token: {
+      type: coda.ValueType.String,
+      fixedId: 'checkout_token',
+    },
     // Information about the browser that the customer used when they placed their order:
-    client_details: ClientDetailsSchema,
+    client_details: { ...ClientDetailsSchema, fixedId: 'client_details' },
     // The date and time (ISO 8601 format) when the order was closed. Returns null if the order isn't closed.
-    closed_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    closed_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'closed_at',
+    },
     // The autogenerated date and time (ISO 8601 format) when the order was created in Shopify. The value for this property cannot be changed.
-    created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    created_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'created_at',
+    },
     // The three-letter code (ISO 4217 format) for the shop currency.
-    currency: { type: coda.ValueType.String },
+    currency: {
+      type: coda.ValueType.String,
+      fixedId: 'currency',
+    },
     // The current total discounts on the order in the shop currency. The value of this field reflects order edits, returns, and refunds.
-    current_total_discounts: { type: coda.ValueType.String },
+    current_total_discounts: {
+      type: coda.ValueType.String,
+      fixedId: 'current_total_discounts',
+    },
     // The current total discounts on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.
-    current_total_discounts_set: PriceSetSchema,
+    current_total_discounts_set: { ...PriceSetSchema, fixedId: 'current_total_discounts_set' },
     // The current total duties charged on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.
-    current_total_duties_set: PriceSetSchema,
+    current_total_duties_set: { ...PriceSetSchema, fixedId: 'current_total_duties_set' },
     // The current total price of the order in the shop currency. The value of this field reflects order edits, returns, and refunds.
-    current_total_price: { type: coda.ValueType.Number },
+    current_total_price: {
+      type: coda.ValueType.Number,
+      fixedId: 'current_total_price',
+    },
     // The current total price of the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.
-    current_total_price_set: PriceSetSchema,
+    current_total_price_set: { ...PriceSetSchema, fixedId: 'current_total_price_set' },
     // The current subtotal price of the order in the shop currency. The value of this field reflects order edits, returns, and refunds.
-    current_subtotal_price: { type: coda.ValueType.Number },
+    current_subtotal_price: {
+      type: coda.ValueType.Number,
+      fixedId: 'current_subtotal_price',
+    },
     // The current subtotal price of the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.
-    current_subtotal_price_set: PriceSetSchema,
+    current_subtotal_price_set: { ...PriceSetSchema, fixedId: 'current_subtotal_price_set' },
     // The current total taxes charged on the order in the shop currency. The value of this field reflects order edits, returns, or refunds.
-    current_total_tax: { type: coda.ValueType.String },
+    current_total_tax: {
+      type: coda.ValueType.String,
+      fixedId: 'current_total_tax',
+    },
     // The current total taxes charged on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.
-    current_total_tax_set: PriceSetSchema,
+    current_total_tax_set: { ...PriceSetSchema, fixedId: 'current_total_tax_set' },
     // Information about the customer. The order might not have a customer and apps should not depend on the existence of a customer object. This value might be null if the order was created through Shopify POS. For more information about the customer object, see the Customer resource.
-    customer: CustomerReference,
+    customer: { ...CustomerReference, fixedId: 'customer' },
     // The two or three-letter language code, optionally followed by a region modifier.
-    customer_locale: { type: coda.ValueType.String },
+    customer_locale: {
+      type: coda.ValueType.String,
+      fixedId: 'customer_locale',
+    },
     // An ordered list of stacked discount applications.
-    discount_applications: { type: coda.ValueType.Array, items: DiscountApplicationSchema },
+    discount_applications: {
+      type: coda.ValueType.Array,
+      items: DiscountApplicationSchema,
+      fixedId: 'discount_applications',
+    },
     // A list of discounts applied to the order. Each discount object includes the following properties:
-    discount_codes: { type: coda.ValueType.Array, items: DiscountCodeSchema },
+    discount_codes: {
+      type: coda.ValueType.Array,
+      items: DiscountCodeSchema,
+      fixedId: 'discount_codes',
+    },
     // The customer's email address.
-    email: { type: coda.ValueType.String, codaType: coda.ValueHintType.Email },
+    email: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Email,
+      fixedId: 'email',
+    },
     // Whether taxes on the order are estimated. Many factors can change between the time a customer places an order and the time the order is shipped, which could affect the calculation of taxes. This property returns false when taxes on the order are finalized and aren't subject to any changes.
-    estimated_taxes: { type: coda.ValueType.Boolean },
+    estimated_taxes: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'estimated_taxes',
+    },
     // The status of payments associated with the order. Can only be set when the order is created. Valid values:
     //  - pending: The payments are pending. Payment might fail in this state. Check again to confirm whether the payments have been paid successfully.
     //  - authorized: The payments have been authorized.
@@ -622,111 +761,247 @@ export const OrderSchema = coda.makeObjectSchema({
     //  - partially_refunded: The payments have been partially refunded.
     //  - refunded: The payments have been refunded.
     //  - voided: The payments have been voided.
-    financial_status: { type: coda.ValueType.String },
+    financial_status: {
+      type: coda.ValueType.String,
+      fixedId: 'financial_status',
+    },
     // TODO
     // An array of fulfillments associated with the order. For more information, see the Fulfillment API.
-    fulfillments: { type: coda.ValueType.Array, items: FulfillmentSchema },
+    fulfillments: {
+      type: coda.ValueType.Array,
+      items: FulfillmentSchema,
+      fixedId: 'fulfillments',
+    },
     // The order's status in terms of fulfilled line items. You can use the FulfillmentOrder resource for a more granular view. Valid values:
     //  - fulfilled: Every line item in the order has been fulfilled.
     //  - null: None of the line items in the order have been fulfilled.
     //  - partial: At least one line item in the order has been fulfilled.
     //  - restocked: Every line item in the order has been restocked and the order canceled.
-    fulfillment_status: { type: coda.ValueType.String },
+    fulfillment_status: {
+      type: coda.ValueType.String,
+      fixedId: 'fulfillment_status',
+    },
     // The URL for the page where the buyer landed when they entered the shop.
-    landing_site: { type: coda.ValueType.String },
+    landing_site: {
+      type: coda.ValueType.String,
+      fixedId: 'landing_site',
+    },
     // A list of line item objects, each containing information about an item in the order.
-    line_items: { type: coda.ValueType.Array, items: LineItemSchema },
+    line_items: {
+      type: coda.ValueType.Array,
+      items: LineItemSchema,
+      fixedId: 'line_items',
+    },
     // The ID of the physical location where the order was processed. To determine the locations where the line items are assigned for fulfillment please use the FulfillmentOrder resource.
-    location_id: { type: coda.ValueType.Number },
+    location_id: {
+      type: coda.ValueType.Number,
+      fixedId: 'location_id',
+    },
     // The order name, generated by combining the order_number property with the order prefix and suffix that are set in the merchant's general settings. This is different from the id property, which is the ID of the order used by the API. This field can also be set by the API to be any string value.
-    name: { type: coda.ValueType.String, required: true },
+    name: {
+      type: coda.ValueType.String,
+      required: true,
+      fixedId: 'name',
+    },
     // An optional note that a shop owner can attach to the order.
-    note: { type: coda.ValueType.String },
+    note: {
+      type: coda.ValueType.String,
+      fixedId: 'note',
+    },
     // Extra information that is added to the order. Appears in the Additional details section of an order details page. Each array entry must contain a hash with name and value keys.
-    note_attributes: { type: coda.ValueType.Array, items: NameValueSchema },
+    note_attributes: {
+      type: coda.ValueType.Array,
+      items: NameValueSchema,
+      fixedId: 'note_attributes',
+    },
     // The order's position in the shop's count of orders. Numbers are sequential and start at 1.
-    number: { type: coda.ValueType.Number },
+    number: {
+      type: coda.ValueType.Number,
+      fixedId: 'number',
+    },
     // The order 's position in the shop's count of orders starting at 1001. Order numbers are sequential and start at 1001.
-    order_number: { type: coda.ValueType.Number },
+    order_number: {
+      type: coda.ValueType.Number,
+      fixedId: 'order_number',
+    },
     // The URL pointing to the order status web page, if applicable.
-    order_status_url: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+    order_status_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fixedId: 'order_status_url',
+    },
     // The original total duties charged on the order in shop and presentment currencies.
-    original_total_duties_set: PriceSetSchema,
+    original_total_duties_set: { ...PriceSetSchema, fixedId: 'original_total_duties_set' },
     // The list of payment gateways used for the order.
-    payment_gateway_names: { type: coda.ValueType.Array, items: { type: coda.ValueType.String } },
+    payment_gateway_names: {
+      type: coda.ValueType.Array,
+      items: { type: coda.ValueType.String },
+      fixedId: 'payment_gateway_names',
+    },
     // The terms and conditions under which a payment should be processed.
-    payment_terms: PaymentTermsSchema,
+    payment_terms: { ...PaymentTermsSchema, fixedId: 'payment_terms' },
     // The customer's phone number for receiving SMS notifications.
-    phone: { type: coda.ValueType.String },
+    phone: {
+      type: coda.ValueType.String,
+      fixedId: 'phone',
+    },
     // The presentment currency that was used to display prices to the customer.
-    presentment_currency: { type: coda.ValueType.String },
+    presentment_currency: {
+      type: coda.ValueType.String,
+      fixedId: 'presentment_currency',
+    },
     // The date and time (ISO 8601 format) when an order was processed. This value is the date that appears on your orders and that's used in the analytic reports. If you're importing orders from an app or another platform, then you can set processed_at to a date and time in the past to match when the original order was created.
-    processed_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    processed_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'processed_at',
+    },
     // The website where the customer clicked a link to the shop.
-    referring_site: { type: coda.ValueType.String },
+    referring_site: {
+      type: coda.ValueType.String,
+      fixedId: 'referring_site',
+    },
     // A list of refunds applied to the order. For more information, see the Refund API.
-    refunds: { type: coda.ValueType.Array, items: RefundSchema },
+    refunds: {
+      type: coda.ValueType.Array,
+      items: RefundSchema,
+      fixedId: 'refunds',
+    },
     // The mailing address to where the order will be shipped. This address is optional and will not be available on orders that do not require shipping.
-    shipping_address: AddressSchema,
+    shipping_address: { ...AddressSchema, fixedId: 'shipping_address' },
     // An array of objects, each of which details a shipping method used.
-    shipping_lines: { type: coda.ValueType.Array, items: ShippingLineSchema },
+    shipping_lines: {
+      type: coda.ValueType.Array,
+      items: ShippingLineSchema,
+      fixedId: 'shipping_lines',
+    },
     // The ID of the order placed on the originating platform. This value doesn't correspond to the Shopify ID that's generated from a completed draft.
-    source_identifier: { type: coda.ValueType.String },
+    source_identifier: {
+      type: coda.ValueType.String,
+      fixedId: 'source_identifier',
+    },
     // The source of the checkout. To use this field for sales attribution, you must register the channels that your app is managing. You can register the channels that your app is managing by completing this Google Form. After you've submited your request, you need to wait for your request to be processed by Shopify. You can find a list of your channels in the Partner Dashboard, in your app's Marketplace extension. You can specify a handle as the source_name value in your request.
-    source_name: { type: coda.ValueType.String },
+    source_name: {
+      type: coda.ValueType.String,
+      fixedId: 'source_name',
+    },
     // A valid URL to the original order on the originating surface. This URL is displayed to merchants on the Order Details page. If the URL is invalid, then it won't be displayed.
-    source_url: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+    source_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fixedId: 'source_url',
+    },
     // The price of the order in the shop currency after discounts but before shipping, duties, taxes, and tips.
-    subtotal_price: { type: coda.ValueType.Number },
+    subtotal_price: {
+      type: coda.ValueType.Number,
+      fixedId: 'subtotal_price',
+    },
     // The subtotal of the order in shop and presentment currencies after discounts but before shipping, duties, taxes, and tips.
-    subtotal_price_set: PriceSetSchema,
+    subtotal_price_set: { ...PriceSetSchema, fixedId: 'subtotal_price_set' },
     // Tags attached to the order, formatted as a string of comma-separated values. Tags are additional short descriptors, commonly used for filtering and searching. Each individual tag is limited to 40 characters in length.
-    tags: { type: coda.ValueType.String },
+    tags: {
+      type: coda.ValueType.String,
+      fixedId: 'tags',
+    },
     // An array of tax line objects, each of which details a tax applicable to the order.
-    tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema },
+    tax_lines: {
+      type: coda.ValueType.Array,
+      items: TaxLineSchema,
+      fixedId: 'tax_lines',
+    },
     // Whether taxes are included in the order subtotal.
-    taxes_included: { type: coda.ValueType.Boolean },
+    taxes_included: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'taxes_included',
+    },
     // Whether this is a test order.
-    test: { type: coda.ValueType.Boolean },
+    test: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'test',
+    },
     // A unique value when referencing the order.
-    token: { type: coda.ValueType.String },
+    token: {
+      type: coda.ValueType.String,
+      fixedId: 'token',
+    },
     // The total discounts applied to the price of the order in the shop currency.
-    total_discounts: { type: coda.ValueType.String },
+    total_discounts: {
+      type: coda.ValueType.String,
+      fixedId: 'total_discounts',
+    },
     // The total discounts applied to the price of the order in shop and presentment currencies.
-    total_discounts_set: PriceSetSchema,
+    total_discounts_set: { ...PriceSetSchema, fixedId: 'total_discounts_set' },
     // The sum of all line item prices in the shop currency.
-    total_line_items_price: { type: coda.ValueType.Number },
+    total_line_items_price: {
+      type: coda.ValueType.Number,
+      fixedId: 'total_line_items_price',
+    },
     // The total of all line item prices in shop and presentment currencies.
-    total_line_items_price_set: PriceSetSchema,
+    total_line_items_price_set: { ...PriceSetSchema, fixedId: 'total_line_items_price_set' },
     // The total outstanding amount of the order in the shop currency.
-    total_outstanding: { type: coda.ValueType.String },
+    total_outstanding: {
+      type: coda.ValueType.String,
+      fixedId: 'total_outstanding',
+    },
     // The sum of all line item prices, discounts, shipping, taxes, and tips in the shop currency. Must be positive.
-    total_price: { type: coda.ValueType.String },
+    total_price: {
+      type: coda.ValueType.String,
+      fixedId: 'total_price',
+    },
     // The total price of the order in shop and presentment currencies.
-    total_price_set: PriceSetSchema,
+    total_price_set: { ...PriceSetSchema, fixedId: 'total_price_set' },
     // The total shipping price of the order, excluding discounts and returns, in shop and presentment currencies. If taxes_included is set to true, then total_shipping_price_set includes taxes.
-    total_shipping_price_set: PriceSetSchema,
+    total_shipping_price_set: { ...PriceSetSchema, fixedId: 'total_shipping_price_set' },
     // The sum of all the taxes applied to the order in the shop currency. Must be positive.
-    total_tax: { type: coda.ValueType.String },
+    total_tax: {
+      type: coda.ValueType.String,
+      fixedId: 'total_tax',
+    },
     // The total tax applied to the order in shop and presentment currencies.
-    total_tax_set: PriceSetSchema,
+    total_tax_set: { ...PriceSetSchema, fixedId: 'total_tax_set' },
     // The sum of all the tips in the order in the shop currency.
-    total_tip_received: { type: coda.ValueType.String },
+    total_tip_received: {
+      type: coda.ValueType.String,
+      fixedId: 'total_tip_received',
+    },
     // The sum of all line item weights in grams. The sum is not adjusted as items are removed from the order.
-    total_weight: { type: coda.ValueType.Number },
+    total_weight: {
+      type: coda.ValueType.Number,
+      fixedId: 'total_weight',
+    },
     // The date and time (ISO 8601 format) when the order was last modified.
-    updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    updated_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'updated_at',
+    },
     // The ID of the user logged into Shopify POS who processed the order, if applicable.
-    user_id: { type: coda.ValueType.Number },
+    user_id: {
+      type: coda.ValueType.Number,
+      fixedId: 'user_id',
+    },
 
     // ??
-    checkout_id: { type: coda.ValueType.Number },
+    checkout_id: {
+      type: coda.ValueType.Number,
+      fixedId: 'checkout_id',
+    },
     // ??
-    confirmed: { type: coda.ValueType.Boolean },
+    confirmed: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'confirmed',
+    },
     // ??
-    contact_email: { type: coda.ValueType.String, codaType: coda.ValueHintType.Email },
+    contact_email: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Email,
+      fixedId: 'contact_email',
+    },
     // ????
-    reference: { type: coda.ValueType.String },
+    reference: {
+      type: coda.ValueType.String,
+      fixedId: 'reference',
+    },
   },
 
   displayProperty: 'name',

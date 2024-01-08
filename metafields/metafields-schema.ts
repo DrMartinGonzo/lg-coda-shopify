@@ -6,55 +6,74 @@ export const MetafieldSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the metafield.',
+      fixedId: 'graphql_gid',
     },
-    metafield_id: { type: coda.ValueType.String, required: true, fromKey: 'id' },
-    lookup: { type: coda.ValueType.String, required: true },
+    metafield_id: {
+      type: coda.ValueType.String,
+      required: true,
+      fromKey: 'id',
+      fixedId: 'metafield_id',
+    },
+    lookup: {
+      type: coda.ValueType.String,
+      required: true,
+      fixedId: 'lookup',
+    },
     key: {
       type: coda.ValueType.String,
       required: true,
       description:
         'The key of the metafield. Keys can be up to 64 characters long and can contain alphanumeric characters, hyphens, underscores, and periods.',
+      fixedId: 'key',
     },
     namespace: {
       type: coda.ValueType.String,
       description:
         'The container for a group of metafields that the metafield is or will be associated with. Used in tandem with `key` to lookup a metafield on a resource, preventing conflicts with other metafields with the same `key`. Must be 3-255 characters long and can contain alphanumeric, hyphen, and underscore characters.',
+      fixedId: 'namespace',
     },
     description: {
       type: coda.ValueType.String,
       description: 'A description of the information that the metafield contains.',
+      fixedId: 'description',
     },
     owner_id: {
       type: coda.ValueType.String,
       required: true,
       description: 'The unique ID of the resource that the metafield is attached to.',
+      fixedId: 'owner_id',
     },
     owner_resource: {
       type: coda.ValueType.String,
       required: true,
       description: 'The type of resource that the metafield is attached to.',
+      fixedId: 'owner_resource',
     },
     value: {
       type: coda.ValueType.String,
       required: true,
       description:
         "The data to store in the metafield. The value is always stored as a string, regardless of the metafield's type.",
+      fixedId: 'value',
     },
     type: {
       type: coda.ValueType.String,
       required: true,
       description:
         'The type of data that the metafield stores in the `value` field. Refer to the list of supported types (https://shopify.dev/apps/metafields/types).',
+      fixedId: 'type',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       description: 'The date and time (ISO 8601 format) when the metafield was created.',
+      fixedId: 'created_at',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       description: 'The date and time (ISO 8601 format) when the metafield was last updated.',
+      fixedId: 'updated_at',
     },
   },
   displayProperty: 'lookup',

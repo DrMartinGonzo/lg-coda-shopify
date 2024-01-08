@@ -72,6 +72,7 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
   let property = {
     fromKey: fieldDefinition.key,
     description: fieldDefinition.description,
+    fixedId: fieldDefinition.key,
   } as coda.Schema & coda.ObjectSchemaProperty;
 
   let extraProps = {};
