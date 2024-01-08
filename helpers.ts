@@ -16,60 +16,89 @@ export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
 
-export function unitToShortName(unit: string) {
-  switch (unit) {
-    // WEIGHT
-    case 'GRAMS':
-      return 'g';
-    case 'KILOGRAMS':
-      return 'kg';
-    case 'OUNCES':
-      return 'oz';
-    case 'POUNDS':
-      return 'lb';
-
-    // LENGTH
-    case 'CENTIMETERS':
-      return 'cm';
-    case 'FEET':
-      return 'pi';
-    case 'INCHES':
-      return 'po';
-    case 'METERS':
-      return 'm';
-    case 'MILLIMETERS':
-      return 'mm';
-    case 'YARDS':
-      return 'yd';
-
-    // VOLUME
-    case 'MILLILITERS':
-      return 'ml';
-    case 'CENTILITERS':
-      return 'cl';
-    case 'LITERS':
-      return 'l';
-    case 'CUBIC_METERS':
-      return 'm³';
-    case 'FLUID_OUNCES':
-      return 'oz liq.';
-    case 'PINTS':
-      return 'pt';
-    case 'QUARTS':
-      return 'qt';
-    case 'GALLONS':
-      return 'gal';
-    case 'IMPERIAL_FLUID_OUNCES':
-      return 'oz liq. imp.';
-    case 'IMPERIAL_PINTS':
-      return 'pt imp.';
-    case 'IMPERIAL_QUARTS':
-      return 'qt imp.';
-    case 'IMPERIAL_GALLONS':
-      return 'gal imp.';
+const weightUnitsMap = {
+  // WEIGHT
+  GRAMS: 'g',
+  KILOGRAMS: 'kg',
+  OUNCES: 'oz',
+  POUNDS: 'lb',
+};
+const dimensionUnitsMap = {
+  CENTIMETERS: 'cm',
+  FEET: 'pi',
+  INCHES: 'po',
+  METERS: 'm',
+  MILLIMETERS: 'mm',
+  YARDS: 'yd',
+};
+const volumeUnitsMap = {
+  MILLILITERS: 'ml',
+  CENTILITERS: 'cl',
+  LITERS: 'l',
+  CUBIC_METERS: 'm³',
+  FLUID_OUNCES: 'oz liq.',
+  PINTS: 'pt',
+  QUARTS: 'qt',
+  GALLONS: 'gal',
+  IMPERIAL_FLUID_OUNCES: 'oz liq. imp.',
+  IMPERIAL_PINTS: 'pt imp.',
+  IMPERIAL_QUARTS: 'qt imp.',
+  IMPERIAL_GALLONS: 'gal imp.',
+};
+export function getUnitMap(measurementType: 'weight' | 'dimension' | 'volume') {
+  switch (measurementType) {
+    case 'weight':
+      return weightUnitsMap;
+    case 'dimension':
+      return dimensionUnitsMap;
+    case 'volume':
+      return volumeUnitsMap;
+    default:
+      throw new coda.UserVisibleError(`Invalid measurement type: ${measurementType}`);
   }
+}
 
-  return unit;
+export function unitToShortName(unit: string) {
+  const allUnitsMap = { ...weightUnitsMap, ...dimensionUnitsMap, ...volumeUnitsMap };
+  const unitShortName = allUnitsMap[unit];
+  if (!unitShortName) {
+    console.log(`Unknown unit: ${unit}`);
+    return '';
+  }
+  return unitShortName;
+}
+
+export function extractValueAndUnitFromMeasurementString(
+  measurementString: string,
+  measurementType: 'weight' | 'dimension' | 'volume'
+): {
+  value: number;
+  unit: string;
+  unitFull: string;
+} {
+  const unitsMap = getUnitMap(measurementType);
+  const possibleUnits = Object.values(unitsMap);
+  const measurementRegex = /^(\d+(\.\d+)?)\s*([a-zA-Z²³µ]*)$/;
+
+  const match = measurementString.match(measurementRegex);
+  if (match) {
+    const value = parseFloat(match[1]);
+    const unit = match[3];
+
+    if (possibleUnits.includes(unit)) {
+      console.log(`Value: ${value}`);
+      console.log(`Unit: ${unit}`);
+
+      const unitFull = Object.keys(unitsMap)[possibleUnits.indexOf(unit)];
+      console.log('unitFull', unitFull);
+
+      return { value, unit, unitFull };
+    } else {
+      throw new coda.UserVisibleError(`Invalid unit: ${unit}`);
+    }
+  } else {
+    throw new coda.UserVisibleError(`Invalid measurement string: ${measurementString}`);
+  }
 }
 
 export function getThumbnailUrlFromFullUrl(url: string, size = DEFAULT_THUMBNAIL_SIZE) {

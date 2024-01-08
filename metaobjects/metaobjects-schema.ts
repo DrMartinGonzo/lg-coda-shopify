@@ -6,6 +6,7 @@ import { PageReference } from '../pages/pages-schema';
 import { CollectionReference } from '../collections/collections-schema';
 import { ProductVariantReference } from '../productVariants/productVariants-schema';
 import { FileReference } from '../files/files-schema';
+import { getUnitMap } from '../helpers';
 
 export const MeasurementSchema = coda.makeObjectSchema({
   properties: {
@@ -80,8 +81,22 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
     case 'multi_line_text_field':
       extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
       break;
+
     case 'rich_text_field':
       extraProps = { type: coda.ValueType.String, codaType: coda.ValueHintType.Html } as coda.StringSchema;
+      break;
+
+    // MEASUREMENT
+    case 'weight':
+    case 'dimension':
+    case 'volume':
+      extraProps = {
+        type: coda.ValueType.String,
+        mutable: true,
+      } as coda.StringSchema;
+      property.description += `${property.description ? '\n' : ''}Valid units are ${Object.values(
+        getUnitMap(fieldType)
+      ).join(', ')}.`;
       break;
 
     // URL
@@ -178,13 +193,6 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       } as coda.StringDateTimeSchema;
       break;
 
-    // MEASUREMENT
-    case 'weight':
-    case 'dimension':
-    case 'volume':
-      extraProps = MeasurementSchema;
-      break;
-
     default:
       extraProps = { type: coda.ValueType.String } as coda.StringSchema;
       break;
@@ -195,7 +203,8 @@ export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
       ...property,
       type: coda.ValueType.Array,
       items: extraProps,
-    } as coda.ArraySchema;
+      mutable: extraProps['mutable'],
+    } as coda.Schema & coda.ObjectSchemaProperty;
   } else {
     property = {
       ...property,

@@ -16,7 +16,7 @@ import {
   getMetaObjectFieldDefinitionsByMetaobjectDefinition,
 } from './metaobjects-functions';
 import { IDENTITY_METAOBJECT } from '../constants';
-import { isString } from '../helpers';
+import { getObjectSchemaItemProp, isString } from '../helpers';
 
 const parameters = {
   metaobjectGID: coda.makeParameter({
@@ -70,9 +70,10 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
           const fields = [];
 
           updatedFields.forEach((key: string) => {
+            const value = update.newValue[key] as string;
             // Edge case: handle
             if (key === 'handle') {
-              handle = update.newValue[key] as string;
+              handle = value;
               return;
             }
 
@@ -80,7 +81,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
             if (!fieldDefinition) throw new Error('fieldDefinition not found');
             fields.push({
               key,
-              value: formatMetaobjectFieldForApi(key, update.newValue[key], fieldDefinition),
+              value: formatMetaobjectFieldForApi(key, value, fieldDefinition, context.sync.schema),
             });
           });
 

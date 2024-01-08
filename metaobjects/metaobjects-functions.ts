@@ -2,7 +2,12 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-import { capitalizeFirstChar, getObjectSchemaItemProp, isString, unitToShortName } from '../helpers';
+import {
+  capitalizeFirstChar,
+  extractValueAndUnitFromMeasurementString,
+  getObjectSchemaItemProp,
+  unitToShortName,
+} from '../helpers';
 import {
   calcSyncTableMaxEntriesPerRun,
   makeGraphQlRequest,
@@ -131,11 +136,8 @@ function formatMetaobjectFieldForSchema(value: any, schemaItemProp) {
     formattedValue = value.amount;
   }
   // MEASUREMENT
-  else if (type === coda.ValueType.Object && value.value !== undefined && value.unit !== undefined) {
-    formattedValue = {
-      ...value,
-      display: `${value.value}${unitToShortName(value.unit)}`,
-    };
+  else if (type === coda.ValueType.String && value.value !== undefined && value.unit !== undefined) {
+    formattedValue = `${value.value}${unitToShortName(value.unit)}`;
   }
   // RATING
   else if (type === coda.ValueType.Number && value.scale_min !== undefined && value.scale_max !== undefined) {
@@ -184,10 +186,60 @@ function makeFormatMetaobjectForSchemaFunction(
   };
 }
 
-export function formatMetaobjectFieldForApi(key: string, value: any, fieldDefinition) {
-  const isArray = fieldDefinition.type.name.startsWith('list.');
-  const fieldType = isArray ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
-  let formattedValue: any;
+interface ShopifyRatingField {
+  scale_min: number;
+  scale_max: number;
+  value: number;
+}
+function formatRatingForApi(value: number, scale_min: number, scale_max: number): ShopifyRatingField {
+  return {
+    scale_min: scale_min,
+    scale_max: scale_max,
+    value: value,
+  };
+}
+interface ShopifyMoneyField {
+  currency_code: string;
+  amount: number;
+}
+function formatMoneyForApi(amount: number, currency_code: string): ShopifyMoneyField {
+  return {
+    amount,
+    currency_code,
+  };
+}
+interface ShopifyMeasurementField {
+  unit: string;
+  value: number;
+}
+
+/**
+ * Format a Measurement cell value for GraphQL Api
+ * @param string the string entered by user in format "{value}{unit}" with eventual spaces between
+ * @param measurementType the measurement field type, can be 'weight', 'dimension' or 'volume'
+ */
+function formatMeasurementForApi(
+  string: string,
+  measurementType: 'weight' | 'dimension' | 'volume'
+): ShopifyMeasurementField {
+  const { value, unit, unitFull } = extractValueAndUnitFromMeasurementString(string, measurementType);
+  return {
+    value,
+    unit: unitFull,
+  };
+}
+
+export function formatMetaobjectFieldForApi(
+  key: string,
+  value: any,
+  fieldDefinition,
+  codaSchema: coda.ArraySchema<coda.Schema>
+) {
+  const codaSchemaItemProp = getObjectSchemaItemProp(codaSchema, key);
+  const isArrayCoda = codaSchemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
+  const isArrayApi = fieldDefinition.type.name.startsWith('list.');
+  const isArrayBoth = isArrayCoda && isArrayApi;
+  const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
 
   switch (fieldType) {
     // TEXT
@@ -205,46 +257,59 @@ export function formatMetaobjectFieldForApi(key: string, value: any, fieldDefini
     case 'date':
     case 'date_time':
     case 'boolean':
-      return value;
+      return isArrayBoth ? JSON.stringify(value) : value;
 
     case 'rich_text_field':
       break;
 
     // RATING
     case 'rating':
-      return JSON.stringify({
-        scale_min: parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_min').value),
-        scale_max: parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_max').value),
-        value: value,
-      });
+      const scale_min = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_min').value);
+      const scale_max = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_max').value);
+      return JSON.stringify(
+        isArrayBoth
+          ? value.map((v) => formatRatingForApi(v, scale_min, scale_max))
+          : formatRatingForApi(value, scale_min, scale_max)
+      );
 
     // MONEY
     case 'money':
-      return JSON.stringify({
-        // TODO: dynamic get value from shop
-        currency_code: 'EUR',
-        amount: value,
-      });
+      // TODO: dynamic get currency_code from shop
+      const currencyCode = 'EUR';
+      return JSON.stringify(
+        isArrayBoth ? value.map((v) => formatMoneyForApi(v, currencyCode)) : formatMoneyForApi(value, currencyCode)
+      );
 
     // REFERENCE
     case 'collection_reference':
     case 'page_reference':
-      return value?.admin_graphql_api_id;
+      return isArrayBoth ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
 
     case 'file_reference':
+      return isArrayBoth ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
+
     case 'metaobject_reference':
-      return value?.id;
+      return isArrayBoth ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
 
     case 'product_reference':
-      return idToGraphQlGid(RESOURCE_PRODUCT, value?.id);
+      return isArrayBoth
+        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT, v?.id)))
+        : idToGraphQlGid(RESOURCE_PRODUCT, value?.id);
 
     case 'variant_reference':
-      return idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, value?.id);
+      return isArrayBoth
+        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, v?.id)))
+        : idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, value?.id);
 
     // MEASUREMENT
     case 'weight':
     case 'dimension':
     case 'volume':
+      return JSON.stringify(
+        isArrayBoth
+          ? value.map((v) => JSON.stringify(formatMeasurementForApi(v, fieldType)))
+          : formatMeasurementForApi(value, fieldType)
+      );
       break;
 
     default:
@@ -314,6 +379,7 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
   fieldDefinitions.forEach((fieldDefinition) => {
     const name = accents.remove(fieldDefinition.name);
     properties[name] = mapMetaobjectFieldToSchemaProperty(fieldDefinition);
+    properties[name]['fixedId'] = fieldDefinition.key;
 
     if (displayNameKey === fieldDefinition.key) {
       displayProperty = name;
