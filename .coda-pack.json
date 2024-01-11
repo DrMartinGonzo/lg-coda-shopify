@@ -1,3 +1,6 @@
 {
-  "packId": 11612
+  "packId": 11612,
+  "options": {
+    "timerStrategy": "fake"
+  }
 }

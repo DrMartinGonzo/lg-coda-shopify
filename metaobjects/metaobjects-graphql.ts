@@ -66,8 +66,8 @@ export const querySyncTableDetails = `#graphql
 `;
 
 const fieldDefinitionFields = `#graphql
-  description
   key
+  description
   name
   required
   type {

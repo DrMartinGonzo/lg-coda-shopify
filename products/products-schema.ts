@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_PRODUCT } from '../constants';
+
+import { IDENTITY_PRODUCT, OPTIONS_PRODUCT_STATUS } from '../constants';
 
 // Product image object
 const ProductImageSchema = coda.makeObjectSchema({
@@ -27,6 +28,7 @@ const ProductImageSchema = coda.makeObjectSchema({
 });
 
 // Product option object
+/*
 const ProductOptionSchema = coda.makeObjectSchema({
   properties: {
     option_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
@@ -37,6 +39,7 @@ const ProductOptionSchema = coda.makeObjectSchema({
   },
   displayProperty: 'name',
 });
+*/
 
 /**====================================================================================================================
  *    Exported schemas
@@ -54,6 +57,19 @@ export const ProductSchema = coda.makeObjectSchema({
      */
     /*
      */
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the product in the Shopify admin.',
+      fixedId: 'admin_url',
+    },
+    storeUrl: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      description: 'A link to the product in the online shop.',
+      fixedId: 'onlineStoreUrl',
+      fromKey: 'onlineStoreUrl',
+    },
     product_id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
@@ -67,53 +83,66 @@ export const ProductSchema = coda.makeObjectSchema({
       description: 'The GraphQL GID of the product.',
       fixedId: 'graphql_gid',
     },
-    // A description of the product. Supports HTML formatting.
-    body: {
+    description: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Html,
-      fixedId: 'body',
+      fixedId: 'description',
+      description:
+        'Text-only content of the description of the product, stripped of any HTML tags and formatting that were included.',
     },
-    body_html: {
+    descriptionHtml: {
       type: coda.ValueType.String,
-      description: 'A description of the product in raw html. Supports HTML formatting',
-      fixedId: 'body_html',
+      description: 'The description of the product, complete with HTML markup.',
+      fixedId: 'descriptionHtml',
+      fromKey: 'descriptionHtml',
+      mutable: true,
     },
-    // The date and time (ISO 8601 format) when the product was created.
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'created_at',
+      description: 'The date and time when the product was created.',
     },
-    // A unique human-friendly string for the product. Automatically generated from the product's title. Used by the Liquid templating language to refer to objects.
     handle: {
       type: coda.ValueType.String,
       fixedId: 'handle',
+      mutable: true,
+      description:
+        "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
     },
-    // A list of product image objects, each one representing an image associated with the product.
+    /*
     images: {
       type: coda.ValueType.Array,
       items: ProductImageSchema,
       fixedId: 'images',
+      description: 'A list of product image objects, each one representing an image associated with the product.',
     },
-    primary_image: {
+    */
+    featuredImage: {
       type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageAttachment,
-      fixedId: 'primary_image',
+      codaType: coda.ValueHintType.ImageReference,
+      fixedId: 'featuredImage',
+      description: 'Featured image of the product.',
     },
-    // The custom product properties. For example, Size, Color, and Material. Each product can have up to 3 options and each option value can be up to 255 characters. Product variants are made of up combinations of option values. Options cannot be created without values. To create new options, a variant with an associated option value also needs to be created.
     options: {
-      type: coda.ValueType.Array,
-      items: ProductOptionSchema,
+      type: coda.ValueType.String,
       fixedId: 'options',
+      description: 'The custom product properties. Product variants are made of up combinations of option values.',
     },
-    // A categorization for the product used for filtering and searching products.
     product_type: {
       type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'product_type',
+      mutable: true,
+      options: coda.OptionsType.Dynamic,
+      allowNewValues: true,
+      requireForUpdates: false,
+      description: 'A categorization for the product.',
     },
-    // The date and time (ISO 8601 format) when the product was published. Can be set to null to unpublish the product from the Online Store channel.
     published_at: {
       type: coda.ValueType.String,
+      description:
+        "The date and time when the product was published. Use product status to unpublish the product by setting it to 'DRAFT'.",
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'published_at',
     },
@@ -124,46 +153,66 @@ export const ProductSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'published_scope',
     },
-    // The status of the product. Valid values:
-    //  - active: The product is ready to sell and is available to customers on the online store, sales channels, and apps. By default, existing products are set to active.
-    //  - archived: The product is no longer being sold and isn't available to customers on sales channels and apps.
-    //  - draft: The product isn't ready to sell and is unavailable to customers on sales channels and apps. By default, duplicated and unarchived products are set to draft.
     status: {
       type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'status',
+      description: `The status of the product. Can be ${OPTIONS_PRODUCT_STATUS.filter((s) => s.value !== '*')
+        .map((s) => s.display)
+        .join(', ')}`,
+      mutable: true,
+      options: OPTIONS_PRODUCT_STATUS.filter((s) => s.value !== '*').map((s) => s.value),
+      requireForUpdates: true,
     },
-    // A string of comma-separated tags that are used for filtering and search. A product can have up to 250 tags. Each tag can have up to 255 characters.
     tags: {
       type: coda.ValueType.String,
       fixedId: 'tags',
+      mutable: true,
+      description: 'A string of comma-separated tags that are used for filtering and search.',
     },
-    // The suffix of the Liquid template used for the product page. If this property is specified, then the product page uses a template called "product.suffix.liquid", where "suffix" is the value of this property. If this property is "" or null, then the product page uses the default template "product.liquid". (default: null)
     template_suffix: {
       type: coda.ValueType.String,
       fixedId: 'template_suffix',
+      mutable: true,
+      description:
+        'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
     },
-    // The name of the product.
     title: {
       type: coda.ValueType.String,
       required: true,
       fixedId: 'title',
+      mutable: true,
+      description: 'The name of the product.',
     },
-    // The date and time (ISO 8601 format) when the product was last modified. A product's updated_at value can change for different reasons. For example, if an order is placed for a product that has inventory tracking set up, then the inventory adjustment is counted as an update.
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'updated_at',
+      description: 'The date and time when the product was last modified.',
     },
     vendor: {
       type: coda.ValueType.String,
       fixedId: 'vendor',
+      mutable: true,
+      description: 'The name of the product vendor.',
     },
-    // An array of product variants, each representing a different version of the product.
-    // variants: { type: coda.ValueType.Array, items: ProductVariantReference },
+    giftCard: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'giftCard',
+      fromKey: 'isGiftCard',
+      description: 'Whether the product is a gift card.',
+    },
   },
   displayProperty: 'title',
   idProperty: 'product_id',
-  featuredProperties: ['title', 'options', 'product_type', 'tags'],
+  // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
+  featuredProperties: ['title', 'product_type', 'status', 'options', 'tags'],
+
+  // Card fields.
+  subtitleProperties: ['product_type', 'status', 'options', 'vendor'],
+  snippetProperty: 'description',
+  imageProperty: 'featuredImage',
+  linkProperty: 'admin_url',
 });
 
 export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSchema, IDENTITY_PRODUCT);

@@ -1,15 +1,22 @@
 import * as coda from '@codahq/packs-sdk';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './Shopify';
 
-export interface SyncTableGraphQlContinuation extends coda.Continuation {
-  lastMaxEntriesPerRun: number;
-  reducedMaxEntriesPerRun?: number;
+export interface SyncTableStorefrontContinuation extends coda.Continuation {
   cursor: string;
   lastSyncTime: number;
   retryCount: number;
+  extraContinuationData: any;
+}
+
+export interface SyncTableGraphQlContinuation extends SyncTableStorefrontContinuation {
+  // cursor: string;
+  // lastSyncTime: number;
+  // retryCount: number;
+  // extraContinuationData: any;
+  lastMaxEntriesPerRun: number;
+  reducedMaxEntriesPerRun?: number;
   lastCost: Omit<ShopifyGraphQlRequestCost, 'throttleStatus'>;
   lastThrottleStatus: ShopifyGraphQlThrottleStatus;
-  extraContinuationData: any;
 }
 
 export interface SyncTableRestContinuation extends coda.Continuation {

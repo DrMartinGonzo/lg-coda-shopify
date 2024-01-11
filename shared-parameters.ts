@@ -30,6 +30,11 @@ export const sharedParameters = {
     name: 'createdAtMin',
     description: 'Filter results created after this date.',
   }),
+  filterCreatedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'createdAt',
+    description: 'Filter results created in the given date range.',
+  }),
   filterFields: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'fields',
@@ -60,6 +65,11 @@ export const sharedParameters = {
     name: 'publishedAtMin',
     description: 'Filter results published after this date.',
   }),
+  filterPublishedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'publishedAt',
+    description: 'Filter results published in the given date range.',
+  }),
   filterPublishedStatus: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'publishedStatus',
@@ -85,5 +95,10 @@ export const sharedParameters = {
     type: coda.ParameterType.Date,
     name: 'updatedAtMin',
     description: 'Filter results last updated after this date.',
+  }),
+  filterUpdatedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'updatedAt',
+    description: 'Filter results updated in the given date range.',
   }),
 };

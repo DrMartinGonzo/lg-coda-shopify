@@ -156,7 +156,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
    *===================================================================================================================== */
   pack.addSyncTable({
     name: 'Articles',
-    description: 'Return articles from this shop.',
+    description: 'Return Articles from this shop.',
     identityName: IDENTITY_ARTICLE,
     schema: ArticleSchema,
     formula: {

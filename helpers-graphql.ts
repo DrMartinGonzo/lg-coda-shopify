@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
-import { getShopifyRequestHeaders, wait } from './helpers';
-import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
+
+import { getShopifyRequestHeaders, getShopifyStorefrontRequestHeaders, wait } from './helpers';
+import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX, IS_ADMIN_RELEASE } from './constants';
 import {
   ShopifyGraphQlError,
   ShopifyGraphQlUserError,
@@ -9,8 +10,11 @@ import {
   ShopifyThrottledError,
 } from './shopifyErrors';
 import { ShopifyGraphQlRequestCost } from './types/Shopify';
-import { SyncTableGraphQlContinuation } from './types/tableSync';
+import { SyncTableGraphQlContinuation, SyncTableStorefrontContinuation } from './types/tableSync';
 import { FormatFunction } from './types/misc';
+
+// TODO: still not ready, calculate this max ?
+const ABSOLUTE_MAX_ENTRIES_PER_RUN = 100;
 
 export function idToGraphQlGid(resourceType: string, id: number) {
   if (id === undefined) return undefined;
@@ -25,9 +29,18 @@ export function graphQlGidToResourceName(graphQlId: string): string {
   return graphQlId.split('gid://shopify/')[1].split('/').pop();
 }
 
+export const pageInfoPart = `#graphql
+  pageInfo {
+    endCursor
+    hasNextPage
+  }`;
+export const userErrorsPart = `#graphql
+  userErrors {
+    field
+    message
+  }`;
+
 export function calcSyncTableMaxEntriesPerRun(prevContinuation: SyncTableGraphQlContinuation) {
-  // TODO: still not ready, calculate this max ?
-  const absoluteMax = 100;
   const startTime = Date.now();
   const { lastCost, lastThrottleStatus, lastMaxEntriesPerRun, lastSyncTime } = prevContinuation;
   const { restoreRate, currentlyAvailable: lastAvailablePoints, maximumAvailable } = lastThrottleStatus;
@@ -44,7 +57,7 @@ export function calcSyncTableMaxEntriesPerRun(prevContinuation: SyncTableGraphQl
   // const maxCost = Math.min(GRAPHQL_BUDGET__MAX, availablePoints);
   const maxCost = Math.min(GRAPHQL_BUDGET__MAX, lastAvailablePoints);
   const maxEntries = Math.floor(maxCost / costOneEntry);
-  return Math.min(absoluteMax, maxEntries);
+  return Math.min(ABSOLUTE_MAX_ENTRIES_PER_RUN, maxEntries);
 }
 
 /**
@@ -73,21 +86,28 @@ export async function handleSyncTableGraphQlResults(
   { nodes, extensions, pageInfo, extraContinuationData },
   currentMaxEntriesPerRun: number,
   formatFunction: FormatFunction,
-  context: coda.SyncExecutionContext
+  context: coda.SyncExecutionContext,
+  storeFront?: boolean
 ) {
   let result = [];
-  let continuation: SyncTableGraphQlContinuation = null;
+  let continuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation = null;
   const endTime = Date.now();
-  const {
-    requestedQueryCost,
-    throttleStatus: { restoreRate },
-  } = extensions.cost;
 
-  // repay the cost of the query
-  const waitMs = (requestedQueryCost / restoreRate) * 1000;
-  if (waitMs > 0) {
-    console.log(`Repay query cost by waiting ${waitMs / 1000}s`);
-    await wait(waitMs);
+  let requestedQueryCost: number;
+  let restoreRate: number;
+
+  if (!storeFront) {
+    requestedQueryCost = extensions.cost.requestedQueryCost;
+    restoreRate = extensions.cost.throttleStatus.restoreRate;
+  }
+
+  // repay the cost of the query if not Storefront
+  if (!storeFront && pageInfo && pageInfo.hasNextPage) {
+    const waitMs = (requestedQueryCost / restoreRate) * 1000;
+    if (waitMs > 0) {
+      console.log(`⏳ Repay query cost (${requestedQueryCost}) by waiting ${waitMs / 1000}s`);
+      await wait(waitMs);
+    }
   }
 
   if (nodes) {
@@ -96,16 +116,21 @@ export async function handleSyncTableGraphQlResults(
     if (pageInfo && pageInfo.hasNextPage) {
       continuation = {
         cursor: pageInfo.endCursor,
-        lastCost: {
-          requestedQueryCost: extensions.cost.requestedQueryCost,
-          actualQueryCost: extensions.cost.actualQueryCost,
-        },
-        lastMaxEntriesPerRun: currentMaxEntriesPerRun,
         lastSyncTime: endTime,
-        lastThrottleStatus: extensions.cost.throttleStatus,
         retryCount: 0,
         extraContinuationData,
       };
+      if (!storeFront) {
+        continuation = {
+          ...continuation,
+          lastCost: {
+            requestedQueryCost: extensions.cost.requestedQueryCost,
+            actualQueryCost: extensions.cost.actualQueryCost,
+          },
+          lastMaxEntriesPerRun: currentMaxEntriesPerRun,
+          lastThrottleStatus: extensions.cost.throttleStatus,
+        };
+      }
     }
   }
 
@@ -117,7 +142,7 @@ export async function handleSyncTableGraphQlResults(
 
 export async function handleSyncTableGraphQlError(
   error: Error,
-  prevContinuation: SyncTableGraphQlContinuation,
+  prevContinuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation,
   currentMaxEntriesPerRun: number,
   extraContinuationData: any
 ) {
@@ -126,7 +151,7 @@ export async function handleSyncTableGraphQlError(
   // If error qualifies for a retry, wait for next run and adjust maxEntriesPerRun
   const currRetries = prevContinuation?.retryCount ?? 0;
   if (currRetries < GRAPHQL_RETRIES__MAX && error instanceof ShopifyRetryableErrors) {
-    const continuation: SyncTableGraphQlContinuation = {
+    const continuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation = {
       ...prevContinuation,
       retryCount: currRetries + 1,
       extraContinuationData,
@@ -139,15 +164,15 @@ export async function handleSyncTableGraphQlError(
       const { restoreRate, maximumAvailable, currentlyAvailable } = error.cost.throttleStatus;
 
       let waitMs = 0;
-      const restoreAllPoints = true;
-      if (restoreAllPoints) {
+      const restoreAllPointsIfThrottled = true;
+      if (restoreAllPointsIfThrottled) {
         // restore all points
         waitMs = ((maximumAvailable - currentlyAvailable) / restoreRate) * 1000;
-        console.log(`TROTTLED : restore all points ${waitMs / 1000}s`);
+        console.log(`⏳ TROTTLED : restore all points by waiting ${waitMs / 1000}s`);
       } else {
         // repay query cost
         waitMs = (requestedQueryCost / restoreRate) * 1000;
-        console.log(`TROTTLED : Repay query cost by waiting ${waitMs / 1000}s`);
+        console.log(`⏳ TROTTLED : Repay query cost (${requestedQueryCost}) by waiting ${waitMs / 1000}s`);
       }
 
       await wait(waitMs);
@@ -164,10 +189,12 @@ export async function handleSyncTableGraphQlError(
       const maxCostError = error.originalError;
       const { maxCost, cost } = maxCostError.extensions;
       const diminishingFactor = 0.75;
-      // TODO: respect absoluteMax
-      continuation.reducedMaxEntriesPerRun = Math.max(
-        1,
-        Math.floor((maxCost / cost) * currentMaxEntriesPerRun * diminishingFactor)
+      continuation.reducedMaxEntriesPerRun = Math.min(
+        ABSOLUTE_MAX_ENTRIES_PER_RUN,
+        Math.max(1, Math.floor((maxCost / cost) * currentMaxEntriesPerRun * diminishingFactor))
+      );
+      console.log(
+        `⛔️ MAX_COST_EXCEEDED : Adjuste next query to run with ${continuation.reducedMaxEntriesPerRun} max entries`
       );
     }
 
@@ -175,8 +202,10 @@ export async function handleSyncTableGraphQlError(
       result: [],
       continuation,
     };
+  } else if (error instanceof coda.UserVisibleError) {
+    throw error;
   } else {
-    throw new coda.UserVisibleError(error.message);
+    throw error;
   }
 }
 
@@ -209,13 +238,15 @@ export async function makeGraphQlRequest(
     payload: any;
     cacheTtlSecs?: number;
     apiVersion?: string;
+    storeFront?: boolean;
   },
   context: coda.ExecutionContext
 ) {
+  const apiVersion = params.apiVersion ?? GRAPHQL_DEFAULT_API_VERSION;
   const options: coda.FetchRequest = {
     method: 'POST',
-    url: `${context.endpoint}/admin/api/${params.apiVersion ?? GRAPHQL_DEFAULT_API_VERSION}/graphql.json`,
-    headers: getShopifyRequestHeaders(context),
+    url: `${context.endpoint}${params.storeFront ? '' : '/admin'}/api/${apiVersion}/graphql.json`,
+    headers: params.storeFront ? getShopifyStorefrontRequestHeaders(context) : getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
   if (params.cacheTtlSecs !== undefined) {
@@ -223,34 +254,17 @@ export async function makeGraphQlRequest(
     options.forceCache = true;
   }
 
-  return context.fetcher.fetch(options);
-}
-
-export async function makeSyncTableGraphQlRequest(
-  params: {
-    payload: any;
-    cacheTtlSecs?: number;
-    apiVersion?: string;
-    formatFunction: FormatFunction;
-    maxEntriesPerRun: number;
-    prevContinuation: SyncTableGraphQlContinuation;
-    extraContinuationData?: any;
-    mainDataKey: string;
-  },
-  context: coda.SyncExecutionContext
-) {
-  console.log('prevContinuation', params.prevContinuation);
-  console.log('maxEntriesPerRun', params.maxEntriesPerRun);
+  if (IS_ADMIN_RELEASE) {
+    console.log(
+      `ℹ️ GraphQlRequest info:
+      apiVersion: ${apiVersion}
+      | storeFront: ${params.storeFront}
+      | payload: ${JSON.stringify(params.payload, null, 2)}`
+    );
+  }
 
   try {
-    const response = await makeGraphQlRequest(
-      {
-        payload: params.payload,
-        cacheTtlSecs: params.cacheTtlSecs,
-        apiVersion: params.apiVersion,
-      },
-      context
-    );
+    const response = await context.fetcher.fetch(options);
     const { body } = response;
     const { errors, extensions } = body;
 
@@ -273,16 +287,59 @@ export async function makeSyncTableGraphQlRequest(
       }
     }
 
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function makeSyncTableGraphQlRequest(
+  params: {
+    payload: any;
+    cacheTtlSecs?: number;
+    apiVersion?: string;
+    formatFunction: FormatFunction;
+    maxEntriesPerRun: number;
+    prevContinuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation;
+    extraContinuationData?: any;
+    mainDataKey: string;
+    storeFront?: boolean;
+    preProcess?: CallableFunction;
+  },
+  context: coda.SyncExecutionContext
+) {
+  if (IS_ADMIN_RELEASE) {
+    console.log(
+      `ℹ️ SyncTableGraphQlRequest info :
+      maxEntriesPerRun : ${params.maxEntriesPerRun}
+      | extraContinuationData : ${JSON.stringify(params.extraContinuationData, null, 2)}`
+    );
+  }
+
+  try {
+    const response = await makeGraphQlRequest(
+      {
+        payload: params.payload,
+        cacheTtlSecs: params.cacheTtlSecs,
+        apiVersion: params.apiVersion,
+        storeFront: params.storeFront,
+      },
+      context
+    );
+
     return await handleSyncTableGraphQlResults(
       {
-        nodes: response.body.data?.[params.mainDataKey]?.nodes,
+        nodes: params.preProcess
+          ? params.preProcess(response.body.data)
+          : response.body.data?.[params.mainDataKey]?.nodes,
         pageInfo: response.body.data?.[params.mainDataKey]?.pageInfo,
         extensions: response.body.extensions,
         extraContinuationData: params.extraContinuationData,
       },
       params.maxEntriesPerRun,
       params.formatFunction,
-      context
+      context,
+      params.storeFront
     );
   } catch (error) {
     return await handleSyncTableGraphQlError(

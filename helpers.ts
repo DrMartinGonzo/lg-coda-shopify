@@ -157,14 +157,17 @@ export function getObjectSchemaItemProp(objectSchema, key: string) {
   }
 }
 
-const getShopifyAccessToken = (context) => {
-  const invocationToken = context.invocationToken;
-  return '{{token-' + invocationToken + '}}';
-};
+const getShopifyAccessToken = (context) => '{{token-' + context.invocationToken + '}}';
 export const getShopifyRequestHeaders = (context) => {
   return {
     'Content-Type': 'application/json',
     'X-Shopify-Access-Token': getShopifyAccessToken(context),
+  };
+};
+export const getShopifyStorefrontRequestHeaders = (context) => {
+  return {
+    'Content-Type': 'application/json',
+    'Shopify-Storefront-Private-Token': getShopifyAccessToken(context),
   };
 };
 

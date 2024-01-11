@@ -23,8 +23,22 @@ export const OPTIONS_ORDER_FINANCIAL_STATUS = [
 ];
 export const OPTIONS_ORDER_FULFILLMENT_STATUS = ['any', 'shipped', 'partial', 'unshipped', 'unfulfilled'];
 
-export const OPTIONS_PUBLISHED_STATUS = ['any', 'published', 'unpublished'];
-export const OPTIONS_PRODUCT_STATUS = ['any', 'active', 'archived', 'draft'];
+export const OPTIONS_PUBLISHED_STATUS = [
+  { display: 'Any', value: 'any' },
+  { display: 'Published', value: 'published' },
+  { display: 'Unpublished', value: 'unpublished' },
+];
+
+// The status of the product. Valid values:
+//  - ACTIVE: The product is ready to sell and is available to customers on the online store, sales channels, and apps. By default, existing products are set to active.
+//  - ARCHIVED: The product is no longer being sold and isn't available to customers on sales channels and apps.
+//  - DRAFT: The product isn't ready to sell and is unavailable to customers on sales channels and apps. By default, duplicated and unarchived products are set to draft.
+export const OPTIONS_PRODUCT_STATUS = [
+  { display: 'All', value: '*' },
+  { display: 'Active', value: 'ACTIVE' },
+  { display: 'Archived', value: 'ARCHIVED' },
+  { display: 'Draft', value: 'DRAFT' },
+];
 
 export const OPTIONS_FILE_TYPE = [
   { display: 'Generic files', value: 'GENERIC_FILE' },
@@ -71,6 +85,7 @@ export const RESOURCE_ORDER = 'Order';
 export const RESOURCE_PAGE = 'OnlineStorePage';
 export const RESOURCE_PRODUCT = 'Product';
 export const RESOURCE_PRODUCT_VARIANT = 'ProductVariant';
+export const RESOURCE_SHOP = 'Shop';
 
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
@@ -82,6 +97,7 @@ export const GRAPHQL_DEFAULT_API_VERSION = '2023-04';
 
 // TODO: rename these
 export const CACHE_DAY = 86400; // 1 day
+export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
 export const CACHE_MINUTE = 60; // 1 minute
 export const CACHE_SINGLE_FETCH = 10; // 10s
 
@@ -130,3 +146,7 @@ export const FIELD_TYPES = {
   // list.volume,
   // list.weight'
 };
+
+export const PACK_PREFIX_KEY = 'lgs_';
+export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
+export const METAFIELD_GID_PREFIX_KEY = `${PACK_PREFIX_KEY}meta_gid__`;

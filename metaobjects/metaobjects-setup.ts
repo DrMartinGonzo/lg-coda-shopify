@@ -9,7 +9,7 @@ import {
   getMetaobjectSyncTableDisplayUrl,
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   getMetaobjectSyncTableSchema,
-  formatMetaobjectFieldForApi,
+  formatMetafieldForApi,
   updateMetaObject,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
@@ -81,7 +81,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
             if (!fieldDefinition) throw new Error('fieldDefinition not found');
             fields.push({
               key,
-              value: formatMetaobjectFieldForApi(key, value, fieldDefinition, context.sync.schema),
+              value: formatMetafieldForApi(key, value, fieldDefinition, context.sync.schema),
             });
           });
 

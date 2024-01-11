@@ -21,12 +21,6 @@ import {
   CACHE_DAY,
   CACHE_SINGLE_FETCH,
   FIELD_TYPES,
-  IDENTITY_COLLECTION,
-  IDENTITY_FILE,
-  IDENTITY_METAOBJECT,
-  IDENTITY_PAGE,
-  IDENTITY_PRODUCT,
-  IDENTITY_PRODUCT_VARIANT,
   NOT_FOUND,
   RESOURCE_PRODUCT,
   RESOURCE_PRODUCT_VARIANT,
@@ -46,6 +40,7 @@ import {
 import { mapMetaobjectFieldToSchemaProperty } from './metaobjects-schema';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { FormatFunction } from '../types/misc';
+import { ShopifyMetaobjectFieldDefinition } from '../types/Shopify';
 
 /**====================================================================================================================
  *    Autocomplete functions
@@ -82,7 +77,7 @@ export async function autocompleteMetaobjectType(context: coda.ExecutionContext,
 /**====================================================================================================================
  *    Formatting functions
  *===================================================================================================================== */
-function formatMetaobjectFieldForSchema(value: any, schemaItemProp, fieldDefinition) {
+export function formatMetaFieldForSchema(value: any, schemaItemProp, fieldDefinition) {
   if (!value) return;
 
   const { type, codaType } = schemaItemProp;
@@ -158,18 +153,19 @@ function formatMetaobjectFieldForSchema(value: any, schemaItemProp, fieldDefinit
 function makeFormatMetaobjectForSchemaFunction(
   type: string,
   optionalFieldsKeys: string[],
-  fieldDefinitions,
-  context: coda.SyncExecutionContext
+  fieldDefinitions
 ): FormatFunction {
-  return function (node: any) {
+  return function (node: any, context) {
     const data = {
       ...node,
       admin_url: `${context.endpoint}/admin/content/entries/${type}/${graphQlGidToId(node.id)}`,
     };
     optionalFieldsKeys.forEach((key) => {
+      if (!node[key]) return;
+
       // edge case for handle field
       if (key === 'handle') {
-        data[key] = node[key].value;
+        data[key] = node[key];
         return;
       }
 
@@ -189,8 +185,8 @@ function makeFormatMetaobjectForSchemaFunction(
 
       data[key] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaobjectFieldForSchema(v, schemaItemProp.items, fieldDefinition))
-          : formatMetaobjectFieldForSchema(parsedValue, schemaItemProp, fieldDefinition);
+          ? parsedValue.map((v) => formatMetaFieldForSchema(v, schemaItemProp.items, fieldDefinition))
+          : formatMetaFieldForSchema(parsedValue, schemaItemProp, fieldDefinition);
     });
 
     return data;
@@ -240,13 +236,20 @@ function formatMeasurementForApi(
   };
 }
 
-export function formatMetaobjectFieldForApi(
-  key: string,
+/**
+ * This function is the same for a metaobject field and a metafield
+ * @param propKey the Coda column prop key
+ * @param value the Coda column cell value
+ * @param fieldDefinition the field definition fetched from Shopify
+ * @param codaSchema
+ */
+export function formatMetafieldForApi(
+  propKey: string,
   value: any,
   fieldDefinition,
   codaSchema: coda.ArraySchema<coda.Schema>
-) {
-  const codaSchemaItemProp = getObjectSchemaItemProp(codaSchema, key);
+): string {
+  const codaSchemaItemProp = getObjectSchemaItemProp(codaSchema, propKey);
   const isArrayCoda = codaSchemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
   const isArrayApi = fieldDefinition.type.name.startsWith('list.');
   const isArrayBoth = isArrayCoda && isArrayApi;
@@ -328,7 +331,7 @@ export function formatMetaobjectFieldForApi(
       break;
   }
 
-  throw new coda.UserVisibleError(`Unable to format field for key ${key}.`);
+  throw new coda.UserVisibleError(`Unable to format field for key ${propKey}.`);
 }
 
 /**====================================================================================================================
@@ -362,7 +365,7 @@ export async function getMetaobjectSyncTableDynamicUrls(context: coda.SyncExecut
 
 export async function getMetaobjectSyncTableName(context: coda.SyncExecutionContext) {
   const { type } = await getMetaobjectSyncTableDetails(context.sync.dynamicUrl, context);
-  return `Metaobject_${capitalizeFirstChar(type)}`;
+  return `Metaobjects_${capitalizeFirstChar(type)}`;
 }
 
 export async function getMetaobjectSyncTableDisplayUrl(context: coda.SyncExecutionContext) {
@@ -462,7 +465,7 @@ export async function getMetaObjectDefinitionByType(type: string, context: coda.
 export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
   metaObjectDefinitionGid: string,
   context: coda.ExecutionContext
-) {
+): Promise<ShopifyMetaobjectFieldDefinition[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitionsFromMetaobjectDefinition,
     variables: {
@@ -473,7 +476,10 @@ export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
   return response.body.data.metaobjectDefinition.fieldDefinitions;
 }
 
-export async function getMetaObjectFieldDefinitionsByMetaobject(metaObjectGid: string, context: coda.ExecutionContext) {
+export async function getMetaObjectFieldDefinitionsByMetaobject(
+  metaObjectGid: string,
+  context: coda.ExecutionContext
+): Promise<ShopifyMetaobjectFieldDefinition[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitions,
     variables: {
@@ -484,7 +490,10 @@ export async function getMetaObjectFieldDefinitionsByMetaobject(metaObjectGid: s
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
-export async function getMetaObjectFieldDefinitionsByType(type: string, context: coda.ExecutionContext) {
+export async function getMetaObjectFieldDefinitionsByType(
+  type: string,
+  context: coda.ExecutionContext
+): Promise<ShopifyMetaobjectFieldDefinition[]> {
   const metaobjectDefinitionByType = await getMetaObjectDefinitionByType(type, context);
   return metaobjectDefinitionByType.fieldDefinitions;
 }
@@ -510,6 +519,8 @@ async function fetchAllMetaObjectDefinitions(batchSize = 20, context: coda.Execu
 export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+
+  // TODO: get type & fieldDefinitions in one GraphQL call
   const { type } =
     prevContinuation?.extraContinuationData ?? (await getMetaobjectSyncTableDetails(context.sync.dynamicUrl, context));
   const fieldDefinitions =
@@ -541,7 +552,7 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
   return makeSyncTableGraphQlRequest(
     {
       payload,
-      formatFunction: makeFormatMetaobjectForSchemaFunction(type, optionalFieldsKeys, fieldDefinitions, context),
+      formatFunction: makeFormatMetaobjectForSchemaFunction(type, optionalFieldsKeys, fieldDefinitions),
       maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'metaobjects',

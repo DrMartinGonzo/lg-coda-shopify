@@ -3,7 +3,7 @@
   "version": "0.0.20",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
-    "push": "npx coda upload --timerStrategy=fake pack.ts",
+    "push": "npx coda upload pack.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "npx patch-package"
   },
