@@ -178,6 +178,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
       execute: syncArticles,
       maxUpdateBatchSize: 10,
       executeUpdate: async function ([], updates, context: coda.SyncExecutionContext) {
+        // TODO: try to reuse existing updateArticle function
         const jobs = updates.map(async (update) => {
           const { updatedFields } = update;
 
@@ -293,6 +294,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.Object,
+    //! withIdentity breaks relations when updating
     // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
     schema: ArticleSchema,
     execute: updateArticle,

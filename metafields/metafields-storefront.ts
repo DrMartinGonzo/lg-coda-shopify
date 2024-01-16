@@ -1,0 +1,51 @@
+import { MetafieldFieldsFragment } from './metafields-graphql';
+
+export const makeQueryMetafieldsStorefront = (type: string) => {
+  return /* GraphQL */ `
+    query GetResourceMetafields($metafieldsIdentifiers: [HasMetafieldsIdentifier!]!, $cursor: String) {
+      ${type}(first: 200, after: $cursor) {
+        nodes {
+          id
+          metafields(identifiers: $metafieldsIdentifiers) {
+            ...metafieldFields
+          }
+        }
+
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+
+    ${MetafieldFieldsFragment}
+  `;
+};
+
+export const makeQueryVariantMetafieldsStorefront = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
+
+  fragment variantFields on ProductVariant {
+    id
+    metafields(identifiers: $metafieldsIdentifiers) {
+      ...metafieldFields
+    }
+  }
+
+  query queryVariantMetafields($metafieldsIdentifiers: [HasMetafieldsIdentifier!]!, $cursor: String) {
+    products(first: 200, after: $cursor) {
+      nodes {
+        title
+        variants(first: 200) {
+          nodes {
+            ...variantFields
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;

@@ -1,12 +1,14 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { FIELD_TYPES, IDENTITY_METAOBJECT, IDENTITY_PRODUCT, PACK_ID } from '../constants';
+import { FIELD_TYPES, IDENTITY_METAOBJECT, PACK_ID } from '../constants';
 import { ProductReference } from '../products/products-schema';
 import { PageReference } from '../pages/pages-schema';
 import { CollectionReference } from '../collections/collections-schema';
 import { ProductVariantReference } from '../productVariants/productVariants-schema';
 import { FileReference } from '../files/files-schema';
 import { getUnitMap } from '../helpers';
+
+import type { MetafieldDefinition, MetaobjectFieldDefinition } from '../types/admin.types';
 
 export const MeasurementSchema = coda.makeObjectSchema({
   properties: {
@@ -61,158 +63,286 @@ export function getMetaobjectReferenceSchema(fieldDefinition) {
   });
 }
 
-export function mapMetaobjectFieldToSchemaProperty(fieldDefinition) {
+export function mapMetaFieldToSchemaProperty(
+  fieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition
+): coda.Schema & coda.ObjectSchemaProperty {
   const typeName = fieldDefinition.type.name;
-
   // Check if typeName begins with 'list.' which means it's an array
   // If it is, remove 'list.' from typeName to get 'raw' field type
   const isArray = typeName.startsWith('list.');
-  const fieldType = isArray ? typeName.replace('list.', '') : typeName;
+  const typeNameNoList = isArray ? typeName.replace('list.', '') : typeName;
 
-  let property = {
+  const baseProperty = {
     fromKey: fieldDefinition.key,
     description: fieldDefinition.description,
     fixedId: fieldDefinition.key,
-  } as coda.Schema & coda.ObjectSchemaProperty;
+  };
 
-  let extraProps = {};
-  switch (fieldType) {
-    // TEXT
-    case FIELD_TYPES.single_line_text_field:
-    case FIELD_TYPES.multi_line_text_field:
-    case FIELD_TYPES.json:
-      extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
-      break;
+  // NON ARRAY PROPERTIES
+  if (!isArray) {
+    switch (typeName) {
+      // TEXT
+      case FIELD_TYPES.single_line_text_field:
+      case FIELD_TYPES.multi_line_text_field:
+      case FIELD_TYPES.json:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          mutable: true,
+        };
 
-    case FIELD_TYPES.rich_text_field:
-      extraProps = { type: coda.ValueType.String, codaType: coda.ValueHintType.Html } as coda.StringSchema;
-      break;
+      case FIELD_TYPES.rich_text_field:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          codaType: coda.ValueHintType.Html,
+        };
 
-    // MEASUREMENT
-    case FIELD_TYPES.weight:
-    case FIELD_TYPES.dimension:
-    case FIELD_TYPES.volume:
-      extraProps = {
-        type: coda.ValueType.String,
-        mutable: true,
-      } as coda.StringSchema;
-      property.description += `${property.description ? '\n' : ''}Valid units are ${Object.values(
-        getUnitMap(fieldType)
-      ).join(', ')}.`;
-      break;
+      // MEASUREMENT
+      case FIELD_TYPES.weight:
+      case FIELD_TYPES.dimension:
+      case FIELD_TYPES.volume:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          mutable: true,
+          description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
+            getUnitMap(typeNameNoList)
+          ).join(', ')}.`,
+        };
 
-    // URL
-    case FIELD_TYPES.url:
-      extraProps = {
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Url,
-        mutable: true,
-      } as coda.LinkSchema;
-      break;
+      // URL
+      case FIELD_TYPES.url:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          codaType: coda.ValueHintType.Url,
+          mutable: true,
+        };
 
-    // COLOR
-    case FIELD_TYPES.color:
-      extraProps = { type: coda.ValueType.String, mutable: true } as coda.StringSchema;
-      break;
+      // COLOR
+      case FIELD_TYPES.color:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          mutable: true,
+        };
 
-    // RATING
-    case FIELD_TYPES.rating:
-      // const maximumStr = fieldDefinition.validations.find((v) => v.name === 'scale_max')?.scale_max;
-      extraProps = {
-        type: coda.ValueType.Number,
-        // codaType: coda.ValueHintType.Scale,
-        // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
-        mutable: true,
-      } as coda.NumberSchema;
-      break;
+      // RATING
+      case FIELD_TYPES.rating:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Number,
+          // codaType: coda.ValueHintType.Scale,
+          // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
+          mutable: true,
+        };
 
-    // NUMBER
-    case FIELD_TYPES.number_integer:
-      extraProps = {
-        type: coda.ValueType.Number,
-        precision: 0,
-        mutable: true,
-      } as coda.NumberSchema;
-      break;
-    case FIELD_TYPES.number_decimal:
-      extraProps = {
-        type: coda.ValueType.Number,
-        mutable: true,
-      } as coda.NumberSchema;
-      break;
+      // NUMBER
+      case FIELD_TYPES.number_integer:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Number,
+          precision: 0,
+          mutable: true,
+        };
+      case FIELD_TYPES.number_decimal:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Number,
+          mutable: true,
+        };
 
-    // MONEY
-    case FIELD_TYPES.money:
-      extraProps = {
-        type: coda.ValueType.Number,
-        codaType: coda.ValueHintType.Currency,
-        mutable: true,
-      } as coda.CurrencySchema;
-      break;
+      // MONEY
+      case FIELD_TYPES.money:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Number,
+          codaType: coda.ValueHintType.Currency,
+          mutable: true,
+        };
 
-    // TRUE_FALSE
-    case FIELD_TYPES.boolean:
-      extraProps = {
-        type: coda.ValueType.Boolean,
-        mutable: true,
-      } as coda.BooleanSchema;
-      break;
+      // TRUE_FALSE
+      case FIELD_TYPES.boolean:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Boolean,
+          mutable: true,
+        };
 
-    // REFERENCE
-    case FIELD_TYPES.collection_reference:
-      extraProps = { ...CollectionReference, mutable: true };
-      break;
-    case FIELD_TYPES.metaobject_reference:
-      extraProps = { ...getMetaobjectReferenceSchema(fieldDefinition), mutable: true };
-      break;
-    case FIELD_TYPES.page_reference:
-      extraProps = { ...PageReference, mutable: true };
-      break;
-    case FIELD_TYPES.product_reference:
-      extraProps = { ...ProductReference, mutable: true };
-      break;
-    case FIELD_TYPES.variant_reference:
-      extraProps = { ...ProductVariantReference, mutable: true };
-      break;
-    case FIELD_TYPES.file_reference:
-      extraProps = { ...FileReference, mutable: true };
-      break;
+      // DATE_TIME
+      case FIELD_TYPES.date:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          codaType: coda.ValueHintType.Date,
+          mutable: true,
+        };
 
-    // DATE_TIME
-    case FIELD_TYPES.date:
-      extraProps = {
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Date,
-        mutable: true,
-      } as coda.StringDateSchema;
-      break;
+      case FIELD_TYPES.date_time:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.String,
+          codaType: coda.ValueHintType.DateTime,
+          mutable: true,
+        };
 
-    case FIELD_TYPES.date_time:
-      extraProps = {
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.DateTime,
-        mutable: true,
-      } as coda.StringDateTimeSchema;
-      break;
+      // REFERENCE
+      case FIELD_TYPES.collection_reference:
+        return {
+          ...baseProperty,
+          ...CollectionReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.metaobject_reference:
+        return {
+          ...baseProperty,
+          ...getMetaobjectReferenceSchema(fieldDefinition),
+          mutable: true,
+        };
+      case FIELD_TYPES.page_reference:
+        return {
+          ...baseProperty,
+          ...PageReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.product_reference:
+        return {
+          ...baseProperty,
+          ...ProductReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.variant_reference:
+        return {
+          ...baseProperty,
+          ...ProductVariantReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.file_reference:
+        return {
+          ...baseProperty,
+          ...FileReference,
+          mutable: true,
+        };
 
-    default:
-      extraProps = { type: coda.ValueType.String } as coda.StringSchema;
-      break;
+      default:
+        return { ...baseProperty, type: coda.ValueType.String };
+    }
   }
+  // ARRAY PROPERTIES
+  else {
+    switch (typeName) {
+      case FIELD_TYPES.list_single_line_text_field:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String },
+        } as coda.Schema & coda.ObjectSchemaProperty;
+      case FIELD_TYPES.list_weight:
+      case FIELD_TYPES.list_dimension:
+      case FIELD_TYPES.list_volume:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String },
+          description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
+            getUnitMap(typeNameNoList)
+          ).join(', ')}.`,
+        };
+      case FIELD_TYPES.list_url:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+        };
+      case FIELD_TYPES.list_color:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String },
+        };
+      case FIELD_TYPES.list_rating:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.Number },
+        };
+      case FIELD_TYPES.list_number_integer:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.Number, precision: 0 },
+        };
+      case FIELD_TYPES.list_number_decimal:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.Number },
+        };
+      case FIELD_TYPES.list_collection_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: CollectionReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.list_metaobject_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: getMetaobjectReferenceSchema(fieldDefinition),
+          mutable: true,
+        };
+      case FIELD_TYPES.list_page_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: PageReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.list_product_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: ProductReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.list_variant_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: ProductVariantReference,
+          mutable: true,
+        };
+      case FIELD_TYPES.list_file_reference:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: FileReference,
+          mutable: true,
+        };
 
-  if (isArray) {
-    property = {
-      ...property,
-      type: coda.ValueType.Array,
-      items: extraProps,
-      mutable: extraProps['mutable'],
-    } as coda.Schema & coda.ObjectSchemaProperty;
-  } else {
-    property = {
-      ...property,
-      ...extraProps,
-    };
+      // DATE_TIME
+      case FIELD_TYPES.list_date:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Date },
+        };
+
+      case FIELD_TYPES.list_date_time:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+        };
+
+      default:
+        return {
+          ...baseProperty,
+          type: coda.ValueType.Array,
+          items: { type: coda.ValueType.String },
+        };
+    }
   }
-
-  return property;
 }

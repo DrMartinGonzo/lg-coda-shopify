@@ -1,0 +1,3 @@
+# .graphqlrc.yml
+schema: "./types/admin.schema.json"
+documents: "./**/*-graphql.ts"

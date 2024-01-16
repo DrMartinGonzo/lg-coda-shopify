@@ -2,16 +2,21 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CollectSchema, CollectionSchema } from './collections-schema';
 import {
-  syncCollections,
   syncCollects,
-  fetchCollection,
-  updateCollection,
+  actionUpdateCollection,
+  collectionSyncTableDynamicOptions,
+  syncCollectionsGraphQlAdmin,
+  getCollectionType,
   deleteCollection,
   createCollection,
+  formatCollectionForSchemaFromRestApi,
+  fetchCollection,
 } from './collections-functions';
 
-import { IDENTITY_COLLECTION, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { IDENTITY_COLLECTION } from '../constants';
 import { sharedParameters } from '../shared-parameters';
+import { graphQlGidToId } from '../helpers-graphql';
+import { cleanQueryParams } from '../helpers-rest';
 
 const parameters = {
   collectionGID: coda.makeParameter({
@@ -22,9 +27,7 @@ const parameters = {
 };
 
 export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
-  /**====================================================================================================================
-   *    Sync tables
-   *===================================================================================================================== */
+  // #region Sync tables
   pack.addSyncTable({
     name: 'Collects',
     description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
@@ -47,9 +50,10 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Collections',
     description:
-      'Return Collectionss from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse.',
+      'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse.',
     identityName: IDENTITY_COLLECTION,
     schema: CollectionSchema,
+    dynamicOptions: collectionSyncTableDynamicOptions,
     formula: {
       name: 'SyncCollections',
       description: '<Help text for the sync formula, not show to the user>',
@@ -99,11 +103,11 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
       },
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Actions
-   *===================================================================================================================== */
+  // #region Actions
   // TODO: finish adding all updatable parameters
+  // UpdateCollection Action
   pack.addFormula({
     name: 'UpdateCollection',
     description: 'Update an existing Shopify collection and return the updated data.',
@@ -149,6 +153,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     },
   });
 
+  // CreateCollection Action
   pack.addFormula({
     name: 'CreateCollection',
     description: `Create a new Shopify Collection and return GraphQl GID.`,
@@ -186,23 +191,23 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: async ([title, handle, body_html, template_suffix, published], context) => {
-      const response = await createCollection(
-        {
-          title,
-          handle,
-          body_html,
-          template_suffix,
-          published,
-        },
-        context
-      );
-      const { body } = response;
-      return body.custom_collection.admin_graphql_api_id;
+    execute: async function ([title, handle, body_html, template_suffix, published], context) {
+      const params = cleanQueryParams({
+        title,
+        handle,
+        body_html,
+        template_suffix,
+        published,
+      });
+
+      // validateCollectionParams(params);
+
+      const response = await createCollection(params, context);
+      return response.body.custom_collection.admin_graphql_api_id;
     },
   });
 
-  // an action to delete a collection
+  // DeleteCollection Action
   pack.addFormula({
     name: 'DeleteCollection',
     description: 'Delete an existing Shopify Collection and return true on success.',
@@ -210,14 +215,16 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     isAction: true,
     resultType: coda.ValueType.Boolean,
     execute: async function ([collectionGid], context) {
-      await deleteCollection([collectionGid], context);
+      const collectionId = graphQlGidToId(collectionGid);
+      const collectionType = await getCollectionType(collectionGid, context);
+      await deleteCollection(collectionId, collectionType, context);
       return true;
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Formulas
-   *===================================================================================================================== */
+  // #region Formulas
+  // Collection Formula
   pack.addFormula({
     name: 'Collection',
     description: 'Return a single collection from this shop.',
@@ -229,15 +236,23 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: CollectionSchema,
-    execute: fetchCollection,
+    execute: async function ([collectionGid], context) {
+      const collectionId = graphQlGidToId(collectionGid);
+      const response = await fetchCollection(collectionId, context);
+      if (response.body.collection) {
+        return formatCollectionForSchemaFromRestApi(response.body.collection, context);
+      }
+    },
   });
 
-  /**====================================================================================================================
-   *    Column formats
-   *===================================================================================================================== */
+  // #endregion
+
+  // #region Column formats
+  // Collection Column Format
   pack.addColumnFormat({
     name: 'Collection',
     instructions: 'Paste the GraphQL GID of the collection into the column.',
     formulaName: 'Collection',
   });
+  // #endregion
 };

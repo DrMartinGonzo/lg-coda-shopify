@@ -1,30 +1,15 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
-import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-import {
-  capitalizeFirstChar,
-  extractValueAndUnitFromMeasurementString,
-  getObjectSchemaItemProp,
-  unitToShortName,
-} from '../helpers';
+import { capitalizeFirstChar, getObjectSchemaItemProp } from '../helpers';
 import {
   calcSyncTableMaxEntriesPerRun,
   makeGraphQlRequest,
   handleGraphQlError,
-  handleGraphQlUserError,
   makeSyncTableGraphQlRequest,
   graphQlGidToId,
-  idToGraphQlGid,
 } from '../helpers-graphql';
-import {
-  CACHE_DAY,
-  CACHE_SINGLE_FETCH,
-  FIELD_TYPES,
-  NOT_FOUND,
-  RESOURCE_PRODUCT,
-  RESOURCE_PRODUCT_VARIANT,
-} from '../constants';
+import { CACHE_DAY, CACHE_SINGLE_FETCH, OPTIONS_METAOBJECT_STATUS } from '../constants';
 import {
   buildQueryAllMetaObjectsWithFields,
   createMetaobjectMutation,
@@ -37,14 +22,20 @@ import {
   querySyncTableDetails,
   updateMetaobjectMutation,
 } from './metaobjects-graphql';
-import { mapMetaobjectFieldToSchemaProperty } from './metaobjects-schema';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
-import { FormatFunction } from '../types/misc';
-import { ShopifyMetaobjectFieldDefinition } from '../types/Shopify';
+import { mapMetaFieldToSchemaProperty } from './metaobjects-schema';
+import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
 
-/**====================================================================================================================
- *    Autocomplete functions
- *===================================================================================================================== */
+import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type {
+  MetaobjectCreateInput,
+  MetaobjectDefinition,
+  MetaobjectFieldDefinition,
+  MetaobjectFieldInput,
+  MetaobjectStatus,
+  MetaobjectUpdateInput,
+} from '../types/admin.types';
+
+// #region Autocomplete functions
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
   context: coda.ExecutionContext,
   search: string,
@@ -73,101 +64,68 @@ export async function autocompleteMetaobjectType(context: coda.ExecutionContext,
   const results = await getMetaObjectTypes(context);
   return coda.autocompleteSearchObjects(search, results, 'name', 'type');
 }
+// #endregion
 
-/**====================================================================================================================
- *    Formatting functions
- *===================================================================================================================== */
-export function formatMetaFieldForSchema(value: any, schemaItemProp, fieldDefinition) {
-  if (!value) return;
+// #region Formatting functions
+export function formatMetaobjectUpdateInput(
+  handle: string,
+  status: string,
+  metaobjectFieldInput: MetaobjectFieldInput[]
+): MetaobjectUpdateInput {
+  const metaobjectUpdateInput: MetaobjectUpdateInput = {};
 
-  const { type, codaType } = schemaItemProp;
-  const isArrayCoda = schemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
-  const isArrayApi = fieldDefinition.type.name.startsWith('list.');
-  const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
-  // let formattedValue: any;
-
-  switch (fieldType) {
-    // TEXT
-    // URL
-    // COLOR
-    // NUMBER
-    // DATE_TIME
-    // TRUE_FALSE
-    case FIELD_TYPES.single_line_text_field:
-    case FIELD_TYPES.multi_line_text_field:
-    case FIELD_TYPES.url:
-    case FIELD_TYPES.color:
-    case FIELD_TYPES.number_integer:
-    case FIELD_TYPES.number_decimal:
-    case FIELD_TYPES.date:
-    case FIELD_TYPES.date_time:
-    case FIELD_TYPES.boolean:
-      return value;
-
-    case FIELD_TYPES.rich_text_field:
-      return convertSchemaToHtml(value);
-
-    case FIELD_TYPES.json:
-      return JSON.stringify(value);
-
-    // RATING
-    case FIELD_TYPES.rating:
-      return value.value;
-
-    // MONEY
-    case FIELD_TYPES.money:
-      return value.amount;
-
-    // REFERENCE
-    case FIELD_TYPES.collection_reference:
-    case FIELD_TYPES.page_reference:
-      return {
-        admin_graphql_api_id: value,
-        title: NOT_FOUND,
-      };
-    case FIELD_TYPES.file_reference:
-      return {
-        id: value,
-        name: NOT_FOUND,
-      };
-    case FIELD_TYPES.metaobject_reference:
-      return {
-        graphql_gid: value,
-        name: NOT_FOUND,
-      };
-    case FIELD_TYPES.product_reference:
-    case FIELD_TYPES.variant_reference:
-      return {
-        id: graphQlGidToId(value),
-        title: NOT_FOUND,
-      };
-
-    // MEASUREMENT
-    case FIELD_TYPES.weight:
-    case FIELD_TYPES.dimension:
-    case FIELD_TYPES.volume:
-      return `${value.value}${unitToShortName(value.unit)}`;
+  if (handle && handle !== '') {
+    metaobjectUpdateInput.handle = handle;
   }
+  if (status && status !== '') {
+    metaobjectUpdateInput.capabilities = { publishable: { status: status as MetaobjectStatus } };
+  }
+  if (metaobjectFieldInput && metaobjectFieldInput.length) {
+    metaobjectUpdateInput.fields = metaobjectFieldInput;
+  }
+
+  return metaobjectUpdateInput;
 }
 
-function makeFormatMetaobjectForSchemaFunction(
+export function formatMetaobjectCreateInputInput(
+  type: string,
+  handle: string,
+  status: string,
+  metaobjectFieldInput: MetaobjectFieldInput[]
+): MetaobjectCreateInput {
+  const metaobjectCreateInput: MetaobjectCreateInput = { type };
+
+  if (handle && handle !== '') {
+    metaobjectCreateInput.handle = handle;
+  }
+  if (status && status !== '') {
+    metaobjectCreateInput.capabilities = { publishable: { status: status as MetaobjectStatus } };
+  }
+  if (metaobjectFieldInput && metaobjectFieldInput.length) {
+    metaobjectCreateInput.fields = metaobjectFieldInput;
+  }
+
+  return metaobjectCreateInput;
+}
+
+function formatMetaobjectForSchemaFromGraphQlApi(
+  node: any,
   type: string,
   optionalFieldsKeys: string[],
-  fieldDefinitions
-): FormatFunction {
-  return function (node: any, context) {
-    const data = {
-      ...node,
-      admin_url: `${context.endpoint}/admin/content/entries/${type}/${graphQlGidToId(node.id)}`,
-    };
-    optionalFieldsKeys.forEach((key) => {
-      if (!node[key]) return;
+  fieldDefinitions,
+  context: coda.SyncExecutionContext
+) {
+  let data = {
+    ...node,
+    admin_url: `${context.endpoint}/admin/content/entries/${type}/${graphQlGidToId(node.id)}`,
+    status: node.capabilities?.publishable?.status,
+  };
 
-      // edge case for handle field
-      if (key === 'handle') {
-        data[key] = node[key];
-        return;
-      }
+  optionalFieldsKeys
+    // edge case for handle field
+    .filter((k) => k !== 'handle')
+    .forEach((key) => {
+      if (!node[key]) return;
 
       // check if node[key] has 'value' property
       const value = node[key].hasOwnProperty('value') ? node[key].value : node[key];
@@ -185,158 +143,15 @@ function makeFormatMetaobjectForSchemaFunction(
 
       data[key] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaFieldForSchema(v, schemaItemProp.items, fieldDefinition))
-          : formatMetaFieldForSchema(parsedValue, schemaItemProp, fieldDefinition);
+          ? parsedValue.map((v) => formatMetaFieldValueForSchema(v, schemaItemProp.items, fieldDefinition))
+          : formatMetaFieldValueForSchema(parsedValue, schemaItemProp, fieldDefinition);
     });
 
-    return data;
-  };
+  return data;
 }
+// #endregion
 
-interface ShopifyRatingField {
-  scale_min: number;
-  scale_max: number;
-  value: number;
-}
-function formatRatingForApi(value: number, scale_min: number, scale_max: number): ShopifyRatingField {
-  return {
-    scale_min: scale_min,
-    scale_max: scale_max,
-    value: value,
-  };
-}
-interface ShopifyMoneyField {
-  currency_code: string;
-  amount: number;
-}
-function formatMoneyForApi(amount: number, currency_code: string): ShopifyMoneyField {
-  return {
-    amount,
-    currency_code,
-  };
-}
-interface ShopifyMeasurementField {
-  unit: string;
-  value: number;
-}
-
-/**
- * Format a Measurement cell value for GraphQL Api
- * @param string the string entered by user in format "{value}{unit}" with eventual spaces between
- * @param measurementType the measurement field type, can be 'weight', 'dimension' or 'volume'
- */
-function formatMeasurementForApi(
-  string: string,
-  measurementType: 'weight' | 'dimension' | 'volume'
-): ShopifyMeasurementField {
-  const { value, unit, unitFull } = extractValueAndUnitFromMeasurementString(string, measurementType);
-  return {
-    value,
-    unit: unitFull,
-  };
-}
-
-/**
- * This function is the same for a metaobject field and a metafield
- * @param propKey the Coda column prop key
- * @param value the Coda column cell value
- * @param fieldDefinition the field definition fetched from Shopify
- * @param codaSchema
- */
-export function formatMetafieldForApi(
-  propKey: string,
-  value: any,
-  fieldDefinition,
-  codaSchema: coda.ArraySchema<coda.Schema>
-): string {
-  const codaSchemaItemProp = getObjectSchemaItemProp(codaSchema, propKey);
-  const isArrayCoda = codaSchemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
-  const isArrayApi = fieldDefinition.type.name.startsWith('list.');
-  const isArrayBoth = isArrayCoda && isArrayApi;
-  const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
-
-  switch (fieldType) {
-    // TEXT
-    // URL
-    // COLOR
-    // NUMBER
-    // DATE_TIME
-    // TRUE_FALSE
-    case FIELD_TYPES.single_line_text_field:
-    case FIELD_TYPES.multi_line_text_field:
-    case FIELD_TYPES.url:
-    case FIELD_TYPES.color:
-    case FIELD_TYPES.number_integer:
-    case FIELD_TYPES.number_decimal:
-    case FIELD_TYPES.date:
-    case FIELD_TYPES.date_time:
-    case FIELD_TYPES.boolean:
-    case FIELD_TYPES.json:
-      return isArrayBoth ? JSON.stringify(value) : value;
-
-    case FIELD_TYPES.rich_text_field:
-      break;
-
-    // RATING
-    case FIELD_TYPES.rating:
-      const scale_min = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_min').value);
-      const scale_max = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_max').value);
-      return JSON.stringify(
-        isArrayBoth
-          ? value.map((v) => formatRatingForApi(v, scale_min, scale_max))
-          : formatRatingForApi(value, scale_min, scale_max)
-      );
-
-    // MONEY
-    case FIELD_TYPES.money:
-      // TODO: dynamic get currency_code from shop
-      const currencyCode = 'EUR';
-      return JSON.stringify(
-        isArrayBoth ? value.map((v) => formatMoneyForApi(v, currencyCode)) : formatMoneyForApi(value, currencyCode)
-      );
-
-    // REFERENCE
-    case FIELD_TYPES.collection_reference:
-    case FIELD_TYPES.page_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
-
-    case FIELD_TYPES.file_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
-
-    case FIELD_TYPES.metaobject_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
-
-    case FIELD_TYPES.product_reference:
-      return isArrayBoth
-        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT, v?.id)))
-        : idToGraphQlGid(RESOURCE_PRODUCT, value?.id);
-
-    case FIELD_TYPES.variant_reference:
-      return isArrayBoth
-        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, v?.id)))
-        : idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, value?.id);
-
-    // MEASUREMENT
-    case FIELD_TYPES.weight:
-    case FIELD_TYPES.dimension:
-    case FIELD_TYPES.volume:
-      return JSON.stringify(
-        isArrayBoth
-          ? value.map((v) => JSON.stringify(formatMeasurementForApi(v, fieldType)))
-          : formatMeasurementForApi(value, fieldType)
-      );
-      break;
-
-    default:
-      break;
-  }
-
-  throw new coda.UserVisibleError(`Unable to format field for key ${propKey}.`);
-}
-
-/**====================================================================================================================
- *    Dynamic SyncTable definition functions
- *===================================================================================================================== */
+// #region Dynamic SyncTable definition functions
 // TODO: fetch all and not only first 20
 export async function getMetaobjectSyncTableDynamicUrls(context: coda.SyncExecutionContext) {
   const payload = {
@@ -378,6 +193,7 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
 
   const metaobjectDefinition = await getMetaObjectDefinitionByType(type, context);
   const { displayNameKey, fieldDefinitions } = metaobjectDefinition;
+  const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
   let displayProperty = 'graphql_gid';
 
   const properties: coda.ObjectSchemaProperties = {
@@ -389,11 +205,23 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
       description: 'A link to the metaobject in the Shopify admin.',
     },
   };
+  if (isPublishable) {
+    properties['status'] = {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
+      fixedId: 'status',
+      description: `The status of the metaobject`,
+      mutable: true,
+      options: OPTIONS_METAOBJECT_STATUS.filter((s) => s.value !== '*').map((s) => s.value),
+      requireForUpdates: true,
+    };
+  }
+
   const featuredProperties = ['graphql_gid', 'handle'];
 
   fieldDefinitions.forEach((fieldDefinition) => {
     const name = accents.remove(fieldDefinition.name);
-    properties[name] = mapMetaobjectFieldToSchemaProperty(fieldDefinition);
+    properties[name] = mapMetaFieldToSchemaProperty(fieldDefinition);
 
     if (displayNameKey === fieldDefinition.key) {
       displayProperty = name;
@@ -402,6 +230,7 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
     }
   });
 
+  featuredProperties.push('admin_url');
   return coda.makeObjectSchema({
     properties,
     displayProperty,
@@ -409,10 +238,9 @@ export async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionCo
     featuredProperties,
   });
 }
+// #endregion
 
-/**====================================================================================================================
- *    Metaobject types
- *===================================================================================================================== */
+// #region Metaobject types
 // TODO: fetch all and not only first 20
 export async function getMetaObjectTypes(context: coda.ExecutionContext) {
   const payload = {
@@ -443,11 +271,13 @@ export async function getMetaobjectSyncTableDetails(
     type: data.metaobjectDefinition.type,
   };
 }
+// #endregion
 
-/**====================================================================================================================
- *    Metaobject definitions
- *===================================================================================================================== */
-export async function getMetaObjectDefinitionByType(type: string, context: coda.ExecutionContext) {
+// #region Metaobject definitions
+export async function getMetaObjectDefinitionByType(
+  type: string,
+  context: coda.ExecutionContext
+): Promise<MetaobjectDefinition> {
   const payload = {
     query: queryMetaobjectDefinitionsByType,
     variables: {
@@ -458,14 +288,13 @@ export async function getMetaObjectDefinitionByType(type: string, context: coda.
   const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
   return response.body.data.metaobjectDefinitionByType;
 }
+// #endregion
 
-/**====================================================================================================================
- *    Field definitions
- *===================================================================================================================== */
+// #region Field definitions
 export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
   metaObjectDefinitionGid: string,
   context: coda.ExecutionContext
-): Promise<ShopifyMetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinition[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitionsFromMetaobjectDefinition,
     variables: {
@@ -479,7 +308,7 @@ export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
 export async function getMetaObjectFieldDefinitionsByMetaobject(
   metaObjectGid: string,
   context: coda.ExecutionContext
-): Promise<ShopifyMetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinition[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitions,
     variables: {
@@ -493,29 +322,55 @@ export async function getMetaObjectFieldDefinitionsByMetaobject(
 export async function getMetaObjectFieldDefinitionsByType(
   type: string,
   context: coda.ExecutionContext
-): Promise<ShopifyMetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinition[]> {
   const metaobjectDefinitionByType = await getMetaObjectDefinitionByType(type, context);
   return metaobjectDefinitionByType.fieldDefinitions;
 }
 
-/*
-async function fetchAllMetaObjectDefinitions(batchSize = 20, context: coda.ExecutionContext) {
+// #endregion
+
+// #region Metaobject functions
+export const updateMetaObject = async (
+  metaobjectGid: string,
+  metaobjectUpdateInput: MetaobjectUpdateInput,
+  context: coda.ExecutionContext
+) => {
   const payload = {
-    query: queryAllMetaobjectDefinitions,
+    query: updateMetaobjectMutation,
     variables: {
-      batchSize,
-      cursor: context.sync.continuation,
+      id: metaobjectGid,
+      metaobject: metaobjectUpdateInput,
+    },
+  };
+  return makeGraphQlRequest({ payload }, context);
+};
+
+export const createMetaObject = async (
+  metaobjectCreateInput: MetaobjectCreateInput,
+  context: coda.ExecutionContext
+) => {
+  const payload = {
+    query: createMetaobjectMutation,
+    variables: {
+      metaobject: metaobjectCreateInput,
+    },
+  };
+  return makeGraphQlRequest({ payload }, context);
+};
+
+export const deleteMetaObject = async (id: string, context: coda.ExecutionContext) => {
+  const payload = {
+    query: deleteMetaobjectMutation,
+    variables: {
+      id,
     },
   };
 
-  const response = await graphQlRequest({payload}, context);
-  return response.body.data.metaobjectDefinitions.nodes;
-}
-*/
+  return makeGraphQlRequest({ payload }, context);
+};
+// #endregion
 
-/**====================================================================================================================
- *    Pack functions
- *===================================================================================================================== */
+// #region Pack functions
 export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
@@ -534,11 +389,12 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
     (prevContinuation?.lastThrottleStatus ? calcSyncTableMaxEntriesPerRun(prevContinuation) : initialEntriesPerRun);
 
   const constantFieldsKeys = ['id']; // will always be fetched
+  const nonFieldKeys = ['status']; // will always be fetched
   // TODO, like with field dependencies, we should have an array below each schema defining the things that can be queried via graphql, with maybe a translation of keys between rest and graphql …
   const calculatedKeys = ['admin_url']; // will never be fetched
-  const optionalFieldsKeys = effectivePropertyKeys
-    .filter((key) => !constantFieldsKeys.includes(key))
-    .filter((key) => !calculatedKeys.includes(key));
+  const optionalFieldsKeys = effectivePropertyKeys.filter(
+    (key) => !constantFieldsKeys.includes(key) && !calculatedKeys.includes(key) && !nonFieldKeys.includes(key)
+  );
 
   const payload = {
     query: buildQueryAllMetaObjectsWithFields(optionalFieldsKeys),
@@ -549,10 +405,9 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
     },
   };
 
-  return makeSyncTableGraphQlRequest(
+  const { response, continuation } = await makeSyncTableGraphQlRequest(
     {
       payload,
-      formatFunction: makeFormatMetaobjectForSchemaFunction(type, optionalFieldsKeys, fieldDefinitions),
       maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'metaobjects',
@@ -560,84 +415,19 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
     },
     context
   );
-};
-
-export const createMetaObject = async ([type, handle, ...varargs], context: coda.ExecutionContext) => {
-  const fields = [];
-  while (varargs.length > 0) {
-    let key: string, value: string;
-    // Pull the first set of varargs off the list, and leave the rest.
-    [key, value, ...varargs] = varargs;
-    fields.push({ key, value });
+  if (response) {
+    const data = response.body.data;
+    return {
+      result: data.metaobjects.nodes.map((metaobject) =>
+        formatMetaobjectForSchemaFromGraphQlApi(metaobject, type, optionalFieldsKeys, fieldDefinitions, context)
+      ),
+      continuation,
+    };
+  } else {
+    return {
+      result: [],
+      continuation,
+    };
   }
-
-  const payload = {
-    query: createMetaobjectMutation,
-    variables: {
-      metaobject: {
-        type,
-        capabilities: {
-          publishable: {
-            status: 'ACTIVE',
-          },
-        },
-        fields,
-      },
-    },
-  };
-  if (handle && handle !== '') {
-    payload.variables.metaobject['handle'] = handle;
-  }
-
-  const response = await makeGraphQlRequest({ payload }, context);
-
-  const { body } = response;
-  return body.data.metaobjectCreate.metaobject.id;
 };
-
-export const updateMetaObject = async (
-  metaobjectGid: string,
-  handle: string,
-  fields: { key: string; value: string }[],
-  context: coda.ExecutionContext
-) => {
-  const payload = {
-    query: updateMetaobjectMutation,
-    variables: {
-      id: metaobjectGid,
-      metaobject: {
-        capabilities: {
-          publishable: {
-            status: 'ACTIVE',
-          },
-        },
-        fields,
-      },
-    },
-  };
-
-  if (handle && handle !== '') {
-    payload.variables.metaobject['handle'] = handle;
-  }
-
-  const response = await makeGraphQlRequest({ payload }, context);
-  const { body } = response;
-
-  handleGraphQlUserError(body.data.metaobjectUpdate.userErrors);
-
-  return body.data.metaobjectUpdate.metaobject.id;
-};
-
-export const deleteMetaObject = async ([id], context: coda.ExecutionContext) => {
-  const payload = {
-    query: deleteMetaobjectMutation,
-    variables: {
-      id,
-    },
-  };
-
-  const response = await makeGraphQlRequest({ payload }, context);
-  const { body } = response;
-
-  return body.data.metaobjectDelete.deletedId;
-};
+// #endregion

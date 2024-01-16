@@ -1,59 +1,90 @@
-export function buildQueryAllFiles(effectivePropertyKeys: string[], type?: string) {
-  let query = 'status:READY';
-  if (type && type !== '') {
-    query += ` AND media_type:${type}`;
-  }
-
-  return `#graphql
-    query queryAllFiles($maxEntriesPerRun: Int!, $cursor: String) {
-      files(first: $maxEntriesPerRun, after: $cursor, reverse:true, sortKey:CREATED_AT, query: "${query}") {
-        nodes {
-          __typename
-          id
-          ${effectivePropertyKeys.includes('alt') ? 'alt' : ''}
-          ${effectivePropertyKeys.includes('createdAt') ? 'createdAt' : ''}
-          ${effectivePropertyKeys.includes('updatedAt') ? 'updatedAt' : ''}
-          ${effectivePropertyKeys.includes('thumbnail') ? `thumbnail: preview { image { url } }` : ''}
-
-          ... on GenericFile {
-            ${effectivePropertyKeys.includes('mimeType') ? 'mimeType' : ''}
-            ${effectivePropertyKeys.includes('fileSize') ? 'originalFileSize' : ''}
-            url
-          }
-
-          ... on MediaImage {
-            image {
-              url
-              ${effectivePropertyKeys.includes('width') ? 'width' : ''}
-              ${effectivePropertyKeys.includes('height') ? 'height' : ''}
-            }
-            ${effectivePropertyKeys.includes('mimeType') ? 'mimeType' : ''}
-            ${effectivePropertyKeys.includes('fileSize') ? 'originalSource { fileSize }' : ''}
-          }
-
-          ... on Video {
-            filename
-            ${effectivePropertyKeys.includes('duration') ? 'duration' : ''}
-            ${effectivePropertyKeys.includes('fileSize') ? 'originalSource { fileSize }' : ''}
-            ${effectivePropertyKeys.includes('height') ? 'originalSource { height }' : ''}
-            ${effectivePropertyKeys.includes('width') ? 'originalSource { width }' : ''}
-            ${effectivePropertyKeys.includes('mimeType') ? 'originalSource { mimeType }' : ''}
-            ${effectivePropertyKeys.includes('url') ? 'originalSource { url }' : ''}
-          }
-        }
-
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
+// #region Fragments
+const FileFieldsFragment = /* GraphQL */ `
+  fragment FileFields on File {
+    __typename
+    id
+    updatedAt
+    alt @include(if: $includeAlt)
+    createdAt @include(if: $includeCreatedAt)
+    updatedAt @include(if: $includeUpdatedAt)
+    thumbnail: preview @include(if: $includeThumbnail) {
+      image {
+        url
       }
-    }`;
-}
+    }
 
-export const deleteFiles = `#graphql
+    ... on GenericFile {
+      mimeType @include(if: $includeMimeType)
+      originalFileSize @include(if: $includeFileSize)
+      url
+    }
+
+    ... on MediaImage {
+      image {
+        url
+        width @include(if: $includeWidth)
+        height @include(if: $includeHeight)
+      }
+      mimeType @include(if: $includeMimeType)
+      originalSource @include(if: $includeFileSize) {
+        fileSize
+      }
+    }
+
+    ... on Video {
+      filename
+      duration @include(if: $includeDuration)
+      originalSource {
+        fileSize @include(if: $includeFileSize)
+        height @include(if: $includeHeight)
+        width @include(if: $includeWidth)
+        mimeType @include(if: $includeMimeType)
+        url @include(if: $includeUrl)
+      }
+    }
+  }
+`;
+// #endregion
+
+// #region Queries
+export const queryAllFiles = /* GraphQL */ `
+  ${FileFieldsFragment}
+
+  query GetFiles(
+    $maxEntriesPerRun: Int!
+    $cursor: String
+    $searchQuery: String
+    $includeAlt: Boolean!
+    $includeCreatedAt: Boolean!
+    $includeDuration: Boolean!
+    $includeFileSize: Boolean!
+    $includeHeight: Boolean!
+    $includeMimeType: Boolean!
+    $includeThumbnail: Boolean!
+    $includeUpdatedAt: Boolean!
+    $includeUrl: Boolean!
+    $includeWidth: Boolean!
+  ) {
+    files(first: $maxEntriesPerRun, after: $cursor, reverse: true, sortKey: CREATED_AT, query: $searchQuery) {
+      nodes {
+        ...FileFields
+      }
+
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+// #endregion
+
+// #region Mutations
+export const deleteFiles = /* GraphQL */ `
   mutation fileDelete($fileIds: [ID!]!) {
     fileDelete(fileIds: $fileIds) {
       deletedFileIds
+
       userErrors {
         field
         message
@@ -62,3 +93,5 @@ export const deleteFiles = `#graphql
     }
   }
 `;
+
+// #endregion

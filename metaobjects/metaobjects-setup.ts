@@ -1,22 +1,25 @@
 import * as coda from '@codahq/packs-sdk';
 
+import { IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
 import {
-  createMetaObject,
-  deleteMetaObject,
   getMetaobjectSyncTableName,
   getMetaobjectSyncTableDynamicUrls,
   syncMetaObjects,
   getMetaobjectSyncTableDisplayUrl,
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   getMetaobjectSyncTableSchema,
-  formatMetafieldForApi,
-  updateMetaObject,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
   getMetaObjectFieldDefinitionsByMetaobjectDefinition,
+  deleteMetaObject,
+  updateMetaObject,
+  formatMetaobjectUpdateInput,
+  formatMetaobjectCreateInputInput,
+  createMetaObject,
 } from './metaobjects-functions';
-import { IDENTITY_METAOBJECT } from '../constants';
 import { isString } from '../helpers';
+import { MetaobjectFieldInput } from '../types/admin.types';
+import { formatMetafieldValueForApi } from '../metafields/metafields-functions';
 
 const parameters = {
   metaobjectGID: coda.makeParameter({
@@ -29,6 +32,12 @@ const parameters = {
     name: 'handle',
     description: 'The handle of the metaobject.',
   }),
+  status: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'status',
+    description: 'The status of the metaobject.',
+    autocomplete: OPTIONS_METAOBJECT_STATUS,
+  }),
 
   // TODO: We will need multiple InputFormat formulas to help format values for the user
   varArgsValue: coda.makeParameter({
@@ -39,9 +48,7 @@ const parameters = {
 };
 
 export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
-  /**====================================================================================================================
-   *    SyncTables
-   *===================================================================================================================== */
+  // #region SyncTables
   // MetaObjects Dynamic SyncTable
   pack.addDynamicSyncTable({
     name: 'Metaobjects',
@@ -58,34 +65,31 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
       execute: syncMetaObjects,
       maxUpdateBatchSize: 10,
       executeUpdate: async function ([], updates, context: coda.SyncExecutionContext) {
-        const fieldDefinitions = await getMetaObjectFieldDefinitionsByMetaobjectDefinition(
+        const metaobjectFieldDefinitions = await getMetaObjectFieldDefinitionsByMetaobjectDefinition(
           context.sync.dynamicUrl,
           context
         );
 
         const jobs = updates.map(async (update) => {
           const { updatedFields } = update;
+
           const metaobjectGid = update.previousValue.id as string;
-          let handle: string;
-          const fields = [];
+          const metaobjectFieldFromKeys = updatedFields.filter((key) => key !== 'handle' && key !== 'status');
+          const handle = updatedFields['handle'];
+          const status = updatedFields['status'];
 
-          updatedFields.forEach((key: string) => {
-            const value = update.newValue[key] as string;
-            // Edge case: handle
-            if (key === 'handle') {
-              handle = value;
-              return;
-            }
-
-            const fieldDefinition = fieldDefinitions.find((f) => f.key === key);
-            if (!fieldDefinition) throw new Error('fieldDefinition not found');
-            fields.push({
-              key,
-              value: formatMetafieldForApi(key, value, fieldDefinition, context.sync.schema),
-            });
+          const fields = metaobjectFieldFromKeys.map((fromKey): MetaobjectFieldInput => {
+            const value = update.newValue[fromKey] as string;
+            const fieldDefinition = metaobjectFieldDefinitions.find((f) => f.key === fromKey);
+            if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
+            return {
+              key: fromKey,
+              value: formatMetafieldValueForApi(fromKey, value, fieldDefinition, context.sync.schema),
+            };
           });
 
-          await updateMetaObject(metaobjectGid, handle, fields, context);
+          const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
+          const response = await updateMetaObject(metaobjectGid, metaobjectUpdateInput, context);
 
           // Return previous values merged with new values, assuming there are no side effects
           // TODO: return real data from Shopify
@@ -105,11 +109,10 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
       },
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Actions
-   *===================================================================================================================== */
-  // An action to create a metaobject
+  // #region Actions
+  // CreateMetaObject Action
   pack.addFormula({
     name: 'CreateMetaObject',
     description: 'Create a metaobject.',
@@ -124,6 +127,12 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
         ...parameters.handle,
         optional: true,
       },
+      {
+        ...parameters.status,
+        description:
+          'The status of the metaobject. Only useful if the metaobject has publishable capabilities. Defaults to DRAFT',
+        optional: true,
+      },
     ],
     varargParameters: [
       coda.makeParameter({
@@ -136,10 +145,21 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: createMetaObject,
+    execute: async function ([type, handle, status = 'DRAFT', ...varargs], context) {
+      const fields: MetaobjectFieldInput[] = [];
+      while (varargs.length > 0) {
+        let key: string, value: string;
+        // Pull the first set of varargs off the list, and leave the rest.
+        [key, value, ...varargs] = varargs;
+        fields.push({ key, value });
+      }
+      const metaobjectCreateInput = formatMetaobjectCreateInputInput(type, handle, status, fields);
+      const response = await createMetaObject(metaobjectCreateInput, context);
+      return response.body.data.metaobjectCreate.metaobject.id;
+    },
   });
 
-  // an action to update a metaobject
+  // UpdateMetaObject Action
   pack.addFormula({
     name: 'UpdateMetaObject',
     description: 'Update a metaobject.',
@@ -148,6 +168,11 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
       {
         ...parameters.handle,
         description: 'The new handle of the metaobject. A blank value will leave the handle unchanged.',
+        optional: true,
+      },
+      {
+        ...parameters.status,
+        description: 'The new status of the metaobject. Only useful if the metaobject has publishable capabilities.',
         optional: true,
       },
     ],
@@ -162,8 +187,8 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: async function ([metaobjectGid, handle, ...varargs], context) {
-      const fields = [];
+    execute: async function ([metaobjectGid, handle, status, ...varargs], context) {
+      const fields: MetaobjectFieldInput[] = [];
       while (varargs.length > 0) {
         let key: string, value: string;
         [key, value, ...varargs] = varargs;
@@ -173,17 +198,24 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
           value: isString(value) ? value : JSON.stringify(value),
         });
       }
-      return updateMetaObject(metaobjectGid, handle, fields, context);
+
+      const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
+      const response = await updateMetaObject(metaobjectGid, metaobjectUpdateInput, context);
+      return response.body.data.metaobjectUpdate.metaobject.id;
     },
   });
 
-  // an action to delete a metaobject
+  // DeleteMetaObject Action
   pack.addFormula({
     name: 'DeleteMetaObject',
     description: 'Delete a metaobject.',
     parameters: [parameters.metaobjectGID],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: deleteMetaObject,
+    execute: async function ([id], context) {
+      const response = await deleteMetaObject(id, context);
+      return response.body.data.metaobjectDelete.deletedId;
+    },
   });
+  // #endregion
 };
