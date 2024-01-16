@@ -39,6 +39,13 @@ export const OPTIONS_PRODUCT_STATUS = [
   { display: 'Archived', value: 'ARCHIVED' },
   { display: 'Draft', value: 'DRAFT' },
 ];
+// The status of the metaobject. Valid values:
+//  - ACTIVE: The metaobjects is active for public use.
+//  - DRAFT: The metaobjects is an internal record.
+export const OPTIONS_METAOBJECT_STATUS = [
+  { display: 'Active', value: 'ACTIVE' },
+  { display: 'Draft', value: 'DRAFT' },
+];
 
 export const OPTIONS_FILE_TYPE = [
   { display: 'Generic files', value: 'GENERIC_FILE' },
@@ -93,7 +100,7 @@ export const REST_DEFAULT_LIMIT = 250;
 export const GRAPHQL_BUDGET__MAX = 500;
 export const GRAPHQL_RETRIES__MAX = 5;
 export const GRAPHQL_DEFAULT_RESTORE_RATE = 50;
-export const GRAPHQL_DEFAULT_API_VERSION = '2023-04';
+export const GRAPHQL_DEFAULT_API_VERSION = '2023-07';
 
 // TODO: rename these
 export const CACHE_DAY = 86400; // 1 day
@@ -127,24 +134,24 @@ export const FIELD_TYPES = {
   variant_reference: 'variant_reference',
 
   // ++ list variants
-  // list.collection_reference,
-  // list.color,
-  // list.date,
-  // list.date_time,
-  // list.dimension,
-  // list.file_reference,
-  // list.metaobject_reference,
-  // list.mixed_reference,
-  // list.number_integer,
-  // list.number_decimal,
-  // list.page_reference,
-  // list.product_reference,
-  // list.rating,
-  // list.single_line_text_field,
-  // list.url,
-  // list.variant_reference,
-  // list.volume,
-  // list.weight'
+  list_collection_reference: 'list.collection_reference',
+  list_color: 'list.color',
+  list_date: 'list.date',
+  list_date_time: 'list.date_time',
+  list_dimension: 'list.dimension',
+  list_file_reference: 'list.file_reference',
+  list_metaobject_reference: 'list.metaobject_reference',
+  list_mixed_reference: 'list.mixed_reference',
+  list_number_integer: 'list.number_integer',
+  list_number_decimal: 'list.number_decimal',
+  list_page_reference: 'list.page_reference',
+  list_product_reference: 'list.product_reference',
+  list_rating: 'list.rating',
+  list_single_line_text_field: 'list.single_line_text_field',
+  list_url: 'list.url',
+  list_variant_reference: 'list.variant_reference',
+  list_volume: 'list.volume',
+  list_weight: 'list.weight',
 };
 
 export const PACK_PREFIX_KEY = 'lgs_';

@@ -24,27 +24,34 @@ import {
   formatMetafieldsSetsInputFromResourceUpdate,
   getMetaFieldRealFromKeys,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldKeyAndNamespace,
+  splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
 import {
-  makeMutationUpdateProduct,
-  makeQueryProductsAdmin,
-  makeQueryProductsStorefront,
-  queryAvailableProductTypes,
+  MAX_OPTIONS_PER_PRODUCT,
+  buildProductsSearchQuery,
+  MutationUpdateProduct,
+  QueryProductsAdmin,
 } from './products-graphql';
+import { makeQueryProductsStorefront, queryAvailableProductTypes } from './products-storefront';
 import {
   calcSyncTableMaxEntriesPerRun,
   graphQlGidToId,
   makeGraphQlRequest,
   makeSyncTableGraphQlRequest,
 } from '../helpers-graphql';
-import { getObjectSchemaItemProp } from '../helpers';
-import { formatMetaFieldForSchema } from '../metaobjects/metaobjects-functions';
+import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
 import { ProductSchema } from './products-schema';
-import { ShopifyMetafieldDefinition } from '../types/Shopify';
 
-const DEFAULT_PRODUCT_OPTION_NAME = 'Coda Default';
+import type { Metafield, MetafieldDefinition, ProductInput } from '../types/admin.types';
+import type {
+  GetProductsWithMetafieldsQuery,
+  GetProductsWithMetafieldsQueryVariables,
+  ProductFieldsFragment,
+  UpdateProductMutationVariables,
+} from '../types/admin.generated';
+
+export const DEFAULT_PRODUCT_OPTION_NAME = 'Coda Default';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
@@ -53,8 +60,8 @@ export async function autocompleteProductTypes(context: coda.ExecutionContext, s
 }
 // #endregion
 
-// #region Formatting functions
-function validateProductParams(params: any) {
+// #region helpers
+export function validateProductParams(params: any) {
   if (params.status) {
     const validStatuses = OPTIONS_PRODUCT_STATUS.map((status) => status.value);
     if (params.status && Array.isArray(params.status)) {
@@ -77,11 +84,13 @@ function validateProductParams(params: any) {
     }
   }
 }
+// #endregion
 
+// #region Formatting functions
 /**
  * Format product for schema from a Rest Admin API response
  */
-const formatProductForSchemaFromRestApi: FormatFunction = (product, context) => {
+export const formatProductForSchemaFromRestApi: FormatFunction = (product, context) => {
   product.admin_url = `${context.endpoint}/admin/products/${product.id}`;
   product.descriptionHtml = product.body_html;
   product.description = striptags(product.body_html);
@@ -101,85 +110,49 @@ const formatProductForSchemaFromRestApi: FormatFunction = (product, context) => 
 
 /**
  * Format product for schema from a GraphQL Admin API response
- * Must be wrapped with makeFormatProductForSchemaFunction
  */
-const formatProductForSchemaFromGraphQlApi = (
-  product,
+export const formatProductForSchemaFromGraphQlApi = (
+  product: ProductFieldsFragment,
   context: coda.ExecutionContext,
-  metaFieldsKeys,
-  fieldDefinitions: ShopifyMetafieldDefinition[],
-  storeFront?: boolean
+  metafieldDefinitions: MetafieldDefinition[]
 ) => {
-  product.admin_url = `${context.endpoint}/admin/products/${graphQlGidToId(product.id)}`;
-  product.description = striptags(product.descriptionHtml);
-  product.admin_graphql_api_id = product.id;
-  product.id = graphQlGidToId(product.id);
-  product.created_at = product.createdAt;
-  product.updated_at = product.updatedAt;
-  product.published_at = product.publishedAt;
-  product.product_type = product.productType;
+  let obj: any = {
+    ...product,
+    admin_url: `${context.endpoint}/admin/products/${graphQlGidToId(product.id)}`,
+    description: striptags(product.descriptionHtml),
+    admin_graphql_api_id: product.id,
+    id: graphQlGidToId(product.id),
+    created_at: product.createdAt,
+    updated_at: product.updatedAt,
+    published_at: product.publishedAt,
+    product_type: product.productType,
+  };
+
   if (product.options) {
-    product.options = product.options.map((option) => option.name).join(', ');
+    obj.options = product.options.map((option) => option.name).join(', ');
   }
   if (product.featuredImage) {
-    product.featuredImage = product.featuredImage.url;
+    obj.featuredImage = product.featuredImage.url;
+  }
+  if (product.metafields && product.metafields.nodes.length) {
+    const metafields = formatMetafieldsForSchema(
+      product.metafields.nodes as Metafield[],
+      metafieldDefinitions,
+      context
+    );
+    obj = {
+      ...obj,
+      ...metafields,
+    };
   }
 
-  if (product.metafields && product.metafields.length) {
-    metaFieldsKeys.forEach(async (key) => {
-      const { metaKey, metaNamespace } = splitMetaFieldKeyAndNamespace(key);
-
-      // const rawValue = product.metafields.find((f) => f && f.namespace === metaNamespace && f.key === metaKey);
-      const rawValue = storeFront
-        ? product.metafields.find((f) => f && f.namespace === metaNamespace && f.key === metaKey)
-        : product.metafields.find((f) => f && f.key === `${metaNamespace}.${metaKey}`);
-      if (!rawValue) return;
-
-      // check if node[key] has 'value' property
-      const value = rawValue.hasOwnProperty('value') ? rawValue.value : rawValue;
-
-      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, METAFIELD_PREFIX_KEY + key);
-      const fieldDefinition = fieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey);
-      if (!fieldDefinition) throw new Error('fieldDefinition not found');
-
-      let parsedValue = value;
-      try {
-        parsedValue = JSON.parse(value);
-      } catch (error) {
-        // console.log('not a parsable json string');
-      }
-
-      product[METAFIELD_GID_PREFIX_KEY + key] = rawValue.id;
-      product[METAFIELD_PREFIX_KEY + key] =
-        schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaFieldForSchema(v, schemaItemProp.items, fieldDefinition))
-          : formatMetaFieldForSchema(parsedValue, schemaItemProp, fieldDefinition);
-    });
-  }
-
-  return product;
+  return obj;
 };
-
-/**
- * Create actual product formatting function for schema from a GraphQL Admin API response
- */
-function makeFormatProductForSchemaFunction(metaFieldsKeys: string[], fieldDefinitions, storeFront?: boolean) {
-  return (node: any, context: coda.ExecutionContext) => {
-    const data = storeFront
-      ? node
-      : {
-          ...node,
-          metafields: node.metafields?.nodes ?? [],
-        };
-
-    return formatProductForSchemaFromGraphQlApi(data, context, metaFieldsKeys, fieldDefinitions, storeFront);
-  };
-}
 
 /**
  * Format ProductInput for a GraphQL product update mutation
  */
-function formatGraphQlProductInput(update: any, productGid: string, fromKeys: string[]) {
+function formatGraphQlProductInput(update: any, productGid: string, fromKeys: string[]): ProductInput {
   const ret = {
     id: productGid,
   };
@@ -210,7 +183,7 @@ function formatGraphQlProductInput(update: any, productGid: string, fromKeys: st
 
 // #region Dynamic SyncTable definition functions
 async function getProductSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
-  const augmentedSchema = await augmentSchemaWithMetafields(ProductSchema, context);
+  const augmentedSchema = await augmentSchemaWithMetafields(ProductSchema, 'PRODUCT', context);
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
@@ -220,7 +193,7 @@ async function getProductSyncTablePropertyOptions(context: coda.PropertyOptionsE
     return getProductTypes(context);
   }
 }
-export const getProductSyncTableDynamicOptions: coda.DynamicOptions = {
+export const productSyncTableDynamicOptions: coda.DynamicOptions = {
   getSchema: getProductSyncTableSchema,
   propertyOptions: getProductSyncTablePropertyOptions,
 };
@@ -233,16 +206,16 @@ async function getProductTypes(context): Promise<string[]> {
   return response.body.data.productTypes.edges.map((edge) => edge.node);
 }
 
-async function fetchProduct(productID: number, context: coda.ExecutionContext) {
+export async function fetchProduct(productID: number, context: coda.ExecutionContext) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
   return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
 }
 
-async function updateProduct(
+export async function updateProduct(
   productGid: string,
   effectivePropertyKeys: string[],
   effectiveMetafieldKeys: string[],
-  metafieldDefinitions: ShopifyMetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinition[],
   update: SyncUpdateNoPreviousValues,
   context: coda.ExecutionContext
 ) {
@@ -268,24 +241,23 @@ async function updateProduct(
   );
 
   const payload = {
-    query: makeMutationUpdateProduct(optionalNestedFields),
+    query: MutationUpdateProduct,
     variables: {
       metafieldsSetsInput,
       productInput,
       metafieldKeys: effectiveMetafieldKeys,
       countMetafields: effectiveMetafieldKeys.length,
-    },
+      maxOptions: MAX_OPTIONS_PER_PRODUCT,
+      includeOptions: optionalNestedFields.includes('options'),
+      includeFeaturedImage: optionalNestedFields.includes('featuredImage'),
+      includeMetafields: optionalNestedFields.includes('metafields'),
+    } as UpdateProductMutationVariables,
   };
-  // try {
-  const response = await makeGraphQlRequest({ payload }, context);
-  // } catch (error) {
-  // throw error;
-  // }
-  const { product } = response.body.data.productUpdate;
-  return makeFormatProductForSchemaFunction(effectiveMetafieldKeys, metafieldDefinitions, false)(product, context);
+
+  return makeGraphQlRequest({ payload }, context);
 }
 
-async function createProduct(params: any, context: coda.ExecutionContext) {
+export async function createProduct(params: any, context: coda.ExecutionContext) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
   const payload = {
     product: {
@@ -296,102 +268,13 @@ async function createProduct(params: any, context: coda.ExecutionContext) {
   return makePostRequest({ url, payload }, context);
 }
 
-async function deleteProduct(productID: number, context: coda.ExecutionContext) {
+export async function deleteProduct(productID: number, context: coda.ExecutionContext) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
   return makeDeleteRequest({ url }, context);
 }
 // #endregion
 
 // #region Pack functions
-export const formulaProduct = async ([productID], context) => {
-  const response = await fetchProduct(productID, context);
-  if (response.body.product) {
-    return formatProductForSchemaFromRestApi(response.body.product, context);
-  }
-};
-
-export async function actionCreateProduct(
-  [
-    title,
-    descriptionHtml,
-    productType,
-    options,
-    tags,
-    vendor,
-    status = 'DRAFT',
-    handle,
-    images,
-    imagesUrls,
-    templateSuffix,
-  ],
-  context: coda.ExecutionContext
-) {
-  if (imagesUrls !== undefined && images !== undefined)
-    throw new coda.UserVisibleError("Provide either 'imagesFromCoda' or 'imagesUrls', not both");
-
-  const imagesToUse = imagesUrls ? imagesUrls : images;
-  const params = cleanQueryParams({
-    title,
-    body_html: descriptionHtml,
-    productType,
-    options: options ? options.map((name) => ({ name, values: [DEFAULT_PRODUCT_OPTION_NAME] })) : undefined,
-    tags,
-    vendor,
-    status,
-    handle,
-    images: imagesToUse ? imagesToUse.map((url) => ({ src: url })) : undefined,
-    imagesUrls,
-    templateSuffix,
-  });
-
-  validateProductParams(params);
-
-  // TODO: make a function to convert from rest admin api values to graphql api values and vice versa
-  // GraphQL status is uppercase, convert it for Rest Admin API
-  if (params.status) {
-    params.status = status.toLowerCase();
-  }
-
-  // We need to add a default variant to the product if some options are defined
-  if (params.options) {
-    params['variants'] = [
-      {
-        option1: DEFAULT_PRODUCT_OPTION_NAME,
-        option2: DEFAULT_PRODUCT_OPTION_NAME,
-        option3: DEFAULT_PRODUCT_OPTION_NAME,
-      },
-    ];
-  }
-
-  const response = await createProduct(params, context);
-  return response.body.product.admin_graphql_api_id;
-}
-
-export async function actionUpdateProduct(
-  [productGid, title, descriptionHtml, product_type, tags, vendor, status, handle, template_suffix],
-  context: coda.ExecutionContext
-) {
-  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(ProductSchema);
-  const newValue = {
-    title,
-    descriptionHtml,
-    product_type,
-    tags,
-    vendor,
-    status,
-    handle,
-    template_suffix,
-  };
-  const updatedFields = Object.keys(newValue).filter((key) => newValue[key] !== undefined);
-  const update: SyncUpdateNoPreviousValues = { newValue, updatedFields };
-  return updateProduct(productGid, effectivePropertyKeys, [], [], update, context);
-}
-
-export async function actionDeleteProduct([productGid], context: coda.ExecutionContext) {
-  await deleteProduct(graphQlGidToId(productGid), context);
-  return true;
-}
-
 /**
  * Sync products using Rest Admin API
  */
@@ -485,7 +368,7 @@ export const syncProductsGraphQlAdmin = async (
     gift_card,
     ids,
   ],
-  context
+  context: coda.SyncExecutionContext
 ) => {
   validateProductParams({ status, published_status });
 
@@ -500,10 +383,10 @@ export const syncProductsGraphQlAdmin = async (
   if (effectivePropertyKeys.includes('featuredImage')) optionalNestedFields.push('featuredImage');
   if (effectivePropertyKeys.includes('options')) optionalNestedFields.push('options');
   // Metafield optional nested fields
-  let fieldDefinitions = [];
+  let metafieldDefinitions: MetafieldDefinition[] = [];
   if (shouldSyncMetafields) {
-    fieldDefinitions =
-      prevContinuation?.extraContinuationData?.fieldDefinitions ??
+    metafieldDefinitions =
+      prevContinuation?.extraContinuationData?.metafieldDefinitions ??
       (await fetchMetafieldDefinitions('PRODUCT', context));
     optionalNestedFields.push('metafields');
   }
@@ -529,28 +412,50 @@ export const syncProductsGraphQlAdmin = async (
     product_types,
     published_status,
   };
+  // Remove any undefined filters
+  Object.keys(queryFilters).forEach((key) => {
+    if (queryFilters[key] === undefined) delete queryFilters[key];
+  });
 
   const payload = {
-    query: makeQueryProductsAdmin(optionalNestedFields, queryFilters),
+    query: QueryProductsAdmin,
     variables: {
       maxEntriesPerRun,
       cursor: prevContinuation?.cursor ?? null,
       metafieldKeys: effectiveMetafieldKeys,
       countMetafields: effectiveMetafieldKeys.length,
-    },
+      maxOptions: MAX_OPTIONS_PER_PRODUCT,
+      searchQuery: buildProductsSearchQuery(queryFilters),
+      includeOptions: optionalNestedFields.includes('options'),
+      includeFeaturedImage: optionalNestedFields.includes('featuredImage'),
+      includeMetafields: optionalNestedFields.includes('metafields'),
+    } as GetProductsWithMetafieldsQueryVariables,
   };
 
-  return makeSyncTableGraphQlRequest(
+  const { response, continuation } = await makeSyncTableGraphQlRequest(
     {
       payload,
-      formatFunction: makeFormatProductForSchemaFunction(effectiveMetafieldKeys, fieldDefinitions, false),
-      maxEntriesPerRun: maxEntriesPerRun,
+      maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'products',
-      extraContinuationData: { fieldDefinitions },
+      extraContinuationData: { metafieldDefinitions },
     },
     context
   );
+  if (response) {
+    const data = response.body.data as GetProductsWithMetafieldsQuery;
+    return {
+      result: data.products.nodes.map((product) =>
+        formatProductForSchemaFromGraphQlApi(product, context, metafieldDefinitions)
+      ),
+      continuation,
+    };
+  } else {
+    return {
+      result: [],
+      continuation,
+    };
+  }
 };
 
 /**

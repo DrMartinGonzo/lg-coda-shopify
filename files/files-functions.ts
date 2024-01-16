@@ -8,51 +8,49 @@ import {
   calcSyncTableMaxEntriesPerRun,
   makeSyncTableGraphQlRequest,
 } from '../helpers-graphql';
-import { buildQueryAllFiles, deleteFiles } from './files-graphql';
+import { queryAllFiles, deleteFiles } from './files-graphql';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { FormatFunction } from '../types/misc';
+import { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
 
-/**====================================================================================================================
- *    Formatting functions
- *===================================================================================================================== */
-
-const formatFileNodeForSchema: FormatFunction = (fileNode) => {
-  const file = {
-    ...fileNode,
-    type: fileNode.__typename,
-    thumbnail: fileNode.thumbnail?.image?.url ? getThumbnailUrlFromFullUrl(fileNode.thumbnail.image.url) : undefined,
+// #region Formatting functions
+const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
+  const obj: any = {
+    ...file,
+    type: file.__typename,
+    thumbnail: file.thumbnail?.image?.url ? getThumbnailUrlFromFullUrl(file.thumbnail.image.url) : undefined,
   };
 
-  switch (fileNode.__typename) {
+  switch (file.__typename) {
     case 'GenericFile':
-      file.name = fileNode.url.split('/').pop().split('?').shift();
+      obj.name = file.url.split('/').pop().split('?').shift();
       break;
     case 'MediaImage':
-      file.name = fileNode.image.url.split('/').pop().split('?').shift();
-      file.fileSize = fileNode.originalSource?.fileSize;
-      file.url = fileNode.image?.url;
-      file.width = fileNode.image?.width;
-      file.height = fileNode.image?.height;
+      obj.name = file.image.url.split('/').pop().split('?').shift();
+      obj.fileSize = file.originalSource?.fileSize;
+      obj.url = file.image?.url;
+      obj.width = file.image?.width;
+      obj.height = file.image?.height;
       break;
     case 'Video':
-      file.name = fileNode.filename;
-      file.duration = fileNode.duration;
-      file.fileSize = fileNode.originalSource?.fileSize;
-      file.mimeType = fileNode.originalSource?.mimeType;
-      file.url = fileNode.originalSource?.url;
-      file.width = fileNode.originalSource?.width;
-      file.height = fileNode.originalSource?.height;
+      obj.name = file.filename;
+      obj.duration = file.duration;
+      obj.fileSize = file.originalSource?.fileSize;
+      obj.mimeType = file.originalSource?.mimeType;
+      obj.url = file.originalSource?.url;
+      obj.width = file.originalSource?.width;
+      obj.height = file.originalSource?.height;
       break;
 
     default:
       break;
   }
-  return file;
+  return obj;
 };
 
-/**====================================================================================================================
- *    Pack functions
- *===================================================================================================================== */
+// #endregion
+
+// #region Pack functions
 /**
  * Sync files using the GraphQL API.
  */
@@ -65,25 +63,52 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
     prevContinuation?.reducedMaxEntriesPerRun ??
     (prevContinuation?.lastThrottleStatus ? calcSyncTableMaxEntriesPerRun(prevContinuation) : initialEntriesPerRun);
 
+  let searchQuery = 'status:READY';
+  if (type && type !== '') {
+    searchQuery += ` AND media_type:${type}`;
+  }
+
   const payload = {
-    query: buildQueryAllFiles(effectivePropertyKeys, type),
+    query: queryAllFiles,
     variables: {
       maxEntriesPerRun,
       cursor: prevContinuation?.cursor ?? null,
-    },
+      searchQuery,
+
+      includeAlt: effectivePropertyKeys.includes('alt'),
+      includeCreatedAt: effectivePropertyKeys.includes('createdAt'),
+      includeDuration: effectivePropertyKeys.includes('duration'),
+      includeFileSize: effectivePropertyKeys.includes('fileSize'),
+      includeHeight: effectivePropertyKeys.includes('height'),
+      includeMimeType: effectivePropertyKeys.includes('mimeType'),
+      includeThumbnail: effectivePropertyKeys.includes('thumbnail'),
+      includeUpdatedAt: effectivePropertyKeys.includes('updatedAt'),
+      includeUrl: effectivePropertyKeys.includes('url'),
+      includeWidth: effectivePropertyKeys.includes('width'),
+    } as GetFilesQueryVariables,
   };
 
-  return makeSyncTableGraphQlRequest(
+  const { response, continuation } = await makeSyncTableGraphQlRequest(
     {
-      apiVersion: '2023-07',
-      formatFunction: formatFileNodeForSchema,
-      maxEntriesPerRun,
       payload,
+      maxEntriesPerRun,
       prevContinuation,
       mainDataKey: 'files',
     },
     context
   );
+  if (response) {
+    const data = response.body.data as GetFilesQuery;
+    return {
+      result: data.files.nodes.map((file) => formatFileNodeForSchema(file)),
+      continuation,
+    };
+  } else {
+    return {
+      result: [],
+      continuation,
+    };
+  }
 };
 
 /**
@@ -109,3 +134,4 @@ export const deleteFile = async ([fileGid], context: coda.ExecutionContext) => {
 
   return body.data.fileDelete.deletedFileIds[0];
 };
+// #endregion

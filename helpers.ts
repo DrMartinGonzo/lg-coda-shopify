@@ -1,8 +1,23 @@
 import * as coda from '@codahq/packs-sdk';
 import { DEFAULT_THUMBNAIL_SIZE } from './constants';
 import { ShopifyGraphQlError } from './shopifyErrors';
-import { ShopifyGraphQlRequestCost } from './types/Shopify';
+import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
 import { willThrottle, isThrottled } from './helpers-graphql';
+import { LengthUnit, WeightUnit } from './types/admin.types';
+
+/**
+ * Taken from Coda sdk
+ */
+export function transformToArraySchema(schema?: any) {
+  if (schema?.type === coda.ValueType.Array) {
+    return schema;
+  } else {
+    return {
+      type: coda.ValueType.Array,
+      items: schema,
+    };
+  }
+}
 
 export function isString(value: any) {
   return typeof value === 'string' || value instanceof String;
@@ -16,14 +31,14 @@ export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
 
-const weightUnitsMap = {
+const weightUnitsMap: { [key in WeightUnit]: string } = {
   // WEIGHT
   GRAMS: 'g',
   KILOGRAMS: 'kg',
   OUNCES: 'oz',
   POUNDS: 'lb',
 };
-const dimensionUnitsMap = {
+const dimensionUnitsMap: { [key in LengthUnit]: string } = {
   CENTIMETERS: 'cm',
   FEET: 'pi',
   INCHES: 'po',
@@ -45,7 +60,7 @@ const volumeUnitsMap = {
   IMPERIAL_QUARTS: 'qt imp.',
   IMPERIAL_GALLONS: 'gal imp.',
 };
-export function getUnitMap(measurementType: 'weight' | 'dimension' | 'volume') {
+export function getUnitMap(measurementType: string) {
   switch (measurementType) {
     case 'weight':
       return weightUnitsMap;
@@ -70,10 +85,10 @@ export function unitToShortName(unit: string) {
 
 export function extractValueAndUnitFromMeasurementString(
   measurementString: string,
-  measurementType: 'weight' | 'dimension' | 'volume'
+  measurementType: string
 ): {
   value: number;
-  unit: string;
+  unit: WeightUnit | LengthUnit | string;
   unitFull: string;
 } {
   const unitsMap = getUnitMap(measurementType);
@@ -86,12 +101,7 @@ export function extractValueAndUnitFromMeasurementString(
     const unit = match[3];
 
     if (possibleUnits.includes(unit)) {
-      console.log(`Value: ${value}`);
-      console.log(`Unit: ${unit}`);
-
       const unitFull = Object.keys(unitsMap)[possibleUnits.indexOf(unit)];
-      console.log('unitFull', unitFull);
-
       return { value, unit, unitFull };
     } else {
       throw new coda.UserVisibleError(`Invalid unit: ${unit}`);
