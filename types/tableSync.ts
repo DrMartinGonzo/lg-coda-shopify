@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './Shopify';
+import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './ShopifyGraphQlErrors';
 
 export interface SyncTableStorefrontContinuation extends coda.Continuation {
   cursor: string;

@@ -17,9 +17,10 @@ export const translateResource = async ([resourceId, ...varargs], context) => {
     mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
       translationsRegister(resourceId: $resourceId, translations: $translations) {
         userErrors {
-          message
           field
+          message
         }
+
         translations {
           key
           value

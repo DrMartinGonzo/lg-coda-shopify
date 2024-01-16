@@ -185,7 +185,8 @@ export const CollectionSchema = coda.makeObjectSchema({
   },
   displayProperty: 'title',
   idProperty: 'graphql_gid',
-  featuredProperties: ['title', 'handle', 'admin_url'],
+  // admin_url will be the last featured property, added in Collections dynamicOptions after the eventual metafields
+  featuredProperties: ['title', 'handle'],
 
   // Card fields.
   subtitleProperties: ['handle', 'published_at', 'published_scope', 'template_suffix'],

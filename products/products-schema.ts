@@ -192,6 +192,7 @@ export const ProductSchema = coda.makeObjectSchema({
     },
     vendor: {
       type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'vendor',
       mutable: true,
       description: 'The name of the product vendor.',

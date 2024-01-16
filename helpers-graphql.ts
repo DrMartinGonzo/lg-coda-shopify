@@ -9,7 +9,7 @@ import {
   ShopifyRetryableErrors,
   ShopifyThrottledError,
 } from './shopifyErrors';
-import { ShopifyGraphQlRequestCost } from './types/Shopify';
+import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
 import { SyncTableGraphQlContinuation, SyncTableStorefrontContinuation } from './types/tableSync';
 import { FormatFunction } from './types/misc';
 
@@ -28,17 +28,6 @@ export function graphQlGidToResourceName(graphQlId: string): string {
   if (graphQlId === undefined) return undefined;
   return graphQlId.split('gid://shopify/')[1].split('/').pop();
 }
-
-export const pageInfoPart = `#graphql
-  pageInfo {
-    endCursor
-    hasNextPage
-  }`;
-export const userErrorsPart = `#graphql
-  userErrors {
-    field
-    message
-  }`;
 
 export function calcSyncTableMaxEntriesPerRun(prevContinuation: SyncTableGraphQlContinuation) {
   const startTime = Date.now();
@@ -82,14 +71,11 @@ export function isMaxCostExceeded(errors: ShopifyGraphQlError[]) {
   return errors && errors.length && errors.some((error) => error.extensions?.code === 'MAX_COST_EXCEEDED');
 }
 
-export async function handleSyncTableGraphQlResults(
-  { nodes, extensions, pageInfo, extraContinuationData },
+export async function handleSyncTableGraphQlContinuation(
+  { extensions, extraContinuationData, pageInfo },
   currentMaxEntriesPerRun: number,
-  formatFunction: FormatFunction,
-  context: coda.SyncExecutionContext,
   storeFront?: boolean
 ) {
-  let result = [];
   let continuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation = null;
   const endTime = Date.now();
 
@@ -110,37 +96,30 @@ export async function handleSyncTableGraphQlResults(
     }
   }
 
-  if (nodes) {
-    result = nodes.map((node) => formatFunction(node, context));
-
-    if (pageInfo && pageInfo.hasNextPage) {
+  if (pageInfo && pageInfo.hasNextPage) {
+    continuation = {
+      cursor: pageInfo.endCursor,
+      lastSyncTime: endTime,
+      retryCount: 0,
+      extraContinuationData,
+    };
+    if (!storeFront) {
       continuation = {
-        cursor: pageInfo.endCursor,
-        lastSyncTime: endTime,
-        retryCount: 0,
-        extraContinuationData,
+        ...continuation,
+        lastCost: {
+          requestedQueryCost: extensions.cost.requestedQueryCost,
+          actualQueryCost: extensions.cost.actualQueryCost,
+        },
+        lastMaxEntriesPerRun: currentMaxEntriesPerRun,
+        lastThrottleStatus: extensions.cost.throttleStatus,
       };
-      if (!storeFront) {
-        continuation = {
-          ...continuation,
-          lastCost: {
-            requestedQueryCost: extensions.cost.requestedQueryCost,
-            actualQueryCost: extensions.cost.actualQueryCost,
-          },
-          lastMaxEntriesPerRun: currentMaxEntriesPerRun,
-          lastThrottleStatus: extensions.cost.throttleStatus,
-        };
-      }
     }
   }
 
-  return {
-    result,
-    continuation,
-  };
+  return continuation;
 }
 
-export async function handleSyncTableGraphQlError(
+export async function handleSyncTableGraphQlErrorContinuation(
   error: Error,
   prevContinuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation,
   currentMaxEntriesPerRun: number,
@@ -198,10 +177,7 @@ export async function handleSyncTableGraphQlError(
       );
     }
 
-    return {
-      result: [],
-      continuation,
-    };
+    return continuation;
   } else if (error instanceof coda.UserVisibleError) {
     throw error;
   } else {
@@ -298,13 +274,11 @@ export async function makeSyncTableGraphQlRequest(
     payload: any;
     cacheTtlSecs?: number;
     apiVersion?: string;
-    formatFunction: FormatFunction;
     maxEntriesPerRun: number;
     prevContinuation: SyncTableStorefrontContinuation | SyncTableGraphQlContinuation;
     extraContinuationData?: any;
     mainDataKey: string;
     storeFront?: boolean;
-    preProcess?: CallableFunction;
   },
   context: coda.SyncExecutionContext
 ) {
@@ -316,8 +290,9 @@ export async function makeSyncTableGraphQlRequest(
     );
   }
 
+  let response;
   try {
-    const response = await makeGraphQlRequest(
+    response = await makeGraphQlRequest(
       {
         payload: params.payload,
         cacheTtlSecs: params.cacheTtlSecs,
@@ -327,26 +302,30 @@ export async function makeSyncTableGraphQlRequest(
       context
     );
 
-    return await handleSyncTableGraphQlResults(
+    const continuation = await handleSyncTableGraphQlContinuation(
       {
-        nodes: params.preProcess
-          ? params.preProcess(response.body.data)
-          : response.body.data?.[params.mainDataKey]?.nodes,
-        pageInfo: response.body.data?.[params.mainDataKey]?.pageInfo,
         extensions: response.body.extensions,
         extraContinuationData: params.extraContinuationData,
+        pageInfo: response.body.data?.[params.mainDataKey]?.pageInfo,
       },
       params.maxEntriesPerRun,
-      params.formatFunction,
-      context,
       params.storeFront
     );
+
+    return {
+      response,
+      continuation,
+    };
   } catch (error) {
-    return await handleSyncTableGraphQlError(
+    const continuation = await handleSyncTableGraphQlErrorContinuation(
       error,
       params.prevContinuation,
       params.maxEntriesPerRun,
       params.extraContinuationData
     );
+    return {
+      response,
+      continuation,
+    };
   }
 }

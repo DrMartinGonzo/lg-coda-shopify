@@ -2,24 +2,27 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_PRODUCT, OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import {
-  formulaProduct,
   syncProductsGraphQlAdmin,
   autocompleteProductTypes,
-  getProductSyncTableDynamicOptions,
+  productSyncTableDynamicOptions,
   executeProductsSyncTableUpdate,
-  actionUpdateProduct,
-  actionDeleteProduct,
-  actionCreateProduct,
+  fetchProduct,
+  formatProductForSchemaFromRestApi,
+  deleteProduct,
+  updateProduct,
+  formatProductForSchemaFromGraphQlApi,
+  DEFAULT_PRODUCT_OPTION_NAME,
+  validateProductParams,
+  createProduct,
 } from './products-functions';
 import { ProductSchema } from './products-schema';
 import { sharedParameters } from '../shared-parameters';
+import { graphQlGidToId } from '../helpers-graphql';
+import { cleanQueryParams } from '../helpers-rest';
+import { SyncUpdateNoPreviousValues } from '../types/misc';
+import { ProductFieldsFragment, UpdateProductMutation } from '../types/admin.generated';
 
 const parameters = {
-  articleID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'articleID',
-    description: 'The id of the article.',
-  }),
   productGid: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'productGid',
@@ -112,16 +115,15 @@ const parameters = {
 };
 
 export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
-  /**====================================================================================================================
-   *    Sync tables
-   *===================================================================================================================== */
+  // #region Sync Tables
+  // Products Sync Table
   pack.addSyncTable({
     name: 'Products',
     description:
       'Return Products from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync.',
     identityName: IDENTITY_PRODUCT,
     schema: ProductSchema,
-    dynamicOptions: getProductSyncTableDynamicOptions,
+    dynamicOptions: productSyncTableDynamicOptions,
     formula: {
       name: 'SyncProducts',
       description: '<Help text for the sync formula, not show to the user>',
@@ -171,26 +173,27 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       executeUpdate: executeProductsSyncTableUpdate,
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Formulas
-   *===================================================================================================================== */
+  // #region Formulas
   pack.addFormula({
     name: 'Product',
     description: 'Get a single product data.',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'productID',
-        description: 'The id of the product.',
-      }),
-    ],
+    parameters: [parameters.productGid],
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: ProductSchema,
-    execute: formulaProduct,
+    execute: async ([productGid], context) => {
+      const response = await fetchProduct(graphQlGidToId(productGid), context);
+      if (response.body.product) {
+        return formatProductForSchemaFromRestApi(response.body.product, context);
+      }
+    },
   });
+  // #endregion
 
+  // #region Actions
+  // CreateProduct Action
   pack.addFormula({
     name: 'CreateProduct',
     description: 'Create a new Shopify Product and return GraphQl GID.',
@@ -221,9 +224,65 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: actionCreateProduct,
+    execute: async function (
+      [
+        title,
+        descriptionHtml,
+        productType,
+        options,
+        tags,
+        vendor,
+        status = 'DRAFT',
+        handle,
+        images,
+        imagesUrls,
+        templateSuffix,
+      ],
+      context
+    ) {
+      if (imagesUrls !== undefined && images !== undefined)
+        throw new coda.UserVisibleError("Provide either 'imagesFromCoda' or 'imagesUrls', not both");
+
+      const imagesToUse = imagesUrls ? imagesUrls : images;
+      const params = cleanQueryParams({
+        title,
+        body_html: descriptionHtml,
+        productType,
+        options: options ? options.map((name) => ({ name, values: [DEFAULT_PRODUCT_OPTION_NAME] })) : undefined,
+        tags,
+        vendor,
+        status,
+        handle,
+        images: imagesToUse ? imagesToUse.map((url) => ({ src: url })) : undefined,
+        imagesUrls,
+        templateSuffix,
+      });
+
+      validateProductParams(params);
+
+      // TODO: make a function to convert from rest admin api values to graphql api values and vice versa
+      // GraphQL status is uppercase, convert it for Rest Admin API
+      if (params.status) {
+        params.status = status.toLowerCase();
+      }
+
+      // We need to add a default variant to the product if some options are defined
+      if (params.options) {
+        params['variants'] = [
+          {
+            option1: DEFAULT_PRODUCT_OPTION_NAME,
+            option2: DEFAULT_PRODUCT_OPTION_NAME,
+            option3: DEFAULT_PRODUCT_OPTION_NAME,
+          },
+        ];
+      }
+
+      const response = await createProduct(params, context);
+      return response.body.product.admin_graphql_api_id;
+    },
   });
 
+  // UpdateProduct Action
   pack.addFormula({
     name: 'UpdateProduct',
     description: 'Update an existing Shopify product and return the updated data.',
@@ -243,24 +302,51 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
     //! withIdentity breaks relations when updating
     // schema: coda.withIdentity(ProductSchema, IDENTITY_PRODUCT),
     schema: ProductSchema,
-    execute: actionUpdateProduct,
+    execute: async function (
+      [productGid, title, descriptionHtml, product_type, tags, vendor, status, handle, template_suffix],
+      context
+    ) {
+      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(ProductSchema);
+      const newValue = {
+        title,
+        descriptionHtml,
+        product_type,
+        tags,
+        vendor,
+        status,
+        handle,
+        template_suffix,
+      };
+      const updatedFields = Object.keys(newValue).filter((key) => newValue[key] !== undefined);
+      const update: SyncUpdateNoPreviousValues = { newValue, updatedFields };
+      const response = await updateProduct(productGid, effectivePropertyKeys, [], [], update, context);
+      const data = response.body.data as UpdateProductMutation;
+      const product = data.productUpdate.product as ProductFieldsFragment;
+      console.log('product', product);
+      return formatProductForSchemaFromGraphQlApi(product, context, []);
+    },
   });
 
+  // DeleteProduct Action
   pack.addFormula({
     name: 'DeleteProduct',
     description: 'Delete an existing Shopify product and return true on success.',
     parameters: [parameters.productGid],
     isAction: true,
     resultType: coda.ValueType.Boolean,
-    execute: actionDeleteProduct,
+    execute: async function ([productGid], context) {
+      await deleteProduct(graphQlGidToId(productGid), context);
+      return true;
+    },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Column formats
-   *===================================================================================================================== */
+  // #region Column Formats
+  // Product Column Format
   pack.addColumnFormat({
     name: 'Product',
-    instructions: 'Get a single product data.',
+    instructions: 'Paste the GraphQL GID of the product into the column.',
     formulaName: 'Product',
   });
+  // #endregion
 };

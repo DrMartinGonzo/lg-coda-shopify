@@ -5,7 +5,8 @@
   "scripts": {
     "push": "npx coda upload pack.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npx patch-package"
+    "postinstall": "npx patch-package",
+    "graphql-codegen": "graphql-codegen --config codegen.ts"
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",
   "license": "MIT",
@@ -16,6 +17,12 @@
     "striptags": "^3.2.0"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "5.0.0",
+    "@graphql-codegen/client-preset": "^4.1.0",
+    "@graphql-codegen/introspection": "4.0.0",
+    "@graphql-codegen/typescript": "4.0.1",
+    "@graphql-codegen/typescript-resolvers": "4.0.1",
+    "@shopify/api-codegen-preset": "^0.0.1",
     "@types/chai": "^4.3.1",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^9.1.1",

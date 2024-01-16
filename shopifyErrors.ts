@@ -1,4 +1,4 @@
-import { ShopifyGraphQlRequestCost } from './types/Shopify';
+import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
 
 export type ShopifyGraphQlError = {
   locations: {

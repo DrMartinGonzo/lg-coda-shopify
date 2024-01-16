@@ -1,102 +1,12 @@
-import { graphQlGidToId, pageInfoPart, userErrorsPart } from '../helpers-graphql';
-import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
+import '../types/admin.generated.d.ts';
 
-const MAX_OPTIONS_PER_PRODUCT = 3;
+import { graphQlGidToId } from '../helpers-graphql';
+import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
-/**====================================================================================================================
- *    Fragments and helpers
- *===================================================================================================================== */
-const metafieldAdminNodes = `
-  metafields(keys: $metafieldKeys, first: $countMetafields) {
-    nodes { ...metafieldFields }
-  }`;
+export const MAX_OPTIONS_PER_PRODUCT = 3;
 
-const metafieldStorefrontNodes = `
-  metafields(identifiers: $metafieldsIdentifiers) {
-    ...metafieldFields
-  }`;
-
-const makeProductFieldsFragmentAdmin = (optionalNestedFields: string[]) => {
-  const hasMetafields = optionalNestedFields.includes('metafields');
-
-  return `#graphql
-    fragment productFields on Product {
-      id
-      handle
-      createdAt
-      title
-      productType
-      publishedAt
-      status
-      tags
-      templateSuffix
-      updatedAt
-      vendor
-      isGiftCard
-      descriptionHtml
-      onlineStoreUrl
-
-      ${optionalNestedFields.includes('options') ? `options(first: ${MAX_OPTIONS_PER_PRODUCT}) { name }` : ''}
-      ${optionalNestedFields.includes('featuredImage') ? 'featuredImage { url }' : ''}
-
-      # availableForSale
-      # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
-      # seo {
-      #   description
-      #   title
-      # }
-      # trackingParameters
-      # media(first: 10) {
-      #   nodes {
-      #     mediaContentType
-      #   }
-      # }
-
-      ${hasMetafields ? metafieldAdminNodes : ''}
-    }
-
-    ${hasMetafields ? metafieldFieldsFragment : ''}
-  `;
-};
-
-const makeProductFieldsFragmentStorefront = (includeMetafields: boolean = false) => `
-  fragment productFields on Product {
-    availableForSale
-    createdAt
-    handle
-    id
-    descriptionHtml
-    productType
-    publishedAt
-    seo {
-      description
-      title
-    }
-    tags
-    title
-    featuredImage {
-      url
-    }
-    #trackingParameters
-    updatedAt
-    vendor
-    isGiftCard
-    media(first: 10) {
-      nodes {
-        mediaContentType
-      }
-    }
-    ${includeMetafields ? `metafields(identifiers: $metafieldsIdentifiers) { ...metafieldFields }` : ''}
-    options(first: ${MAX_OPTIONS_PER_PRODUCT}) {
-      name
-      #values
-    }
-  }
-
-  ${includeMetafields ? metafieldFieldsFragment : ''}
-`;
-
-function buildSearchQuery(filters: { [key: string]: any }) {
+// #region Helpers
+export function buildProductsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
   if (filters.search) searchItems.push(filters.search);
 
@@ -125,80 +35,215 @@ function buildSearchQuery(filters: { [key: string]: any }) {
 
   return searchItems.join(' AND ');
 }
+// #endregion
 
-/**====================================================================================================================
- *    Queries
- *===================================================================================================================== */
-// Storefront query to list max 50 available product types
-export const queryAvailableProductTypes = `#graphql
-  query QueryAvailableProductTypes{
-    productTypes(first: 50) {
-      edges {
-        node
-      }
+// #region Fragments
+export const ProductFieldsFragment = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
+
+  fragment ProductFields on Product {
+    id
+    handle
+    createdAt
+    title
+    productType
+    publishedAt
+    status
+    tags
+    templateSuffix
+    updatedAt
+    vendor
+    isGiftCard
+    descriptionHtml
+    onlineStoreUrl
+
+    # Optional fields and connections
+    options(first: $maxOptions) @include(if: $includeOptions) {
+      name
     }
-  }
-`;
-
-export const makeQueryProductsAdmin = (optionalNestedFields: string[], filters: { [key: string]: any }) => {
-  // Remove any undefined filters
-  Object.keys(filters).forEach((key) => {
-    if (filters[key] === undefined) delete filters[key];
-  });
-  const searchQuery = buildSearchQuery(filters);
-  console.log('searchQuery', searchQuery);
-
-  const hasMetafields = optionalNestedFields.includes('metafields');
-  const declaredVariables = ['$maxEntriesPerRun: Int!', '$cursor: String'];
-  if (hasMetafields) {
-    declaredVariables.push('$metafieldKeys: [String!]');
-    declaredVariables.push('$countMetafields: Int!');
-  }
-
-  return `#graphql
-  query queryProductsWithMetafields(${declaredVariables.join(', ')}) {
-    products(first: $maxEntriesPerRun, after: $cursor, query: "${searchQuery}") {
+    featuredImage @include(if: $includeFeaturedImage) {
+      url
+    }
+    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
       nodes {
-        ...productFields
+        ...MetafieldFields
       }
-      ${pageInfoPart}
+    }
+
+    # availableForSale
+    # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
+    # seo {
+    #   description
+    #   title
+    # }
+    # trackingParameters
+    # media(first: 10) {
+    #   nodes {
+    #     mediaContentType
+    #   }
+    # }
+  }
+`;
+// #endregion
+
+// #region Queries
+export const QueryProductsAdmin = /* GraphQL */ `
+  ${ProductFieldsFragment}
+
+  query getProductsWithMetafields(
+    $maxEntriesPerRun: Int!
+    $cursor: String
+    $metafieldKeys: [String!]
+    $countMetafields: Int
+    $maxOptions: Int
+    $searchQuery: String
+    $includeOptions: Boolean!
+    $includeFeaturedImage: Boolean!
+    $includeMetafields: Boolean!
+  ) {
+    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+      nodes {
+        ...ProductFields
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
-
-  ${makeProductFieldsFragmentAdmin(optionalNestedFields)}
 `;
-};
+// #endregion
+
+// #region Mutations
+export const MutationUpdateProduct = /* GraphQL */ `
+  ${ProductFieldsFragment}
+
+  mutation UpdateProduct(
+    $countMetafields: Int
+    $includeFeaturedImage: Boolean!
+    $includeMetafields: Boolean!
+    $includeOptions: Boolean!
+    $maxOptions: Int
+    $metafieldKeys: [String!]
+    $metafieldsSetsInput: [MetafieldsSetInput!]!
+    $productInput: ProductInput!
+  ) {
+    metafieldsSet(metafields: $metafieldsSetsInput) {
+      metafields {
+        key
+        namespace
+        value
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+    productUpdate(input: $productInput) {
+      product {
+        ...ProductFields
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+// #endregion
 
 /**====================================================================================================================
- *    Mutations
+ *    Unused stuff
  *===================================================================================================================== */
-export function makeMutationUpdateProduct(optionalNestedFields: string[]) {
-  const hasMetafields = optionalNestedFields.includes('metafields');
-  const declaredVariables = ['$productInput: ProductInput!', '$metafieldsSetsInput: [MetafieldsSetInput!]!'];
-  if (hasMetafields) {
-    declaredVariables.push('$metafieldKeys: [String!]');
-    declaredVariables.push('$countMetafields: Int!');
+// #region Unused stuff
+export const queryProductInCollection = `
+  query queryProductInCollection($collectionId: ID!, $productId: ID!) {
+    collection(id: $collectionId) {
+      hasProduct(id: $productId)
+    }
   }
+`;
 
-  return `#graphql
-    mutation UpdateProduct(${declaredVariables.join(', ')}) {
-      metafieldsSet(metafields: $metafieldsSetsInput) {
-        metafields {
-          key
-          namespace
-          value
+// export const makeQueryProductsStorefront = `
+//   query queryProducts($cursor: String) {
+//     products(first: 200, after: $cursor) {
+//       nodes {
+//         ...productFields
+//       }
+//       pageInfo {
+//         ...PageInfoFields
+//       }
+//     }
+//   }
+//   ${makeProductFieldsFragmentStorefront()}
+// `;
+
+/*
+export const makeMutationProductsWithMetafieldsBulk = () => `
+  mutation {
+    bulkOperationRunQuery(
+    query: """
+      {
+        products {
+          edges {
+            node {
+              id
+              handle
+              createdAt
+              title
+              options {
+                name
+              }
+              productType
+              publishedAt
+              status
+              tags
+              templateSuffix
+              updatedAt
+              vendor
+              descriptionHtml
+              metafields {
+                edges {
+                  node {
+                    ...metafieldFields
+                  }
+                }
+              }
+            }
+          }
         }
-        ${userErrorsPart}
       }
-      productUpdate(input: $productInput) {
-        product {
-          # id
-          ...productFields
-        }
-        ${userErrorsPart}
+      ${metafieldFieldsFragment}
+      """
+    ) {
+      bulkOperation {
+        id
+        status
+      }
+      userErrors {
+        field
+        message
       }
     }
+  }
+`;
+*/
 
-    ${makeProductFieldsFragmentAdmin(optionalNestedFields)}
-  `;
-}
+export const queryCurrentBulkOperation = `
+  query queryCurrentBulkOperation {
+    currentBulkOperation {
+      id
+      status
+      errorCode
+      createdAt
+      completedAt
+      objectCount
+      fileSize
+      url
+      partialDataUrl
+      type
+      rootObjectCount
+    }
+  }
+`;
+// #endregion

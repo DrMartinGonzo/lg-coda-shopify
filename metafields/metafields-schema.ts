@@ -3,8 +3,8 @@ import * as accents from 'remove-accents';
 
 import { METAFIELD_GID_PREFIX_KEY, METAFIELD_PREFIX_KEY } from '../constants';
 import { capitalizeFirstChar } from '../helpers';
-import { fetchMetafieldDefinitions, getMetaFieldFullKey } from '../metafields/metafields-functions';
-import { mapMetaobjectFieldToSchemaProperty } from '../metaobjects/metaobjects-schema';
+import { fetchMetafieldDefinitions, getMetafieldDefinitionFullKey } from '../metafields/metafields-functions';
+import { mapMetaFieldToSchemaProperty } from '../metaobjects/metaobjects-schema';
 
 export const MetafieldSchema = coda.makeObjectSchema({
   properties: {
@@ -108,26 +108,27 @@ export const MetafieldSchemaNew = coda.makeObjectSchema({
 
 export async function augmentSchemaWithMetafields(
   baseSchema: coda.ObjectSchema<any, any>,
+  ownerType: string,
   context: coda.SyncExecutionContext
 ) {
   const schema: coda.ObjectSchema<any, any> = { ...baseSchema };
 
-  const fieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context);
-  fieldDefinitions.forEach((fieldDefinition) => {
-    const name = accents.remove(fieldDefinition.name);
-    const fullKey = getMetaFieldFullKey(fieldDefinition);
-    const prefixedFullKey = METAFIELD_PREFIX_KEY + fullKey;
-    const prefixedGidFullKey = METAFIELD_GID_PREFIX_KEY + fullKey;
+  const metafieldDefinitions = await fetchMetafieldDefinitions(ownerType, context);
+  metafieldDefinitions.forEach((metafieldDefinition) => {
+    const name = accents.remove(metafieldDefinition.name);
+    const fullKey = getMetafieldDefinitionFullKey(metafieldDefinition);
+    const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
+    const matchingSchemaGidKey = METAFIELD_GID_PREFIX_KEY + fullKey;
     const propName = `Meta ${capitalizeFirstChar(name)}`;
 
     /* We prefix fromKey to be able to determine later wich columns are metafield values */
     schema.properties[propName] = {
-      ...mapMetaobjectFieldToSchemaProperty(fieldDefinition),
-      fromKey: prefixedFullKey,
-      fixedId: prefixedFullKey,
+      ...mapMetaobjectFieldToSchemaProperty(metafieldDefinition),
+      fromKey: matchingSchemaKey,
+      fixedId: matchingSchemaKey,
     };
     // Add eventual choices
-    const choicesValidation = fieldDefinition.validations.find((v) => v.name === 'choices');
+    const choicesValidation = metafieldDefinition.validations.find((v) => v.name === 'choices');
     if (choicesValidation && choicesValidation.value) {
       schema.properties[propName]['codaType'] = coda.ValueHintType.SelectList;
       schema.properties[propName]['options'] = JSON.parse(choicesValidation.value);
@@ -136,8 +137,8 @@ export async function augmentSchemaWithMetafields(
     /* Another property to store field GraphQL GID */
     schema.properties[`Meta Gid ${capitalizeFirstChar(name)}`] = {
       type: coda.ValueType.String,
-      fromKey: prefixedGidFullKey,
-      fixedId: prefixedGidFullKey,
+      fromKey: matchingSchemaGidKey,
+      fixedId: matchingSchemaGidKey,
     };
 
     // always feature metafields properties so that the user know they are synced by default

@@ -1,5 +1,51 @@
-export const queryMetaobjectDynamicUrls = `#graphql
-  query queryMetaobjectDynamicUrls($cursor: String) {
+// #region Helpers
+
+// #endregion
+
+// #region Fragments
+const MetaobjectFieldDefinitionFieldsFragment = /* GraphQL */ `
+  fragment MetaobjectFieldDefinitionFields on MetaobjectFieldDefinition {
+    key
+    description
+    name
+    required
+    type {
+      category
+      name
+      supportedValidations {
+        name
+        type
+      }
+      supportsDefinitionMigrations
+    }
+    validations {
+      name
+      type
+      value
+    }
+  }
+`;
+
+// TODO: https://stackoverflow.com/a/65271603 to avoid the error ?
+function buildOptionalFieldsFragment(fieldsKey: string[]) {
+  return /* GraphQL */ `
+    fragment OptionalFieldsFragment on Metaobject {
+      ${fieldsKey
+        .map((key) => {
+          // handle is a special case
+          if (key === 'handle') return key;
+          return `${key}: field(key: "${key}") { value }`;
+        })
+        .join('\n')}
+    }
+  `;
+}
+
+// #endregion
+
+// #region Queries
+export const queryMetaobjectDynamicUrls = /* GraphQL */ `
+  query GetMetaobjectDynamicUrls($cursor: String) {
     metaobjectDefinitions(first: 20, after: $cursor) {
       nodes {
         id
@@ -15,7 +61,7 @@ export const queryMetaobjectDynamicUrls = `#graphql
   }
 `;
 
-export const queryMetaobjectTypes = `#graphql
+export const queryMetaobjectTypes = /* GraphQL */ `
   query queryMetaobjectTypes($cursor: String) {
     metaobjectDefinitions(first: 20, after: $cursor) {
       nodes {
@@ -31,12 +77,20 @@ export const queryMetaobjectTypes = `#graphql
 `;
 
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
-  return `#graphql
-    query ($type: String!, $maxEntriesPerRun: Int!, $cursor: String) {
-      metaobjects(type: $type, first: $maxEntriesPerRun, after: $cursor, reverse:true) {
+  return /* GraphQL */ `
+    ${buildOptionalFieldsFragment(fieldsKey)}
+
+    query GetMetaobjects($type: String!, $maxEntriesPerRun: Int!, $cursor: String) {
+      metaobjects(type: $type, first: $maxEntriesPerRun, after: $cursor, reverse: true) {
         nodes {
           id
-          ...optionalFieldsFragment
+          # TODO: only add if requested as it increases query cost
+          capabilities {
+            publishable {
+              status
+            }
+          }
+          ...OptionalFieldsFragment
         }
 
         pageInfo {
@@ -45,82 +99,63 @@ export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
         }
       }
     }
-
-    fragment optionalFieldsFragment on Metaobject {
-      ${fieldsKey
-        .map((key) => {
-          // handle is a special case
-          if (key === 'handle') return key;
-          return `${key}: field(key: "${key}") { value }`;
-        })
-        .join('\n')}
-    }`;
+  `;
 }
 
-export const querySyncTableDetails = `#graphql
-  query metaobjectDefinitionType($id: ID!) {
+export const querySyncTableDetails = /* GraphQL */ `
+  query GetMetaobjectDefinitionType($id: ID!) {
     metaobjectDefinition(id: $id) {
       type
     }
   }
 `;
 
-const fieldDefinitionFields = `#graphql
-  key
-  description
-  name
-  required
-  type {
-    category
-    name
-    supportedValidations {
-      name
-      type
-    }
-    supportsDefinitionMigrations
-  }
-  validations {
-    name
-    type
-    value
-  }
-`;
+export const queryMetaObjectFieldDefinitionsFromMetaobjectDefinition = /* GraphQL */ `
+  ${MetaobjectFieldDefinitionFieldsFragment}
 
-export const queryMetaObjectFieldDefinitionsFromMetaobjectDefinition = `#graphql
-  query queryMetaObjectFieldDefinitionsFromMetaobjectDefinition($id: ID!) {
+  query GetMetaObjectFieldDefinitionsFromMetaobjectDefinition($id: ID!) {
     metaobjectDefinition(id: $id) {
       fieldDefinitions {
-        ${fieldDefinitionFields}
+        ...MetaobjectFieldDefinitionFields
       }
     }
   }
 `;
 
-export const queryMetaObjectFieldDefinitions = `#graphql
-  query queryMetaObjectFieldDefinitions($id: ID!) {
+export const queryMetaObjectFieldDefinitions = /* GraphQL */ `
+  ${MetaobjectFieldDefinitionFieldsFragment}
+
+  query GetMetaObjectFieldDefinitions($id: ID!) {
     metaobject(id: $id) {
       definition {
         fieldDefinitions {
-          ${fieldDefinitionFields}
+          ...MetaobjectFieldDefinitionFields
         }
       }
     }
   }
 `;
 
-export const queryMetaobjectDefinitionsByType = `#graphql
-  query metaobjectDefinitionByType($type: String!) {
+export const queryMetaobjectDefinitionsByType = /* GraphQL */ `
+  ${MetaobjectFieldDefinitionFieldsFragment}
+
+  query GetMetaobjectDefinitionByType($type: String!) {
     metaobjectDefinitionByType(type: $type) {
       displayNameKey
+      capabilities {
+        publishable {
+          enabled
+        }
+      }
       fieldDefinitions {
-        ${fieldDefinitionFields}
+        ...MetaobjectFieldDefinitionFields
       }
     }
   }
 `;
 
-export const queryAllMetaobjectDefinitions = `#graphql
-  query queryAllMetaobjectDefinitions($batchSize: Int!, $cursor: String) {
+export const queryAllMetaobjectDefinitions = /* GraphQL */ `
+  query GetMetaobjectDefinitions($batchSize: Int!, $cursor: String) {
     metaobjectDefinitions(first: $batchSize, after: $cursor) {
       nodes {
         id
@@ -133,14 +168,18 @@ export const queryAllMetaobjectDefinitions = `#graphql
         endCursor
       }
     }
-  }`;
+  }
+`;
+// #endregion
 
-export const createMetaobjectMutation = `#graphql
-  mutation createMetaobject($metaobject: MetaobjectCreateInput!) {
+// #region Mutations
+export const createMetaobjectMutation = /* GraphQL */ `
+  mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {
     metaobjectCreate(metaobject: $metaobject) {
       metaobject {
         id
       }
+
       userErrors {
         field
         message
@@ -150,12 +189,13 @@ export const createMetaobjectMutation = `#graphql
   }
 `;
 
-export const updateMetaobjectMutation = `#graphql
-  mutation metaobjectUpdate($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+export const updateMetaobjectMutation = /* GraphQL */ `
+  mutation UpdateMetaobject($id: ID!, $metaobject: MetaobjectUpdateInput!) {
     metaobjectUpdate(id: $id, metaobject: $metaobject) {
       metaobject {
         id
       }
+
       userErrors {
         field
         message
@@ -165,14 +205,17 @@ export const updateMetaobjectMutation = `#graphql
   }
 `;
 
-export const deleteMetaobjectMutation = `#graphql
-  mutation metaobjectDelete($id: ID!) {
+export const deleteMetaobjectMutation = /* GraphQL */ `
+  mutation DeleteMetaobject($id: ID!) {
     metaobjectDelete(id: $id) {
       deletedId
+
       userErrors {
         field
         message
+        code
       }
     }
   }
 `;
+// #endregion
