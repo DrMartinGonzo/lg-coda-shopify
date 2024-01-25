@@ -5,6 +5,20 @@ import { syncPages, fetchPage, updatePage, deletePage, createPage } from './page
 
 import { PageSchema } from './pages-schema';
 import { sharedParameters } from '../shared-parameters';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import {
+  createResourceMetafield,
+  deleteResourceMetafieldById,
+  fetchMetafieldDefinitions,
+  findRequiredMetafieldDefinition,
+  formatMetafieldValueForApi,
+  formatMetafieldsForSchema,
+  getMetaFieldRealFromKey,
+  getResourceMetafieldByNamespaceKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+  splitMetaFieldFullKey,
+} from '../metafields/metafields-functions';
+import { graphQlGidToId } from '../helpers-graphql';
 
 const parameters = {
   pageGID: coda.makeParameter({
@@ -67,10 +81,26 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
     description: 'Return Pages from this shop.',
     identityName: IDENTITY_PAGE,
     schema: PageSchema,
+    dynamicOptions: {
+      getSchema: async function (context, _, { syncMetafields }) {
+        let augmentedSchema: any = PageSchema;
+        if (syncMetafields) {
+          augmentedSchema = await augmentSchemaWithMetafields(PageSchema, 'PAGE', context);
+        }
+        // admin_url should always be the last featured property, regardless of any metafield keys added previously
+        augmentedSchema.featuredProperties.push('admin_url');
+        return augmentedSchema;
+      },
+    },
     formula: {
       name: 'SyncPages',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
+        {
+          ...sharedParameters.optionalSyncMetafields,
+          description:
+            "description: 'Also retrieve metafields. Not recommanded if you have lots of pages, the sync will be much slower as the pack will have to do another API call for each page. Still waiting for Shopify to add GraphQL access to pages...',",
+        },
         { ...sharedParameters.filterCreatedAtMax, optional: true },
         { ...sharedParameters.filterCreatedAtMin, optional: true },
         { ...sharedParameters.filterHandle, optional: true },
@@ -85,16 +115,86 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
       execute: syncPages,
       maxUpdateBatchSize: 10,
       executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+        const { prefixedMetafieldFromKeys: schemaPrefixedMetafieldFromKeys, standardFromKeys } =
+          separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
+        const effectiveMetafieldKeys = schemaPrefixedMetafieldFromKeys.map(getMetaFieldRealFromKey);
+        const hasMetafieldsInSchema = !!effectiveMetafieldKeys.length;
+        // TODO: fetch metafield definitions only if a metafield update is detected, and not only if metafields are present in the schema
+        const metafieldDefinitions = hasMetafieldsInSchema ? await fetchMetafieldDefinitions('PAGE', context) : [];
+
         const jobs = updates.map(async (update) => {
           const { updatedFields } = update;
           const pageGid = update.previousValue.admin_graphql_api_id;
 
-          const fields = {};
-          updatedFields.forEach((key) => {
-            fields[key] = update.newValue[key];
+          const updatedMetafieldKeys = updatedFields.filter((key) => schemaPrefixedMetafieldFromKeys.includes(key));
+          const updatedNonMetafieldKeys = updatedFields.filter((key) => standardFromKeys.includes(key));
+          let nonMetafieldNewValues = {};
+          let metafieldNewValues = {};
+
+          const restFields = {};
+          updatedNonMetafieldKeys.forEach((key) => {
+            restFields[key] = update.newValue[key];
           });
-          const newValues = await updatePage(pageGid, fields, context);
-          return newValues;
+
+          if (Object.keys(restFields).length) {
+            nonMetafieldNewValues = await updatePage(pageGid, restFields, context);
+          }
+
+          if (updatedMetafieldKeys.length) {
+            // Update metafields. We must do it via Rest Admin API for pages as it's not supported by GraphQL
+            const updatedMetafields = (
+              await Promise.all(
+                updatedMetafieldKeys.map(async (propKey) => {
+                  const value = update.newValue[propKey] as string;
+                  const realKey = getMetaFieldRealFromKey(propKey);
+                  const { metaNamespace, metaKey } = splitMetaFieldFullKey(realKey);
+
+                  // TODO: Faster processing of deletions possible ?
+                  // Delete metafield if value is empty
+                  if (value === undefined || value === '') {
+                    const matchingMetafield = await getResourceMetafieldByNamespaceKey(
+                      graphQlGidToId(pageGid),
+                      'page',
+                      metaNamespace,
+                      metaKey,
+                      context
+                    );
+                    if (matchingMetafield) {
+                      await deleteResourceMetafieldById([matchingMetafield.id], context);
+                      return {
+                        ...matchingMetafield,
+                        value: undefined,
+                      };
+                    }
+                  }
+
+                  const metafieldDefinition = findRequiredMetafieldDefinition(realKey, metafieldDefinitions);
+                  const formattedApiValue = formatMetafieldValueForApi(propKey, value, metafieldDefinition);
+                  const res = await createResourceMetafield(
+                    [
+                      graphQlGidToId(pageGid),
+                      'page',
+                      metaNamespace,
+                      metaKey,
+                      formattedApiValue,
+                      metafieldDefinition.type.name,
+                    ],
+                    context
+                  );
+
+                  return res.body.metafield;
+                })
+              )
+            )
+              // remove all falsy values
+              .filter((f) => f);
+
+            console.log('updatedMetafields', updatedMetafields);
+            metafieldNewValues = formatMetafieldsForSchema(updatedMetafields, metafieldDefinitions);
+          }
+
+          return { ...update.previousValue, ...nonMetafieldNewValues, ...metafieldNewValues };
         });
 
         // Wait for all of the jobs to finish .

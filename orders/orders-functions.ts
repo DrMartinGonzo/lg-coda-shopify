@@ -14,7 +14,7 @@ import {
 import { convertTTCtoHT } from '../helpers';
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
 
-import { formatCustomer } from '../customers/customers-functions';
+import { formatCustomerForSchemaFromRestApi } from '../customers/customers-functions';
 import { FormatFunction } from '../types/misc';
 
 function getItemRefundLineItems(refunds, line_item_id) {
@@ -63,7 +63,7 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
 
 export const formatOrder: FormatFunction = (data, context) => {
   if (data.customer) {
-    data.customer = formatCustomer(data.customer, context);
+    data.customer = formatCustomerForSchemaFromRestApi(data.customer, context);
   }
 
   return data;

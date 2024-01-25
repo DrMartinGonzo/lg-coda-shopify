@@ -16,17 +16,18 @@ import {
   capitalizeFirstChar,
   extractValueAndUnitFromMeasurementString,
   getObjectSchemaItemProp,
+  maybeParseJson,
   transformToArraySchema,
   unitToShortName,
 } from '../helpers';
 import { makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import {
-  calcSyncTableMaxEntriesPerRun,
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
   graphQlGidToId,
-  handleGraphQlError,
   idToGraphQlGid,
   makeGraphQlRequest,
   makeSyncTableGraphQlRequest,
+  skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 
@@ -53,8 +54,24 @@ import type {
   CurrencyCode,
   MetafieldsSetInput,
 } from '../types/admin.types';
+import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 
 // TODO: there are still some legacy API in there: 2022-01 and 2022-07
+
+// #region Autocomplete functions
+export function makeAutocompleteMetafieldKeysFunction(ownerType: string) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    const metafieldDefinitions = await fetchMetafieldDefinitions(ownerType, context);
+    const searchObjects = metafieldDefinitions.map((metafield) => {
+      return {
+        name: metafield.name,
+        fullKey: `${metafield.namespace}.${metafield.key}`,
+      };
+    });
+    return coda.autocompleteSearchObjects(search, searchObjects, 'name', 'fullKey');
+  };
+}
+// #endregion
 
 // #region Metafield key functions
 export const getMetafieldDefinitionFullKey = (metafieldDefinition: MetafieldDefinition) =>
@@ -72,23 +89,21 @@ export const splitMetaFieldFullKey = (fullKey: string) => ({
 });
 
 /**
- * Remove our custom prefix from the metafield keys
- * @param prefixedMetafieldFromKeys array of prefixed metafield keys
- * @returns array of keys without the prefix, i.e. the actual metafield keys
+ * Remove our custom prefix from the metafield key
+ * @param fromKey prefixed metafield keys
+ * @returns key without the prefix, i.e. the actual metafield keys
  */
-export function getMetaFieldRealFromKeys(prefixedMetafieldFromKeys: string[]) {
-  return prefixedMetafieldFromKeys.map((fromKey) =>
-    fromKey.replace(METAFIELD_PREFIX_KEY, '').replace(METAFIELD_GID_PREFIX_KEY, '')
-  );
+export function getMetaFieldRealFromKey(fromKey: string) {
+  return fromKey.replace(METAFIELD_PREFIX_KEY, '').replace(METAFIELD_GID_PREFIX_KEY, '');
 }
 
 export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
   const prefixedMetafieldFromKeys = fromKeys.filter(
     (fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY) || fromKey.startsWith(METAFIELD_GID_PREFIX_KEY)
   );
-  const nonMetafieldFromKeys = fromKeys.filter((fromKey) => prefixedMetafieldFromKeys.indexOf(fromKey) === -1);
+  const standardFromKeys = fromKeys.filter((fromKey) => prefixedMetafieldFromKeys.indexOf(fromKey) === -1);
 
-  return { prefixedMetafieldFromKeys, nonMetafieldFromKeys };
+  return { prefixedMetafieldFromKeys, standardFromKeys };
 }
 // #endregion
 
@@ -96,32 +111,27 @@ export function formatMetafieldsSetsInputFromResourceUpdate(
   update: SyncUpdateNoPreviousValues,
   ownerGid: string,
   metafieldFromKeys: string[],
-  metafieldDefinitions: MetafieldDefinition[],
-  codaSchema: coda.ArraySchema<coda.Schema>
+  metafieldDefinitions: MetafieldDefinition[]
 ): MetafieldsSetInput[] {
   if (!metafieldFromKeys.length) return [];
 
   return metafieldFromKeys.map((fromKey) => {
     const value = update.newValue[fromKey] as string;
-    const realFromKey = fromKey.replace(METAFIELD_PREFIX_KEY, '').replace(METAFIELD_GID_PREFIX_KEY, '');
+    const realFromKey = getMetaFieldRealFromKey(fromKey);
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-
-    const metafieldDefinition = metafieldDefinitions.find(
-      (f) => f && f.namespace === metaNamespace && f.key === metaKey
-    );
-    if (!metafieldDefinition) throw new Error('metafieldDefinition not found');
+    const metafieldDefinition = findRequiredMetafieldDefinition(realFromKey, metafieldDefinitions);
 
     return {
       key: metaKey,
       namespace: metaNamespace,
       ownerId: ownerGid,
       type: metafieldDefinition.type.name,
-      value: formatMetafieldValueForApi(fromKey, value, metafieldDefinition, codaSchema),
+      value: formatMetafieldValueForApi(fromKey, value, metafieldDefinition),
     };
   });
 }
 
-function resourceEndpointFromResourceType(resourceType) {
+export function resourceEndpointFromResourceType(resourceType) {
   switch (resourceType) {
     case 'article':
       return 'articles';
@@ -151,7 +161,7 @@ function resourceEndpointFromResourceType(resourceType) {
 }
 
 // #region Formatting functions
-const formatMetafield: FormatFunction = (metafield, context) => {
+export const formatMetafield: FormatFunction = (metafield, context) => {
   if (metafield.namespace && metafield.key) {
     metafield.lookup = `${metafield.namespace}.${metafield.key}`;
   }
@@ -159,46 +169,33 @@ const formatMetafield: FormatFunction = (metafield, context) => {
   return metafield;
 };
 
-/**
- * try to parse a metafield or metaobject file raw value
- */
-export function parseMetafieldValue(value) {
-  if (!value) return value;
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return value;
-  }
-}
-
-export function getParsedMetafields(
-  metafields: Metafield[],
+export function parseMetafieldAndAugmentDefinition(
+  metafield: Metafield,
   metafieldDefinitions: MetafieldDefinition[]
-): ParsedMetafieldWithAugmentedDefinition[] {
-  return metafields.map((metafield) => {
-    const fullKey = getMetaFieldFullKey(metafield);
-    const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
-    const matchingSchemaGidKey = METAFIELD_GID_PREFIX_KEY + fullKey;
-    const parsedValue = parseMetafieldValue(metafield?.value);
-    const metafieldDefinition = metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
-    if (!metafieldDefinition) throw new Error('metafieldDefinition not found');
+): ParsedMetafieldWithAugmentedDefinition {
+  const fullKey = getMetaFieldFullKey(metafield);
+  const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
+  const matchingSchemaGidKey = METAFIELD_GID_PREFIX_KEY + fullKey;
+  const parsedValue = maybeParseJson(metafield?.value);
+  const metafieldDefinition = findRequiredMetafieldDefinition(fullKey, metafieldDefinitions);
 
-    return {
-      ...metafield,
-      value: parsedValue,
-      augmentedDefinition: { ...metafieldDefinition, fullKey, matchingSchemaKey, matchingSchemaGidKey },
-    };
-  });
+  return {
+    ...metafield,
+    value: parsedValue,
+    augmentedDefinition: { ...metafieldDefinition, fullKey, matchingSchemaKey, matchingSchemaGidKey },
+  };
 }
 
-export function formatMetaFieldValueForSchema(value: any, schemaItemProp, metafieldDefinition: MetafieldDefinition) {
+// TODO: list metafields should not be returned as array except for fields returning objects ? for example: references
+// All the other should be outputed with a string delimiter, like '\n;;;\n' for easier editing inside Coda
+export function formatMetaFieldValueForSchema(
+  value: any,
+  metafieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition
+) {
   if (!value) return;
 
-  const { type, codaType } = schemaItemProp;
-  const isArrayCoda = schemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
   const isArrayApi = metafieldDefinition.type.name.startsWith('list.');
   const fieldType = isArrayApi ? metafieldDefinition.type.name.replace('list.', '') : metafieldDefinition.type.name;
-  // let formattedValue: any;
 
   switch (fieldType) {
     // TEXT
@@ -265,28 +262,21 @@ export function formatMetaFieldValueForSchema(value: any, schemaItemProp, metafi
 }
 
 export function formatMetafieldsForSchema(
-  metafields: Metafield[],
-  metafieldDefinitions: MetafieldDefinition[],
-  context: coda.ExecutionContext
+  metafields: Metafield[] | MetafieldRest[],
+  metafieldDefinitions: MetafieldDefinition[]
 ) {
   const obj = {};
-  const parsedMetafields = getParsedMetafields(metafields, metafieldDefinitions);
 
-  parsedMetafields
-    .filter((metafield) => metafield.value !== undefined)
-    .forEach((parsedMetafield) => {
-      const { value, augmentedDefinition } = parsedMetafield;
-      const { matchingSchemaKey, matchingSchemaGidKey } = augmentedDefinition;
+  metafields.forEach((metafield) => {
+    const { value, augmentedDefinition } = parseMetafieldAndAugmentDefinition(metafield, metafieldDefinitions);
 
-      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, matchingSchemaKey);
-      if (!schemaItemProp) return; // user did not select this field
+    const { matchingSchemaKey, matchingSchemaGidKey } = augmentedDefinition;
 
-      obj[matchingSchemaGidKey] = parsedMetafield.id;
-      obj[matchingSchemaKey] =
-        schemaItemProp.type === coda.ValueType.Array && Array.isArray(value)
-          ? value.map((v) => formatMetaFieldValueForSchema(v, schemaItemProp.items, augmentedDefinition))
-          : formatMetaFieldValueForSchema(value, schemaItemProp, augmentedDefinition);
-    });
+    obj[matchingSchemaGidKey] = metafield.id;
+    obj[matchingSchemaKey] = Array.isArray(value)
+      ? value.map((v) => formatMetaFieldValueForSchema(v, augmentedDefinition))
+      : formatMetaFieldValueForSchema(value, augmentedDefinition);
+  });
 
   return obj;
 }
@@ -329,13 +319,9 @@ export function formatMeasurementFieldForApi(string: string, measurementType: st
 export function formatMetafieldValueForApi(
   propKey: string,
   value: any,
-  fieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition,
-  codaSchema: coda.ArraySchema<coda.Schema>
+  fieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition
 ): string {
-  const codaSchemaItemProp = getObjectSchemaItemProp(codaSchema, propKey);
-  const isArrayCoda = codaSchemaItemProp.type === coda.ValueType.Array && Array.isArray(value);
   const isArrayApi = fieldDefinition.type.name.startsWith('list.');
-  const isArrayBoth = isArrayCoda && isArrayApi;
   const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
 
   switch (fieldType) {
@@ -355,7 +341,7 @@ export function formatMetafieldValueForApi(
     case FIELD_TYPES.date_time:
     case FIELD_TYPES.boolean:
     case FIELD_TYPES.json:
-      return isArrayBoth ? JSON.stringify(value) : value;
+      return isArrayApi ? JSON.stringify(value) : value;
 
     case FIELD_TYPES.rich_text_field:
       break;
@@ -365,7 +351,7 @@ export function formatMetafieldValueForApi(
       const scale_min = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_min').value);
       const scale_max = parseFloat(fieldDefinition.validations.find((v) => v.name === 'scale_max').value);
       return JSON.stringify(
-        isArrayBoth
+        isArrayApi
           ? value.map((v) => formatRatingFieldForApi(v, scale_min, scale_max))
           : formatRatingFieldForApi(value, scale_min, scale_max)
       );
@@ -375,7 +361,7 @@ export function formatMetafieldValueForApi(
       // TODO: dynamic get currency_code from shop
       const currencyCode = 'EUR' as CurrencyCode;
       return JSON.stringify(
-        isArrayBoth
+        isArrayApi
           ? value.map((v) => formatMoneyFieldForApi(v, currencyCode))
           : formatMoneyFieldForApi(value, currencyCode)
       );
@@ -383,21 +369,21 @@ export function formatMetafieldValueForApi(
     // REFERENCE
     case FIELD_TYPES.collection_reference:
     case FIELD_TYPES.page_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
+      return isArrayApi ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
 
     case FIELD_TYPES.file_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
+      return isArrayApi ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
 
     case FIELD_TYPES.metaobject_reference:
-      return isArrayBoth ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
+      return isArrayApi ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
 
     case FIELD_TYPES.product_reference:
-      return isArrayBoth
+      return isArrayApi
         ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT, v?.id)))
         : idToGraphQlGid(RESOURCE_PRODUCT, value?.id);
 
     case FIELD_TYPES.variant_reference:
-      return isArrayBoth
+      return isArrayApi
         ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, v?.id)))
         : idToGraphQlGid(RESOURCE_PRODUCT_VARIANT, value?.id);
 
@@ -406,7 +392,7 @@ export function formatMetafieldValueForApi(
     case FIELD_TYPES.dimension:
     case FIELD_TYPES.volume:
       return JSON.stringify(
-        isArrayBoth
+        isArrayApi
           ? value.map((v) => JSON.stringify(formatMeasurementFieldForApi(v, fieldType)))
           : formatMeasurementFieldForApi(value, fieldType)
       );
@@ -432,27 +418,24 @@ function makeFormatMetaFieldForSchemaFunction(
       admin_url: `${context.endpoint}/admin/${adminEntryUrlPart}/${graphQlGidToId(node.id)}/metafields`,
     };
 
-    optionalFieldsKeys.forEach(async (key) => {
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(key);
+    optionalFieldsKeys.forEach(async (fullKey) => {
+      const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
 
       const rawMetafieldValue = node.metafields.find((f) => f && f.namespace === metaNamespace && f.key === metaKey);
-      const metafieldValue = parseMetafieldValue(
+      const metafieldValue = maybeParseJson(
         // check if node[key] has 'value' property
         // TODO: check if really necessary
         rawMetafieldValue.hasOwnProperty('value') ? rawMetafieldValue.value : rawMetafieldValue
       );
       if (!metafieldValue) return;
 
-      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
-      const metafieldDefinition = metafieldDefinitions.find(
-        (f) => f && f.namespace === metaNamespace && f.key === metaKey
-      );
-      if (!metafieldDefinition) throw new Error('metafieldDefinition not found');
+      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, fullKey);
+      const metafieldDefinition = findRequiredMetafieldDefinition(fullKey, metafieldDefinitions);
 
-      data[key] =
+      data[fullKey] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(metafieldValue)
-          ? metafieldValue.map((v) => formatMetaFieldValueForSchema(v, schemaItemProp.items, metafieldDefinition))
-          : formatMetaFieldValueForSchema(metafieldValue, schemaItemProp, metafieldDefinition);
+          ? metafieldValue.map((v) => formatMetaFieldValueForSchema(v, metafieldDefinition))
+          : formatMetaFieldValueForSchema(metafieldValue, metafieldDefinition);
     });
 
     return data;
@@ -516,9 +499,7 @@ export async function fetchMetafieldDefinitions(
     },
   };
 
-  const response = await makeGraphQlRequest({ payload }, context);
-  handleGraphQlError(response.body.errors);
-
+  const { response } = await makeGraphQlRequest({ payload }, context);
   return response.body.data.metafieldDefinitions.nodes;
 }
 // #endregion
@@ -648,21 +629,36 @@ export const fetchMetafield = async ([metafieldId], context) => {
   }
 };
 
-export const fetchResourceMetafields = async ([resourceId, resourceType], context) => {
-  if (resourceId.length == 0) return;
-
-  if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
-    throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
-  }
-
+export const fetchResourceMetafields = async (
+  resourceId: number,
+  resourceType: string,
+  filters: {
+    /** Show metafields with given namespace */
+    namespace?: string;
+    /** Show metafields with given key */
+    key?: string;
+  } = {},
+  context: coda.ExecutionContext
+) => {
   const endpointType = resourceEndpointFromResourceType(resourceType);
   let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
+
+  const params = {};
+  if (filters.namespace) {
+    params['namespace'] = filters.namespace;
+  }
+  if (filters.key) {
+    params['key'] = filters.key;
+  }
+
   // edge case
   if (resourceType === 'Shop') {
     url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
   }
 
-  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+  const requestOptions: any = { url: coda.withQueryParams(url, params) };
+  return makeGetRequest(requestOptions, context);
+};
   const { body } = response;
 
   let items = [];
@@ -717,7 +713,28 @@ export const updateResourceMetafield = async ([metafieldId, resourceId, resource
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteResourceMetafield = async ([metafieldId], context) => {
-  const url = `${context.endpoint}/admin/api/2022-07/metafields/${metafieldId}.json`;
+export function findRequiredMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinition[]) {
+  const metafieldDefinition = metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
+  if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
+  return metafieldDefinition;
+}
+
+export const deleteResourceMetafieldById = async ([metafieldId], context) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields/${metafieldId}.json`;
   return makeDeleteRequest({ url }, context);
+};
+export const getResourceMetafieldByNamespaceKey = async (
+  resourceId: number,
+  resourceType: string,
+  metaNamespace: string,
+  metaKey: string,
+  context: coda.ExecutionContext
+): Promise<MetafieldRest> => {
+  const res = await fetchResourceMetafields(
+    resourceId,
+    resourceType,
+    { namespace: metaNamespace, key: metaKey },
+    context
+  );
+  return res.body.metafields.find((meta: MetafieldRest) => meta.namespace === metaNamespace && meta.key === metaKey);
 };

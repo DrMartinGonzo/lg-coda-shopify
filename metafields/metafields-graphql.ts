@@ -66,8 +66,8 @@ export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalF
 
 // #region Mutations
 export const mutationSetResourceMetafields = /* GraphQL */ `
-  mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafields) {
+  mutation metafieldsSet($metafieldsSetsInput: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafieldsSetsInput) {
       metafields {
         key
         value

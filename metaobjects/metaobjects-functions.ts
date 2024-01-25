@@ -3,11 +3,11 @@ import * as accents from 'remove-accents';
 
 import { capitalizeFirstChar, getObjectSchemaItemProp } from '../helpers';
 import {
-  calcSyncTableMaxEntriesPerRun,
   makeGraphQlRequest,
-  handleGraphQlError,
   makeSyncTableGraphQlRequest,
   graphQlGidToId,
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { CACHE_DAY, CACHE_SINGLE_FETCH, OPTIONS_METAOBJECT_STATUS } from '../constants';
 import {
@@ -112,7 +112,7 @@ function formatMetaobjectForSchemaFromGraphQlApi(
   node: any,
   type: string,
   optionalFieldsKeys: string[],
-  fieldDefinitions,
+  fieldDefinitions: MetaobjectFieldDefinition[],
   context: coda.SyncExecutionContext
 ) {
   let data = {
@@ -132,7 +132,7 @@ function formatMetaobjectForSchemaFromGraphQlApi(
 
       const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
       const fieldDefinition = fieldDefinitions.find((f) => f.key === key);
-      if (!fieldDefinition) throw new Error('fieldDefinition not found');
+      if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
 
       let parsedValue = value;
       try {
@@ -143,8 +143,8 @@ function formatMetaobjectForSchemaFromGraphQlApi(
 
       data[key] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaFieldValueForSchema(v, schemaItemProp.items, fieldDefinition))
-          : formatMetaFieldValueForSchema(parsedValue, schemaItemProp, fieldDefinition);
+          ? parsedValue.map((v) => formatMetaFieldValueForSchema(v, fieldDefinition))
+          : formatMetaFieldValueForSchema(parsedValue, fieldDefinition);
     });
 
   return data;
@@ -161,9 +161,7 @@ export async function getMetaobjectSyncTableDynamicUrls(context: coda.SyncExecut
     },
   };
 
-  const response = await makeGraphQlRequest({ payload }, context);
-
-  handleGraphQlError(response.body.errors);
+  const { response } = await makeGraphQlRequest({ payload }, context);
 
   const metaobjectDefinitions = response.body.data.metaobjectDefinitions.nodes;
   if (metaobjectDefinitions) {
@@ -249,7 +247,7 @@ export async function getMetaObjectTypes(context: coda.ExecutionContext) {
       cursor: undefined,
     },
   };
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
   return response.body.data.metaobjectDefinitions.nodes.map((node) => {
     return {
       name: node.name,
@@ -264,7 +262,7 @@ export async function getMetaobjectSyncTableDetails(
   context: coda.SyncExecutionContext
 ) {
   const payload = { query: querySyncTableDetails, variables: { id: metaobjectDefinitionId } };
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
 
   const { data } = response.body;
   return {
@@ -285,7 +283,7 @@ export async function getMetaObjectDefinitionByType(
     },
   };
 
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
   return response.body.data.metaobjectDefinitionByType;
 }
 // #endregion
@@ -301,7 +299,7 @@ export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
       id: metaObjectDefinitionGid,
     },
   };
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
   return response.body.data.metaobjectDefinition.fieldDefinitions;
 }
 
@@ -315,7 +313,7 @@ export async function getMetaObjectFieldDefinitionsByMetaobject(
       id: metaObjectGid,
     },
   };
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
@@ -342,7 +340,11 @@ export const updateMetaObject = async (
       metaobject: metaobjectUpdateInput,
     },
   };
-  return makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest(
+    { payload, getUserErrors: (body) => body.data.metaobjectUpdate.userErrors },
+    context
+  );
+  return response;
 };
 
 export const createMetaObject = async (
@@ -355,7 +357,11 @@ export const createMetaObject = async (
       metaobject: metaobjectCreateInput,
     },
   };
-  return makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest(
+    { payload, getUserErrors: (body) => body.data.metaobjectCreate.userErrors },
+    context
+  );
+  return response;
 };
 
 export const deleteMetaObject = async (id: string, context: coda.ExecutionContext) => {
@@ -366,13 +372,27 @@ export const deleteMetaObject = async (id: string, context: coda.ExecutionContex
     },
   };
 
-  return makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest(
+    { payload, getUserErrors: (body) => body.data.metaobjectDelete.userErrors },
+    context
+  );
+  return response;
 };
 // #endregion
 
 // #region Pack functions
 export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
+  const defaultMaxEntriesPerRun = 50;
+  const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+    defaultMaxEntriesPerRun,
+    prevContinuation,
+    context
+  );
+  if (shouldDeferBy > 0) {
+    return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+  }
+
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
 
   // TODO: get type & fieldDefinitions in one GraphQL call
@@ -381,12 +401,6 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
   const fieldDefinitions =
     prevContinuation?.extraContinuationData?.fieldDefinitions ??
     (await getMetaObjectFieldDefinitionsByMetaobjectDefinition(context.sync.dynamicUrl, context));
-
-  // TODO: get an approximation for first run by using count of relation columns ?
-  const initialEntriesPerRun = 50;
-  let maxEntriesPerRun =
-    prevContinuation?.reducedMaxEntriesPerRun ??
-    (prevContinuation?.lastThrottleStatus ? calcSyncTableMaxEntriesPerRun(prevContinuation) : initialEntriesPerRun);
 
   const constantFieldsKeys = ['id']; // will always be fetched
   const nonFieldKeys = ['status']; // will always be fetched
@@ -410,12 +424,12 @@ export const syncMetaObjects = async ([], context: coda.SyncExecutionContext) =>
       payload,
       maxEntriesPerRun,
       prevContinuation,
-      mainDataKey: 'metaobjects',
       extraContinuationData: { type, fieldDefinitions },
+      getPageInfo: (data: any) => data.metaobjects?.pageInfo,
     },
     context
   );
-  if (response) {
+  if (response && response.body.data?.metaobjects) {
     const data = response.body.data;
     return {
       result: data.metaobjects.nodes.map((metaobject) =>

@@ -16,6 +16,12 @@ export const sharedParameters = {
     description: 'The GraphQL GID of the blog.',
     autocomplete: autocompleteBlogGidParameter,
   }),
+  optionalSyncMetafields: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'syncMetafields',
+    description: 'Also retrieve metafields (slower sync)',
+    optional: true,
+  }),
 
   /**====================================================================================================================
    *    Filters
@@ -44,6 +50,11 @@ export const sharedParameters = {
     type: coda.ParameterType.String,
     name: 'handle',
     description: 'Filter results by handle.',
+  }),
+  filterHandles: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'handles',
+    description: 'Filter results by comma separared list of handles.',
   }),
   filterIds: coda.makeParameter({
     type: coda.ParameterType.String,
