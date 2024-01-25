@@ -120,27 +120,6 @@ export function getThumbnailUrlFromFullUrl(url: string, size = DEFAULT_THUMBNAIL
 }
 
 /**
- * Conditionally delays the next execution if the current availability is less
- * than the requested query cost or if there are any 'THROTTLED' errors.
- *
- * It calculates the waiting time based on the requested query cost, the
- * currently available capacity, and the restore rate, then applies the delay.
- *
- * @param cost - The cost property of the query being requested.
- * @param errors - The array of errors to check for a 'THROTTLED' code. Defaults to an empty array.
- */
-export async function maybeDelayNextExecution(cost: ShopifyGraphQlRequestCost, errors: ShopifyGraphQlError[]) {
-  const { requestedQueryCost } = cost;
-  const { currentlyAvailable, restoreRate } = cost.throttleStatus;
-
-  if (willThrottle(cost) || isThrottled(errors)) {
-    const waitMs = ((requestedQueryCost - currentlyAvailable + restoreRate) / restoreRate) * 1000;
-    console.log(`Delay next execution by ${waitMs}ms`);
-    return wait(waitMs);
-  }
-}
-
-/**
  * Delays the execution of subsequent code for a specified number of milliseconds.
  * Pack need to be executed/uploaded with --timerStrategy=fake flag for enable setTimeout shim
  *
@@ -204,4 +183,16 @@ export function handleFieldDependencies(
 
   // Return only unique values
   return Array.from(new Set(effectivePropertyKeys));
+}
+
+/**
+ * Try to parse a json string, if it fails return the original value
+ */
+export function maybeParseJson(value) {
+  if (!value) return value;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
 }

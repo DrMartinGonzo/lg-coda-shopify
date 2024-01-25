@@ -9,6 +9,7 @@ import { FileReference } from '../files/files-schema';
 import { getUnitMap } from '../helpers';
 
 import type { MetafieldDefinition, MetaobjectFieldDefinition } from '../types/admin.types';
+import { getMetafieldDefinitionFullKey } from '../metafields/metafields-functions';
 
 export const MeasurementSchema = coda.makeObjectSchema({
   properties: {
@@ -72,9 +73,17 @@ export function mapMetaFieldToSchemaProperty(
   const isArray = typeName.startsWith('list.');
   const typeNameNoList = isArray ? typeName.replace('list.', '') : typeName;
 
+  let description = fieldDefinition.description;
+  // Add full key to description for metafields, not metaobject fields
+  if (fieldDefinition.hasOwnProperty('namespace')) {
+    description +=
+      (description ? '\n' : '') +
+      `field key: [${getMetafieldDefinitionFullKey(fieldDefinition as MetafieldDefinition)}]`;
+  }
   const baseProperty = {
+    description,
+    // TODO: not sure we need to set the key yet as its also set later in augmentSchemaWithMetafields
     fromKey: fieldDefinition.key,
-    description: fieldDefinition.description,
     fixedId: fieldDefinition.key,
   };
 

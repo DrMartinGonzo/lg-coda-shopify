@@ -23,7 +23,24 @@ export const CollectionImageSchema = coda.makeObjectSchema({
 });
 */
 
-export const SmartCollectionRuleSchema = coda.makeObjectSchema({
+const CollectionRuleSchema = coda.makeObjectSchema({
+  properties: {
+    column: { type: coda.ValueType.String },
+    condition: { type: coda.ValueType.String },
+    relation: { type: coda.ValueType.String },
+  },
+  // displayProperty: 'relation',
+});
+const CollectionRuleSetSchema = coda.makeObjectSchema({
+  properties: {
+    display: { type: coda.ValueType.String },
+    rules: { type: coda.ValueType.Array, items: CollectionRuleSchema },
+    appliedDisjunctively: { type: coda.ValueType.Boolean },
+  },
+  displayProperty: 'display',
+});
+
+const SmartCollectionRuleSchema = coda.makeObjectSchema({
   properties: {
     /**
      * The property of a product being used to populate the smart collection.
@@ -152,6 +169,9 @@ export const CollectionSchema = coda.makeObjectSchema({
         'For a smart (automated) collection, the list of rules that define what products go into the smart collection.',
       fixedId: 'rules',
     },
+
+    ruleSet: CollectionRuleSetSchema,
+
     disjunctive: {
       type: coda.ValueType.Boolean,
       description:

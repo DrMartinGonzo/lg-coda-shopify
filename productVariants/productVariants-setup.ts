@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_PRODUCT_VARIANT, OPTIONS_PRODUCT_STATUS, OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { IDENTITY_PRODUCT_VARIANT, OPTIONS_PRODUCT_STATUS_GRAPHQL, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { syncProductVariants, fetchProductVariant } from './productVariants-functions';
 
 import { ProductVariantSchema } from './productVariants-schema';
@@ -93,7 +93,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
           name: 'status',
           description: 'Return only products specified by a comma-separated list of statuses.',
           optional: true,
-          autocomplete: OPTIONS_PRODUCT_STATUS,
+          autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
         }),
         coda.makeParameter({
           type: coda.ParameterType.String,

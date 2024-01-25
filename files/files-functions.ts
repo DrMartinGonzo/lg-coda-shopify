@@ -3,10 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 import { getThumbnailUrlFromFullUrl } from '../helpers';
 import {
   makeGraphQlRequest,
-  handleGraphQlError,
-  handleGraphQlUserError,
-  calcSyncTableMaxEntriesPerRun,
   makeSyncTableGraphQlRequest,
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { queryAllFiles, deleteFiles } from './files-graphql';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
@@ -56,12 +55,17 @@ const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
  */
 export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const defaultMaxEntriesPerRun = 50;
+  const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+    defaultMaxEntriesPerRun,
+    prevContinuation,
+    context
+  );
+  if (shouldDeferBy > 0) {
+    return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+  }
 
-  const initialEntriesPerRun = 50;
-  let maxEntriesPerRun =
-    prevContinuation?.reducedMaxEntriesPerRun ??
-    (prevContinuation?.lastThrottleStatus ? calcSyncTableMaxEntriesPerRun(prevContinuation) : initialEntriesPerRun);
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
 
   let searchQuery = 'status:READY';
   if (type && type !== '') {
@@ -93,11 +97,11 @@ export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
       payload,
       maxEntriesPerRun,
       prevContinuation,
-      mainDataKey: 'files',
+      getPageInfo: (data: any) => data.files?.pageInfo,
     },
     context
   );
-  if (response) {
+  if (response && response.body.data?.files) {
     const data = response.body.data as GetFilesQuery;
     return {
       result: data.files.nodes.map((file) => formatFileNodeForSchema(file)),
@@ -126,12 +130,15 @@ export const deleteFile = async ([fileGid], context: coda.ExecutionContext) => {
     variables,
   };
 
-  const response = await makeGraphQlRequest({ payload, apiVersion: '2023-07' }, context);
+  const { response } = await makeGraphQlRequest(
+    {
+      payload,
+      getUserErrors: (body) => body.data.fileDelete.userErrors,
+    },
+    context
+  );
+
   const { body } = response;
-
-  handleGraphQlError(body.errors);
-  handleGraphQlUserError(body.data.fileDelete.userErrors);
-
   return body.data.fileDelete.deletedFileIds[0];
 };
 // #endregion

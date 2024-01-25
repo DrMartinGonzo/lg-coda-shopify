@@ -108,7 +108,8 @@ export const PageSchema = coda.makeObjectSchema({
   },
   displayProperty: 'title',
   idProperty: 'graphql_gid',
-  featuredProperties: ['title', 'author', 'handle', 'template_suffix', 'admin_url'],
+  // admin_url will be the last featured property, added in Pages dynamicOptions after the eventual metafields
+  featuredProperties: ['title', 'author', 'handle', 'template_suffix'],
 
   // Card fields.
   subtitleProperties: ['author', 'handle', 'created_at'],

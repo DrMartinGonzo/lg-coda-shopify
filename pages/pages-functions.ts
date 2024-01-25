@@ -1,7 +1,13 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import {
+  METAFIELD_GID_PREFIX_KEY,
+  METAFIELD_PREFIX_KEY,
+  OPTIONS_PUBLISHED_STATUS,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
 import {
   cleanQueryParams,
   makeDeleteRequest,
@@ -15,6 +21,15 @@ import { handleFieldDependencies } from '../helpers';
 import { FormatFunction } from '../types/misc';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { graphQlGidToId } from '../helpers-graphql';
+import {
+  fetchMetafieldDefinitions,
+  fetchResourceMetafields,
+  formatMetafieldsForSchema,
+  getMetaFieldRealFromKey,
+} from '../metafields/metafields-functions';
+import { Metafield, MetafieldDefinition } from '../types/admin.types';
+
+import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 
 export const formatPage: FormatFunction = (page, context) => {
   page.admin_url = `${context.endpoint}/admin/pages/${page.id}`;
@@ -39,6 +54,7 @@ export const fetchPage = async ([pageGid], context: coda.ExecutionContext) => {
 
 export const syncPages = async (
   [
+    syncMetafields,
     created_at_max,
     created_at_min,
     handle,
@@ -54,6 +70,16 @@ export const syncPages = async (
 ) => {
   const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const effectiveMetafieldKeys = effectivePropertyKeys
+    .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY) || key.startsWith(METAFIELD_GID_PREFIX_KEY))
+    .map(getMetaFieldRealFromKey);
+  const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+  let metafieldDefinitions: MetafieldDefinition[] = [];
+  if (shouldSyncMetafields) {
+    metafieldDefinitions =
+      prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+      (await fetchMetafieldDefinitions('PAGE', context));
+  }
   const syncedFields = handleFieldDependencies(effectivePropertyKeys, pageFieldDependencies);
 
   const params = cleanQueryParams({
@@ -61,7 +87,9 @@ export const syncPages = async (
     created_at_max,
     created_at_min,
     handle,
-    limit: REST_DEFAULT_LIMIT,
+    // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
+    // TODO: calculate best possible value based on effectiveMetafieldKeys.length
+    limit: shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
     published_at_max,
     published_at_min,
     published_status,
@@ -77,15 +105,42 @@ export const syncPages = async (
     prevContinuation?.nextUrl ??
     coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, params);
 
-  return await makeSyncTableGetRequest(
+  let { result, continuation } = await makeSyncTableGetRequest(
     {
       url,
       formatFunction: formatPage,
       cacheTtlSecs: 0,
       mainDataKey: 'pages',
+      extraContinuationData: { metafieldDefinitions },
     },
     context
   );
+
+  // Add metafields by doing multiple Rest Admin API calls
+  if (shouldSyncMetafields) {
+    result = await Promise.all(
+      result.map(async (resource) => {
+        const response = await fetchResourceMetafields(resource.id, 'page', {}, context);
+
+        // Only keep metafields that have a definition are in the schema
+        const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
+          effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`)
+        );
+        if (metafields.length) {
+          return {
+            ...resource,
+            ...formatMetafieldsForSchema(metafields, metafieldDefinitions),
+          };
+        }
+        return resource;
+      })
+    );
+  }
+
+  return {
+    result,
+    continuation,
+  };
 };
 
 export const createPage = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {
