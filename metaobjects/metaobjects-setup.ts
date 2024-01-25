@@ -84,7 +84,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
             if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
             return {
               key: fromKey,
-              value: formatMetafieldValueForApi(fromKey, value, fieldDefinition, context.sync.schema),
+              value: formatMetafieldValueForApi(fromKey, value, fieldDefinition),
             };
           });
 

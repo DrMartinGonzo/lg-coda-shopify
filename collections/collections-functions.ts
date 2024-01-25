@@ -6,9 +6,9 @@ import {
   graphQlGidToId,
   idToGraphQlGid,
   makeGraphQlRequest,
-  handleGraphQlError,
-  calcSyncTableMaxEntriesPerRun,
   makeSyncTableGraphQlRequest,
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import {
   cleanQueryParams,
@@ -37,7 +37,7 @@ import { SyncTableGraphQlContinuation, SyncTableRestContinuation } from '../type
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
 import {
   fetchMetafieldDefinitions,
-  getMetaFieldRealFromKeys,
+  getMetaFieldRealFromKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
@@ -110,11 +110,7 @@ const formatCollectionForSchemaFromGraphQlApi = (
     };
   }
   if (collection.metafields && collection.metafields.nodes.length) {
-    const metafields = formatMetafieldsForSchema(
-      collection.metafields.nodes as Metafield[],
-      metafieldDefinitions,
-      context
-    );
+    const metafields = formatMetafieldsForSchema(collection.metafields.nodes as Metafield[], metafieldDefinitions);
     obj = {
       ...obj,
       ...metafields,
@@ -146,9 +142,8 @@ export const getCollectionType = async (gid: string, context: coda.ExecutionCont
     },
   };
 
-  const response = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
   const { body } = response;
-  handleGraphQlError(body.errors);
 
   return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
 };
@@ -268,7 +263,7 @@ export const syncCollections = async (
   return results;
 };
 
-export const updateCollection = async (collectionGid: string, fields, context: coda.ExecutionContext) => {
+export const actionUpdateCollection = async (collectionGid: string, fields, context: coda.ExecutionContext) => {
   let newValues = {};
   const restAdminOnlyKeys = ['published'];
 
@@ -308,11 +303,9 @@ export const updateCollection = async (collectionGid: string, fields, context: c
       },
     };
 
-    const response = await makeGraphQlRequest({ payload, apiVersion: '2023-07' }, context);
+    const { response } = await makeGraphQlRequest({ payload }, context);
 
     const { body } = response;
-    const { errors, extensions } = body;
-    handleGraphQlError(errors);
 
     // TODO: need a formatCollection function for graphQL responses
     newValues = formatCollectionForSchemaFromRestApi(

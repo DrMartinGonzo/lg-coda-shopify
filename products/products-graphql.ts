@@ -1,6 +1,5 @@
 import '../types/admin.generated.d.ts';
 
-import { graphQlGidToId } from '../helpers-graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 export const MAX_OPTIONS_PER_PRODUCT = 3;
@@ -30,8 +29,7 @@ export function buildProductsSearchQuery(filters: { [key: string]: any }) {
       '(' + filters.product_types.map((product_type) => `product_type:'${product_type}'`).join(' OR ') + ')'
     );
 
-  if (filters.ids && filters.ids.length)
-    searchItems.push('(' + filters.ids.map((id) => `id:${graphQlGidToId(id)}`).join(' OR ') + ')');
+  if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');
 
   return searchItems.join(' AND ');
 }
@@ -112,6 +110,33 @@ export const QueryProductsAdmin = /* GraphQL */ `
     }
   }
 `;
+
+export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
+
+  query getProductsMetafields(
+    $maxEntriesPerRun: Int!
+    $cursor: String
+    $metafieldKeys: [String!]
+    $countMetafields: Int
+    $searchQuery: String
+  ) {
+    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+      nodes {
+        id
+        metafields(keys: $metafieldKeys, first: $countMetafields) {
+          nodes {
+            ...MetafieldFields
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
 // #endregion
 
 // #region Mutations
@@ -142,6 +167,22 @@ export const MutationUpdateProduct = /* GraphQL */ `
     productUpdate(input: $productInput) {
       product {
         ...ProductFields
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const MutationUpdateProductMetafields = /* GraphQL */ `
+  mutation UpdateProductMetafields($metafieldsSetsInput: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafieldsSetsInput) {
+      metafields {
+        key
+        namespace
+        value
       }
       userErrors {
         field

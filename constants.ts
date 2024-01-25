@@ -33,12 +33,19 @@ export const OPTIONS_PUBLISHED_STATUS = [
 //  - ACTIVE: The product is ready to sell and is available to customers on the online store, sales channels, and apps. By default, existing products are set to active.
 //  - ARCHIVED: The product is no longer being sold and isn't available to customers on sales channels and apps.
 //  - DRAFT: The product isn't ready to sell and is unavailable to customers on sales channels and apps. By default, duplicated and unarchived products are set to draft.
-export const OPTIONS_PRODUCT_STATUS = [
+export const OPTIONS_PRODUCT_STATUS_GRAPHQL = [
   { display: 'All', value: '*' },
   { display: 'Active', value: 'ACTIVE' },
   { display: 'Archived', value: 'ARCHIVED' },
   { display: 'Draft', value: 'DRAFT' },
 ];
+export const OPTIONS_PRODUCT_STATUS_REST = [
+  { display: 'Active', value: 'active' },
+  { display: 'Archived', value: 'archived' },
+  { display: 'Draft', value: 'draft' },
+];
+export const DEFAULT_PRODUCT_STATUS_REST = 'draft';
+
 // The status of the metaobject. Valid values:
 //  - ACTIVE: The metaobjects is active for public use.
 //  - DRAFT: The metaobjects is an internal record.
@@ -52,6 +59,8 @@ export const OPTIONS_FILE_TYPE = [
   { display: 'Images', value: 'IMAGE' },
   { display: 'Videos', value: 'VIDEO' },
 ];
+
+export const DEFAULT_PRODUCT_OPTION_NAME = 'Coda Default';
 
 export const METAFIELDS_RESOURCE_TYPES = [
   'article',
@@ -97,9 +106,9 @@ export const RESOURCE_SHOP = 'Shop';
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
 
-export const GRAPHQL_BUDGET__MAX = 500;
+// Don't put this at 1000 (theoretical max) because we can have multiple syncs happening at the same time in different documents
+export const GRAPHQL_BUDGET__MAX = 900;
 export const GRAPHQL_RETRIES__MAX = 5;
-export const GRAPHQL_DEFAULT_RESTORE_RATE = 50;
 export const GRAPHQL_DEFAULT_API_VERSION = '2023-07';
 
 // TODO: rename these

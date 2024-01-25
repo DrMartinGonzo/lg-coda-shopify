@@ -69,7 +69,8 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         { ...sharedParameters.filterUpdatedAtMax, optional: true },
         { ...sharedParameters.filterUpdatedAtMin, optional: true },
       ],
-      execute: syncCollections,
+      // execute: syncCollections,
+      execute: syncCollectionsGraphQlAdmin,
       maxUpdateBatchSize: 10,
       executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
         const jobs = updates.map(async (update) => {
@@ -82,7 +83,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
           updatedFields.forEach((key) => {
             fields[key] = update.newValue[key];
           });
-          const newValues = await updateCollection(collectionGid, fields, context);
+          const newValues = await actionUpdateCollection(collectionGid, fields, context);
           return newValues;
         });
 
@@ -149,7 +150,11 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.Object,
     schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
     execute: async ([collectionGid, body_html, handle, template_suffix, title, published], context) => {
-      return await updateCollection(collectionGid, { body_html, handle, template_suffix, published, title }, context);
+      return await actionUpdateCollection(
+        collectionGid,
+        { body_html, handle, template_suffix, published, title },
+        context
+      );
     },
   });
 

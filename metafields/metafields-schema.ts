@@ -109,7 +109,7 @@ export const MetafieldSchemaNew = coda.makeObjectSchema({
 export async function augmentSchemaWithMetafields(
   baseSchema: coda.ObjectSchema<any, any>,
   ownerType: string,
-  context: coda.SyncExecutionContext
+  context: coda.ExecutionContext
 ) {
   const schema: coda.ObjectSchema<any, any> = { ...baseSchema };
 
@@ -123,7 +123,7 @@ export async function augmentSchemaWithMetafields(
 
     /* We prefix fromKey to be able to determine later wich columns are metafield values */
     schema.properties[propName] = {
-      ...mapMetaobjectFieldToSchemaProperty(metafieldDefinition),
+      ...mapMetaFieldToSchemaProperty(metafieldDefinition),
       fromKey: matchingSchemaKey,
       fixedId: matchingSchemaKey,
     };

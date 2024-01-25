@@ -7,6 +7,8 @@ const metafieldStorefrontNodes = `
   }`;
 
 const makeProductFieldsFragmentStorefront = (includeMetafields: boolean = false) => `
+  ${MetafieldFieldsFragment}
+
   fragment productFields on Product {
     availableForSale
     createdAt
@@ -33,20 +35,21 @@ const makeProductFieldsFragmentStorefront = (includeMetafields: boolean = false)
         mediaContentType
       }
     }
-    ${includeMetafields ? `metafields(identifiers: $metafieldsIdentifiers) { ...metafieldFields }` : ''}
     options(first: ${MAX_OPTIONS_PER_PRODUCT}) {
       name
       #values
     }
-  }
 
-  ${includeMetafields ? MetafieldFieldsFragment : ''}
+    metafields(identifiers: $metafieldsIdentifiers) @include(if: $includeMetafields) {
+      ...MetafieldFields
+    }
+  }
 `;
 
 // Storefront query to list max 50 available product types
 export const queryAvailableProductTypes = `
   query QueryAvailableProductTypes{
-    productTypes(first: 50) {
+    productTypes(first: 250) {
       edges {
         node
       }
@@ -55,7 +58,7 @@ export const queryAvailableProductTypes = `
 `;
 
 export const makeQueryProductsStorefront = `
-  query queryProducts($cursor: String) {
+  query queryProducts($cursor: String, $metafieldsIdentifiers: [HasMetafieldsIdentifier!]!, $includeMetafields: Boolean!) {
     products(first: 200, after: $cursor) {
       nodes {
         ...productFields

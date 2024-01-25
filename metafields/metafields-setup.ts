@@ -24,6 +24,7 @@ import {
   RESOURCE_PAGE,
   RESOURCE_PRODUCT,
   RESOURCE_PRODUCT_VARIANT,
+  REST_DEFAULT_API_VERSION,
 } from '../constants';
 
 export const setupMetafields = (pack) => {
