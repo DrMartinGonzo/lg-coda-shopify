@@ -1,8 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
-import { DEFAULT_THUMBNAIL_SIZE } from './constants';
+import { DEFAULT_THUMBNAIL_SIZE, IS_ADMIN_RELEASE } from './constants';
 import { ShopifyGraphQlError } from './shopifyErrors';
 import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
-import { willThrottle, isThrottled } from './helpers-graphql';
 import { LengthUnit, WeightUnit } from './types/admin.types';
 
 /**
@@ -181,8 +180,8 @@ export function handleFieldDependencies(
     }
   });
 
-  // Return only unique values
-  return Array.from(new Set(effectivePropertyKeys));
+  return arrayUnique(effectivePropertyKeys);
+}
 }
 
 /**
@@ -194,5 +193,23 @@ export function maybeParseJson(value) {
     return JSON.parse(value);
   } catch (error) {
     return value;
+  }
+}
+
+export function isCodaCached(response: coda.FetchResponse<any>): boolean {
+  return (response.headers['Coda-Fetcher-Cache-Hit'] && response.headers['Coda-Fetcher-Cache-Hit'] === '1') ?? false;
+}
+
+export function arrayUnique(array: any[]) {
+  return Array.from(new Set(array));
+}
+
+export function wrapGetSchemaForCli(fn: coda.MetadataFunction, context: coda.ExecutionContext, args: any) {
+  return fn(context, undefined, { ...args, __brand: 'MetadataContext' }) as Promise<coda.ArraySchema<coda.Schema>>;
+}
+
+export function logAdmin(msg: string) {
+  if (IS_ADMIN_RELEASE) {
+    console.log(msg);
   }
 }

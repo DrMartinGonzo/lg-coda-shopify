@@ -17921,7 +17921,7 @@ export type LineItem = Node & {
   product?: Maybe<Product>;
   /** The number of variant units ordered. */
   quantity: Scalars['Int']['output'];
-  /** The line item's quantity, minus the removed quantity. */
+  /** The line item's quantity, minus the refunded quantity. */
   refundableQuantity: Scalars['Int']['output'];
   /** Whether physical shipping is required for the variant. */
   requiresShipping: Scalars['Boolean']['output'];
@@ -18083,7 +18083,7 @@ export type LineItemMutable = Node & {
   product?: Maybe<Product>;
   /** The number of variant units ordered. */
   quantity: Scalars['Int']['output'];
-  /** The line item's quantity, minus the removed quantity. */
+  /** The line item's quantity, minus the refunded quantity. */
   refundableQuantity: Scalars['Int']['output'];
   /** Whether physical shipping is required for the variant. */
   requiresShipping: Scalars['Boolean']['output'];
@@ -19831,7 +19831,7 @@ export type MarketWebPresence = Node & {
   /** The associated market. */
   market: Market;
   /**
-   * The list of root URLs for each of the web presence’s locales.
+   * The list of root URLs for each of the web presence’s locales. As of version `2024-04` this value will no longer have a trailing slash.
    *
    */
   rootUrls: Array<MarketWebPresenceRootUrl>;
@@ -23397,7 +23397,9 @@ export type Mutation = {
   /** Creates a new marketing engagement for a marketing activity or a marketing channel. */
   marketingEngagementCreate?: Maybe<MarketingEngagementCreatePayload>;
   /**
-   * Creates a metafield definition.
+   * Creates a metafield definition. Any metafields existing under the same owner type, namespace, and key will be
+   * checked against this definition and will have their type updated accordingly. For metafields that are not
+   * valid, they will remain unchanged but any attempts to update them must align with this definition.
    *
    */
   metafieldDefinitionCreate?: Maybe<MetafieldDefinitionCreatePayload>;
@@ -36670,7 +36672,7 @@ export type Return = Node & {
   status: ReturnStatus;
   /** A suggested refund for the return. */
   suggestedRefund?: Maybe<SuggestedReturnRefund>;
-  /** The sum of all line item quantities for the return. Includes the total quantity of both return line items and exchange line items. */
+  /** The sum of all return line item quantities for the return. */
   totalQuantity: Scalars['Int']['output'];
 };
 

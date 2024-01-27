@@ -148,26 +148,23 @@ export const syncArticles = async (
       `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${currentBlogId}/articles.json`,
       params
     );
-  const results = await makeSyncTableGetRequest(
-    {
-      url,
-      formatFunction: formatArticle,
-      mainDataKey: 'articles',
-    },
-    context
-  );
+
+  let restResult = [];
+  let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+  if (response && response.body?.articles) {
+    restResult = response.body.articles.map((article) => formatArticle(article, context));
+  }
 
   const blogIdsLeftUpdated = blogIdsLeft.filter((id) => id != currentBlogId);
-  if (blogIdsLeftUpdated.length && !results.continuation?.nextUrl) {
-    results.continuation = {
+  if (blogIdsLeftUpdated.length && !continuation?.nextUrl) {
+    continuation = {
+      ...continuation,
       nextUrl: undefined, // reset nextUrl to undefined so that it doesn't get used in the next sync
-      extraContinuationData: {
-        blogIdsLeft: blogIdsLeftUpdated,
-      },
+      extraContinuationData: { blogIdsLeft: blogIdsLeftUpdated },
     };
   }
 
-  return results;
+  return { result: restResult, continuation };
 };
 
 export const createArticle = async (

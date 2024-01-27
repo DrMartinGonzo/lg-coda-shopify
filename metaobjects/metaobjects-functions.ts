@@ -324,7 +324,6 @@ export async function getMetaObjectFieldDefinitionsByType(
   const metaobjectDefinitionByType = await getMetaObjectDefinitionByType(type, context);
   return metaobjectDefinitionByType.fieldDefinitions;
 }
-
 // #endregion
 
 // #region Metaobject functions
