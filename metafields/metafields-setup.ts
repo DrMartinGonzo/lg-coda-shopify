@@ -169,9 +169,6 @@ export const setupMetafields = (pack: coda.PackDefinitionBuilder) => {
       });
     },
     getName: async function (context) {
-      console.log('context.sync', context.sync);
-      console.log('context.endpoint', context.endpoint);
-
       const definition = getResourceMetafieldsSyncTableElements(context.sync.dynamicUrl);
       if (!definition) throw new coda.UserVisibleError(`Unknown resource ${context.sync.dynamicUrl}`);
       return `${definition.display} metafields`;

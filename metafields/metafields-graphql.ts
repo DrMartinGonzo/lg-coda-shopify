@@ -65,14 +65,26 @@ export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalF
 // #endregion
 
 // #region Mutations
-export const mutationSetResourceMetafields = /* GraphQL */ `
-  mutation metafieldsSet($metafieldsSetsInput: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafieldsSetsInput) {
+export const MutationSetMetafields = /* GraphQL */ `
+  mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafieldsSetInputs) {
       metafields {
         key
+        namespace
         value
       }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
 
+export const MutationDeleteMetafield = /* GraphQL */ `
+  mutation metafieldDelete($input: MetafieldDeleteInput!) {
+    metafieldDelete(input: $input) {
+      deletedId
       userErrors {
         field
         message

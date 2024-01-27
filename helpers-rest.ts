@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { getShopifyRequestHeaders } from './helpers';
+import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { FormatFunction } from './types/misc';
 import { SyncTableRestContinuation } from './types/tableSync';
 
@@ -34,15 +34,14 @@ export async function makeSyncTableGetRequest(
   params: {
     url: string;
     cacheTtlSecs?: number;
-    formatFunction: FormatFunction;
-    mainDataKey: string;
     extraContinuationData?: any;
   },
   context: coda.SyncExecutionContext
 ) {
+  logAdmin(`🚀  Rest Admin API: Starting sync…`);
+
   let continuation: SyncTableRestContinuation = null;
   const response = await makeGetRequest({ url: params.url, cacheTtlSecs: params.cacheTtlSecs }, context);
-  const { body } = response;
 
   // Check if we have paginated results
   const nextUrl = extractNextUrlPagination(response);
@@ -53,21 +52,19 @@ export async function makeSyncTableGetRequest(
     };
   }
 
-  let items = [];
-  if (body[params.mainDataKey]) {
-    items = body[params.mainDataKey].map((item) => params.formatFunction(item, context));
-  }
-
   return {
-    result: items,
+    response,
     continuation,
   };
 }
 
 async function doRequest(options: coda.FetchRequest, context: coda.ExecutionContext) {
+  let response: coda.FetchResponse<any>;
   try {
-    return await context.fetcher.fetch(options);
+    response = await context.fetcher.fetch(options);
+    return response;
   } catch (error) {
+    console.log('error', error);
     throw new coda.UserVisibleError(error);
   }
 }
@@ -88,7 +85,9 @@ export async function makeGetRequest(
     options.cacheTtlSecs = params.cacheTtlSecs;
   }
 
-  return doRequest(options, context);
+  const response = await doRequest(options, context);
+  const isCachedResponse = isCodaCached(response);
+  return response;
 }
 
 export async function makePutRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {

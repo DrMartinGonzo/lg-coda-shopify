@@ -16,9 +16,10 @@ import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
   formatMetafieldsSetsInputFromResourceUpdate,
+  handleResourceMetafieldsUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { MAX_OPTIONS_PER_PRODUCT, MutationUpdateProduct, MutationUpdateProductMetafields } from './products-graphql';
+import { MAX_OPTIONS_PER_PRODUCT, MutationUpdateProduct } from './products-graphql';
 import { queryAvailableProductTypes } from './products-storefront';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
@@ -26,9 +27,11 @@ import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
 import type { Metafield, MetafieldDefinition, ProductInput } from '../types/admin.types';
 import type {
   ProductFieldsFragment,
-  UpdateProductMetafieldsMutationVariables,
+  SetMetafieldsMutationVariables,
   UpdateProductMutationVariables,
 } from '../types/admin.generated';
+import { MutationSetMetafields } from '../metafields/metafields-graphql';
+import { ProductSchemaRest } from './products-schema';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
@@ -43,26 +46,79 @@ export function validateProductParams(params: any, isRest = false) {
     const validStatuses = (isRest ? OPTIONS_PRODUCT_STATUS_REST : OPTIONS_PRODUCT_STATUS_GRAPHQL).map(
       (status) => status.value
     );
-    console.log('validStatuses', validStatuses);
-    if (params.status && Array.isArray(params.status)) {
-      params.status.forEach((status) => {
-        if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
-      });
-    }
-    if (params.status && typeof params.status === 'string') {
-      if (!validStatuses.includes(params.status))
-        throw new coda.UserVisibleError('Unknown product status: ' + params.status);
-    }
+    (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
+      if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
+    });
   }
   if (params.title !== undefined && params.title === '') {
     throw new coda.UserVisibleError("Product title can't be blank");
   }
   if (params.published_status) {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if (!validPublishedStatuses.includes(params.published_status)) {
-      throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
+    (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
+      (published_status) => {
+        if (!validPublishedStatuses.includes(published_status))
+          throw new coda.UserVisibleError('Unknown published_status: ' + published_status);
+      }
+    );
+  }
+}
+
+export async function handleProductUpdateJob(
+  update: coda.SyncUpdate<string, string, typeof ProductSchemaRest>,
+  metafieldDefinitions: MetafieldDefinition[],
+  context: coda.ExecutionContext
+) {
+  const { updatedFields } = update;
+  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
+  let obj = { ...update.previousValue };
+  const subJobs: Promise<any>[] = [];
+  const productId = update.previousValue.id as number;
+
+  if (standardFromKeys.length) {
+    const restParams: ProductUpdateRestParams = {};
+    standardFromKeys.forEach((fromKey) => {
+      const value = update.newValue[fromKey];
+      let inputKey = fromKey;
+      restParams[inputKey] = value;
+    });
+
+    subJobs.push(updateProductRest(productId, restParams, context));
+  } else {
+    subJobs.push(undefined);
+  }
+
+  if (prefixedMetafieldFromKeys.length) {
+    subJobs.push(
+      handleResourceMetafieldsUpdate(
+        idToGraphQlGid('Product', productId),
+        'product',
+        metafieldDefinitions,
+        update,
+        context
+      )
+    );
+  } else {
+    subJobs.push(undefined);
+  }
+
+  const [restResponse, metafields] = await Promise.all(subJobs);
+  if (restResponse) {
+    if (restResponse.body?.product) {
+      obj = {
+        ...obj,
+        ...formatProductForSchemaFromRestApi(restResponse.body.product, context),
+      };
     }
   }
+  if (metafields) {
+    obj = {
+      ...obj,
+      ...metafields,
+    };
+  }
+
+  return obj;
 }
 // #endregion
 
@@ -172,11 +228,7 @@ export function createProductRest(params: ProductCreateRestParams, context: coda
   const restParams = cleanQueryParams(params);
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
-  const payload = {
-    product: {
-      ...restParams,
-    },
-  };
+  const payload = { product: { ...restParams } };
 
   return makePostRequest({ url, payload }, context);
 }
@@ -268,7 +320,7 @@ export async function updateProductMetafieldsGraphQl(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const metafieldsSetsInput = formatMetafieldsSetsInputFromResourceUpdate(
+  const metafieldsSetInputs = formatMetafieldsSetsInputFromResourceUpdate(
     update,
     idToGraphQlGid('Product', productId),
     prefixedMetafieldFromKeys,
@@ -276,10 +328,10 @@ export async function updateProductMetafieldsGraphQl(
   );
 
   const payload = {
-    query: MutationUpdateProductMetafields,
+    query: MutationSetMetafields,
     variables: {
-      metafieldsSetsInput,
-    } as UpdateProductMetafieldsMutationVariables,
+      metafieldsSetInputs,
+    } as SetMetafieldsMutationVariables,
   };
 
   const { response } = await makeGraphQlRequest(

@@ -130,6 +130,7 @@ async function getCollectionSyncTableSchema(context: coda.SyncExecutionContext, 
 }
 export const collectionSyncTableDynamicOptions: coda.DynamicOptions = {
   getSchema: getCollectionSyncTableSchema,
+  defaultAddDynamicColumns: false,
 };
 // #endregion
 

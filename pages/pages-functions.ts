@@ -105,21 +105,19 @@ export const syncPages = async (
     prevContinuation?.nextUrl ??
     coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, params);
 
-  let { result, continuation } = await makeSyncTableGetRequest(
-    {
-      url,
-      formatFunction: formatPage,
-      cacheTtlSecs: 0,
-      mainDataKey: 'pages',
-      extraContinuationData: { metafieldDefinitions },
-    },
+  let restResult = [];
+  let { response, continuation } = await makeSyncTableGetRequest(
+    { url, extraContinuationData: { metafieldDefinitions } },
     context
   );
+  if (response && response.body?.pages) {
+    restResult = response.body.pages.map((page) => formatPage(page, context));
+  }
 
   // Add metafields by doing multiple Rest Admin API calls
   if (shouldSyncMetafields) {
-    result = await Promise.all(
-      result.map(async (resource) => {
+    restResult = await Promise.all(
+      restResult.map(async (resource) => {
         const response = await fetchResourceMetafields(resource.id, 'page', {}, context);
 
         // Only keep metafields that have a definition are in the schema
@@ -137,10 +135,7 @@ export const syncPages = async (
     );
   }
 
-  return {
-    result,
-    continuation,
-  };
+  return { result: restResult, continuation };
 };
 
 export const createPage = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {

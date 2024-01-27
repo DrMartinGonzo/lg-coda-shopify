@@ -8,7 +8,7 @@ import { sharedParameters } from '../shared-parameters';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
 import {
   createResourceMetafield,
-  deleteResourceMetafieldById,
+  deleteMetafieldRest,
   fetchMetafieldDefinitions,
   findRequiredMetafieldDefinition,
   formatMetafieldValueForApi,
@@ -91,6 +91,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         augmentedSchema.featuredProperties.push('admin_url');
         return augmentedSchema;
       },
+      defaultAddDynamicColumns: false,
     },
     formula: {
       name: 'SyncPages',
@@ -161,7 +162,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
                       context
                     );
                     if (matchingMetafield) {
-                      await deleteResourceMetafieldById([matchingMetafield.id], context);
+                      await deleteMetafieldRest([matchingMetafield.id], context);
                       return {
                         ...matchingMetafield,
                         value: undefined,
