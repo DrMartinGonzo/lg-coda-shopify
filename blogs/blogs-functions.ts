@@ -55,14 +55,13 @@ export const syncBlogs = async ([handle], context: coda.SyncExecutionContext) =>
     prevContinuation?.nextUrl ??
     coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
 
-  return await makeSyncTableGetRequest(
-    {
-      url,
-      formatFunction: formatBlog,
-      mainDataKey: 'blogs',
-    },
-    context
-  );
+  let restResult = [];
+  let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+  if (response && response.body?.blogs) {
+    restResult = response.body.blogs.map((blog) => formatBlog(blog, context));
+  }
+
+  return { result: restResult, continuation };
 };
 
 export const createBlog = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {

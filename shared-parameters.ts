@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { autocompleteBlogGidParameter } from './articles/articles-functions';
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from './constants';
+import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from './constants';
+import { autocompleteProductTypes } from './products/products-functions';
 
 export const sharedParameters = {
   maxEntriesPerRun: coda.makeParameter({
@@ -21,6 +22,62 @@ export const sharedParameters = {
     name: 'syncMetafields',
     description: 'Also retrieve metafields (slower sync)',
     optional: true,
+  }),
+  metafieldValue: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'metafieldValue',
+    description: 'The metafield value.',
+  }),
+
+  productId: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'productId',
+    description: 'The Id of the product.',
+  }),
+  productType: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'productType',
+    description: 'The product type.',
+    autocomplete: autocompleteProductTypes,
+  }),
+  productTypes: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'productTypes',
+    description: 'Filter results by product types.',
+    autocomplete: autocompleteProductTypes,
+  }),
+  productVendor: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'vendor',
+    description: 'The product vendor.',
+  }),
+  productVendors: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'vendors',
+    description: 'Return products by product vendors.',
+  }),
+  productStatusRest: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'status',
+    description: 'The status of the product.',
+    autocomplete: OPTIONS_PRODUCT_STATUS_REST,
+  }),
+  productSingleStatusRest: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'status',
+    description: 'The status of the product.',
+    autocomplete: OPTIONS_PRODUCT_STATUS_REST,
+  }),
+  productPublishedStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'publishedStatus',
+    description: 'The product published status.',
+    autocomplete: OPTIONS_PUBLISHED_STATUS,
+  }),
+  productIds: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'productIds',
+    description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
   }),
 
   /**====================================================================================================================
@@ -54,7 +111,7 @@ export const sharedParameters = {
   filterHandles: coda.makeParameter({
     type: coda.ParameterType.StringArray,
     name: 'handles',
-    description: 'Filter results by comma separared list of handles.',
+    description: 'Filter results by comma separated list of handles.',
   }),
   filterIds: coda.makeParameter({
     type: coda.ParameterType.String,

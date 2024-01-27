@@ -175,22 +175,6 @@ export const MutationUpdateProduct = /* GraphQL */ `
     }
   }
 `;
-
-export const MutationUpdateProductMetafields = /* GraphQL */ `
-  mutation UpdateProductMetafields($metafieldsSetsInput: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafieldsSetsInput) {
-      metafields {
-        key
-        namespace
-        value
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
 // #endregion
 
 /**====================================================================================================================

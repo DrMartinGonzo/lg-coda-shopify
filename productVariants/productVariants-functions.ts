@@ -1,125 +1,151 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
-import { REST_DEFAULT_API_VERSION } from '../constants';
-import { FormatFunction } from '../types/misc';
+import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
+import {
+  CACHE_SINGLE_FETCH,
+  OPTIONS_PRODUCT_STATUS_REST,
+  OPTIONS_PUBLISHED_STATUS,
+  REST_DEFAULT_API_VERSION,
+} from '../constants';
+import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import { ProductVariantSchema } from './productVariants-schema';
+import { MetafieldDefinition } from '../types/admin.types';
+import {
+  handleResourceMetafieldsUpdate,
+  separatePrefixedMetafieldsKeysFromKeys,
+} from '../metafields/metafields-functions';
+import { idToGraphQlGid } from '../helpers-graphql';
 
-export const formatProductVariant: FormatFunction = (variant, context) => {
-  if (variant.product_id) {
-    variant.product = {
-      id: variant.product_id,
+// #region Validate functions
+export function validateProductVariantParams(params: any) {
+  if (params.status) {
+    const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
+    (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
+      if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
+    });
+  }
+  if (params.published_status) {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+    (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
+      (published_status) => {
+        if (!validPublishedStatuses.includes(published_status))
+          throw new coda.UserVisibleError('Unknown published_status: ' + published_status);
+      }
+    );
+  }
+}
+// #endregion
+
+// #region helpers
+export async function handleProductVariantUpdateJob(
+  update: coda.SyncUpdate<string, string, typeof ProductVariantSchema>,
+  metafieldDefinitions: MetafieldDefinition[],
+  context: coda.ExecutionContext
+) {
+  const { updatedFields } = update;
+  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
+  let obj = { ...update.previousValue };
+  const subJobs: Promise<any>[] = [];
+  const productVariantId = update.previousValue.id as number;
+
+  if (standardFromKeys.length) {
+    const restParams: ProductVariantUpdateRestParams = {};
+    standardFromKeys.forEach((fromKey) => {
+      const value = update.newValue[fromKey];
+      let inputKey = fromKey;
+      restParams[inputKey] = value;
+    });
+
+    subJobs.push(updateProductVariantRest(productVariantId, restParams, context));
+  } else {
+    subJobs.push(undefined);
+  }
+
+  if (prefixedMetafieldFromKeys.length) {
+    subJobs.push(
+      handleResourceMetafieldsUpdate(
+        idToGraphQlGid('ProductVariant', productVariantId),
+        'variant',
+        metafieldDefinitions,
+        update,
+        context
+      )
+    );
+  } else {
+    subJobs.push(undefined);
+  }
+
+  const [restResponse, metafields] = await Promise.all(subJobs);
+  if (restResponse) {
+    if (restResponse.body?.variant) {
+      obj = {
+        ...obj,
+        ...formatProductVariantForSchemaFromRestApi(restResponse.body.variant, {}, context),
+      };
+    }
+  }
+  if (metafields) {
+    obj = {
+      ...obj,
+      ...metafields,
     };
   }
-  if (variant.image_id && variant.parentProduct.images && variant.parentProduct.images.length > 0) {
-    const variantImage = variant.parentProduct.images.filter((image) => image.id === variant.image_id);
-    if (variantImage.length === 1) {
-      variant.image = variantImage[0].src;
-    }
-  }
 
-  return variant;
-};
+  return obj;
+}
+// #endregion
 
-export const fetchProductVariant = async ([productVariantID], context) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
-  const { body } = response;
-
-  if (body.variant) {
-    return body.variant;
-  }
-};
-
-export const syncProductVariants = async (
-  [
-    collection_id,
-    created_at_max,
-    created_at_min,
-    handle,
-    ids,
-    maxEntriesPerRun,
-    presentment_currencies,
-    product_type,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    status,
-    title,
-    updated_at_max,
-    updated_at_min,
-    vendor,
-  ],
-  context
-) => {
-  // Only fetch the selected columns.
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-  // always add variants field
-  syncedFields.push('variants');
-  // replace product with product_id if present
-  const productFieldindex = syncedFields.indexOf('product');
-  if (productFieldindex !== -1) {
-    syncedFields[productFieldindex] = 'product_id';
-  }
-  // replace image with images if present
-  const ImageFieldindex = syncedFields.indexOf('image');
-  if (ImageFieldindex !== -1) {
-    syncedFields[ImageFieldindex] = 'images';
-  }
-
-  const params = cleanQueryParams({
-    collection_id,
-    created_at_max,
-    created_at_min,
-    fields: syncedFields.join(', '),
-    handle,
-    ids,
-    limit: maxEntriesPerRun,
-    presentment_currencies,
-    product_type,
-    published_at_max,
-    published_at_min,
-    published_status,
-    since_id,
-    status,
-    title,
-    updated_at_max,
-    updated_at_min,
-    vendor,
-  });
-
-  // if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
-  //   throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
-  // }
-  // // TODO: check split value
-  // if (params.status && !OPTIONS_PRODUCT_STATUS.includes(params.status)) {
-  //   throw new coda.UserVisibleError('Unknown status: ' + params.status);
-  // }
-
-  let url =
-    context.sync.continuation ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`, params);
-  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
-  const { body } = response;
-
-  // Check if we have paginated results
-  const nextUrl = extractNextUrlPagination(response);
-
-  let items = [];
-  if (body.products) {
-    if (body.products) {
-      items = body.products.reduce((previous, currProduct) => {
-        return previous.concat(
-          currProduct.variants.map((variant) =>
-            formatProductVariant({ ...variant, parentProduct: currProduct }, context)
-          )
-        );
-      }, []);
-    }
-  }
-
-  return {
-    result: items,
-    continuation: nextUrl,
+// #region Formatting functions
+export const formatProductVariantForSchemaFromRestApi = (variant, parentProduct, context) => {
+  let obj: any = {
+    ...variant,
+    admin_url: `${context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
+    product: {
+      id: variant.product_id,
+      title: parentProduct?.title,
+    },
+    displayTitle: parentProduct?.title ? `${parentProduct.title} - ${variant.title}` : variant.title,
   };
+
+  if (parentProduct?.status === 'active' && parentProduct?.handle) {
+    obj.storeUrl = `${context.endpoint}/products/${parentProduct.handle}?variant=${variant.id}`;
+  }
+  if (variant.image_id && parentProduct?.images && parentProduct?.images.length > 0) {
+    obj.image = parentProduct.images.find((image) => image.id === variant.image_id)?.src;
+  }
+
+  return obj;
 };
+// #endregion
+
+// #region Rest requests
+export function fetchProductVariantRest(productVariantID: number, context: coda.ExecutionContext) {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
+  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+}
+
+export function createProductVariantRest(params: ProductVariantCreateRestParams, context: coda.ExecutionContext) {
+  const restParams = cleanQueryParams(params);
+  validateProductVariantParams(restParams);
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${params.product_id}/variants.json`;
+  const payload = { variant: { ...restParams } };
+  return makePostRequest({ url, payload }, context);
+}
+
+export const updateProductVariantRest = async (
+  productVariantId: number,
+  params: ProductVariantUpdateRestParams,
+  context: coda.ExecutionContext
+) => {
+  const restParams = cleanQueryParams(params);
+  validateProductVariantParams(restParams);
+
+  const payload = { variant: restParams };
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantId}.json`;
+  return makePutRequest({ url, payload }, context);
+};
+
+export function deleteProductVariantRest(productVariantID: number, context: coda.ExecutionContext) {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
+  return makeDeleteRequest({ url }, context);
+}

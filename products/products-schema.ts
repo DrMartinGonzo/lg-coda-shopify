@@ -268,6 +268,7 @@ export const ProductSchemaGraphQl = coda.makeObjectSchema({
       required: true,
       description: 'unique identifier for the product',
       fixedId: 'product_id',
+      useThousandsSeparator: false,
     },
     graphql_gid: {
       type: coda.ValueType.String,

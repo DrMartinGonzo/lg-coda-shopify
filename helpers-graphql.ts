@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getShopifyRequestHeaders, getShopifyStorefrontRequestHeaders, wait } from './helpers';
-import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX, IS_ADMIN_RELEASE } from './constants';
+import { getShopifyRequestHeaders, getShopifyStorefrontRequestHeaders, isCodaCached, logAdmin, wait } from './helpers';
+import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import {
   ShopifyGraphQlError,
   ShopifyGraphQlUserError,
@@ -154,6 +154,7 @@ export async function makeGraphQlRequest(
     const { body } = response;
     const { errors, extensions } = body;
     const userErrors: ShopifyGraphQlUserError[] = params.getUserErrors ? params.getUserErrors(body) : undefined;
+    const isCachedResponse = isCodaCached(response);
 
     if (errors) {
       const isThrottledError = isThrottled(errors);
@@ -169,9 +170,7 @@ export async function makeGraphQlRequest(
             if (context.sync.schema) return { response, retries: currRetries };
 
             /* We are doing a normal request. Retry immediately */
-            if (IS_ADMIN_RELEASE) {
-              console.log(`🔄 Retrying (count: ${currRetries})...`);
-            }
+            logAdmin(`🔄 Retrying (count: ${currRetries})...`);
             return makeGraphQlRequest({ ...params, retries: currRetries }, context);
           }
 
@@ -229,8 +228,8 @@ export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
     shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
     maxEntriesPerRun = defaultMaxEntriesPerRun;
 
-    if (IS_ADMIN_RELEASE && shouldDeferBy > 0) {
-      console.log(
+    if (shouldDeferBy > 0) {
+      logAdmin(
         `🚫 Not enough points (${currentlyAvailable}/${minPointsNeeded}). Skip and wait ${shouldDeferBy / 1000}s`
       );
     }
@@ -263,14 +262,10 @@ export async function makeSyncTableGraphQlRequest(
   },
   context: coda.SyncExecutionContext
 ) {
-  if (IS_ADMIN_RELEASE) {
-    if (params.prevContinuation?.retries) {
-      console.log(
-        `🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries...`
-      );
-    }
-    console.log(`🚀 Starting sync of ${params.maxEntriesPerRun} entries...`);
+  if (params.prevContinuation?.retries) {
+    logAdmin(`🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries…`);
   }
+  logAdmin(`🚀  GraphQL Admin API: Starting sync of ${params.maxEntriesPerRun} entries…`);
 
   try {
     const { response, retries } = await makeGraphQlRequest(
@@ -380,15 +375,14 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     storeFront?: boolean;
   },
   context: coda.SyncExecutionContext
-) {
-  if (IS_ADMIN_RELEASE) {
-    if (params.prevContinuation?.retries) {
-      console.log(
-        `🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries...`
-      );
-    }
-    console.log(`🚀 Starting sync of ${params.maxEntriesPerRun} entries...`);
+): Promise<{
+  response: coda.FetchResponse<any>;
+  continuation: SyncTableRestAugmentedContinuation | null;
+}> {
+  if (params.prevContinuation?.retries) {
+    logAdmin(`🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries…`);
   }
+  logAdmin(`🚀  GraphQL Admin API: Starting sync of ${params.maxEntriesPerRun} entries…`);
 
   try {
     const { response, retries } = await makeGraphQlRequest(
