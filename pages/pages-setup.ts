@@ -1,15 +1,22 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_PAGE } from '../constants';
-import { syncPages, fetchPage, updatePage, deletePage, createPage } from './pages-functions';
+import {
+  IDENTITY_PAGE,
+  METAFIELD_GID_PREFIX_KEY,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
+import { fetchPage, updatePage, deletePage, createPage, validatePageParams, formatPage } from './pages-functions';
 
-import { PageSchema } from './pages-schema';
+import { PageSchema, pageFieldDependencies } from './pages-schema';
 import { sharedParameters } from '../shared-parameters';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
 import {
   createResourceMetafield,
   deleteMetafieldRest,
   fetchMetafieldDefinitions,
+  fetchResourceMetafields,
   findRequiredMetafieldDefinition,
   formatMetafieldValueForApi,
   formatMetafieldsForSchema,
@@ -19,6 +26,11 @@ import {
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
 import { graphQlGidToId } from '../helpers-graphql';
+import { SyncTableRestContinuation } from '../types/tableSync';
+import { MetafieldDefinition } from '../types/admin.types';
+import { handleFieldDependencies } from '../helpers';
+import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
+import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 
 const parameters = {
   pageGID: coda.makeParameter({
@@ -76,6 +88,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Sync tables
    *===================================================================================================================== */
+  // #region Sync Tables
   pack.addSyncTable({
     name: 'Pages',
     description: 'Return Pages from this shop.',
@@ -102,18 +115,87 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
           description:
             "description: 'Also retrieve metafields. Not recommanded if you have lots of pages, the sync will be much slower as the pack will have to do another API call for each page. Still waiting for Shopify to add GraphQL access to pages...',",
         },
-        { ...sharedParameters.filterCreatedAtMax, optional: true },
-        { ...sharedParameters.filterCreatedAtMin, optional: true },
+        { ...sharedParameters.filterCreatedAtRange, optional: true },
+        { ...sharedParameters.filterUpdatedAtRange, optional: true },
+        { ...sharedParameters.filterPublishedAtRange, optional: true },
         { ...sharedParameters.filterHandle, optional: true },
-        { ...sharedParameters.filterPublishedAtMax, optional: true },
-        { ...sharedParameters.filterPublishedAtMin, optional: true },
         { ...sharedParameters.filterPublishedStatus, optional: true },
         { ...sharedParameters.filterSinceId, optional: true },
         { ...sharedParameters.filterTitle, optional: true },
-        { ...sharedParameters.filterUpdatedAtMax, optional: true },
-        { ...sharedParameters.filterUpdatedAtMin, optional: true },
       ],
-      execute: syncPages,
+      execute: async function (
+        [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title],
+        context
+      ) {
+        const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+        const effectiveMetafieldKeys = effectivePropertyKeys
+          .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY) || key.startsWith(METAFIELD_GID_PREFIX_KEY))
+          .map(getMetaFieldRealFromKey);
+        const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+        let metafieldDefinitions: MetafieldDefinition[] = [];
+        if (shouldSyncMetafields) {
+          metafieldDefinitions =
+            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+            (await fetchMetafieldDefinitions('PAGE', context));
+        }
+        const syncedFields = handleFieldDependencies(effectivePropertyKeys, pageFieldDependencies);
+
+        const params = cleanQueryParams({
+          fields: syncedFields.join(', '),
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          published_at_min: published_at ? published_at[0] : undefined,
+          published_at_max: published_at ? published_at[1] : undefined,
+          handle,
+          // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
+          // TODO: calculate best possible value based on effectiveMetafieldKeys.length
+          limit: shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
+          published_status,
+          since_id,
+          title,
+        });
+
+        validatePageParams(params);
+
+        let url =
+          prevContinuation?.nextUrl ??
+          coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, params);
+
+        let restResult = [];
+        let { response, continuation } = await makeSyncTableGetRequest(
+          { url, extraContinuationData: { metafieldDefinitions } },
+          context
+        );
+        if (response && response.body?.pages) {
+          restResult = response.body.pages.map((page) => formatPage(page, context));
+        }
+
+        // Add metafields by doing multiple Rest Admin API calls
+        if (shouldSyncMetafields) {
+          restResult = await Promise.all(
+            restResult.map(async (resource) => {
+              const response = await fetchResourceMetafields(resource.id, 'page', {}, context);
+
+              // Only keep metafields that have a definition are in the schema
+              const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
+                effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`)
+              );
+              if (metafields.length) {
+                return {
+                  ...resource,
+                  ...formatMetafieldsForSchema(metafields, metafieldDefinitions),
+                };
+              }
+              return resource;
+            })
+          );
+        }
+
+        return { result: restResult, continuation };
+      },
       maxUpdateBatchSize: 10,
       executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
         const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
@@ -162,7 +244,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
                       context
                     );
                     if (matchingMetafield) {
-                      await deleteMetafieldRest([matchingMetafield.id], context);
+                      await deleteMetafieldRest(matchingMetafield.id, context);
                       return {
                         ...matchingMetafield,
                         value: undefined,
@@ -215,10 +297,9 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
       },
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Actions
-   *===================================================================================================================== */
+  // #region Actions
   // an action to update a page
   pack.addFormula({
     name: 'UpdatePage',
@@ -304,10 +385,9 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
       return true;
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Formulas
-   *===================================================================================================================== */
+  // #region Formulas
   pack.addFormula({
     name: 'Page',
     description: 'Return a single page from this shop.',
@@ -318,12 +398,10 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
     execute: fetchPage,
   });
 
-  /**====================================================================================================================
-   *    Column formats
-   *===================================================================================================================== */
   pack.addColumnFormat({
     name: 'Page',
     instructions: 'Paste the GraphQL GID of the page into the column.',
     formulaName: 'Page',
   });
+  // #endregion
 };

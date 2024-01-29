@@ -3,6 +3,7 @@ import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
 import {
+  CACHE_SINGLE_FETCH,
   FIELD_TYPES,
   METAFIELDS_RESOURCE_TYPES,
   METAFIELD_GID_PREFIX_KEY,
@@ -87,6 +88,10 @@ export const splitMetaFieldFullKey = (fullKey: string) => ({
   metaKey: fullKey.split('.')[1],
   metaNamespace: fullKey.split('.')[0],
 });
+
+export function maybeHasMetaFieldKeys(keys: string[]) {
+  return keys.some((key) => key.indexOf('.') !== -1);
+}
 
 /**
  * Remove our custom prefix from the metafield key
@@ -488,7 +493,8 @@ export function formatMetafieldsSetsInputFromResourceUpdate(
 // #region Metafield definitions
 export async function fetchMetafieldDefinitions(
   ownerType: string,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  cacheTtlSecs?: number
 ): Promise<MetafieldDefinition[]> {
   const maxMetafieldsPerResource = 200;
   const payload = {
@@ -499,7 +505,7 @@ export async function fetchMetafieldDefinitions(
     },
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: 15 }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
   return response.body.data.metafieldDefinitions.nodes;
 }
 // #endregion

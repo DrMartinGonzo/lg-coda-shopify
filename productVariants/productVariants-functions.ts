@@ -149,3 +149,4 @@ export function deleteProductVariantRest(productVariantID: number, context: coda
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
   return makeDeleteRequest({ url }, context);
 }
+// #endregion
