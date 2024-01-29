@@ -1,8 +1,50 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_CUSTOMER } from '../constants';
 
+export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
+const CONSENT_STATE__NOT_SUBSCRIBED = { display: 'Not subscribed', value: 'not_subscribed' };
+export const CONSENT_STATE__UNSUBSCRIBED = { display: 'Unsubscribed', value: 'unsubscribed' };
+const CONSENT_STATE__REDACTED = { display: 'Redacted', value: 'redacted' };
+const CONSENT_STATE__INVALID = { display: 'Invalid', value: 'invalid' };
+const CONSENT_STATE__PENDING = { display: 'Pending', value: 'pending' };
+
+// After providing their information, the customer receives a confirmation and is required to perform a intermediate step before receiving marketing information.
+const CONSENT_OPT_IN_LEVEL__CONFIRMED_OPT_IN = { display: 'Confirmed opt-in', value: 'confirmed_opt_in' };
+// After providing their information, the customer receives marketing information without any intermediate steps.
+export const CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN = { display: 'Single opt-in', value: 'single_opt_in' };
+// The customer receives marketing information but how they were opted in is unknown.
+const CONSENT_OPT_IN_LEVEL__UNKNOWN = { display: 'Unknown', value: 'unknown' };
+
+export const MARKETING_CONSENT_ALL_OPTIONS = [
+  CONSENT_STATE__SUBSCRIBED,
+  CONSENT_STATE__NOT_SUBSCRIBED,
+  CONSENT_STATE__UNSUBSCRIBED,
+  CONSENT_STATE__REDACTED,
+  CONSENT_STATE__INVALID,
+  CONSENT_STATE__PENDING,
+]
+  .map((state) =>
+    [CONSENT_OPT_IN_LEVEL__CONFIRMED_OPT_IN, CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN, CONSENT_OPT_IN_LEVEL__UNKNOWN].map(
+      (optInLevel) => {
+        return {
+          state: state.value,
+          opt_in_level: optInLevel.value,
+          display: `${state.display}: ${optInLevel.display}`,
+        };
+      }
+    )
+  )
+  .flat();
+
+export const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.filter(
+  (option) =>
+    [CONSENT_STATE__SUBSCRIBED, CONSENT_STATE__UNSUBSCRIBED].map((s) => s.value).includes(option.state) &&
+    option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value
+);
+
 const CustomerAddressSchema = coda.makeObjectSchema({
   properties: {
+    display: { type: coda.ValueType.String },
     // A unique identifier for the address.
     address_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // The street address of the address.
@@ -19,8 +61,6 @@ const CustomerAddressSchema = coda.makeObjectSchema({
     country_code: { type: coda.ValueType.String },
     // The customer's normalized country name
     country_name: { type: coda.ValueType.String },
-    // A unique identifier for the customer.
-    customer_id: { type: coda.ValueType.Number },
     // Returns true for each default address.
     default: { type: coda.ValueType.Boolean },
     // The first name of the person.
@@ -42,18 +82,23 @@ const CustomerAddressSchema = coda.makeObjectSchema({
     // The postal code (for example, zip, postcode, or Eircode) of the address.
     zip: { type: coda.ValueType.String },
   },
-  displayProperty: 'address1',
+  displayProperty: 'display',
 });
 
 // The marketing consent information when the customer consented to receiving marketing material by email. The email property is required to create a customer with email consent information and to update a customer for email consent that doesn't have an email recorded. The customer must have a unique email address associated to the record.
 const EmailMarketingConsentSchema = coda.makeObjectSchema({
   properties: {
-    // The current email marketing state for the customer.
-    state: { type: coda.ValueType.String },
-    // The marketing subscription opt-in level, as described in the M3AAWG Sender Best Common Practices, that the customer gave when they consented to receive marketing material by email.
-    opt_in_level: { type: coda.ValueType.String },
-    // The date and time when the customer consented to receive marketing material by email. If no date is provided, then the date and time when the consent information was sent is used.
-    consent_updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    state: { type: coda.ValueType.String, description: 'The current email marketing state for the customer.' },
+    opt_in_level: {
+      type: coda.ValueType.String,
+      description:
+        'The marketing subscription opt-in level, as described in the M3AAWG Sender Best Common Practices, that the customer gave when they consented to receive marketing material by email.',
+    },
+    consent_updated_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The date and time when the customer consented to receive marketing material by email.',
+    },
   },
   displayProperty: 'state',
 });
@@ -61,14 +106,21 @@ const EmailMarketingConsentSchema = coda.makeObjectSchema({
 // The marketing consent information when the customer consented to receiving marketing material by SMS. The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer that doesn't have a phone number recorded. The customer must have a unique phone number associated to the record.
 const SmsMarketingConsentSchema = coda.makeObjectSchema({
   properties: {
-    // The current SMS marketing state for the customer.
-    state: { type: coda.ValueType.String },
-    // The marketing subscription opt-in level, as described in the M3AAWG Sender Best Common Practices, that the customer gave when they consented to receive marketing material by SMS.
-    opt_in_level: { type: coda.ValueType.String },
-    // The date and time when the customer consented to receive marketing material by SMS. If no date is provided, then the date and time when the consent information was sent is used.
-    consent_updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-    // The source for whether the customer has consented to receive marketing material by SMS.
-    consent_collected_from: { type: coda.ValueType.String },
+    state: { type: coda.ValueType.String, description: 'The current SMS marketing state for the customer.' },
+    opt_in_level: {
+      type: coda.ValueType.String,
+      description:
+        'The marketing subscription opt-in level, as described in the M3AAWG Sender Best Common Practices, that the customer gave when they consented to receive marketing material by SMS.',
+    },
+    consent_updated_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The date and time when the customer consented to receive marketing material by SMS.',
+    },
+    consent_collected_from: {
+      type: coda.ValueType.String,
+      description: 'The source for whether the customer has consented to receive marketing material by SMS.',
+    },
   },
   displayProperty: 'state',
 });
@@ -97,6 +149,7 @@ export const CustomerSchema = coda.makeObjectSchema({
       fromKey: 'id',
       required: true,
       fixedId: 'customer_id',
+      useThousandsSeparator: false,
     },
     // @See formatCustomer function
     display: {
@@ -130,13 +183,44 @@ export const CustomerSchema = coda.makeObjectSchema({
       mutable: true,
       fixedId: 'email',
     },
-    // The email property is required to create a customer with email consent information and to update a customer for email consent that doesn't have an email recorded. The customer must have a unique email address associated to the record.
+    accepts_email_marketing: {
+      type: coda.ValueType.Boolean,
+      description: 'Wether the customer consented to receiving marketing material by email.',
+      fixedId: 'accepts_email_marketing',
+      mutable: true,
+    },
+    accepts_sms_marketing: {
+      type: coda.ValueType.Boolean,
+      description:
+        'Wether the customer consented to receiving marketing material by SMS. The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer.',
+      fixedId: 'accepts_sms_marketing',
+      mutable: true,
+    },
+    // Disabled for now, prefer to use simple checkboxes
+    /*
     email_marketing_consent: {
-      ...EmailMarketingConsentSchema,
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
       description:
         'The marketing consent information when the customer consented to receiving marketing material by email.',
       fixedId: 'email_marketing_consent',
+      mutable: true,
+      options: MARKETING_CONSENT_UPDATE_OPTIONS.map((option) => option.display),
     },
+    */
+    // Disabled for now, prefer to use simple checkboxes
+    /*
+    sms_marketing_consent: {
+      // ...SmsMarketingConsentSchema,
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
+      description:
+        'The marketing consent information when the customer consented to receiving marketing material by SMS. The customer must have a unique phone number associated to the record to be able to update.',
+      fixedId: 'sms_marketing_consent',
+      mutable: true,
+      options: MARKETING_CONSENT_UPDATE_OPTIONS.map((option) => option.display),
+    },
+    */
     first_name: {
       type: coda.ValueType.String,
       description: "The customer's first name.",
@@ -182,13 +266,6 @@ export const CustomerSchema = coda.makeObjectSchema({
       mutable: true,
       fixedId: 'phone',
     },
-    // The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer that doesn't have a phone number recorded. The customer must have a unique phone number associated to the record.
-    sms_marketing_consent: {
-      ...SmsMarketingConsentSchema,
-      description:
-        'The marketing consent information when the customer consented to receiving marketing material by SMS.',
-      fixedId: 'sms_marketing_consent',
-    },
     state: {
       type: coda.ValueType.String,
       description:
@@ -233,7 +310,8 @@ export const CustomerSchema = coda.makeObjectSchema({
   },
   displayProperty: 'display',
   idProperty: 'customer_id',
-  featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent', 'admin_url'],
+  // admin_url will be the last featured property, added in Customers dynamicOptions after the eventual metafields
+  featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent'],
 
   // Card fields.
   subtitleProperties: ['email', 'total_spent', 'tags', 'created_at'],
@@ -247,5 +325,13 @@ export const customerFieldDependencies = [
   {
     field: 'id',
     dependencies: ['admin_url'],
+  },
+  {
+    field: 'email_marketing_consent',
+    dependencies: ['accepts_email_marketing'],
+  },
+  {
+    field: 'sms_marketing_consent',
+    dependencies: ['accepts_sms_marketing'],
   },
 ];

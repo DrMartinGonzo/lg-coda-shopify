@@ -1,16 +1,85 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { syncCustomers, fetchCustomer, updateCustomer, deleteCustomer, createCustomer } from './customers-functions';
+import {
+  deleteCustomer,
+  createCustomerRest,
+  formatCustomerForSchemaFromRestApi,
+  handleCustomerUpdateJob,
+  fetchCustomerRest,
+  codaCustomerValuesToRest,
+} from './customers-functions';
 
-import { CustomerSchema } from './customers-schema';
+import { CustomerSchema, customerFieldDependencies } from './customers-schema';
 import { sharedParameters } from '../shared-parameters';
-import { IDENTITY_CUSTOMER } from '../constants';
+import {
+  CACHE_MINUTE,
+  IDENTITY_CUSTOMER,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { SyncTableRestAugmentedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import {
+  fetchMetafieldDefinitions,
+  formatMetafieldsForSchema,
+  getMetaFieldRealFromKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+  splitMetaFieldFullKey,
+} from '../metafields/metafields-functions';
+import { Metafield, MetafieldDefinition } from '../types/admin.types';
+import { arrayUnique, handleFieldDependencies, logAdmin, wrapGetSchemaForCli } from '../helpers';
+import {
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  graphQlGidToId,
+  makeAugmentedSyncTableGraphQlRequest,
+  skipGraphQlSyncTableRun,
+} from '../helpers-graphql';
+import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
+import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './customers-graphql';
+import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
+import {
+  UpdateCreateProp,
+  getMetafieldsCreateUpdateProps,
+  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
+  parseVarargsCreateUpdatePropsValues,
+} from '../helpers-varargs';
+import { MetafieldRestInput } from '../types/Metafields';
+import { CustomerCreateRestParams } from '../types/Customer';
+
+async function getCustomerSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+  let augmentedSchema: any = CustomerSchema;
+  if (formulaContext.syncMetafields) {
+    augmentedSchema = await augmentSchemaWithMetafields(CustomerSchema, 'CUSTOMER', context);
+  }
+  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  augmentedSchema.featuredProperties.push('admin_url');
+  return augmentedSchema;
+}
+
+/**
+ * The properties that can be updated when updating a customer.
+ */
+const standardUpdateProps: UpdateCreateProp[] = [
+  { display: 'first name', key: 'first_name', type: 'string' },
+  { display: 'last name', key: 'last_name', type: 'string' },
+  { display: 'email', key: 'email', type: 'string' },
+  { display: 'phone', key: 'phone', type: 'string' },
+  { display: 'note', key: 'note', type: 'string' },
+  { display: 'tags', key: 'tags', type: 'string' },
+  { display: 'accepts Email marketing', key: 'accepts_email_marketing', type: 'boolean' },
+  { display: 'accepts SMS marketing', key: 'accepts_sms_marketing', type: 'boolean' },
+];
+/**
+ * The properties that can be updated when creating a customer.
+ */
+const standardCreateProps = standardUpdateProps;
 
 const parameters = {
-  customerGID: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'customerGid',
-    description: 'The GraphQL GID of the customer.',
+  customerID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'customerId',
+    description: 'The ID of the customer.',
   }),
   // Optional input parameters
   inputFirstName: coda.makeParameter({
@@ -63,44 +132,42 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
     description: 'Return Customers from this shop.',
     identityName: IDENTITY_CUSTOMER,
     schema: CustomerSchema,
+    dynamicOptions: {
+      getSchema: getCustomerSchema,
+      defaultAddDynamicColumns: false,
+    },
     formula: {
       name: 'SyncCustomers',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        { ...sharedParameters.filterCreatedAtMax, optional: true },
-        { ...sharedParameters.filterCreatedAtMin, optional: true },
+        sharedParameters.optionalSyncMetafields,
+        {
+          ...sharedParameters.filterCreatedAtRange,
+          optional: true,
+          description: 'Sync only customers created in the given date range.',
+        },
+        {
+          ...sharedParameters.filterUpdatedAtRange,
+          optional: true,
+          description: 'Sync only customers updated in the given date range.',
+        },
         { ...sharedParameters.filterIds, optional: true },
         { ...sharedParameters.filterSinceId, optional: true },
-        { ...sharedParameters.filterUpdatedAtMax, optional: true },
-        { ...sharedParameters.filterUpdatedAtMin, optional: true },
       ],
       execute: syncCustomers,
       maxUpdateBatchSize: 10,
       executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
-        const jobs = updates.map(async (update) => {
-          const { updatedFields } = update;
-          const customerGid = update.previousValue.admin_graphql_api_id;
+        const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
+        const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
+        const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('CUSTOMER', context) : [];
 
-          const fields = {};
-          updatedFields.forEach((key) => {
-            fields[key] = update.newValue[key];
-          });
-          const newValues = await updateCustomer(customerGid, fields, context);
-          return newValues;
-        });
+        const jobs = updates.map((update) => handleCustomerUpdateJob(update, metafieldDefinitions, context));
 
-        // Wait for all of the jobs to finish .
-        let completed = await Promise.allSettled(jobs);
-
+        const completed = await Promise.allSettled(jobs);
         return {
-          // For each update, return either the updated row
-          // or an error if the update failed.
           result: completed.map((job) => {
-            if (job.status === 'fulfilled') {
-              return job.value;
-            } else {
-              return job.reason;
-            }
+            if (job.status === 'fulfilled') return job.value;
+            else return job.reason;
           }),
         };
       },
@@ -114,67 +181,96 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'UpdateCustomer',
     description: 'Update an existing Shopify customer and return the updated data.',
-    parameters: [
-      parameters.customerGID,
-      // Optional input parameters
-      parameters.inputFirstName,
-      parameters.inputLastName,
-      parameters.inputEmail,
-      parameters.inputPhone,
-      parameters.inputNote,
-      parameters.inputTags,
+    parameters: [parameters.customerID],
+    varargParameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'key',
+        description: 'The customer property to update.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
+          const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
+      }),
+      sharedParameters.varArgsPropValue,
     ],
     isAction: true,
     resultType: coda.ValueType.Object,
     schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
-    execute: async function ([customerGid, first_name, last_name, email, phone, note, tags], context) {
-      return updateCustomer(
-        customerGid,
-        {
-          first_name,
-          last_name,
-          email,
-          phone,
-          note,
-          tags,
-        },
-        context
-      );
+    execute: async function ([customer_id, ...varargs], context) {
+      // Build a Coda update object for Rest Admin and GraphQL API updates
+      let update: coda.SyncUpdate<string, string, any>;
+
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'CUSTOMER', context);
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
+
+      update = {
+        previousValue: { id: customer_id },
+        newValue: newValues,
+        updatedFields: Object.keys(newValues),
+      };
+      update.newValue = cleanQueryParams(update.newValue);
+
+      return handleCustomerUpdateJob(update, metafieldDefinitions, context);
     },
   });
 
   // an action to create a customer
   pack.addFormula({
     name: 'CreateCustomer',
-    description: `Create a new Shopify customer and return GraphQl GID.\nCustomer must have a name, phone number or email address.`,
-    parameters: [
-      parameters.inputFirstName,
-      parameters.inputLastName,
-      parameters.inputEmail,
-      parameters.inputPhone,
-      parameters.inputNote,
-      parameters.inputTags,
+    description: `Create a new Shopify customer and return customer ID.\nCustomer must have a name, phone number or email address.`,
+    parameters: [],
+    varargParameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'key',
+        description: 'The product variant property to update.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
+          const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
+      }),
+      sharedParameters.varArgsPropValue,
     ],
     isAction: true,
     resultType: coda.ValueType.String,
-    execute: async function ([first_name, last_name, email, phone, note, tags], context) {
-      if (!first_name && !last_name && !email && !phone) {
+    execute: async function ([...varargs], context) {
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'CUSTOMER', context);
+
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
+      const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
+        Object.keys(newValues)
+      );
+
+      if (!newValues['first_name'] && !newValues['last_name'] && !newValues['email'] && !newValues['phone']) {
         throw new coda.UserVisibleError('Customer must have a name, phone number or email address.');
       }
 
-      const response = await createCustomer(
-        {
-          first_name,
-          last_name,
-          email,
-          phone,
-          note,
-          tags,
-        },
-        context
-      );
-      const { body } = response;
-      return body.customer.admin_graphql_api_id;
+      // We can use Rest Admin API to create metafields
+      let metafieldRestInputs: MetafieldRestInput[] = [];
+      prefixedMetafieldFromKeys.forEach((fromKey) => {
+        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+        const input: MetafieldRestInput = {
+          namespace: metaNamespace,
+          key: metaKey,
+          value: newValues[fromKey],
+          type: metafieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey).type.name,
+        };
+        metafieldRestInputs.push(input);
+      });
+
+      const params: CustomerCreateRestParams = {
+        metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
+      };
+      standardFromKeys.forEach((key) => (params[key] = newValues[key]));
+
+      const response = await createCustomerRest(codaCustomerValuesToRest(params), context);
+      return response.body.customer.id;
     },
   });
 
@@ -182,11 +278,11 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'DeleteCustomer',
     description: 'Delete an existing Shopify customer and return true on success.',
-    parameters: [parameters.customerGID],
+    parameters: [parameters.customerID],
     isAction: true,
     resultType: coda.ValueType.Boolean,
-    execute: async function ([customerGid], context) {
-      await deleteCustomer([customerGid], context);
+    execute: async function ([customerId], context) {
+      await deleteCustomer(customerId, context);
       return true;
     },
   });
@@ -197,11 +293,16 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'Customer',
     description: 'Return a single customer from this shop.',
-    parameters: [parameters.customerGID],
+    parameters: [parameters.customerID],
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: CustomerSchema,
-    execute: fetchCustomer,
+    execute: async ([customer_id], context) => {
+      const customerResponse = await fetchCustomerRest(customer_id, context);
+      if (customerResponse.body?.customer) {
+        return formatCustomerForSchemaFromRestApi(customerResponse.body.customer, context);
+      }
+    },
   });
 
   /**====================================================================================================================
@@ -209,7 +310,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
    *===================================================================================================================== */
   pack.addColumnFormat({
     name: 'Customer',
-    instructions: 'Paste the GraphQL GID of the customer into the column.',
+    instructions: 'Paste the the customer Id into the column.',
     formulaName: 'Customer',
   });
 };

@@ -113,6 +113,7 @@ export const GRAPHQL_DEFAULT_API_VERSION = '2023-07';
 
 // TODO: rename these
 export const CACHE_DAY = 86400; // 1 day
+export const CACHE_YEAR = CACHE_DAY * 365; // 1 year
 export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
 export const CACHE_MINUTE = 60; // 1 minute
 export const CACHE_SINGLE_FETCH = 10; // 10s

@@ -41,16 +41,19 @@ pack.setUserAuthentication({
 });
 pack.addNetworkDomain('myshopify.com');
 
+setupProducts(pack);
+setupProductVariants(pack);
+setupCollections(pack);
+
+setupCustomers(pack);
+setupOrders(pack);
+
 setupArticles(pack);
 setupBlogs(pack);
-setupCollections(pack);
-setupCustomers(pack);
+setupPages(pack);
+
 setupFiles(pack);
 setupMetafields(pack);
 setupMetaObjects(pack);
-setupOrders(pack);
-setupPages(pack);
-setupProducts(pack);
-setupProductVariants(pack);
 setupShop(pack);
 setupTranslations(pack);

@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_MINUTE,
   IDENTITY_PRODUCT_VARIANT,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
@@ -13,10 +14,8 @@ import {
   fetchProductVariantRest,
   formatProductVariantForSchemaFromRestApi,
   handleProductVariantUpdateJob,
-  updateProductVariantRest,
   validateProductVariantParams,
 } from './productVariants-functions';
-import { handleResourceMetafieldsUpdate } from '../metafields/metafields-functions';
 
 import { ProductVariantSchema, productVariantFieldDependencies } from './productVariants-schema';
 import { sharedParameters } from '../shared-parameters';
@@ -32,12 +31,11 @@ import {
   makeAutocompleteMetafieldKeysFunction,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { arrayUnique, getUnitMap, handleFieldDependencies, logAdmin, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, logAdmin, wrapGetSchemaForCli } from '../helpers';
 import { MetafieldDefinition } from '../types/admin.types';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   graphQlGidToId,
-  idToGraphQlGid,
   makeAugmentedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
@@ -48,9 +46,36 @@ import {
 } from '../types/admin.generated';
 import { fetchProductRest } from '../products/products-functions';
 import { MetafieldRestInput } from '../types/Metafields';
-import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import { ProductVariantCreateRestParams } from '../types/ProductVariant';
+import {
+  UpdateCreateProp,
+  getMetafieldsCreateUpdateProps,
+  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
+  parseVarargsCreateUpdatePropsValues,
+} from '../helpers-varargs';
 
 // #endregion
+
+/**
+ * The properties that can be updated when updating a product variant.
+ */
+const standardUpdateProps: UpdateCreateProp[] = [
+  { display: 'option 1', key: 'option1', type: 'string' },
+  { display: 'option 2', key: 'option2', type: 'string' },
+  { display: 'option 3', key: 'option3', type: 'string' },
+  { display: 'price', key: 'price', type: 'number' },
+  { display: 'sku', key: 'sku', type: 'string' },
+  { display: 'position', key: 'position', type: 'number' },
+  { display: 'taxable', key: 'taxable', type: 'boolean' },
+  { display: 'barcode', key: 'barcode', type: 'string' },
+  { display: 'weight', key: 'weight', type: 'number' },
+  { display: 'weight unit', key: 'weight_unit', type: 'string' },
+  { display: 'compare at price', key: 'compare_at_price', type: 'number' },
+];
+/**
+ * The properties that can be updated when creating a product variant.
+ */
+const standardCreateProps = standardUpdateProps.filter((prop) => prop.key !== 'option1');
 
 async function getProductVariantsSchema(
   context: coda.ExecutionContext,
@@ -398,131 +423,55 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'option1',
-        description: 'Option 1 of 3 of the product variant.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'option2',
-        description: 'Option 2 of 3 of the product variant.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'option3',
-        description: 'Option 3 of 3 of the product variant.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'price',
-        description: 'The product variant price.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'sku',
-        description: 'The product variant sku.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'position',
-        description: 'The order of the product variant in the list of product variants.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Boolean,
-        name: 'taxable',
-        description: 'Whether a tax is charged when the product variant is sold.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'barcode',
-        description: 'The barcode, UPC, or ISBN number for the product variants',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'weight',
-        description:
-          "The weight of the product variant in the unit system specified with weightUnit. If you don't specify a value for weightUnit, then the shop's default unit of measurement is applied",
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'weightUnit',
-        description: "The unit of measurement that applies to the product variant's weight.",
-        optional: true,
-        autocomplete: Object.values(getUnitMap('weight')),
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'compareAtPrice',
-        description: 'The original price of the item before an adjustment or a sale.',
-        optional: true,
+        description: 'Option 1 of 3 of the product variant. At least one option is required.',
       }),
     ],
-    varargParameters: [parameters.metafieldKey, sharedParameters.metafieldValue],
+    varargParameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'key',
+        description: 'The product variant property to update.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context, CACHE_MINUTE);
+          const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
+      }),
+      sharedParameters.varArgsPropValue,
+    ],
     isAction: true,
     resultType: coda.ValueType.Number,
-    execute: async function (
-      [
-        product_id,
-        option1,
-        option2,
-        option3,
-        price,
-        sku,
-        position,
-        taxable,
-        barcode,
-        weight,
-        weight_unit,
-        compare_at_price,
-        ...varargs
-      ],
-      context
-    ) {
-      // if (imagesUrls !== undefined && images !== undefined)
-      //   throw new coda.UserVisibleError("Provide either 'imagesFromCoda' or 'imagesUrls', not both");
+    execute: async function ([product_id, option1, ...varargs], context) {
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCTVARIANT', context);
 
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
+      const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
+        Object.keys(newValues)
+      );
+
+      // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
-      if (varargs && varargs.length) {
-        const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context);
-        while (varargs.length > 0) {
-          let metafieldKey: string, metafieldValue: string;
-          [metafieldKey, metafieldValue, ...varargs] = varargs;
-          const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKey);
-          const input: MetafieldRestInput = {
-            namespace: metaNamespace,
-            key: metaKey,
-            value: metafieldValue,
-            type: metafieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey).type.name,
-          };
-          metafieldRestInputs.push(input);
-        }
-      }
+      prefixedMetafieldFromKeys.forEach((fromKey) => {
+        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+        const input: MetafieldRestInput = {
+          namespace: metaNamespace,
+          key: metaKey,
+          value: newValues[fromKey],
+          type: metafieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey).type.name,
+        };
+        metafieldRestInputs.push(input);
+      });
 
-      // const imagesToUse = imagesUrls ? imagesUrls : images;
       const params: ProductVariantCreateRestParams = {
         product_id,
         option1,
-        option2,
-        option3,
-        price,
-        sku,
-        position,
-        taxable,
-        barcode,
-        weight,
-        weight_unit,
-        compare_at_price,
+        ...standardFromKeys.map((key) => ({ [key]: newValues[key] })),
         metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-
         // images: imagesToUse ? imagesToUse.map((url) => ({ src: url })) : undefined,
       };
+      standardFromKeys.forEach((key) => (params[key] = newValues[key]));
 
       const response = await createProductVariantRest(params, context);
       return response.body.variant.id;
@@ -533,141 +482,39 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'UpdateProductVariant',
     description: 'Update an existing Shopify product variant and return the updated data.',
-    parameters: [
-      { ...parameters.productVariantId },
+    parameters: [parameters.productVariantId],
+    varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
-        name: 'option1',
-        description: 'Option 1 of 3 of the product variant.',
-        optional: true,
+        name: 'key',
+        description: 'The product variant property to update.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context, CACHE_MINUTE);
+          const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
       }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'option2',
-        description: 'Option 2 of 3 of the product variant.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'option3',
-        description: 'Option 3 of 3 of the product variant.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'price',
-        description: 'The product variant price.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'sku',
-        description: 'The product variant sku.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'position',
-        description: 'The order of the product variant in the list of product variants.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Boolean,
-        name: 'taxable',
-        description: 'Whether a tax is charged when the product variant is sold.',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'barcode',
-        description: 'The barcode, UPC, or ISBN number for the product variants',
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'weight',
-        description:
-          "The weight of the product variant in the unit system specified with weightUnit. If you don't specify a value for weightUnit, then the shop's default unit of measurement is applied",
-        optional: true,
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.String,
-        name: 'weightUnit',
-        description: "The unit of measurement that applies to the product variant's weight.",
-        optional: true,
-        autocomplete: Object.values(getUnitMap('weight')),
-      }),
-      coda.makeParameter({
-        type: coda.ParameterType.Number,
-        name: 'compareAtPrice',
-        description: 'The original price of the item before an adjustment or a sale.',
-        optional: true,
-      }),
+      sharedParameters.varArgsPropValue,
     ],
-    varargParameters: [parameters.metafieldKey, sharedParameters.metafieldValue],
     isAction: true,
     resultType: coda.ValueType.Object,
     //! withIdentity breaks relations when updating
     // schema: coda.withIdentity(ProductVariantSchema, IDENTITY_PRODUCT_VARIANT),
     schema: ProductVariantSchema,
-    execute: async function (
-      [
-        product_variant_id,
-        option1,
-        option2,
-        option3,
-        price,
-        sku,
-        position,
-        taxable,
-        barcode,
-        weight,
-        weight_unit,
-        compare_at_price,
-        ...varargs
-      ],
-      context
-    ) {
+    execute: async function ([product_variant_id, ...varargs], context) {
       // Build a Coda update object for Rest Admin and GraphQL API updates
-      let update: coda.SyncUpdate<string, string, typeof ProductVariantSchema>;
+      let update: coda.SyncUpdate<string, string, any>;
 
-      const cleanedRestParams: ProductVariantUpdateRestParams = cleanQueryParams({
-        option1,
-        option2,
-        option3,
-        price,
-        sku,
-        position,
-        taxable,
-        barcode,
-        weight,
-        weight_unit,
-        compare_at_price,
-      });
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCTVARIANT', context);
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {
-        previousValue: {
-          id: product_variant_id,
-        },
-        newValue: { ...cleanedRestParams },
-        updatedFields: Object.keys(cleanedRestParams),
+        previousValue: { id: product_variant_id },
+        newValue: newValues,
+        updatedFields: Object.keys(newValues),
       };
-
-      let metafieldDefinitions: MetafieldDefinition[] = [];
-      const prefixedMetafieldFromKeys = [];
-      if (varargs && varargs.length) {
-        while (varargs.length > 0) {
-          let metafieldKey: string, metafieldValue: string;
-          [metafieldKey, metafieldValue, ...varargs] = varargs;
-          const prefixedMetafieldFromKey = METAFIELD_PREFIX_KEY + metafieldKey;
-          prefixedMetafieldFromKeys.push(prefixedMetafieldFromKey);
-          update.newValue[prefixedMetafieldFromKey] = metafieldValue;
-          update.updatedFields.push(prefixedMetafieldFromKey);
-        }
-      }
-      if (prefixedMetafieldFromKeys.length) {
-        metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context);
-      }
+      update.newValue = cleanQueryParams(update.newValue);
 
       return handleProductVariantUpdateJob(update, metafieldDefinitions, context);
     },
