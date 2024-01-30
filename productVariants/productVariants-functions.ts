@@ -15,6 +15,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
+import { MetafieldDefinitionFragment } from '../types/admin.generated';
 
 // #region Validate functions
 export function validateProductVariantParams(params: any) {
@@ -39,7 +40,7 @@ export function validateProductVariantParams(params: any) {
 // #region helpers
 export async function handleProductVariantUpdateJob(
   update: coda.SyncUpdate<string, string, typeof ProductVariantSchema>,
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;

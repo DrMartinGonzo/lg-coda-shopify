@@ -24,7 +24,7 @@ export const BlogSchema = coda.makeObjectSchema({
       fixedId: 'admin_url',
     },
     /* NOT NEEDED
-    blog_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'A unique numeric identifier for the blog.' },
+    blog_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'A unique numeric identifier for the blog.', useThousandsSeparator: false, },
     */
     graphql_gid: {
       type: coda.ValueType.String,

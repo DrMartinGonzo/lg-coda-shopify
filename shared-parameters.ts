@@ -80,6 +80,12 @@ export const sharedParameters = {
     description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
   }),
 
+  varArgsPropValue: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'value',
+    description: 'The property value.',
+  }),
+
   /**====================================================================================================================
    *    Filters
    *===================================================================================================================== */

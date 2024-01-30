@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_MINUTE,
   DEFAULT_PRODUCT_OPTION_NAME,
   DEFAULT_PRODUCT_STATUS_REST,
   IDENTITY_PRODUCT,
@@ -16,30 +17,24 @@ import {
   createProductRest,
   getProductTypes,
   deleteProductRest,
-  updateProductGraphQl,
-  formatProductForSchemaFromGraphQlApi,
   handleProductUpdateJob,
 } from './products-functions';
-import { ProductSchemaGraphQl, ProductSchemaRest, productFieldDependencies } from './products-schema';
-import {
-  MAX_OPTIONS_PER_PRODUCT,
-  QueryProductsAdmin,
-  QueryProductsMetafieldsAdmin,
-  buildProductsSearchQuery,
-} from './products-graphql';
+import { ProductSchemaRest, productFieldDependencies } from './products-schema';
+import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
 import { sharedParameters } from '../shared-parameters';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
+  getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
-  makeAugmentedSyncTableGraphQlRequest,
-  makeSyncTableGraphQlRequest,
+  makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
 import {
   fetchMetafieldDefinitions,
+  findMatchingMetafieldDefinition,
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
   makeAutocompleteMetafieldKeysFunction,
@@ -49,15 +44,52 @@ import {
 
 // Import types
 import {
+  GetProductsMetafieldsQuery,
   GetProductsMetafieldsQueryVariables,
-  GetProductsWithMetafieldsQuery,
-  GetProductsWithMetafieldsQueryVariables,
+  MetafieldDefinitionFragment,
 } from '../types/admin.generated';
-import { MetafieldDefinition } from '../types/admin.types';
 import { MetafieldRestInput } from '../types/Metafields';
-import { SyncTableGraphQlContinuation, SyncTableRestAugmentedContinuation } from '../types/tableSync';
-import { ProductSyncTableRestParams, ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
-import { arrayUnique, handleFieldDependencies } from '../helpers';
+import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import { ProductSyncTableRestParams, ProductCreateRestParams } from '../types/Product';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import {
+  UpdateCreateProp,
+  getMetafieldsCreateUpdateProps,
+  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
+  parseVarargsCreateUpdatePropsValues,
+} from '../helpers-varargs';
+
+async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+  let augmentedSchema: any = ProductSchemaRest;
+  if (formulaContext.syncMetafields) {
+    augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaRest, 'PRODUCT', context);
+  }
+  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  augmentedSchema.featuredProperties.push('admin_url');
+  return augmentedSchema;
+}
+
+/**
+ * The properties that can be updated when updating a product.
+ */
+const standardUpdateProps: UpdateCreateProp[] = [
+  { display: 'title', key: 'title', type: 'string' },
+  { display: 'body html', key: 'body_html', type: 'string' },
+  { display: 'product type', key: 'product_type', type: 'string' },
+  { display: 'tags', key: 'tags', type: 'string' },
+  { display: 'vendor', key: 'vendor', type: 'string' },
+  { display: 'status', key: 'status', type: 'string' },
+  { display: 'handle', key: 'handle', type: 'string' },
+  { display: 'template suffix', key: 'template_suffix', type: 'string' },
+];
+/**
+ * The properties that can be updated when creating a product.
+ */
+const standardCreateProps = [
+  ...standardUpdateProps.filter((prop) => prop.key !== 'title'),
+  { display: 'images URLs', key: 'images', type: 'productImageUrls' },
+  { display: 'options', key: 'options', type: 'productCreateOptions' },
+];
 
 const parameters = {
   productGid: coda.makeParameter({
@@ -130,7 +162,6 @@ const parameters = {
 
 export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   // #region Sync Tables
-
   // Products Sync Table via Rest Admin API
   pack.addSyncTable({
     name: 'Products',
@@ -139,15 +170,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
     identityName: IDENTITY_PRODUCT,
     schema: ProductSchemaRest,
     dynamicOptions: {
-      getSchema: async function (context, _, { syncMetafields }) {
-        let augmentedSchema: any = ProductSchemaRest;
-        if (syncMetafields) {
-          augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaRest, 'PRODUCT', context);
-        }
-        // admin_url should always be the last featured property, regardless of any metafield keys added previously
-        augmentedSchema.featuredProperties.push('admin_url');
-        return augmentedSchema;
-      },
+      getSchema: getProductSchema,
       defaultAddDynamicColumns: false,
       propertyOptions: async function (context) {
         if (context.propertyName === 'product_type') {
@@ -210,21 +233,25 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         ],
         context
       ) {
-        const prevContinuation = context.sync.continuation as SyncTableRestAugmentedContinuation;
-        console.log('prevContinuation', prevContinuation);
-        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+        // If executing from CLI, schema is undefined, we have to retrieve it first
+        const schema =
+          context.sync.schema ?? (await wrapGetSchemaForCli(getProductSchema, context, { syncMetafields }));
+        const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
         const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+
         let restLimit = REST_DEFAULT_LIMIT;
         let maxEntriesPerRun = restLimit;
         let shouldDeferBy = 0;
-        let metafieldDefinitions: MetafieldDefinition[] = [];
+        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
 
         if (shouldSyncMetafields) {
-          const defaultMaxEntriesPerRun = 50;
+          // TODO: calc this
+          const defaultMaxEntriesPerRun = 200;
           const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
             defaultMaxEntriesPerRun,
             prevContinuation,
@@ -242,98 +269,126 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
             (await fetchMetafieldDefinitions('PRODUCT', context));
         }
 
-        const restParams: ProductSyncTableRestParams = cleanQueryParams({
-          fields: handleFieldDependencies(standardFromKeys, productFieldDependencies).join(', '),
-          limit: restLimit,
-          handle: handles && handles.length ? handles.join(',') : undefined,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          product_type,
-          published_status,
-          status: status && status.length ? status.join(',') : undefined,
-          vendor,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          published_at_min: published_at ? published_at[0] : undefined,
-          published_at_max: published_at ? published_at[1] : undefined,
-        });
-        validateProductParams(restParams, true);
+        let restItems = [];
+        let restContinuation: SyncTableRestContinuation = null;
+        const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`,
-            restParams
+        // Rest Admin API Sync
+        if (!skipNextRestSync) {
+          const syncedStandardFields = handleFieldDependencies(standardFromKeys, productFieldDependencies);
+          const restParams: ProductSyncTableRestParams = cleanQueryParams({
+            fields: syncedStandardFields.join(', '),
+            limit: restLimit,
+            handle: handles && handles.length ? handles.join(',') : undefined,
+            ids: ids && ids.length ? ids.join(',') : undefined,
+            product_type,
+            published_status,
+            status: status && status.length ? status.join(',') : undefined,
+            vendor,
+            created_at_min: created_at ? created_at[0] : undefined,
+            created_at_max: created_at ? created_at[1] : undefined,
+            updated_at_min: updated_at ? updated_at[0] : undefined,
+            updated_at_max: updated_at ? updated_at[1] : undefined,
+            published_at_min: published_at ? published_at[0] : undefined,
+            published_at_max: published_at ? published_at[1] : undefined,
+          });
+          validateProductParams(restParams, true);
+
+          let url: string;
+          if (prevContinuation?.nextUrl) {
+            url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
+          } else {
+            url = coda.withQueryParams(
+              `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`,
+              restParams
+            );
+          }
+          const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+          restContinuation = continuation;
+
+          if (response && response.body?.products) {
+            restItems = response.body.products.map((product) => formatProductForSchemaFromRestApi(product, context));
+          }
+
+          if (!shouldSyncMetafields) {
+            return {
+              result: restItems,
+              continuation: restContinuation,
+            };
+          }
+        }
+
+        // GraphQL Admin API metafields augmented Sync
+        if (shouldSyncMetafields) {
+          const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
+            prevContinuation,
+            restItems,
+            maxEntriesPerRun
           );
-        }
-
-        let restResult = [];
-        const { response: restResponse, continuation: restContinuation } = await makeSyncTableGetRequest(
-          {
-            url,
-          },
-          context
-        );
-        if (restResponse && restResponse.body?.products) {
-          restResult = restResponse.body.products.map((product) => formatProductForSchemaFromRestApi(product, context));
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restResult,
-            continuation: restContinuation,
-          };
-        }
-
-        // Now we will sync metafields
-        const payload = {
-          query: QueryProductsMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            searchQuery: buildProductsSearchQuery({ ids: restResult.map((p) => p.id) }),
-          } as GetProductsMetafieldsQueryVariables,
-        };
-
-        const { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeAugmentedSyncTableGraphQlRequest(
-            {
-              payload,
+          const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
+          const graphQlPayload = {
+            query: QueryProductsMetafieldsAdmin,
+            variables: {
               maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableRestAugmentedContinuation,
-              restNextUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                metafieldDefinitions,
-              },
-            },
-            context
-          );
+              metafieldKeys: effectiveMetafieldKeys,
+              countMetafields: effectiveMetafieldKeys.length,
+              cursor: prevContinuation?.cursor,
+              searchQuery: buildProductsSearchQuery({ ids: uniqueIdsToFetch }),
+            } as GetProductsMetafieldsQueryVariables,
+          };
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+          let { response: augmentedResponse, continuation: augmentedContinuation } =
+            await makeMixedSyncTableGraphQlRequest(
+              {
+                payload: graphQlPayload,
+                maxEntriesPerRun,
+                prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
+                nextRestUrl: restContinuation?.nextUrl,
+                extraContinuationData: {
+                  metafieldDefinitions,
+                  currentBatch: {
+                    remaining: remaining,
+                    processing: toProcess,
+                  },
+                },
+                getPageInfo: (data: GetProductsMetafieldsQuery) => data.products?.pageInfo,
+              },
+              context
+            );
+
+          if (augmentedResponse && augmentedResponse.body?.data) {
+            const customersData = augmentedResponse.body.data as GetProductsMetafieldsQuery;
+            const augmentedItems = toProcess
+              .map((product) => {
+                const graphQlNodeMatch = customersData.products.nodes.find((c) => graphQlGidToId(c.id) === product.id);
+
+                // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
+                if (!graphQlNodeMatch) return;
+
+                if (graphQlNodeMatch?.metafields?.nodes?.length) {
+                  return {
+                    ...product,
+                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
+                  };
+                }
+                return product;
+              })
+              .filter((p) => p); // filter out undefined items
+
+            return {
+              result: augmentedItems,
+              continuation: augmentedContinuation,
+            };
+          }
+
           return {
-            result: restResult.map((product) => {
-              const match = augmentedResponse.body.data.products.nodes.find(
-                (p: GetProductsWithMetafieldsQuery['products']['nodes'][number]) => graphQlGidToId(p.id) === product.id
-              );
-              if (match?.metafields?.nodes?.length) {
-                return {
-                  ...product,
-                  ...formatMetafieldsForSchema(match.metafields.nodes, metafieldDefinitions),
-                };
-              }
-              return product;
-            }),
+            result: [],
             continuation: augmentedContinuation,
           };
         }
 
         return {
           result: [],
-          continuation: augmentedContinuation,
         };
       },
       maxUpdateBatchSize: 10,
@@ -370,6 +425,15 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       }
     },
   });
+
+  // Product Column Format
+  // TODO: add link regex
+  pack.addColumnFormat({
+    name: 'Product',
+    instructions: 'Paste the GraphQL GID of the product into the column.',
+    formulaName: 'Product',
+    // matchers: [new RegExp('^https://.*myshopify.com/admin/products/([0-9]+)$')],
+  });
   // #endregion
 
   // #region Actions
@@ -377,89 +441,54 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'CreateProduct',
     description: 'Create a new Shopify Product and return Product Id.',
-    parameters: [
-      { ...parameters.title },
-      { ...parameters.bodyHtml, optional: true },
-      { ...sharedParameters.productType, optional: true },
-      { ...parameters.options, optional: true },
-      { ...parameters.tags, optional: true },
-      { ...sharedParameters.productVendor, optional: true },
-      { ...sharedParameters.productSingleStatusRest, optional: true },
-      { ...parameters.handle, optional: true },
+    parameters: [{ ...parameters.title }],
+    varargParameters: [
       coda.makeParameter({
-        type: coda.ParameterType.ImageArray,
-        name: 'imagesFromCoda',
-        description:
-          "A list of Coda image references to use in the product. 🚨 You can't use both imagesFromCoda and imagesUrls parameter.",
-        optional: true,
+        type: coda.ParameterType.String,
+        name: 'key',
+        description: 'The product variant property to create.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
+          const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
       }),
-      coda.makeParameter({
-        type: coda.ParameterType.StringArray,
-        name: 'imagesUrls',
-        description:
-          "A list of image urls to use in the product. 🚨 You can't use both imagesFromCoda and imagesUrls parameter.",
-        optional: true,
-      }),
-      { ...parameters.templateSuffix, optional: true },
+      sharedParameters.varArgsPropValue,
     ],
-    varargParameters: [parameters.metafieldKey, sharedParameters.metafieldValue],
     isAction: true,
     resultType: coda.ValueType.Number,
-    execute: async function (
-      [
-        title,
-        body_html,
-        product_type,
-        options,
-        tags,
-        vendor,
-        status = DEFAULT_PRODUCT_STATUS_REST,
-        handle,
-        images,
-        imagesUrls,
-        template_suffix,
-        ...varargs
-      ],
-      context
-    ) {
-      if (imagesUrls !== undefined && images !== undefined)
-        throw new coda.UserVisibleError("Provide either 'imagesFromCoda' or 'imagesUrls', not both");
+    execute: async function ([title, ...varargs], context) {
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCT', context);
 
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
+      const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
+        Object.keys(newValues)
+      );
+
+      // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
-      if (varargs && varargs.length) {
-        const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context);
-        while (varargs.length > 0) {
-          let metafieldKey: string, metafieldValue: string;
-          [metafieldKey, metafieldValue, ...varargs] = varargs;
-          const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKey);
-          const input: MetafieldRestInput = {
-            namespace: metaNamespace,
-            key: metaKey,
-            value: metafieldValue,
-            type: metafieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey).type.name,
-          };
-          metafieldRestInputs.push(input);
-        }
-      }
+      prefixedMetafieldFromKeys.forEach((fromKey) => {
+        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+        const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+        const input: MetafieldRestInput = {
+          namespace: metaNamespace,
+          key: metaKey,
+          value: newValues[fromKey],
+          type: matchingMetafieldDefinition?.type.name,
+        };
+        metafieldRestInputs.push(input);
+      });
 
-      const imagesToUse = imagesUrls ? imagesUrls : images;
       const params: ProductCreateRestParams = {
         title,
-        body_html,
-        product_type,
-        options: options ? options.map((name) => ({ name, values: [DEFAULT_PRODUCT_OPTION_NAME] })) : undefined,
-        tags,
-        vendor,
-        // status or handle can unintentionally be empty strings if adding varargs parameters
-        status: status && status !== '' ? status : DEFAULT_PRODUCT_STATUS_REST,
-        handle: handle && handle !== '' ? handle : undefined,
-        images: imagesToUse ? imagesToUse.map((url) => ({ src: url })) : undefined,
-        template_suffix,
         metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
       };
+      standardFromKeys.forEach((key) => (params[key] = newValues[key]));
 
       // We need to add a default variant to the product if some options are defined
-      if (params.options) {
+      if (params.options && Array.isArray(params.options) && params.options.length) {
         params.variants = [
           {
             option1: DEFAULT_PRODUCT_OPTION_NAME,
@@ -467,6 +496,9 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
             option3: DEFAULT_PRODUCT_OPTION_NAME,
           },
         ];
+      }
+      if (!params.status) {
+        params.status = DEFAULT_PRODUCT_STATUS_REST;
       }
 
       const response = await createProductRest(params, context);
@@ -478,71 +510,39 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'UpdateProduct',
     description: 'Update an existing Shopify product and return the updated data.',
-    parameters: [
-      sharedParameters.productId,
-      { ...parameters.title, optional: true },
-      { ...parameters.bodyHtml, optional: true },
-      { ...sharedParameters.productType, optional: true },
-      { ...parameters.tags, optional: true },
-      { ...sharedParameters.productVendor, optional: true },
-      { ...sharedParameters.productSingleStatusRest, optional: true },
-      { ...parameters.handle, optional: true },
-      { ...parameters.templateSuffix, optional: true },
+    parameters: [sharedParameters.productId],
+    varargParameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'key',
+        description: 'The product property to update.',
+        autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
+          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
+          const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+        },
+      }),
+      sharedParameters.varArgsPropValue,
     ],
-    varargParameters: [parameters.metafieldKey, sharedParameters.metafieldValue],
     isAction: true,
     resultType: coda.ValueType.Object,
     //! withIdentity breaks relations when updating
     // schema: coda.withIdentity(ProductSchema, IDENTITY_PRODUCT),
     schema: ProductSchemaRest,
-    /**
-     * The update will be performed first with Rest Admin API for standard
-     * fields and then with GraphQL Admin API for metafields. It's easier to
-     * update metafields in GraphQL because we don't have to handle metafield
-     * creation/update. Otherwise we would have to know the metafield ID when
-     * we are updating a metafield
-     */
-    execute: async function (
-      [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, ...varargs],
-      context
-    ) {
+    execute: async function ([product_id, ...varargs], context) {
       // Build a Coda update object for Rest Admin and GraphQL API updates
-      let update: coda.SyncUpdate<string, string, typeof ProductSchemaRest>;
+      let update: coda.SyncUpdate<string, string, any>;
 
-      const cleanedRestParams: ProductUpdateRestParams = cleanQueryParams({
-        title,
-        body_html,
-        product_type,
-        tags,
-        vendor,
-        status,
-        handle,
-        template_suffix,
-      });
+      const { metafieldDefinitions, metafieldUpdateCreateProps } =
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCT', context);
+      const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {
-        previousValue: {
-          id: productId,
-        },
-        newValue: { ...cleanedRestParams },
-        updatedFields: Object.keys(cleanedRestParams),
+        previousValue: { id: product_id },
+        newValue: newValues,
+        updatedFields: Object.keys(newValues),
       };
-
-      let metafieldDefinitions: MetafieldDefinition[] = [];
-      const prefixedMetafieldFromKeys = [];
-      if (varargs && varargs.length) {
-        while (varargs.length > 0) {
-          let metafieldKey: string, metafieldValue: string;
-          [metafieldKey, metafieldValue, ...varargs] = varargs;
-          const prefixedMetafieldFromKey = METAFIELD_PREFIX_KEY + metafieldKey;
-          prefixedMetafieldFromKeys.push(prefixedMetafieldFromKey);
-          update.newValue[prefixedMetafieldFromKey] = metafieldValue;
-          update.updatedFields.push(prefixedMetafieldFromKey);
-        }
-      }
-      if (prefixedMetafieldFromKeys.length) {
-        metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context);
-      }
+      update.newValue = cleanQueryParams(update.newValue);
 
       return handleProductUpdateJob(update, metafieldDefinitions, context);
     },
@@ -559,15 +559,6 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       await deleteProductRest(productId, context);
       return true;
     },
-  });
-  // #endregion
-
-  // #region Column Formats
-  // Product Column Format
-  pack.addColumnFormat({
-    name: 'Product',
-    instructions: 'Paste the GraphQL GID of the product into the column.',
-    formulaName: 'Product',
   });
   // #endregion
 };
