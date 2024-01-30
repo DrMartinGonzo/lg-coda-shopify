@@ -2,18 +2,12 @@ import * as coda from '@codahq/packs-sdk';
 
 import { getShopifyRequestHeaders, getShopifyStorefrontRequestHeaders, isCodaCached, logAdmin, wait } from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
-import {
-  ShopifyGraphQlError,
-  ShopifyGraphQlUserError,
-  ShopifyMaxExceededError,
-  ShopifyRetryableErrors,
-  ShopifyThrottledError,
-} from './shopifyErrors';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './types/ShopifyGraphQlErrors';
+import { ShopifyGraphQlError, ShopifyGraphQlUserError, ShopifyMaxExceededError } from './shopifyErrors';
+import { ShopifyGraphQlThrottleStatus } from './types/ShopifyGraphQlErrors';
 import {
   SyncTableGraphQlContinuation,
+  SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
-  SyncTableRestContinuation,
 } from './types/tableSync';
 
 // TODO: still not ready, calculate this max ?
@@ -26,12 +20,6 @@ const queryCheckThrottleStatus = /* GraphQL */ `
     }
   }
 `;
-
-export async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
-  const { response } = await makeGraphQlRequest({ payload: { query: queryCheckThrottleStatus } }, context);
-  const { extensions } = response.body;
-  return extensions.cost.throttleStatus;
-}
 
 // #region GID functions
 export function idToGraphQlGid(resourceType: string, id: number) {
@@ -69,7 +57,21 @@ function isMaxCostExceeded(errors: ShopifyGraphQlError[]) {
 function getGraphQlErrorByCode(errors: ShopifyGraphQlError[], code: string) {
   return errors.find((error) => error.extensions?.code === code);
 }
+
+function formatGraphQlErrors(errors: ShopifyGraphQlError[]) {
+  return errors.map((error) => `• ${error.message}`).join('\n\n');
+}
+function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
+  return userErrors.map((error) => `• ${error.code}\n${error.message}`).join('\n\n');
+}
 // #endregion
+
+// #region GraphQl auto throttling
+export async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
+  const { response } = await makeGraphQlRequest({ payload: { query: queryCheckThrottleStatus } }, context);
+  const { extensions } = response.body;
+  return extensions.cost.throttleStatus;
+}
 
 function calcSyncTableMaxEntriesPerRun(
   prevContinuation: SyncTableGraphQlContinuation,
@@ -115,16 +117,54 @@ async function repayGraphQlCost(cost: any, throttled?: boolean) {
   }
 }
 
-function formatGraphQlErrors(errors: ShopifyGraphQlError[]) {
-  return errors.map((error) => `• ${error.message}`).join('\n\n');
-}
-function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
-  return userErrors.map((error) => `• ${error.code}\n${error.message}`).join('\n\n');
+export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
+  defaultMaxEntriesPerRun: number,
+  prevContinuation: SyncTableGraphQlContinuation,
+  context: coda.ExecutionContext
+) {
+  const previousLockAcquired = prevContinuation?.graphQlLock ? prevContinuation.graphQlLock === 'true' : false;
+  const throttleStatus = await checkThrottleStatus(context);
+  const { currentlyAvailable, maximumAvailable } = throttleStatus;
+
+  let maxEntriesPerRun: number;
+  let shouldDeferBy = 0;
+
+  if (previousLockAcquired) {
+    if (prevContinuation?.reducedMaxEntriesPerRun) {
+      maxEntriesPerRun = prevContinuation.reducedMaxEntriesPerRun;
+    } else if (prevContinuation?.lastCost) {
+      maxEntriesPerRun = calcSyncTableMaxEntriesPerRun(prevContinuation, throttleStatus);
+    } else {
+      maxEntriesPerRun = defaultMaxEntriesPerRun;
+    }
+  } else {
+    const minPointsNeeded = maximumAvailable - 1;
+    shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
+    maxEntriesPerRun = defaultMaxEntriesPerRun;
+
+    if (shouldDeferBy > 0) {
+      logAdmin(
+        `🚫 Not enough points (${currentlyAvailable}/${minPointsNeeded}). Skip and wait ${shouldDeferBy / 1000}s`
+      );
+    }
+  }
+
+  return {
+    maxEntriesPerRun,
+    shouldDeferBy,
+  };
 }
 
-/**====================================================================================================================
- *    GraphQL Request functions
- *===================================================================================================================== */
+export async function skipGraphQlSyncTableRun(prevContinuation: SyncTableGraphQlContinuation, waitms: number) {
+  await wait(waitms);
+  return {
+    result: [],
+    continuation: { ...prevContinuation, graphQlLock: 'false' },
+  };
+}
+// #endregion
+
+// #region GraphQL Request functions
 export async function makeGraphQlRequest(
   params: {
     payload: any;
@@ -201,52 +241,6 @@ export async function makeGraphQlRequest(
   } catch (error) {
     throw error;
   }
-}
-
-export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
-  defaultMaxEntriesPerRun: number,
-  prevContinuation: SyncTableGraphQlContinuation,
-  context: coda.ExecutionContext
-) {
-  const previousLockAcquired = prevContinuation?.graphQlLock ? prevContinuation.graphQlLock === 'true' : false;
-  const throttleStatus = await checkThrottleStatus(context);
-  const { currentlyAvailable, maximumAvailable } = throttleStatus;
-
-  let maxEntriesPerRun: number;
-  let shouldDeferBy = 0;
-
-  if (previousLockAcquired) {
-    if (prevContinuation?.reducedMaxEntriesPerRun) {
-      maxEntriesPerRun = prevContinuation.reducedMaxEntriesPerRun;
-    } else if (prevContinuation?.lastCost) {
-      maxEntriesPerRun = calcSyncTableMaxEntriesPerRun(prevContinuation, throttleStatus);
-    } else {
-      maxEntriesPerRun = defaultMaxEntriesPerRun;
-    }
-  } else {
-    const minPointsNeeded = maximumAvailable - 1;
-    shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
-    maxEntriesPerRun = defaultMaxEntriesPerRun;
-
-    if (shouldDeferBy > 0) {
-      logAdmin(
-        `🚫 Not enough points (${currentlyAvailable}/${minPointsNeeded}). Skip and wait ${shouldDeferBy / 1000}s`
-      );
-    }
-  }
-
-  return {
-    maxEntriesPerRun,
-    shouldDeferBy,
-  };
-}
-
-export async function skipGraphQlSyncTableRun(prevContinuation: SyncTableGraphQlContinuation, waitms: number) {
-  await wait(waitms);
-  return {
-    result: [],
-    continuation: { ...prevContinuation, graphQlLock: 'false' },
-  };
 }
 
 export async function makeSyncTableGraphQlRequest(
@@ -370,7 +364,7 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     apiVersion?: string;
     maxEntriesPerRun: number;
     prevContinuation: SyncTableRestAugmentedContinuation;
-    restNextUrl?: string;
+    nextRestUrl?: string;
     extraContinuationData?: any;
     storeFront?: boolean;
   },
@@ -397,7 +391,7 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     );
 
     let continuation: SyncTableRestAugmentedContinuation = null;
-    const hasNextRun = retries > 0 || params.restNextUrl;
+    const hasNextRun = retries > 0 || params.nextRestUrl;
 
     if (hasNextRun) {
       continuation = {
@@ -408,10 +402,10 @@ export async function makeAugmentedSyncTableGraphQlRequest(
         nextUrl: params.prevContinuation?.nextUrl,
       };
 
-      if (params.restNextUrl) {
+      if (params.nextRestUrl) {
         continuation = {
           ...continuation,
-          nextUrl: params.restNextUrl,
+          nextUrl: params.nextRestUrl,
         };
       }
       if (response.body.extensions?.cost) {
@@ -463,3 +457,165 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     }
   }
 }
+
+export function getMixedSyncTableRemainingAndToProcessItems(
+  prevContinuation: SyncTableMixedContinuation,
+  restItems: any[],
+  maxEntriesPerRun: number
+) {
+  let toProcess = [];
+  let remaining = [];
+
+  if (prevContinuation?.cursor || prevContinuation?.retries) {
+    logAdmin(`🔁 Fetching remaining graphQL results from current batch`);
+    toProcess = prevContinuation?.extraContinuationData?.currentBatch?.processing;
+    remaining = prevContinuation?.extraContinuationData?.currentBatch?.remaining;
+  } else {
+    const stillProcessingRestItems = prevContinuation?.extraContinuationData?.currentBatch?.remaining.length > 0;
+    let items = [];
+    if (stillProcessingRestItems) {
+      items = [...prevContinuation.extraContinuationData.currentBatch.remaining];
+      logAdmin(`🔁 Fetching next batch of ${items.length} Variants`);
+    } else {
+      items = [...restItems];
+      logAdmin(`🟢 Found ${items.length} Variants to augment with metafields`);
+    }
+
+    toProcess = items.splice(0, maxEntriesPerRun);
+    remaining = items;
+  }
+  return { toProcess, remaining };
+}
+
+export async function makeMixedSyncTableGraphQlRequest(
+  params: {
+    payload: any;
+    cacheTtlSecs?: number;
+    apiVersion?: string;
+    maxEntriesPerRun: number;
+    prevContinuation: SyncTableMixedContinuation;
+    nextRestUrl?: string;
+    getPageInfo?: CallableFunction;
+    extraContinuationData?: any;
+  },
+  context: coda.SyncExecutionContext
+): Promise<{
+  response: coda.FetchResponse<any>;
+  continuation: SyncTableMixedContinuation | null;
+}> {
+  if (params.prevContinuation?.retries) {
+    logAdmin(`🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries…`);
+  }
+  logAdmin(`🚀  GraphQL Admin API: Starting sync of ${params.maxEntriesPerRun} entries…`);
+
+  try {
+    const { response, retries } = await makeGraphQlRequest(
+      {
+        payload: params.payload,
+        cacheTtlSecs: params.cacheTtlSecs,
+        apiVersion: params.apiVersion,
+        retries: params.prevContinuation?.retries ?? 0,
+      },
+      context
+    );
+
+    let continuation: SyncTableMixedContinuation = null;
+    const pageInfo = response.body?.data && params.getPageInfo ? params.getPageInfo(response.body.data) : undefined;
+    const hasNextPage = pageInfo && pageInfo.hasNextPage;
+    const hasRemainingItems = params.extraContinuationData?.currentBatch?.remaining.length > 0;
+
+    const triggerNextRestSync =
+      !retries &&
+      !hasNextPage &&
+      !hasRemainingItems &&
+      (params.nextRestUrl !== undefined || params.prevContinuation?.scheduledNextRestUrl !== undefined);
+
+    const hasNextRun = retries > 0 || hasNextPage || hasRemainingItems || triggerNextRestSync;
+    console.log('hasNextRun', hasNextRun);
+
+    if (hasNextRun) {
+      continuation = {
+        ...continuation,
+        graphQlLock: 'true',
+        retries,
+        extraContinuationData: {
+          ...params.extraContinuationData,
+          skipNextRestSync: true,
+        },
+        scheduledNextRestUrl: params.prevContinuation?.scheduledNextRestUrl ?? params.nextRestUrl,
+      };
+      // console.log('continuation.scheduledNextRestUrl', continuation.scheduledNextRestUrl);
+      if (triggerNextRestSync) {
+        continuation = {
+          ...continuation,
+          extraContinuationData: {
+            ...params.extraContinuationData,
+            skipNextRestSync: false,
+          },
+          nextUrl: params.nextRestUrl ?? params.prevContinuation?.scheduledNextRestUrl,
+          scheduledNextRestUrl: undefined,
+        };
+      }
+
+      if (hasNextPage) {
+        // @ts-ignore
+        continuation = {
+          ...continuation,
+          cursor: pageInfo.endCursor,
+        };
+      }
+
+      if (response.body.extensions?.cost) {
+        // @ts-ignore
+        continuation = {
+          ...continuation,
+          lastCost: {
+            requestedQueryCost: response.body.extensions.cost.requestedQueryCost,
+            actualQueryCost: response.body.extensions.cost.actualQueryCost,
+          },
+          lastMaxEntriesPerRun: params.maxEntriesPerRun,
+          lastThrottleStatus: response.body.extensions.cost.throttleStatus,
+        };
+      }
+    }
+
+    return {
+      response,
+      continuation,
+    };
+  } catch (error) {
+    if (error instanceof ShopifyMaxExceededError) {
+      const maxCostError = error.originalError;
+      const { maxCost, cost } = maxCostError.extensions;
+      const diminishingFactor = 0.75;
+      const reducedMaxEntriesPerRun = Math.min(
+        ABSOLUTE_MAX_ENTRIES_PER_RUN,
+        Math.max(1, Math.floor((maxCost / cost) * params.maxEntriesPerRun * diminishingFactor))
+      );
+
+      const errorContinuation: SyncTableMixedContinuation = {
+        ...params.prevContinuation,
+        graphQlLock: 'true',
+        retries: (params.prevContinuation?.retries ?? 0) + 1,
+        extraContinuationData: {
+          ...params.extraContinuationData,
+          skipNextRestSync: true,
+        },
+        scheduledNextRestUrl: params.prevContinuation?.scheduledNextRestUrl ?? params.nextRestUrl,
+        reducedMaxEntriesPerRun: reducedMaxEntriesPerRun,
+      };
+
+      console.log(
+        `🎚️ ${error.message} Adjusting next query to run with ${errorContinuation.reducedMaxEntriesPerRun} max entries.`
+      );
+
+      return {
+        response: undefined,
+        continuation: errorContinuation,
+      };
+    } else {
+      throw error;
+    }
+  }
+}
+// #endregion

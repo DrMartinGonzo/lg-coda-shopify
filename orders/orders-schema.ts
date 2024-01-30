@@ -141,7 +141,7 @@ const DiscountCodeSchema = coda.makeObjectSchema({
 
 const DutySchema = coda.makeObjectSchema({
   properties: {
-    duty_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    duty_id: { type: coda.ValueType.Number, fromKey: 'id', useThousandsSeparator: false },
     tax_lines: { type: coda.ValueType.Array, items: TaxLineSchema },
     country_code_of_origin: { type: coda.ValueType.String },
     harmonized_system_code: { type: coda.ValueType.String },
@@ -177,6 +177,7 @@ const LineItemSchema = coda.makeObjectSchema({
       fromKey: 'id',
       description: 'The ID of the line item',
       fixedId: 'line_item_id',
+      useThousandsSeparator: false,
     },
     fulfillable_quantity: {
       type: coda.ValueType.Number,
@@ -229,6 +230,7 @@ const LineItemSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       description: 'The ID of the product variant',
       fixedId: 'variant_id',
+      useThousandsSeparator: false,
     },
     variant_title: {
       type: coda.ValueType.String,
@@ -336,11 +338,11 @@ const FulfillmentSchema = coda.makeObjectSchema({
     // The date and time when the fulfillment was created. The API returns this value in ISO 8601 format.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     // The ID for the fulfillment.
-    fulfillment_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    fulfillment_id: { type: coda.ValueType.Number, fromKey: 'id', useThousandsSeparator: false },
     // A list of the fulfillment's line items
     line_items: { type: coda.ValueType.Array, items: LineItemSchema },
     // The unique identifier of the location that the fulfillment was processed at.
-    location_id: { type: coda.ValueType.Number },
+    location_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
     // The uniquely identifying fulfillment name, consisting of two parts
     // separated by a .. The first part represents the order name and the
     // second part represents the fulfillment number. The fulfillment
@@ -350,7 +352,7 @@ const FulfillmentSchema = coda.makeObjectSchema({
     // Whether the customer should be notified. If set to true, then an email will be sent when the fulfillment is created or updated. For orders that were initially created using the API, the default value is false. For all other orders, the default value is true.
     notify_customer: { type: coda.ValueType.Boolean },
     // The unique numeric identifier for the order.
-    order_id: { type: coda.ValueType.Number },
+    order_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
     // The address from which the fulfillment occurred:
     origin_address: {
       type: coda.ValueType.Object,
@@ -421,7 +423,7 @@ const FulfillmentSchema = coda.makeObjectSchema({
 
 const OrderAdjustmentSchema = coda.makeObjectSchema({
   properties: {
-    order_adjustment_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    order_adjustment_id: { type: coda.ValueType.Number, fromKey: 'id', useThousandsSeparator: false },
     order_id: { type: coda.ValueType.Number },
     refund_id: { type: coda.ValueType.Number },
     amount: { type: coda.ValueType.Number },
@@ -474,13 +476,13 @@ const PaymentTermsSchema = coda.makeObjectSchema({
 
 const TransactionSchema = coda.makeObjectSchema({
   properties: {
-    transaction_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    transaction_id: { type: coda.ValueType.Number, fromKey: 'id', useThousandsSeparator: false },
     amount: { type: coda.ValueType.Number },
     authorization: { type: coda.ValueType.String },
     authorization_expires_at: { type: coda.ValueType.String },
     created_at: { type: coda.ValueType.String },
     currency: { type: coda.ValueType.String },
-    device_id: { type: coda.ValueType.Number },
+    device_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
     error_code: { type: coda.ValueType.String },
     extended_authorization_attributes: {
       type: coda.ValueType.Object,
@@ -491,7 +493,7 @@ const TransactionSchema = coda.makeObjectSchema({
     },
     gateway: { type: coda.ValueType.String },
     kind: { type: coda.ValueType.String },
-    location_id: { type: coda.ValueType.Number },
+    location_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
   },
   displayProperty: 'gateway',
 });
@@ -500,9 +502,9 @@ const TransactionSchema = coda.makeObjectSchema({
 const RefundLineItemSchema = coda.makeObjectSchema({
   properties: {
     // The unique identifier of the line item in the refund.
-    refund_line_item_id: { type: coda.ValueType.Number, fromKey: 'id' },
+    refund_line_item_id: { type: coda.ValueType.Number, fromKey: 'id', useThousandsSeparator: false },
     // The ID of the related line item in the order.
-    line_item_id: { type: coda.ValueType.Number },
+    line_item_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
     // The refunded quantity of the associated line item.
     quantity: { type: coda.ValueType.Number },
     // restock_type: How this refund line item affects inventory levels. Valid values:
@@ -512,7 +514,7 @@ const RefundLineItemSchema = coda.makeObjectSchema({
     //  - legacy_restock: The deprecated restock property was used for this refund. These items were made available for sale again. This value is not accepted when creating new refunds.
     restock_type: { type: coda.ValueType.String },
     // The unique identifier of the location where the items will be restocked. Required when restock_type has the value return or cancel.
-    location_id: { type: coda.ValueType.Number },
+    location_id: { type: coda.ValueType.Number, useThousandsSeparator: false },
     // The subtotal of the refund line item.
     subtotal: { type: coda.ValueType.Number },
     // The total tax on the refund line item.
@@ -529,7 +531,7 @@ const RefundLineItemSchema = coda.makeObjectSchema({
 const RefundDutySchema = coda.makeObjectSchema({
   properties: {
     // The unique identifier of the duty.
-    duty_id: { type: coda.ValueType.Number, fixedId: 'duty_id' },
+    duty_id: { type: coda.ValueType.Number, fixedId: 'duty_id', useThousandsSeparator: false },
     // Specifies how you want the duty refunded
     refund_type: { type: coda.ValueType.String, fixedId: 'refund_type' },
   },
@@ -540,7 +542,7 @@ const RefundDutySchema = coda.makeObjectSchema({
 const RefundSchema = coda.makeObjectSchema({
   properties: {
     // The unique identifier for the refund.
-    refund_id: { type: coda.ValueType.Number, fromKey: 'id', fixedId: 'refund_id' },
+    refund_id: { type: coda.ValueType.Number, fromKey: 'id', fixedId: 'refund_id', useThousandsSeparator: false },
     // The date and time (ISO 8601 format) when the refund was created.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime, fixedId: 'created_at' },
     // A list of duties that have been reimbursed as part of the refund.
@@ -558,7 +560,7 @@ const RefundSchema = coda.makeObjectSchema({
     // A list of transactions involved in the refund. A single order can have multiple transactions associated with it. For more information, see the Transaction resource.
     transactions: { type: coda.ValueType.Array, items: TransactionSchema, fixedId: 'transactions' },
     // The unique identifier of the user who performed the refund.
-    user_id: { type: coda.ValueType.Number, fixedId: 'user_id' },
+    user_id: { type: coda.ValueType.Number, fixedId: 'user_id', useThousandsSeparator: false },
   },
   displayProperty: 'refund_id',
 });
@@ -568,7 +570,12 @@ const ShippingLineSchema = coda.makeObjectSchema({
   // requested_fulfillment_service_id: A reference to the fulfillment service that is being requested for the shipping method. Present if the shipping method requires processing by a third party fulfillment service; null otherwise.
   properties: {
     // The ID of shipping line
-    shipping_line_id: { type: coda.ValueType.Number, fromKey: 'id', fixedId: 'shipping_line_id' },
+    shipping_line_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'id',
+      fixedId: 'shipping_line_id',
+      useThousandsSeparator: false,
+    },
     // A reference to the shipping method.
     code: { type: coda.ValueType.String, fixedId: 'code' },
     // A reference to the carrier service that provided the rate. Present when the rate was computed by a third-party carrier service.
@@ -629,11 +636,13 @@ export const OrderSchema = coda.makeObjectSchema({
       fromKey: 'id',
       required: true,
       fixedId: 'order_id',
+      useThousandsSeparator: false,
     },
     // The ID of the app that created the order.
     app_id: {
       type: coda.ValueType.Number,
       fixedId: 'app_id',
+      useThousandsSeparator: false,
     },
     // The mailing address associated with the payment method. This address is an optional field that won't be available on orders that do not require a payment method.
     billing_address: { ...AddressSchema, fixedId: 'billing_address' },
@@ -796,6 +805,7 @@ export const OrderSchema = coda.makeObjectSchema({
     location_id: {
       type: coda.ValueType.Number,
       fixedId: 'location_id',
+      useThousandsSeparator: false,
     },
     // The order name, generated by combining the order_number property with the order prefix and suffix that are set in the merchant's general settings. This is different from the id property, which is the ID of the order used by the API. This field can also be set by the API to be any string value.
     name: {
@@ -979,12 +989,14 @@ export const OrderSchema = coda.makeObjectSchema({
     user_id: {
       type: coda.ValueType.Number,
       fixedId: 'user_id',
+      useThousandsSeparator: false,
     },
 
     // ??
     checkout_id: {
       type: coda.ValueType.Number,
       fixedId: 'checkout_id',
+      useThousandsSeparator: false,
     },
     // ??
     confirmed: {

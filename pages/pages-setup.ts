@@ -17,7 +17,7 @@ import {
   deleteMetafieldRest,
   fetchMetafieldDefinitions,
   fetchResourceMetafields,
-  findRequiredMetafieldDefinition,
+  findMatchingMetafieldDefinition,
   formatMetafieldValueForApi,
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
@@ -252,7 +252,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
                     }
                   }
 
-                  const metafieldDefinition = findRequiredMetafieldDefinition(realKey, metafieldDefinitions);
+                  const metafieldDefinition = findMatchingMetafieldDefinition(realKey, metafieldDefinitions);
                   const formattedApiValue = formatMetafieldValueForApi(propKey, value, metafieldDefinition);
                   const res = await createResourceMetafield(
                     [

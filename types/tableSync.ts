@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './ShopifyGraphQlErrors';
+import { MetafieldDefinition } from './admin.types';
 
 export interface SyncTableRestContinuation extends coda.Continuation {
   nextUrl: string;
@@ -19,8 +20,22 @@ export interface SyncTableGraphQlContinuation extends coda.Continuation {
 }
 
 export interface SyncTableRestAugmentedContinuation extends SyncTableRestContinuation, SyncTableGraphQlContinuation {
-  // bypassRest?: any;
   graphQlPayload?: any;
-  prevRestItems?: any;
+  remainingRestItems?: any;
   prevRestNextUrl?: string;
+  nextRestUrl?: string;
+  scheduledNextRestUrl?: string;
+}
+
+export interface SyncTableMixedContinuation extends SyncTableRestContinuation, SyncTableGraphQlContinuation {
+  scheduledNextRestUrl: string;
+  // @ts-ignore
+  extraContinuationData: {
+    skipNextRestSync: boolean;
+    metafieldDefinitions: MetafieldDefinition[];
+    currentBatch: {
+      remaining: any[];
+      processing: any[];
+    };
+  };
 }

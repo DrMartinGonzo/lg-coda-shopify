@@ -15,8 +15,8 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
   handleResourceMetafieldsUpdate,
 } from '../metafields/metafields-functions';
-import { MetafieldDefinition } from '../types/admin.types';
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
+import { MetafieldDefinitionFragment } from '../types/admin.generated';
 
 // #region Helpers
 export function codaCustomerValuesToRest(fields: CustomerUpdateRestParams) {
@@ -62,7 +62,7 @@ export function codaCustomerValuesToRest(fields: CustomerUpdateRestParams) {
 
 export async function handleCustomerUpdateJob(
   update: coda.SyncUpdate<string, string, typeof CustomerSchema>,
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;

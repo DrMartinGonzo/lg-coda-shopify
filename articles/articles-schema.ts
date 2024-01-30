@@ -175,6 +175,7 @@ export const ArticleSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       description: 'A unique numeric identifier for the author of the article.',
       fixedId: 'user_id',
+      useThousandsSeparator: false,
     },
   },
   displayProperty: 'title',

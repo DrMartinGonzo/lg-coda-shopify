@@ -1991,7 +1991,7 @@ export type CalculatedDraftOrder = {
   lineItemsSubtotalPrice: MoneyBag;
   /** The name of the selected market. */
   marketName: Scalars['String']['output'];
-  /** The selected market region country code for the draft order. */
+  /** The selected country code that determines the pricing of the draft order. */
   marketRegionCountryCode: CountryCode;
   /** Phone number assigned to draft order. */
   phone?: Maybe<Scalars['String']['output']>;
@@ -11722,7 +11722,7 @@ export type DraftOrder = CommentEventSubject & HasEvents & HasLocalizationExtens
   localizationExtensions: LocalizationExtensionConnection;
   /** The name of the selected market. */
   marketName: Scalars['String']['output'];
-  /** The selected market region country code for the draft order. */
+  /** The selected country code that determines the pricing of the draft order. */
   marketRegionCountryCode: CountryCode;
   /** Returns a metafield by namespace and key that belongs to the resource. */
   metafield?: Maybe<Metafield>;
@@ -12223,7 +12223,7 @@ export type DraftOrderInput = {
   lineItems?: InputMaybe<Array<DraftOrderLineItemInput>>;
   /** The localization extensions attached to the draft order. For example, Tax IDs. */
   localizationExtensions?: InputMaybe<Array<LocalizationExtensionInput>>;
-  /** The selected market region country code for the draft order. */
+  /** The selected country code that determines the pricing of the draft order. */
   marketRegionCountryCode?: InputMaybe<CountryCode>;
   /**
    * Metafields attached to the draft order.

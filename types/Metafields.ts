@@ -1,4 +1,5 @@
 import type { CurrencyCode, Metafield, MetafieldDefinition } from '../types/admin.types';
+import { MetafieldDefinitionFragment } from './admin.generated';
 
 export interface ShopifyRatingField {
   scale_min: number;
@@ -21,7 +22,7 @@ export interface ParsedMetafieldWithAugmentedDefinition extends Metafield {
 }
 
 /** An interface describing a metafield definition with some extra props */
-export interface AugmentedMetafieldDefinition extends MetafieldDefinition {
+export interface AugmentedMetafieldDefinition extends MetafieldDefinitionFragment {
   fullKey: string;
   matchingSchemaKey: string;
   matchingSchemaGidKey: string;

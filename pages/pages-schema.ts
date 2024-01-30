@@ -34,6 +34,7 @@ export const PageSchema = coda.makeObjectSchema({
       fromKey: 'id',
       required: true,
       description: 'The unique numeric identifier for the page.',
+      useThousandsSeparator: false,
     },
     */
     body: {

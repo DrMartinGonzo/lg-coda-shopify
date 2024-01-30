@@ -13,26 +13,33 @@ export const MetafieldFieldsFragment = /* GraphQL */ `
     __typename
   }
 `;
+
+export const MetafieldDefinitionFragment = /* GraphQL */ `
+  fragment MetafieldDefinition on MetafieldDefinition {
+    key
+    id
+    namespace
+    name
+    description
+    type {
+      name
+    }
+    validations {
+      name
+      type
+      value
+    }
+  }
+`;
 // #endregion
 
 // #region Queries
 export const queryMetafieldDefinitions = /* GraphQL */ `
+  ${MetafieldDefinitionFragment}
   query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxMetafieldsPerResource: Int!) {
     metafieldDefinitions(ownerType: $ownerType, first: $maxMetafieldsPerResource) {
       nodes {
-        key
-        id
-        namespace
-        name
-        description
-        type {
-          name
-        }
-        validations {
-          name
-          type
-          value
-        }
+        ...MetafieldDefinition
       }
     }
   }
@@ -47,7 +54,7 @@ export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalF
           ${optionalFieldsKeys.map((key) => {
             const { metaKey, metaNamespace } = splitMetaFieldFullKey(key);
             return `${normalizeSchemaKey(key)}: metafield(key: "${metaKey}", namespace: "${metaNamespace}") {
-              ...metafieldFields
+              ...MetafieldFields
             }`;
           })}
         }
@@ -66,12 +73,11 @@ export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalF
 
 // #region Mutations
 export const MutationSetMetafields = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
   mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {
     metafieldsSet(metafields: $metafieldsSetInputs) {
       metafields {
-        key
-        namespace
-        value
+        ...MetafieldFields
       }
       userErrors {
         field

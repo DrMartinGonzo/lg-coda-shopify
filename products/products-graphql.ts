@@ -121,7 +121,7 @@ export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
     $countMetafields: Int
     $searchQuery: String
   ) {
-    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
       nodes {
         id
         metafields(keys: $metafieldKeys, first: $countMetafields) {

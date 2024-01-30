@@ -1,9 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
+import isUrl from 'is-url-superb';
 
-import { METAFIELD_PREFIX_KEY } from './constants';
+import { DEFAULT_PRODUCT_OPTION_NAME, METAFIELD_PREFIX_KEY } from './constants';
 import { getMetaFieldFullKey, maybeHasMetaFieldKeys } from './metafields/metafields-functions';
 import { fetchMetafieldDefinitions } from './metafields/metafields-functions';
-import { Metafield, MetafieldDefinition } from './types/admin.types';
+import { Metafield } from './types/admin.types';
+import { MetafieldDefinitionFragment } from './types/admin.generated';
 
 export type UpdateCreateProp = {
   display: string;
@@ -11,7 +13,7 @@ export type UpdateCreateProp = {
   type: string;
 };
 
-export function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDefinition[]) {
+export function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDefinitionFragment[]) {
   const metafieldProps = metafieldDefinitions.map(
     (metafieldDefinition): UpdateCreateProp => ({
       display: metafieldDefinition.name,
@@ -45,18 +47,36 @@ export function parseVarargsCreateUpdatePropsValues(
 
     if (matchStandardProps) {
       const type = matchStandardProps.type;
+      // Standard values
       if (type === 'string') {
         parsedValue = value;
       } else if (type === 'boolean') {
         parsedValue = value === 'true';
       } else if (type === 'number') {
         parsedValue = parseFloat(value);
+      }
+      // Special cases
+      else if (type === 'productImageUrls') {
+        // TODO: need to validate these are indeed IMAGE URLs
+        parsedValue = value.split(',').map((url) => {
+          const trimmedUrl = url.trim();
+          if (!isUrl(trimmedUrl)) {
+            throw new coda.UserVisibleError(`Invalid URL: ${trimmedUrl}`);
+          }
+          return { src: url.trim() };
+        });
+      } else if (type === 'productCreateOptions') {
+        parsedValue = value.split(',').map((option) => {
+          return { name: option.trim(), values: [DEFAULT_PRODUCT_OPTION_NAME] };
+        });
       } else {
         throw new coda.UserVisibleError(`Unknown property type: ${type}`);
       }
       newValues[key] = parsedValue;
       continue;
     } else if (matchMetafieldProps) {
+      // TODO: can we format metafield value here instead of formatting it later ?
+      // ? Quoique il me semble que l'on ne formatte pas mais qu'on envoie direct la valeur dans le cas d'un update
       const prefixedMetafieldFromKey = METAFIELD_PREFIX_KEY + key;
       newValues[prefixedMetafieldFromKey] = value;
       continue;
@@ -73,7 +93,7 @@ export async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
   metafieldOwnerType: string,
   context: coda.ExecutionContext
 ) {
-  let metafieldDefinitions: MetafieldDefinition[] = [];
+  let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
   let metafieldUpdateCreateProps: UpdateCreateProp[] = [];
 
   const maybeHasMetaFields = maybeHasMetaFieldKeys(getVarargsCreateUpdateKeys(varargs));
