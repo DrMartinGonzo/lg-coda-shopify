@@ -38,7 +38,7 @@ export const translateResource = async ([resourceId, ...varargs], context) => {
     },
   };
 
-  const response = await makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest({ payload }, context);
 
   const { body } = response;
   console.log('body', body);
@@ -73,7 +73,7 @@ export const getTranslatableResource = async ([resourceId, locale], context) => 
     },
   };
 
-  const response = await makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest({ payload }, context);
 
   const { body } = response;
   return body.data.translatableResource;

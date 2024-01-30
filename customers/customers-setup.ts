@@ -19,25 +19,30 @@ import {
   REST_DEFAULT_LIMIT,
 } from '../constants';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
-import { SyncTableRestAugmentedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,
+  findMatchingMetafieldDefinition,
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { Metafield, MetafieldDefinition } from '../types/admin.types';
-import { arrayUnique, handleFieldDependencies, logAdmin, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
+  getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
-  makeAugmentedSyncTableGraphQlRequest,
+  makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './customers-graphql';
-import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
+import {
+  GetCustomersMetafieldsQuery,
+  GetCustomersMetafieldsQueryVariables,
+  MetafieldDefinitionFragment,
+} from '../types/admin.generated';
 import {
   UpdateCreateProp,
   getMetafieldsCreateUpdateProps,
@@ -124,9 +129,7 @@ const parameters = {
 };
 
 export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
-  /**====================================================================================================================
-   *    Sync tables
-   *===================================================================================================================== */
+  // #region Sync Tables
   pack.addSyncTable({
     name: 'Customers',
     description: 'Return Customers from this shop.',
@@ -152,17 +155,172 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
           description: 'Sync only customers updated in the given date range.',
         },
         { ...sharedParameters.filterIds, optional: true },
-        { ...sharedParameters.filterSinceId, optional: true },
       ],
-      execute: syncCustomers,
+      execute: async function ([syncMetafields, created_at, updated_at, ids], context: coda.SyncExecutionContext) {
+        // If executing from CLI, schema is undefined, we have to retrieve it first
+        const schema =
+          context.sync.schema ?? (await wrapGetSchemaForCli(getCustomerSchema, context, { syncMetafields }));
+        const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
+        const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
+          separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
+
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+
+        let restLimit = REST_DEFAULT_LIMIT;
+        let maxEntriesPerRun = restLimit;
+        let shouldDeferBy = 0;
+        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
+
+        if (shouldSyncMetafields) {
+          // TODO: calc this
+          const defaultMaxEntriesPerRun = 200;
+          const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+            defaultMaxEntriesPerRun,
+            prevContinuation,
+            context
+          );
+          maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
+          restLimit = maxEntriesPerRun;
+          shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
+          if (shouldDeferBy > 0) {
+            return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+          }
+
+          metafieldDefinitions =
+            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+            (await fetchMetafieldDefinitions('CUSTOMER', context));
+        }
+
+        let restItems = [];
+        let restContinuation: SyncTableRestContinuation = null;
+        const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
+
+        // Rest Admin API Sync
+        if (!skipNextRestSync) {
+          const syncedStandardFields = handleFieldDependencies(standardFromKeys, customerFieldDependencies);
+          const restParams = cleanQueryParams({
+            fields: syncedStandardFields.join(', '),
+            limit: restLimit,
+            ids,
+            created_at_min: created_at ? created_at[0] : undefined,
+            created_at_max: created_at ? created_at[1] : undefined,
+            updated_at_min: updated_at ? updated_at[0] : undefined,
+            updated_at_max: updated_at ? updated_at[1] : undefined,
+          });
+
+          // TODO: validateCustomerParams
+          // validateCustomerParams(restParams);
+
+          let url: string;
+          if (prevContinuation?.nextUrl) {
+            url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
+          } else {
+            url = coda.withQueryParams(
+              `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`,
+              restParams
+            );
+          }
+          const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+          restContinuation = continuation;
+
+          if (response && response.body?.customers) {
+            restItems = response.body.customers.map((customer) =>
+              formatCustomerForSchemaFromRestApi(customer, context)
+            );
+          }
+
+          if (!shouldSyncMetafields) {
+            return {
+              result: restItems,
+              continuation: restContinuation,
+            };
+          }
+        }
+
+        // GraphQL Admin API metafields augmented Sync
+        if (shouldSyncMetafields) {
+          const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
+            prevContinuation,
+            restItems,
+            maxEntriesPerRun
+          );
+          const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
+          const graphQlPayload = {
+            query: QueryCustomersMetafieldsAdmin,
+            variables: {
+              maxEntriesPerRun,
+              metafieldKeys: effectiveMetafieldKeys,
+              countMetafields: effectiveMetafieldKeys.length,
+              cursor: prevContinuation?.cursor,
+              searchQuery: buildCustomersSearchQuery({ ids: uniqueIdsToFetch }),
+            } as GetCustomersMetafieldsQueryVariables,
+          };
+
+          let { response: augmentedResponse, continuation: augmentedContinuation } =
+            await makeMixedSyncTableGraphQlRequest(
+              {
+                payload: graphQlPayload,
+                maxEntriesPerRun,
+                prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
+                nextRestUrl: restContinuation?.nextUrl,
+                extraContinuationData: {
+                  metafieldDefinitions,
+                  currentBatch: {
+                    remaining: remaining,
+                    processing: toProcess,
+                  },
+                },
+                getPageInfo: (data: GetCustomersMetafieldsQuery) => data.customers?.pageInfo,
+              },
+              context
+            );
+
+          if (augmentedResponse && augmentedResponse.body?.data) {
+            const customersData = augmentedResponse.body.data as GetCustomersMetafieldsQuery;
+            const augmentedItems = toProcess
+              .map((customer) => {
+                const graphQlNodeMatch = customersData.customers.nodes.find(
+                  (c) => graphQlGidToId(c.id) === customer.id
+                );
+
+                // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
+                if (!graphQlNodeMatch) return;
+
+                if (graphQlNodeMatch?.metafields?.nodes?.length) {
+                  return {
+                    ...customer,
+                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
+                  };
+                }
+                return customer;
+              })
+              .filter((p) => p); // filter out undefined items
+
+            return {
+              result: augmentedItems,
+              continuation: augmentedContinuation,
+            };
+          }
+
+          return {
+            result: [],
+            continuation: augmentedContinuation,
+          };
+        }
+
+        return {
+          result: [],
+        };
+      },
       maxUpdateBatchSize: 10,
-      executeUpdate: async function (args, updates, context: coda.SyncExecutionContext) {
+      executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('CUSTOMER', context) : [];
 
         const jobs = updates.map((update) => handleCustomerUpdateJob(update, metafieldDefinitions, context));
-
         const completed = await Promise.allSettled(jobs);
         return {
           result: completed.map((job) => {
@@ -173,10 +331,9 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       },
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Actions
-   *===================================================================================================================== */
+  // #region Actions
   // an action to update a customer
   pack.addFormula({
     name: 'UpdateCustomer',
@@ -226,7 +383,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
-        description: 'The product variant property to update.',
+        description: 'The customer property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
@@ -255,11 +412,12 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       prefixedMetafieldFromKeys.forEach((fromKey) => {
         const realFromKey = getMetaFieldRealFromKey(fromKey);
         const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+        const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
         const input: MetafieldRestInput = {
           namespace: metaNamespace,
           key: metaKey,
           value: newValues[fromKey],
-          type: metafieldDefinitions.find((f) => f && f.namespace === metaNamespace && f.key === metaKey).type.name,
+          type: matchingMetafieldDefinition?.type.name,
         };
         metafieldRestInputs.push(input);
       });
@@ -286,10 +444,9 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       return true;
     },
   });
+  // #endregion
 
-  /**====================================================================================================================
-   *    Formulas
-   *===================================================================================================================== */
+  // #region Formulas
   pack.addFormula({
     name: 'Customer',
     description: 'Return a single customer from this shop.',
@@ -305,12 +462,10 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
     },
   });
 
-  /**====================================================================================================================
-   *    Column formats
-   *===================================================================================================================== */
   pack.addColumnFormat({
     name: 'Customer',
     instructions: 'Paste the the customer Id into the column.',
     formulaName: 'Customer',
   });
+  // #endregion
 };

@@ -26,6 +26,7 @@ import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
 
 import type { Metafield, MetafieldDefinition, ProductInput } from '../types/admin.types';
 import type {
+  MetafieldDefinitionFragment,
   ProductFieldsFragment,
   SetMetafieldsMutationVariables,
   UpdateProductMutationVariables,
@@ -66,7 +67,7 @@ export function validateProductParams(params: any, isRest = false) {
 
 export async function handleProductUpdateJob(
   update: coda.SyncUpdate<string, string, typeof ProductSchemaRest>,
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;
@@ -176,7 +177,7 @@ export const formatProductForSchemaFromGraphQlApi = (
     obj.featuredImage = product.featuredImage.url;
   }
   if (product?.metafields?.nodes?.length) {
-    const metafields = formatMetafieldsForSchema(product.metafields.nodes as Metafield[], metafieldDefinitions);
+    const metafields = formatMetafieldsForSchema(product.metafields.nodes, metafieldDefinitions);
     obj = {
       ...obj,
       ...metafields,
@@ -229,7 +230,6 @@ export function createProductRest(params: ProductCreateRestParams, context: coda
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
   const payload = { product: { ...restParams } };
-
   return makePostRequest({ url, payload }, context);
 }
 
@@ -240,9 +240,8 @@ export const updateProductRest = async (
 ) => {
   const restParams = cleanQueryParams(params);
   validateProductParams(restParams, true);
-
-  const payload = { product: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productId}.json`;
+  const payload = { product: restParams };
   return makePutRequest({ url, payload }, context);
 };
 
@@ -266,7 +265,7 @@ export async function updateProductGraphQl(
   productGid: string,
   effectivePropertyKeys: string[],
   effectiveMetafieldKeys: string[],
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,
   context: coda.ExecutionContext
 ) {

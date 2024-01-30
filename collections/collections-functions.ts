@@ -110,7 +110,7 @@ const formatCollectionForSchemaFromGraphQlApi = (
     };
   }
   if (collection.metafields && collection.metafields.nodes.length) {
-    const metafields = formatMetafieldsForSchema(collection.metafields.nodes as Metafield[], metafieldDefinitions);
+    const metafields = formatMetafieldsForSchema(collection.metafields.nodes, metafieldDefinitions);
     obj = {
       ...obj,
       ...metafields,

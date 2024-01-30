@@ -55,7 +55,12 @@ import type {
   MetafieldsSetInput,
 } from '../types/admin.types';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import { SetMetafieldsMutation, SetMetafieldsMutationVariables } from '../types/admin.generated';
+import {
+  MetafieldDefinitionFragment,
+  MetafieldFieldsFragment,
+  SetMetafieldsMutation,
+  SetMetafieldsMutationVariables,
+} from '../types/admin.generated';
 
 // TODO: there are still some legacy API in there: 2022-01 and 2022-07
 
@@ -75,7 +80,7 @@ export function makeAutocompleteMetafieldKeysFunction(ownerType: string) {
 // #endregion
 
 // #region Metafield key functions
-export const getMetafieldDefinitionFullKey = (metafieldDefinition: MetafieldDefinition) =>
+export const getMetafieldDefinitionFullKey = (metafieldDefinition: MetafieldDefinitionFragment) =>
   `${metafieldDefinition.namespace}.${metafieldDefinition.key}`;
 
 export function getMetaFieldFullKey(metafield: Metafield) {
@@ -152,13 +157,13 @@ export const formatMetafield: FormatFunction = (metafield, context) => {
 
 export function parseMetafieldAndAugmentDefinition(
   metafield: Metafield,
-  metafieldDefinitions: MetafieldDefinition[]
+  metafieldDefinitions: MetafieldDefinitionFragment[]
 ): ParsedMetafieldWithAugmentedDefinition {
   const fullKey = getMetaFieldFullKey(metafield);
   const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
   const matchingSchemaGidKey = METAFIELD_GID_PREFIX_KEY + fullKey;
   const parsedValue = maybeParseJson(metafield?.value);
-  const metafieldDefinition = findRequiredMetafieldDefinition(fullKey, metafieldDefinitions);
+  const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
 
   return {
     ...metafield,
@@ -171,7 +176,7 @@ export function parseMetafieldAndAugmentDefinition(
 // All the other should be outputed with a string delimiter, like '\n;;;\n' for easier editing inside Coda
 export function formatMetaFieldValueForSchema(
   value: any,
-  metafieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition
+  metafieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinition
 ) {
   if (!value) return;
 
@@ -243,8 +248,8 @@ export function formatMetaFieldValueForSchema(
 }
 
 export function formatMetafieldsForSchema(
-  metafields: Metafield[] | MetafieldRest[],
-  metafieldDefinitions: MetafieldDefinition[]
+  metafields: MetafieldFieldsFragment[] | MetafieldRest[],
+  metafieldDefinitions: MetafieldDefinitionFragment[]
 ) {
   const obj = {};
 
@@ -300,7 +305,7 @@ export function formatMeasurementFieldForApi(string: string, measurementType: st
 export function formatMetafieldValueForApi(
   propKey: string,
   value: any,
-  fieldDefinition: MetafieldDefinition | MetaobjectFieldDefinition
+  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinition
 ): string {
   const isArrayApi = fieldDefinition.type.name.startsWith('list.');
   const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
@@ -411,7 +416,7 @@ function makeFormatMetaFieldForSchemaFunction(
       if (!metafieldValue) return;
 
       const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, fullKey);
-      const metafieldDefinition = findRequiredMetafieldDefinition(fullKey, metafieldDefinitions);
+      const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
 
       data[fullKey] =
         schemaItemProp.type === coda.ValueType.Array && Array.isArray(metafieldValue)
@@ -469,7 +474,7 @@ export function formatMetafieldsSetsInputFromResourceUpdate(
   update: SyncUpdateNoPreviousValues,
   ownerGid: string,
   metafieldFromKeys: string[],
-  metafieldDefinitions: MetafieldDefinition[]
+  metafieldDefinitions: MetafieldDefinitionFragment[]
 ): MetafieldsSetInput[] {
   if (!metafieldFromKeys.length) return [];
 
@@ -477,7 +482,7 @@ export function formatMetafieldsSetsInputFromResourceUpdate(
     const value = update.newValue[fromKey] as any;
     const realFromKey = getMetaFieldRealFromKey(fromKey);
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-    const metafieldDefinition = findRequiredMetafieldDefinition(realFromKey, metafieldDefinitions);
+    const metafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
 
     return {
       key: metaKey,
@@ -495,7 +500,7 @@ export async function fetchMetafieldDefinitions(
   ownerType: string,
   context: coda.ExecutionContext,
   cacheTtlSecs?: number
-): Promise<MetafieldDefinition[]> {
+): Promise<MetafieldDefinitionFragment[]> {
   const maxMetafieldsPerResource = 200;
   const payload = {
     query: queryMetafieldDefinitions,
@@ -677,7 +682,7 @@ export const updateMetafieldsGraphQl = async (
 };
 // #endregion
 
-export function findRequiredMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinition[]) {
+export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
   const metafieldDefinition = metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
   return metafieldDefinition;
@@ -749,7 +754,7 @@ export const getResourceMetafieldByNamespaceKey = async (
 export async function handleResourceMetafieldsUpdate(
   resourceGid: string,
   resourceType: string,
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,
   context: coda.ExecutionContext
 ): Promise<{ [key: string]: any }> {
@@ -792,10 +797,7 @@ export async function handleResourceMetafieldsUpdate(
     if (updateResponse) {
       const graphQldata = updateResponse.body.data as SetMetafieldsMutation;
       if (graphQldata?.metafieldsSet?.metafields?.length) {
-        const metafields = formatMetafieldsForSchema(
-          graphQldata.metafieldsSet.metafields as Metafield[],
-          metafieldDefinitions
-        );
+        const metafields = formatMetafieldsForSchema(graphQldata.metafieldsSet.metafields, metafieldDefinitions);
         obj = {
           ...obj,
           ...metafields,

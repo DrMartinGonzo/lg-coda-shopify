@@ -111,6 +111,7 @@ export const CollectionSchema = coda.makeObjectSchema({
       fromKey: 'id',
       required: true,
       description: 'The ID for the collection.',
+      useThousandsSeparator: false,
     },
     */
     body: {
