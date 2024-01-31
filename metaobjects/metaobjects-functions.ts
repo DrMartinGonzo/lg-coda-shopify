@@ -34,6 +34,7 @@ import type {
   MetaobjectStatus,
   MetaobjectUpdateInput,
 } from '../types/admin.types';
+import { MetaobjectFieldDefinitionFieldsFragment } from '../types/admin.generated';
 
 // #region Autocomplete functions
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
@@ -112,7 +113,7 @@ function formatMetaobjectForSchemaFromGraphQlApi(
   node: any,
   type: string,
   optionalFieldsKeys: string[],
-  fieldDefinitions: MetaobjectFieldDefinition[],
+  fieldDefinitions: MetaobjectFieldDefinitionFieldsFragment[],
   context: coda.SyncExecutionContext
 ) {
   let data = {
@@ -292,7 +293,7 @@ export async function getMetaObjectDefinitionByType(
 export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
   metaObjectDefinitionGid: string,
   context: coda.ExecutionContext
-): Promise<MetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinitionFieldsFragment[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitionsFromMetaobjectDefinition,
     variables: {
@@ -306,7 +307,7 @@ export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
 export async function getMetaObjectFieldDefinitionsByMetaobject(
   metaObjectGid: string,
   context: coda.ExecutionContext
-): Promise<MetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinitionFieldsFragment[]> {
   const payload = {
     query: queryMetaObjectFieldDefinitions,
     variables: {
@@ -320,7 +321,7 @@ export async function getMetaObjectFieldDefinitionsByMetaobject(
 export async function getMetaObjectFieldDefinitionsByType(
   type: string,
   context: coda.ExecutionContext
-): Promise<MetaobjectFieldDefinition[]> {
+): Promise<MetaobjectFieldDefinitionFieldsFragment[]> {
   const metaobjectDefinitionByType = await getMetaObjectDefinitionByType(type, context);
   return metaobjectDefinitionByType.fieldDefinitions;
 }

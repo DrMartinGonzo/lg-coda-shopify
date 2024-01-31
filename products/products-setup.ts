@@ -166,7 +166,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Products',
     description:
-      'Return Products from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync.',
+      'Return Products from this shop. You can also fetch metafields by selection them in advanced settings.',
     identityName: IDENTITY_PRODUCT,
     schema: ProductSchemaRest,
     dynamicOptions: {
@@ -427,10 +427,10 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   });
 
   // Product Column Format
-  // TODO: add link regex
+  // TODO: add link regex ?
   pack.addColumnFormat({
     name: 'Product',
-    instructions: 'Paste the GraphQL GID of the product into the column.',
+    instructions: 'Paste the ID of the product into the column.',
     formulaName: 'Product',
     // matchers: [new RegExp('^https://.*myshopify.com/admin/products/([0-9]+)$')],
   });

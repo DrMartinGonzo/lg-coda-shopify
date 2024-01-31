@@ -58,6 +58,7 @@ import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin
 import {
   MetafieldDefinitionFragment,
   MetafieldFieldsFragment,
+  MetaobjectFieldDefinitionFieldsFragment,
   SetMetafieldsMutation,
   SetMetafieldsMutationVariables,
 } from '../types/admin.generated';
@@ -176,7 +177,7 @@ export function parseMetafieldAndAugmentDefinition(
 // All the other should be outputed with a string delimiter, like '\n;;;\n' for easier editing inside Coda
 export function formatMetaFieldValueForSchema(
   value: any,
-  metafieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinition
+  metafieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFieldsFragment
 ) {
   if (!value) return;
 
@@ -305,7 +306,7 @@ export function formatMeasurementFieldForApi(string: string, measurementType: st
 export function formatMetafieldValueForApi(
   propKey: string,
   value: any,
-  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinition
+  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFieldsFragment
 ): string {
   const isArrayApi = fieldDefinition.type.name.startsWith('list.');
   const fieldType = isArrayApi ? fieldDefinition.type.name.replace('list.', '') : fieldDefinition.type.name;
@@ -393,7 +394,7 @@ export function formatMetafieldValueForApi(
 
 function makeFormatMetaFieldForSchemaFunction(
   optionalFieldsKeys: string[],
-  metafieldDefinitions: MetafieldDefinition[]
+  metafieldDefinitions: MetafieldDefinitionFragment[]
 ): FormatFunction {
   return function (node: NormalizedGraphQLMetafieldsData, context) {
     const resourceMetafieldsSyncTableElements = getResourceMetafieldsSyncTableElements(context.sync.dynamicUrl);
@@ -751,7 +752,7 @@ export const getResourceMetafieldByNamespaceKey = async (
 };
 // #endregion
 
-export async function handleResourceMetafieldsUpdate(
+export async function handleResourceMetafieldsUpdateGraphQl(
   resourceGid: string,
   resourceType: string,
   metafieldDefinitions: MetafieldDefinitionFragment[],
@@ -803,6 +804,81 @@ export async function handleResourceMetafieldsUpdate(
           ...metafields,
         };
       }
+    }
+  }
+
+  return obj;
+}
+
+// For resources not supported in GraphQL. e.g. Blogs
+// TODO: refactor ?
+export async function handleResourceMetafieldsUpdateRest(
+  endpoint: string,
+  resourceId: number,
+  resourceType: string,
+  metafieldDefinitions: MetafieldDefinitionFragment[],
+  update: SyncUpdateNoPreviousValues,
+  context: coda.ExecutionContext
+): Promise<{ [key: string]: any }> {
+  let obj = {};
+  const { updatedFields } = update;
+  const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
+
+  const prefixedMetafieldsToDelete = prefixedMetafieldFromKeys.filter((fromKey) => {
+    const value = update.newValue[fromKey] as any;
+    return !value || value === '';
+  });
+  const prefixedMetafieldsToUpdate = prefixedMetafieldFromKeys.filter(
+    (fromKey) => prefixedMetafieldsToDelete.includes(fromKey) === false
+  );
+
+  if (prefixedMetafieldsToDelete.length) {
+    const deletedMetafields = await deleteMetafieldsByKeysRest(
+      resourceId,
+      // TODO: replace with something that would eliminate the need for resourceType
+      resourceType,
+      prefixedMetafieldsToDelete,
+      context
+    );
+    if (deletedMetafields.length) {
+      deletedMetafields.forEach((m) => {
+        obj[m.prefixedFullKey] = undefined;
+      });
+    }
+  }
+
+  if (prefixedMetafieldsToUpdate.length) {
+    const metafieldsSetInputs = formatMetafieldsSetsInputFromResourceUpdate(
+      update,
+      endpoint,
+      prefixedMetafieldsToUpdate,
+      metafieldDefinitions
+    );
+
+    const completed = await Promise.allSettled(
+      metafieldsSetInputs.map((input) => {
+        const payload = {
+          metafield: { namespace: input.namespace, key: input.key, type: input.type, value: input.value },
+        };
+        const url = `${endpoint}/metafields.json`;
+        return makePostRequest({ url, payload }, context);
+      })
+    );
+
+    const metafieldsResults = [];
+    completed.forEach((job) => {
+      if (job.status === 'fulfilled') {
+        if (job.value.body?.metafield) {
+          metafieldsResults.push(job.value.body.metafield);
+        }
+      }
+    });
+    if (metafieldsResults.length) {
+      const metafields = formatMetafieldsForSchema(metafieldsResults, metafieldDefinitions);
+      obj = {
+        ...obj,
+        ...metafields,
+      };
     }
   }
 
