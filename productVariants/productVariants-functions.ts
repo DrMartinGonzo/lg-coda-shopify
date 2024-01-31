@@ -11,7 +11,7 @@ import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '
 import { ProductVariantSchema } from './productVariants-schema';
 import { MetafieldDefinition } from '../types/admin.types';
 import {
-  handleResourceMetafieldsUpdate,
+  handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
@@ -64,7 +64,7 @@ export async function handleProductVariantUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdate(
+      handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid('ProductVariant', productVariantId),
         'variant',
         metafieldDefinitions,

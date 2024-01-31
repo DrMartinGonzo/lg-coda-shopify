@@ -1,92 +1,116 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import {
-  cleanQueryParams,
-  makeDeleteRequest,
-  makeGetRequest,
-  makePostRequest,
-  makePutRequest,
-  makeSyncTableGetRequest,
-} from '../helpers-rest';
-import { blogFieldDependencies } from './blogs-schema';
-import { handleFieldDependencies } from '../helpers';
-import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
-import { FormatFunction } from '../types/misc';
-import { SyncTableRestContinuation } from '../types/tableSync';
+import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION } from '../constants';
+import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
-export const formatBlog: FormatFunction = (blog, context) => {
+import { idToGraphQlGid } from '../helpers-graphql';
+import { FormatFunction } from '../types/misc';
+import { BlogSchema } from './blogs-schema';
+import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import {
+  handleResourceMetafieldsUpdateRest,
+  separatePrefixedMetafieldsKeysFromKeys,
+} from '../metafields/metafields-functions';
+import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
+
+// #region Helpers
+export async function handleBlogUpdateJob(
+  update: coda.SyncUpdate<string, string, typeof BlogSchema>,
+  metafieldDefinitions: MetafieldDefinitionFragment[],
+  context: coda.ExecutionContext
+) {
+  const { updatedFields } = update;
+  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
+  let obj = { ...update.previousValue };
+  const subJobs: Promise<any>[] = [];
+  const blogId = update.previousValue.id as number;
+
+  if (standardFromKeys.length) {
+    const restParams: BlogUpdateRestParams = {};
+    standardFromKeys.forEach((fromKey) => {
+      const value = update.newValue[fromKey];
+      restParams[fromKey] = value;
+    });
+
+    subJobs.push(updateBlogRest(blogId, restParams, context));
+  } else {
+    subJobs.push(undefined);
+  }
+
+  if (prefixedMetafieldFromKeys.length) {
+    // TODO: handle results
+    subJobs.push(
+      handleResourceMetafieldsUpdateRest(
+        `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}`,
+        blogId,
+        'blog',
+        metafieldDefinitions,
+        update,
+        context
+      )
+    );
+  } else {
+    subJobs.push(undefined);
+  }
+
+  const [restResponse, metafields] = await Promise.all(subJobs);
+  if (restResponse) {
+    if (restResponse.body?.blog) {
+      obj = {
+        ...obj,
+        ...formatBlogForSchemaFromRestApi(restResponse.body.blog, context),
+      };
+    }
+  }
+  if (metafields) {
+    obj = {
+      ...obj,
+      ...metafields,
+    };
+  }
+
+  return obj;
+}
+// #endregion
+
+// #region Formatting functions
+export const formatBlogForSchemaFromRestApi: FormatFunction = (blog, context) => {
   blog.admin_url = `${context.endpoint}/admin/blogs/${blog.id}`;
   blog.graphql_gid = idToGraphQlGid(RESOURCE_BLOG, blog.blog_id);
 
   return blog;
 };
 
-function validateBlogParams(params: any) {
+export function validateBlogParams(params: any) {
   if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
     throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
   }
 }
+// #endregion
 
-export const fetchBlog = async ([blogGid], context: coda.ExecutionContext) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${graphQlGidToId(blogGid)}.json`;
-  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
-  const { body } = response;
-
-  if (body.blog) {
-    return formatBlog(body.blog, context);
-  }
+// #region Rest requests
+export const fetchBlogRest = (blogId: number, context: coda.ExecutionContext) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
+  return makeGetRequest({ url, cacheTtlSecs: 10 }, context);
 };
 
-export const syncBlogs = async ([handle], context: coda.SyncExecutionContext) => {
-  const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-  const syncedFields = handleFieldDependencies(effectivePropertyKeys, blogFieldDependencies);
-
-  const params = cleanQueryParams({
-    fields: syncedFields.join(', '),
-    handle,
-    limit: REST_DEFAULT_LIMIT,
-  });
-
-  validateBlogParams(params);
-
-  let url =
-    prevContinuation?.nextUrl ??
-    coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
-
-  let restResult = [];
-  let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-  if (response && response.body?.blogs) {
-    restResult = response.body.blogs.map((blog) => formatBlog(blog, context));
-  }
-
-  return { result: restResult, continuation };
-};
-
-export const createBlog = async (fields: { [key: string]: any }, context: coda.ExecutionContext) => {
-  // validateBlogParams(fields);
-
-  const payload = { blog: cleanQueryParams(fields) };
+export const createBlogRest = (params: BlogCreateRestParams, context: coda.ExecutionContext) => {
+  // validateBlogParams(params);
+  const payload = { blog: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`;
-
   return makePostRequest({ url, payload }, context);
 };
 
-export const updateBlog = async (blogGid, fields: { [key: string]: any }, context: coda.ExecutionContext) => {
-  const params = cleanQueryParams(fields);
+export const updateBlogRest = (blogId: number, params: BlogUpdateRestParams, context: coda.ExecutionContext) => {
+  const restParams = cleanQueryParams(params);
   // validateBlogParams(params);
-
-  const blogId = graphQlGidToId(blogGid);
-  const payload = { blog: params };
+  const payload = { blog: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
-  const response = await makePutRequest({ url, payload }, context);
-
-  return formatBlog(response.body.blog, context);
+  return makePutRequest({ url, payload }, context);
 };
 
-export const deleteBlog = async ([blogGid], context) => {
-  const blogId = graphQlGidToId(blogGid);
+export const deleteBlogRest = (blogId: number, context) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
   return makeDeleteRequest({ url }, context);
 };
+// #endregion

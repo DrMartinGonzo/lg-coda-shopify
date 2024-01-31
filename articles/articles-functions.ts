@@ -33,7 +33,7 @@ export const formatArticle: FormatFunction = (article, context) => {
     article.blog_gid = idToGraphQlGid(RESOURCE_BLOG, article.blog_id);
     article.pseudo_graphql_gid = genArticlePeudoGid(article.blog_id, article.id);
     article.blog = {
-      admin_graphql_api_id: idToGraphQlGid(RESOURCE_BLOG, article.blog_id),
+      id: article.blog_id,
       title: NOT_FOUND,
     };
   }

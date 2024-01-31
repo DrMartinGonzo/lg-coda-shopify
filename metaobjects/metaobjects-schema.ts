@@ -10,7 +10,7 @@ import { getUnitMap } from '../helpers';
 
 import type { MetafieldDefinition, MetaobjectFieldDefinition } from '../types/admin.types';
 import { getMetafieldDefinitionFullKey } from '../metafields/metafields-functions';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFieldsFragment } from '../types/admin.generated';
 
 export const MeasurementSchema = coda.makeObjectSchema({
   properties: {
@@ -66,7 +66,7 @@ export function getMetaobjectReferenceSchema(fieldDefinition) {
 }
 
 export function mapMetaFieldToSchemaProperty(
-  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinition
+  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFieldsFragment
 ): coda.Schema & coda.ObjectSchemaProperty {
   const typeName = fieldDefinition.type.name;
   // Check if typeName begins with 'list.' which means it's an array
