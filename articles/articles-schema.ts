@@ -19,8 +19,15 @@ export const ArticleSchema = coda.makeObjectSchema({
      */
 
     /* NOT NEEDED
-    article_id: { type: coda.ValueType.Number, fromKey: 'id', description: 'The ID of the article.' },
-    */
+     */
+    article_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'id',
+      fixedId: 'type',
+      required: true,
+      useThousandsSeparator: false,
+      description: 'The ID of the article.',
+    },
 
     /* NOT NEEDED
     article_gid: {

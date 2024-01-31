@@ -28,7 +28,8 @@ const MetaobjectFieldDefinitionFieldsFragment = /* GraphQL */ `
 
 // TODO: https://stackoverflow.com/a/65271603 to avoid the error ?
 function buildOptionalFieldsFragment(fieldsKey: string[]) {
-  return /* GraphQL */ `
+  // no GraphQL tag as it confuses graphql codegen */
+  return `
     fragment OptionalFieldsFragment on Metaobject {
       ${fieldsKey
         .map((key) => {
@@ -77,7 +78,8 @@ export const queryMetaobjectTypes = /* GraphQL */ `
 `;
 
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
-  return /* GraphQL */ `
+  // no GraphQL tag as it confuses graphql codegen */
+  return `
     ${buildOptionalFieldsFragment(fieldsKey)}
 
     query GetMetaobjects($type: String!, $maxEntriesPerRun: Int!, $cursor: String) {

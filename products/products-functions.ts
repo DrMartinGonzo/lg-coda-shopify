@@ -16,7 +16,7 @@ import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
   formatMetafieldsSetsInputFromResourceUpdate,
-  handleResourceMetafieldsUpdate,
+  handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { MAX_OPTIONS_PER_PRODUCT, MutationUpdateProduct } from './products-graphql';
@@ -24,7 +24,7 @@ import { queryAvailableProductTypes } from './products-storefront';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
 
-import type { Metafield, MetafieldDefinition, ProductInput } from '../types/admin.types';
+import type { ProductInput } from '../types/admin.types';
 import type {
   MetafieldDefinitionFragment,
   ProductFieldsFragment,
@@ -91,7 +91,7 @@ export async function handleProductUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdate(
+      handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid('Product', productId),
         'product',
         metafieldDefinitions,
@@ -156,7 +156,7 @@ export const formatProductForSchemaFromRestApi: FormatFunction = (
 export const formatProductForSchemaFromGraphQlApi = (
   product: ProductFieldsFragment,
   context: coda.ExecutionContext,
-  metafieldDefinitions: MetafieldDefinition[]
+  metafieldDefinitions: MetafieldDefinitionFragment[]
 ) => {
   let obj: any = {
     ...product,
@@ -312,7 +312,7 @@ export async function updateProductGraphQl(
 
 export async function updateProductMetafieldsGraphQl(
   productId: number,
-  metafieldDefinitions: MetafieldDefinition[],
+  metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,
   context: coda.ExecutionContext
 ) {
