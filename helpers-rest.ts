@@ -1,6 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
-import { FormatFunction } from './types/misc';
 import { SyncTableRestContinuation } from './types/tableSync';
 
 export const cleanQueryParams = (params) => {

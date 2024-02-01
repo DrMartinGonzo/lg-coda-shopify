@@ -15,7 +15,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
-  formatMetafieldsSetsInputFromResourceUpdate,
+  formatGraphQlMetafieldsSetsInputFromResourceUpdate,
   handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -282,7 +282,7 @@ export async function updateProductGraphQl(
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
   const productInput = formatGraphQlProductInput(update, productGid, standardFromKeys);
-  const metafieldsSetsInput = formatMetafieldsSetsInputFromResourceUpdate(
+  const metafieldsSetsInput = formatGraphQlMetafieldsSetsInputFromResourceUpdate(
     update,
     productGid,
     prefixedMetafieldFromKeys,
@@ -319,7 +319,7 @@ export async function updateProductMetafieldsGraphQl(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const metafieldsSetInputs = formatMetafieldsSetsInputFromResourceUpdate(
+  const metafieldsSetInputs = formatGraphQlMetafieldsSetsInputFromResourceUpdate(
     update,
     idToGraphQlGid('Product', productId),
     prefixedMetafieldFromKeys,
