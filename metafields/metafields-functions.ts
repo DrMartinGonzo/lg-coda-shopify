@@ -40,6 +40,7 @@ import { mapMetaFieldToSchemaProperty } from '../metaobjects/metaobjects-schema'
 
 import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import {
+  MetafieldRestInput,
   ParsedMetafieldWithAugmentedDefinition,
   ShopifyMeasurementField,
   ShopifyMoneyField,
@@ -117,6 +118,10 @@ export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
   return { prefixedMetafieldFromKeys, standardFromKeys };
 }
 // #endregion
+
+export function getResourceMetafieldsRestUrl(resourceType: string, resourceId: number, context: coda.ExecutionContext) {
+  return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${resourceType}/${resourceId}/metafields.json`;
+}
 
 export function resourceEndpointFromResourceType(resourceType) {
   switch (resourceType) {
@@ -471,7 +476,7 @@ function preprocessData(
   }
 }
 
-export function formatMetafieldsSetsInputFromResourceUpdate(
+export function formatGraphQlMetafieldsSetsInputFromResourceUpdate(
   update: SyncUpdateNoPreviousValues,
   ownerGid: string,
   metafieldFromKeys: string[],
@@ -489,6 +494,30 @@ export function formatMetafieldsSetsInputFromResourceUpdate(
       key: metaKey,
       namespace: metaNamespace,
       ownerId: ownerGid,
+      type: metafieldDefinition.type.name,
+      value: formatMetafieldValueForApi(fromKey, value, metafieldDefinition),
+    };
+  });
+}
+/**
+ * Same as before, but for Rest Admin API
+ */
+export function formatMetafieldsRestInputFromResourceUpdate(
+  update: SyncUpdateNoPreviousValues,
+  metafieldFromKeys: string[],
+  metafieldDefinitions: MetafieldDefinitionFragment[]
+): MetafieldRestInput[] {
+  if (!metafieldFromKeys.length) return [];
+
+  return metafieldFromKeys.map((fromKey) => {
+    const value = update.newValue[fromKey] as any;
+    const realFromKey = getMetaFieldRealFromKey(fromKey);
+    const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+    const metafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+
+    return {
+      key: metaKey,
+      namespace: metaNamespace,
       type: metafieldDefinition.type.name,
       value: formatMetafieldValueForApi(fromKey, value, metafieldDefinition),
     };
@@ -558,8 +587,7 @@ export const fetchMetafield = async ([metafieldId], context) => {
 };
 
 export const fetchResourceMetafields = async (
-  resourceId: number,
-  resourceType: string,
+  resourceMetafieldsUrl: string,
   filters: {
     /** Show metafields with given namespace */
     namespace?: string;
@@ -569,9 +597,6 @@ export const fetchResourceMetafields = async (
   context: coda.ExecutionContext,
   cacheTtlSecs?: number
 ) => {
-  const endpointType = resourceEndpointFromResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
-
   const params = {};
   if (filters.namespace) {
     params['namespace'] = filters.namespace;
@@ -580,12 +605,7 @@ export const fetchResourceMetafields = async (
     params['key'] = filters.key;
   }
 
-  // edge case
-  if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
-  }
-
-  const requestOptions: any = { url: coda.withQueryParams(url, params) };
+  const requestOptions: any = { url: coda.withQueryParams(resourceMetafieldsUrl, params) };
   if (cacheTtlSecs !== undefined) {
     requestOptions.cacheTtlSecs = cacheTtlSecs;
   }
@@ -690,13 +710,12 @@ export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefini
 }
 
 export const deleteMetafieldsByKeysRest = async (
-  resourceId: number,
-  resourceType: string,
+  resourceMetafieldsUrl: string,
   metafieldFromKeys: string[],
   context: coda.ExecutionContext
 ) => {
   // TODO: replace with something that would eliminate the need for resourceType
-  const response = await fetchResourceMetafields(resourceId, resourceType, {}, context, 0);
+  const response = await fetchResourceMetafields(resourceMetafieldsUrl, {}, context, 0);
   if (response && response.body.metafields) {
     const promises = metafieldFromKeys.map(async (fromKey) => {
       const realFromKey = getMetaFieldRealFromKey(fromKey);
@@ -710,14 +729,16 @@ export const deleteMetafieldsByKeysRest = async (
           if (coda.StatusCodeError.isStatusCodeError(error)) {
             const statusError = error as coda.StatusCodeError;
             if (statusError.statusCode === 404) {
-              console.error(`Metafield ${realFromKey} not found in resource ${resourceId}. Possibly already deleted.`);
+              console.error(
+                `Metafield ${realFromKey} not found at url ${resourceMetafieldsUrl}. Possibly already deleted.`
+              );
             }
           }
           // The request failed for some other reason. Re-throw the error so that it bubbles up.
           throw error;
         }
       } else {
-        console.error(`Metafield ${realFromKey} not found in resource ${resourceId}. Possibly already deleted.`);
+        console.error(`Metafield ${realFromKey} not found at url ${resourceMetafieldsUrl}. Possibly already deleted.`);
       }
 
       // If no errors were thrown, then the metafield was deleted.
@@ -743,8 +764,7 @@ export const getResourceMetafieldByNamespaceKey = async (
   context: coda.ExecutionContext
 ): Promise<MetafieldRest> => {
   const res = await fetchResourceMetafields(
-    resourceId,
-    resourceType,
+    getResourceMetafieldsRestUrl(resourceEndpointFromResourceType(resourceType), resourceId, context),
     { namespace: metaNamespace, key: metaKey },
     context
   );
@@ -773,9 +793,11 @@ export async function handleResourceMetafieldsUpdateGraphQl(
 
   if (prefixedMetafieldsToDelete.length) {
     const deletedMetafields = await deleteMetafieldsByKeysRest(
-      graphQlGidToId(resourceGid),
-      // TODO: replace with something that would eliminate the need for resourceType
-      resourceType,
+      getResourceMetafieldsRestUrl(
+        resourceEndpointFromResourceType(resourceType),
+        graphQlGidToId(resourceGid),
+        context
+      ),
       prefixedMetafieldsToDelete,
       context
     );
@@ -787,7 +809,7 @@ export async function handleResourceMetafieldsUpdateGraphQl(
   }
 
   if (prefixedMetafieldsToUpdate.length) {
-    const metafieldsSetInputs = formatMetafieldsSetsInputFromResourceUpdate(
+    const metafieldsSetInputs = formatGraphQlMetafieldsSetsInputFromResourceUpdate(
       update,
       resourceGid,
       prefixedMetafieldsToUpdate,
@@ -810,12 +832,13 @@ export async function handleResourceMetafieldsUpdateGraphQl(
   return obj;
 }
 
-// For resources not supported in GraphQL. e.g. Blogs
-// TODO: refactor ?
+// Pour les ressources dont les metafields ne peuvent pas être update
+// directement dans la requête de la ressource mais seulement par des requêtes
+// spécifiques pour chaque metafield
+// TODO: Il faudrait renommer la fonction poiur quelque chose de plus descriptif
+// TODO: faire la fonction équivalente quand on peut update en un seul appel ? CAD une fonction qui gere l'update de la ressource et de ses metafields et quio gere aussi la suppression des metafields
 export async function handleResourceMetafieldsUpdateRest(
-  endpoint: string,
-  resourceId: number,
-  resourceType: string,
+  resourceMetafieldsUrl: string,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,
   context: coda.ExecutionContext
@@ -834,9 +857,7 @@ export async function handleResourceMetafieldsUpdateRest(
 
   if (prefixedMetafieldsToDelete.length) {
     const deletedMetafields = await deleteMetafieldsByKeysRest(
-      resourceId,
-      // TODO: replace with something that would eliminate the need for resourceType
-      resourceType,
+      resourceMetafieldsUrl,
       prefixedMetafieldsToDelete,
       context
     );
@@ -848,9 +869,8 @@ export async function handleResourceMetafieldsUpdateRest(
   }
 
   if (prefixedMetafieldsToUpdate.length) {
-    const metafieldsSetInputs = formatMetafieldsSetsInputFromResourceUpdate(
+    const metafieldsSetInputs = formatMetafieldsRestInputFromResourceUpdate(
       update,
-      endpoint,
       prefixedMetafieldsToUpdate,
       metafieldDefinitions
     );
@@ -860,8 +880,7 @@ export async function handleResourceMetafieldsUpdateRest(
         const payload = {
           metafield: { namespace: input.namespace, key: input.key, type: input.type, value: input.value },
         };
-        const url = `${endpoint}/metafields.json`;
-        return makePostRequest({ url, payload }, context);
+        return makePostRequest({ url: resourceMetafieldsUrl, payload }, context);
       })
     );
 

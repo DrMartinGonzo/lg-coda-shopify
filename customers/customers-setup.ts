@@ -28,7 +28,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -66,14 +66,14 @@ async function getCustomerSchema(context: coda.ExecutionContext, _: string, form
  * The properties that can be updated when updating a customer.
  */
 const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'first name', key: 'first_name', type: 'string' },
-  { display: 'last name', key: 'last_name', type: 'string' },
-  { display: 'email', key: 'email', type: 'string' },
-  { display: 'phone', key: 'phone', type: 'string' },
-  { display: 'note', key: 'note', type: 'string' },
-  { display: 'tags', key: 'tags', type: 'string' },
-  { display: 'accepts Email marketing', key: 'accepts_email_marketing', type: 'boolean' },
-  { display: 'accepts SMS marketing', key: 'accepts_sms_marketing', type: 'boolean' },
+  { display: 'First name', key: 'first_name', type: 'string' },
+  { display: 'Last name', key: 'last_name', type: 'string' },
+  { display: 'Email', key: 'email', type: 'string' },
+  { display: 'Phone', key: 'phone', type: 'string' },
+  { display: 'Note', key: 'note', type: 'string' },
+  { display: 'Tags', key: 'tags', type: 'string' },
+  { display: 'Accepts Email marketing', key: 'accepts_email_marketing', type: 'boolean' },
+  { display: 'Accepts SMS marketing', key: 'accepts_sms_marketing', type: 'boolean' },
 ];
 /**
  * The properties that can be updated when creating a customer.
@@ -347,7 +347,8 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,
@@ -387,7 +388,8 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,

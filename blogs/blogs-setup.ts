@@ -25,7 +25,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,
@@ -33,6 +33,7 @@ import {
   findMatchingMetafieldDefinition,
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
+  getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
@@ -56,10 +57,10 @@ async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaC
  * The properties that can be updated when updating a blog.
  */
 const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'title', key: 'title', type: 'string' },
-  { display: 'handle', key: 'handle', type: 'string' },
-  { display: 'commentable', key: 'commentable', type: 'string' },
-  { display: 'template suffix', key: 'template_suffix', type: 'string' },
+  { display: 'Title', key: 'title', type: 'string' },
+  { display: 'Handle', key: 'handle', type: 'string' },
+  { display: 'Commentable', key: 'commentable', type: 'string' },
+  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
 ];
 /**
  * The properties that can be updated when creating a blog.
@@ -92,7 +93,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Blogs',
     description:
-      "Return Blogs from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync (as Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
+      "Return Blogs from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
     identityName: IDENTITY_BLOG,
     schema: BlogSchema,
     dynamicOptions: {
@@ -144,7 +145,11 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           restResult = await Promise.all(
             restResult.map(async (resource) => {
-              const response = await fetchResourceMetafields(resource.id, 'blog', {}, context);
+              const response = await fetchResourceMetafields(
+                getResourceMetafieldsRestUrl('blogs', resource.id, context),
+                {},
+                context
+              );
 
               // Only keep metafields that have a definition are in the schema
               const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
@@ -196,7 +201,8 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('BLOG', context, CACHE_MINUTE);
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,
@@ -237,7 +243,8 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('BLOG', context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,

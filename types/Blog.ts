@@ -22,6 +22,7 @@ export interface BlogUpdateRestParams {
   handle?: string;
   commentable?: string;
   template_suffix?: string;
+  metafields?: MetafieldRestInput[];
 }
 export interface BlogCreateRestParams {
   title: string;
