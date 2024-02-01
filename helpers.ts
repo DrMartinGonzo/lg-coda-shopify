@@ -213,3 +213,23 @@ export function logAdmin(msg: string) {
     console.log(msg);
   }
 }
+
+// Coda date to ISO Date helper
+export function toIsoDate(convDate: Date): String {
+  let isoDate = convDate.toISOString();
+  return isoDate;
+}
+
+// ISO Date to Coda date helper
+export function toCodaDate(isoDateToConv: String): String {
+  let date = isoDateToConv.toString();
+  let codaDate = new Date(date).toLocaleDateString('us');
+  return codaDate;
+}
+
+export function compareByDisplayKey(a: any, b: any) {
+  return a.display.localeCompare(b.display);
+}
+export function compareByValueKey(a: any, b: any) {
+  return a.value.localeCompare(b.value);
+}

@@ -2,6 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { fetchShopDetails } from './shop-functions';
 
+// TODO: url for shop metafields is:
+// `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
+
 export const setupShop = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
    *    Formulas

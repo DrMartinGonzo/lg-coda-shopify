@@ -51,7 +51,7 @@ import {
 import { MetafieldRestInput } from '../types/Metafields';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import { ProductSyncTableRestParams, ProductCreateRestParams } from '../types/Product';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   UpdateCreateProp,
   getMetafieldsCreateUpdateProps,
@@ -73,22 +73,22 @@ async function getProductSchema(context: coda.ExecutionContext, _: string, formu
  * The properties that can be updated when updating a product.
  */
 const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'title', key: 'title', type: 'string' },
-  { display: 'body html', key: 'body_html', type: 'string' },
-  { display: 'product type', key: 'product_type', type: 'string' },
-  { display: 'tags', key: 'tags', type: 'string' },
-  { display: 'vendor', key: 'vendor', type: 'string' },
-  { display: 'status', key: 'status', type: 'string' },
-  { display: 'handle', key: 'handle', type: 'string' },
-  { display: 'template suffix', key: 'template_suffix', type: 'string' },
+  { display: 'Title', key: 'title', type: 'string' },
+  { display: 'Body HTML', key: 'body_html', type: 'string' },
+  { display: 'Product type', key: 'product_type', type: 'string' },
+  { display: 'Tags', key: 'tags', type: 'string' },
+  { display: 'Vendor', key: 'vendor', type: 'string' },
+  { display: 'Status', key: 'status', type: 'string' },
+  { display: 'Handle', key: 'handle', type: 'string' },
+  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
 ];
 /**
  * The properties that can be updated when creating a product.
  */
 const standardCreateProps = [
   ...standardUpdateProps.filter((prop) => prop.key !== 'title'),
-  { display: 'images URLs', key: 'images', type: 'productImageUrls' },
-  { display: 'options', key: 'options', type: 'productCreateOptions' },
+  { display: 'Images URLs', key: 'images', type: 'productImageUrls' },
+  { display: 'Options', key: 'options', type: 'productCreateOptions' },
 ];
 
 const parameters = {
@@ -450,7 +450,8 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,
@@ -519,7 +520,8 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,

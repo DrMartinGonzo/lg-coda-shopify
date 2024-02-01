@@ -47,7 +47,8 @@ import { CollectionFieldsFragment, GetCollectionsQuery, GetCollectionsQueryVaria
 
 // #region Formatting functions
 function validateCollectionParams(params: any) {
-  if (params.published_status && !OPTIONS_PUBLISHED_STATUS.includes(params.published_status)) {
+  const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+  if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
     throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
   }
 }

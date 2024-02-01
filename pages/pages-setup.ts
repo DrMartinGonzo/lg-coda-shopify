@@ -22,6 +22,7 @@ import {
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
   getResourceMetafieldByNamespaceKey,
+  getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
@@ -177,7 +178,11 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           restResult = await Promise.all(
             restResult.map(async (resource) => {
-              const response = await fetchResourceMetafields(resource.id, 'page', {}, context);
+              const response = await fetchResourceMetafields(
+                getResourceMetafieldsRestUrl('pages', resource.id, context),
+                {},
+                context
+              );
 
               // Only keep metafields that have a definition are in the schema
               const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>

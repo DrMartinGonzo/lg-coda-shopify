@@ -36,7 +36,7 @@ import {
   splitMetaFieldFullKey,
   findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -66,17 +66,17 @@ import {
  * The properties that can be updated when updating a product variant.
  */
 const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'option 1', key: 'option1', type: 'string' },
-  { display: 'option 2', key: 'option2', type: 'string' },
-  { display: 'option 3', key: 'option3', type: 'string' },
-  { display: 'price', key: 'price', type: 'number' },
-  { display: 'sku', key: 'sku', type: 'string' },
-  { display: 'position', key: 'position', type: 'number' },
-  { display: 'taxable', key: 'taxable', type: 'boolean' },
-  { display: 'barcode', key: 'barcode', type: 'string' },
-  { display: 'weight', key: 'weight', type: 'number' },
-  { display: 'weight unit', key: 'weight_unit', type: 'string' },
-  { display: 'compare at price', key: 'compare_at_price', type: 'number' },
+  { display: 'Option 1', key: 'option1', type: 'string' },
+  { display: 'Option 2', key: 'option2', type: 'string' },
+  { display: 'Option 3', key: 'option3', type: 'string' },
+  { display: 'Price', key: 'price', type: 'number' },
+  { display: 'Sku', key: 'sku', type: 'string' },
+  { display: 'Position', key: 'position', type: 'number' },
+  { display: 'Raxable', key: 'taxable', type: 'boolean' },
+  { display: 'Barcode', key: 'barcode', type: 'string' },
+  { display: 'Weight', key: 'weight', type: 'number' },
+  { display: 'Weight unit', key: 'weight_unit', type: 'string' },
+  { display: 'Compare at price', key: 'compare_at_price', type: 'number' },
 ];
 /**
  * The properties that can be updated when creating a product variant.
@@ -419,7 +419,8 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,
@@ -476,7 +477,8 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCTVARIANT', context, CACHE_MINUTE);
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-          return coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
+          return result.sort(compareByDisplayKey);
         },
       }),
       sharedParameters.varArgsPropValue,
