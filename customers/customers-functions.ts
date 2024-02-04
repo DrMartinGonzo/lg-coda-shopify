@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { CACHE_SINGLE_FETCH, REST_DEFAULT_API_VERSION } from '../constants';
+import { CACHE_SINGLE_FETCH, RESOURCE_CUSTOMER, REST_DEFAULT_API_VERSION } from '../constants';
 import { FormatFunction } from '../types/misc';
 
 import {
@@ -19,45 +19,70 @@ import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Cus
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 
 // #region Helpers
-export function codaCustomerValuesToRest(fields: CustomerUpdateRestParams) {
-  // Disabled for now, prefer to use simple checkboxes
-  /*
-  if (fields.email_marketing_consent) {
-    const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find(
-      (option) => option.display === fields.email_marketing_consent
-    );
-    fields.email_marketing_consent = {
-      state: matchingOption.state,
-      opt_in_level: matchingOption.opt_in_level,
-    };
-  }
-  if (fields.sms_marketing_consent) {
-    const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find(
-      (option) => option.display === fields.sms_marketing_consent
-    );
-    fields.sms_marketing_consent = {
-      state: matchingOption.state,
-      opt_in_level: matchingOption.opt_in_level,
-    };
-  }
-  */
-
-  if (fields.accepts_email_marketing !== undefined) {
-    fields.email_marketing_consent = {
+/*
+export function customerCodaParamsToRest(params: CustomerCreateRestParams & CustomerUpdateRestParams) {
+  if (params.accepts_email_marketing !== undefined) {
+    params.email_marketing_consent = {
       state:
-        fields.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        params.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
       opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
     };
   }
-  if (fields.accepts_sms_marketing !== undefined) {
-    fields.sms_marketing_consent = {
+  if (params.accepts_sms_marketing !== undefined) {
+    params.sms_marketing_consent = {
       state:
-        fields.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        params.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
       opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
     };
   }
 
-  return fields;
+  return params;
+}
+*/
+
+export function formatCustomerStandardFieldsRestParams(
+  standardFromKeys: string[],
+  values: coda.SyncUpdate<string, string, typeof CustomerSchema>['newValue']
+) {
+  const restParams: any = {};
+  standardFromKeys.forEach((fromKey) => {
+    const value = values[fromKey];
+
+    // Edge cases
+    if (fromKey === 'accepts_email_marketing') {
+      restParams.email_marketing_consent = {
+        state: value === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    } else if (fromKey === 'accepts_sms_marketing') {
+      restParams.sms_marketing_consent = {
+        state: value === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    }
+    // Disabled for now, prefer to use simple checkboxes
+    /*
+    else if (fromKey === 'email_marketing_consent') {
+      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
+      restParams.email_marketing_consent = {
+        state: matchingOption.state,
+        opt_in_level: matchingOption.opt_in_level,
+      };
+    } else if (fromKey === 'sms_marketing_consent') {
+      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
+      restParams.sms_marketing_consent = {
+        state: matchingOption.state,
+        opt_in_level: matchingOption.opt_in_level,
+      };
+    }
+    */
+    // No processing needed
+    else {
+      restParams[fromKey] = value;
+    }
+  });
+
+  return restParams;
 }
 
 export async function handleCustomerUpdateJob(
@@ -67,18 +92,16 @@ export async function handleCustomerUpdateJob(
 ) {
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-  let obj = { ...update.previousValue };
+
   const subJobs: Promise<any>[] = [];
   const customerId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {
-    const restParams: CustomerUpdateRestParams = {};
-    standardFromKeys.forEach((fromKey) => {
-      const value = update.newValue[fromKey];
-      restParams[fromKey] = value;
-    });
-
-    subJobs.push(updateCustomerRest(customerId, codaCustomerValuesToRest(restParams), context));
+    const restParams: CustomerUpdateRestParams = formatCustomerStandardFieldsRestParams(
+      standardFromKeys,
+      update.newValue
+    );
+    subJobs.push(updateCustomerRest(customerId, restParams, context));
   } else {
     subJobs.push(undefined);
   }
@@ -86,7 +109,7 @@ export async function handleCustomerUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
-        idToGraphQlGid('Customer', customerId),
+        idToGraphQlGid(RESOURCE_CUSTOMER, customerId),
         'customer',
         metafieldDefinitions,
         update,
@@ -96,6 +119,8 @@ export async function handleCustomerUpdateJob(
   } else {
     subJobs.push(undefined);
   }
+
+  let obj = { ...update.previousValue };
 
   const [restResponse, metafields] = await Promise.all(subJobs);
   if (restResponse) {
@@ -294,7 +319,7 @@ export const syncCustomersRest = async (
   if (shouldSyncMetafields) {
     metafieldDefinitions =
       prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-      (await fetchMetafieldDefinitions('CUSTOMER', context));
+      (await fetchMetafieldDefinitions('MetafieldOwnerType.Customer', context));
   }
   // }
 
@@ -398,7 +423,7 @@ export const syncCustomersGraphQlAdmin = async (
   if (shouldSyncMetafields) {
     metafieldDefinitions =
       prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-      (await fetchMetafieldDefinitions('CUSTOMER', context));
+      (await fetchMetafieldDefinitions('MetafieldOwnerType.Customer', context));
     optionalNestedFields.push('metafields');
   }
 

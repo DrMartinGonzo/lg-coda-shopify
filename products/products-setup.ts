@@ -58,11 +58,12 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
+import { MetafieldOwnerType } from '../types/Metafields';
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = ProductSchemaRest;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaRest, 'PRODUCT', context);
+    augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaRest, MetafieldOwnerType.Product, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -156,7 +157,7 @@ const parameters = {
     type: coda.ParameterType.String,
     name: 'metafieldKey',
     description: 'The metafield field key',
-    autocomplete: makeAutocompleteMetafieldKeysFunction('PRODUCT'),
+    autocomplete: makeAutocompleteMetafieldKeysFunction(MetafieldOwnerType.Product),
   }),
 };
 
@@ -266,7 +267,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
 
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions('PRODUCT', context));
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context));
         }
 
         let restItems = [];
@@ -395,7 +396,9 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-        const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('PRODUCT', context) : [];
+        const metafieldDefinitions = hasUpdatedMetaFields
+          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context)
+          : [];
 
         const jobs = updates.map((update) => handleProductUpdateJob(update, metafieldDefinitions, context));
         const completed = await Promise.allSettled(jobs);
@@ -448,7 +451,11 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The product variant property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Product,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -460,7 +467,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.Number,
     execute: async function ([title, ...varargs], context) {
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCT', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Product, context);
 
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
       const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
@@ -518,7 +525,11 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The product property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('PRODUCT', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Product,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -536,7 +547,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       let update: coda.SyncUpdate<string, string, any>;
 
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'PRODUCT', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Product, context);
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {

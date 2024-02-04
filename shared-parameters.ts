@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { autocompleteBlogGidParameter } from './articles/articles-functions';
+
 import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
 
@@ -11,12 +11,6 @@ export const sharedParameters = {
     optional: true,
   }),
 
-  blog_gid: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'blogGid',
-    description: 'The GraphQL GID of the blog.',
-    autocomplete: autocompleteBlogGidParameter,
-  }),
   optionalSyncMetafields: coda.makeParameter({
     type: coda.ParameterType.Boolean,
     name: 'syncMetafields',

@@ -29,6 +29,7 @@ import {
 import { graphQlGidToId } from '../helpers-graphql';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { MetafieldDefinition } from '../types/admin.types';
+import { MetafieldOwnerType } from '../types/Metafields';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
@@ -99,7 +100,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
       getSchema: async function (context, _, { syncMetafields }) {
         let augmentedSchema: any = PageSchema;
         if (syncMetafields) {
-          augmentedSchema = await augmentSchemaWithMetafields(PageSchema, 'PAGE', context);
+          augmentedSchema = await augmentSchemaWithMetafields(PageSchema, MetafieldOwnerType.Page, context);
         }
         // admin_url should always be the last featured property, regardless of any metafield keys added previously
         augmentedSchema.featuredProperties.push('admin_url');
@@ -138,7 +139,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions('PAGE', context));
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context));
         }
         const syncedFields = handleFieldDependencies(effectivePropertyKeys, pageFieldDependencies);
 
@@ -209,7 +210,9 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         const effectiveMetafieldKeys = schemaPrefixedMetafieldFromKeys.map(getMetaFieldRealFromKey);
         const hasMetafieldsInSchema = !!effectiveMetafieldKeys.length;
         // TODO: fetch metafield definitions only if a metafield update is detected, and not only if metafields are present in the schema
-        const metafieldDefinitions = hasMetafieldsInSchema ? await fetchMetafieldDefinitions('PAGE', context) : [];
+        const metafieldDefinitions = hasMetafieldsInSchema
+          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context)
+          : [];
 
         const jobs = updates.map(async (update) => {
           const { updatedFields } = update;

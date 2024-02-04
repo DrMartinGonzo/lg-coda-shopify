@@ -15,6 +15,38 @@ import {
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
 
 // #region Helpers
+export function formatArticleStandardFieldsRestParams(
+  standardFromKeys: string[],
+  values: coda.SyncUpdate<string, string, typeof ArticleSchema>['newValue']
+) {
+  const restParams: any = {};
+
+  standardFromKeys.forEach((fromKey) => {
+    const value = values[fromKey];
+
+    // Edge cases
+    if (fromKey === 'image_alt_text') {
+      restParams.image = {
+        ...(restParams.image ?? {}),
+        alt: value,
+      };
+    } else if (fromKey === 'image_url') {
+      restParams.image = {
+        ...(restParams.image ?? {}),
+        src: value,
+      };
+    } else if (fromKey === 'blog') {
+      restParams.blog_id = value.id;
+    }
+    // No processing needed
+    else {
+      restParams[fromKey] = value;
+    }
+  });
+
+  return restParams;
+}
+
 /**
  * Gère un update depuis COda vers Shopify pour les articles
  * Pas la même startégie que d'habitude pour cette fonction.
@@ -33,32 +65,10 @@ export async function handleArticleUpdateJob(
   const articleId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {
-    const restParams: ArticleUpdateRestParams = {};
-    standardFromKeys.forEach((fromKey) => {
-      const value = update.newValue[fromKey];
-
-      // edge case: Image alt text
-      if (fromKey === 'image_alt_text') {
-        restParams.image = {
-          ...(restParams.image ?? {}),
-          alt: value,
-        };
-      }
-      // edge case: Image Url
-      if (fromKey === 'image_url') {
-        restParams.image = {
-          ...(restParams.image ?? {}),
-          src: value,
-        };
-      }
-      // edge case: blog
-      else if (fromKey === 'blog') {
-        restParams.blog_id = value.id;
-      } else {
-        restParams[fromKey] = value;
-      }
-    });
-
+    const restParams: ArticleUpdateRestParams = formatArticleStandardFieldsRestParams(
+      standardFromKeys,
+      update.newValue
+    );
     subJobs.push(updateArticleRest(articleId, restParams, context));
   } else {
     subJobs.push(undefined);
@@ -120,7 +130,7 @@ export const formatArticleForSchemaFromRestApi: FormatFunction = (article, conte
   if (article.image) {
     obj.thumbnail = getThumbnailUrlFromFullUrl(article.image.src);
     obj.image_alt_text = article.image.alt;
-    obj.image = article.image.src;
+    obj.image_url = article.image.src;
   }
 
   return obj;
