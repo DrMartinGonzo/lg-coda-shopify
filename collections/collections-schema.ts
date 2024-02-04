@@ -95,49 +95,64 @@ export const CollectionSchema = coda.makeObjectSchema({
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the collection.',
-      required: true,
       fixedId: 'graphql_gid',
+      description: 'The GraphQL GID of the collection.',
     },
     admin_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Url,
-      description: 'A link to the collection in the Shopify admin.',
       fixedId: 'admin_url',
+      description: 'A link to the collection in the Shopify admin.',
     },
-    /* NOT NEEDED
+
     collection_id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
+      fixedId: 'collection_id',
       required: true,
-      description: 'The ID for the collection.',
       useThousandsSeparator: false,
+      description: 'The ID for the collection.',
     },
-    */
+
     body: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Html,
+      fixedId: 'body',
       description:
         'Text-only description of the collection, stripped of any HTML tags and formatting that were included.',
-      fixedId: 'body',
     },
     body_html: {
       type: coda.ValueType.String,
-      description: 'The description of the collection, including any HTML tags and formatting.',
       fixedId: 'body_html',
+      fromKey: 'body_html',
       mutable: true,
+      description: 'The description of the collection, including any HTML tags and formatting.',
     },
     handle: {
       type: coda.ValueType.String,
-      description: 'A unique string that identifies the collection.',
       mutable: true,
       fixedId: 'handle',
+      fromKey: 'handle',
+      description: 'A unique string that identifies the collection.',
     },
-    image: {
+    // image: {
+    //   type: coda.ValueType.String,
+    //   codaType: coda.ValueHintType.ImageReference,
+    //   description: 'The image associated with the collection.',
+    //   fixedId: 'image',
+    // },
+    image_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
+      fixedId: 'image_url',
+      mutable: true,
       description: 'The image associated with the collection.',
-      fixedId: 'image',
+    },
+    image_alt_text: {
+      type: coda.ValueType.String,
+      mutable: true,
+      fixedId: 'image_alt_text',
+      description: `Alternative text that describes the image associated with the collection.`,
     },
     // TODO: maybe thumbnail are never needed ?
     // thumbnail: {
@@ -148,78 +163,85 @@ export const CollectionSchema = coda.makeObjectSchema({
     published: {
       type: coda.ValueType.Boolean,
       codaType: coda.ValueHintType.Toggle,
-      description: 'Whether the collection is visible.',
       mutable: true,
       fixedId: 'published',
+      fromKey: 'published',
+      description: 'Whether the collection is visible.',
     },
     published_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The time and date when the collection was made visible',
       fixedId: 'published_at',
+      fromKey: 'published_at',
+      description: 'The time and date when the collection was made visible',
     },
     published_scope: {
       type: coda.ValueType.String,
-      description: 'Whether the collection is published to the Point of Sale channel.',
       fixedId: 'published_scope',
+      fromKey: 'published_scope',
+      description: 'Whether the collection is published to the Point of Sale channel.',
     },
     rules: {
       type: coda.ValueType.Array,
       items: SmartCollectionRuleSchema,
+      fixedId: 'rules',
       description:
         'For a smart (automated) collection, the list of rules that define what products go into the smart collection.',
-      fixedId: 'rules',
     },
 
     ruleSet: CollectionRuleSetSchema,
 
     disjunctive: {
       type: coda.ValueType.Boolean,
+      fixedId: 'disjunctive',
       description:
         'For a smart (automated) collection, , whether the product must match all the rules to be included in the smart collection.',
-      fixedId: 'disjunctive',
     },
     sort_order: {
       type: coda.ValueType.String,
-      description: 'The order in which products in the collection appear',
       fixedId: 'sort_order',
+      fromKey: 'sort_order',
+      description: 'The order in which products in the collection appear',
     },
     template_suffix: {
       type: coda.ValueType.String,
-      description: 'The suffix of the Liquid template being used to show the collection in an online store.',
       mutable: true,
       fixedId: 'template_suffix',
+      fromKey: 'template_suffix',
+      description: 'The suffix of the Liquid template being used to show the collection in an online store.',
     },
     title: {
       type: coda.ValueType.String,
       mutable: true,
       required: true,
-      description: 'The name of the collection.',
       fixedId: 'title',
+      fromKey: 'title',
+      description: 'The name of the collection.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the collection was last modified.',
       fixedId: 'updated_at',
+      fromKey: 'updated_at',
+      description: 'The date and time when the collection was last modified.',
     },
   },
   displayProperty: 'title',
-  idProperty: 'graphql_gid',
+  idProperty: 'collection_id',
   // admin_url will be the last featured property, added in Collections dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'handle'],
 
   // Card fields.
   subtitleProperties: ['handle', 'published_at', 'published_scope', 'template_suffix'],
   snippetProperty: 'body',
-  imageProperty: 'image',
+  imageProperty: 'image_url',
   linkProperty: 'admin_url',
 });
 export const collectionFieldDependencies = [
-  // {
-  //   field: 'image',
-  //   dependencies: ['thumbnail'],
-  // },
+  {
+    field: 'image',
+    dependencies: ['image_url', 'image_alt_text'],
+  },
   {
     field: 'id',
     dependencies: ['admin_url'],
@@ -231,62 +253,71 @@ export const CollectionReference = coda.makeReferenceSchemaFromObjectSchema(Coll
 export const CollectSchema = coda.makeObjectSchema({
   properties: {
     //! admin_graphql_api_id DOES NOT EXIST
-
     collect_id: {
       type: coda.ValueType.Number,
-      fromKey: 'id',
       required: true,
+      fromKey: 'id',
       fixedId: 'collect_id',
+      useThousandsSeparator: false,
     },
-    collection_gid: {
-      type: coda.ValueType.String,
-      description: 'The GraphQL GID of the related collection.',
-      fixedId: 'collection_gid',
+    collection_id: {
+      type: coda.ValueType.Number,
+      fromKey: 'collection_id',
+      fixedId: 'collection_id',
+      useThousandsSeparator: false,
+      description: 'The ID of the custom collection containing the product.',
     },
     collection: {
       ...CollectionReference,
-      description: 'Relation to the related collection.',
       fixedId: 'collection',
+      description: 'Relation to the related collection.',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'created_at',
+      fromKey: 'created_at',
+      description: 'The date and time when the collect was created.',
     },
     position: {
       type: coda.ValueType.Number,
+      fixedId: 'position',
+      fromKey: 'position',
       description:
         'The position of this product in a manually sorted custom collection. The first position is 1. This value is applied only when the custom collection is sorted manually.',
-      fixedId: 'position',
     },
-    product_gid: {
-      type: coda.ValueType.String,
-      description: 'The GraphQL GID of the product in the custom collection.',
-      fixedId: 'product_gid',
+    product_id: {
+      type: coda.ValueType.Number,
+      fixedId: 'product_id',
+      fromKey: 'product_id',
+      useThousandsSeparator: false,
+      description: 'The unique numeric identifier for the product in the custom collection.',
     },
     product: {
       ...ProductReference,
-      description: 'Relation to the product in the custom collection.',
       fixedId: 'product',
+      description: 'Relation to the product in the custom collection.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'updated_at',
+      fromKey: 'updated_at',
+      description: 'The date and time when the collect was last updated.',
     },
   },
   displayProperty: 'collect_id',
   idProperty: 'collect_id',
-  featuredProperties: ['collect_id', 'collection', 'product'],
+  featuredProperties: ['collect_id', 'collection', 'product', 'created_at', 'updated_at'],
 });
 export const collectFieldDependencies = [
   {
     field: 'product_id',
-    dependencies: ['product', 'product_gid'],
+    dependencies: ['product'],
   },
   {
     field: 'collection_id',
-    dependencies: ['collection', 'collection_gid'],
+    dependencies: ['collection'],
   },
   {
     field: 'published_at',

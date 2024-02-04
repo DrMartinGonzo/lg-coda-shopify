@@ -34,6 +34,17 @@ export async function autocompleteBlogIdParameter(context: coda.ExecutionContext
   return coda.autocompleteSearchObjects(search, searchObjects, 'title', 'string_id');
 }
 
+export function formatBlogStandardFieldsRestParams(
+  standardFromKeys: string[],
+  values: coda.SyncUpdate<string, string, typeof BlogSchema>['newValue']
+) {
+  const restParams: any = {};
+  standardFromKeys.forEach((fromKey) => {
+    restParams[fromKey] = values[fromKey];
+  });
+  return restParams;
+}
+
 export async function handleBlogUpdateJob(
   update: coda.SyncUpdate<string, string, typeof BlogSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
@@ -53,10 +64,7 @@ export async function handleBlogUpdateJob(
   const blogId = update.previousValue.id as number;
 
   if (standardFromKeys.length || prefixedMetafieldsToUpdate.length) {
-    const restParams: BlogUpdateRestParams = {};
-    standardFromKeys.forEach((fromKey) => {
-      restParams[fromKey] = update.newValue[fromKey];
-    });
+    const restParams: BlogUpdateRestParams = formatBlogStandardFieldsRestParams(standardFromKeys, update.newValue);
 
     if (prefixedMetafieldsToUpdate.length) {
       restParams.metafields = formatMetafieldsRestInputFromResourceUpdate(

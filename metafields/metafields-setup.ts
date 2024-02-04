@@ -26,6 +26,7 @@ import {
   RESOURCE_PRODUCT_VARIANT,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
+import { MetafieldOwnerType } from '../types/Metafields';
 
 export const setupMetafields = (pack) => {
 interface ResourceMetafieldsSyncTableElements {
@@ -34,7 +35,7 @@ interface ResourceMetafieldsSyncTableElements {
   adminSettingsUrlPart: string;
   adminEntryUrlPart: string;
   graphQlResourceQuery: string;
-  metafieldOwnerType: string;
+  metafieldOwnerType: MetafieldOwnerType;
   storeFront?: boolean;
 }
 const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[] = [
@@ -44,7 +45,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'article',
     adminEntryUrlPart: 'articles',
     graphQlResourceQuery: 'articles',
-    metafieldOwnerType: 'ARTICLE',
+    metafieldOwnerType: MetafieldOwnerType.Article,
   },
   {
     key: RESOURCE_BLOG,
@@ -52,7 +53,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'blog',
     adminEntryUrlPart: 'blogs',
     graphQlResourceQuery: 'blogs',
-    metafieldOwnerType: 'BLOG',
+    metafieldOwnerType: MetafieldOwnerType.Blog,
     storeFront: true,
   },
   {
@@ -61,7 +62,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'collection',
     adminEntryUrlPart: 'collections',
     graphQlResourceQuery: 'collections',
-    metafieldOwnerType: 'COLLECTION',
+    metafieldOwnerType: MetafieldOwnerType.Collection,
   },
   // {
   //   key: 'smart_collection',
@@ -77,7 +78,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'customer',
     adminEntryUrlPart: 'customers',
     graphQlResourceQuery: 'customers',
-    metafieldOwnerType: 'CUSTOMER',
+    metafieldOwnerType: MetafieldOwnerType.Customer,
   },
   // TODO: maybe add suppoort for draft orders later
   // {
@@ -86,7 +87,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
   //   adminUrlPart: 'draftOrder',
   //   adminEntryUrlPart: 'draftOrders',
   //   graphQlResourceQuery: 'draftOrders',
-  //   metafieldOwnerType: 'DRAFTORDER',
+  //   metafieldOwnerType: MetafieldOwnerType.Draftorder,
   // },
   {
     key: 'location',
@@ -94,7 +95,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'location',
     adminEntryUrlPart: 'locations',
     graphQlResourceQuery: 'locations',
-    metafieldOwnerType: 'LOCATION',
+    metafieldOwnerType: MetafieldOwnerType.Location,
   },
   {
     key: RESOURCE_ORDER,
@@ -102,7 +103,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'order',
     adminEntryUrlPart: 'orders',
     graphQlResourceQuery: 'orders',
-    metafieldOwnerType: 'ORDER',
+    metafieldOwnerType: MetafieldOwnerType.Order,
   },
   {
     key: RESOURCE_PAGE,
@@ -110,7 +111,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'page',
     adminEntryUrlPart: 'pages',
     graphQlResourceQuery: 'pages',
-    metafieldOwnerType: 'PAGE',
+    metafieldOwnerType: MetafieldOwnerType.Page,
     storeFront: true,
   },
   {
@@ -119,7 +120,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'product',
     adminEntryUrlPart: 'products',
     graphQlResourceQuery: 'products',
-    metafieldOwnerType: 'PRODUCT',
+    metafieldOwnerType: MetafieldOwnerType.Product,
     storeFront: true,
   },
   // {
@@ -136,7 +137,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
     adminSettingsUrlPart: 'productVariant',
     adminEntryUrlPart: 'productVariants',
     graphQlResourceQuery: 'productVariants',
-    metafieldOwnerType: 'PRODUCTVARIANT',
+    metafieldOwnerType: MetafieldOwnerType.Productvariant,
     storeFront: true,
   },
   // {
@@ -145,7 +146,7 @@ const resourceMetafieldsSyncTableElements: ResourceMetafieldsSyncTableElements[]
   //   adminSettingsUrlPart: 'shop',
   //   adminEntryUrlPart: 'shop',
   //   graphQlResourceQuery: 'shop',
-  //   metafieldOwnerType: 'SHOP',
+  //   metafieldOwnerType: MetafieldOwnerType.Shop,
   // },
 ];
 export const getResourceMetafieldsSyncTableElements = (value) =>
@@ -324,7 +325,7 @@ export const setupMetafields = (pack: coda.PackDefinitionBuilder) => {
     description: 'delete metafield.',
     parameters: [
       coda.makeParameter({
-        type: coda.ParameterType.String,
+        type: coda.ParameterType.Number,
         name: 'metafieldId',
         description: 'The id of the metafield.',
       }),
@@ -333,7 +334,7 @@ export const setupMetafields = (pack: coda.PackDefinitionBuilder) => {
     cacheTtlSecs: 0,
     resultType: coda.ValueType.Boolean,
     execute: async ([metafieldId], context) => {
-      const response = await deleteResourceMetafield([metafieldId], context);
+      const response = await deleteMetafieldRest(metafieldId, context);
       return true;
     },
   });

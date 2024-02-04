@@ -6,7 +6,7 @@ import {
   formatCustomerForSchemaFromRestApi,
   handleCustomerUpdateJob,
   fetchCustomerRest,
-  codaCustomerValuesToRest,
+  formatCustomerStandardFieldsRestParams,
 } from './customers-functions';
 
 import { CustomerSchema, customerFieldDependencies } from './customers-schema';
@@ -51,11 +51,12 @@ import {
 } from '../helpers-varargs';
 import { MetafieldRestInput } from '../types/Metafields';
 import { CustomerCreateRestParams } from '../types/Customer';
+import { MetafieldOwnerType } from '../types/Metafields';
 
 async function getCustomerSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = CustomerSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(CustomerSchema, 'CUSTOMER', context);
+    augmentedSchema = await augmentSchemaWithMetafields(CustomerSchema, MetafieldOwnerType.Customer, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -190,7 +191,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
 
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions('CUSTOMER', context));
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Customer, context));
         }
 
         let restItems = [];
@@ -318,7 +319,9 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-        const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('CUSTOMER', context) : [];
+        const metafieldDefinitions = hasUpdatedMetaFields
+          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Customer, context)
+          : [];
 
         const jobs = updates.map((update) => handleCustomerUpdateJob(update, metafieldDefinitions, context));
         const completed = await Promise.allSettled(jobs);
@@ -345,7 +348,11 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Customer,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -361,7 +368,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
       let update: coda.SyncUpdate<string, string, any>;
 
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'CUSTOMER', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Customer, context);
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {
@@ -369,6 +376,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         newValue: newValues,
         updatedFields: Object.keys(newValues),
       };
+      // TODO: should not be needed here if each Rest update function implement this cleaning
       update.newValue = cleanQueryParams(update.newValue);
 
       return handleCustomerUpdateJob(update, metafieldDefinitions, context);
@@ -386,7 +394,11 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('CUSTOMER', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Customer,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -398,7 +410,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.String,
     execute: async function ([...varargs], context) {
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'CUSTOMER', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Customer, context);
 
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
       const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
@@ -426,10 +438,11 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
 
       const params: CustomerCreateRestParams = {
         metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
+        // @ts-ignore
+        ...formatCustomerStandardFieldsRestParams(standardFromKeys, newValues),
       };
-      standardFromKeys.forEach((key) => (params[key] = newValues[key]));
 
-      const response = await createCustomerRest(codaCustomerValuesToRest(params), context);
+      const response = await createCustomerRest(params, context);
       return response.body.customer.id;
     },
   });
@@ -466,7 +479,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
 
   pack.addColumnFormat({
     name: 'Customer',
-    instructions: 'Paste the the customer Id into the column.',
+    instructions: 'Paste the customer Id into the column.',
     formulaName: 'Customer',
   });
   // #endregion

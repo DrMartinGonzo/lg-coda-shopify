@@ -9,6 +9,7 @@ import {
   METAFIELD_GID_PREFIX_KEY,
   METAFIELD_PREFIX_KEY,
   NOT_FOUND,
+  RESOURCE_COLLECTION,
   RESOURCE_PRODUCT,
   RESOURCE_PRODUCT_VARIANT,
   REST_DEFAULT_API_VERSION,
@@ -47,14 +48,7 @@ import {
   ShopifyRatingField,
 } from '../types/Metafields';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
-import type {
-  Metafield,
-  MetafieldDefinition,
-  MetaobjectFieldDefinition,
-  MoneyInput,
-  CurrencyCode,
-  MetafieldsSetInput,
-} from '../types/admin.types';
+import type { Metafield, MoneyInput, CurrencyCode, MetafieldsSetInput, MetafieldOwnerType } from '../types/admin.types';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import {
   MetafieldDefinitionFragment,
@@ -67,7 +61,7 @@ import {
 // TODO: there are still some legacy API in there: 2022-01 and 2022-07
 
 // #region Autocomplete functions
-export function makeAutocompleteMetafieldKeysFunction(ownerType: string) {
+export function makeAutocompleteMetafieldKeysFunction(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
     const metafieldDefinitions = await fetchMetafieldDefinitions(ownerType, context);
     const searchObjects = metafieldDefinitions.map((metafield) => {
@@ -222,7 +216,6 @@ export function formatMetaFieldValueForSchema(
       return value.amount;
 
     // REFERENCE
-    case FIELD_TYPES.collection_reference:
     case FIELD_TYPES.page_reference:
       return {
         admin_graphql_api_id: value,
@@ -238,6 +231,7 @@ export function formatMetaFieldValueForSchema(
         graphql_gid: value,
         name: NOT_FOUND,
       };
+    case FIELD_TYPES.collection_reference:
     case FIELD_TYPES.product_reference:
     case FIELD_TYPES.variant_reference:
       return {
@@ -359,7 +353,6 @@ export function formatMetafieldValueForApi(
       );
 
     // REFERENCE
-    case FIELD_TYPES.collection_reference:
     case FIELD_TYPES.page_reference:
       return isArrayApi ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
 
@@ -368,6 +361,11 @@ export function formatMetafieldValueForApi(
 
     case FIELD_TYPES.metaobject_reference:
       return isArrayApi ? JSON.stringify(value.map((v) => v?.graphql_gid)) : value?.graphql_gid;
+
+    case FIELD_TYPES.collection_reference:
+      return isArrayApi
+        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_COLLECTION, v?.id)))
+        : idToGraphQlGid(RESOURCE_COLLECTION, value?.id);
 
     case FIELD_TYPES.product_reference:
       return isArrayApi
@@ -527,7 +525,7 @@ export function formatMetafieldsRestInputFromResourceUpdate(
 
 // #region Metafield definitions
 export async function fetchMetafieldDefinitions(
-  ownerType: string,
+  ownerType: MetafieldOwnerType,
   context: coda.ExecutionContext,
   cacheTtlSecs?: number
 ): Promise<MetafieldDefinitionFragment[]> {
@@ -774,6 +772,7 @@ export const getResourceMetafieldByNamespaceKey = async (
 
 export async function handleResourceMetafieldsUpdateGraphQl(
   resourceGid: string,
+  // TODO: remove dependency on thsi variable resourceType
   resourceType: string,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,

@@ -16,6 +16,7 @@ import {
   handleArticleUpdateJob,
   fetchArticleRest,
   createArticleRest,
+  formatArticleStandardFieldsRestParams,
 } from './articles-functions';
 
 import { ArticleSchema, articleFieldDependencies } from './articles-schema';
@@ -45,11 +46,12 @@ import {
 } from '../helpers-varargs';
 import { MetafieldRestInput } from '../types/Metafields';
 import { autocompleteBlogIdParameter } from '../blogs/blogs-functions';
+import { MetafieldOwnerType } from '../types/Metafields';
 
 async function getArticleSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = ArticleSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(ArticleSchema, 'ARTICLE', context);
+    augmentedSchema = await augmentSchemaWithMetafields(ArticleSchema, MetafieldOwnerType.Article, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -261,7 +263,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions('ARTICLE', context));
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Article, context));
         }
 
         const syncedStandardFields = handleFieldDependencies(standardFromKeys, articleFieldDependencies);
@@ -361,7 +363,9 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
       executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-        const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('ARTICLE', context) : [];
+        const metafieldDefinitions = hasUpdatedMetaFields
+          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Article, context)
+          : [];
 
         const jobs = updates.map((update) => handleArticleUpdateJob(update, metafieldDefinitions, context));
         const completed = await Promise.allSettled(jobs);
@@ -405,7 +409,11 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The article property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('ARTICLE', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Article,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
 
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -418,7 +426,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.String,
     execute: async ([blogId, title, ...varargs], context) => {
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'ARTICLE', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Article, context);
 
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
       const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
@@ -444,28 +452,10 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         blog_id: blogId,
         title,
         metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
+        ...formatArticleStandardFieldsRestParams(standardFromKeys, newValues),
       };
-      standardFromKeys.forEach((key) => {
-        const value = newValues[key];
-        // TODO: need common function to handle edge cases for create and update functions
-        // edge case: Image alt text
-        if (key === 'image_alt_text') {
-          params.image = {
-            ...(params.image ?? { src: undefined }),
-            alt: value,
-          };
-        }
-        // edge case: Image src
-        else if (key === 'image_url') {
-          params.image = {
-            ...(params.image ?? { alt: undefined }),
-            src: value,
-          };
-        } else {
-          params[key] = value;
-        }
-      });
-      // default to unpublished
+
+      // default to unpublished for article creation
       if (params.published === undefined) {
         params.published = false;
       }
@@ -486,7 +476,11 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The article property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('ARTICLE', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(
+            MetafieldOwnerType.Article,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -504,7 +498,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
       let update: coda.SyncUpdate<string, string, any>;
 
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'ARTICLE', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Article, context);
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {

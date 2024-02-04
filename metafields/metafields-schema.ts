@@ -108,7 +108,7 @@ export const MetafieldSchemaNew = coda.makeObjectSchema({
 
 export async function augmentSchemaWithMetafields(
   baseSchema: coda.ObjectSchema<any, any>,
-  ownerType: string,
+  ownerType: MetafieldOwnerType,
   context: coda.ExecutionContext
 ) {
   const schema: coda.ObjectSchema<any, any> = { ...baseSchema };

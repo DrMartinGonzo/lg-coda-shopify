@@ -22,9 +22,9 @@ export interface ArticleUpdateRestParams {
   handle?: string;
   // TODO: see if we can update the image src
   image?: {
-    alt: string;
+    alt?: string;
+    src?: string;
   };
-  metafields?: MetafieldRestInput[];
   published_at?: string;
   published?: boolean;
   summary_html?: string;
@@ -41,7 +41,7 @@ export interface ArticleCreateRestParams {
   handle?: string;
   image?: {
     src: string;
-    alt: string;
+    alt?: string;
   };
   metafields?: MetafieldRestInput[];
   published_at?: string;

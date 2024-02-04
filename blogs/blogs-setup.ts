@@ -14,6 +14,7 @@ import {
   validateBlogParams,
   formatBlogForSchemaFromRestApi,
   handleBlogUpdateJob,
+  formatBlogStandardFieldsRestParams,
 } from './blogs-functions';
 
 import { BlogSchema, blogFieldDependencies } from './blogs-schema';
@@ -41,12 +42,12 @@ import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import { MetafieldRestInput } from '../types/Metafields';
+import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
 
 async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = BlogSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(BlogSchema, 'BLOG', context);
+    augmentedSchema = await augmentSchemaWithMetafields(BlogSchema, MetafieldOwnerType.Blog, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -118,7 +119,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions('BLOG', context));
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context));
         }
 
         const syncedStandardFields = handleFieldDependencies(standardFromKeys, blogFieldDependencies);
@@ -172,7 +173,9 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
       executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-        const metafieldDefinitions = hasUpdatedMetaFields ? await fetchMetafieldDefinitions('BLOG', context) : [];
+        const metafieldDefinitions = hasUpdatedMetaFields
+          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context)
+          : [];
 
         const jobs = updates.map((update) => handleBlogUpdateJob(update, metafieldDefinitions, context));
         const completed = await Promise.allSettled(jobs);
@@ -199,7 +202,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('BLOG', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context, CACHE_MINUTE);
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -213,10 +216,11 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
     // schema: coda.withIdentity(BlogSchema, IDENTITY_BLOG),
     execute: async function ([blog_id, ...varargs], context) {
       // Build a Coda update object for Rest Admin and GraphQL API updates
+      // TODO: type is not perfect here
       let update: coda.SyncUpdate<string, string, any>;
 
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'BLOG', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Blog, context);
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {
@@ -241,7 +245,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions('BLOG', context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context, CACHE_MINUTE);
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -253,7 +257,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.String,
     execute: async function ([title, ...varargs], context) {
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, 'BLOG', context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Blog, context);
 
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
       const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
@@ -278,8 +282,9 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
       const params: BlogCreateRestParams = {
         title,
         metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
+        // @ts-ignore
+        ...formatBlogStandardFieldsRestParams(standardFromKeys, newValues),
       };
-      standardFromKeys.forEach((key) => (params[key] = newValues[key]));
 
       const response = await createBlogRest(params, context);
       return response.body.blog.id;
@@ -318,12 +323,10 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
   });
 
   // Blog Column Format
-  // TODO: add link regex ?
   pack.addColumnFormat({
     name: 'Blog',
-    instructions: 'Paste the ID of the blog into the column.',
+    instructions: 'Paste the blog Id into the column.',
     formulaName: 'Blog',
-    // matchers: [new RegExp('^https://.*myshopify.com/admin/products/([0-9]+)$')],
   });
   // #endregion
 };

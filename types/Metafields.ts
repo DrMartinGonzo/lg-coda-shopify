@@ -61,3 +61,57 @@ export type MetafieldRestInput = {
    */
   value: string;
 };
+
+/**
+ * Possible types of a metafield's owner resource.
+ *
+ * Copié directement depuis ./admin.types.d.ts, sinon l'import
+ * foire quand c'est pris directement d'un fichier *.d.ts
+ * @see https://lukasbehal.com/2017-05-22-enums-in-declaration-files/
+ // TODO: voir si ya plus simple pour que ça garde ça au moins synchro, peut-être au niveau de graphql-codegen ?
+ */
+export enum MetafieldOwnerType {
+  /** The Api Permission metafield owner type. */
+  ApiPermission = 'API_PERMISSION',
+  /** The Article metafield owner type. */
+  Article = 'ARTICLE',
+  /** The Blog metafield owner type. */
+  Blog = 'BLOG',
+  /** The Collection metafield owner type. */
+  Collection = 'COLLECTION',
+  /** The Company metafield owner type. */
+  Company = 'COMPANY',
+  /** The Company Location metafield owner type. */
+  CompanyLocation = 'COMPANY_LOCATION',
+  /** The Customer metafield owner type. */
+  Customer = 'CUSTOMER',
+  /** The Delivery Customization metafield owner type. */
+  DeliveryCustomization = 'DELIVERY_CUSTOMIZATION',
+  /** The Discount metafield owner type. */
+  Discount = 'DISCOUNT',
+  /** The Draft Order metafield owner type. */
+  Draftorder = 'DRAFTORDER',
+  /** The Location metafield owner type. */
+  Location = 'LOCATION',
+  /** The Market metafield owner type. */
+  Market = 'MARKET',
+  /** The Media Image metafield owner type. */
+  MediaImage = 'MEDIA_IMAGE',
+  /** The Order metafield owner type. */
+  Order = 'ORDER',
+  /** The Page metafield owner type. */
+  Page = 'PAGE',
+  /** The Payment Customization metafield owner type. */
+  PaymentCustomization = 'PAYMENT_CUSTOMIZATION',
+  /** The Product metafield owner type. */
+  Product = 'PRODUCT',
+  /**
+   * The Product Image metafield owner type.
+   * @deprecated `PRODUCTIMAGE` is deprecated. Use `MEDIA_IMAGE` instead.
+   */
+  Productimage = 'PRODUCTIMAGE',
+  /** The Product Variant metafield owner type. */
+  Productvariant = 'PRODUCTVARIANT',
+  /** The Shop metafield owner type. */
+  Shop = 'SHOP',
+}
