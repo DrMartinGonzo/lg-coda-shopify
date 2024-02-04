@@ -4,7 +4,7 @@ import isUrl from 'is-url-superb';
 import { DEFAULT_PRODUCT_OPTION_NAME, METAFIELD_PREFIX_KEY } from './constants';
 import { getMetaFieldFullKey, maybeHasMetaFieldKeys } from './metafields/metafields-functions';
 import { fetchMetafieldDefinitions } from './metafields/metafields-functions';
-import { Metafield } from './types/admin.types';
+import { Metafield, MetafieldOwnerType } from './types/admin.types';
 import { MetafieldDefinitionFragment } from './types/admin.generated';
 
 export type UpdateCreateProp = {
@@ -90,7 +90,7 @@ export function parseVarargsCreateUpdatePropsValues(
 
 export async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
   varargs: string[],
-  metafieldOwnerType: string,
+  metafieldOwnerType: MetafieldOwnerType,
   context: coda.ExecutionContext
 ) {
   let metafieldDefinitions: MetafieldDefinitionFragment[] = [];

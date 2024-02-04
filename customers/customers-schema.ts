@@ -133,68 +133,71 @@ export const CustomerSchema = coda.makeObjectSchema({
     admin_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Url,
-      description: 'A link to the customer in the Shopify admin.',
       fixedId: 'admin_url',
+      description: 'A link to the customer in the Shopify admin.',
     },
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the customer.',
-      required: true,
       fixedId: 'graphql_gid',
+      description: 'The GraphQL GID of the customer.',
     },
-    // A unique identifier for the customer.
     customer_id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,
       fixedId: 'customer_id',
       useThousandsSeparator: false,
+      description: 'A unique identifier for the customer.',
     },
     // @See formatCustomer function
     display: {
       type: coda.ValueType.String,
-      description: 'Formatted display name.',
       required: true,
       fixedId: 'display',
+      description: 'Formatted display name.',
     },
     addresses: {
       type: coda.ValueType.Array,
       items: CustomerAddressSchema,
-      description: 'A list of the ten most recently updated addresses for the customer.',
       fixedId: 'addresses',
+      fromKey: 'addresses',
+      description: 'A list of the ten most recently updated addresses for the customer.',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the customer was created.',
       fixedId: 'created_at',
+      fromKey: 'created_at',
+      description: 'The date and time when the customer was created.',
     },
     default_address: {
       ...CustomerAddressSchema,
-      description: 'The default address for the customer.',
       fixedId: 'default_address',
+      fromKey: 'default_address',
+      description: 'The default address for the customer.',
     },
     email: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Email,
-      description:
-        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
       mutable: true,
       fixedId: 'email',
+      fromKey: 'email',
+      description:
+        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
     },
     accepts_email_marketing: {
       type: coda.ValueType.Boolean,
-      description: 'Wether the customer consented to receiving marketing material by email.',
       fixedId: 'accepts_email_marketing',
       mutable: true,
+      description: 'Wether the customer consented to receiving marketing material by email.',
     },
     accepts_sms_marketing: {
       type: coda.ValueType.Boolean,
-      description:
-        'Wether the customer consented to receiving marketing material by SMS. The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer.',
       fixedId: 'accepts_sms_marketing',
       mutable: true,
+      description:
+        'Wether the customer consented to receiving marketing material by SMS. The phone property is required to create a customer with SMS consent information and to perform an SMS update on a customer.',
     },
     // Disabled for now, prefer to use simple checkboxes
     /*
@@ -223,89 +226,104 @@ export const CustomerSchema = coda.makeObjectSchema({
     */
     first_name: {
       type: coda.ValueType.String,
-      description: "The customer's first name.",
       mutable: true,
       fixedId: 'first_name',
+      fromKey: 'first_name',
+      description: "The customer's first name.",
     },
     last_name: {
       type: coda.ValueType.String,
-      description: "The customer's first last.",
       mutable: true,
       fixedId: 'last_name',
+      fromKey: 'last_name',
+      description: "The customer's first last.",
     },
     last_order_id: {
       type: coda.ValueType.Number,
-      description: 'The ID of the customer’s last order.',
       fixedId: 'last_order_id',
+      fromKey: 'last_order_id',
+      description: 'The ID of the customer’s last order.',
     },
     last_order_name: {
       type: coda.ValueType.String,
-      description: 'The name of the customer’s last order.',
       fixedId: 'last_order_name',
+      fromKey: 'last_order_name',
+      description: 'The name of the customer’s last order.',
     },
     multipass_identifier: {
       type: coda.ValueType.String,
-      description: "A unique identifier for the customer that's used with Multipass login.",
       fixedId: 'multipass_identifier',
+      fromKey: 'multipass_identifier',
+      description: "A unique identifier for the customer that's used with Multipass login.",
     },
     note: {
       type: coda.ValueType.String,
-      description: 'A note about the customer.',
       mutable: true,
       fixedId: 'note',
+      fromKey: 'note',
+      description: 'A note about the customer.',
     },
     orders_count: {
       type: coda.ValueType.Number,
-      description: 'The number of orders associated with the customer.',
       fixedId: 'orders_count',
+      fromKey: 'orders_count',
+      description: 'The number of orders associated with the customer.',
     },
     phone: {
       type: coda.ValueType.String,
-      description:
-        'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error. The property can be set using different formats, but each format must represent a number that can be dialed from anywhere in the world.',
       mutable: true,
       fixedId: 'phone',
+      fromKey: 'phone',
+      description:
+        'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error. The property can be set using different formats, but each format must represent a number that can be dialed from anywhere in the world.',
     },
     state: {
       type: coda.ValueType.String,
+      fixedId: 'state',
+      fromKey: 'state',
       description:
         "The state of the customer's account with a shop. Default value: disabled. Valid values:\n- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.\n- invited: The customer has received an email invite to create an account.\n- enabled: The customer has created an account.\n- declined: The customer declined the email invite to create an account.",
-      fixedId: 'state',
     },
     tags: {
       type: coda.ValueType.String,
-      description:
-        'Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
       mutable: true,
       fixedId: 'tags',
+      fromKey: 'tags',
+      description:
+        'Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
     },
     tax_exempt: {
       type: coda.ValueType.Boolean,
-      description: 'Whether the customer is exempt from paying taxes on their order.',
       fixedId: 'tax_exempt',
+      fromKey: 'tax_exempt',
+      description: 'Whether the customer is exempt from paying taxes on their order.',
     },
     tax_exemptions: {
       type: coda.ValueType.Array,
       items: { type: coda.ValueType.String },
-      description: 'Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.',
       fixedId: 'tax_exemptions',
+      fromKey: 'tax_exemptions',
+      description: 'Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.',
     },
     total_spent: {
       type: coda.ValueType.Number,
       codaType: coda.ValueHintType.Currency,
-      description: 'The total amount of money that the customer has spent across their order history.',
       fixedId: 'total_spent',
+      fromKey: 'total_spent',
+      description: 'The total amount of money that the customer has spent across their order history.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the customer information was last updated.',
       fixedId: 'updated_at',
+      fromKey: 'updated_at',
+      description: 'The date and time when the customer information was last updated.',
     },
     verified_email: {
       type: coda.ValueType.Boolean,
-      description: 'Whether the customer has verified their email address.',
       fixedId: 'verified_email',
+      fromKey: 'verified_email',
+      description: 'Whether the customer has verified their email address.',
     },
   },
   displayProperty: 'display',

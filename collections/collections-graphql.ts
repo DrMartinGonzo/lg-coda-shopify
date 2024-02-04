@@ -1,5 +1,15 @@
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
+// #region Helpers
+export function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
+  const searchItems = [];
+
+  if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');
+
+  return searchItems.join(' AND ');
+}
+// #endregion
+
 // #region Fragments
 const CollectionFieldsFragmentAdmin = /* GraphQL */ `
   ${MetafieldFieldsFragment}
@@ -74,11 +84,39 @@ export const QueryCollectionsAdmin = /* GraphQL */ `
 `;
 
 export const isSmartCollection = /* GraphQL */ `
-  query IsSmartCollection($gid: ID!) {
-    collection(id: $gid) {
+  query IsSmartCollection($collectionGid: ID!) {
+    collection(id: $collectionGid) {
       # will be null for non smart collections
       isSmartCollection: ruleSet {
         appliedDisjunctively
+      }
+    }
+  }
+`;
+
+export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
+
+  query getCollectionsMetafields(
+    $maxEntriesPerRun: Int!
+    $cursor: String
+    $metafieldKeys: [String!]
+    $countMetafields: Int
+    $searchQuery: String
+  ) {
+    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+      nodes {
+        id
+
+        metafields(keys: $metafieldKeys, first: $countMetafields) {
+          nodes {
+            ...MetafieldFields
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }

@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { BlogReference } from '../blogs/blogs-schema';
+import { FieldDependency } from '../types/tableSync';
 
 /**====================================================================================================================
  *    Exported schemas
@@ -17,7 +18,7 @@ export const ArticleSchema = coda.makeObjectSchema({
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
-      fixedId: 'admin_graphql_api_id',
+      fixedId: 'graphql_gid',
       description: 'The GraphQL GID of the article.',
     },
     admin_url: {
@@ -26,6 +27,13 @@ export const ArticleSchema = coda.makeObjectSchema({
       fixedId: 'admin_url',
       description: 'A link to the article in the Shopify admin.',
     },
+    // Pas possible sans faire de reqûete supplémentaire pour récupérer le handle du blog à partir de blog_id
+    // store_url: {
+    //   type: coda.ValueType.String,
+    //   codaType: coda.ValueHintType.Url,
+    //   fixedId: 'store_url',
+    //   description: 'A link to the article in the online shop.',
+    // },
     author: {
       type: coda.ValueType.String,
       mutable: true,
@@ -76,10 +84,10 @@ export const ArticleSchema = coda.makeObjectSchema({
       description:
         "A human-friendly unique string for the article that's automatically generated from the article's title. The handle is used in the article's URL.",
     },
-    image: {
+    image_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
-      fixedId: 'image',
+      fixedId: 'image_url',
       description: 'An image associated with the article.',
     },
     image_alt_text: {
@@ -163,11 +171,11 @@ export const ArticleSchema = coda.makeObjectSchema({
   // Card fields.
   subtitleProperties: ['author', 'published_at', 'tags', 'template_suffix'],
   snippetProperty: 'body',
-  imageProperty: 'image',
+  imageProperty: 'image_url',
   linkProperty: 'admin_url',
 });
 
-export const articleFieldDependencies = [
+export const articleFieldDependencies: FieldDependency<typeof ArticleSchema.properties>[] = [
   {
     field: 'summary_html',
     dependencies: ['summary'],
@@ -190,6 +198,6 @@ export const articleFieldDependencies = [
   },
   {
     field: 'image',
-    dependencies: ['image_alt_text'],
+    dependencies: ['image_url', 'image_alt_text'],
   },
 ];
