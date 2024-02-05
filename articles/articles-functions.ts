@@ -48,8 +48,8 @@ export function formatArticleStandardFieldsRestParams(
 }
 
 /**
- * Gère un update depuis COda vers Shopify pour les articles
- * Pas la même startégie que d'habitude pour cette fonction.
+ * Gère un update depuis Coda vers Shopify pour les articles
+ * Pas la même stratégie que d'habitude pour cette fonction.
  * On ne peut pas directement update les metafields pour les articles.
  * Il va falloir faire un appel séparé pour chaque metafield
  */

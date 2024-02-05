@@ -380,23 +380,6 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
   });
   // #endregion
 
-  // #region Formulas
-  pack.addFormula({
-    name: 'Article',
-    description: 'Return a single article from this shop.',
-    parameters: [parameters.articleID],
-    cacheTtlSecs: 10,
-    resultType: coda.ValueType.Object,
-    schema: ArticleSchema,
-    execute: async ([articleId], context) => {
-      const articleResponse = await fetchArticleRest(articleId, context);
-      if (articleResponse.body?.article) {
-        return formatArticleForSchemaFromRestApi(articleResponse.body.article, context);
-      }
-    },
-  });
-  // #endregion
-
   // #region Actions
   // CreateArticle
   pack.addFormula({
@@ -523,6 +506,30 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
       await deleteArticleRest(articleId, context);
       return true;
     },
+  });
+  // #endregion
+
+  // #region Formulas
+  pack.addFormula({
+    name: 'Article',
+    description: 'Return a single article from this shop.',
+    parameters: [parameters.articleID],
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.Object,
+    schema: ArticleSchema,
+    execute: async ([articleId], context) => {
+      const articleResponse = await fetchArticleRest(articleId, context);
+      if (articleResponse.body?.article) {
+        return formatArticleForSchemaFromRestApi(articleResponse.body.article, context);
+      }
+    },
+  });
+
+  // Article Column Format
+  pack.addColumnFormat({
+    name: 'Article',
+    instructions: 'Paste the article Id into the column.',
+    formulaName: 'Article',
   });
   // #endregion
 };

@@ -340,3 +340,103 @@ export async function updateProductMetafieldsGraphQl(
   return response;
 }
 // #endregion
+
+// #region Unused stuff
+/**
+ * Check if a product is present in a collection
+ */
+/*
+export const checkProductInCollection = async ([productGid, collectionGid], context: coda.ExecutionContext) => {
+  const payload = {
+    query: queryProductInCollection,
+    variables: {
+      collectionId: collectionGid,
+      productId: productGid,
+    },
+  };
+
+  const response = await graphQlRequest({ payload }, context);
+
+  const { body } = response;
+  return body.data.collection.hasProduct;
+};
+*/
+
+/**
+ * Sync products using Storefront API
+ */
+/*
+export const syncProductsGraphQlStorefront = async (
+  [
+    search,
+    product_types,
+    created_at,
+    updated_at,
+    syncMetafields,
+    // published_at,
+    status,
+    published_status,
+    vendors,
+    gift_card,
+    ids,
+  ],
+  context
+) => {
+  const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
+  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+  const effectiveMetafieldKeys = effectivePropertyKeys
+    .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY) || key.startsWith(METAFIELD_GID_PREFIX_KEY))
+    .map(getMetaFieldRealFromKey);
+  const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+
+  let metafieldDefinitions: MetafieldDefinition[] = [];
+  if (shouldSyncMetafields) {
+    metafieldDefinitions =
+      prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+      (await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context));
+  }
+
+  const payload = {
+    query: makeQueryProductsStorefront,
+    variables: {
+      cursor: prevContinuation?.cursor ?? null,
+      includeMetafields: shouldSyncMetafields,
+      metafieldsIdentifiers: effectiveMetafieldKeys.map((key) => {
+        const { metaKey, metaNamespace } = splitMetaFieldFullKey(key);
+        return {
+          key: metaKey,
+          namespace: metaNamespace,
+        };
+      }),
+    },
+  };
+
+  const { response, continuation } = await makeSyncTableGraphQlRequest(
+    {
+      payload,
+      maxEntriesPerRun: 200,
+      prevContinuation,
+      extraContinuationData: { metafieldDefinitions },
+      getPageInfo: (data: any) => data.products?.pageInfo,
+      storeFront: true,
+    },
+    context
+  );
+  if (response && response.body.data?.products) {
+    const data = response.body.data as GetProductsWithMetafieldsQuery;
+    return {
+      result: data.products.nodes.map((product) =>
+        // TODO: need to normalize metafields result before calling formatting function
+        formatProductForSchemaFromGraphQlApi(product, context, metafieldDefinitions)
+      ),
+      continuation,
+    };
+  } else {
+    return {
+      result: [],
+      continuation,
+    };
+  }
+};
+*/
+// #endregion

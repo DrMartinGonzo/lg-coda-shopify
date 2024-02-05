@@ -10,6 +10,7 @@ import {
   METAFIELD_PREFIX_KEY,
   NOT_FOUND,
   RESOURCE_COLLECTION,
+  RESOURCE_PAGE,
   RESOURCE_PRODUCT,
   RESOURCE_PRODUCT_VARIANT,
   REST_DEFAULT_API_VERSION,
@@ -216,11 +217,6 @@ export function formatMetaFieldValueForSchema(
       return value.amount;
 
     // REFERENCE
-    case FIELD_TYPES.page_reference:
-      return {
-        admin_graphql_api_id: value,
-        title: NOT_FOUND,
-      };
     case FIELD_TYPES.file_reference:
       return {
         id: value,
@@ -231,6 +227,7 @@ export function formatMetaFieldValueForSchema(
         graphql_gid: value,
         name: NOT_FOUND,
       };
+    case FIELD_TYPES.page_reference:
     case FIELD_TYPES.collection_reference:
     case FIELD_TYPES.product_reference:
     case FIELD_TYPES.variant_reference:
@@ -354,7 +351,9 @@ export function formatMetafieldValueForApi(
 
     // REFERENCE
     case FIELD_TYPES.page_reference:
-      return isArrayApi ? JSON.stringify(value.map((v) => v?.admin_graphql_api_id)) : value?.admin_graphql_api_id;
+      return isArrayApi
+        ? JSON.stringify(value.map((v) => idToGraphQlGid(RESOURCE_PAGE, v?.id)))
+        : idToGraphQlGid(RESOURCE_PAGE, value?.id);
 
     case FIELD_TYPES.file_reference:
       return isArrayApi ? JSON.stringify(value.map((v) => v?.id)) : value?.id;
@@ -889,6 +888,8 @@ export async function handleResourceMetafieldsUpdateRest(
         if (job.value.body?.metafield) {
           metafieldsResults.push(job.value.body.metafield);
         }
+      } else if (job.status === 'rejected') {
+        throw new coda.UserVisibleError(job.reason);
       }
     });
     if (metafieldsResults.length) {
