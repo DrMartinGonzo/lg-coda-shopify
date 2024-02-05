@@ -311,6 +311,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
     name: 'Blog',
     description: 'Return a single Blog from this shop.',
     parameters: [parameters.blogId],
+    // TODO: check cacheTtlSecs for all single fetch formulas
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: BlogSchema,

@@ -1,114 +1,107 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_PAGE } from '../constants';
+import { FieldDependency } from '../types/tableSync';
 
 /**====================================================================================================================
  *    Exported schemas
  *===================================================================================================================== */
 export const PageSchema = coda.makeObjectSchema({
   properties: {
-    /**
-     * ! Deprecated
-     */
-
-    /**
-     * Disabled
-     */
-
     admin_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.Url,
-      description: 'A link to the page in the Shopify admin.',
       fixedId: 'admin_url',
+      description: 'A link to the page in the Shopify admin.',
     },
-    // TODO: use this as idProperty
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the page.',
-      required: true,
       fixedId: 'graphql_gid',
+      description: 'The GraphQL GID of the page.',
     },
-    /* NOT NEEDED
     page_id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
+      fixedId: 'page_id',
       required: true,
-      description: 'The unique numeric identifier for the page.',
       useThousandsSeparator: false,
+      description: 'The unique numeric identifier for the page.',
     },
-    */
     body: {
       type: coda.ValueType.String,
-      description: 'Text-only content of the page, stripped of any HTML tags and formatting that were included.',
       fixedId: 'body',
+      description: 'Text-only content of the page, stripped of any HTML tags and formatting that were included.',
     },
     body_html: {
       type: coda.ValueType.String,
-      description: 'The text content of the page, in raw HTML.',
       mutable: true,
       fixedId: 'body_html',
+      fromKey: 'body_html',
+      description: 'The text content of the page, in raw HTML.',
     },
     handle: {
       type: coda.ValueType.String,
-      description: 'A unique, human-friendly string for the page.',
       mutable: true,
       fixedId: 'handle',
+      fromKey: 'handle',
+      description: 'A unique, human-friendly string for the page.',
     },
     author: {
       type: coda.ValueType.String,
-      description: 'The name of the person who created the page.',
       mutable: true,
       fixedId: 'author',
+      fromKey: 'author',
+      description: 'The name of the person who created the page.',
     },
     title: {
       type: coda.ValueType.String,
-      description: 'The title of the page.',
       required: true,
       mutable: true,
       fixedId: 'title',
+      fromKey: 'title',
+      description: 'The title of the page.',
     },
-    /* NOT NEEDED
-    shop_id: {
-      type: coda.ValueType.Number,
-      description: 'The ID of the shop to which the page belongs.',
-    },
-    */
     template_suffix: {
       type: coda.ValueType.String,
-      description:
-        'The suffix of the template that is used to render the page. If the value is an empty string or null, then the default page template is used.',
       mutable: true,
       fixedId: 'template_suffix',
+      fromKey: 'template_suffix',
+      description:
+        'The suffix of the template that is used to render the page. If the value is an empty string or null, then the default page template is used.',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the page was created.',
       fixedId: 'created_at',
+      fromKey: 'created_at',
+      description: 'The date and time when the page was created.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the page was last updated.',
       fixedId: 'updated_at',
+      fromKey: 'updated_at',
+      description: 'The date and time when the page was last updated.',
     },
     published: {
       type: coda.ValueType.Boolean,
       codaType: coda.ValueHintType.Toggle,
-      description: 'Whether the page is visible.',
       mutable: true,
       fixedId: 'published',
+      fromKey: 'published',
+      description: 'Whether the page is visible.',
     },
     published_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time when the page was published. Blank when the page is hidden.',
       mutable: true,
       fixedId: 'published_at',
+      fromKey: 'published_at',
+      description: 'The date and time when the page was published. Blank when the page is hidden.',
     },
   },
   displayProperty: 'title',
-  idProperty: 'graphql_gid',
+  idProperty: 'page_id',
   // admin_url will be the last featured property, added in Pages dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'author', 'handle', 'template_suffix'],
 
@@ -117,10 +110,8 @@ export const PageSchema = coda.makeObjectSchema({
   snippetProperty: 'body',
   linkProperty: 'admin_url',
 });
-
 export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSchema, IDENTITY_PAGE);
-
-export const pageFieldDependencies = [
+export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties>[] = [
   {
     field: 'body_html',
     dependencies: ['body'],

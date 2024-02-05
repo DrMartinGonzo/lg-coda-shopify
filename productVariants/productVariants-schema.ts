@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ProductReference } from '../products/products-schema';
 import { IDENTITY_PRODUCT_VARIANT } from '../constants';
 import { getUnitMap } from '../helpers';
+import { FieldDependency } from '../types/tableSync';
 
 const MoneySchema = coda.makeObjectSchema({
   properties: {
@@ -228,7 +229,7 @@ export const ProductVariantSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const productVariantFieldDependencies = [
+export const productVariantFieldDependencies: FieldDependency<typeof ProductVariantSchema.properties>[] = [
   {
     field: 'images',
     dependencies: ['image'],

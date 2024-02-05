@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ProductReference } from '../products/products-schema';
-import { DEFAULT_THUMBNAIL_SIZE, IDENTITY_COLLECTION } from '../constants';
+import { IDENTITY_COLLECTION } from '../constants';
+import { FieldDependency } from '../types/tableSync';
 
 /*
 export const CollectionImageSchema = coda.makeObjectSchema({
@@ -237,7 +238,7 @@ export const CollectionSchema = coda.makeObjectSchema({
   imageProperty: 'image_url',
   linkProperty: 'admin_url',
 });
-export const collectionFieldDependencies = [
+export const collectionFieldDependencies: FieldDependency<typeof CollectionSchema.properties>[] = [
   {
     field: 'image',
     dependencies: ['image_url', 'image_alt_text'],
@@ -310,7 +311,7 @@ export const CollectSchema = coda.makeObjectSchema({
   idProperty: 'collect_id',
   featuredProperties: ['collect_id', 'collection', 'product', 'created_at', 'updated_at'],
 });
-export const collectFieldDependencies = [
+export const collectFieldDependencies: FieldDependency<typeof CollectSchema.properties>[] = [
   {
     field: 'product_id',
     dependencies: ['product'],

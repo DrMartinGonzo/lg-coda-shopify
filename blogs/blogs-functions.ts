@@ -8,9 +8,8 @@ import { FormatFunction } from '../types/misc';
 import { BlogSchema } from './blogs-schema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
-  deleteMetafieldsByKeysRest,
-  formatMetafieldsRestInputFromResourceUpdate,
   getResourceMetafieldsRestUrl,
+  handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
@@ -45,6 +44,12 @@ export function formatBlogStandardFieldsRestParams(
   return restParams;
 }
 
+/**
+ * On peut créer des metafields directement en un call mais apparemment ça ne
+ * fonctionne que pour les créations, pas les updates, du coup on applique la
+ * même stratégie que pour handleArticleUpdateJob, CAD il va falloir faire un
+ * appel séparé pour chaque metafield
+ */
 export async function handleBlogUpdateJob(
   update: coda.SyncUpdate<string, string, typeof BlogSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
@@ -52,38 +57,23 @@ export async function handleBlogUpdateJob(
 ) {
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-  const prefixedMetafieldsToDelete = prefixedMetafieldFromKeys.filter((fromKey) => {
-    const value = update.newValue[fromKey] as any;
-    return !value || value === '';
-  });
-  const prefixedMetafieldsToUpdate = prefixedMetafieldFromKeys.filter(
-    (fromKey) => prefixedMetafieldsToDelete.includes(fromKey) === false
-  );
 
   const subJobs: Promise<any>[] = [];
   const blogId = update.previousValue.id as number;
 
-  if (standardFromKeys.length || prefixedMetafieldsToUpdate.length) {
+  if (standardFromKeys.length) {
     const restParams: BlogUpdateRestParams = formatBlogStandardFieldsRestParams(standardFromKeys, update.newValue);
-
-    if (prefixedMetafieldsToUpdate.length) {
-      restParams.metafields = formatMetafieldsRestInputFromResourceUpdate(
-        update,
-        prefixedMetafieldsToUpdate,
-        metafieldDefinitions
-      );
-    }
-
     subJobs.push(updateBlogRest(blogId, restParams, context));
   } else {
     subJobs.push(undefined);
   }
 
-  if (prefixedMetafieldsToDelete.length) {
+  if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      deleteMetafieldsByKeysRest(
+      handleResourceMetafieldsUpdateRest(
         getResourceMetafieldsRestUrl('blogs', blogId, context),
-        prefixedMetafieldsToDelete,
+        metafieldDefinitions,
+        update,
         context
       )
     );
@@ -93,24 +83,27 @@ export async function handleBlogUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob, deletedMetafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob && updateJob.status === 'fulfilled' && updateJob.value) {
-    if (updateJob.value.body?.blog) {
-      obj = {
-        ...obj,
-        ...formatBlogForSchemaFromRestApi(updateJob.value.body.blog, context),
-      };
-      // Keep value from Coda for each successfully updated metafield, there should be no side effect when they are in Shopify
-      prefixedMetafieldsToUpdate.forEach((fromKey) => {
-        obj[fromKey] = update.newValue[fromKey];
-      });
+  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
+  if (updateJob) {
+    if (updateJob.status === 'fulfilled' && updateJob.value) {
+      if (updateJob.value.body?.blog) {
+        obj = {
+          ...obj,
+          ...formatBlogForSchemaFromRestApi(updateJob.value.body.blog, context),
+        };
+      }
+    } else if (updateJob.status === 'rejected') {
+      throw new coda.UserVisibleError(updateJob.reason);
     }
   }
-  if (deletedMetafieldsJob && deletedMetafieldsJob.status === 'fulfilled' && deletedMetafieldsJob.value) {
-    if (deletedMetafieldsJob.value && deletedMetafieldsJob.value.length) {
-      deletedMetafieldsJob.value.forEach((m) => {
-        obj[m.prefixedFullKey] = undefined;
-      });
+  if (metafieldsJob) {
+    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
+      obj = {
+        ...obj,
+        ...metafieldsJob.value,
+      };
+    } else if (metafieldsJob.status === 'rejected') {
+      throw new coda.UserVisibleError(metafieldsJob.reason);
     }
   }
 

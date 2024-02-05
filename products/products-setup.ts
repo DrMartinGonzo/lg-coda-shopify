@@ -574,4 +574,239 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
     },
   });
   // #endregion
+
+  // #region Unused stuff
+  /*
+  // Products Sync Table via GraphQL Admin API
+  pack.addSyncTable({
+    name: 'ProductsGraphQL',
+    description:
+      'Return Products from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync.',
+    identityName: IDENTITY_PRODUCT + '_GRAPHQL',
+    schema: ProductSchemaGraphQl,
+    dynamicOptions: {
+      getSchema: async function (context, _, { syncMetafields }) {
+        let augmentedSchema: any = ProductSchemaGraphQl;
+        if (syncMetafields) {
+          augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaGraphQl, MetafieldOwnerType.Product, context);
+        }
+        // admin_url should always be the last featured property, regardless of any metafield keys added previously
+        augmentedSchema.featuredProperties.push('admin_url');
+        return augmentedSchema;
+      },
+      defaultAddDynamicColumns: false,
+      propertyOptions: async function (context) {
+        if (context.propertyName === 'product_type') {
+          return getProductTypes(context);
+        }
+      },
+    },
+    formula: {
+      name: 'SyncProductsGraphQL',
+      description: '<Help text for the sync formula, not show to the user>',
+      parameters: [
+        coda.makeParameter({
+          type: coda.ParameterType.String,
+          name: 'search',
+          description: 'Filter by case-insensitive search of all the fields in a product.',
+          optional: true,
+        }),
+        {
+          ...sharedParameters.productTypes,
+          description: 'Filter results by product types.',
+          optional: true,
+        },
+        { ...sharedParameters.filterCreatedAtRange, optional: true },
+        { ...sharedParameters.filterUpdatedAtRange, optional: true },
+        sharedParameters.optionalSyncMetafields,
+        // { ...sharedParameters.filterPublishedAtRange, optional: true },
+        {
+          ...parameters.status,
+          description: 'Return only products matching these statuses.',
+          optional: true,
+        },
+        {
+          ...sharedParameters.productPublishedStatus,
+          description: 'Return products by their published status.',
+          optional: true,
+        },
+        {
+          ...sharedParameters.productVendors,
+          description: 'Return products by product vendors.',
+          optional: true,
+        },
+        {
+          ...parameters.giftCard,
+          description: 'Return only products marked as gift cards.',
+          optional: true,
+        },
+        {
+          ...sharedParameters.productIds,
+          description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
+          optional: true,
+        },
+      ],
+      execute: async function (
+        [
+          search,
+          product_types,
+          created_at,
+          updated_at,
+          syncMetafields,
+          status,
+          published_status,
+          vendors,
+          gift_card,
+          ids,
+        ],
+        context: coda.SyncExecutionContext
+      ) {
+        validateProductParams({ status, published_status });
+
+        const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
+        // TODO: get an approximation for first run by using count of relation columns ?
+        const defaultMaxEntriesPerRun = 50;
+        const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+          defaultMaxEntriesPerRun,
+          prevContinuation,
+          context
+        );
+        if (shouldDeferBy > 0) {
+          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+        }
+
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+        const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys } =
+          separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+
+        // Include optional nested fields. We only request these when necessary as they increase the query cost
+        const optionalNestedFields = [];
+        if (effectivePropertyKeys.includes('featuredImage')) optionalNestedFields.push('featuredImage');
+        if (effectivePropertyKeys.includes('options')) optionalNestedFields.push('options');
+        // Metafield optional nested fields
+        let metafieldDefinitions: MetafieldDefinition[] = [];
+        if (shouldSyncMetafields) {
+          metafieldDefinitions =
+            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+            (await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context));
+          optionalNestedFields.push('metafields');
+        }
+
+        const queryFilters = {
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          gift_card,
+          ids: ids.map((gid) => graphQlGidToId(gid)),
+          status,
+          vendors,
+          search,
+          product_types,
+          published_status,
+        };
+        // Remove any undefined filters
+        Object.keys(queryFilters).forEach((key) => {
+          if (queryFilters[key] === undefined) delete queryFilters[key];
+        });
+
+        const payload = {
+          query: QueryProductsAdmin,
+          variables: {
+            maxEntriesPerRun,
+            cursor: prevContinuation?.cursor ?? null,
+            metafieldKeys: effectiveMetafieldKeys,
+            countMetafields: effectiveMetafieldKeys.length,
+            maxOptions: MAX_OPTIONS_PER_PRODUCT,
+            searchQuery: buildProductsSearchQuery(queryFilters),
+            includeOptions: optionalNestedFields.includes('options'),
+            includeFeaturedImage: optionalNestedFields.includes('featuredImage'),
+            includeMetafields: optionalNestedFields.includes('metafields'),
+          } as GetProductsWithMetafieldsQueryVariables,
+        };
+
+        const { response, continuation } = await makeSyncTableGraphQlRequest(
+          {
+            payload,
+            maxEntriesPerRun,
+            prevContinuation,
+            extraContinuationData: { metafieldDefinitions },
+            getPageInfo: (data: any) => data.products?.pageInfo,
+          },
+          context
+        );
+
+        if (response && response.body.data?.products) {
+          const data = response.body.data as GetProductsWithMetafieldsQuery;
+          return {
+            result: data.products.nodes.map((product) =>
+              formatProductForSchemaFromGraphQlApi(product, context, metafieldDefinitions)
+            ),
+            continuation,
+          };
+        } else {
+          return {
+            result: [],
+            continuation,
+          };
+        }
+      },
+      maxUpdateBatchSize: 10,
+      executeUpdate: async function (args, updates, context) {
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
+        const { prefixedMetafieldFromKeys: schemaPrefixedMetafieldFromKeys } =
+          separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
+        const effectiveMetafieldKeys = schemaPrefixedMetafieldFromKeys.map(getMetaFieldRealFromKey);
+        const hasMetafieldsInSchema = !!effectiveMetafieldKeys.length;
+        // TODO: fetch metafield definitions only if a metafield update is detected, and not only if metafields are present in the schema
+        const metafieldDefinitions = hasMetafieldsInSchema ? await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context) : [];
+
+        const jobs = updates.map(async (update) => {
+          const productGid = update.previousValue.admin_graphql_api_id as string;
+          return updateProductGraphQl(
+            productGid,
+            effectivePropertyKeys,
+            effectiveMetafieldKeys,
+            metafieldDefinitions,
+            update,
+            context
+          );
+        });
+
+        const completed = await Promise.allSettled(jobs);
+        return {
+          result: completed.map((job) => {
+            if (job.status === 'fulfilled') return job.value;
+            else return job.reason;
+          }),
+        };
+      },
+    },
+  });
+  */
+
+  /*
+  pack.addFormula({
+    name: 'InCollection',
+    description: 'Check if specified product is in specified collection.',
+    parameters: [
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'productGid',
+        description: 'The gid of the product.',
+      }),
+      coda.makeParameter({
+        type: coda.ParameterType.String,
+        name: 'collectionGid',
+        description: 'The gid of the collection.',
+      }),
+    ],
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.Boolean,
+    execute: checkProductInCollection,
+  });
+  */
+  // #endregion
 };
