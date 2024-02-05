@@ -3,6 +3,7 @@ import { DEFAULT_THUMBNAIL_SIZE, IS_ADMIN_RELEASE } from './constants';
 import { ShopifyGraphQlError } from './shopifyErrors';
 import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
 import { LengthUnit, WeightUnit } from './types/admin.types';
+import { FieldDependency } from './types/tableSync';
 
 /**
  * Taken from Coda sdk
@@ -165,18 +166,14 @@ export const getShopifyStorefrontRequestHeaders = (context) => {
  * this parent field, this function allows adding it according to a dependency
  * array defined next to the entity schema
  */
-export function handleFieldDependencies(
-  effectivePropertyKeys: string[],
-  fieldDependencies: {
-    field: string;
-    dependencies: string[];
-  }[]
-) {
+export function handleFieldDependencies(effectivePropertyKeys: string[], fieldDependencies: FieldDependency<any>[]) {
   fieldDependencies.forEach((def) => {
     if (
-      def.dependencies.some((key) => effectivePropertyKeys.includes(key) && !effectivePropertyKeys.includes(def.field))
+      def.dependencies.some(
+        (key) => effectivePropertyKeys.includes(key) && !effectivePropertyKeys.includes(def.field as string)
+      )
     ) {
-      effectivePropertyKeys.push(def.field);
+      effectivePropertyKeys.push(def.field as string);
     }
   });
 

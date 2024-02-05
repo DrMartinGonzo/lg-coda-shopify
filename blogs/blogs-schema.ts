@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_BLOG } from '../constants';
+import { FieldDependency } from '../types/tableSync';
 
 export const COMMENTABLE_OPTIONS = [
   { display: 'No', value: 'no' },
@@ -104,7 +105,7 @@ export const BlogSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSchema, IDENTITY_BLOG);
-export const blogFieldDependencies = [
+export const blogFieldDependencies: FieldDependency<typeof BlogSchema.properties>[] = [
   {
     field: 'id',
     dependencies: ['graphql_gid', 'admin_url'],

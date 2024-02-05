@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_PRODUCT, OPTIONS_PRODUCT_STATUS_GRAPHQL, OPTIONS_PRODUCT_STATUS_REST } from '../constants';
+import { FieldDependency } from '../types/tableSync';
 
 // Product image object
 const ProductImageSchema = coda.makeObjectSchema({
@@ -221,7 +222,7 @@ export const ProductSchemaRest = coda.makeObjectSchema({
   imageProperty: 'featuredImage',
   linkProperty: 'admin_url',
 });
-export const productFieldDependencies = [
+export const productFieldDependencies: FieldDependency<typeof ProductSchemaRest.properties>[] = [
   {
     field: 'body_html',
     dependencies: ['body'],
