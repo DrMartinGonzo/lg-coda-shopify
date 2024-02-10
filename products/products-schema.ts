@@ -181,9 +181,12 @@ export const ProductSchemaRest = coda.makeObjectSchema({
     },
     template_suffix: {
       type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'template_suffix',
       fromKey: 'template_suffix',
       mutable: true,
+      requireForUpdates: false,
+      options: coda.OptionsType.Dynamic,
       description:
         'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
     },

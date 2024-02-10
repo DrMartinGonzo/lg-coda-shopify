@@ -2,6 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
+import { autocompleteLocations } from './locations/locations-functions';
 
 export const sharedParameters = {
   maxEntriesPerRun: coda.makeParameter({
@@ -79,6 +80,22 @@ export const sharedParameters = {
     name: 'value',
     description: 'The property value.',
   }),
+  inventoryItemID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'inventoryItemID',
+    description: 'The ID of the Inventory Item.',
+  }),
+  locationID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'locationID',
+    description: 'The ID of the location.',
+  }),
+  location: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'location',
+    description: 'The location.',
+    autocomplete: autocompleteLocations,
+  }),
 
   /**====================================================================================================================
    *    Filters
@@ -118,6 +135,14 @@ export const sharedParameters = {
     name: 'ids',
     description: 'Filter results by comma-separated list of IDs.',
   }),
+  filterLocations: coda.makeParameter({
+    // BUG: Should be NumberArray but it doesn't seem to work…
+    // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
+    type: coda.ParameterType.StringArray,
+    name: 'locations',
+    description: 'Filter results by locations.',
+    autocomplete: autocompleteLocations,
+  }),
   filterProductId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'productId',
@@ -137,6 +162,11 @@ export const sharedParameters = {
     type: coda.ParameterType.DateArray,
     name: 'publishedAt',
     description: 'Filter results published in the given date range.',
+  }),
+  filterProcessedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'processedAt',
+    description: 'Filter results processed in the given date range.',
   }),
   filterPublishedStatus: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -168,5 +198,10 @@ export const sharedParameters = {
     type: coda.ParameterType.DateArray,
     name: 'updatedAt',
     description: 'Filter results updated in the given date range.',
+  }),
+  filterSkus: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'skus',
+    description: 'Filter results by skus.',
   }),
 };

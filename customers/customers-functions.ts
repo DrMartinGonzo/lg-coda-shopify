@@ -17,6 +17,7 @@ import {
 } from '../metafields/metafields-functions';
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import { formatAddressDisplayName } from '../addresses/addresses-functions';
 
 // #region Helpers
 /*
@@ -143,19 +144,6 @@ export async function handleCustomerUpdateJob(
 // #endregion
 
 // #region Formatting
-function formatCustomerAddressDisplayName(address, withName = true, withCompany = true) {
-  const parts = [
-    withName ? [address?.first_name, address?.last_name].filter((p) => p && p !== '').join(' ') : undefined,
-    withCompany ? address?.company : undefined,
-    address?.address1,
-    address?.address2,
-    address?.city,
-    address?.country,
-  ];
-
-  return parts.filter((part) => part && part !== '').join(', ');
-}
-
 export const formatCustomerForSchemaFromRestApi: FormatFunction = (customer, context) => {
   let obj: any = {
     ...customer,
@@ -174,13 +162,13 @@ export const formatCustomerForSchemaFromRestApi: FormatFunction = (customer, con
   }
   if (customer.default_address) {
     obj.default_address = {
-      display: formatCustomerAddressDisplayName(customer.default_address),
+      display: formatAddressDisplayName(customer.default_address),
       ...customer.default_address,
     };
   }
   if (customer.addresses) {
     obj.addresses = customer.addresses.map((address) => ({
-      display: formatCustomerAddressDisplayName(address),
+      display: formatAddressDisplayName(address),
       ...address,
     }));
   }

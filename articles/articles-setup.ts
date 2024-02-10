@@ -47,6 +47,7 @@ import {
 import { MetafieldRestInput } from '../types/Metafields';
 import { autocompleteBlogIdParameter } from '../blogs/blogs-functions';
 import { MetafieldOwnerType } from '../types/Metafields';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getArticleSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = ArticleSchema;
@@ -102,8 +103,9 @@ const parameters = {
     name: 'blogId',
     description: 'The Id of the blog containing the article.',
   }),
-  restrict_to_blogs: coda.makeParameter({
-    //! Should be NumberArray but it doesn't seem to work…
+  filterBlogs: coda.makeParameter({
+    // BUG: Should be NumberArray but it doesn't seem to work…
+    // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
     type: coda.ParameterType.StringArray,
     name: 'blogs',
     description: 'Only fetch articles from the specified blog IDs.',
@@ -230,13 +232,18 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
     dynamicOptions: {
       getSchema: getArticleSchema,
       defaultAddDynamicColumns: false,
+      propertyOptions: async function (context) {
+        if (context.propertyName === 'template_suffix') {
+          return getTemplateSuffixesFor('article', context);
+        }
+      },
     },
     formula: {
       name: 'SyncArticles',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
         sharedParameters.optionalSyncMetafields,
-        { ...parameters.restrict_to_blogs, optional: true },
+        { ...parameters.filterBlogs, optional: true },
         { ...parameters.author, optional: true },
         { ...sharedParameters.filterCreatedAtRange, optional: true },
         { ...sharedParameters.filterUpdatedAtRange, optional: true },

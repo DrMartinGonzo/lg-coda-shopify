@@ -206,9 +206,12 @@ export const CollectionSchema = coda.makeObjectSchema({
     },
     template_suffix: {
       type: coda.ValueType.String,
-      mutable: true,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'template_suffix',
       fromKey: 'template_suffix',
+      mutable: true,
+      requireForUpdates: false,
+      options: coda.OptionsType.Dynamic,
       description: 'The suffix of the Liquid template being used to show the collection in an online store.',
     },
     title: {

@@ -80,6 +80,34 @@ export const queryAllFiles = /* GraphQL */ `
 // #endregion
 
 // #region Mutations
+export const UpdateFile = /* GraphQL */ `
+  ${FileFieldsFragment}
+
+  mutation fileUpdate(
+    $files: [FileUpdateInput!]!
+    $includeAlt: Boolean!
+    $includeCreatedAt: Boolean!
+    $includeDuration: Boolean!
+    $includeFileSize: Boolean!
+    $includeHeight: Boolean!
+    $includeMimeType: Boolean!
+    $includeThumbnail: Boolean!
+    $includeUpdatedAt: Boolean!
+    $includeUrl: Boolean!
+    $includeWidth: Boolean!
+  ) {
+    fileUpdate(files: $files) {
+      files {
+        ...FileFields
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export const deleteFiles = /* GraphQL */ `
   mutation fileDelete($fileIds: [ID!]!) {
     fileDelete(fileIds: $fileIds) {

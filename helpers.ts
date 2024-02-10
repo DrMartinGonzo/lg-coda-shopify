@@ -230,3 +230,32 @@ export function compareByDisplayKey(a: any, b: any) {
 export function compareByValueKey(a: any, b: any) {
   return a.value.localeCompare(b.value);
 }
+
+/**
+ * Sometimes, we will provide an input like `${name} (${id})`, formatted using formatOptionNameId()
+ * This function parses the parameter value, extracting the ID from the
+ * parenthesis, but also allows for cases where just the ID was passed in (via a
+ * formula, etc).
+ */
+export function parseOptionId(label: string): number {
+  if (!label) return undefined;
+  if (!Number.isNaN(parseInt(label))) {
+    return Number(label);
+  }
+  let match = label.match(/\((\d+)\)$/);
+  if (!match) {
+    throw new coda.UserVisibleError(`Invalid option: ${label}`);
+  }
+  return Number(match[1]);
+}
+
+export function formatOptionNameId(name: string, id: number): string {
+  return `${trimStringWithEllipsis(name, 25)} (${id})`;
+}
+
+function trimStringWithEllipsis(inputString, maxLength) {
+  if (inputString.length > maxLength) {
+    return inputString.substring(0, maxLength - 1) + '…';
+  }
+  return inputString;
+}

@@ -135,9 +135,12 @@ export const ArticleSchema = coda.makeObjectSchema({
     },
     template_suffix: {
       type: coda.ValueType.String,
-      mutable: true,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'template_suffix',
       fromKey: 'template_suffix',
+      mutable: true,
+      requireForUpdates: false,
+      options: coda.OptionsType.Dynamic,
       description:
         "The name of the template an article is using if it's using an alternate template. If an article is using the default article.liquid template, then the value returned is null.",
     },
