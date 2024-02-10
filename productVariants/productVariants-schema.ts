@@ -130,6 +130,7 @@ export const ProductVariantSchema = coda.makeObjectSchema({
       mutable: true,
       description: 'Option 3 of 3 for a product variant.',
     },
+    /*
     presentment_prices: {
       ...MoneySchema,
       fixedId: 'presentment_prices',
@@ -137,13 +138,14 @@ export const ProductVariantSchema = coda.makeObjectSchema({
       description:
         "A list of the variant's presentment prices and compare-at prices in each of the shop's enabled presentment currencies.",
     },
+    */
     price: {
       type: coda.ValueType.Number,
       codaType: coda.ValueHintType.Currency,
       fixedId: 'price',
       fromKey: 'price',
       mutable: true,
-      description: 'The price of the product variant.',
+      description: 'The price of the product variant in the default shop currency.',
     },
     position: {
       type: coda.ValueType.Number,

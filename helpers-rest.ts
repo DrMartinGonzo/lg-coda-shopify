@@ -2,7 +2,8 @@ import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { SyncTableRestContinuation } from './types/tableSync';
 
-export const cleanQueryParams = (params) => {
+
+export const cleanQueryParams = <T>(params: T) => {
   Object.keys(params).forEach((key) => {
     if (params[key] === undefined) {
       delete params[key];

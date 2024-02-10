@@ -34,7 +34,7 @@ import {
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { MetafieldDefinition } from '../types/admin.types';
 import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies } from '../helpers';
+import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import {
@@ -44,6 +44,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { PageCreateRestParams } from '../types/Page';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = PageSchema;
@@ -52,6 +53,7 @@ async function getPageSchema(context: coda.ExecutionContext, _: string, formulaC
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
+
   return augmentedSchema;
 }
 
@@ -125,9 +127,6 @@ const parameters = {
 };
 
 export const setupPages = (pack: coda.PackDefinitionBuilder) => {
-  /**====================================================================================================================
-   *    Sync tables
-   *===================================================================================================================== */
   // #region Sync Tables
   pack.addSyncTable({
     name: 'Pages',
@@ -137,6 +136,11 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
     dynamicOptions: {
       getSchema: getPageSchema,
       defaultAddDynamicColumns: false,
+      propertyOptions: async function (context) {
+        if (context.propertyName === 'template_suffix') {
+          return getTemplateSuffixesFor('page', context);
+        }
+      },
     },
     formula: {
       name: 'SyncPages',
@@ -159,22 +163,27 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title],
         context
       ) {
+        // If executing from CLI, schema is undefined, we have to retrieve it first
+        const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getPageSchema, context, { syncMetafields }));
         const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-        const effectiveMetafieldKeys = effectivePropertyKeys
-          .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY) || key.startsWith(METAFIELD_GID_PREFIX_KEY))
-          .map(getMetaFieldRealFromKey);
+        const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
+        const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
+          separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
+
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
+
         let metafieldDefinitions: MetafieldDefinition[] = [];
+
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
             (await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context));
         }
-        const syncedFields = handleFieldDependencies(effectivePropertyKeys, pageFieldDependencies);
 
+        const syncedStandardFields = handleFieldDependencies(standardFromKeys, pageFieldDependencies);
         const params = cleanQueryParams({
-          fields: syncedFields.join(', '),
+          fields: syncedStandardFields.join(', '),
           created_at_min: created_at ? created_at[0] : undefined,
           created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
@@ -209,23 +218,30 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           restResult = await Promise.all(
             restResult.map(async (resource) => {
+              let obj = { ...resource };
+
               const response = await fetchResourceMetafields(
                 getResourceMetafieldsRestUrl('pages', resource.id, context),
                 {},
                 context
               );
+              const metafields: MetafieldRest[] = response.body.metafields;
 
-              // Only keep metafields that have a definition are in the schema
-              const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
-                effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`)
+              // Process metafields that have a definition and in the schema
+              const definitionsFullKeys = metafieldDefinitions.map((def) => `${def.namespace}.${def.key}`);
+              const metafieldsWithDefinition = metafields.filter(
+                (meta: MetafieldRest) =>
+                  effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`) &&
+                  definitionsFullKeys.includes(`${meta.namespace}.${meta.key}`)
               );
-              if (metafields.length) {
-                return {
-                  ...resource,
-                  ...formatMetafieldsForSchema(metafields, metafieldDefinitions),
+              if (metafieldsWithDefinition.length) {
+                obj = {
+                  ...obj,
+                  ...formatMetafieldsForSchema(metafieldsWithDefinition, metafieldDefinitions),
                 };
               }
-              return resource;
+
+              return obj;
             })
           );
         }

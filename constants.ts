@@ -83,12 +83,16 @@ export const IDENTITY_ARTICLE = 'Article';
 export const IDENTITY_BLOG = 'Blog';
 export const IDENTITY_COLLECTION = 'Collection';
 export const IDENTITY_CUSTOMER = 'Customer';
+export const IDENTITY_LOCATION = 'Location';
 export const IDENTITY_FILE = 'File';
 export const IDENTITY_IMAGE = 'Image';
 export const IDENTITY_METAOBJECT = 'Metaobject';
 export const IDENTITY_PAGE = 'Page';
+export const IDENTITY_INVENTORYITEM = 'InventoryItem';
+export const IDENTITY_INVENTORYLEVEL = 'InventoryLevel';
 export const IDENTITY_PRODUCT = 'Product';
 export const IDENTITY_PRODUCT_VARIANT = 'ProductVariant';
+export const IDENTITY_REDIRECT = 'Redirect';
 
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
@@ -97,11 +101,13 @@ export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
 export const RESOURCE_BLOG = 'OnlineStoreBlog';
 export const RESOURCE_COLLECTION = 'Collection';
 export const RESOURCE_CUSTOMER = 'Customer';
+export const RESOURCE_LOCATION = 'Location';
 export const RESOURCE_ORDER = 'Order';
 export const RESOURCE_PAGE = 'OnlineStorePage';
 export const RESOURCE_PRODUCT = 'Product';
 export const RESOURCE_PRODUCT_VARIANT = 'ProductVariant';
 export const RESOURCE_SHOP = 'Shop';
+export const RESOURCE_INVENTORY_ITEM = 'InventoryItem';
 
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
@@ -167,3 +173,22 @@ export const FIELD_TYPES = {
 export const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
 export const METAFIELD_GID_PREFIX_KEY = `${PACK_PREFIX_KEY}meta_gid__`;
+export const CODA_SUPORTED_CURRENCIES = [
+  'BRL',
+  'CHF',
+  'EUR',
+  'GBP',
+  'IDR',
+  'ILS',
+  'INR',
+  'JPY',
+  'KRW',
+  'NOK',
+  'PLN',
+  'RUB',
+  'TRY',
+  'UAH',
+  'USD',
+  'VND',
+  'XBT',
+];

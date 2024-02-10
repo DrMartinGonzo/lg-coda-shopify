@@ -13,6 +13,12 @@ export const PageSchema = coda.makeObjectSchema({
       fixedId: 'admin_url',
       description: 'A link to the page in the Shopify admin.',
     },
+    shop_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fixedId: 'shop_url',
+      description: 'A link to the page in the oniine shop.',
+    },
     graphql_gid: {
       type: coda.ValueType.String,
       fromKey: 'admin_graphql_api_id',
@@ -63,9 +69,12 @@ export const PageSchema = coda.makeObjectSchema({
     },
     template_suffix: {
       type: coda.ValueType.String,
-      mutable: true,
+      codaType: coda.ValueHintType.SelectList,
       fixedId: 'template_suffix',
       fromKey: 'template_suffix',
+      mutable: true,
+      requireForUpdates: false,
+      options: coda.OptionsType.Dynamic,
       description:
         'The suffix of the template that is used to render the page. If the value is an empty string or null, then the default page template is used.',
     },
@@ -122,6 +131,10 @@ export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties
   },
   {
     field: 'published_at',
-    dependencies: ['published'],
+    dependencies: ['published', 'store_url'],
+  },
+  {
+    field: 'handle',
+    dependencies: ['store_url'],
   },
 ];

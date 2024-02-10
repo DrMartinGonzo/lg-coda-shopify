@@ -42,6 +42,7 @@ import { mapMetaFieldToSchemaProperty } from '../metaobjects/metaobjects-schema'
 
 import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import {
+  MetafieldOwnerType,
   MetafieldRestInput,
   ParsedMetafieldWithAugmentedDefinition,
   ShopifyMeasurementField,
@@ -49,7 +50,7 @@ import {
   ShopifyRatingField,
 } from '../types/Metafields';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
-import type { Metafield, MoneyInput, CurrencyCode, MetafieldsSetInput, MetafieldOwnerType } from '../types/admin.types';
+import { Metafield, MoneyInput, CurrencyCode, MetafieldsSetInput } from '../types/admin.types';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import {
   MetafieldDefinitionFragment,
@@ -130,6 +131,8 @@ export function resourceEndpointFromResourceType(resourceType) {
       return 'customers';
     case 'draft_order':
       return 'draft_orders';
+    case 'location':
+      return 'locations';
     case 'order':
       return 'orders';
     case 'page':
@@ -537,8 +540,43 @@ export async function fetchMetafieldDefinitions(
     },
   };
 
+  /* Add 'Fake' metafield definitions for SEO metafields */
+  const extraDefinitions: MetafieldDefinitionFragment[] = [];
+  if (
+    [
+      MetafieldOwnerType.Page,
+      MetafieldOwnerType.Product,
+      MetafieldOwnerType.Collection,
+      MetafieldOwnerType.Blog,
+      MetafieldOwnerType.Article,
+    ].includes(ownerType)
+  ) {
+    extraDefinitions.push({
+      id: 'FAKE_META_FIELD_ID',
+      name: 'SEO Description',
+      namespace: 'global',
+      key: 'description_tag',
+      type: {
+        name: FIELD_TYPES.single_line_text_field,
+      },
+      description: 'The meta description.',
+      validations: [],
+    });
+    extraDefinitions.push({
+      id: 'FAKE_META_FIELD_ID',
+      name: 'SEO Title',
+      namespace: 'global',
+      key: 'title_tag',
+      type: {
+        name: FIELD_TYPES.single_line_text_field,
+      },
+      description: 'The meta title.',
+      validations: [],
+    });
+  }
+
   const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metafieldDefinitions.nodes;
+  return response.body.data.metafieldDefinitions.nodes.concat(extraDefinitions);
 }
 // #endregion
 

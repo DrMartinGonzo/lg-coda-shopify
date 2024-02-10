@@ -39,7 +39,7 @@ export type GetCollectionsQuery = { collections: { nodes: Array<(
     )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
 
 export type IsSmartCollectionQueryVariables = AdminTypes.Exact<{
-  gid: AdminTypes.Scalars['ID']['input'];
+  collectionGid: AdminTypes.Scalars['ID']['input'];
 }>;
 
 
@@ -173,6 +173,35 @@ export type GetFilesQuery = { files: { nodes: Array<(
       & { originalSource?: AdminTypes.Maybe<AdminTypes.MakeOptional<Pick<AdminTypes.VideoSource, 'fileSize' | 'height' | 'width' | 'mimeType' | 'url'>, 'fileSize' | 'height' | 'width' | 'mimeType' | 'url'>>, thumbnail?: AdminTypes.Maybe<{ image?: AdminTypes.Maybe<Pick<AdminTypes.Image, 'url'>> }> }
     )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
 
+export type FileUpdateMutationVariables = AdminTypes.Exact<{
+  files: Array<AdminTypes.FileUpdateInput> | AdminTypes.FileUpdateInput;
+  includeAlt: AdminTypes.Scalars['Boolean']['input'];
+  includeCreatedAt: AdminTypes.Scalars['Boolean']['input'];
+  includeDuration: AdminTypes.Scalars['Boolean']['input'];
+  includeFileSize: AdminTypes.Scalars['Boolean']['input'];
+  includeHeight: AdminTypes.Scalars['Boolean']['input'];
+  includeMimeType: AdminTypes.Scalars['Boolean']['input'];
+  includeThumbnail: AdminTypes.Scalars['Boolean']['input'];
+  includeUpdatedAt: AdminTypes.Scalars['Boolean']['input'];
+  includeUrl: AdminTypes.Scalars['Boolean']['input'];
+  includeWidth: AdminTypes.Scalars['Boolean']['input'];
+}>;
+
+
+export type FileUpdateMutation = { fileUpdate?: AdminTypes.Maybe<{ files?: AdminTypes.Maybe<Array<(
+      { __typename: 'GenericFile' }
+      & AdminTypes.MakeOptional<Pick<AdminTypes.GenericFile, 'mimeType' | 'originalFileSize' | 'url' | 'id' | 'updatedAt' | 'alt' | 'createdAt'>, 'mimeType' | 'originalFileSize' | 'updatedAt' | 'alt' | 'createdAt'>
+      & { thumbnail?: AdminTypes.Maybe<{ image?: AdminTypes.Maybe<Pick<AdminTypes.Image, 'url'>> }> }
+    ) | (
+      { __typename: 'MediaImage' }
+      & AdminTypes.MakeOptional<Pick<AdminTypes.MediaImage, 'mimeType' | 'id' | 'updatedAt' | 'alt' | 'createdAt'>, 'mimeType' | 'updatedAt' | 'alt' | 'createdAt'>
+      & { image?: AdminTypes.Maybe<AdminTypes.MakeOptional<Pick<AdminTypes.Image, 'url' | 'width' | 'height'>, 'width' | 'height'>>, originalSource?: AdminTypes.Maybe<Pick<AdminTypes.MediaImageOriginalSource, 'fileSize'>>, thumbnail?: AdminTypes.Maybe<{ image?: AdminTypes.Maybe<Pick<AdminTypes.Image, 'url'>> }> }
+    ) | (
+      { __typename: 'Video' }
+      & AdminTypes.MakeOptional<Pick<AdminTypes.Video, 'filename' | 'duration' | 'id' | 'updatedAt' | 'alt' | 'createdAt'>, 'duration' | 'updatedAt' | 'alt' | 'createdAt'>
+      & { originalSource?: AdminTypes.Maybe<AdminTypes.MakeOptional<Pick<AdminTypes.VideoSource, 'fileSize' | 'height' | 'width' | 'mimeType' | 'url'>, 'fileSize' | 'height' | 'width' | 'mimeType' | 'url'>>, thumbnail?: AdminTypes.Maybe<{ image?: AdminTypes.Maybe<Pick<AdminTypes.Image, 'url'>> }> }
+    )>>, userErrors: Array<Pick<AdminTypes.FilesUserError, 'field' | 'message'>> }> };
+
 export type FileDeleteMutationVariables = AdminTypes.Exact<{
   fileIds: Array<AdminTypes.Scalars['ID']['input']> | AdminTypes.Scalars['ID']['input'];
 }>;
@@ -187,6 +216,51 @@ export type CheckThrottleStatusQueryVariables = AdminTypes.Exact<{ [key: string]
 
 
 export type CheckThrottleStatusQuery = { shop: Pick<AdminTypes.Shop, 'id'> };
+
+export type InventoryItemFieldsFragment = (
+  Pick<AdminTypes.InventoryItem, 'harmonizedSystemCode' | 'createdAt' | 'id' | 'inventoryHistoryUrl' | 'provinceCodeOfOrigin' | 'requiresShipping' | 'sku' | 'tracked' | 'updatedAt' | 'countryCodeOfOrigin' | 'locationsCount'>
+  & { trackedEditable: Pick<AdminTypes.EditableProperty, 'locked' | 'reason'>, unitCost?: AdminTypes.Maybe<Pick<AdminTypes.MoneyV2, 'amount' | 'currencyCode'>>, variant: Pick<AdminTypes.ProductVariant, 'id'> }
+);
+
+export type GetInventoryItemsQueryVariables = AdminTypes.Exact<{
+  maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
+  cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+  searchQuery?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+}>;
+
+
+export type GetInventoryItemsQuery = { inventoryItems: { nodes: Array<(
+      Pick<AdminTypes.InventoryItem, 'harmonizedSystemCode' | 'createdAt' | 'id' | 'inventoryHistoryUrl' | 'provinceCodeOfOrigin' | 'requiresShipping' | 'sku' | 'tracked' | 'updatedAt' | 'countryCodeOfOrigin' | 'locationsCount'>
+      & { trackedEditable: Pick<AdminTypes.EditableProperty, 'locked' | 'reason'>, unitCost?: AdminTypes.Maybe<Pick<AdminTypes.MoneyV2, 'amount' | 'currencyCode'>>, variant: Pick<AdminTypes.ProductVariant, 'id'> }
+    )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
+
+export type InventoryItemUpdateMutationVariables = AdminTypes.Exact<{
+  id: AdminTypes.Scalars['ID']['input'];
+  input: AdminTypes.InventoryItemUpdateInput;
+}>;
+
+
+export type InventoryItemUpdateMutation = { inventoryItemUpdate?: AdminTypes.Maybe<{ inventoryItem?: AdminTypes.Maybe<(
+      Pick<AdminTypes.InventoryItem, 'harmonizedSystemCode' | 'createdAt' | 'id' | 'inventoryHistoryUrl' | 'provinceCodeOfOrigin' | 'requiresShipping' | 'sku' | 'tracked' | 'updatedAt' | 'countryCodeOfOrigin' | 'locationsCount'>
+      & { trackedEditable: Pick<AdminTypes.EditableProperty, 'locked' | 'reason'>, unitCost?: AdminTypes.Maybe<Pick<AdminTypes.MoneyV2, 'amount' | 'currencyCode'>>, variant: Pick<AdminTypes.ProductVariant, 'id'> }
+    )>, userErrors: Array<Pick<AdminTypes.UserError, 'field' | 'message'>> }> };
+
+export type GetLocationsMetafieldsQueryVariables = AdminTypes.Exact<{
+  maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
+  cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+  metafieldKeys?: AdminTypes.InputMaybe<Array<AdminTypes.Scalars['String']['input']> | AdminTypes.Scalars['String']['input']>;
+  countMetafields?: AdminTypes.InputMaybe<AdminTypes.Scalars['Int']['input']>;
+  searchQuery?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+}>;
+
+
+export type GetLocationsMetafieldsQuery = { locations: { nodes: Array<(
+      Pick<AdminTypes.Location, 'id'>
+      & { metafields: { nodes: Array<(
+          { __typename: 'Metafield' }
+          & Pick<AdminTypes.Metafield, 'id' | 'value' | 'type' | 'key' | 'namespace'>
+        )> } }
+    )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
 
 export type MetafieldFieldsFragment = (
   { __typename: 'Metafield' }
@@ -333,6 +407,23 @@ export type DeleteMetaobjectMutation = { metaobjectDelete?: AdminTypes.Maybe<(
     & { userErrors: Array<Pick<AdminTypes.MetaobjectUserError, 'field' | 'message' | 'code'>> }
   )> };
 
+export type GetOrdersMetafieldsQueryVariables = AdminTypes.Exact<{
+  maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
+  cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+  metafieldKeys?: AdminTypes.InputMaybe<Array<AdminTypes.Scalars['String']['input']> | AdminTypes.Scalars['String']['input']>;
+  countMetafields?: AdminTypes.InputMaybe<AdminTypes.Scalars['Int']['input']>;
+  searchQuery?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
+}>;
+
+
+export type GetOrdersMetafieldsQuery = { orders: { nodes: Array<(
+      Pick<AdminTypes.Order, 'id'>
+      & { metafields: { nodes: Array<(
+          { __typename: 'Metafield' }
+          & Pick<AdminTypes.Metafield, 'id' | 'value' | 'type' | 'key' | 'namespace'>
+        )> } }
+    )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
+
 export type GetProductVariantsMetafieldsQueryVariables = AdminTypes.Exact<{
   maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
   cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
@@ -418,13 +509,15 @@ export type UpdateProductMutation = { metafieldsSet?: AdminTypes.Maybe<{ metafie
 
 interface GeneratedQueryTypes {
   "\n  \n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  fragment CollectionFields on Collection {\n    handle\n    id\n    descriptionHtml\n    updatedAt\n    templateSuffix\n    title\n    # availableForSale\n    # publishedOnPublication(publicationId: \"gid://shopify/Publication/42911268979\")\n    # seo {\n    #   description\n    #   title\n    # }\n    # trackingParameters\n    # media(first: 10) {\n    #   nodes {\n    #     mediaContentType\n    #   }\n    # }\n\n    # Optional fields and connections\n    image @include(if: $includeImage) {\n      url\n    }\n    sortOrder @include(if: $includeSortOrder)\n    ruleSet @include(if: $includeRuleSet) {\n      appliedDisjunctively\n      rules {\n        column\n        condition\n        relation\n      }\n    }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n  }\n\n\n  query GetCollections(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n    $includeImage: Boolean!\n    $includeMetafields: Boolean!\n    $includeSortOrder: Boolean!\n    $includeRuleSet: Boolean!\n  ) {\n    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...CollectionFields\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCollectionsQuery, variables: GetCollectionsQueryVariables},
-  "\n  query IsSmartCollection($gid: ID!) {\n    collection(id: $gid) {\n      # will be null for non smart collections\n      isSmartCollection: ruleSet {\n        appliedDisjunctively\n      }\n    }\n  }\n": {return: IsSmartCollectionQuery, variables: IsSmartCollectionQueryVariables},
+  "\n  query IsSmartCollection($collectionGid: ID!) {\n    collection(id: $collectionGid) {\n      # will be null for non smart collections\n      isSmartCollection: ruleSet {\n        appliedDisjunctively\n      }\n    }\n  }\n": {return: IsSmartCollectionQuery, variables: IsSmartCollectionQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getCollectionsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCollectionsMetafieldsQuery, variables: GetCollectionsMetafieldsQueryVariables},
   "\n  query GetOnlineStorePublication {\n    appByHandle(handle: \"online_store\") {\n      id\n      handle\n      title\n      installation {\n        publication {\n          id\n        }\n      }\n    }\n  }\n": {return: GetOnlineStorePublicationQuery, variables: GetOnlineStorePublicationQueryVariables},
   "\n  \n  \n  fragment CustomerAddressFields on MailingAddress {\n    address1\n    address2\n    city\n    company\n    coordinatesValidated\n    country\n    countryCodeV2\n    firstName\n    formattedArea\n    id\n    lastName\n    latitude\n    longitude\n    name\n    phone\n    province\n    provinceCode\n    timeZone\n    zip\n    formatted(withName: true, withCompany: true)\n  }\n\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  fragment CustomerFields on Customer {\n    id\n    createdAt\n    displayName\n    email\n    firstName\n    lastName\n    lifetimeDuration\n    locale\n    multipassIdentifier\n    note\n    numberOfOrders\n    phone\n    productSubscriberStatus\n    state\n    tags\n    taxExempt\n    taxExemptions\n    unsubscribeUrl\n    updatedAt\n    validEmailAddress\n    verifiedEmail\n    addresses(first: 3) {\n      ...CustomerAddressFields\n    }\n    defaultAddress {\n      ...CustomerAddressFields\n    }\n    amountSpent {\n      amount\n      currencyCode\n    }\n    canDelete\n    # TODO: breaks graphql-codegen\n    # events(first: 2) {\n    #   nodes {\n    #     ... on CommentEvent {\n    #       id\n    #       message\n    #     }\n    #   }\n    # }\n    emailMarketingConsent {\n      consentUpdatedAt\n      marketingOptInLevel\n      marketingState\n    }\n    smsMarketingConsent {\n      consentCollectedFrom\n      consentUpdatedAt\n      marketingOptInLevel\n      marketingState\n    }\n    statistics {\n      predictedSpendTier\n    }\n\n    # Optional fields and connections\n    # options(first: $maxOptions) @include(if: $includeOptions) {\n    #   name\n    # }\n    # featuredImage @include(if: $includeFeaturedImage) {\n    #   url\n    # }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n  }\n\n\n  query getCustomersWithMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n    $includeMetafields: Boolean!\n  ) {\n    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...CustomerFields\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCustomersWithMetafieldsQuery, variables: GetCustomersWithMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getCustomersMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCustomersMetafieldsQuery, variables: GetCustomersMetafieldsQueryVariables},
   "\n  \n  fragment FileFields on File {\n    __typename\n    id\n    updatedAt\n    alt @include(if: $includeAlt)\n    createdAt @include(if: $includeCreatedAt)\n    updatedAt @include(if: $includeUpdatedAt)\n    thumbnail: preview @include(if: $includeThumbnail) {\n      image {\n        url\n      }\n    }\n\n    ... on GenericFile {\n      mimeType @include(if: $includeMimeType)\n      originalFileSize @include(if: $includeFileSize)\n      url\n    }\n\n    ... on MediaImage {\n      image {\n        url\n        width @include(if: $includeWidth)\n        height @include(if: $includeHeight)\n      }\n      mimeType @include(if: $includeMimeType)\n      originalSource @include(if: $includeFileSize) {\n        fileSize\n      }\n    }\n\n    ... on Video {\n      filename\n      duration @include(if: $includeDuration)\n      originalSource {\n        fileSize @include(if: $includeFileSize)\n        height @include(if: $includeHeight)\n        width @include(if: $includeWidth)\n        mimeType @include(if: $includeMimeType)\n        url @include(if: $includeUrl)\n      }\n    }\n  }\n\n\n  query GetFiles(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $searchQuery: String\n    $includeAlt: Boolean!\n    $includeCreatedAt: Boolean!\n    $includeDuration: Boolean!\n    $includeFileSize: Boolean!\n    $includeHeight: Boolean!\n    $includeMimeType: Boolean!\n    $includeThumbnail: Boolean!\n    $includeUpdatedAt: Boolean!\n    $includeUrl: Boolean!\n    $includeWidth: Boolean!\n  ) {\n    files(first: $maxEntriesPerRun, after: $cursor, reverse: true, sortKey: CREATED_AT, query: $searchQuery) {\n      nodes {\n        ...FileFields\n      }\n\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetFilesQuery, variables: GetFilesQueryVariables},
   "\n  query CheckThrottleStatus {\n    shop {\n      id\n    }\n  }\n": {return: CheckThrottleStatusQuery, variables: CheckThrottleStatusQueryVariables},
+  "\n  \n  fragment InventoryItemFields on InventoryItem {\n    harmonizedSystemCode\n    createdAt\n    id\n    inventoryHistoryUrl\n    provinceCodeOfOrigin\n    requiresShipping\n    sku\n    tracked\n    trackedEditable {\n      locked\n      reason\n    }\n    updatedAt\n    unitCost {\n      amount\n      currencyCode\n    }\n    countryCodeOfOrigin\n    locationsCount\n    variant {\n      id\n    }\n  }\n\n\n  query GetInventoryItems($maxEntriesPerRun: Int!, $cursor: String, $searchQuery: String) {\n    inventoryItems(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...InventoryItemFields\n      }\n\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetInventoryItemsQuery, variables: GetInventoryItemsQueryVariables},
+  "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getLocationsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    locations(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetLocationsMetafieldsQuery, variables: GetLocationsMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldDefinition on MetafieldDefinition {\n    key\n    id\n    namespace\n    name\n    description\n    type {\n      name\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n  query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxMetafieldsPerResource: Int!) {\n    metafieldDefinitions(ownerType: $ownerType, first: $maxMetafieldsPerResource) {\n      nodes {\n        ...MetafieldDefinition\n      }\n    }\n  }\n": {return: GetMetafieldDefinitionsQuery, variables: GetMetafieldDefinitionsQueryVariables},
   "\n  query GetMetaobjectDynamicUrls($cursor: String) {\n    metaobjectDefinitions(first: 20, after: $cursor) {\n      nodes {\n        id\n        name\n        displayNameKey\n        type\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetMetaobjectDynamicUrlsQuery, variables: GetMetaobjectDynamicUrlsQueryVariables},
   "\n  query queryMetaobjectTypes($cursor: String) {\n    metaobjectDefinitions(first: 20, after: $cursor) {\n      nodes {\n        name\n        type\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: QueryMetaobjectTypesQuery, variables: QueryMetaobjectTypesQueryVariables},
@@ -433,6 +526,7 @@ interface GeneratedQueryTypes {
   "\n  \n  fragment MetaobjectFieldDefinitionFields on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  query GetMetaObjectFieldDefinitions($id: ID!) {\n    metaobject(id: $id) {\n      definition {\n        fieldDefinitions {\n          ...MetaobjectFieldDefinitionFields\n        }\n      }\n    }\n  }\n": {return: GetMetaObjectFieldDefinitionsQuery, variables: GetMetaObjectFieldDefinitionsQueryVariables},
   "\n  \n  fragment MetaobjectFieldDefinitionFields on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  query GetMetaobjectDefinitionByType($type: String!) {\n    metaobjectDefinitionByType(type: $type) {\n      displayNameKey\n      capabilities {\n        publishable {\n          enabled\n        }\n      }\n      fieldDefinitions {\n        ...MetaobjectFieldDefinitionFields\n      }\n    }\n  }\n": {return: GetMetaobjectDefinitionByTypeQuery, variables: GetMetaobjectDefinitionByTypeQueryVariables},
   "\n  query GetMetaobjectDefinitions($batchSize: Int!, $cursor: String) {\n    metaobjectDefinitions(first: $batchSize, after: $cursor) {\n      nodes {\n        id\n        name\n        displayNameKey\n        type\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetMetaobjectDefinitionsQuery, variables: GetMetaobjectDefinitionsQueryVariables},
+  "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getOrdersMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetOrdersMetafieldsQuery, variables: GetOrdersMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getProductVariantsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    productVariants(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetProductVariantsMetafieldsQuery, variables: GetProductVariantsMetafieldsQueryVariables},
   "\n  \n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  fragment ProductFields on Product {\n    id\n    handle\n    createdAt\n    title\n    productType\n    publishedAt\n    status\n    tags\n    templateSuffix\n    updatedAt\n    vendor\n    isGiftCard\n    descriptionHtml\n    onlineStoreUrl\n\n    # Optional fields and connections\n    options(first: $maxOptions) @include(if: $includeOptions) {\n      name\n    }\n    featuredImage @include(if: $includeFeaturedImage) {\n      url\n    }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n\n    # availableForSale\n    # publishedOnPublication(publicationId: \"gid://shopify/Publication/42911268979\")\n    # seo {\n    #   description\n    #   title\n    # }\n    # trackingParameters\n    # media(first: 10) {\n    #   nodes {\n    #     mediaContentType\n    #   }\n    # }\n  }\n\n\n  query getProductsWithMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $maxOptions: Int\n    $searchQuery: String\n    $includeOptions: Boolean!\n    $includeFeaturedImage: Boolean!\n    $includeMetafields: Boolean!\n  ) {\n    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...ProductFields\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetProductsWithMetafieldsQuery, variables: GetProductsWithMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n\n  query getProductsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetProductsMetafieldsQuery, variables: GetProductsMetafieldsQueryVariables},
@@ -440,7 +534,9 @@ interface GeneratedQueryTypes {
 
 interface GeneratedMutationTypes {
   "\n  mutation UpdateCollection($input: CollectionInput!) {\n    collectionUpdate(input: $input) {\n      collection {\n        handle\n        descriptionHtml\n        templateSuffix\n        title\n      }\n\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: UpdateCollectionMutation, variables: UpdateCollectionMutationVariables},
+  "\n  \n  fragment FileFields on File {\n    __typename\n    id\n    updatedAt\n    alt @include(if: $includeAlt)\n    createdAt @include(if: $includeCreatedAt)\n    updatedAt @include(if: $includeUpdatedAt)\n    thumbnail: preview @include(if: $includeThumbnail) {\n      image {\n        url\n      }\n    }\n\n    ... on GenericFile {\n      mimeType @include(if: $includeMimeType)\n      originalFileSize @include(if: $includeFileSize)\n      url\n    }\n\n    ... on MediaImage {\n      image {\n        url\n        width @include(if: $includeWidth)\n        height @include(if: $includeHeight)\n      }\n      mimeType @include(if: $includeMimeType)\n      originalSource @include(if: $includeFileSize) {\n        fileSize\n      }\n    }\n\n    ... on Video {\n      filename\n      duration @include(if: $includeDuration)\n      originalSource {\n        fileSize @include(if: $includeFileSize)\n        height @include(if: $includeHeight)\n        width @include(if: $includeWidth)\n        mimeType @include(if: $includeMimeType)\n        url @include(if: $includeUrl)\n      }\n    }\n  }\n\n\n  mutation fileUpdate(\n    $files: [FileUpdateInput!]!\n    $includeAlt: Boolean!\n    $includeCreatedAt: Boolean!\n    $includeDuration: Boolean!\n    $includeFileSize: Boolean!\n    $includeHeight: Boolean!\n    $includeMimeType: Boolean!\n    $includeThumbnail: Boolean!\n    $includeUpdatedAt: Boolean!\n    $includeUrl: Boolean!\n    $includeWidth: Boolean!\n  ) {\n    fileUpdate(files: $files) {\n      files {\n        ...FileFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: FileUpdateMutation, variables: FileUpdateMutationVariables},
   "\n  mutation fileDelete($fileIds: [ID!]!) {\n    fileDelete(fileIds: $fileIds) {\n      deletedFileIds\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: FileDeleteMutation, variables: FileDeleteMutationVariables},
+  "\n  \n  fragment InventoryItemFields on InventoryItem {\n    harmonizedSystemCode\n    createdAt\n    id\n    inventoryHistoryUrl\n    provinceCodeOfOrigin\n    requiresShipping\n    sku\n    tracked\n    trackedEditable {\n      locked\n      reason\n    }\n    updatedAt\n    unitCost {\n      amount\n      currencyCode\n    }\n    countryCodeOfOrigin\n    locationsCount\n    variant {\n      id\n    }\n  }\n\n\n  mutation inventoryItemUpdate($id: ID!, $input: InventoryItemUpdateInput!) {\n    inventoryItemUpdate(id: $id, input: $input) {\n      inventoryItem {\n        ...InventoryItemFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: InventoryItemUpdateMutation, variables: InventoryItemUpdateMutationVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n  mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {\n    metafieldsSet(metafields: $metafieldsSetInputs) {\n      metafields {\n        ...MetafieldFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: SetMetafieldsMutation, variables: SetMetafieldsMutationVariables},
   "\n  mutation metafieldDelete($input: MetafieldDeleteInput!) {\n    metafieldDelete(input: $input) {\n      deletedId\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: MetafieldDeleteMutation, variables: MetafieldDeleteMutationVariables},
   "\n  mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {\n    metaobjectCreate(metaobject: $metaobject) {\n      metaobject {\n        id\n      }\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: CreateMetaobjectMutation, variables: CreateMetaobjectMutationVariables},

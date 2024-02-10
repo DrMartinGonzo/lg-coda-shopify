@@ -7,6 +7,7 @@ import { setupBlogs } from './blogs/blogs-setup';
 import { setupCollections } from './collections/collections-setup';
 import { setupCustomers } from './customers/customers-setup';
 import { setupFiles } from './files/files-setup';
+import { setupInventoryLevels } from './inventoryLevels/inventoryLevels-setup';
 import { setupMetafields } from './metafields/metafields-setup';
 import { setupMetaObjects } from './metaobjects/metaobjects-setup';
 import { setupOrders } from './orders/orders-setup';
@@ -15,6 +16,8 @@ import { setupProducts } from './products/products-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
 import { setupShop } from './shop/shop-setup';
 import { setupTranslations } from './translations/translations-setup';
+import { setupLocations } from './locations/locations-setup';
+import { setupRedirects } from './redirects/redirects-setup';
 
 import { fetchShopDetails } from './shop/shop-functions';
 
@@ -44,6 +47,8 @@ pack.addNetworkDomain('myshopify.com');
 setupProducts(pack);
 setupProductVariants(pack);
 setupCollections(pack);
+setupLocations(pack);
+setupInventoryLevels(pack);
 
 setupCustomers(pack);
 setupOrders(pack);
@@ -57,3 +62,4 @@ setupMetafields(pack);
 setupMetaObjects(pack);
 setupShop(pack);
 setupTranslations(pack);
+setupRedirects(pack);

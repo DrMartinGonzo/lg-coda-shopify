@@ -62,7 +62,7 @@ function formatGraphQlErrors(errors: ShopifyGraphQlError[]) {
   return errors.map((error) => `• ${error.message}`).join('\n\n');
 }
 function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
-  return userErrors.map((error) => `• ${error.code}\n${error.message}`).join('\n\n');
+  return userErrors.map((error) => `• ${[error.code, error.message].join('\n')}`).join('\n\n');
 }
 // #endregion
 
@@ -619,3 +619,23 @@ export async function makeMixedSyncTableGraphQlRequest(
   }
 }
 // #endregion
+
+/*
+export async function makeGraphQlBulkRequest(
+  params: {
+    payload: any;
+    apiVersion?: string;
+  },
+  context: coda.ExecutionContext
+) {
+  const options: coda.FetchRequest = {
+    method: 'POST',
+    url: `${context.endpoint}/admin/api/${params.apiVersion ?? GRAPHQL_DEFAULT_API_VERSION}/graphql.json`,
+    headers: getShopifyRequestHeaders(context),
+    body: JSON.stringify(params.payload),
+  };
+
+  const res = await context.fetcher.fetch(options);
+  return res.body.data.bulkOperationRunQuery.bulkOperation.id;
+}
+*/

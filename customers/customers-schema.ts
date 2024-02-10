@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_CUSTOMER } from '../constants';
+import { CustomerAddressSchema } from '../addresses/addresses-schema';
 
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
 const CONSENT_STATE__NOT_SUBSCRIBED = { display: 'Not subscribed', value: 'not_subscribed' };
@@ -41,49 +42,6 @@ export const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.fi
     [CONSENT_STATE__SUBSCRIBED, CONSENT_STATE__UNSUBSCRIBED].map((s) => s.value).includes(option.state) &&
     option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value
 );
-
-const CustomerAddressSchema = coda.makeObjectSchema({
-  properties: {
-    display: { type: coda.ValueType.String },
-    // A unique identifier for the address.
-    address_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
-    // The street address of the address.
-    address1: { type: coda.ValueType.String },
-    // An optional additional field for the street address of the address.
-    address2: { type: coda.ValueType.String },
-    // The city, town, or village of the address.
-    city: { type: coda.ValueType.String },
-    // The company of the person associated with the address.
-    company: { type: coda.ValueType.String },
-    // The name of the country of the address.
-    country: { type: coda.ValueType.String },
-    // The two-letter code (ISO 3166-1 format) for the country of the address.
-    country_code: { type: coda.ValueType.String },
-    // The customer's normalized country name
-    country_name: { type: coda.ValueType.String },
-    // Returns true for each default address.
-    default: { type: coda.ValueType.Boolean },
-    // The first name of the person.
-    first_name: { type: coda.ValueType.String },
-    // The last name of the person.
-    last_name: { type: coda.ValueType.String },
-    // The full name of the person.
-    name: { type: coda.ValueType.String },
-    // The latitude of the address.
-    latitude: { type: coda.ValueType.String },
-    // The longitude of the address.
-    longitude: { type: coda.ValueType.String },
-    // The phone number at the address.
-    phone: { type: coda.ValueType.String },
-    // province: The name of the region (for example, province, state, or prefecture) of the address.
-    province: { type: coda.ValueType.String },
-    // province_code: The two-letter abbreviation of the region of the address.
-    province_code: { type: coda.ValueType.String },
-    // The postal code (for example, zip, postcode, or Eircode) of the address.
-    zip: { type: coda.ValueType.String },
-  },
-  displayProperty: 'display',
-});
 
 // The marketing consent information when the customer consented to receiving marketing material by email. The email property is required to create a customer with email consent information and to update a customer for email consent that doesn't have an email recorded. The customer must have a unique email address associated to the record.
 const EmailMarketingConsentSchema = coda.makeObjectSchema({
