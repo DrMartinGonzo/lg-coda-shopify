@@ -25,8 +25,8 @@ export async function autocompleteBlogIdParameter(context: coda.ExecutionContext
   const searchObjects = response.body.blogs.map((blog) => {
     return {
       ...blog,
-      // convert id to string as we use StringArray ParameterType (@see comment
-      // in restrict_to_blogs parameter in articles-setup.ts)
+      // BUG hack: convert id to string as we use StringArray ParameterType (@see comment
+      // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
       string_id: blog.id.toString(),
     };
   });

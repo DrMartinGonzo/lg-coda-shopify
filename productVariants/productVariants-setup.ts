@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import {
   CACHE_MINUTE,
+  CODA_SUPORTED_CURRENCIES,
   IDENTITY_PRODUCT_VARIANT,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
@@ -60,6 +61,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { MetafieldOwnerType } from '../types/Metafields';
+import { fetchShopDetails } from '../shop/shop-functions';
 
 // #endregion
 
@@ -97,6 +99,20 @@ async function getProductVariantsSchema(
       context
     );
   }
+
+  // TODO: need a generic setCurrencyCode function
+  const shop = await fetchShopDetails(['currency'], context);
+  if (shop && shop['currency']) {
+    let currencyCode = shop['currency'];
+    if (!CODA_SUPORTED_CURRENCIES.includes(currencyCode)) {
+      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
+      currencyCode = 'USD';
+    }
+
+    // Main props
+    augmentedSchema.properties.price.currencyCode = currencyCode;
+  }
+
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;

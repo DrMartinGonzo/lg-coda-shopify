@@ -59,6 +59,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { MetafieldOwnerType } from '../types/Metafields';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = ProductSchemaRest;
@@ -176,6 +177,9 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
       propertyOptions: async function (context) {
         if (context.propertyName === 'product_type') {
           return getProductTypes(context);
+        }
+        if (context.propertyName === 'template_suffix') {
+          return getTemplateSuffixesFor('product', context);
         }
       },
     },

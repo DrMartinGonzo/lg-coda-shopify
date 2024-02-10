@@ -95,10 +95,18 @@ export async function handlePageUpdateJob(
 
 // #region Formatting functions
 export const formatPageForSchemaFromRestApi: FormatFunction = (page, context) => {
-  page.admin_url = `${context.endpoint}/admin/pages/${page.id}`;
-  page.body = striptags(page.body_html);
-  page.published = !!page.published_at;
-  return page;
+  let obj: any = {
+    ...page,
+    admin_url: `${context.endpoint}/admin/pages/${page.id}`,
+    body: striptags(page.body_html),
+    published: !!page.published_at,
+  };
+
+  if (!!page.published_at && page.handle) {
+    obj.shop_url = `${context.endpoint}/pages/${page.handle}`;
+  }
+
+  return obj;
 };
 
 export function validatePageParams(params: any) {

@@ -6,16 +6,56 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  NOT_FOUND,
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { convertTTCtoHT } from '../helpers';
-import { cleanQueryParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
+import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePutRequest } from '../helpers-rest';
 
 import { formatCustomerForSchemaFromRestApi } from '../customers/customers-functions';
 import { FormatFunction } from '../types/misc';
+import { formatAddressDisplayName } from '../addresses/addresses-functions';
+import { OrderSchema } from './orders-schema';
+import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import {
+  getResourceMetafieldsRestUrl,
+  handleResourceMetafieldsUpdateRest,
+  separatePrefixedMetafieldsKeysFromKeys,
+} from '../metafields/metafields-functions';
+import { OrderUpdateRestParams } from '../types/Order';
+
+// #region Helpers
+export function validateOrderParams(params) {
+  if (params.status) {
+    const validStatuses = OPTIONS_ORDER_STATUS;
+    (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
+      if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown status: ' + params.status);
+    });
+  }
+  if (params.financial_status) {
+    const validStatuses = OPTIONS_ORDER_FINANCIAL_STATUS;
+    (Array.isArray(params.financial_status) ? params.financial_status : [params.financial_status]).forEach(
+      (financial_status) => {
+        if (!validStatuses.includes(financial_status))
+          throw new coda.UserVisibleError('Unknown financial status: ' + params.financial_status);
+      }
+    );
+  }
+  if (params.fulfillment_status) {
+    const validStatuses = OPTIONS_ORDER_FULFILLMENT_STATUS;
+    (Array.isArray(params.fulfillment_status) ? params.fulfillment_status : [params.fulfillment_status]).forEach(
+      (fulfillment_status) => {
+        if (!validStatuses.includes(fulfillment_status))
+          throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.fulfillment_status);
+      }
+    );
+  }
+
+  return true;
+}
 
 function getItemRefundLineItems(refunds, line_item_id) {
   let refund_line_items = [];
@@ -40,149 +80,85 @@ function getRefundQuantity(item, refunds) {
   return quantity;
 }
 
-const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => {
-  if (address) {
-    return {
-      name: address?.name ?? '' + (address?.company != '' ? `\n${address?.company}` : ''),
-      address:
-        [
-          address?.address1,
-          address?.address2,
-          [address?.zip, address?.city].filter((value) => value && value !== '').join(' '),
-          address.country,
-        ]
-          .filter((value) => value && value !== '')
-          .join('\n') ?? '',
-    };
-  }
-  return {
-    name: fallback,
-    address: '',
-  };
-};
-
-export const formatOrder: FormatFunction = (data, context) => {
-  if (data.customer) {
-    data.customer = formatCustomerForSchemaFromRestApi(data.customer, context);
-  }
-
-  return data;
-};
-
-export const fetchOrder = async ([orderID], context) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderID}.json`;
-  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
-  const { body } = response;
-
-  if (body.order) {
-    return formatOrder(body.order, context);
-  }
-};
-
-export const fetchOrders = async (
-  status: string,
-  created_at_max: Date,
-  created_at_min: Date,
-  financial_status: string,
-  fulfillment_status: string,
-  ids: string,
-  maxEntriesPerRun: number,
-  processed_at_max: Date,
-  processed_at_min: Date,
-  since_id: number,
-  updated_at_max: Date,
-  updated_at_min: Date,
-  fields: string,
-
-  nextUrl: string,
-  context
-) => {
-  const params = cleanQueryParams({
-    created_at_max,
-    created_at_min,
-    fields,
-    financial_status,
-    fulfillment_status,
-    ids,
-    limit: maxEntriesPerRun,
-    processed_at_max,
-    processed_at_min,
-    since_id,
-    status,
-    updated_at_max,
-    updated_at_min,
+export function formatOrderStandardFieldsRestParams(
+  standardFromKeys: string[],
+  values: coda.SyncUpdate<string, string, typeof OrderSchema>['newValue']
+) {
+  const restParams: any = {};
+  standardFromKeys.forEach((fromKey) => {
+    restParams[fromKey] = values[fromKey];
   });
+  return restParams;
+}
 
-  if (params.status && !OPTIONS_ORDER_STATUS.includes(params.status)) {
-    throw new coda.UserVisibleError('Unknown status: ' + params.status);
+/**
+ * On peut créer des metafields directement en un call mais apparemment ça ne
+ * fonctionne que pour les créations, pas les updates, du coup on applique la
+ * même stratégie que pour handleArticleUpdateJob, CAD il va falloir faire un
+ * appel séparé pour chaque metafield
+ */
+export async function handleOrderUpdateJob(
+  update: coda.SyncUpdate<string, string, typeof OrderSchema>,
+  metafieldDefinitions: MetafieldDefinitionFragment[],
+  context: coda.ExecutionContext
+) {
+  const { updatedFields } = update;
+  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
+
+  const subJobs: Promise<any>[] = [];
+  const orderId = update.previousValue.id as number;
+
+  if (standardFromKeys.length) {
+    const restParams: OrderUpdateRestParams = formatOrderStandardFieldsRestParams(standardFromKeys, update.newValue);
+    subJobs.push(updateOrderRest(orderId, restParams, context));
+  } else {
+    subJobs.push(undefined);
   }
-  if (params.financial_status && !OPTIONS_ORDER_FINANCIAL_STATUS.includes(params.financial_status)) {
-    throw new coda.UserVisibleError('Unknown financial status: ' + params.financial_status);
+
+  if (prefixedMetafieldFromKeys.length) {
+    subJobs.push(
+      handleResourceMetafieldsUpdateRest(
+        getResourceMetafieldsRestUrl('orders', orderId, context),
+        metafieldDefinitions,
+        update,
+        context
+      )
+    );
+  } else {
+    subJobs.push(undefined);
   }
-  if (params.fulfillment_status && !OPTIONS_ORDER_FULFILLMENT_STATUS.includes(params.fulfillment_status)) {
-    throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.financial_status);
+
+  let obj = { ...update.previousValue };
+
+  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
+  if (updateJob) {
+    if (updateJob.status === 'fulfilled' && updateJob.value) {
+      if (updateJob.value.body?.order) {
+        obj = {
+          ...obj,
+          ...formatOrderForSchemaFromRestApi(updateJob.value.body.order, context),
+        };
+      }
+    } else if (updateJob.status === 'rejected') {
+      throw new coda.UserVisibleError(updateJob.reason);
+    }
+  }
+  if (metafieldsJob) {
+    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
+      obj = {
+        ...obj,
+        ...metafieldsJob.value,
+      };
+    } else if (metafieldsJob.status === 'rejected') {
+      throw new coda.UserVisibleError(metafieldsJob.reason);
+    }
   }
 
-  let url =
-    nextUrl ?? coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, params);
+  return obj;
+}
+// #endregion
 
-  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
-  const { body } = response;
-
-  return {
-    items: body.orders ? body.orders.map((order) => formatOrder(order, context)) : [],
-    // Check if we have paginated results
-    nextUrl: extractNextUrlPagination(response),
-  };
-};
-
-export const syncAllOrders = async (
-  [
-    status,
-    created_at_max,
-    created_at_min,
-    financial_status,
-    fulfillment_status,
-    ids,
-    maxEntriesPerRun,
-    processed_at_max,
-    processed_at_min,
-    since_id,
-    updated_at_max,
-    updated_at_min,
-  ],
-  context
-) => {
-  // Only fetch the selected columns.
-  // TODO: apply this to other sync tables
-  const syncedFields = coda.getEffectivePropertyKeysFromSchema(context.sync.schema).join(', ');
-
-  const res = await fetchOrders(
-    status,
-    created_at_max,
-    created_at_min,
-    financial_status,
-    fulfillment_status,
-    ids,
-    maxEntriesPerRun,
-    processed_at_max,
-    processed_at_min,
-    since_id,
-    updated_at_max,
-    updated_at_min,
-
-    syncedFields,
-    context.sync.continuation,
-
-    context
-  );
-
-  return {
-    result: res.items,
-    continuation: res.nextUrl,
-  };
-};
-
+// #region Formatting functions
 export const formatOrderForDocExport = (order) => {
   const discountApplications = order.discount_applications;
   const refunds = order.refunds;
@@ -345,3 +321,91 @@ export const formatOrderForDocExport = (order) => {
 
   return JSON.stringify(payload);
 };
+
+const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => {
+  if (address) {
+    return {
+      name: address?.name ?? '' + (address?.company != '' ? `\n${address?.company}` : ''),
+      address:
+        [
+          address?.address1,
+          address?.address2,
+          [address?.zip, address?.city].filter((value) => value && value !== '').join(' '),
+          address.country,
+        ]
+          .filter((value) => value && value !== '')
+          .join('\n') ?? '',
+    };
+  }
+  return {
+    name: fallback,
+    address: '',
+  };
+};
+
+export const formatOrderForSchemaFromRestApi: FormatFunction = (order, context) => {
+  let obj: any = {
+    ...order,
+    admin_url: `${context.endpoint}/admin/orders/${order.id}`,
+  };
+
+  if (order.customer) {
+    obj.customer = formatCustomerForSchemaFromRestApi(order.customer, context);
+  }
+  if (order.billing_address) {
+    obj.billing_address = {
+      display: formatAddressDisplayName(order.billing_address),
+      ...order.billing_address,
+    };
+  }
+  if (order.shipping_address) {
+    obj.shipping_address = {
+      display: formatAddressDisplayName(order.shipping_address),
+      ...order.shipping_address,
+    };
+  }
+  if (order.current_total_duties_set) {
+    obj.current_total_duties = order.current_total_duties_set?.shop_money?.amount;
+  }
+  if (order.current_total_additional_fees_set) {
+    obj.current_total_additional_fees = order.current_total_additional_fees_set?.shop_money?.amount;
+  }
+  if (order.original_total_additional_fees_set) {
+    obj.original_total_additional_fees = order.original_total_additional_fees_set?.shop_money?.amount;
+  }
+  if (order.original_total_duties_set) {
+    obj.original_total_duties = order.original_total_duties_set?.shop_money?.amount;
+  }
+  if (order.total_shipping_price_set) {
+    obj.total_shipping_price = order.total_shipping_price_set?.shop_money?.amount;
+  }
+  if (order.client_details) {
+    obj.browser_user_agent = order.client_details?.user_agent;
+    obj.browser_accept_language = order.client_details?.accept_language;
+  }
+
+  return obj;
+};
+// #endregion
+
+// #region Requests
+export const fetchOrder = async ([orderID], context) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderID}.json`;
+  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
+  const { body } = response;
+
+  if (body.order) {
+    return formatOrderForSchemaFromRestApi(body.order, context);
+  }
+};
+
+export const updateOrderRest = (orderId: number, params: OrderUpdateRestParams, context: coda.ExecutionContext) => {
+  const restParams = cleanQueryParams(params);
+  // validateOrderParams(params);
+  const payload = { order: restParams };
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderId}.json`;
+  return makePutRequest({ url, payload }, context);
+};
+
+};
+// #endregion

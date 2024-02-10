@@ -43,6 +43,7 @@ import { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = BlogSchema;
@@ -100,6 +101,11 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
     dynamicOptions: {
       getSchema: getBlogSchema,
       defaultAddDynamicColumns: false,
+      propertyOptions: async function (context) {
+        if (context.propertyName === 'template_suffix') {
+          return getTemplateSuffixesFor('blog', context);
+        }
+      },
     },
     formula: {
       name: 'SyncBlogs',

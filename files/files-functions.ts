@@ -1,19 +1,80 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { getThumbnailUrlFromFullUrl } from '../helpers';
-import {
-  makeGraphQlRequest,
-  makeSyncTableGraphQlRequest,
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { queryAllFiles, deleteFiles } from './files-graphql';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import { makeGraphQlRequest } from '../helpers-graphql';
+import { deleteFiles, UpdateFile } from './files-graphql';
 import { FormatFunction } from '../types/misc';
-import { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
+import { FileFieldsFragment, FileUpdateMutationVariables } from '../types/admin.generated';
+import { FileSchema } from './files-schema';
+import { FileUpdateInput } from '../types/admin.types';
+
+// #region Helpers
+export async function handleFileUpdateJob(
+  update: coda.SyncUpdate<string, string, typeof FileSchema>,
+  context: coda.ExecutionContext
+) {
+  const { updatedFields } = update;
+  const subJobs: Promise<any>[] = [];
+  const fileId = update.previousValue.id as number;
+
+  if (updatedFields.length) {
+    const fileUpdateInput = formatGraphQlFileUpdateInput(update, updatedFields);
+    subJobs.push(updateFileGraphQl(fileUpdateInput, context));
+  } else {
+    subJobs.push(undefined);
+  }
+
+  let obj = { ...update.previousValue };
+
+  const [updateJob] = await Promise.allSettled(subJobs);
+  if (updateJob) {
+    if (updateJob.status === 'fulfilled' && updateJob.value) {
+      if (updateJob.value.body?.data?.fileUpdate?.files) {
+        const file = updateJob.value.body.data.fileUpdate.files.find((file) => file.id === fileId);
+        obj = {
+          ...obj,
+          ...formatFileNodeForSchema(file, context),
+        };
+      }
+    } else if (updateJob.status === 'rejected') {
+      throw new coda.UserVisibleError(updateJob.reason);
+    }
+  }
+
+  return obj;
+}
+// #endregion
 
 // #region Formatting functions
-const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
+// TODO: rewrite this without looping over fromKeys but explicitly set FileUpdateInput props
+function formatGraphQlFileUpdateInput(update: any, fromKeys: string[]): FileUpdateInput {
+  const ret: FileUpdateInput = {
+    id: update.previousValue.id,
+  };
+  if (!fromKeys.length) return ret;
+
+  fromKeys.forEach((fromKey) => {
+    const value = update.newValue[fromKey];
+    let inputKey = fromKey;
+    switch (fromKey) {
+      case 'name':
+        inputKey = 'filename';
+        break;
+      default:
+        break;
+    }
+
+    if (fromKey === 'alt') {
+      ret.alt = value;
+    } else {
+      ret[inputKey] = value !== undefined && value !== '' ? value : null;
+    }
+  });
+
+  return ret;
+}
+
+export const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
   const obj: any = {
     ...file,
     type: file.__typename,
@@ -49,78 +110,41 @@ const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
 
 // #endregion
 
-// #region Pack functions
-/**
- * Sync files using the GraphQL API.
- */
-export const syncFiles = async ([type], context: coda.SyncExecutionContext) => {
-  const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-  const defaultMaxEntriesPerRun = 50;
-  const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-    defaultMaxEntriesPerRun,
-    prevContinuation,
-    context
-  );
-  if (shouldDeferBy > 0) {
-    return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-  }
-
-  const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-
-  let searchQuery = 'status:READY';
-  if (type && type !== '') {
-    searchQuery += ` AND media_type:${type}`;
-  }
-
+// #region GraphQL Requests
+export async function updateFileGraphQl(fileUpdateInput: FileUpdateInput, context: coda.ExecutionContext) {
   const payload = {
-    query: queryAllFiles,
+    query: UpdateFile,
     variables: {
-      maxEntriesPerRun,
-      cursor: prevContinuation?.cursor ?? null,
-      searchQuery,
-
-      includeAlt: effectivePropertyKeys.includes('alt'),
-      includeCreatedAt: effectivePropertyKeys.includes('createdAt'),
-      includeDuration: effectivePropertyKeys.includes('duration'),
-      includeFileSize: effectivePropertyKeys.includes('fileSize'),
-      includeHeight: effectivePropertyKeys.includes('height'),
-      includeMimeType: effectivePropertyKeys.includes('mimeType'),
-      includeThumbnail: effectivePropertyKeys.includes('thumbnail'),
-      includeUpdatedAt: effectivePropertyKeys.includes('updatedAt'),
-      includeUrl: effectivePropertyKeys.includes('url'),
-      includeWidth: effectivePropertyKeys.includes('width'),
-    } as GetFilesQueryVariables,
+      files: fileUpdateInput,
+      includeAlt: true,
+      includeCreatedAt: true,
+      includeDuration: true,
+      includeFileSize: true,
+      includeHeight: true,
+      includeMimeType: true,
+      includeThumbnail: true,
+      includeUpdatedAt: true,
+      includeUrl: true,
+      includeWidth: true,
+    } as FileUpdateMutationVariables,
   };
 
-  const { response, continuation } = await makeSyncTableGraphQlRequest(
+  const { response } = await makeGraphQlRequest(
     {
       payload,
-      maxEntriesPerRun,
-      prevContinuation,
-      getPageInfo: (data: any) => data.files?.pageInfo,
+      getUserErrors: (body) => body.data.fileUpdate.userErrors,
     },
     context
   );
-  if (response && response.body.data?.files) {
-    const data = response.body.data as GetFilesQuery;
-    return {
-      result: data.files.nodes.map((file) => formatFileNodeForSchema(file)),
-      continuation,
-    };
-  } else {
-    return {
-      result: [],
-      continuation,
-    };
-  }
-};
+  return response;
+}
 
 /**
  * Deletes a file with the given fileGid.
  * @param fileGid - The GraphQL GID of the file to be deleted.
  * @param context - The context object containing necessary information.
  */
-export const deleteFile = async ([fileGid], context: coda.ExecutionContext) => {
+export const deleteFileGraphQl = async (fileGid: string, context: coda.ExecutionContext): Promise<string> => {
   const variables = {
     fileIds: [fileGid],
   };

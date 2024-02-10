@@ -61,6 +61,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { CollectionCreateRestParams } from '../types/Collection';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getCollectionSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = CollectionSchema;
@@ -146,6 +147,11 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     dynamicOptions: {
       getSchema: getCollectionSchema,
       defaultAddDynamicColumns: false,
+      propertyOptions: async function (context) {
+        if (context.propertyName === 'template_suffix') {
+          return getTemplateSuffixesFor('collection', context);
+        }
+      },
     },
     formula: {
       name: 'SyncCollections',

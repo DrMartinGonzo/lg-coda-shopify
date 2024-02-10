@@ -7,16 +7,22 @@ export const FileSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       required: true,
       fixedId: 'name',
+      fromKey: 'name',
+      mutable: true,
+      description: 'The name of the file including its extension.',
     },
     graphql_gid: {
       type: coda.ValueType.String,
       required: true,
-      fromKey: 'id',
       fixedId: 'graphql_gid',
+      fromKey: 'id',
     },
     alt: {
       type: coda.ValueType.String,
       fixedId: 'alt',
+      fromKey: 'alt',
+      mutable: true,
+      description: 'The alternative text description of the file.',
     },
     createdAt: {
       type: coda.ValueType.String,
