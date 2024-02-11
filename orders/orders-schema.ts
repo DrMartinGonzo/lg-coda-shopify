@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { CustomerReference } from '../customers/customers-schema';
 import { BaseAddressSchema } from '../addresses/addresses-schema';
 import { FieldDependency } from '../types/tableSync';
+import { IDENTITY_ORDER } from '../constants';
 
 const MoneySchema = coda.makeObjectSchema({
   properties: {
@@ -1997,3 +1998,4 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSchema.properti
     dependencies: ['admin_url'],
   },
 ];
+export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSchema, IDENTITY_ORDER);

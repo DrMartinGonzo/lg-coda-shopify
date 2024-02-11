@@ -2,10 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 
 import {
   CODA_SUPORTED_CURRENCIES,
+  IDENTITY_ORDER,
   IS_ADMIN_RELEASE,
   METAFIELD_PREFIX_KEY,
   OPTIONS_ORDER_FINANCIAL_STATUS,
-  OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
@@ -46,7 +46,7 @@ import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-gra
 import { fetchShopDetails } from '../shop/shop-functions';
 import { UpdateCreateProp } from '../helpers-varargs';
 
-async function getOrdersSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+async function getOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = OrderSchema;
   // let augmentedSchema = OrderSchema;
   if (formulaContext.syncMetafields) {
@@ -178,7 +178,7 @@ const standardUpdateProps: UpdateCreateProp[] = [
  */
 const standardCreateProps = [...standardUpdateProps.filter((prop) => prop.key !== 'title')];
 
-const requiredParameters = {
+const parameters = {
   orderId: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'orderID',
@@ -187,14 +187,6 @@ const requiredParameters = {
 };
 
 const optionalParameters = {
-  status: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'status',
-    autocomplete: OPTIONS_ORDER_STATUS,
-    suggestedValue: 'open',
-    description: 'Filter orders by their status.',
-    optional: true,
-  }),
   created_at_max: coda.makeParameter({
     type: coda.ParameterType.Date,
     name: 'created_at_max',
@@ -206,22 +198,6 @@ const optionalParameters = {
     name: 'created_at_min',
     description: 'Show orders created at or after date.',
     optional: true,
-  }),
-  financial_status: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'financial_status',
-    autocomplete: OPTIONS_ORDER_FINANCIAL_STATUS,
-    suggestedValue: 'any',
-    optional: true,
-    description: 'Filter orders by their financial status.',
-  }),
-  fulfillment_status: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'fulfillment_status',
-    autocomplete: OPTIONS_ORDER_FULFILLMENT_STATUS,
-    suggestedValue: 'any',
-    optional: true,
-    description: 'Filter orders by their fulfillment status.',
   }),
   ids: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -279,31 +255,31 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Orders',
     description: 'All Shopify orders',
-    identityName: 'Order',
+    identityName: IDENTITY_ORDER,
     schema: OrderSchema,
     dynamicOptions: {
-      getSchema: getOrdersSchema,
+      getSchema: getOrderSchema,
       defaultAddDynamicColumns: false,
     },
     formula: {
       name: 'SyncOrders',
       description: '<Help text for the sync formula, not show to the user>',
       parameters: [
-        optionalParameters.status,
+        sharedParameters.orderStatus,
         sharedParameters.optionalSyncMetafields,
 
         { ...sharedParameters.filterCreatedAtRange, optional: true },
         { ...sharedParameters.filterUpdatedAtRange, optional: true },
         { ...sharedParameters.filterProcessedAtRange, optional: true },
 
-        optionalParameters.financial_status,
-        optionalParameters.fulfillment_status,
+        { ...sharedParameters.filterFinancialStatus, optional: true },
+        { ...sharedParameters.filterFulfillmentStatus, optional: true },
         optionalParameters.orderIds,
         optionalParameters.since_id,
       ],
       execute: async function (
         [
-          status,
+          status = 'any',
           syncMetafields,
           created_at,
           updated_at,
@@ -316,7 +292,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         context
       ) {
         // If executing from CLI, schema is undefined, we have to retrieve it first
-        const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getOrdersSchema, context, { syncMetafields }));
+        const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getOrderSchema, context, { syncMetafields }));
         const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
         const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
@@ -498,7 +474,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'Order',
     description: 'Get a single order data.',
-    parameters: [requiredParameters.orderId],
+    parameters: [parameters.orderId],
     cacheTtlSecs: 10,
     resultType: coda.ValueType.Object,
     schema: OrderSchema,
@@ -511,10 +487,10 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
       name: 'Orders',
       description: 'Get orders data.',
       parameters: [
-        optionalParameters.status,
+        { ...sharedParameters.orderStatus, optional: true },
         { ...sharedParameters.filterCreatedAtRange, optional: true },
-        optionalParameters.financial_status,
-        optionalParameters.fulfillment_status,
+        { ...sharedParameters.filterFinancialStatus, optional: true },
+        { ...sharedParameters.filterFulfillmentStatus, optional: true },
         optionalParameters.ids,
         { ...sharedParameters.filterProcessedAtRange, optional: true },
         { ...sharedParameters.filterUpdatedAtRange, optional: true },
@@ -572,7 +548,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
     pack.addFormula({
       name: 'OrderExportFormat',
       description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
-      parameters: [requiredParameters.orderId],
+      parameters: [parameters.orderId],
       cacheTtlSecs: 10,
       resultType: coda.ValueType.String,
       execute: async ([orderID], context) => {
