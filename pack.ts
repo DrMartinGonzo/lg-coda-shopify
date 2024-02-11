@@ -11,6 +11,7 @@ import { setupInventoryLevels } from './inventoryLevels/inventoryLevels-setup';
 import { setupMetafields } from './metafields/metafields-setup';
 import { setupMetaObjects } from './metaobjects/metaobjects-setup';
 import { setupOrders } from './orders/orders-setup';
+import { setupOrderTransactions } from './orderTransactions/transactions-setup';
 import { setupPages } from './pages/pages-setup';
 import { setupProducts } from './products/products-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
@@ -52,6 +53,7 @@ setupInventoryLevels(pack);
 
 setupCustomers(pack);
 setupOrders(pack);
+setupOrderTransactions(pack);
 
 setupArticles(pack);
 setupBlogs(pack);

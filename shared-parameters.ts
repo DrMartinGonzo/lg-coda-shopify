@@ -1,6 +1,13 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from './constants';
+import {
+  OPTIONS_ORDER_FINANCIAL_STATUS,
+  OPTIONS_ORDER_FULFILLMENT_STATUS,
+  OPTIONS_ORDER_STATUS,
+  OPTIONS_PRODUCT_STATUS_REST,
+  OPTIONS_PUBLISHED_STATUS,
+  REST_DEFAULT_LIMIT,
+} from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
 import { autocompleteLocations } from './locations/locations-functions';
 
@@ -96,6 +103,13 @@ export const sharedParameters = {
     description: 'The location.',
     autocomplete: autocompleteLocations,
   }),
+  orderStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'status',
+    autocomplete: OPTIONS_ORDER_STATUS,
+    suggestedValue: 'open',
+    description: 'Filter orders by their status.',
+  }),
 
   /**====================================================================================================================
    *    Filters
@@ -119,6 +133,21 @@ export const sharedParameters = {
     type: coda.ParameterType.String,
     name: 'fields',
     description: 'Comma-separated list of fields names to retrieve. Retrieve all fields if blank.',
+  }),
+  filterFinancialStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'financialStatus',
+    autocomplete: OPTIONS_ORDER_FINANCIAL_STATUS,
+    suggestedValue: 'any',
+    optional: true,
+    description: 'Filter results by their financial status.',
+  }),
+  filterFulfillmentStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'fulfillmentStatus',
+    autocomplete: OPTIONS_ORDER_FULFILLMENT_STATUS,
+    suggestedValue: 'any',
+    description: 'Filter results by their fulfillment status.',
   }),
   filterHandle: coda.makeParameter({
     type: coda.ParameterType.String,
