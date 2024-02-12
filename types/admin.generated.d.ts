@@ -245,6 +245,11 @@ export type InventoryItemUpdateMutation = { inventoryItemUpdate?: AdminTypes.May
       & { trackedEditable: Pick<AdminTypes.EditableProperty, 'locked' | 'reason'>, unitCost?: AdminTypes.Maybe<Pick<AdminTypes.MoneyV2, 'amount' | 'currencyCode'>>, variant: Pick<AdminTypes.ProductVariant, 'id'> }
     )>, userErrors: Array<Pick<AdminTypes.UserError, 'field' | 'message'>> }> };
 
+export type LocationFragment = (
+  Pick<AdminTypes.Location, 'id' | 'isActive' | 'name'>
+  & { address: Pick<AdminTypes.LocationAddress, 'address1' | 'address2' | 'city' | 'country' | 'countryCode' | 'phone' | 'zip' | 'province' | 'provinceCode'> }
+);
+
 export type GetLocationsMetafieldsQueryVariables = AdminTypes.Exact<{
   maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
   cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
@@ -261,6 +266,17 @@ export type GetLocationsMetafieldsQuery = { locations: { nodes: Array<(
           & Pick<AdminTypes.Metafield, 'id' | 'value' | 'type' | 'key' | 'namespace'>
         )> } }
     )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
+
+export type LocationEditMutationVariables = AdminTypes.Exact<{
+  id: AdminTypes.Scalars['ID']['input'];
+  input: AdminTypes.LocationEditInput;
+}>;
+
+
+export type LocationEditMutation = { locationEdit?: AdminTypes.Maybe<{ location?: AdminTypes.Maybe<(
+      Pick<AdminTypes.Location, 'id' | 'isActive' | 'name'>
+      & { address: Pick<AdminTypes.LocationAddress, 'address1' | 'address2' | 'city' | 'country' | 'countryCode' | 'phone' | 'zip' | 'province' | 'provinceCode'> }
+    )>, userErrors: Array<Pick<AdminTypes.LocationEditUserError, 'field' | 'message'>> }> };
 
 export type MetafieldFieldsFragment = (
   { __typename: 'Metafield' }
@@ -580,6 +596,7 @@ interface GeneratedMutationTypes {
   "\n  \n  fragment FileFields on File {\n    __typename\n    id\n    updatedAt\n    alt @include(if: $includeAlt)\n    createdAt @include(if: $includeCreatedAt)\n    updatedAt @include(if: $includeUpdatedAt)\n    thumbnail: preview @include(if: $includeThumbnail) {\n      image {\n        url\n      }\n    }\n\n    ... on GenericFile {\n      mimeType @include(if: $includeMimeType)\n      originalFileSize @include(if: $includeFileSize)\n      url\n    }\n\n    ... on MediaImage {\n      image {\n        url\n        width @include(if: $includeWidth)\n        height @include(if: $includeHeight)\n      }\n      mimeType @include(if: $includeMimeType)\n      originalSource @include(if: $includeFileSize) {\n        fileSize\n      }\n    }\n\n    ... on Video {\n      filename\n      duration @include(if: $includeDuration)\n      originalSource {\n        fileSize @include(if: $includeFileSize)\n        height @include(if: $includeHeight)\n        width @include(if: $includeWidth)\n        mimeType @include(if: $includeMimeType)\n        url @include(if: $includeUrl)\n      }\n    }\n  }\n\n\n  mutation fileUpdate(\n    $files: [FileUpdateInput!]!\n    $includeAlt: Boolean!\n    $includeCreatedAt: Boolean!\n    $includeDuration: Boolean!\n    $includeFileSize: Boolean!\n    $includeHeight: Boolean!\n    $includeMimeType: Boolean!\n    $includeThumbnail: Boolean!\n    $includeUpdatedAt: Boolean!\n    $includeUrl: Boolean!\n    $includeWidth: Boolean!\n  ) {\n    fileUpdate(files: $files) {\n      files {\n        ...FileFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: FileUpdateMutation, variables: FileUpdateMutationVariables},
   "\n  mutation fileDelete($fileIds: [ID!]!) {\n    fileDelete(fileIds: $fileIds) {\n      deletedFileIds\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: FileDeleteMutation, variables: FileDeleteMutationVariables},
   "\n  \n  fragment InventoryItemFields on InventoryItem {\n    harmonizedSystemCode\n    createdAt\n    id\n    inventoryHistoryUrl\n    provinceCodeOfOrigin\n    requiresShipping\n    sku\n    tracked\n    trackedEditable {\n      locked\n      reason\n    }\n    updatedAt\n    unitCost {\n      amount\n      currencyCode\n    }\n    countryCodeOfOrigin\n    locationsCount\n    variant {\n      id\n    }\n  }\n\n\n  mutation inventoryItemUpdate($id: ID!, $input: InventoryItemUpdateInput!) {\n    inventoryItemUpdate(id: $id, input: $input) {\n      inventoryItem {\n        ...InventoryItemFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: InventoryItemUpdateMutation, variables: InventoryItemUpdateMutationVariables},
+  "\n  \n  fragment Location on Location {\n    id\n    isActive\n    address {\n      address1\n      address2\n      city\n      country\n      countryCode\n      phone\n      zip\n      province\n      provinceCode\n    }\n    name\n  }\n\n\n  mutation locationEdit($id: ID!, $input: LocationEditInput!) {\n    locationEdit(id: $id, input: $input) {\n      location {\n        ...Location\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: LocationEditMutation, variables: LocationEditMutationVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    value\n    type\n    key\n    namespace\n    __typename\n  }\n\n  mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {\n    metafieldsSet(metafields: $metafieldsSetInputs) {\n      metafields {\n        ...MetafieldFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: SetMetafieldsMutation, variables: SetMetafieldsMutationVariables},
   "\n  mutation metafieldDelete($input: MetafieldDeleteInput!) {\n    metafieldDelete(input: $input) {\n      deletedId\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: MetafieldDeleteMutation, variables: MetafieldDeleteMutationVariables},
   "\n  mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {\n    metaobjectCreate(metaobject: $metaobject) {\n      metaobject {\n        id\n      }\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: CreateMetaobjectMutation, variables: CreateMetaobjectMutationVariables},

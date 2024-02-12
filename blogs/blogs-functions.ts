@@ -13,6 +13,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
+import { formatOptionNameId } from '../helpers';
 
 // #region Helpers
 export async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
@@ -22,15 +23,17 @@ export async function autocompleteBlogIdParameter(context: coda.ExecutionContext
   });
   let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
   const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
-  const searchObjects = response.body.blogs.map((blog) => {
-    return {
-      ...blog,
-      // BUG hack: convert id to string as we use StringArray ParameterType (@see comment
-      // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
-      string_id: blog.id.toString(),
-    };
+  return coda.autocompleteSearchObjects(search, response.body.blogs, 'title', 'id');
+}
+
+export async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
+  const params = cleanQueryParams({
+    limit: REST_DEFAULT_LIMIT,
+    fields: ['id', 'title'].join(','),
   });
-  return coda.autocompleteSearchObjects(search, searchObjects, 'title', 'string_id');
+  let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
+  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+  return response.body.blogs.map((blog) => formatOptionNameId(blog.title, blog.id));
 }
 
 export function formatBlogStandardFieldsRestParams(

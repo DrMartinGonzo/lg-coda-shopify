@@ -23,17 +23,12 @@ import { sharedParameters } from '../shared-parameters';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import {
-  SyncTableMixedContinuation,
-  SyncTableRestAugmentedContinuation,
-  SyncTableRestContinuation,
-} from '../types/tableSync';
+import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,
   getMetaFieldRealFromKey,
   formatMetafieldsForSchema,
   separatePrefixedMetafieldsKeysFromKeys,
-  makeAutocompleteMetafieldKeysFunction,
   splitMetaFieldFullKey,
   findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
@@ -124,12 +119,12 @@ const parameters = {
     name: 'productVariantId',
     description: 'The Id of the product variant.',
   }),
-  metafieldKey: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'metafieldKey',
-    description: 'The metafield field key',
-    autocomplete: makeAutocompleteMetafieldKeysFunction(MetafieldOwnerType.Productvariant),
-  }),
+  // metafieldKey: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'metafieldKey',
+  //   description: 'The metafield field key',
+  //   autocomplete: makeAutocompleteMetafieldKeysFunction(MetafieldOwnerType.Productvariant),
+  // }),
 };
 
 export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {

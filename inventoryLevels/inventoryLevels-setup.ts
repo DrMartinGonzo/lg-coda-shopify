@@ -21,7 +21,7 @@ const parameters = {
     name: 'available',
     description: 'Sets the available inventory quantity.',
   }),
-  available_adjustment: coda.makeParameter({
+  availableAdjustment: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'availableAdjustment',
     description:
@@ -138,7 +138,7 @@ export const setupInventoryLevels = (pack: coda.PackDefinitionBuilder) => {
         ...sharedParameters.location,
         description: 'The Location for which the available quantity should be adjusted.',
       },
-      parameters.available_adjustment,
+      parameters.availableAdjustment,
     ],
     isAction: true,
     resultType: coda.ValueType.Object,

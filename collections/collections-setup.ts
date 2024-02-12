@@ -217,7 +217,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
           const restParams = cleanQueryParams({
             fields: syncedStandardFields.join(', '),
             limit: restLimit,
-            ids,
+            ids: ids && ids.length ? ids.join(',') : undefined,
             handle,
             product_id,
             title,
