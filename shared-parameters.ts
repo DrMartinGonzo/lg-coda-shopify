@@ -6,29 +6,48 @@ import {
   OPTIONS_ORDER_STATUS,
   OPTIONS_PRODUCT_STATUS_REST,
   OPTIONS_PUBLISHED_STATUS,
-  REST_DEFAULT_LIMIT,
 } from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
-import { autocompleteLocations } from './locations/locations-functions';
+import { autocompleteLocationsWithName } from './locations/locations-functions';
 
 export const sharedParameters = {
-  maxEntriesPerRun: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'maxEntriesPerRun',
-    description: `How many entries do we fetch each run. (max: ${REST_DEFAULT_LIMIT}) (all entries will always be fetched, this is just to adjust if Shopify complains about Query cost)`,
-    optional: true,
-  }),
-
   optionalSyncMetafields: coda.makeParameter({
     type: coda.ParameterType.Boolean,
     name: 'syncMetafields',
     description: 'Also retrieve metafields (slower sync)',
     optional: true,
   }),
+
+  inventoryItemID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'inventoryItemID',
+    description: 'The ID of the Inventory Item.',
+  }),
+
+  locationID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'locationID',
+    description: 'The ID of the location.',
+  }),
+  location: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'location',
+    description: 'The location.',
+    autocomplete: autocompleteLocationsWithName,
+  }),
+
   metafieldValue: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'metafieldValue',
     description: 'The metafield value.',
+  }),
+
+  orderStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'status',
+    autocomplete: OPTIONS_ORDER_STATUS,
+    suggestedValue: 'open',
+    description: 'Filter orders by their status.',
   }),
 
   productId: coda.makeParameter({
@@ -82,53 +101,42 @@ export const sharedParameters = {
     description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
   }),
 
+  // TODO: We will need multiple InputFormat formulas to help format values for the user
   varArgsPropValue: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'value',
     description: 'The property value.',
   }),
-  inventoryItemID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'inventoryItemID',
-    description: 'The ID of the Inventory Item.',
-  }),
-  locationID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'locationID',
-    description: 'The ID of the location.',
-  }),
-  location: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'location',
-    description: 'The location.',
-    autocomplete: autocompleteLocations,
-  }),
-  orderStatus: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'status',
-    autocomplete: OPTIONS_ORDER_STATUS,
-    suggestedValue: 'open',
-    description: 'Filter orders by their status.',
-  }),
 
   /**====================================================================================================================
    *    Filters
    *===================================================================================================================== */
-  filterCreatedAtMax: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'createdAtMax',
-    description: 'Filter results created before this date.',
-  }),
-  filterCreatedAtMin: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'createdAtMin',
-    description: 'Filter results created after this date.',
-  }),
   filterCreatedAtRange: coda.makeParameter({
     type: coda.ParameterType.DateArray,
     name: 'createdAt',
     description: 'Filter results created in the given date range.',
   }),
+  filterPublishedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'publishedAt',
+    description: 'Filter results published in the given date range.',
+  }),
+  filterProcessedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'processedAt',
+    description: 'Filter results processed in the given date range.',
+  }),
+  filterUpdatedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
+    name: 'updatedAt',
+    description: 'Filter results updated in the given date range.',
+  }),
+  filterUpdatedAtMin: coda.makeParameter({
+    type: coda.ParameterType.Date,
+    name: 'updatedAtMin',
+    description: 'Filter results last updated after this date.',
+  }),
+
   filterFields: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'fields',
@@ -160,7 +168,7 @@ export const sharedParameters = {
     description: 'Filter results by comma separated list of handles.',
   }),
   filterIds: coda.makeParameter({
-    type: coda.ParameterType.String,
+    type: coda.ParameterType.StringArray,
     name: 'ids',
     description: 'Filter results by comma-separated list of IDs.',
   }),
@@ -170,33 +178,14 @@ export const sharedParameters = {
     type: coda.ParameterType.StringArray,
     name: 'locations',
     description: 'Filter results by locations.',
-    autocomplete: autocompleteLocations,
+    autocomplete: autocompleteLocationsWithName,
   }),
   filterProductId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'productId',
     description: 'Filter results that include the specified product.',
   }),
-  filterPublishedAtMax: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAtMax',
-    description: 'Filter results published before this date.',
-  }),
-  filterPublishedAtMin: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAtMin',
-    description: 'Filter results published after this date.',
-  }),
-  filterPublishedAtRange: coda.makeParameter({
-    type: coda.ParameterType.DateArray,
-    name: 'publishedAt',
-    description: 'Filter results published in the given date range.',
-  }),
-  filterProcessedAtRange: coda.makeParameter({
-    type: coda.ParameterType.DateArray,
-    name: 'processedAt',
-    description: 'Filter results processed in the given date range.',
-  }),
+
   filterPublishedStatus: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'publishedStatus',
@@ -212,21 +201,6 @@ export const sharedParameters = {
     type: coda.ParameterType.String,
     name: 'title',
     description: 'Filter results by specified title.',
-  }),
-  filterUpdatedAtMax: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updatedAtMax',
-    description: 'Filter results last updated before this date.',
-  }),
-  filterUpdatedAtMin: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updatedAtMin',
-    description: 'Filter results last updated after this date.',
-  }),
-  filterUpdatedAtRange: coda.makeParameter({
-    type: coda.ParameterType.DateArray,
-    name: 'updatedAt',
-    description: 'Filter results updated in the given date range.',
   }),
   filterSkus: coda.makeParameter({
     type: coda.ParameterType.StringArray,

@@ -30,6 +30,7 @@ import {
 } from '../types/admin.generated';
 import { UpdateCreateProp } from '../helpers-varargs';
 import { MetafieldOwnerType } from '../types/Metafields';
+import type { Location as LocationRest } from '@shopify/shopify-api/rest/admin/2023-10/location';
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = LocationSchema;
@@ -41,8 +42,6 @@ async function getLocationSchema(context: coda.ExecutionContext, _: string, form
   return augmentedSchema;
 }
 
-// TODO: on peut update les locations mais seulement via GraphQL
-
 /**
  * The properties that can be updated when updating a location.
  */
@@ -51,49 +50,6 @@ const standardUpdateProps: UpdateCreateProp[] = [];
  * The properties that can be updated when creating a location.
  */
 const standardCreateProps = standardUpdateProps;
-
-const parameters = {
-  // Optional input parameters
-  inputFirstName: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'firstName',
-    description: "The customer's first name.",
-    optional: true,
-  }),
-  inputLastName: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'lastName',
-    description: "The customer's last name.",
-    optional: true,
-  }),
-  inputEmail: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'email',
-    description:
-      'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
-    optional: true,
-  }),
-  inputNote: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'note',
-    description: 'A note about the customer.',
-    optional: true,
-  }),
-  inputPhone: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'phone',
-    description:
-      'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
-    optional: true,
-  }),
-  inputTags: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tags',
-    description:
-      'Tags attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
-    optional: true,
-  }),
-};
 
 export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
   // #region Sync Tables
@@ -153,34 +109,17 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
 
         // Rest Admin API Sync
         if (!skipNextRestSync) {
-          const syncedStandardFields = handleFieldDependencies(standardFromKeys, locationFieldDependencies);
-          const restParams = cleanQueryParams({
-            fields: syncedStandardFields.join(', '),
-            limit: restLimit,
-            // ids,
-            // created_at_min: created_at ? created_at[0] : undefined,
-            // created_at_max: created_at ? created_at[1] : undefined,
-            // updated_at_min: updated_at ? updated_at[0] : undefined,
-            // updated_at_max: updated_at ? updated_at[1] : undefined,
-          });
-
-          // TODO: validateLocationParams
-          // validateLocationParams(restParams);
-
           let url: string;
           if (prevContinuation?.nextUrl) {
-            url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
+            url = prevContinuation.nextUrl;
           } else {
-            url = coda.withQueryParams(
-              `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/locations.json`,
-              restParams
-            );
+            url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/locations.json`;
           }
           const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
           restContinuation = continuation;
 
           if (response && response.body?.locations) {
-            restItems = response.body.locations.map((location) =>
+            restItems = (response.body.locations as LocationRest[]).map((location) =>
               formatLocationForSchemaFromRestApi(location, context)
             );
           }
@@ -350,7 +289,7 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
     execute: async ([location_id], context) => {
       const locationResponse = await fetchLocationRest(location_id, context);
       if (locationResponse.body?.location) {
-        return formatLocationForSchemaFromRestApi(locationResponse.body.location, context);
+        return formatLocationForSchemaFromRestApi(locationResponse.body.location as LocationRest, context);
       }
     },
   });

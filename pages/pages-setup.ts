@@ -80,50 +80,41 @@ const parameters = {
     name: 'pageId',
     description: 'The Id of the page.',
   }),
-
-  // Optional input parameters
-  inputHandle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description: 'The handle of the page.',
-    optional: true,
-  }),
-  inputPublished: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'published',
-    description: 'The visibility status of the page.',
-    optional: true,
-  }),
-  inputPublishedAt: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAt',
-    description: 'The published date and time of the page.',
-    optional: true,
-  }),
+  // inputHandle: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'handle',
+  //   description: 'The handle of the page.',
+  // }),
+  // inputPublished: coda.makeParameter({
+  //   type: coda.ParameterType.Boolean,
+  //   name: 'published',
+  //   description: 'The visibility status of the page.',
+  // }),
+  // inputPublishedAt: coda.makeParameter({
+  //   type: coda.ParameterType.Date,
+  //   name: 'publishedAt',
+  //   description: 'The published date and time of the page.',
+  // }),
   inputTitle: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the page.',
-    optional: true,
   }),
-  inputBodyHtml: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'bodyHtml',
-    description: 'The html content of the page.',
-    optional: true,
-  }),
-  inputAuthor: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'author',
-    description: 'The author of the page.',
-    optional: true,
-  }),
-  inputTemplateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    description: 'The template suffix of the page.',
-    optional: true,
-  }),
+  // inputBodyHtml: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'bodyHtml',
+  //   description: 'The html content of the page.',
+  // }),
+  // inputAuthor: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'author',
+  //   description: 'The author of the page.',
+  // }),
+  // inputTemplateSuffix: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'templateSuffix',
+  //   description: 'The template suffix of the page.',
+  // }),
 };
 
 export const setupPages = (pack: coda.PackDefinitionBuilder) => {
@@ -318,17 +309,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'CreatePage',
     description: `Create a new Shopify page and return GraphQl GID. The page will be visible unless 'published' is set to false.`,
-    parameters: [
-      { ...parameters.inputTitle, optional: false },
-
-      // Optional input parameters
-      // parameters.inputHandle,
-      // parameters.inputPublished,
-      // parameters.inputPublishedAt,
-      // parameters.inputBodyHtml,
-      // parameters.inputAuthor,
-      // parameters.inputTemplateSuffix,
-    ],
+    parameters: [parameters.inputTitle],
     varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,

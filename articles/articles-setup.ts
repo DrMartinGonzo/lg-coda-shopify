@@ -5,7 +5,6 @@ import {
   IDENTITY_ARTICLE,
   METAFIELD_PREFIX_KEY,
   OPTIONS_PUBLISHED_STATUS,
-  RESOURCE_ARTICLE,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -23,7 +22,13 @@ import { ArticleSchema, articleFieldDependencies } from '../schemas/syncTable/Ar
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { sharedParameters } from '../shared-parameters';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import {
+  arrayUnique,
+  compareByDisplayKey,
+  handleFieldDependencies,
+  parseOptionId,
+  wrapGetSchemaForCli,
+} from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,
@@ -45,7 +50,7 @@ import {
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
 import { MetafieldRestInput } from '../types/Metafields';
-import { autocompleteBlogIdParameter } from '../blogs/blogs-functions';
+import { autocompleteBlogIdParameter, autocompleteBlogParameterWithName } from '../blogs/blogs-functions';
 import { MetafieldOwnerType } from '../types/Metafields';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
@@ -88,11 +93,6 @@ const parameters = {
     name: 'articleID',
     description: 'The id of the article.',
   }),
-  articlePseudoGID: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'pseudoGid',
-    description: `The custom coda generated id for the article. Use helper function ArticlePseudoGid to help generate it. Format is gid://shopify/${RESOURCE_ARTICLE}/{article_id}?blog_id={blog_id}`,
-  }),
   author: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'author',
@@ -102,70 +102,40 @@ const parameters = {
     type: coda.ParameterType.Number,
     name: 'blogId',
     description: 'The Id of the blog containing the article.',
+    autocomplete: autocompleteBlogIdParameter,
   }),
   filterBlogs: coda.makeParameter({
-    // BUG: Should be NumberArray but it doesn't seem to work…
-    // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
     type: coda.ParameterType.StringArray,
     name: 'blogs',
     description: 'Only fetch articles from the specified blog IDs.',
-    autocomplete: autocompleteBlogIdParameter,
+    autocomplete: autocompleteBlogParameterWithName,
   }),
-  body_html: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'bodyHtml',
-    description: 'The text of the body of the article, complete with HTML markup.',
-  }),
-  created_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'createdAtMin',
-    description: 'Show articles created after date.',
-    optional: true,
-  }),
-  created_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'createdAtMax',
-    description: 'Show articles created before date.',
-    optional: true,
-  }),
+  // body_html: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'bodyHtml',
+  //   description: 'The text of the body of the article, complete with HTML markup.',
+  // }),
   handle: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'handle',
     description:
       "A human-friendly unique string for the article that's automatically generated from the article's title. The handle is used in the article's URL.",
   }),
-  imageSrc: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'imageSrc',
-    description: 'Source URL that specifies the location of the image.',
-  }),
-  imageAlt: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'imageAlt',
-    description: 'Alternative text that describes the image.',
-  }),
-  published: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'published',
-    description: 'Whether the article is visible.',
-  }),
-  published_at: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAt',
-    description: 'The date and time  when the article was published.',
-  }),
-  published_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAtMin',
-    description: 'Show articles published after date.',
-    optional: true,
-  }),
-  published_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'publishedAtMax',
-    description: 'Show articles published before date.',
-    optional: true,
-  }),
+  // imageSrc: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'imageSrc',
+  //   description: 'Source URL that specifies the location of the image.',
+  // }),
+  // imageAlt: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'imageAlt',
+  //   description: 'Alternative text that describes the image.',
+  // }),
+  // published: coda.makeParameter({
+  //   type: coda.ParameterType.Boolean,
+  //   name: 'published',
+  //   description: 'Whether the article is visible.',
+  // }),
   published_status: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'publishedStatus',
@@ -173,29 +143,23 @@ const parameters = {
     optional: true,
     autocomplete: OPTIONS_PUBLISHED_STATUS,
   }),
-  summary_html: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'summaryHtml',
-    description:
-      'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
-  }),
-  tags: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tags',
-    description:
-      'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
-  }),
-  template_suffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    description: "The name of the template an article is using if it's using an alternate template.",
-  }),
-  since_id: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'sinceId',
-    description: 'Restrict results to after the specified ID.',
-    optional: true,
-  }),
+  // summary_html: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'summaryHtml',
+  //   description:
+  //     'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
+  // }),
+  // tags: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'tags',
+  //   description:
+  //     'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
+  // }),
+  // template_suffix: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'templateSuffix',
+  //   description: "The name of the template an article is using if it's using an alternate template.",
+  // }),
   tag: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'tag',
@@ -206,18 +170,6 @@ const parameters = {
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the article.',
-  }),
-  updated_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updatedAtMax',
-    description: 'Show articles last updated before date.',
-    optional: true,
-  }),
-  updated_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updatedAtMin',
-    description: 'Show articles last updated after date.',
-    optional: true,
   }),
 };
 
@@ -296,7 +248,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         // Should trigger only on first run when user has specified the blogs he
         // wants to sync articles from
         if (!blogIdsLeft.length && restrictToBlogIds && restrictToBlogIds.length) {
-          blogIdsLeft = restrictToBlogIds;
+          blogIdsLeft = restrictToBlogIds.map(parseOptionId);
         }
 
         if (prevContinuation?.nextUrl) {

@@ -87,46 +87,39 @@ const parameters = {
     name: 'customerId',
     description: 'The ID of the customer.',
   }),
-  // Optional input parameters
-  inputFirstName: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'firstName',
-    description: "The customer's first name.",
-    optional: true,
-  }),
-  inputLastName: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'lastName',
-    description: "The customer's last name.",
-    optional: true,
-  }),
-  inputEmail: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'email',
-    description:
-      'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
-    optional: true,
-  }),
-  inputNote: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'note',
-    description: 'A note about the customer.',
-    optional: true,
-  }),
-  inputPhone: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'phone',
-    description:
-      'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
-    optional: true,
-  }),
-  inputTags: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tags',
-    description:
-      'Tags attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
-    optional: true,
-  }),
+  // inputFirstName: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'firstName',
+  //   description: "The customer's first name.",
+  // }),
+  // inputLastName: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'lastName',
+  //   description: "The customer's last name.",
+  // }),
+  // inputEmail: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'email',
+  //   description:
+  //     'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
+  // }),
+  // inputNote: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'note',
+  //   description: 'A note about the customer.',
+  // }),
+  // inputPhone: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'phone',
+  //   description:
+  //     'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
+  // }),
+  // inputTags: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'tags',
+  //   description:
+  //     'Tags attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
+  // }),
 };
 
 export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
@@ -204,7 +197,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
           const restParams = cleanQueryParams({
             fields: syncedStandardFields.join(', '),
             limit: restLimit,
-            ids,
+            ids: ids && ids.length ? ids.join(',') : undefined,
             created_at_min: created_at ? created_at[0] : undefined,
             created_at_max: created_at ? created_at[1] : undefined,
             updated_at_min: updated_at ? updated_at[0] : undefined,

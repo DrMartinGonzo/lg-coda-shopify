@@ -31,6 +31,7 @@ import {
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { buildQueryAllMetaObjectsWithFields, queryAllMetaobjectDefinitions } from './metaobjects-graphql';
 import { GetMetaobjectDefinitionsQueryVariables } from '../types/admin.generated';
+import { sharedParameters } from '../shared-parameters';
 
 async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
   const metaobjectDefinition = await getMetaObjectDefinitionById(context.sync.dynamicUrl, true, true, context);
@@ -76,11 +77,6 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
 }
 
 const parameters = {
-  metaobjectGID: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'metaobjectGid',
-    description: 'The GraphQL GID of the metaobject.',
-  }),
   metaobjectID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'metaobjectId',
@@ -96,13 +92,6 @@ const parameters = {
     name: 'status',
     description: 'The status of the metaobject.',
     autocomplete: OPTIONS_METAOBJECT_STATUS,
-  }),
-
-  // TODO: We will need multiple InputFormat formulas to help format values for the user
-  varArgsValue: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'value',
-    description: 'The field value.',
   }),
 };
 
@@ -294,10 +283,10 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
-        description: 'The field key (metaobject type must be provided for autocomplete to work).',
+        description: 'The metaobject property to update (metaobject type must be provided for autocomplete to work).',
         autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectType,
       }),
-      parameters.varArgsValue,
+      sharedParameters.varArgsPropValue,
     ],
     isAction: true,
     resultType: coda.ValueType.String,
@@ -337,10 +326,11 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
-        description: 'The field key (ID of the metaobject must be provided for autocomplete to work).',
+        description:
+          'The metaobject property to update (ID of the metaobject must be provided for autocomplete to work).',
         autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectGid,
       }),
-      parameters.varArgsValue,
+      sharedParameters.varArgsPropValue,
     ],
     isAction: true,
     resultType: coda.ValueType.Number,

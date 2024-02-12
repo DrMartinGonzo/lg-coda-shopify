@@ -423,7 +423,7 @@ export function getResourceMetafieldsRestUrl(resourceType: string, resourceId: n
   return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${resourceType}/${resourceId}/metafields.json`;
 }
 
-export function resourceEndpointFromResourceType(resourceType) {
+export function getMetafieldRestEndpointFromRestResourceType(resourceType) {
   switch (resourceType) {
     case 'article':
       return 'articles';
@@ -465,7 +465,6 @@ export const deleteMetafieldsByKeysRest = async (
   metafieldFromKeys: string[],
   context: coda.ExecutionContext
 ) => {
-  // TODO: replace with something that would eliminate the need for resourceType
   const response = await fetchResourceMetafields(resourceMetafieldsUrl, {}, context, 0);
   if (response && response.body.metafields) {
     const promises = metafieldFromKeys.map(async (fromKey) => {
@@ -515,7 +514,7 @@ export const getResourceMetafieldByNamespaceKey = async (
   context: coda.ExecutionContext
 ): Promise<MetafieldRest> => {
   const res = await fetchResourceMetafields(
-    getResourceMetafieldsRestUrl(resourceEndpointFromResourceType(resourceType), resourceId, context),
+    getResourceMetafieldsRestUrl(getMetafieldRestEndpointFromRestResourceType(resourceType), resourceId, context),
     { namespace: metaNamespace, key: metaKey },
     context
   );
@@ -524,7 +523,7 @@ export const getResourceMetafieldByNamespaceKey = async (
 
 export async function handleResourceMetafieldsUpdateGraphQl(
   resourceGid: string,
-  // TODO: remove dependency on thsi variable resourceType
+  // TODO: remove dependency on this variable resourceType
   resourceType: string,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   update: SyncUpdateNoPreviousValues,
@@ -545,7 +544,7 @@ export async function handleResourceMetafieldsUpdateGraphQl(
   if (prefixedMetafieldsToDelete.length) {
     const deletedMetafields = await deleteMetafieldsByKeysRest(
       getResourceMetafieldsRestUrl(
-        resourceEndpointFromResourceType(resourceType),
+        getMetafieldRestEndpointFromRestResourceType(resourceType),
         graphQlGidToId(resourceGid),
         context
       ),
@@ -1199,7 +1198,7 @@ export const updateResourceMetafield = async ([metafieldId, resourceId, resource
   if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
   }
-  const endpointType = resourceEndpointFromResourceType(resourceType);
+  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
   let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
   // edge case
   if (resourceType === 'Shop') {
@@ -1219,7 +1218,7 @@ export const createResourceMetafield = async ([resourceId, resourceType, namespa
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
   }
 
-  const endpointType = resourceEndpointFromResourceType(resourceType);
+  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
   let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
@@ -1245,7 +1244,7 @@ export const createResourceMetafieldNew = async ([resourceId, resourceType, name
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
   }
 
-  const endpointType = resourceEndpointFromResourceType(resourceType);
+  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
   let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
   // edge case
   if (resourceType === 'Shop') {
