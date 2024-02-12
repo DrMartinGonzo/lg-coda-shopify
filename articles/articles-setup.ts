@@ -19,10 +19,10 @@ import {
   formatArticleStandardFieldsRestParams,
 } from './articles-functions';
 
-import { ArticleSchema, articleFieldDependencies } from './articles-schema';
+import { ArticleSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
@@ -226,7 +226,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Articles',
     description:
-      "Return Articles from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each blog to get its metafields).",
+      "Return Articles from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each blog to get its metafields).",
     identityName: IDENTITY_ARTICLE,
     schema: ArticleSchema,
     dynamicOptions: {

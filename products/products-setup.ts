@@ -19,7 +19,7 @@ import {
   deleteProductRest,
   handleProductUpdateJob,
 } from './products-functions';
-import { ProductSchemaRest, productFieldDependencies } from './products-schema';
+import { ProductSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
 import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
 import { sharedParameters } from '../shared-parameters';
 
@@ -31,7 +31,7 @@ import {
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import {
   fetchMetafieldDefinitions,
   findMatchingMetafieldDefinition,
@@ -168,7 +168,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Products',
     description:
-      'Return Products from this shop. You can also fetch metafields by selection them in advanced settings.',
+      'Return Products from this shop. You can also fetch metafields by selecting them in advanced settings.',
     identityName: IDENTITY_PRODUCT,
     schema: ProductSchemaRest,
     dynamicOptions: {
@@ -585,7 +585,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'ProductsGraphQL',
     description:
-      'Return Products from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync.',
+      'Return Products from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync.',
     identityName: IDENTITY_PRODUCT + '_GRAPHQL',
     schema: ProductSchemaGraphQl,
     dynamicOptions: {

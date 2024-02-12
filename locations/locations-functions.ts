@@ -4,7 +4,7 @@ import { makeGetRequest } from '../helpers-rest';
 import { CACHE_SINGLE_FETCH, RESOURCE_LOCATION, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { FormatFunction } from '../types/misc';
 
-import { LocationSchema } from './locations-schema';
+import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { idToGraphQlGid } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,

@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { FileSchema } from './files-schema';
+import { FileSchema } from '../schemas/syncTable/FileSchema';
 import { deleteFileGraphQl, handleFileUpdateJob, formatFileNodeForSchema } from './files-functions';
 import { IDENTITY_FILE, OPTIONS_FILE_TYPE } from '../constants';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';

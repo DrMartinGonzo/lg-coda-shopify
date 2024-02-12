@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryItemSchema } from './inventoryItems-schema';
+import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
 import { CODA_SUPORTED_CURRENCIES, IDENTITY_INVENTORYITEM } from '../constants';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';

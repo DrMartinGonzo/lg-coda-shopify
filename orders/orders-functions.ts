@@ -18,7 +18,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePutRequest } f
 import { formatCustomerForSchemaFromRestApi } from '../customers/customers-functions';
 import { FormatFunction } from '../types/misc';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { OrderSchema } from './orders-schema';
+import { OrderSchema } from '../schemas/syncTable/OrderSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getResourceMetafieldsRestUrl,

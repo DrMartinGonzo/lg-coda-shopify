@@ -24,7 +24,7 @@ export const formatOrderTransactionForSchemaFromGraphQlApi = (
     order_id: graphQlGidToId(parentOrder.id),
     order: {
       id: graphQlGidToId(parentOrder.id),
-      name: NOT_FOUND,
+      name: parentOrder.name,
     },
   };
 

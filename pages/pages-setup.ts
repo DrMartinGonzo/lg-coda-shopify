@@ -18,9 +18,9 @@ import {
   handlePageUpdateJob,
 } from './pages-functions';
 
-import { PageSchema, pageFieldDependencies } from './pages-schema';
+import { PageSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import {
   fetchMetafieldDefinitions,
   fetchResourceMetafields,

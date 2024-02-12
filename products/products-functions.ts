@@ -32,7 +32,7 @@ import type {
   UpdateProductMutationVariables,
 } from '../types/admin.generated';
 import { MutationSetMetafields } from '../metafields/metafields-graphql';
-import { ProductSchemaRest } from './products-schema';
+import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {

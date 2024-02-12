@@ -9,7 +9,7 @@ import {
   CONSENT_STATE__SUBSCRIBED,
   CONSENT_STATE__UNSUBSCRIBED,
   CustomerSchema,
-} from './customers-schema';
+} from '../schemas/syncTable/CustomerSchema';
 import { idToGraphQlGid } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,

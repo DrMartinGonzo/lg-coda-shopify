@@ -7,7 +7,7 @@ import {
   setInventoryLevelRest,
 } from './inventoryLevels-functions';
 
-import { InventoryLevelSchema } from './inventoryLevels-schema';
+import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { IDENTITY_INVENTORYLEVEL, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
