@@ -11,7 +11,8 @@ import { setupInventoryLevels } from './inventoryLevels/inventoryLevels-setup';
 import { setupMetafields } from './metafields/metafields-setup';
 import { setupMetaObjects } from './metaobjects/metaobjects-setup';
 import { setupOrders } from './orders/orders-setup';
-import { setupOrderTransactions } from './orderTransactions/transactions-setup';
+import { setupOrderLineItems } from './orderLineItems/orderLineItems-setup';
+import { setupOrderTransactions } from './orderTransactions/orderTransactions-setup';
 import { setupPages } from './pages/pages-setup';
 import { setupProducts } from './products/products-setup';
 import { setupProductVariants } from './productVariants/productVariants-setup';
@@ -21,6 +22,7 @@ import { setupLocations } from './locations/locations-setup';
 import { setupRedirects } from './redirects/redirects-setup';
 
 import { fetchShopDetails } from './shop/shop-functions';
+import { setupInventoryItems } from './inventoryItems/inventoryItems-setup';
 
 export const pack = coda.newPack();
 
@@ -49,10 +51,12 @@ setupProducts(pack);
 setupProductVariants(pack);
 setupCollections(pack);
 setupLocations(pack);
+setupInventoryItems(pack);
 setupInventoryLevels(pack);
 
 setupCustomers(pack);
 setupOrders(pack);
+setupOrderLineItems(pack);
 setupOrderTransactions(pack);
 
 setupArticles(pack);

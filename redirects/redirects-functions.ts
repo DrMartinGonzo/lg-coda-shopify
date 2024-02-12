@@ -4,7 +4,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 import { CACHE_SINGLE_FETCH, REST_DEFAULT_API_VERSION } from '../constants';
 import { FormatFunction } from '../types/misc';
 
-import { RedirectSchema } from './redirects-schema';
+import { RedirectSchema } from '../schemas/syncTable/RedirectSchema';
 import { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
 
 // #region Helpers

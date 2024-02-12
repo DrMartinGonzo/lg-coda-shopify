@@ -8,7 +8,7 @@ import {
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
-import { ProductVariantSchema } from './productVariants-schema';
+import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { MetafieldDefinition } from '../types/admin.types';
 import {
   handleResourceMetafieldsUpdateGraphQl,

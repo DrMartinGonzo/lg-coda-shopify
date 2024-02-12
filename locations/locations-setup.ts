@@ -2,10 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 
 import { formatLocationForSchemaFromRestApi, handleLocationUpdateJob, fetchLocationRest } from './locations-functions';
 
-import { LocationSchema, locationFieldDependencies } from './locations-schema';
+import { LocationSchema, locationFieldDependencies } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
 import { IDENTITY_LOCATION, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,

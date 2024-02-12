@@ -5,7 +5,7 @@ import { makeGraphQlRequest } from '../helpers-graphql';
 import { deleteFiles, UpdateFile } from './files-graphql';
 import { FormatFunction } from '../types/misc';
 import { FileFieldsFragment, FileUpdateMutationVariables } from '../types/admin.generated';
-import { FileSchema } from './files-schema';
+import { FileSchema } from '../schemas/syncTable/FileSchema';
 import { FileUpdateInput } from '../types/admin.types';
 
 // #region Helpers

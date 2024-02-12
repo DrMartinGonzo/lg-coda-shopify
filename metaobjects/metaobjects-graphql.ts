@@ -1,10 +1,6 @@
-// #region Helpers
-
-// #endregion
-
 // #region Fragments
-const MetaobjectFieldDefinitionFieldsFragment = /* GraphQL */ `
-  fragment MetaobjectFieldDefinitionFields on MetaobjectFieldDefinition {
+const MetaobjectFieldDefinitionFragment = /* GraphQL */ `
+  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {
     key
     description
     name
@@ -22,6 +18,25 @@ const MetaobjectFieldDefinitionFieldsFragment = /* GraphQL */ `
       name
       type
       value
+    }
+  }
+`;
+
+const MetaobjectDefinitionFragment = /* GraphQL */ `
+  ${MetaobjectFieldDefinitionFragment}
+
+  fragment MetaobjectDefinition on MetaobjectDefinition {
+    id
+    name
+    displayNameKey
+    type
+    capabilities @include(if: $includeCapabilities) {
+      publishable {
+        enabled
+      }
+    }
+    fieldDefinitions @include(if: $includeFieldDefinitions) {
+      ...MetaobjectFieldDefinition
     }
   }
 `;
@@ -45,38 +60,6 @@ function buildOptionalFieldsFragment(fieldsKey: string[]) {
 // #endregion
 
 // #region Queries
-export const queryMetaobjectDynamicUrls = /* GraphQL */ `
-  query GetMetaobjectDynamicUrls($cursor: String) {
-    metaobjectDefinitions(first: 20, after: $cursor) {
-      nodes {
-        id
-        name
-        displayNameKey
-        type
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
-export const queryMetaobjectTypes = /* GraphQL */ `
-  query queryMetaobjectTypes($cursor: String) {
-    metaobjectDefinitions(first: 20, after: $cursor) {
-      nodes {
-        name
-        type
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
   // no GraphQL tag as it confuses graphql codegen */
   return `
@@ -104,66 +87,68 @@ export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
   `;
 }
 
-export const querySyncTableDetails = /* GraphQL */ `
-  query GetMetaobjectDefinitionType($id: ID!) {
-    metaobjectDefinition(id: $id) {
-      type
-    }
-  }
-`;
-
-export const queryMetaObjectFieldDefinitionsFromMetaobjectDefinition = /* GraphQL */ `
-  ${MetaobjectFieldDefinitionFieldsFragment}
+export const queryMetaObjectDefinitionFieldDefinitions = /* GraphQL */ `
+  ${MetaobjectFieldDefinitionFragment}
 
   query GetMetaObjectFieldDefinitionsFromMetaobjectDefinition($id: ID!) {
     metaobjectDefinition(id: $id) {
       fieldDefinitions {
-        ...MetaobjectFieldDefinitionFields
+        ...MetaobjectFieldDefinition
       }
     }
   }
 `;
 
 export const queryMetaObjectFieldDefinitions = /* GraphQL */ `
-  ${MetaobjectFieldDefinitionFieldsFragment}
+  ${MetaobjectFieldDefinitionFragment}
 
   query GetMetaObjectFieldDefinitions($id: ID!) {
     metaobject(id: $id) {
       definition {
         fieldDefinitions {
-          ...MetaobjectFieldDefinitionFields
+          ...MetaobjectFieldDefinition
         }
       }
     }
   }
 `;
 
-export const queryMetaobjectDefinitionsByType = /* GraphQL */ `
-  ${MetaobjectFieldDefinitionFieldsFragment}
+export const queryMetaobjectDefinitionByType = /* GraphQL */ `
+  ${MetaobjectDefinitionFragment}
 
-  query GetMetaobjectDefinitionByType($type: String!) {
+  query GetMetaobjectDefinitionByType(
+    $type: String!
+    $includeCapabilities: Boolean!
+    $includeFieldDefinitions: Boolean!
+  ) {
     metaobjectDefinitionByType(type: $type) {
-      displayNameKey
-      capabilities {
-        publishable {
-          enabled
-        }
-      }
-      fieldDefinitions {
-        ...MetaobjectFieldDefinitionFields
-      }
+      ...MetaobjectDefinition
+    }
+  }
+`;
+
+export const queryMetaobjectDefinition = /* GraphQL */ `
+  ${MetaobjectDefinitionFragment}
+
+  query GetMetaobjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {
+    metaobjectDefinition(id: $id) {
+      ...MetaobjectDefinition
     }
   }
 `;
 
 export const queryAllMetaobjectDefinitions = /* GraphQL */ `
-  query GetMetaobjectDefinitions($batchSize: Int!, $cursor: String) {
+  ${MetaobjectDefinitionFragment}
+
+  query GetMetaobjectDefinitions(
+    $batchSize: Int!
+    $cursor: String
+    $includeCapabilities: Boolean!
+    $includeFieldDefinitions: Boolean!
+  ) {
     metaobjectDefinitions(first: $batchSize, after: $cursor) {
       nodes {
-        id
-        name
-        displayNameKey
-        type
+        ...MetaobjectDefinition
       }
       pageInfo {
         hasNextPage

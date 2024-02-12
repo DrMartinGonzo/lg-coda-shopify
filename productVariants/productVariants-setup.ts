@@ -18,9 +18,9 @@ import {
   validateProductVariantParams,
 } from './productVariants-functions';
 
-import { ProductVariantSchema, productVariantFieldDependencies } from './productVariants-schema';
+import { ProductVariantSchema, productVariantFieldDependencies } from '../schemas/syncTable/ProductVariantSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {

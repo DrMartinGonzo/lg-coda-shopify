@@ -2,8 +2,6 @@ import '../types/admin.generated.d.ts';
 
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
-export const MAX_OPTIONS_PER_PRODUCT = 3;
-
 // #region Helpers
 export function buildOrdersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
@@ -14,12 +12,7 @@ export function buildOrdersSearchQuery(filters: { [key: string]: any }) {
 }
 // #endregion
 
-// #region Fragments
-
-// #endregion
-
 // #region Queries
-
 export const QueryOrdersMetafieldsAdmin = /* GraphQL */ `
   ${MetafieldFieldsFragment}
 
@@ -46,12 +39,4 @@ export const QueryOrdersMetafieldsAdmin = /* GraphQL */ `
     }
   }
 `;
-// #endregion
-
-// #region Mutations
-
-// #endregion
-
-// #region Unused stuff
-
 // #endregion

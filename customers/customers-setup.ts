@@ -9,7 +9,7 @@ import {
   formatCustomerStandardFieldsRestParams,
 } from './customers-functions';
 
-import { CustomerSchema, customerFieldDependencies } from './customers-schema';
+import { CustomerSchema, customerFieldDependencies } from '../schemas/syncTable/CustomerSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   CACHE_MINUTE,
@@ -18,7 +18,7 @@ import {
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitions,

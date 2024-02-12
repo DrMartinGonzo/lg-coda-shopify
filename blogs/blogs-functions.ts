@@ -5,7 +5,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 
 import { idToGraphQlGid } from '../helpers-graphql';
 import { FormatFunction } from '../types/misc';
-import { BlogSchema } from './blogs-schema';
+import { BlogSchema } from '../schemas/syncTable/BlogSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getResourceMetafieldsRestUrl,

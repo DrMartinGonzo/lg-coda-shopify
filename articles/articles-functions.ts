@@ -3,7 +3,7 @@ import striptags from 'striptags';
 
 import { NOT_FOUND, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { ArticleSchema } from './articles-schema';
+import { ArticleSchema } from '../schemas/syncTable/ArticleSchema';
 import { getThumbnailUrlFromFullUrl } from '../helpers';
 import { FormatFunction } from '../types/misc';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
