@@ -5,14 +5,14 @@ export interface ArticleSyncTableRestParams {
   limit?: number;
   author?: string;
   tag?: string;
-  created_at_max?: string;
-  created_at_min?: string;
+  created_at_max?: Date;
+  created_at_min?: Date;
   handle?: string;
-  published_at_max?: string;
-  published_at_min?: string;
+  published_at_max?: Date;
+  published_at_min?: Date;
   published_status?: string;
-  updated_at_max?: string;
-  updated_at_min?: string;
+  updated_at_max?: Date;
+  updated_at_min?: Date;
 }
 
 export interface ArticleUpdateRestParams {
@@ -25,7 +25,7 @@ export interface ArticleUpdateRestParams {
     alt?: string;
     src?: string;
   };
-  published_at?: string;
+  published_at?: Date;
   published?: boolean;
   summary_html?: string;
   tags?: string;
@@ -44,7 +44,7 @@ export interface ArticleCreateRestParams {
     alt?: string;
   };
   metafields?: MetafieldRestInput[];
-  published_at?: string;
+  published_at?: Date;
   published?: boolean;
   summary_html?: string;
   tags?: string;

@@ -1,8 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CODA_SUPORTED_CURRENCIES, IDENTITY_ORDER_TRANSACTION } from '../constants';
-import { formatOrderTransactionForSchemaFromGraphQlApi } from './transactions-functions';
-import { OrderTransactionSchema } from './transactions-schema';
+import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
+import { OrderTransactionSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { sharedParameters } from '../shared-parameters';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
@@ -12,7 +12,7 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 
-import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './transactions-graphql';
+import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
 import { fetchShopDetails } from '../shop/shop-functions';
 
 async function getOrderTransactionSchema(

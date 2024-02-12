@@ -5,7 +5,7 @@ import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
 import { FormatFunction } from '../types/misc';
-import { PageSchema } from './pages-schema';
+import { PageSchema } from '../schemas/syncTable/PageSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getResourceMetafieldsRestUrl,

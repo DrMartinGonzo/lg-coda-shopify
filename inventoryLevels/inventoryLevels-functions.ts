@@ -4,7 +4,7 @@ import { makePostRequest } from '../helpers-rest';
 import { NOT_FOUND, REST_DEFAULT_API_VERSION } from '../constants';
 import { FormatFunction } from '../types/misc';
 
-import { InventoryLevelSchema } from './inventoryLevels-schema';
+import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { InventoryLevelAdjustRestParams, InventoryLevelSetRestParams } from '../types/InventoryLevel';
 
 // #region Helpers

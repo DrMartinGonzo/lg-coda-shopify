@@ -15,7 +15,7 @@ import {
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
-import { CollectionSchema } from './collections-schema';
+import { CollectionSchema } from '../schemas/syncTable/CollectionSchema';
 import { FormatFunction } from '../types/misc';
 
 import {

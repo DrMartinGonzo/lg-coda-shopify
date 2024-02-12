@@ -1,11 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CollectSchema,
-  CollectionSchema,
-  collectFieldDependencies,
-  collectionFieldDependencies,
-} from './collections-schema';
+import { CollectSchema, collectFieldDependencies } from '../schemas/syncTable/CollectSchema';
+import { CollectionSchema, collectionFieldDependencies } from '../schemas/syncTable/CollectionSchema';
 import {
   getCollectionTypeGraphQl,
   deleteCollectionRest,
@@ -36,7 +32,7 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';

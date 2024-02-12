@@ -17,9 +17,9 @@ import {
   handleOrderUpdateJob,
   validateOrderParams,
 } from './orders-functions';
-import { OrderSchema, orderFieldDependencies } from './orders-schema';
+import { OrderSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/Metafields';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
@@ -62,48 +62,32 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     }
 
     // Refund order adjustments
-    [
-      augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties,
-      augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties,
-    ].forEach((properties) => {
+    [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
       properties.amount.currencyCode = currencyCode;
       properties.tax_amount.currencyCode = currencyCode;
     });
 
     // Refund transactions
-    [
-      augmentedSchema.properties.refunds.items.properties.transactions.items.properties,
-      augmentedSchema.properties.refunds.items.properties.transactions.items.properties,
-    ].forEach((properties) => {
+    [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
       properties.amount.currencyCode = currencyCode;
       properties.total_unsettled.currencyCode = currencyCode;
     });
 
     // Refund line items
-    [
-      augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties,
-      augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties,
-    ].forEach((properties) => {
+    [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
       properties.subtotal.currencyCode = currencyCode;
       properties.total_tax.currencyCode = currencyCode;
     });
 
     // Line items
-    [
-      augmentedSchema.properties.line_items.items.properties,
-      augmentedSchema.properties.line_items.items.properties,
-      augmentedSchema.properties.line_items.items.properties,
-    ].forEach((properties) => {
+    [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
       properties.price.currencyCode = currencyCode;
       properties.total_discount.currencyCode = currencyCode;
       properties.discount_allocations.items.properties.amount.currencyCode = currencyCode;
     });
 
     // Shipping lines
-    [
-      augmentedSchema.properties.shipping_lines.items.properties,
-      augmentedSchema.properties.shipping_lines.items.properties,
-    ].forEach((properties) => {
+    [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
       properties.discounted_price.currencyCode = currencyCode;
       properties.price.currencyCode = currencyCode;
     });
@@ -254,7 +238,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
   // Orders sync table
   pack.addSyncTable({
     name: 'Orders',
-    description: 'All Shopify orders',
+    description: 'Return Orders from this shop. You can also fetch metafields by selecting them in advanced settings.',
     identityName: IDENTITY_ORDER,
     schema: OrderSchema,
     dynamicOptions: {

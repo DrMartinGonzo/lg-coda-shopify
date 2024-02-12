@@ -17,7 +17,7 @@ import {
   formatBlogStandardFieldsRestParams,
 } from './blogs-functions';
 
-import { BlogSchema, blogFieldDependencies } from './blogs-schema';
+import { BlogSchema, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   UpdateCreateProp,
@@ -25,7 +25,7 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-schema';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
@@ -95,7 +95,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
   pack.addSyncTable({
     name: 'Blogs',
     description:
-      "Return Blogs from this shop. You can also fetch metafields by selection them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
+      "Return Blogs from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
     identityName: IDENTITY_BLOG,
     schema: BlogSchema,
     dynamicOptions: {

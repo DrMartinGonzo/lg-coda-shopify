@@ -4,7 +4,7 @@ import { FormatFunction } from '../types/misc';
 import { InventoryItemFieldsFragment, InventoryItemUpdateMutationVariables } from '../types/admin.generated';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { NOT_FOUND, RESOURCE_INVENTORY_ITEM } from '../constants';
-import { InventoryItemSchema } from './inventoryItems-schema';
+import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryItemUpdateInput } from '../types/admin.types';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
 

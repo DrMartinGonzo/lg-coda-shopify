@@ -8,7 +8,7 @@ import {
   handleRedirectUpdateJob,
 } from './redirects-functions';
 
-import { RedirectSchema, redirectFieldDependencies } from './redirects-schema';
+import { RedirectSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
 import { IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
