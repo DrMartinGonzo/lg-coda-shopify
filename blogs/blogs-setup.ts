@@ -75,19 +75,16 @@ const parameters = {
     name: 'blogId',
     description: 'The Id of the blog.',
   }),
-  // Optional input parameters
   inputTitle: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the page.',
-    optional: true,
   }),
-  inputHandle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description: 'The handle of the page.',
-    optional: true,
-  }),
+  // inputHandle: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'handle',
+  //   description: 'The handle of the page.',
+  // }),
 };
 
 export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
@@ -244,7 +241,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'CreateBlog',
     description: `Create a new Shopify Blog and return its ID.`,
-    parameters: [{ ...parameters.inputTitle, optional: false }],
+    parameters: [parameters.inputTitle],
     varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,

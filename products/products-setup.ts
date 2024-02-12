@@ -6,7 +6,6 @@ import {
   DEFAULT_PRODUCT_STATUS_REST,
   IDENTITY_PRODUCT,
   METAFIELD_PREFIX_KEY,
-  OPTIONS_PRODUCT_STATUS_GRAPHQL,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -37,7 +36,6 @@ import {
   findMatchingMetafieldDefinition,
   formatMetafieldsForSchema,
   getMetaFieldRealFromKey,
-  makeAutocompleteMetafieldKeysFunction,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
@@ -99,67 +97,61 @@ const parameters = {
     name: 'productGid',
     description: 'The GraphQL GID of the product.',
   }),
-  status: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'status',
-    description: 'The status of the product.',
-    autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
-  }),
-  singleStatus: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'status',
-    description: 'The status of the product.',
-    autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
-  }),
-  giftCard: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'giftCard',
-    description: 'Whether the product is a gift card.',
-  }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    description:
-      'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
-  }),
-  handle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description:
-      "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
-  }),
+  // status: coda.makeParameter({
+  //   type: coda.ParameterType.StringArray,
+  //   name: 'status',
+  //   description: 'The status of the product.',
+  //   autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
+  // }),
+  // singleStatus: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'status',
+  //   description: 'The status of the product.',
+  //   autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
+  // }),
+  // giftCard: coda.makeParameter({
+  //   type: coda.ParameterType.Boolean,
+  //   name: 'giftCard',
+  //   description: 'Whether the product is a gift card.',
+  // }),
+  // templateSuffix: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'templateSuffix',
+  //   description:
+  //     'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
+  // }),
+  // handle: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'handle',
+  //   description:
+  //     "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
+  // }),
   title: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The name of the product.',
   }),
-  descriptionHtml: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'descriptionHtml',
-    description: 'The description of the product, complete with HTML markup.',
-  }),
-  bodyHtml: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'bodyHtml',
-    description: 'The description of the product, complete with HTML markup.',
-  }),
-  tags: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tags',
-    description: 'A string of comma-separated tags.',
-  }),
-  options: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'options',
-    description:
-      'A comma-separated list of up to 3 options for how this product can vary. Options are things like "Size" or "Color".',
-  }),
-  metafieldKey: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'metafieldKey',
-    description: 'The metafield field key',
-    autocomplete: makeAutocompleteMetafieldKeysFunction(MetafieldOwnerType.Product),
-  }),
+  // descriptionHtml: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'descriptionHtml',
+  //   description: 'The description of the product, complete with HTML markup.',
+  // }),
+  // bodyHtml: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'bodyHtml',
+  //   description: 'The description of the product, complete with HTML markup.',
+  // }),
+  // tags: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'tags',
+  //   description: 'A string of comma-separated tags.',
+  // }),
+  // options: coda.makeParameter({
+  //   type: coda.ParameterType.StringArray,
+  //   name: 'options',
+  //   description:
+  //     'A comma-separated list of up to 3 options for how this product can vary. Options are things like "Size" or "Color".',
+  // }),
 };
 
 export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
@@ -448,7 +440,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
   pack.addFormula({
     name: 'CreateProduct',
     description: 'Create a new Shopify Product and return Product Id.',
-    parameters: [{ ...parameters.title }],
+    parameters: [parameters.title],
     varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,

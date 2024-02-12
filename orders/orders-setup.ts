@@ -5,8 +5,6 @@ import {
   IDENTITY_ORDER,
   IS_ADMIN_RELEASE,
   METAFIELD_PREFIX_KEY,
-  OPTIONS_ORDER_FINANCIAL_STATUS,
-  OPTIONS_ORDER_STATUS,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -157,10 +155,6 @@ const standardUpdateProps: UpdateCreateProp[] = [
     type: 'string',
   },
 ];
-/**
- * The properties that can be updated when creating an order.
- */
-const standardCreateProps = [...standardUpdateProps.filter((prop) => prop.key !== 'title')];
 
 const parameters = {
   orderId: coda.makeParameter({
@@ -168,68 +162,10 @@ const parameters = {
     name: 'orderID',
     description: 'The id of the order.',
   }),
-};
-
-const optionalParameters = {
-  created_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'created_at_max',
-    description: 'Show orders created at or before date.',
-    optional: true,
-  }),
-  created_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'created_at_min',
-    description: 'Show orders created at or after date.',
-    optional: true,
-  }),
-  ids: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'ids',
-    description: 'Retrieve only orders specified by a comma-separated list of order IDs.',
-    optional: true,
-  }),
-  orderIds: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'ids',
-    description: 'Retrieve only orders specified by a comma-separated list of order IDs.',
-    optional: true,
-  }),
-  processed_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'processed_at_max',
-    description: 'Show orders imported at or before date.',
-    optional: true,
-  }),
-  processed_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'processed_at_min',
-    description: 'Show orders imported at or after date.',
-    optional: true,
-  }),
-  since_id: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'since_id',
-    description: 'Show orders after the specified ID.',
-    optional: true,
-  }),
-  updated_at_max: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updated_at_max',
-    description: 'Show orders last updated at or before date.',
-    optional: true,
-  }),
-  updated_at_min: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'updated_at_min',
-    description: 'Show orders last updated at or after date.',
-    optional: true,
-  }),
-  fields: coda.makeParameter({
+  filterFields: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'fields',
     description: 'Comma separated string of fields to retrieve.',
-    optional: true,
   }),
 };
 
@@ -258,8 +194,8 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
 
         { ...sharedParameters.filterFinancialStatus, optional: true },
         { ...sharedParameters.filterFulfillmentStatus, optional: true },
-        optionalParameters.orderIds,
-        optionalParameters.since_id,
+        { ...sharedParameters.filterIds, optional: true },
+        { ...sharedParameters.filterSinceId, optional: true },
       ],
       execute: async function (
         [
@@ -475,10 +411,10 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         { ...sharedParameters.filterCreatedAtRange, optional: true },
         { ...sharedParameters.filterFinancialStatus, optional: true },
         { ...sharedParameters.filterFulfillmentStatus, optional: true },
-        optionalParameters.ids,
+        { ...sharedParameters.filterIds, optional: true },
         { ...sharedParameters.filterProcessedAtRange, optional: true },
         { ...sharedParameters.filterUpdatedAtRange, optional: true },
-        optionalParameters.fields,
+        { ...parameters.filterFields, optional: true },
       ],
       cacheTtlSecs: 10,
       resultType: coda.ValueType.Array,
@@ -488,8 +424,6 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         context
       ) {
         const params = cleanQueryParams({
-          // created_at_max,
-          // created_at_min,
           created_at_min: created_at ? created_at[0] : undefined,
           created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
@@ -499,7 +433,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
           fields,
           financial_status,
           fulfillment_status,
-          ids,
+          ids: ids && ids.length ? ids.join(',') : undefined,
           limit: REST_DEFAULT_LIMIT,
           status,
         });

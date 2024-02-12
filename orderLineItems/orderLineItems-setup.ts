@@ -41,11 +41,6 @@ const parameters = {
     name: 'orderIds',
     description: 'Retrieve only orders specified by a comma-separated list of order IDs.',
   }),
-  since_id: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'ordersSinceId',
-    description: 'Retrieve only orders after the specified ID.',
-  }),
 };
 
 export const setupOrderLineItems = (pack: coda.PackDefinitionBuilder) => {
@@ -73,7 +68,11 @@ export const setupOrderLineItems = (pack: coda.PackDefinitionBuilder) => {
         { ...sharedParameters.filterFinancialStatus, optional: true, name: 'orderFinancialStatus' },
         { ...sharedParameters.filterFulfillmentStatus, optional: true, name: 'orderFulfillmentStatus' },
         { ...parameters.orderIds, optional: true },
-        { ...parameters.since_id, optional: true },
+        {
+          ...sharedParameters.filterSinceId,
+          optional: true,
+          name: 'ordersSinceId',
+        },
       ],
       execute: async function (
         [
