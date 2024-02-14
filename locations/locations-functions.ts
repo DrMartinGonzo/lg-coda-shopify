@@ -1,15 +1,24 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { makeGetRequest } from '../helpers-rest';
-import { CACHE_SINGLE_FETCH, RESOURCE_LOCATION, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import { CACHE_SINGLE_FETCH, RESOURCE_LOCATION } from '../constants';
 
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,
   handleResourceMetafieldsUpdateGraphQl,
+  preprendPrefixToMetaFieldKey,
+  getMetaFieldFullKey,
+  formatMetaFieldValueForSchema,
 } from '../metafields/metafields-functions';
 import {
+  GetLocationsQuery,
+  GetLocationsQueryVariables,
+  GetSingleLocationQueryVariables,
+  LocationActivateMutation,
+  LocationActivateMutationVariables,
+  LocationDeactivateMutation,
+  LocationDeactivateMutationVariables,
   LocationEditMutation,
   LocationEditMutationVariables,
   LocationFragment,
@@ -17,22 +26,34 @@ import {
 } from '../types/admin.generated';
 import { formatOptionNameId } from '../helpers';
 import { LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
-import type { Location as LocationRest } from '@shopify/shopify-api/rest/admin/2023-10/location';
-import { UpdateLocation } from './locations-graphql';
+import {
+  ActivateLocation,
+  DeactivateLocation,
+  QueryLocations,
+  QuerySingleLocation,
+  UpdateLocation,
+} from './locations-graphql';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 
 // #region Autocomplete functions
 export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
-  const restParams = {
-    fields: ['name', 'id'].join(', '),
-    limit: REST_DEFAULT_LIMIT,
+  const payload = {
+    query: QueryLocations,
+    variables: {
+      maxEntriesPerRun: 250,
+      includeMetafields: false,
+      includeLocalPickupSettings: false,
+      includeFulfillmentService: false,
+    } as GetLocationsQueryVariables,
   };
-  const url = coda.withQueryParams(
-    `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/locations.json`,
-    restParams
+  const response: coda.FetchResponse<{
+    data: GetLocationsQuery;
+    extensions: ShopifyGraphQlRequestExtensions;
+  }> = (await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context)).response;
+
+  return response.body.data.locations.nodes.map((location) =>
+    formatOptionNameId(location.name, graphQlGidToId(location.id))
   );
-  const response = await makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.locations.map((location) => formatOptionNameId(location.name, location.id));
 }
 
 // #endregion
@@ -68,6 +89,7 @@ function formatGraphQlLocationEditAddressInput(update: any): LocationEditAddress
   return ret;
 }
 
+// TODO: set metafields along with the location update ? There is still the problem that we can't update with a null value, we need to delete first
 export async function handleLocationUpdateJob(
   update: coda.SyncUpdate<string, string, typeof LocationSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
@@ -125,25 +147,16 @@ export async function handleLocationUpdateJob(
 // #endregion
 
 // #region Formatting
-export const formatLocationForSchemaFromRestApi = (location: LocationRest, context) => {
-  let obj: coda.SchemaType<typeof LocationSchema> = {
-    ...location,
-    admin_url: `${context.endpoint}/admin/settings/locations/${location.id}`,
-    country: location.country_name,
-  };
-
-  return obj;
-};
-
 export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment, context) => {
   const location_id = graphQlGidToId(location.id);
 
   let obj: coda.SchemaType<typeof LocationSchema> = {
-    ...location,
+    // ...location,
     id: location_id,
     graphql_gid: location.id,
     active: location.isActive,
     admin_url: `${context.endpoint}/admin/settings/locations/${location_id}`,
+    stock_url: `${context.endpoint}/admin/products/inventory?location_id=${location_id}`,
     address1: location.address?.address1,
     address2: location.address?.address2,
     city: location.address?.city,
@@ -154,18 +167,42 @@ export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment
     province: location.address?.province,
     province_code: location.address?.provinceCode,
     zip: location.address?.zip,
-    // created_at: location.address?.address1,
-    // legacy: location.address?.address1,
+    has_active_inventory: location.hasActiveInventory,
+    ships_inventory: location.shipsInventory,
+    fulfills_online_orders: location.fulfillsOnlineOrders,
   };
+
+  if (location.metafields?.nodes) {
+    location.metafields.nodes.forEach((metafield) => {
+      const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+      obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+    });
+  }
+  if (location.localPickupSettingsV2) {
+    obj.local_pickup_settings = location.localPickupSettingsV2;
+  }
+  if (location.fulfillmentService) {
+    obj.fulfillment_service = location.fulfillmentService.handle;
+  }
 
   return obj;
 };
 // #endregion
 
 // #region Rest requests
-export const fetchLocationRest = (location_id: number, context: coda.ExecutionContext) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/locations/${location_id}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+export const fetchLocationGraphQl = async (locationGid: string, context: coda.ExecutionContext) => {
+  const payload = {
+    query: QuerySingleLocation,
+    variables: {
+      id: locationGid,
+      includeMetafields: false,
+      includeFulfillmentService: true,
+      includeLocalPickupSettings: false,
+    } as GetSingleLocationQueryVariables,
+  };
+
+  const { response } = await makeGraphQlRequest({ payload }, context);
+  return response;
 };
 // #endregion
 
@@ -180,6 +217,9 @@ export async function updateLocationGraphQl(
     variables: {
       id: locationGid,
       input: locationEditInput,
+      includeMetafields: false,
+      includeLocalPickupSettings: false,
+      includeFulfillmentService: false,
     } as LocationEditMutationVariables,
   };
 
@@ -187,6 +227,50 @@ export async function updateLocationGraphQl(
     {
       payload,
       getUserErrors: (body) => body.data.locationEdit.userErrors,
+    },
+    context
+  );
+  return response;
+}
+
+export async function activateLocationGraphQl(
+  locationGid: string,
+  context: coda.ExecutionContext
+): Promise<coda.FetchResponse<{ data: LocationActivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
+  const payload = {
+    query: ActivateLocation,
+    variables: {
+      locationId: locationGid,
+    } as LocationActivateMutationVariables,
+  };
+
+  const { response } = await makeGraphQlRequest(
+    {
+      payload,
+      getUserErrors: (body) => body.data.locationActivate.locationActivateUserErrors,
+    },
+    context
+  );
+  return response;
+}
+
+export async function deactivateLocationGraphQl(
+  locationGid: string,
+  destinationLocationGid: string,
+  context: coda.ExecutionContext
+): Promise<coda.FetchResponse<{ data: LocationDeactivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
+  const payload = {
+    query: DeactivateLocation,
+    variables: {
+      locationId: locationGid,
+      destinationLocationId: destinationLocationGid,
+    } as LocationDeactivateMutationVariables,
+  };
+
+  const { response } = await makeGraphQlRequest(
+    {
+      payload,
+      getUserErrors: (body) => body.data.locationDeactivate.locationDeactivateUserErrors,
     },
     context
   );

@@ -1,11 +1,16 @@
 import * as coda from '@codahq/packs-sdk';
 import isUrl from 'is-url-superb';
 
-import { DEFAULT_PRODUCT_OPTION_NAME, METAFIELD_PREFIX_KEY } from './constants';
-import { getMetaFieldFullKey, maybeHasMetaFieldKeys } from './metafields/metafields-functions';
-import { fetchMetafieldDefinitions } from './metafields/metafields-functions';
+import { DEFAULT_PRODUCT_OPTION_NAME } from './constants';
+import {
+  getMetaFieldFullKey,
+  maybeHasMetaFieldKeys,
+  preprendPrefixToMetaFieldKey,
+} from './metafields/metafields-functions';
+import { fetchMetafieldDefinitionsGraphQl } from './metafields/metafields-functions';
 import { Metafield, MetafieldOwnerType } from './types/admin.types';
 import { MetafieldDefinitionFragment } from './types/admin.generated';
+import { maybeParseJson } from './helpers';
 
 export type UpdateCreateProp = {
   display: string;
@@ -17,7 +22,7 @@ export function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDe
   const metafieldProps = metafieldDefinitions.map(
     (metafieldDefinition): UpdateCreateProp => ({
       display: metafieldDefinition.name,
-      key: getMetaFieldFullKey(metafieldDefinition as unknown as Metafield),
+      key: getMetaFieldFullKey(metafieldDefinition),
       type: 'metafield',
     })
   );
@@ -75,10 +80,10 @@ export function parseVarargsCreateUpdatePropsValues(
       newValues[key] = parsedValue;
       continue;
     } else if (matchMetafieldProps) {
-      // TODO: can we format metafield value here instead of formatting it later ?
-      // ? Quoique il me semble que l'on ne formatte pas mais qu'on envoie direct la valeur dans le cas d'un update
-      const prefixedMetafieldFromKey = METAFIELD_PREFIX_KEY + key;
-      newValues[prefixedMetafieldFromKey] = value;
+      // Il faut parser la valeur car on envoie que des strings, impossible d'envoyer direct un object, une array d'objets
+      const prefixedMetafieldFromKey = preprendPrefixToMetaFieldKey(key);
+      newValues[prefixedMetafieldFromKey] = maybeParseJson(value);
+
       continue;
     }
 
@@ -98,7 +103,7 @@ export async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
 
   const maybeHasMetaFields = maybeHasMetaFieldKeys(getVarargsCreateUpdateKeys(varargs));
   if (maybeHasMetaFields) {
-    metafieldDefinitions = await fetchMetafieldDefinitions(metafieldOwnerType, context);
+    metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(metafieldOwnerType, context);
     metafieldUpdateCreateProps = getMetafieldsCreateUpdateProps(metafieldDefinitions);
   }
 

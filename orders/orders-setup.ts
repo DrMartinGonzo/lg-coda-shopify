@@ -17,21 +17,21 @@ import {
 } from './orders-functions';
 import { OrderSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import {
+  augmentSchemaWithMetafields,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+} from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/Metafields';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitions,
-  getMetaFieldRealFromKey,
+  fetchMetafieldDefinitionsGraphQl,
+  removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-  formatMetafieldsForSchema,
 } from '../metafields/metafields-functions';
-import {
-  GetOrdersMetafieldsQuery,
-  GetOrdersMetafieldsQueryVariables,
-  MetafieldDefinitionFragment,
-} from '../types/admin.generated';
+import { GetOrdersMetafieldsQuery, GetOrdersMetafieldsQueryVariables } from '../types/admin.generated';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -218,13 +218,12 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
         let restLimit = REST_DEFAULT_LIMIT;
         let maxEntriesPerRun = restLimit;
         let shouldDeferBy = 0;
-        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
 
         if (shouldSyncMetafields) {
           // TODO: calc this
@@ -240,10 +239,6 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
           if (shouldDeferBy > 0) {
             return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
           }
-
-          metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Order, context));
         }
 
         let restItems = [];
@@ -322,7 +317,6 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
                 prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
                 nextRestUrl: restContinuation?.nextUrl,
                 extraContinuationData: {
-                  metafieldDefinitions,
                   currentBatch: {
                     remaining: remaining,
                     processing: toProcess,
@@ -336,19 +330,19 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
           if (augmentedResponse && augmentedResponse.body?.data) {
             const customersData = augmentedResponse.body.data as GetOrdersMetafieldsQuery;
             const augmentedItems = toProcess
-              .map((order) => {
-                const graphQlNodeMatch = customersData.orders.nodes.find((c) => graphQlGidToId(c.id) === order.id);
+              .map((resource) => {
+                const graphQlNodeMatch = customersData.orders.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
 
                 // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
                 if (!graphQlNodeMatch) return;
 
                 if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                  return {
-                    ...order,
-                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
-                  };
+                  graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
+                    const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+                    resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+                  });
                 }
-                return order;
+                return resource;
               })
               .filter((p) => p); // filter out undefined items
 
@@ -373,7 +367,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Order, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Order, context)
           : [];
 
         const jobs = updates.map((update) => handleOrderUpdateJob(update, metafieldDefinitions, context));

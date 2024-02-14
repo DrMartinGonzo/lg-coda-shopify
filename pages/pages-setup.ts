@@ -3,7 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 import {
   CACHE_MINUTE,
   IDENTITY_PAGE,
-  METAFIELD_GID_PREFIX_KEY,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
@@ -20,13 +19,17 @@ import {
 
 import { PageSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import {
-  fetchMetafieldDefinitions,
+  augmentSchemaWithMetafields,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+} from '../metafields/metafields-functions';
+import {
+  fetchMetafieldDefinitionsGraphQl,
   fetchResourceMetafields,
   findMatchingMetafieldDefinition,
-  formatMetafieldsForSchema,
-  getMetaFieldRealFromKey,
+  removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
@@ -161,7 +164,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
         let metafieldDefinitions: MetafieldDefinition[] = [];
@@ -169,7 +172,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context));
+            (await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Page, context));
         }
 
         const syncedStandardFields = handleFieldDependencies(standardFromKeys, pageFieldDependencies);
@@ -218,6 +221,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
               );
               const metafields: MetafieldRest[] = response.body.metafields;
 
+              // TODO: On pourrait peut-être tous les processer et laisser Coda se démerder derrière pour ne pas intégrer ceux qui ne sont pas définis dans le schéma
               // Process metafields that have a definition and in the schema
               const definitionsFullKeys = metafieldDefinitions.map((def) => `${def.namespace}.${def.key}`);
               const metafieldsWithDefinition = metafields.filter(
@@ -226,10 +230,10 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
                   definitionsFullKeys.includes(`${meta.namespace}.${meta.key}`)
               );
               if (metafieldsWithDefinition.length) {
-                obj = {
-                  ...obj,
-                  ...formatMetafieldsForSchema(metafieldsWithDefinition, metafieldDefinitions),
-                };
+                metafieldsWithDefinition.forEach((metafield) => {
+                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+                  obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+                });
               }
 
               return obj;
@@ -244,7 +248,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Page, context)
           : [];
 
         const jobs = updates.map((update) => handlePageUpdateJob(update, metafieldDefinitions, context));
@@ -272,7 +276,11 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The page property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+            MetafieldOwnerType.Page,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -316,7 +324,11 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The page property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Page, context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+            MetafieldOwnerType.Page,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -338,7 +350,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
       // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
       prefixedMetafieldFromKeys.forEach((fromKey) => {
-        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const realFromKey = removePrefixFromMetaFieldKey(fromKey);
         const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
         const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
         const input: MetafieldRestInput = {

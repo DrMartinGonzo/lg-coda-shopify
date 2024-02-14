@@ -104,6 +104,7 @@ export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
 export const RESOURCE_BLOG = 'OnlineStoreBlog';
 export const RESOURCE_COLLECTION = 'Collection';
 export const RESOURCE_CUSTOMER = 'Customer';
+export const RESOURCE_DRAFT_ORDER = 'DraftOrder';
 export const RESOURCE_LOCATION = 'Location';
 export const RESOURCE_METAOBJECT = 'Metaobject';
 export const RESOURCE_ORDER = 'Order';
@@ -130,29 +131,29 @@ export const CACHE_MINUTE = 60; // 1 minute
 export const CACHE_SINGLE_FETCH = 10; // 10s
 
 export const FIELD_TYPES = {
-  single_line_text_field: 'single_line_text_field',
-  multi_line_text_field: 'multi_line_text_field',
-  rich_text_field: 'rich_text_field',
-  number_integer: 'number_integer',
-  number_decimal: 'number_decimal',
-  date: 'date',
-  date_time: 'date_time',
   boolean: 'boolean',
-  url: 'url',
-  color: 'color',
-  weight: 'weight',
-  dimension: 'dimension',
-  volume: 'volume',
-  rating: 'rating',
-  money: 'money',
-  json: 'json',
-  mixed_reference: 'mixed_reference',
   collection_reference: 'collection_reference',
-  page_reference: 'page_reference',
+  color: 'color',
+  date_time: 'date_time',
+  date: 'date',
+  dimension: 'dimension',
   file_reference: 'file_reference',
+  json: 'json',
   metaobject_reference: 'metaobject_reference',
+  mixed_reference: 'mixed_reference',
+  money: 'money',
+  multi_line_text_field: 'multi_line_text_field',
+  number_decimal: 'number_decimal',
+  number_integer: 'number_integer',
+  page_reference: 'page_reference',
   product_reference: 'product_reference',
+  rating: 'rating',
+  rich_text_field: 'rich_text_field',
+  single_line_text_field: 'single_line_text_field',
+  url: 'url',
   variant_reference: 'variant_reference',
+  volume: 'volume',
+  weight: 'weight',
 
   // ++ list variants
   list_collection_reference: 'list.collection_reference',
@@ -177,7 +178,6 @@ export const FIELD_TYPES = {
 
 export const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
-export const METAFIELD_GID_PREFIX_KEY = `${PACK_PREFIX_KEY}meta_gid__`;
 export const CODA_SUPORTED_CURRENCIES = [
   'BRL',
   'CHF',

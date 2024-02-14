@@ -9058,7 +9058,7 @@ export type DeliveryMethodDefinition = Node & {
   __typename?: 'DeliveryMethodDefinition';
   /** Whether this method definition is active. */
   active: Scalars['Boolean']['output'];
-  /** The description of the method definition. */
+  /** The description of the method definition. Only available on shipping rates that are custom. */
   description?: Maybe<Scalars['String']['output']>;
   /** A globally-unique ID. */
   id: Scalars['ID']['output'];
