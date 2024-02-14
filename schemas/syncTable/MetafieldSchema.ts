@@ -1,84 +1,186 @@
 import * as coda from '@codahq/packs-sdk';
+import { FIELD_TYPES } from '../../constants';
+import { ProductReference } from './ProductSchemaRest';
+import { CollectionReference } from './CollectionSchema';
+import { PageReference } from './PageSchema';
+import { FileReference } from './FileSchema';
+import { ProductVariantReference } from './ProductVariantSchema';
 
 export const MetafieldSchema = coda.makeObjectSchema({
   properties: {
     graphql_gid: {
       type: coda.ValueType.String,
+      required: true,
+      fixedId: 'graphql_gid',
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the metafield.',
-      fixedId: 'graphql_gid',
     },
-    metafield_id: {
-      type: coda.ValueType.String,
-      required: true,
+    id: {
+      type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'metafield_id',
+      fixedId: 'id',
+      required: true,
+      useThousandsSeparator: false,
     },
-    lookup: {
+    label: {
       type: coda.ValueType.String,
       required: true,
-      fixedId: 'lookup',
+      fixedId: 'label',
+    },
+    admin_url: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.Url,
+      fixedId: 'admin_url',
+      description: 'A link to the metafield in the Shopify admin.',
     },
     key: {
       type: coda.ValueType.String,
       required: true,
+      fixedId: 'key',
       description:
         'The key of the metafield. Keys can be up to 64 characters long and can contain alphanumeric characters, hyphens, underscores, and periods.',
-      fixedId: 'key',
+    },
+    hasDefinition: {
+      type: coda.ValueType.Boolean,
+      required: true,
+      fixedId: 'hasDefinition',
+      description: 'Wether the metafield has a definition.',
     },
     namespace: {
       type: coda.ValueType.String,
+      required: true,
+      fixedId: 'namespace',
       description:
         'The container for a group of metafields that the metafield is or will be associated with. Used in tandem with `key` to lookup a metafield on a resource, preventing conflicts with other metafields with the same `key`. Must be 3-255 characters long and can contain alphanumeric, hyphen, and underscore characters.',
-      fixedId: 'namespace',
-    },
-    description: {
-      type: coda.ValueType.String,
-      description: 'A description of the information that the metafield contains.',
-      fixedId: 'description',
     },
     owner_id: {
-      type: coda.ValueType.String,
+      type: coda.ValueType.Number,
       required: true,
-      description: 'The unique ID of the resource that the metafield is attached to.',
+      useThousandsSeparator: false,
       fixedId: 'owner_id',
+      description: 'The ID of the resource that the metafield is attached to.',
     },
-    owner_resource: {
+    owner_type: {
       type: coda.ValueType.String,
       required: true,
-      description: 'The type of resource that the metafield is attached to.',
-      fixedId: 'owner_resource',
+      fixedId: 'owner_type',
+      description: 'The type of the resource that the metafield is attached to.',
     },
-    value: {
+    rawValue: {
       type: coda.ValueType.String,
-      required: true,
+      mutable: true,
+      fixedId: 'rawValue',
       description:
-        "The data to store in the metafield. The value is always stored as a string, regardless of the metafield's type.",
-      fixedId: 'value',
+        "The data stored in the metafield in its raw form. The value is always stored as a string, regardless of the metafield's type. For some metafields, you can use helper columns to facilitate editing it. E.g. for references.",
     },
     type: {
       type: coda.ValueType.String,
+      codaType: coda.ValueHintType.SelectList,
+      options: Object.values(FIELD_TYPES),
       required: true,
-      description:
-        'The type of data that the metafield stores in the `value` field. Refer to the list of supported types (https://shopify.dev/apps/metafields/types).',
       fixedId: 'type',
+      description:
+        'The type of data that the metafield stores. Refer to the list of supported types (https://shopify.dev/apps/metafields/types).',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time (ISO 8601 format) when the metafield was created.',
+      required: true,
       fixedId: 'created_at',
+      description: 'The date and time (ISO 8601 format) when the metafield was created.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      description: 'The date and time (ISO 8601 format) when the metafield was last updated.',
+      required: true,
       fixedId: 'updated_at',
+      description: 'The date and time (ISO 8601 format) when the metafield was last updated.',
+    },
+    editCollectionReference: {
+      ...CollectionReference,
+      fixedId: 'editCollectionReference',
+      fromKey: 'editCollectionReference',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.collection_reference}' type.`,
+    },
+    editCollectionReferenceList: {
+      type: coda.ValueType.Array,
+      items: CollectionReference,
+      fixedId: 'editCollectionReferenceList',
+      fromKey: 'editCollectionReferenceList',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_collection_reference}' type.`,
+    },
+    editFileReference: {
+      ...FileReference,
+      fixedId: 'editFileReference',
+      fromKey: 'editFileReference',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.file_reference}' type.`,
+    },
+    editFileReferenceList: {
+      type: coda.ValueType.Array,
+      items: CollectionReference,
+      fixedId: 'editFileReferenceList',
+      fromKey: 'editFileReferenceList',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_file_reference}' type.`,
+    },
+    editPageReference: {
+      ...PageReference,
+      fixedId: 'editPageReference',
+      fromKey: 'editPageReference',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.page_reference}' type.`,
+    },
+    editPageReferenceList: {
+      type: coda.ValueType.Array,
+      items: CollectionReference,
+      fixedId: 'editPageReferenceList',
+      fromKey: 'editPageReferenceList',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_page_reference}' type.`,
+    },
+    editProductReference: {
+      ...ProductReference,
+      fixedId: 'editProductReference',
+      fromKey: 'editProductReference',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.product_reference}' type.`,
+    },
+    editProductReferenceList: {
+      type: coda.ValueType.Array,
+      items: ProductReference,
+      fixedId: 'editProductReferenceList',
+      fromKey: 'editProductReferenceList',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_product_reference}' type.`,
+    },
+    editProductVariantReference: {
+      ...ProductVariantReference,
+      fixedId: 'editProductVariantReference',
+      fromKey: 'editProductVariantReference',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.variant_reference}' type.`,
+    },
+    editProductVariantReferenceList: {
+      type: coda.ValueType.Array,
+      items: CollectionReference,
+      fixedId: 'editProductVariantReferenceList',
+      fromKey: 'editProductVariantReferenceList',
+      mutable: true,
+      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_variant_reference}' type.`,
     },
   },
-  displayProperty: 'lookup',
-  idProperty: 'metafield_id',
-  featuredProperties: ['key', 'owner_id', 'value', 'type'],
+  displayProperty: 'label',
+  idProperty: 'id',
+  featuredProperties: ['key', 'owner_id', 'rawValue', 'type'],
+
+  // Card fields.
+  subtitleProperties: ['id', 'type', 'owner_type', 'updated_at'],
+  snippetProperty: 'rawValue',
+  // imageProperty: 'featuredImage',
+  linkProperty: 'admin_url',
 });
 
 export const MetafieldFormulaSchema = coda.makeObjectSchema({

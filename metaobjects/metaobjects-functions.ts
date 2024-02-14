@@ -1,6 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getObjectSchemaItemProp } from '../helpers';
 import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
 import { CACHE_SINGLE_FETCH, IDENTITY_METAOBJECT, PACK_ID, RESOURCE_METAOBJECT } from '../constants';
 import {
@@ -232,25 +231,12 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
     .filter((k) => k !== 'handle')
     .forEach((key) => {
       if (!node[key]) return;
-
-      // check if node[key] has 'value' property
-      const value = node[key].hasOwnProperty('value') ? node[key].value : node[key];
-
-      const schemaItemProp = getObjectSchemaItemProp(context.sync.schema, key);
       const fieldDefinition = fieldDefinitions.find((f) => f.key === key);
       if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
 
-      let parsedValue = value;
-      try {
-        parsedValue = JSON.parse(value);
-      } catch (error) {
-        // console.log('not a parsable json string');
-      }
-
-      data[key] =
-        schemaItemProp.type === coda.ValueType.Array && Array.isArray(parsedValue)
-          ? parsedValue.map((v) => formatMetaFieldValueForSchema(v, fieldDefinition))
-          : formatMetaFieldValueForSchema(parsedValue, fieldDefinition);
+      // check if node[key] has 'value' property
+      const value = node[key].hasOwnProperty('value') ? node[key].value : node[key];
+      data[key] = formatMetaFieldValueForSchema({ value, type: fieldDefinition.type.name });
     });
 
   return data;

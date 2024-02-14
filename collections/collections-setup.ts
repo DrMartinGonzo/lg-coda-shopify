@@ -32,23 +32,23 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import {
+  augmentSchemaWithMetafields,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+} from '../metafields/metafields-functions';
 import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitions,
-  getMetaFieldRealFromKey,
-  formatMetafieldsForSchema,
+  fetchMetafieldDefinitionsGraphQl,
+  removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
   findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
-import {
-  GetCollectionsMetafieldsQuery,
-  GetCollectionsMetafieldsQueryVariables,
-  MetafieldDefinitionFragment,
-} from '../types/admin.generated';
+import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
 import {
   UpdateCreateProp,
@@ -177,13 +177,12 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
         let restLimit = REST_DEFAULT_LIMIT;
         let maxEntriesPerRun = restLimit;
         let shouldDeferBy = 0;
-        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
 
         if (shouldSyncMetafields) {
           // TODO: calc this
@@ -199,10 +198,6 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
           if (shouldDeferBy > 0) {
             return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
           }
-
-          metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Collection, context));
         }
 
         let restItems = [];
@@ -308,7 +303,6 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
                 nextRestUrl: restContinuation?.nextUrl,
                 extraContinuationData: {
                   restType,
-                  metafieldDefinitions,
                   currentBatch: {
                     remaining: remaining,
                     processing: toProcess,
@@ -322,21 +316,21 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
           if (augmentedResponse && augmentedResponse.body?.data) {
             const collectionsData = augmentedResponse.body.data as GetCollectionsMetafieldsQuery;
             const augmentedItems = toProcess
-              .map((collection) => {
+              .map((resource) => {
                 const graphQlNodeMatch = collectionsData.collections.nodes.find(
-                  (c) => graphQlGidToId(c.id) === collection.id
+                  (c) => graphQlGidToId(c.id) === resource.id
                 );
 
                 // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
                 if (!graphQlNodeMatch) return;
 
                 if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                  return {
-                    ...collection,
-                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
-                  };
+                  graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
+                    const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+                    resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+                  });
                 }
-                return collection;
+                return resource;
               })
               .filter((p) => p); // filter out undefined items
 
@@ -361,7 +355,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Collection, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Collection, context)
           : [];
 
         const jobs = updates.map((update) => handleCollectionUpdateJob(update, metafieldDefinitions, context));
@@ -389,7 +383,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The collection property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
             MetafieldOwnerType.Collection,
             context,
             CACHE_MINUTE
@@ -444,7 +438,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The collection property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
             MetafieldOwnerType.Collection,
             context,
             CACHE_MINUTE
@@ -472,7 +466,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
       // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
       prefixedMetafieldFromKeys.forEach((fromKey) => {
-        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const realFromKey = removePrefixFromMetaFieldKey(fromKey);
         const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
         const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
         const input: MetafieldRestInput = {

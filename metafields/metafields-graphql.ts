@@ -1,15 +1,16 @@
-import { normalizeSchemaKey } from '@codahq/packs-sdk/schema';
-
-import { splitMetaFieldFullKey } from './metafields-functions';
+import { capitalizeFirstChar } from '../helpers';
 
 // #region Fragments
 export const MetafieldFieldsFragment = /* GraphQL */ `
   fragment MetafieldFields on Metafield {
     id
-    value
-    type
-    key
     namespace
+    key
+    type
+    value
+    ownerType
+    createdAt
+    updatedAt
     __typename
   }
 `;
@@ -36,6 +37,7 @@ export const MetafieldDefinitionFragment = /* GraphQL */ `
 // #region Queries
 export const queryMetafieldDefinitions = /* GraphQL */ `
   ${MetafieldDefinitionFragment}
+
   query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxMetafieldsPerResource: Int!) {
     metafieldDefinitions(ownerType: $ownerType, first: $maxMetafieldsPerResource) {
       nodes {
@@ -45,28 +47,37 @@ export const queryMetafieldDefinitions = /* GraphQL */ `
   }
 `;
 
-export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalFieldsKeys: string[]) => {
-  return `
-    query GetResourceMetafields($batchSize: Int!, $cursor: String){
-      ${graphQlResourceQuery}(first: $batchSize, after: $cursor) {
-        nodes {
-          id
-          ${optionalFieldsKeys.map((key) => {
-            const { metaKey, metaNamespace } = splitMetaFieldFullKey(key);
-            return `${normalizeSchemaKey(key)}: metafield(key: "${metaKey}", namespace: "${metaNamespace}") {
-              ...MetafieldFields
-            }`;
-          })}
-        }
+/**
+ * Query all or some metafields from a specific ressource
+ */
+export const makeQueryMetafieldsByKeys = (graphQlQueryOperation: string) => {
+  const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
+  let declaredArgs = ['$metafieldKeys: [String!]', '$countMetafields: Int!'];
+  let operationMaybeWithArgs: string;
 
-        pageInfo {
-          hasNextPage
-          endCursor
+  if (graphQlQueryOperation === 'shop') {
+    operationMaybeWithArgs = graphQlQueryOperation;
+  } else {
+    declaredArgs.push('$ownerGid: ID!');
+    operationMaybeWithArgs = `${graphQlQueryOperation}(id: $ownerGid)`;
+  }
+
+  return `
+    ${MetafieldFieldsFragment}
+
+    query ${queryName}(${declaredArgs.join(', ')}) {
+      ${operationMaybeWithArgs} {
+        id
+        metafields(keys: $metafieldKeys, first: $countMetafields) {
+          nodes {
+            ...MetafieldFields
+            definition {
+              id
+            }
+          }
         }
       }
     }
-
-    ${MetafieldFieldsFragment}
   `;
 };
 // #endregion
@@ -74,10 +85,14 @@ export const makeQueryMetafieldsAdmin = (graphQlResourceQuery: string, optionalF
 // #region Mutations
 export const MutationSetMetafields = /* GraphQL */ `
   ${MetafieldFieldsFragment}
+
   mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {
     metafieldsSet(metafields: $metafieldsSetInputs) {
       metafields {
         ...MetafieldFields
+        definition {
+          id
+        }
       }
       userErrors {
         field
@@ -99,26 +114,3 @@ export const MutationDeleteMetafield = /* GraphQL */ `
   }
 `;
 // #endregion
-
-// export const makeQueryShopMetafields = (optionalFieldsKeys) => {
-//   console.log('optionalFieldsKeys', optionalFieldsKeys);
-//   return `
-//     query queryShopMetafields {
-//       shop {
-//         id
-//         ${optionalFieldsKeys.map((key) => {
-//           const { metaKey, metaNamespace } = getMetaFieldKeyAndNamespaceFromFromKey(key);
-//           return `${normalizeSchemaKey(key)}: metafield(key: "${metaKey}", namespace: "${metaNamespace}") {
-//           ...metafieldFields
-//         }`;
-//         })}
-//       }
-//     }
-
-//     fragment metafieldFields on Metafield {
-//       id
-//       value
-//       type
-//     }
-//   `;
-// };

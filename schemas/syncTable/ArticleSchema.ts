@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { BlogReference } from './BlogSchema';
 import { FieldDependency } from '../../types/tableSync';
+import { IDENTITY_ARTICLE } from '../../constants';
 
 export const ArticleSchema = coda.makeObjectSchema({
   properties: {
@@ -143,6 +144,7 @@ export const ArticleSchema = coda.makeObjectSchema({
     },
     title: {
       type: coda.ValueType.String,
+      required: true,
       mutable: true,
       fixedId: 'title',
       fromKey: 'title',
@@ -174,6 +176,8 @@ export const ArticleSchema = coda.makeObjectSchema({
   imageProperty: 'image_url',
   linkProperty: 'admin_url',
 });
+
+export const ArticleReference = coda.makeReferenceSchemaFromObjectSchema(ArticleSchema, IDENTITY_ARTICLE);
 
 export const articleFieldDependencies: FieldDependency<typeof ArticleSchema.properties>[] = [
   {
