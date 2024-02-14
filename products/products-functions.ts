@@ -15,19 +15,17 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
-  formatGraphQlMetafieldsSetsInputFromResourceUpdate,
+  formatMetafieldInputsFromResourceUpdate,
   handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { MAX_OPTIONS_PER_PRODUCT, MutationUpdateProduct } from './products-graphql';
 import { queryAvailableProductTypes } from './products-storefront';
-import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { formatMetafieldsForSchema } from '../metafields/metafields-functions';
+import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
 import type {
   MetafieldDefinitionFragment,
-  ProductFieldsFragment,
   SetMetafieldsMutationVariables,
   UpdateProductMutationVariables,
 } from '../types/admin.generated';
@@ -151,43 +149,6 @@ export const formatProductForSchemaFromRestApi: FormatFunction = (
 };
 
 /**
- * Format product for schema from a GraphQL Admin API response
- */
-export const formatProductForSchemaFromGraphQlApi = (
-  product: ProductFieldsFragment,
-  context: coda.ExecutionContext,
-  metafieldDefinitions: MetafieldDefinitionFragment[]
-) => {
-  let obj: any = {
-    ...product,
-    admin_url: `${context.endpoint}/admin/products/${graphQlGidToId(product.id)}`,
-    description: striptags(product.descriptionHtml),
-    admin_graphql_api_id: product.id,
-    id: graphQlGidToId(product.id),
-    created_at: product.createdAt,
-    updated_at: product.updatedAt,
-    published_at: product.publishedAt,
-    product_type: product.productType,
-  };
-
-  if (product.options) {
-    obj.options = product.options.map((option) => option.name).join(', ');
-  }
-  if (product.featuredImage) {
-    obj.featuredImage = product.featuredImage.url;
-  }
-  if (product?.metafields?.nodes?.length) {
-    const metafields = formatMetafieldsForSchema(product.metafields.nodes, metafieldDefinitions);
-    obj = {
-      ...obj,
-      ...metafields,
-    };
-  }
-
-  return obj;
-};
-
-/**
  * Format ProductInput for a GraphQL product update mutation
  */
 function formatGraphQlProductInput(update: any, productGid: string, fromKeys: string[]): ProductInput {
@@ -282,11 +243,12 @@ export async function updateProductGraphQl(
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
   const productInput = formatGraphQlProductInput(update, productGid, standardFromKeys);
-  const metafieldsSetsInput = formatGraphQlMetafieldsSetsInputFromResourceUpdate(
+  const metafieldsSetsInput = formatMetafieldInputsFromResourceUpdate(
     update,
-    productGid,
     prefixedMetafieldFromKeys,
-    metafieldDefinitions
+    metafieldDefinitions,
+    'forGraphql',
+    productGid
   );
 
   const payload = {
@@ -319,11 +281,12 @@ export async function updateProductMetafieldsGraphQl(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const metafieldsSetInputs = formatGraphQlMetafieldsSetsInputFromResourceUpdate(
+  const metafieldsSetInputs = formatMetafieldInputsFromResourceUpdate(
     update,
-    idToGraphQlGid('Product', productId),
     prefixedMetafieldFromKeys,
-    metafieldDefinitions
+    metafieldDefinitions,
+    'forGraphql',
+    idToGraphQlGid('Product', productId)
   );
 
   const payload = {
@@ -342,6 +305,44 @@ export async function updateProductMetafieldsGraphQl(
 // #endregion
 
 // #region Unused stuff
+/**
+ * Format product for schema from a GraphQL Admin API response
+ */
+/*
+export const formatProductForSchemaFromGraphQlApi = (
+  product: ProductFieldsFragment,
+  context: coda.ExecutionContext
+) => {
+  let obj: any = {
+    ...product,
+    admin_url: `${context.endpoint}/admin/products/${graphQlGidToId(product.id)}`,
+    description: striptags(product.descriptionHtml),
+    admin_graphql_api_id: product.id,
+    id: graphQlGidToId(product.id),
+    created_at: product.createdAt,
+    updated_at: product.updatedAt,
+    published_at: product.publishedAt,
+    product_type: product.productType,
+  };
+
+  if (product.options) {
+    obj.options = product.options.map((option) => option.name).join(', ');
+  }
+  if (product.featuredImage) {
+    obj.featuredImage = product.featuredImage.url;
+  }
+  if (product?.metafields?.nodes?.length) {
+    const metafields = formatMetafieldsForSchema(product.metafields.nodes);
+    obj = {
+      ...obj,
+      ...metafields,
+    };
+  }
+
+  return obj;
+};
+*/
+
 /**
  * Check if a product is present in a collection
  */
@@ -385,7 +386,7 @@ export const syncProductsGraphQlStorefront = async (
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
   const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
   const effectiveMetafieldKeys = effectivePropertyKeys
-    .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY) || key.startsWith(METAFIELD_GID_PREFIX_KEY))
+    .filter((key) => key.startsWith(METAFIELD_PREFIX_KEY))
     .map(getMetaFieldRealFromKey);
   const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
@@ -427,7 +428,7 @@ export const syncProductsGraphQlStorefront = async (
     return {
       result: data.products.nodes.map((product) =>
         // TODO: need to normalize metafields result before calling formatting function
-        formatProductForSchemaFromGraphQlApi(product, context, metafieldDefinitions)
+        formatProductForSchemaFromGraphQlApi(product, context)
       ),
       continuation,
     };

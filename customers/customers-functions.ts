@@ -242,8 +242,7 @@ function formatCustomerAddressForSchemaFromGraphQl(address) {
 /*
 export const formatCustomerForSchemaFromGraphQlApi = (
   customer,
-  context: coda.ExecutionContext,
-  metafieldDefinitions: MetafieldDefinition[]
+  context: coda.ExecutionContext
 ) => {
   let obj: any = {
     ...customer,
@@ -274,7 +273,7 @@ export const formatCustomerForSchemaFromGraphQlApi = (
   };
 
   if (customer?.metafields?.nodes?.length) {
-    const metafields = formatMetafieldsForSchema(customer.metafields.nodes as Metafield[], metafieldDefinitions);
+    const metafields = formatMetafieldsForSchema(customer.metafields.nodes as Metafield[]);
     obj = {
       ...obj,
       ...metafields,
@@ -318,11 +317,7 @@ export const syncCustomersGraphQlAdmin = async (
   if (effectivePropertyKeys.includes('featuredImage')) optionalNestedFields.push('featuredImage');
   if (effectivePropertyKeys.includes('options')) optionalNestedFields.push('options');
   // Metafield optional nested fields
-  let metafieldDefinitions: MetafieldDefinition[] = [];
   if (shouldSyncMetafields) {
-    metafieldDefinitions =
-      prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-      (await fetchMetafieldDefinitions('MetafieldOwnerType.Customer', context));
     optionalNestedFields.push('metafields');
   }
 
@@ -349,7 +344,6 @@ export const syncCustomersGraphQlAdmin = async (
       payload,
       maxEntriesPerRun,
       prevContinuation,
-      extraContinuationData: { metafieldDefinitions },
       getPageInfo: (data: any) => data.customers?.pageInfo,
     },
     context
@@ -358,7 +352,7 @@ export const syncCustomersGraphQlAdmin = async (
     const data = response.body.data as GetCustomersWithMetafieldsQuery;
     return {
       result: data.customers.nodes.map((customer) =>
-        formatCustomerForSchemaFromGraphQlApi(customer, context, metafieldDefinitions)
+        formatCustomerForSchemaFromGraphQlApi(customer, context)
       ),
       continuation,
     };

@@ -1,55 +1,88 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { formatLocationForSchemaFromRestApi, handleLocationUpdateJob, fetchLocationRest } from './locations-functions';
-
-import { LocationSchema, locationFieldDependencies } from '../schemas/syncTable/LocationSchema';
-import { sharedParameters } from '../shared-parameters';
-import { IDENTITY_LOCATION, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitions,
-  formatMetafieldsForSchema,
-  getMetaFieldRealFromKey,
+  handleLocationUpdateJob,
+  deactivateLocationGraphQl,
+  formatLocationForSchemaFromGraphQlApi,
+  activateLocationGraphQl,
+  fetchLocationGraphQl,
+} from './locations-functions';
+
+import { LocationSchema } from '../schemas/syncTable/LocationSchema';
+import { sharedParameters } from '../shared-parameters';
+import { CACHE_MINUTE, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY, RESOURCE_LOCATION } from '../constants';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import {
+  fetchMetafieldDefinitionsGraphQl,
+  removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, compareByDisplayKey, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
+  idToGraphQlGid,
+  makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { QueryLocationsMetafieldsAdmin, buildLocationsSearchQuery } from './locations-graphql';
+import { QueryLocations } from './locations-graphql';
 import {
-  GetLocationsMetafieldsQuery,
-  GetLocationsMetafieldsQueryVariables,
+  GetLocationsQuery,
+  GetLocationsQueryVariables,
+  GetSingleLocationQuery,
   MetafieldDefinitionFragment,
 } from '../types/admin.generated';
-import { UpdateCreateProp } from '../helpers-varargs';
+import {
+  UpdateCreateProp,
+  getMetafieldsCreateUpdateProps,
+  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
+  parseVarargsCreateUpdatePropsValues,
+} from '../helpers-varargs';
 import { MetafieldOwnerType } from '../types/Metafields';
-import type { Location as LocationRest } from '@shopify/shopify-api/rest/admin/2023-10/location';
+import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = LocationSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(LocationSchema, MetafieldOwnerType.Location, context);
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
+  augmentedSchema.featuredProperties.push('stock_url');
   return augmentedSchema;
 }
 
 /**
  * The properties that can be updated when updating a location.
  */
-const standardUpdateProps: UpdateCreateProp[] = [];
+const standardUpdateProps: UpdateCreateProp[] = [
+  { display: 'Name', key: 'name', type: 'string' },
+  { display: 'Address 1', key: 'address1', type: 'string' },
+  { display: 'Address 2', key: 'address2', type: 'string' },
+  { display: 'City', key: 'city', type: 'string' },
+  { display: 'Country code', key: 'country_code', type: 'string' },
+  { display: 'Phone', key: 'phone', type: 'string' },
+  { display: 'Province code', key: 'province_code', type: 'string' },
+  { display: 'Zip', key: 'zip', type: 'string' },
+];
 /**
  * The properties that can be updated when creating a location.
  */
-const standardCreateProps = standardUpdateProps;
+// const standardCreateProps = standardUpdateProps;
+
+const parameters = {
+  locationID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'locationId',
+    description: 'The ID of the location.',
+  }),
+  destinationLocationID: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'destinationLocationId',
+    description:
+      'The ID of a destination location to which inventory, pending orders and moving transfers will be moved from the location to deactivate.',
+  }),
+};
 
 export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
   // #region Sync Tables
@@ -70,149 +103,70 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
         // If executing from CLI, schema is undefined, we have to retrieve it first
         const schema =
           context.sync.schema ?? (await wrapGetSchemaForCli(getLocationSchema, context, { syncMetafields }));
-        const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
+
+        const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
+        const defaultMaxEntriesPerRun = 50;
+        const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+          defaultMaxEntriesPerRun,
+          prevContinuation,
+          context
+        );
+        if (shouldDeferBy > 0) {
+          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+        }
+
         const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
-        let restLimit = REST_DEFAULT_LIMIT;
-        let maxEntriesPerRun = restLimit;
-        let shouldDeferBy = 0;
-        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
+        let searchQuery = '';
 
-        if (shouldSyncMetafields) {
-          // TODO: calc this
-          const defaultMaxEntriesPerRun = 200;
-          const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-            defaultMaxEntriesPerRun,
+        const payload = {
+          query: QueryLocations,
+          variables: {
+            maxEntriesPerRun,
+            cursor: prevContinuation?.cursor ?? null,
+            // searchQuery,
+            metafieldKeys: effectiveMetafieldKeys,
+            countMetafields: effectiveMetafieldKeys.length,
+            includeMetafields: shouldSyncMetafields,
+            includeFulfillmentService: standardFromKeys.includes('fulfillment_service'),
+            includeLocalPickupSettings: standardFromKeys.includes('local_pickup_settings'),
+          } as GetLocationsQueryVariables,
+        };
+
+        const { response, continuation } = await makeSyncTableGraphQlRequest(
+          {
+            payload,
+            maxEntriesPerRun,
             prevContinuation,
-            context
-          );
-          maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-          restLimit = maxEntriesPerRun;
-          shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-          if (shouldDeferBy > 0) {
-            return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-          }
-
-          metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Location, context));
-        }
-
-        let restItems = [];
-        let restContinuation: SyncTableRestContinuation = null;
-        const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
-        // Rest Admin API Sync
-        if (!skipNextRestSync) {
-          let url: string;
-          if (prevContinuation?.nextUrl) {
-            url = prevContinuation.nextUrl;
-          } else {
-            url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/locations.json`;
-          }
-          const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-          restContinuation = continuation;
-
-          if (response && response.body?.locations) {
-            restItems = (response.body.locations as LocationRest[]).map((location) =>
-              formatLocationForSchemaFromRestApi(location, context)
-            );
-          }
-
-          if (!shouldSyncMetafields) {
-            return {
-              result: restItems,
-              continuation: restContinuation,
-            };
-          }
-        }
-
-        // GraphQL Admin API metafields augmented Sync
-        if (shouldSyncMetafields) {
-          const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-            prevContinuation,
-            restItems,
-            maxEntriesPerRun
-          );
-          const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
-          const graphQlPayload = {
-            query: QueryLocationsMetafieldsAdmin,
-            variables: {
-              maxEntriesPerRun,
-              metafieldKeys: effectiveMetafieldKeys,
-              countMetafields: effectiveMetafieldKeys.length,
-              cursor: prevContinuation?.cursor,
-              searchQuery: buildLocationsSearchQuery({ ids: uniqueIdsToFetch }),
-            } as GetLocationsMetafieldsQueryVariables,
+            getPageInfo: (data: any) => data.locations?.pageInfo,
+          },
+          context
+        );
+        if (response && response.body.data?.locations) {
+          const data = response.body.data as GetLocationsQuery;
+          return {
+            result: data.locations.nodes.map((location) => formatLocationForSchemaFromGraphQlApi(location, context)),
+            continuation,
           };
-
-          let { response: augmentedResponse, continuation: augmentedContinuation } =
-            await makeMixedSyncTableGraphQlRequest(
-              {
-                payload: graphQlPayload,
-                maxEntriesPerRun,
-                prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-                nextRestUrl: restContinuation?.nextUrl,
-                extraContinuationData: {
-                  metafieldDefinitions,
-                  currentBatch: {
-                    remaining: remaining,
-                    processing: toProcess,
-                  },
-                },
-                getPageInfo: (data: GetLocationsMetafieldsQuery) => data.locations?.pageInfo,
-              },
-              context
-            );
-
-          if (augmentedResponse && augmentedResponse.body?.data) {
-            const locationsData = augmentedResponse.body.data as GetLocationsMetafieldsQuery;
-            const augmentedItems = toProcess
-              .map((location) => {
-                const graphQlNodeMatch = locationsData.locations.nodes.find(
-                  (c) => graphQlGidToId(c.id) === location.id
-                );
-
-                // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-                if (!graphQlNodeMatch) return;
-
-                if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                  return {
-                    ...location,
-                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
-                  };
-                }
-                return location;
-              })
-              .filter((p) => p); // filter out undefined items
-
-            return {
-              result: augmentedItems,
-              continuation: augmentedContinuation,
-            };
-          }
-
+        } else {
           return {
             result: [],
-            continuation: augmentedContinuation,
+            continuation,
           };
         }
-
-        return {
-          result: [],
-        };
       },
+
       maxUpdateBatchSize: 10,
       executeUpdate: async function (params, updates, context) {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Location, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Location, context)
           : [];
 
         const jobs = updates.map((update) => handleLocationUpdateJob(update, metafieldDefinitions, context));
@@ -228,21 +182,20 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
   });
   // #endregion
 
-  /*
   // #region Actions
-  // an action to update a customer
+  // UpdateLocation action
   pack.addFormula({
-    name: 'UpdateCustomer',
-    description: 'Update an existing Shopify customer and return the updated data.',
+    name: 'UpdateLocation',
+    description: 'Update an existing Shopify location and return the updated data.',
     parameters: [parameters.locationID],
     varargParameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'key',
-        description: 'The customer property to update.',
+        description: 'The location property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(
-            MetafieldOwnerType.Customer,
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+            MetafieldOwnerType.Location,
             context,
             CACHE_MINUTE
           );
@@ -255,28 +208,94 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
     ],
     isAction: true,
     resultType: coda.ValueType.Object,
-    schema: coda.withIdentity(LocationSchema, IDENTITY_CUSTOMER),
-    execute: async function ([customer_id, ...varargs], context) {
+    // TODO: get it to update metafield values added in dynamic schema
+    // on dirait que ça déconne même en ajoutant includeUnknownProperties dans les schema. Pourtant je suis quasi sûr que ça avait déjà fonctionné avec mon pack coda-sync-plus…
+    schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+    // schema: LocationSchema,
+    execute: async function ([location_id, ...varargs], context) {
       // Build a Coda update object for Rest Admin and GraphQL API updates
       let update: coda.SyncUpdate<string, string, any>;
 
       const { metafieldDefinitions, metafieldUpdateCreateProps } =
-        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Customer, context);
+        await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Location, context);
       const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
 
       update = {
-        previousValue: { id: customer_id },
+        previousValue: { id: location_id },
         newValue: newValues,
         updatedFields: Object.keys(newValues),
       };
-      // TODO: should not be needed here if each Rest update function implement this cleaning
-      update.newValue = cleanQueryParams(update.newValue);
+      // // TODO: should not be needed here if each Rest update function implement this cleaning
+      // update.newValue = cleanQueryParams(update.newValue);
 
-      return handleLocationUpdateJob(update, metafieldDefinitions, context);
+      // return handleLocationUpdateJob(update, metafieldDefinitions, context);
+      const obj = await handleLocationUpdateJob(update, metafieldDefinitions, context);
+
+      // On enleve tout ce qui est référence pour enlever de l'update withIdentity qui casse les references
+      // const metafieldDefinitionsWithReference = metafieldDefinitions.filter(filterMetafieldDefinitionWithReference);
+      // metafieldDefinitionsWithReference.forEach((definition) => {
+      //   const fullKey = getMetafieldDefinitionFullKey(definition);
+      //   const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
+      //   console.log('matchingSchemaKey', matchingSchemaKey);
+      //   console.log('obj[matchingSchemaKey]', obj[matchingSchemaKey]);
+      //   if (obj[matchingSchemaKey]) delete obj[matchingSchemaKey];
+      // });
+      // console.log('metafieldDefinitionsWithReference', metafieldDefinitionsWithReference);
+
+      // obj[`Meta Single line text`] = obj['lgs_meta__custom.single_line_text'];
+      // obj.location_id = location_id;
+
+      // console.log('obj', obj);
+      return obj;
+    },
+  });
+
+  // ActivateLocation action
+  pack.addFormula({
+    name: 'ActivateLocation',
+    description: 'Activates a location.',
+    parameters: [{ ...parameters.locationID, description: 'The ID of a location to deactivate.' }],
+    isAction: true,
+    resultType: coda.ValueType.Object,
+    schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+    execute: async function ([locationID], context) {
+      const response = await activateLocationGraphQl(idToGraphQlGid(RESOURCE_LOCATION, locationID), context);
+      const location = response?.body?.data?.locationActivate?.location;
+      return {
+        id: locationID,
+        name: location?.name,
+        active: location?.isActive,
+      } as coda.SchemaType<typeof LocationSchema>;
+    },
+  });
+
+  // DeactivateLocation action
+  pack.addFormula({
+    name: 'DeactivateLocation',
+    description:
+      'Deactivates a location and potentially moves inventory, pending orders, and moving transfers to a destination location.',
+    parameters: [
+      { ...parameters.locationID, description: 'The ID of a location to deactivate.' },
+      { ...parameters.destinationLocationID, optional: true },
+    ],
+    isAction: true,
+    resultType: coda.ValueType.Object,
+    schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+    execute: async function ([locationID, destinationLocationID], context) {
+      const response = await deactivateLocationGraphQl(
+        idToGraphQlGid(RESOURCE_LOCATION, locationID),
+        destinationLocationID ? idToGraphQlGid(RESOURCE_LOCATION, destinationLocationID) : undefined,
+        context
+      );
+      const location = response?.body?.data?.locationDeactivate?.location;
+      return {
+        id: locationID,
+        name: location?.name,
+        active: location?.isActive,
+      } as coda.SchemaType<typeof LocationSchema>;
     },
   });
   // #endregion
-*/
 
   // #region Formulas
   pack.addFormula({
@@ -287,9 +306,13 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.Object,
     schema: LocationSchema,
     execute: async ([location_id], context) => {
-      const locationResponse = await fetchLocationRest(location_id, context);
-      if (locationResponse.body?.location) {
-        return formatLocationForSchemaFromRestApi(locationResponse.body.location as LocationRest, context);
+      const locationResponse: coda.FetchResponse<{
+        data: GetSingleLocationQuery;
+        extensions: ShopifyGraphQlRequestExtensions;
+      }> = await fetchLocationGraphQl(idToGraphQlGid(RESOURCE_LOCATION, location_id), context);
+
+      if (locationResponse.body?.data?.location) {
+        return formatLocationForSchemaFromGraphQlApi(locationResponse.body.data.location, context);
       }
     },
   });

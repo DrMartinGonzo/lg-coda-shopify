@@ -62,7 +62,11 @@ function formatGraphQlErrors(errors: ShopifyGraphQlError[]) {
   return errors.map((error) => `• ${error.message}`).join('\n\n');
 }
 function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
-  return userErrors.map((error) => `• ${[error.code, error.message].join('\n')}`).join('\n\n');
+  return userErrors
+    .map((error) => {
+      return `• ${error.code ? error.code + ': ' : ''}${error.message}`;
+    })
+    .join('\n\n');
 }
 // #endregion
 
@@ -193,7 +197,6 @@ export async function makeGraphQlRequest(
     const response = await context.fetcher.fetch(options);
     const { body } = response;
     const { errors, extensions } = body;
-    const userErrors: ShopifyGraphQlUserError[] = params.getUserErrors ? params.getUserErrors(body) : undefined;
     const isCachedResponse = isCodaCached(response);
 
     if (errors) {
@@ -205,7 +208,7 @@ export async function makeGraphQlRequest(
           throw new coda.UserVisibleError(`Max retries (${GRAPHQL_RETRIES__MAX}) of GraphQL requests exceeded.`);
         } else {
           if (isThrottledError) {
-            await repayGraphQlCost(extensions.cost, true);
+            if (!isCachedResponse) await repayGraphQlCost(extensions.cost, true);
             /* We are in a Sync Table request. Schedule a retry */
             if (context.sync.schema) return { response, retries: currRetries };
 
@@ -226,11 +229,15 @@ export async function makeGraphQlRequest(
       } else {
         throw new coda.UserVisibleError(formatGraphQlErrors(errors));
       }
-    } else if (userErrors && userErrors.length) {
-      throw new coda.UserVisibleError(formatGraphQlUserErrors(userErrors));
+    } else {
+      const userErrors: ShopifyGraphQlUserError[] = params.getUserErrors ? params.getUserErrors(body) : undefined;
+      if (userErrors && userErrors.length) {
+        throw new coda.UserVisibleError(formatGraphQlUserErrors(userErrors));
+      }
     }
+
     // Always repay cost if not storeFront
-    else if (!params.storeFront && extensions?.cost) {
+    if (!isCachedResponse && !params.storeFront && extensions?.cost) {
       await repayGraphQlCost(extensions.cost);
     }
 

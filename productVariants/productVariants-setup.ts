@@ -20,14 +20,18 @@ import {
 
 import { ProductVariantSchema, productVariantFieldDependencies } from '../schemas/syncTable/ProductVariantSchema';
 import { sharedParameters } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import {
+  augmentSchemaWithMetafields,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+} from '../metafields/metafields-functions';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitions,
-  getMetaFieldRealFromKey,
-  formatMetafieldsForSchema,
+  fetchMetafieldDefinitionsGraphQl,
+  removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
   findMatchingMetafieldDefinition,
@@ -44,7 +48,6 @@ import { QueryProductVariantsMetafieldsAdmin, buildProductVariantsSearchQuery } 
 import {
   GetProductVariantsMetafieldsQuery,
   GetProductVariantsMetafieldsQueryVariables,
-  MetafieldDefinitionFragment,
 } from '../types/admin.generated';
 import { fetchProductRest } from '../products/products-functions';
 import { MetafieldRestInput } from '../types/Metafields';
@@ -70,7 +73,7 @@ const standardUpdateProps: UpdateCreateProp[] = [
   { display: 'Price', key: 'price', type: 'number' },
   { display: 'Sku', key: 'sku', type: 'string' },
   { display: 'Position', key: 'position', type: 'number' },
-  { display: 'Raxable', key: 'taxable', type: 'boolean' },
+  { display: 'Taxable', key: 'taxable', type: 'boolean' },
   { display: 'Barcode', key: 'barcode', type: 'string' },
   { display: 'Weight', key: 'weight', type: 'number' },
   { display: 'Weight unit', key: 'weight_unit', type: 'string' },
@@ -218,13 +221,12 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
 
         let restLimit = REST_DEFAULT_LIMIT;
         let maxEntriesPerRun = restLimit;
         let shouldDeferBy = 0;
-        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
 
         if (shouldSyncMetafields) {
           // TODO: calc this
@@ -242,10 +244,6 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
           if (shouldDeferBy > 0) {
             return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
           }
-
-          metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Productvariant, context));
         }
 
         let restItems = [];
@@ -338,7 +336,6 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
                 prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
                 nextRestUrl: restContinuation?.nextUrl,
                 extraContinuationData: {
-                  metafieldDefinitions,
                   currentBatch: {
                     remaining: remaining,
                     processing: toProcess,
@@ -352,9 +349,9 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
           if (augmentedResponse && augmentedResponse.body?.data) {
             const variantsData = augmentedResponse.body.data as GetProductVariantsMetafieldsQuery;
             const augmentedItems = toProcess
-              .map((variant) => {
+              .map((resource) => {
                 const graphQlNodeMatch = variantsData.productVariants.nodes.find(
-                  (p) => graphQlGidToId(p.id) === variant.id
+                  (p) => graphQlGidToId(p.id) === resource.id
                 );
                 // if (variant.product.id === 7094974251123) {
                 //   console.log('augmentedContinuation', augmentedContinuation);
@@ -366,12 +363,12 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
                 if (!graphQlNodeMatch) return;
 
                 if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                  return {
-                    ...variant,
-                    ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
-                  };
+                  graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
+                    const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+                    resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+                  });
                 }
-                return variant;
+                return resource;
               })
               .filter((p) => p); // filter out undefined items
 
@@ -398,7 +395,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Productvariant, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Productvariant, context)
           : [];
 
         const jobs = updates.map((update) => handleProductVariantUpdateJob(update, metafieldDefinitions, context));
@@ -433,7 +430,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The product variant property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
             MetafieldOwnerType.Productvariant,
             context,
             CACHE_MINUTE
@@ -459,7 +456,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
       // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
       prefixedMetafieldFromKeys.forEach((fromKey) => {
-        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const realFromKey = removePrefixFromMetaFieldKey(fromKey);
         const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
         const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
         const input: MetafieldRestInput = {
@@ -495,7 +492,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The product variant property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
             MetafieldOwnerType.Productvariant,
             context,
             CACHE_MINUTE
@@ -838,7 +835,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
               if (graphQlNodeMatch?.metafields?.nodes?.length) {
                 return {
                   ...variant,
-                  ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes, metafieldDefinitions),
+                  ...formatMetafieldsForSchema(graphQlNodeMatch.metafields.nodes),
                 };
               }
               return variant;

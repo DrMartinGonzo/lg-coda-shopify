@@ -25,20 +25,23 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import {
+  augmentSchemaWithMetafields,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+} from '../metafields/metafields-functions';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitions,
+  fetchMetafieldDefinitionsGraphQl,
   fetchResourceMetafields,
   findMatchingMetafieldDefinition,
-  formatMetafieldsForSchema,
-  getMetaFieldRealFromKey,
+  removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
@@ -115,15 +118,8 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
 
-        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(getMetaFieldRealFromKey);
+        const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
         const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-        let metafieldDefinitions: MetafieldDefinitionFragment[] = [];
-        if (shouldSyncMetafields) {
-          metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context));
-        }
 
         const syncedStandardFields = handleFieldDependencies(standardFromKeys, blogFieldDependencies);
         const restParams: BlogSyncTableRestParams = cleanQueryParams({
@@ -137,10 +133,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
           coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, restParams);
 
         let restResult = [];
-        let { response, continuation } = await makeSyncTableGetRequest(
-          { url, extraContinuationData: { metafieldDefinitions } },
-          context
-        );
+        let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
         if (response && response.body?.blogs) {
           restResult = response.body.blogs.map((blog) => formatBlogForSchemaFromRestApi(blog, context));
         }
@@ -160,10 +153,10 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
                 effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`)
               );
               if (metafields.length) {
-                return {
-                  ...resource,
-                  ...formatMetafieldsForSchema(metafields, metafieldDefinitions),
-                };
+                metafields.forEach((metafield) => {
+                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
+                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+                });
               }
               return resource;
             })
@@ -177,7 +170,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context)
+          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Blog, context)
           : [];
 
         const jobs = updates.map((update) => handleBlogUpdateJob(update, metafieldDefinitions, context));
@@ -205,7 +198,11 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+            MetafieldOwnerType.Blog,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -248,7 +245,11 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         name: 'key',
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-          const metafieldDefinitions = await fetchMetafieldDefinitions(MetafieldOwnerType.Blog, context, CACHE_MINUTE);
+          const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+            MetafieldOwnerType.Blog,
+            context,
+            CACHE_MINUTE
+          );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
           return result.sort(compareByDisplayKey);
@@ -270,7 +271,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
       // We can use Rest Admin API to create metafields
       let metafieldRestInputs: MetafieldRestInput[] = [];
       prefixedMetafieldFromKeys.forEach((fromKey) => {
-        const realFromKey = getMetaFieldRealFromKey(fromKey);
+        const realFromKey = removePrefixFromMetaFieldKey(fromKey);
         const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
         const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
         const input: MetafieldRestInput = {

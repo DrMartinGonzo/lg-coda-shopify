@@ -11,7 +11,6 @@ import {
   NOT_FOUND,
   OPTIONS_PUBLISHED_STATUS,
   RESOURCE_COLLECTION,
-  RESOURCE_PRODUCT,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
@@ -227,7 +226,6 @@ export const deleteCollectionRest = async (collectionId: number, collectionType:
 const formatCollectionForSchemaFromGraphQlApi = (
   collection: CollectionFieldsFragment,
   context: coda.ExecutionContext,
-  metafieldDefinitions: MetafieldDefinition[]
 ) => {
   let obj: any = {
     ...collection,
@@ -250,7 +248,7 @@ const formatCollectionForSchemaFromGraphQlApi = (
     };
   }
   if (collection.metafields && collection.metafields.nodes.length) {
-    const metafields = formatMetafieldsForSchema(collection.metafields.nodes, metafieldDefinitions);
+    const metafields = formatMetafieldsForSchema(collection.metafields.nodes);
     obj = {
       ...obj,
       ...metafields,
@@ -306,13 +304,6 @@ export const syncCollectionsGraphQlAdmin = async (
   if (effectivePropertyKeys.includes('image')) optionalNestedFields.push('image');
   if (effectivePropertyKeys.includes('sort_order')) optionalNestedFields.push('sortOrder');
   // Metafield optional nested fields
-  let metafieldDefinitions = [];
-  if (shouldSyncMetafields) {
-    metafieldDefinitions =
-      prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-      (await fetchMetafieldDefinitions(MetafieldOwnerType.Collection, context));
-    optionalNestedFields.push('metafields');
-  }
 
   // const queryFilters = {
   //   created_at_min: created_at ? created_at[0] : undefined,
@@ -351,7 +342,6 @@ export const syncCollectionsGraphQlAdmin = async (
       payload,
       maxEntriesPerRun,
       prevContinuation,
-      extraContinuationData: { metafieldDefinitions },
       getPageInfo: (data: any) => data.collections?.pageInfo,
     },
     context
@@ -360,7 +350,7 @@ export const syncCollectionsGraphQlAdmin = async (
     const data = response.body.data as GetCollectionsQuery;
     return {
       result: data.collections.nodes.map((collection) =>
-        formatCollectionForSchemaFromGraphQlApi(collection, context, metafieldDefinitions)
+        formatCollectionForSchemaFromGraphQlApi(collection, context)
       ),
       continuation,
     };
