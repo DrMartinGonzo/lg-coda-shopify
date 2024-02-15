@@ -2,6 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { SyncTableRestContinuation } from './types/tableSync';
 
+// TODO: better error handling
 
 export const cleanQueryParams = <T>(params: T) => {
   Object.keys(params).forEach((key) => {
@@ -69,13 +70,11 @@ async function doRequest(options: coda.FetchRequest, context: coda.ExecutionCont
   }
 }
 
-export async function makeGetRequest(
-  params: {
-    url: string;
-    cacheTtlSecs?: number;
-  },
-  context: coda.ExecutionContext
-) {
+export interface GetRequestParams {
+  url: string;
+  cacheTtlSecs?: number;
+}
+export async function makeGetRequest(params: GetRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'GET',
     url: params.url,

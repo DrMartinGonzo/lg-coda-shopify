@@ -10,7 +10,6 @@ import {
   COLLECTION_TYPE__SMART,
   NOT_FOUND,
   OPTIONS_PUBLISHED_STATUS,
-  RESOURCE_COLLECTION,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
@@ -25,6 +24,7 @@ import {
 
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { CollectionUpdateRestParams } from '../types/Collection';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Helpers
 export function formatCollectionStandardFieldsRestParams(
@@ -65,7 +65,10 @@ export async function handleCollectionUpdateJob(
 
   const subJobs: Promise<any>[] = [];
   const collectionId = update.previousValue.id as number;
-  const collectionType = await getCollectionTypeGraphQl(idToGraphQlGid(RESOURCE_COLLECTION, collectionId), context);
+  const collectionType = await getCollectionTypeGraphQl(
+    idToGraphQlGid(GraphQlResource.Collection, collectionId),
+    context
+  );
 
   if (standardFromKeys.length) {
     const restParams: CollectionUpdateRestParams = formatCollectionStandardFieldsRestParams(

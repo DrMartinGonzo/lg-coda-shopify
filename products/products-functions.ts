@@ -292,7 +292,7 @@ export async function updateProductMetafieldsGraphQl(
   const payload = {
     query: MutationSetMetafields,
     variables: {
-      metafieldsSetInputs,
+      inputs: metafieldsSetInputs,
     } as SetMetafieldsMutationVariables,
   };
 

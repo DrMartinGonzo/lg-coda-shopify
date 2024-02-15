@@ -18,7 +18,6 @@ import {
   CACHE_MINUTE,
   IDENTITY_COLLECTION,
   METAFIELD_PREFIX_KEY,
-  RESOURCE_COLLECTION,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -38,7 +37,7 @@ import {
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
-import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
+import { MetafieldRestInput } from '../types/Metafields';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
@@ -48,6 +47,7 @@ import {
   splitMetaFieldFullKey,
   findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
 import {
@@ -58,6 +58,7 @@ import {
 } from '../helpers-varargs';
 import { CollectionCreateRestParams } from '../types/Collection';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { GraphQlResource } from '../types/GraphQl';
 
 async function getCollectionSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = CollectionSchema;
@@ -355,7 +356,7 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Collection, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Collection }, context)
           : [];
 
         const jobs = updates.map((update) => handleCollectionUpdateJob(update, metafieldDefinitions, context));
@@ -384,9 +385,8 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         description: 'The collection property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Collection,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Collection, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -439,9 +439,8 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
         description: 'The collection property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Collection,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Collection, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -502,7 +501,10 @@ export const setupCollections = (pack: coda.PackDefinitionBuilder) => {
     isAction: true,
     resultType: coda.ValueType.Boolean,
     execute: async function ([collectionId], context) {
-      const collectionType = await getCollectionTypeGraphQl(idToGraphQlGid(RESOURCE_COLLECTION, collectionId), context);
+      const collectionType = await getCollectionTypeGraphQl(
+        idToGraphQlGid(GraphQlResource.Collection, collectionId),
+        context
+      );
       await deleteCollectionRest(collectionId, collectionType, context);
       return true;
     },

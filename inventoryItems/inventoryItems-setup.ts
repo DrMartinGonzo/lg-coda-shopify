@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
-import { CODA_SUPORTED_CURRENCIES, IDENTITY_INVENTORYITEM } from '../constants';
+import { CODA_SUPPORTED_CURRENCIES, IDENTITY_INVENTORYITEM } from '../constants';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -23,7 +23,7 @@ async function getInventoryItemSchema(context: coda.ExecutionContext, _: string,
   const shop = await fetchShopDetails(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
-    if (!CODA_SUPORTED_CURRENCIES.includes(currencyCode)) {
+    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
       console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
       currencyCode = 'USD';
     }

@@ -157,6 +157,7 @@ export const CustomerSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       fixedId: 'last_order_id',
       fromKey: 'last_order_id',
+      useThousandsSeparator: false,
       description: 'The ID of the customer’s last order.',
     },
     last_order_name: {

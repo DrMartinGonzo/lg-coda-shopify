@@ -51,7 +51,7 @@ import {
 } from '../helpers-varargs';
 import { MetafieldRestInput } from '../types/Metafields';
 import { CustomerCreateRestParams } from '../types/Customer';
-import { MetafieldOwnerType } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 async function getCustomerSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = CustomerSchema;
@@ -307,7 +307,7 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Customer, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Customer }, context)
           : [];
 
         const jobs = updates.map((update) => handleCustomerUpdateJob(update, metafieldDefinitions, context));
@@ -336,9 +336,8 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Customer,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Customer, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -382,9 +381,8 @@ export const setupCustomers = (pack: coda.PackDefinitionBuilder) => {
         description: 'The customer property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Customer,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Customer, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');

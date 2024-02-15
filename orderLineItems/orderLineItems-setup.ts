@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
-  CODA_SUPORTED_CURRENCIES,
+  CODA_SUPPORTED_CURRENCIES,
   IDENTITY_ORDER_LINE_ITEM,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
@@ -21,7 +21,7 @@ async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string,
   const shop = await fetchShopDetails(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
-    if (!CODA_SUPORTED_CURRENCIES.includes(currencyCode)) {
+    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
       console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
       currencyCode = 'USD';
     }
