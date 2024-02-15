@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS, RESOURCE_BLOG, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
 import { idToGraphQlGid } from '../helpers-graphql';
@@ -14,6 +14,7 @@ import {
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { formatOptionNameId } from '../helpers';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Helpers
 export async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
@@ -119,7 +120,7 @@ export const formatBlogForSchemaFromRestApi: FormatFunction = (blog, context) =>
   let obj: any = {
     ...blog,
     admin_url: `${context.endpoint}/admin/blogs/${blog.id}`,
-    graphql_gid: idToGraphQlGid(RESOURCE_BLOG, blog.blog_id),
+    graphql_gid: idToGraphQlGid(GraphQlResource.Blog, blog.blog_id),
   };
 
   return obj;

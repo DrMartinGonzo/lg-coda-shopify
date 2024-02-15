@@ -1,0 +1,15 @@
+[
+  {
+    "previousValue": {
+      "id": 35668357120332,
+      "label": "lg_category.blend",
+      "namespace": "lg_category",
+      "key": "blend",
+      "rawValue": "creation"
+    },
+    "newValue": {
+      "rawValue": "pure_origin"
+    },
+    "updatedFields": ["rawValue"]
+  }
+]

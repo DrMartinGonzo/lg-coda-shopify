@@ -3,10 +3,10 @@
   "version": "0.0.20",
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
-    "push": "npx coda upload pack.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "npx patch-package",
-    "graphql-codegen": "graphql-codegen --config codegen.ts"
+    "push": "coda upload pack.ts",
+    "graphql-codegen": "graphql-codegen --config codegen.ts",
+    "test-metafield-update": "coda execute ./pack.ts Metafields:update --dynamicUrl=Product \"lg_category.blend\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",
   "license": "MIT",
@@ -43,6 +43,7 @@
     "eslint-plugin-local": "^1.0.0",
     "eslint-plugin-prefer-let": "^3.0.1",
     "gas-coda-export-bills": "github:DrMartinGonzo/gas-coda-export-bills.git#^0.2.0",
+    "graphql": "^16.8.1",
     "json-schema": "^0.4.0",
     "mocha": "^10.0.0",
     "sinon": "^14.0.0",

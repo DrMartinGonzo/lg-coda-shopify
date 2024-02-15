@@ -103,7 +103,7 @@ export async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
 
   const maybeHasMetaFields = maybeHasMetaFieldKeys(getVarargsCreateUpdateKeys(varargs));
   if (maybeHasMetaFields) {
-    metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(metafieldOwnerType, context);
+    metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType: metafieldOwnerType }, context);
     metafieldUpdateCreateProps = getMetafieldsCreateUpdateProps(metafieldDefinitions);
   }
 

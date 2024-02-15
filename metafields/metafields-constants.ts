@@ -1,20 +1,10 @@
-import {
-  RESOURCE_ARTICLE,
-  RESOURCE_BLOG,
-  RESOURCE_COLLECTION,
-  RESOURCE_CUSTOMER,
-  RESOURCE_LOCATION,
-  RESOURCE_ORDER,
-  RESOURCE_PAGE,
-  RESOURCE_PRODUCT,
-  RESOURCE_PRODUCT_VARIANT,
-  RESOURCE_SHOP,
-} from '../constants';
-import { MetafieldOwnerType, ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
+import { GraphQlResource } from '../types/GraphQl';
+import { ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncTableDefinition[] = [
   {
-    key: RESOURCE_ARTICLE,
+    key: GraphQlResource.Article,
     metafieldOwnerType: MetafieldOwnerType.Article,
     display: 'Article',
     metafieldsSettingsUrlPart: 'article',
@@ -24,7 +14,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     graphQlQueryOperation: 'article', // TODO: no graphQL here
   },
   {
-    key: RESOURCE_BLOG,
+    key: GraphQlResource.Blog,
     metafieldOwnerType: MetafieldOwnerType.Blog,
     display: 'Blog',
     metafieldsSettingsUrlPart: 'blog',
@@ -35,7 +25,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     storeFront: true,
   },
   {
-    key: RESOURCE_COLLECTION,
+    key: GraphQlResource.Collection,
     metafieldOwnerType: MetafieldOwnerType.Collection,
     display: 'Collection',
     metafieldsSettingsUrlPart: 'collection',
@@ -53,7 +43,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   graphQlQueryOperation: 'collections',
   // },
   {
-    key: RESOURCE_CUSTOMER,
+    key: GraphQlResource.Customer,
     metafieldOwnerType: MetafieldOwnerType.Customer,
     display: 'Customer',
     metafieldsSettingsUrlPart: 'customer',
@@ -72,7 +62,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   graphQlQueryOperation: 'draftOrders',
   // },
   {
-    key: RESOURCE_LOCATION,
+    key: GraphQlResource.Location,
     metafieldOwnerType: MetafieldOwnerType.Location,
     display: 'Location',
     metafieldsSettingsUrlPart: 'location',
@@ -82,7 +72,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     graphQlQueryOperation: 'location',
   },
   {
-    key: RESOURCE_ORDER,
+    key: GraphQlResource.Order,
     metafieldOwnerType: MetafieldOwnerType.Order,
     display: 'Order',
     metafieldsSettingsUrlPart: 'order',
@@ -92,7 +82,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     graphQlQueryOperation: 'order',
   },
   {
-    key: RESOURCE_PAGE,
+    key: GraphQlResource.Page,
     metafieldOwnerType: MetafieldOwnerType.Page,
     display: 'Page',
     metafieldsSettingsUrlPart: 'page',
@@ -103,7 +93,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     storeFront: true,
   },
   {
-    key: RESOURCE_PRODUCT,
+    key: GraphQlResource.Product,
     metafieldOwnerType: MetafieldOwnerType.Product,
     display: 'Product',
     metafieldsSettingsUrlPart: 'product',
@@ -122,7 +112,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   graphQlQueryOperation: 'articles',
   // },
   {
-    key: RESOURCE_PRODUCT_VARIANT,
+    key: GraphQlResource.ProductVariant,
     metafieldOwnerType: MetafieldOwnerType.Productvariant,
     display: 'Product Variant',
     metafieldsSettingsUrlPart: 'productVariant',
@@ -133,7 +123,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     // storeFront: true,
   },
   {
-    key: RESOURCE_SHOP,
+    key: GraphQlResource.Shop,
     metafieldOwnerType: MetafieldOwnerType.Shop,
     display: 'Shop',
     metafieldsSettingsUrlPart: 'shop',

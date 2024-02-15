@@ -27,7 +27,7 @@ import {
 } from '../metafields/metafields-functions';
 import {
   fetchMetafieldDefinitionsGraphQl,
-  fetchResourceMetafields,
+  fetchMetafieldsRest,
   findMatchingMetafieldDefinition,
   removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
@@ -35,8 +35,8 @@ import {
   splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
 import { SyncTableRestContinuation } from '../types/tableSync';
-import { MetafieldDefinition } from '../types/admin.types';
-import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
+import { MetafieldOwnerType, MetafieldDefinition } from '../types/admin.types';
+import { MetafieldRestInput } from '../types/Metafields';
 import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
@@ -172,7 +172,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           metafieldDefinitions =
             prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-            (await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Page, context));
+            (await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Page }, context));
         }
 
         const syncedStandardFields = handleFieldDependencies(standardFromKeys, pageFieldDependencies);
@@ -214,7 +214,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
             restResult.map(async (resource) => {
               let obj = { ...resource };
 
-              const response = await fetchResourceMetafields(
+              const response = await fetchMetafieldsRest(
                 getResourceMetafieldsRestUrl('pages', resource.id, context),
                 {},
                 context
@@ -248,7 +248,7 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Page, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Page }, context)
           : [];
 
         const jobs = updates.map((update) => handlePageUpdateJob(update, metafieldDefinitions, context));
@@ -277,9 +277,8 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         description: 'The page property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Page,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Page, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -325,9 +324,8 @@ export const setupPages = (pack: coda.PackDefinitionBuilder) => {
         description: 'The page property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Page,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Page, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');

@@ -37,7 +37,7 @@ import {
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
-  fetchResourceMetafields,
+  fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
   getResourceMetafieldsRestUrl,
@@ -54,8 +54,8 @@ import {
 } from '../helpers-varargs';
 import { MetafieldRestInput } from '../types/Metafields';
 import { autocompleteBlogIdParameter, autocompleteBlogParameterWithName } from '../blogs/blogs-functions';
-import { MetafieldOwnerType } from '../types/Metafields';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 async function getArticleSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = ArticleSchema;
@@ -281,7 +281,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           restResult = await Promise.all(
             restResult.map(async (resource) => {
-              const response = await fetchResourceMetafields(
+              const response = await fetchMetafieldsRest(
                 getResourceMetafieldsRestUrl('articles', resource.id, context),
                 {},
                 context
@@ -321,7 +321,7 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Article, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Article }, context)
           : [];
 
         const jobs = updates.map((update) => handleArticleUpdateJob(update, metafieldDefinitions, context));
@@ -350,9 +350,8 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         description: 'The article property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Article,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Article, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
 
@@ -417,9 +416,8 @@ export const setupArticles = (pack: coda.PackDefinitionBuilder) => {
         description: 'The article property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Article,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Article, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');

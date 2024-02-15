@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_SINGLE_FETCH, RESOURCE_LOCATION } from '../constants';
+import { CACHE_SINGLE_FETCH } from '../constants';
 
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
@@ -34,6 +34,7 @@ import {
   UpdateLocation,
 } from './locations-graphql';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Autocomplete functions
 export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
@@ -100,7 +101,7 @@ export async function handleLocationUpdateJob(
 
   const subJobs: Promise<any>[] = [];
   const locationId = update.previousValue.id as number;
-  const locationGid = idToGraphQlGid(RESOURCE_LOCATION, locationId);
+  const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
 
   if (standardFromKeys.length) {
     const locationEditInput = formatGraphQlLocationEditInput(update, standardFromKeys);

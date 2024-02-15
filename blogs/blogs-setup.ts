@@ -35,7 +35,7 @@ import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchem
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
-  fetchResourceMetafields,
+  fetchMetafieldsRest,
   findMatchingMetafieldDefinition,
   removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
@@ -45,7 +45,8 @@ import {
 import { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import { MetafieldOwnerType, MetafieldRestInput } from '../types/Metafields';
+import { MetafieldRestInput } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -142,7 +143,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         if (shouldSyncMetafields) {
           restResult = await Promise.all(
             restResult.map(async (resource) => {
-              const response = await fetchResourceMetafields(
+              const response = await fetchMetafieldsRest(
                 getResourceMetafieldsRestUrl('blogs', resource.id, context),
                 {},
                 context
@@ -170,7 +171,7 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Blog, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Blog }, context)
           : [];
 
         const jobs = updates.map((update) => handleBlogUpdateJob(update, metafieldDefinitions, context));
@@ -199,9 +200,8 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Blog,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Blog, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -246,9 +246,8 @@ export const setupBlogs = (pack: coda.PackDefinitionBuilder) => {
         description: 'The customer property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Blog,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Blog, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');

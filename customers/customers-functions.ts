@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { CACHE_SINGLE_FETCH, RESOURCE_CUSTOMER, REST_DEFAULT_API_VERSION } from '../constants';
+import { CACHE_SINGLE_FETCH, REST_DEFAULT_API_VERSION } from '../constants';
 import { FormatFunction } from '../types/misc';
 
 import {
@@ -18,6 +18,7 @@ import {
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Helpers
 /*
@@ -110,7 +111,7 @@ export async function handleCustomerUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
-        idToGraphQlGid(RESOURCE_CUSTOMER, customerId),
+        idToGraphQlGid(GraphQlResource.Customer, customerId),
         'customer',
         metafieldDefinitions,
         update,

@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 
-import { IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS, RESOURCE_METAOBJECT } from '../constants';
+import { AllMetafieldTypeValue, IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
@@ -32,6 +32,7 @@ import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { buildQueryAllMetaObjectsWithFields, queryAllMetaobjectDefinitions } from './metaobjects-graphql';
 import { GetMetaobjectDefinitionsQueryVariables } from '../types/admin.generated';
 import { sharedParameters } from '../shared-parameters';
+import { GraphQlResource } from '../types/GraphQl';
 
 async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
   const metaobjectDefinition = await getMetaObjectDefinitionById(context.sync.dynamicUrl, true, true, context);
@@ -218,7 +219,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
         const jobs = updates.map(async (update) => {
           const { updatedFields } = update;
 
-          const metaobjectGid = idToGraphQlGid(RESOURCE_METAOBJECT, update.previousValue.id as number);
+          const metaobjectGid = idToGraphQlGid(GraphQlResource.Metaobject, update.previousValue.id as number);
           const metaobjectFieldFromKeys = updatedFields.filter((key) => key !== 'handle' && key !== 'status');
           const handle = updatedFields['handle'];
           const status = updatedFields['status'];
@@ -227,9 +228,21 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
             const value = update.newValue[fromKey] as string;
             const fieldDefinition = metaobjectFieldDefinitions.find((f) => f.key === fromKey);
             if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
+
+            let formattedValue;
+            try {
+              formattedValue = formatMetafieldValueForApi(
+                value,
+                fieldDefinition.type.name as AllMetafieldTypeValue,
+                fieldDefinition.validations
+              );
+            } catch (error) {
+              throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+            }
+
             return {
               key: fromKey,
-              value: formatMetafieldValueForApi(fromKey, value, fieldDefinition),
+              value: formattedValue,
             };
           });
 
@@ -348,7 +361,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
 
       const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
       const response = await updateMetaObjectGraphQl(
-        idToGraphQlGid(RESOURCE_METAOBJECT, metaobjectId),
+        idToGraphQlGid(GraphQlResource.Metaobject, metaobjectId),
         metaobjectUpdateInput,
         context
       );
@@ -367,7 +380,7 @@ export const setupMetaObjects = (pack: coda.PackDefinitionBuilder) => {
     isAction: true,
     resultType: coda.ValueType.String,
     execute: async function ([metaobjectId], context) {
-      const response = await deleteMetaObjectGraphQl(idToGraphQlGid(RESOURCE_METAOBJECT, metaobjectId), context);
+      const response = await deleteMetaObjectGraphQl(idToGraphQlGid(GraphQlResource.Metaobject, metaobjectId), context);
       return response.body.data.metaobjectDelete.deletedId;
     },
   });

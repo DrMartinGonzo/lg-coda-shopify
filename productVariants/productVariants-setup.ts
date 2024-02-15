@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import {
   CACHE_MINUTE,
-  CODA_SUPORTED_CURRENCIES,
+  CODA_SUPPORTED_CURRENCIES,
   IDENTITY_PRODUCT_VARIANT,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
@@ -58,7 +58,7 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
-import { MetafieldOwnerType } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { fetchShopDetails } from '../shop/shop-functions';
 
 // #endregion
@@ -102,7 +102,7 @@ async function getProductVariantsSchema(
   const shop = await fetchShopDetails(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
-    if (!CODA_SUPORTED_CURRENCIES.includes(currencyCode)) {
+    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
       console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
       currencyCode = 'USD';
     }
@@ -395,7 +395,7 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Productvariant, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Productvariant }, context)
           : [];
 
         const jobs = updates.map((update) => handleProductVariantUpdateJob(update, metafieldDefinitions, context));
@@ -431,9 +431,8 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         description: 'The product variant property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Productvariant,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Productvariant, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -493,9 +492,8 @@ export const setupProductVariants = (pack: coda.PackDefinitionBuilder) => {
         description: 'The product variant property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Productvariant,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Productvariant, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
