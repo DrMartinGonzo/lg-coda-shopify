@@ -3,10 +3,11 @@ import * as coda from '@codahq/packs-sdk';
 import { FormatFunction } from '../types/misc';
 import { InventoryItemFieldsFragment, InventoryItemUpdateMutationVariables } from '../types/admin.generated';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { NOT_FOUND, RESOURCE_INVENTORY_ITEM } from '../constants';
+import { NOT_FOUND } from '../constants';
 import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryItemUpdateInput } from '../types/admin.types';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(
@@ -21,7 +22,7 @@ export async function handleInventoryItemUpdateJob(
     const inventoryItemUpdateInput = formatGraphQlInventoryItemUpdateInput(update, updatedFields);
     subJobs.push(
       updateInventoryItemGraphQl(
-        idToGraphQlGid(RESOURCE_INVENTORY_ITEM, inventoryItemId),
+        idToGraphQlGid(GraphQlResource.InventoryItem, inventoryItemId),
         inventoryItemUpdateInput,
         context
       )

@@ -100,21 +100,6 @@ export const IDENTITY_REDIRECT = 'Redirect';
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 
-export const RESOURCE_ARTICLE = 'OnlineStoreArticle';
-export const RESOURCE_BLOG = 'OnlineStoreBlog';
-export const RESOURCE_COLLECTION = 'Collection';
-export const RESOURCE_CUSTOMER = 'Customer';
-export const RESOURCE_DRAFT_ORDER = 'DraftOrder';
-export const RESOURCE_LOCATION = 'Location';
-export const RESOURCE_METAOBJECT = 'Metaobject';
-export const RESOURCE_ORDER = 'Order';
-export const RESOURCE_ORDER_TRANSACTION = 'OrderTransaction';
-export const RESOURCE_PAGE = 'OnlineStorePage';
-export const RESOURCE_PRODUCT = 'Product';
-export const RESOURCE_PRODUCT_VARIANT = 'ProductVariant';
-export const RESOURCE_SHOP = 'Shop';
-export const RESOURCE_INVENTORY_ITEM = 'InventoryItem';
-
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
 
@@ -174,11 +159,28 @@ export const FIELD_TYPES = {
   list_variant_reference: 'list.variant_reference',
   list_volume: 'list.volume',
   list_weight: 'list.weight',
-};
+} as const;
+
+export const LEGACY_FIELD_TYPES = {
+  string: 'string',
+  integer: 'integer',
+  json_string: 'json_string',
+} as const;
+
+type MetafieldTypes = typeof FIELD_TYPES;
+/** A union of all the supported `metafield.type`s */
+export type MetafieldTypeValue = MetafieldTypes[keyof MetafieldTypes];
+
+type LegacyMetafieldTypes = typeof LEGACY_FIELD_TYPES;
+/** A union of all the supported legacy `metafield.type`s */
+export type LegacyMetafieldTypeValue = LegacyMetafieldTypes[keyof LegacyMetafieldTypes];
+
+/** A union of all the supported modern and legacy `metafield.type`s */
+export type AllMetafieldTypeValue = MetafieldTypeValue | LegacyMetafieldTypeValue;
 
 export const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
-export const CODA_SUPORTED_CURRENCIES = [
+export const CODA_SUPPORTED_CURRENCIES = [
   'BRL',
   'CHF',
   'EUR',
@@ -196,4 +198,4 @@ export const CODA_SUPORTED_CURRENCIES = [
   'USD',
   'VND',
   'XBT',
-];
+] as const;

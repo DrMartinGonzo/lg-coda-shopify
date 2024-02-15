@@ -273,3 +273,16 @@ export const MetafieldBaseSyncSchema = coda.makeObjectSchema({
   idProperty: 'owner_gid',
   featuredProperties: ['owner_gid', 'admin_url'],
 });
+
+export const metafieldSyncTableHelperEditColumns = [
+  { key: 'editCollectionReference', type: FIELD_TYPES.collection_reference },
+  { key: 'editCollectionReferenceList', type: FIELD_TYPES.list_collection_reference },
+  { key: 'editFileReference', type: FIELD_TYPES.file_reference },
+  { key: 'editFileReferenceList', type: FIELD_TYPES.list_file_reference },
+  { key: 'editPageReference', type: FIELD_TYPES.page_reference },
+  { key: 'editPageReferenceList', type: FIELD_TYPES.list_page_reference },
+  { key: 'editProductReference', type: FIELD_TYPES.product_reference },
+  { key: 'editProductReferenceList', type: FIELD_TYPES.list_product_reference },
+  { key: 'editProductVariantReference', type: FIELD_TYPES.variant_reference },
+  { key: 'editProductVariantReferenceList', type: FIELD_TYPES.list_variant_reference },
+];

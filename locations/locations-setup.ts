@@ -10,7 +10,7 @@ import {
 
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
-import { CACHE_MINUTE, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY, RESOURCE_LOCATION } from '../constants';
+import { CACHE_MINUTE, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
 import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
@@ -38,8 +38,9 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
-import { MetafieldOwnerType } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
+import { GraphQlResource } from '../types/GraphQl';
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = LocationSchema;
@@ -166,7 +167,7 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Location, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Location }, context)
           : [];
 
         const jobs = updates.map((update) => handleLocationUpdateJob(update, metafieldDefinitions, context));
@@ -195,9 +196,8 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
         description: 'The location property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Location,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Location, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -259,7 +259,7 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
     resultType: coda.ValueType.Object,
     schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
     execute: async function ([locationID], context) {
-      const response = await activateLocationGraphQl(idToGraphQlGid(RESOURCE_LOCATION, locationID), context);
+      const response = await activateLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, locationID), context);
       const location = response?.body?.data?.locationActivate?.location;
       return {
         id: locationID,
@@ -283,8 +283,8 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
     schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
     execute: async function ([locationID, destinationLocationID], context) {
       const response = await deactivateLocationGraphQl(
-        idToGraphQlGid(RESOURCE_LOCATION, locationID),
-        destinationLocationID ? idToGraphQlGid(RESOURCE_LOCATION, destinationLocationID) : undefined,
+        idToGraphQlGid(GraphQlResource.Location, locationID),
+        destinationLocationID ? idToGraphQlGid(GraphQlResource.Location, destinationLocationID) : undefined,
         context
       );
       const location = response?.body?.data?.locationDeactivate?.location;
@@ -309,7 +309,7 @@ export const setupLocations = (pack: coda.PackDefinitionBuilder) => {
       const locationResponse: coda.FetchResponse<{
         data: GetSingleLocationQuery;
         extensions: ShopifyGraphQlRequestExtensions;
-      }> = await fetchLocationGraphQl(idToGraphQlGid(RESOURCE_LOCATION, location_id), context);
+      }> = await fetchLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, location_id), context);
 
       if (locationResponse.body?.data?.location) {
         return formatLocationForSchemaFromGraphQlApi(locationResponse.body.data.location, context);

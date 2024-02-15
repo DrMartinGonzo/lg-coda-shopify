@@ -48,25 +48,16 @@ export const queryMetafieldDefinitions = /* GraphQL */ `
 `;
 
 /**
- * Query all or some metafields from a specific ressource
+ * Create a GraphQl query to get all or some metafields from a specific ressource (except Shop)
  */
-export const makeQueryMetafieldsByKeys = (graphQlQueryOperation: string) => {
+export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
-  let declaredArgs = ['$metafieldKeys: [String!]', '$countMetafields: Int!'];
-  let operationMaybeWithArgs: string;
-
-  if (graphQlQueryOperation === 'shop') {
-    operationMaybeWithArgs = graphQlQueryOperation;
-  } else {
-    declaredArgs.push('$ownerGid: ID!');
-    operationMaybeWithArgs = `${graphQlQueryOperation}(id: $ownerGid)`;
-  }
 
   return `
     ${MetafieldFieldsFragment}
 
-    query ${queryName}(${declaredArgs.join(', ')}) {
-      ${operationMaybeWithArgs} {
+    query ${queryName}($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
+      ${graphQlQueryOperation}(id: $ownerGid) {
         id
         metafields(keys: $metafieldKeys, first: $countMetafields) {
           nodes {
@@ -80,14 +71,64 @@ export const makeQueryMetafieldsByKeys = (graphQlQueryOperation: string) => {
     }
   `;
 };
+
+/**
+ * Create a GraphQl query to get metafields by their keys from resources (except Shop)
+ */
+export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
+  const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
+
+  return `
+    ${MetafieldFieldsFragment}
+
+    query ${queryName}($metafieldKeys: [String!], $countMetafields: Int!, $maxEntriesPerRun: Int!, $cursor: String) {
+      ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
+        nodes {
+          id
+          metafields(keys: $metafieldKeys, first: $countMetafields) {
+            nodes {
+              ...MetafieldFields
+              definition {
+                id
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  `;
+};
+
+// Edge case for Shop
+export const QueryShopMetafieldsByKeys = /* GraphQL */ `
+  ${MetafieldFieldsFragment}
+
+  query GetShopMetafields($metafieldKeys: [String!], $countMetafields: Int!) {
+    shop {
+      id
+      metafields(keys: $metafieldKeys, first: $countMetafields) {
+        nodes {
+          ...MetafieldFields
+          definition {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
 // #endregion
 
 // #region Mutations
 export const MutationSetMetafields = /* GraphQL */ `
   ${MetafieldFieldsFragment}
 
-  mutation SetMetafields($metafieldsSetInputs: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafieldsSetInputs) {
+  mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $inputs) {
       metafields {
         ...MetafieldFields
         definition {

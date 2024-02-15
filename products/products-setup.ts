@@ -56,7 +56,7 @@ import {
   getVarargsMetafieldDefinitionsAndUpdateCreateProps,
   parseVarargsCreateUpdatePropsValues,
 } from '../helpers-varargs';
-import { MetafieldOwnerType } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -387,7 +387,7 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Product, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Product }, context)
           : [];
 
         const jobs = updates.map((update) => handleProductUpdateJob(update, metafieldDefinitions, context));
@@ -442,9 +442,8 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         description: 'The product variant property to create.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Product,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Product, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
@@ -516,9 +515,8 @@ export const setupProducts = (pack: coda.PackDefinitionBuilder) => {
         description: 'The product property to update.',
         autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
           const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-            MetafieldOwnerType.Product,
-            context,
-            CACHE_MINUTE
+            { ownerType: MetafieldOwnerType.Product, cacheTtlSecs: CACHE_MINUTE },
+            context
           );
           const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
           const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');

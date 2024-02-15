@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
-import { CACHE_SINGLE_FETCH, IDENTITY_METAOBJECT, PACK_ID, RESOURCE_METAOBJECT } from '../constants';
+import { CACHE_SINGLE_FETCH, IDENTITY_METAOBJECT, PACK_ID } from '../constants';
 import {
   createMetaobjectMutation,
   deleteMetaobjectMutation,
@@ -28,6 +28,7 @@ import {
   MetaobjectDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
 } from '../types/admin.generated';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Autocomplete functions
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
@@ -39,7 +40,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
   const results = await getMetaObjectFieldDefinitionsByMetaobject(
-    idToGraphQlGid(RESOURCE_METAOBJECT, args.metaobjectId),
+    idToGraphQlGid(GraphQlResource.Metaobject, args.metaobjectId),
     context
   );
   return coda.autocompleteSearchObjects(search, results, 'name', 'key');

@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
-  CODA_SUPORTED_CURRENCIES,
+  CODA_SUPPORTED_CURRENCIES,
   IDENTITY_ORDER,
   IS_ADMIN_RELEASE,
   METAFIELD_PREFIX_KEY,
@@ -23,7 +23,6 @@ import {
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
-import { MetafieldOwnerType } from '../types/Metafields';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
@@ -31,6 +30,7 @@ import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
+import { MetafieldOwnerType } from '../types/admin.types';
 import { GetOrdersMetafieldsQuery, GetOrdersMetafieldsQueryVariables } from '../types/admin.generated';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -54,7 +54,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
   const shop = await fetchShopDetails(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
-    if (!CODA_SUPORTED_CURRENCIES.includes(currencyCode)) {
+    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
       console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
       currencyCode = 'USD';
     }
@@ -367,7 +367,7 @@ export const setupOrders = (pack: coda.PackDefinitionBuilder) => {
         const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
         const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
         const metafieldDefinitions = hasUpdatedMetaFields
-          ? await fetchMetafieldDefinitionsGraphQl(MetafieldOwnerType.Order, context)
+          ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Order }, context)
           : [];
 
         const jobs = updates.map((update) => handleOrderUpdateJob(update, metafieldDefinitions, context));
