@@ -7,6 +7,8 @@ export enum GraphQlResource {
   Collection = 'Collection',
   Customer = 'Customer',
   DraftOrder = 'DraftOrder',
+  GenericFile = 'GenericFile',
+  Image = 'MediaImage',
   InventoryItem = 'InventoryItem',
   Location = 'Location',
   Metaobject = 'Metaobject',
@@ -16,4 +18,5 @@ export enum GraphQlResource {
   Product = 'Product',
   ProductVariant = 'ProductVariant',
   Shop = 'Shop',
+  Video = 'Video',
 }

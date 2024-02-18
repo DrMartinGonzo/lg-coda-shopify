@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 
 import {
@@ -13,6 +14,8 @@ import { sharedParameters } from '../shared-parameters';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { fetchShopDetails } from '../shop/shop-functions';
+
+// #endregion
 
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = OrderLineItemSchema;
@@ -43,100 +46,95 @@ const parameters = {
   }),
 };
 
-export const setupOrderLineItems = (pack: coda.PackDefinitionBuilder) => {
-  // #region Sync tables
-  // OrderLineItems sync table
-  pack.addSyncTable({
-    name: 'OrderLineItems',
-    description: 'All Shopify OrderLineItems',
-    identityName: IDENTITY_ORDER_LINE_ITEM,
-    schema: OrderLineItemSchema,
-    dynamicOptions: {
-      getSchema: getOrderLineItemSchema,
-      defaultAddDynamicColumns: false,
-    },
-    formula: {
-      name: 'SyncOrderLineItems',
-      description: '<Help text for the sync formula, not show to the user>',
-      parameters: [
-        { ...sharedParameters.orderStatus, name: 'orderStatus' },
+// #region Sync tables
+export const Sync_OrderLineItems = coda.makeSyncTable({
+  name: 'OrderLineItems',
+  description: 'All Shopify OrderLineItems',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  identityName: IDENTITY_ORDER_LINE_ITEM,
+  schema: OrderLineItemSchema,
+  dynamicOptions: {
+    getSchema: getOrderLineItemSchema,
+    defaultAddDynamicColumns: false,
+  },
+  formula: {
+    name: 'SyncOrderLineItems',
+    description: '<Help text for the sync formula, not show to the user>',
+    parameters: [
+      { ...sharedParameters.orderStatus, name: 'orderStatus' },
 
-        { ...sharedParameters.filterCreatedAtRange, optional: true, name: 'orderCreatedAt' },
-        { ...sharedParameters.filterUpdatedAtRange, optional: true, name: 'orderUpdatedAt' },
-        { ...sharedParameters.filterProcessedAtRange, optional: true, name: 'orderProcessedAt' },
+      { ...sharedParameters.filterCreatedAtRange, optional: true, name: 'orderCreatedAt' },
+      { ...sharedParameters.filterUpdatedAtRange, optional: true, name: 'orderUpdatedAt' },
+      { ...sharedParameters.filterProcessedAtRange, optional: true, name: 'orderProcessedAt' },
 
-        { ...sharedParameters.filterFinancialStatus, optional: true, name: 'orderFinancialStatus' },
-        { ...sharedParameters.filterFulfillmentStatus, optional: true, name: 'orderFulfillmentStatus' },
-        { ...parameters.orderIds, optional: true },
-        {
-          ...sharedParameters.filterSinceId,
-          optional: true,
-          name: 'ordersSinceId',
-        },
-      ],
-      execute: async function (
-        [
-          orderStatus = 'any',
-          orderCreatedAt,
-          orderUpdatedAt,
-          orderProcessedAt,
-          orderFinancialStatus,
-          orderFulfillmentStatus,
-          orderIds,
-          ordersSinceId,
-        ],
-        context
-      ) {
-        const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-        let restLimit = REST_DEFAULT_LIMIT;
-        let restItems = [];
-        let restContinuation: SyncTableRestContinuation = null;
-
-        // Rest Admin API Sync
-        const restParams = cleanQueryParams({
-          fields: ['id', 'name', 'line_items'].join(', '),
-          limit: restLimit,
-          ids: orderIds && orderIds.length ? orderIds.join(',') : undefined,
-          financial_status: orderFinancialStatus,
-          fulfillment_status: orderFulfillmentStatus,
-          status: orderStatus,
-          since_id: ordersSinceId,
-          created_at_min: orderCreatedAt ? orderCreatedAt[0] : undefined,
-          created_at_max: orderCreatedAt ? orderCreatedAt[1] : undefined,
-          updated_at_min: orderUpdatedAt ? orderUpdatedAt[0] : undefined,
-          updated_at_max: orderUpdatedAt ? orderUpdatedAt[1] : undefined,
-          processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
-          processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
-        });
-
-        validateOrderLineItemParams(restParams);
-
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`,
-            restParams
-          );
-        }
-        const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-        restContinuation = continuation;
-
-        if (response && response.body?.orders) {
-          restItems = response.body.orders
-            .map((order) =>
-              order.line_items.map((line_item) => formatOrderLineItemForSchemaFromRestApi(line_item, order, context))
-            )
-            .flat();
-        }
-
-        return {
-          result: restItems,
-          continuation: restContinuation,
-        };
+      { ...sharedParameters.filterFinancialStatus, optional: true, name: 'orderFinancialStatus' },
+      { ...sharedParameters.filterFulfillmentStatus, optional: true, name: 'orderFulfillmentStatus' },
+      { ...parameters.orderIds, optional: true },
+      {
+        ...sharedParameters.filterSinceId,
+        optional: true,
+        name: 'ordersSinceId',
       },
+    ],
+    execute: async function (
+      [
+        orderStatus = 'any',
+        orderCreatedAt,
+        orderUpdatedAt,
+        orderProcessedAt,
+        orderFinancialStatus,
+        orderFulfillmentStatus,
+        orderIds,
+        ordersSinceId,
+      ],
+      context
+    ) {
+      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
+      let restLimit = REST_DEFAULT_LIMIT;
+      let restItems = [];
+      let restContinuation: SyncTableRestContinuation = null;
+
+      // Rest Admin API Sync
+      const restParams = cleanQueryParams({
+        fields: ['id', 'name', 'line_items'].join(', '),
+        limit: restLimit,
+        ids: orderIds && orderIds.length ? orderIds.join(',') : undefined,
+        financial_status: orderFinancialStatus,
+        fulfillment_status: orderFulfillmentStatus,
+        status: orderStatus,
+        since_id: ordersSinceId,
+        created_at_min: orderCreatedAt ? orderCreatedAt[0] : undefined,
+        created_at_max: orderCreatedAt ? orderCreatedAt[1] : undefined,
+        updated_at_min: orderUpdatedAt ? orderUpdatedAt[0] : undefined,
+        updated_at_max: orderUpdatedAt ? orderUpdatedAt[1] : undefined,
+        processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
+        processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
+      });
+
+      validateOrderLineItemParams(restParams);
+
+      let url: string;
+      if (prevContinuation?.nextUrl) {
+        url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
+      } else {
+        url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, restParams);
+      }
+      const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+      restContinuation = continuation;
+
+      if (response && response.body?.orders) {
+        restItems = response.body.orders
+          .map((order) =>
+            order.line_items.map((line_item) => formatOrderLineItemForSchemaFromRestApi(line_item, order, context))
+          )
+          .flat();
+      }
+
+      return {
+        result: restItems,
+        continuation: restContinuation,
+      };
     },
-  });
-  // #endregion
-};
+  },
+});
+// #endregion

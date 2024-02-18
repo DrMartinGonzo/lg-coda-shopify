@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { cases } from 'to-case';
+import toSentenceCase from 'to-sentence-case';
 
 import { NOT_FOUND } from '../constants';
 import { graphQlGidToId } from '../helpers-graphql';
@@ -20,7 +20,7 @@ export const formatOrderTransactionForSchemaFromGraphQlApi = (
   let obj: any = {
     ...orderTransaction,
     id: graphQlGidToId(orderTransaction.id),
-    label: `Order ${parentOrder.name} - ${cases.sentence(orderTransaction.kind)}`,
+    label: `Order ${parentOrder.name} - ${toSentenceCase(orderTransaction.kind)}`,
     order_id: graphQlGidToId(parentOrder.id),
     order: {
       id: graphQlGidToId(parentOrder.id),
