@@ -65,6 +65,7 @@ import {
 } from '../types/admin.generated';
 import { MetafieldSchema } from '../schemas/syncTable/MetafieldSchema';
 import { GraphQlResource } from '../types/GraphQl';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 
 // #endregion
 
