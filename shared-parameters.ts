@@ -100,6 +100,11 @@ export const sharedParameters = {
     name: 'productIds',
     description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
   }),
+  metafields: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'metafields',
+    description: 'Metafields to update.',
+  }),
 
   // TODO: We will need multiple InputFormat formulas to help format values for the user
   varArgsPropValue: coda.makeParameter({

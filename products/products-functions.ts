@@ -31,6 +31,7 @@ import type {
 } from '../types/admin.generated';
 import { MutationSetMetafields } from '../metafields/metafields-graphql';
 import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
@@ -90,7 +91,7 @@ export async function handleProductUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
-        idToGraphQlGid('Product', productId),
+        idToGraphQlGid(GraphQlResource.Product, productId),
         'product',
         metafieldDefinitions,
         update,

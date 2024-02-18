@@ -30,6 +30,11 @@ export function fetchThemeAssetsRest(theme_id: number, context: coda.ExecutionCo
   return makeGetRequest({ url }, context);
 }
 
+export function makeAutocompleteTemplateSuffixesFor(kind: string) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    return getTemplateSuffixesFor(kind, context);
+  };
+}
 export async function getTemplateSuffixesFor(kind: string, context: coda.ExecutionContext): Promise<string[]> {
   const activeTheme = await getActiveTheme(context);
   if (activeTheme) {
