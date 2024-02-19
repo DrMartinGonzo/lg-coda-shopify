@@ -37,7 +37,7 @@ export async function autocompleteBlogParameterWithName(context: coda.ExecutionC
   return response.body.blogs.map((blog) => formatOptionNameId(blog.title, blog.id));
 }
 
-export function formatBlogStandardFieldsRestParams(
+function formatBlogStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof BlogSchema>['newValue']
 ) {

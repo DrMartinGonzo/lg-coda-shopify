@@ -142,19 +142,3 @@ export const MutationCollectionProduct = /* GraphQL */ `
   }
 `;
 // #endregion
-
-// TODO: see if useful, and move it elsewhere
-export const queryOnlineStorePublication = /* GraphQL */ `
-  query GetOnlineStorePublication {
-    appByHandle(handle: "online_store") {
-      id
-      handle
-      title
-      installation {
-        publication {
-          id
-        }
-      }
-    }
-  }
-`;

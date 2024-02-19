@@ -36,7 +36,7 @@ export function buildProductsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-export const ProductFieldsFragment = /* GraphQL */ `
+const ProductFieldsFragment = /* GraphQL */ `
   ${MetafieldFieldsFragment}
 
   fragment ProductFields on Product {

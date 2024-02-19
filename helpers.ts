@@ -31,7 +31,7 @@ export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
 
-const weightUnitsMap: { [key in WeightUnit]: string } = {
+export const weightUnitsMap: { [key in WeightUnit]: string } = {
   // WEIGHT
   GRAMS: 'g',
   KILOGRAMS: 'kg',

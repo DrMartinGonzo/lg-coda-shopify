@@ -267,6 +267,24 @@ export const Formula_MetafieldColorValue = coda.makeFormula({
   execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.color, value } as CodaMetafieldValue),
 });
 
+export const Formula_MetafieldNumberDecimalValue = coda.makeFormula({
+  name: 'MetafieldNumberDecimalValue',
+  description: 'Helper function to build a `number_decimal` metafield value.',
+  parameters: [{ ...parameters.metaNumberValue, description: 'The decimal number value.' }],
+  resultType: coda.ValueType.String,
+  connectionRequirement: coda.ConnectionRequirement.None,
+  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.number_decimal, value } as CodaMetafieldValue),
+});
+
+export const Formula_MetafieldNumberIntegerValue = coda.makeFormula({
+  name: 'MetafieldNumberIntegerValue',
+  description: 'Helper function to build a `number_integer` metafield value.',
+  parameters: [{ ...parameters.metaNumberValue, description: 'The integer value.' }],
+  resultType: coda.ValueType.String,
+  connectionRequirement: coda.ConnectionRequirement.None,
+  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.number_integer, value } as CodaMetafieldValue),
+});
+
 export const Formula_MetafieldDateValue = coda.makeFormula({
   name: 'MetafieldDateValue',
   description: 'Helper function to build a `date` metafield value.',

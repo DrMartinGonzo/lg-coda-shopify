@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
-  CACHE_MINUTE,
   IDENTITY_ARTICLE,
   METAFIELD_PREFIX_KEY,
   OPTIONS_PUBLISHED_STATUS,
@@ -16,7 +15,7 @@ import {
   handleArticleUpdateJob,
   fetchArticleRest,
   createArticleRest,
-  formatArticleStandardFieldsRestParams,
+  updateArticleRest,
 } from './articles-functions';
 
 import { ArticleSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
@@ -25,16 +24,12 @@ import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  handleResourceMetafieldsUpdateRestNew,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
-import {
-  arrayUnique,
-  compareByDisplayKey,
-  handleFieldDependencies,
-  parseOptionId,
-  wrapGetSchemaForCli,
-} from '../helpers';
+import { arrayUnique, handleFieldDependencies, parseOptionId, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
@@ -42,20 +37,11 @@ import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
   getResourceMetafieldsRestUrl,
-  splitMetaFieldFullKey,
-  findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
-import { ArticleCreateRestParams, ArticleSyncTableRestParams } from '../types/Article';
+import { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
-import { MetafieldRestInput } from '../types/Metafields';
 import { autocompleteBlogIdParameter, autocompleteBlogParameterWithName } from '../blogs/blogs-functions';
-import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 
 // #endregion
@@ -70,39 +56,11 @@ async function getArticleSchema(context: coda.ExecutionContext, _: string, formu
   return augmentedSchema;
 }
 
-/**
- * The properties that can be updated when updating a article.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'Author', key: 'author', type: 'string' },
-  { display: 'Blog', key: 'blog', type: 'string' },
-  { display: 'Body HTML', key: 'body_html', type: 'string' },
-  { display: 'Summary HTML', key: 'summary_html', type: 'string' },
-  { display: 'Handle', key: 'handle', type: 'string' },
-  { display: 'Image URL', key: 'image_url', type: 'string' },
-  { display: 'Image alt text', key: 'image_alt_text', type: 'string' },
-  { display: 'Published', key: 'published', type: 'boolean' },
-  { display: 'Published at', key: 'published_at', type: 'string' },
-  { display: 'Tags', key: 'tags', type: 'string' },
-  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
-  { display: 'Title', key: 'title', type: 'string' },
-];
-
-const standardCreateProps = [
-  ...standardUpdateProps.filter((prop) => prop.key !== 'title' && prop.key !== 'blog'),
-  // { display: 'Image URL', key: 'image_url', type: 'string' },
-];
-
 const parameters = {
   articleID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'articleID',
     description: 'The id of the article.',
-  }),
-  author: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'author',
-    description: 'The name of the author of the article.',
   }),
   blogId: coda.makeParameter({
     type: coda.ParameterType.Number,
@@ -110,38 +68,18 @@ const parameters = {
     description: 'The Id of the blog containing the article.',
     autocomplete: autocompleteBlogIdParameter,
   }),
+  blogIdOptionName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'blog',
+    description: 'The blog containing the article.',
+    autocomplete: autocompleteBlogParameterWithName,
+  }),
   filterBlogs: coda.makeParameter({
     type: coda.ParameterType.StringArray,
     name: 'blogs',
     description: 'Only fetch articles from the specified blog IDs.',
     autocomplete: autocompleteBlogParameterWithName,
   }),
-  // body_html: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'bodyHtml',
-  //   description: 'The text of the body of the article, complete with HTML markup.',
-  // }),
-  handle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description:
-      "A human-friendly unique string for the article that's automatically generated from the article's title. The handle is used in the article's URL.",
-  }),
-  // imageSrc: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'imageSrc',
-  //   description: 'Source URL that specifies the location of the image.',
-  // }),
-  // imageAlt: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'imageAlt',
-  //   description: 'Alternative text that describes the image.',
-  // }),
-  // published: coda.makeParameter({
-  //   type: coda.ParameterType.Boolean,
-  //   name: 'published',
-  //   description: 'Whether the article is visible.',
-  // }),
   published_status: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'publishedStatus',
@@ -149,33 +87,24 @@ const parameters = {
     optional: true,
     autocomplete: OPTIONS_PUBLISHED_STATUS,
   }),
-  // summary_html: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'summaryHtml',
-  //   description:
-  //     'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
-  // }),
-  // tags: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'tags',
-  //   description:
-  //     'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
-  // }),
-  // template_suffix: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'templateSuffix',
-  //   description: "The name of the template an article is using if it's using an alternate template.",
-  // }),
+  summaryHtml: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'summaryHtml',
+    description:
+      'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
+  }),
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'templateSuffix',
+    autocomplete: makeAutocompleteTemplateSuffixesFor('article'),
+    description:
+      'The suffix of the Liquid template used for the article. If this property is null, then the article uses the default template.',
+  }),
   tag: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'tag',
     description: 'Filter articles with a specific tag.',
     optional: true,
-  }),
-  title: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'title',
-    description: 'The title of the article.',
   }),
 };
 
@@ -202,11 +131,11 @@ export const Sync_Articles = coda.makeSyncTable({
     parameters: [
       sharedParameters.optionalSyncMetafields,
       { ...parameters.filterBlogs, optional: true },
-      { ...parameters.author, optional: true },
+      { ...sharedParameters.filterAuthor, optional: true },
       { ...sharedParameters.filterCreatedAtRange, optional: true },
       { ...sharedParameters.filterUpdatedAtRange, optional: true },
       { ...sharedParameters.filterPublishedAtRange, optional: true },
-      { ...parameters.handle, optional: true },
+      { ...sharedParameters.filterHandle, optional: true },
       { ...parameters.published_status, optional: true },
       { ...parameters.tag, optional: true },
     ],
@@ -344,64 +273,79 @@ export const Action_CreateArticle = coda.makeFormula({
   name: 'CreateArticle',
   description: 'Create a new Shopify article and return its ID. The article will be unpublished by default.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.blogId, parameters.title],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The article property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Article, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
+  parameters: [
+    parameters.blogId,
+    { ...sharedParameters.inputTitle, description: 'The title of the article.' },
 
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+    // optional parameters
+    { ...sharedParameters.inputAuthor, description: 'The name of the author of the article.', optional: true },
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...parameters.summaryHtml, optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputImageUrl, optional: true },
+    { ...sharedParameters.inputImageAlt, optional: true },
+    { ...sharedParameters.inputPublished, description: 'Whether the article is visible.', optional: true },
+    {
+      ...sharedParameters.inputPublishedAt,
+      description: 'The date and time when the article was published.',
+      optional: true,
+    },
+    { ...sharedParameters.inputTags, optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Article metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
-  execute: async ([blogId, title, ...varargs], context) => {
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Article, context);
-
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
-    const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
-      Object.keys(newValues)
-    );
-
-    // We can use Rest Admin API to create metafields
-    let metafieldRestInputs: MetafieldRestInput[] = [];
-    prefixedMetafieldFromKeys.forEach((fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-      const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-      const input: MetafieldRestInput = {
-        namespace: metaNamespace,
-        key: metaKey,
-        value: newValues[fromKey],
-        type: matchingMetafieldDefinition?.type.name,
-      };
-      metafieldRestInputs.push(input);
-    });
-
-    const params: ArticleCreateRestParams = {
+  execute: async (
+    [
+      blogId,
+      title,
+      author,
+      bodyHtml,
+      summary_html,
+      handle,
+      imageUrl,
+      imageAlt,
+      published,
+      publishedAt,
+      tags,
+      templateSuffix,
+      metafields,
+    ],
+    context
+  ) => {
+    const restParams: ArticleCreateRestParams = {
       blog_id: blogId,
       title,
-      metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-      ...formatArticleStandardFieldsRestParams(standardFromKeys, newValues),
+      author,
+      body_html: bodyHtml,
+      summary_html,
+      handle,
+      published_at: publishedAt,
+      tags: tags ? tags.join(',') : undefined,
+      template_suffix: templateSuffix,
+      // default to unpublished for article creation
+      published: published !== undefined ? published : false,
     };
 
-    // default to unpublished for article creation
-    if (params.published === undefined) {
-      params.published = false;
+    if (imageUrl) {
+      restParams.image = {
+        ...(restParams.image ?? {}),
+        src: imageUrl,
+      };
+      if (imageAlt) {
+        restParams.image.alt = imageAlt;
+      }
     }
 
-    const response = await createArticleRest(params, context);
+    if (metafields && metafields.length) {
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      if (metafieldRestInputs.length) {
+        restParams.metafields = metafieldRestInputs;
+      }
+    }
+
+    const response = await createArticleRest(restParams, context);
     return response.body.article.id;
   },
 });
@@ -410,45 +354,90 @@ export const Action_UpdateArticle = coda.makeFormula({
   name: 'UpdateArticle',
   description: 'Update an existing Shopify article and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.articleID],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The article property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Article, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    parameters.articleID,
+
+    // optional parameters
+    { ...sharedParameters.inputAuthor, description: 'The name of the author of the article.', optional: true },
+    { ...parameters.blogIdOptionName, optional: true },
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...parameters.summaryHtml, optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputImageUrl, optional: true },
+    { ...sharedParameters.inputImageAlt, optional: true },
+    { ...sharedParameters.inputPublished, description: 'Whether the article is visible.', optional: true },
+    {
+      ...sharedParameters.inputPublishedAt,
+      description: 'The date and time when the article was published.',
+      optional: true,
+    },
+    { ...sharedParameters.inputTags, optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.inputTitle, description: 'The title of the article.', optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Article metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity breaks relations when updating
   // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
   schema: ArticleSchema,
-  execute: async function ([articleId, ...varargs], context) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Article, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: articleId },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
+  execute: async function (
+    [
+      articleId,
+      author,
+      blog,
+      bodyHtml,
+      summaryHtml,
+      handle,
+      imageUrl,
+      imageAlt,
+      published,
+      publishedAt,
+      tags,
+      templateSuffix,
+      title,
+      metafields,
+    ],
+    context
+  ) {
+    const restParams: ArticleUpdateRestParams = {
+      author,
+      blog_id: blog ? parseOptionId(blog) : undefined,
+      body_html: bodyHtml,
+      summary_html: summaryHtml,
+      handle,
+      published_at: publishedAt,
+      tags: tags ? tags.join(',') : undefined,
+      template_suffix: templateSuffix,
+      title,
+      published,
     };
-    update.newValue = cleanQueryParams(update.newValue);
+    if (imageUrl) {
+      restParams.image = { ...(restParams.image ?? {}), src: imageUrl };
+    }
+    if (imageAlt) {
+      restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
+    }
 
-    return handleArticleUpdateJob(update, metafieldDefinitions, context);
+    let obj = { id: articleId };
+
+    const restResponse = await updateArticleRest(articleId, restParams, context);
+    if (restResponse.body?.article) {
+      obj = {
+        ...obj,
+        ...formatArticleForSchemaFromRestApi(restResponse.body.article, context),
+      };
+    }
+
+    if (metafields && metafields.length) {
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
+        getResourceMetafieldsRestUrl('articles', articleId, context),
+        metafields,
+        context
+      );
+    }
+
+    return obj;
   },
 });
 

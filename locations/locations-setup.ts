@@ -7,19 +7,23 @@ import {
   formatLocationForSchemaFromGraphQlApi,
   activateLocationGraphQl,
   fetchLocationGraphQl,
+  updateLocationGraphQl,
+  formatGraphQlLocationEditAddressInputNew,
 } from './locations-functions';
-
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
-import { CACHE_MINUTE, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import { IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
+import {
+  augmentSchemaWithMetafields,
+  handleResourceMetafieldsUpdateGraphQlNew,
+} from '../metafields/metafields-functions';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { arrayUnique, compareByDisplayKey, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   idToGraphQlGid,
@@ -28,13 +32,7 @@ import {
 } from '../helpers-graphql';
 import { QueryLocations } from './locations-graphql';
 import { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { LocationEditInput, MetafieldOwnerType } from '../types/admin.types';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 import { GraphQlResource } from '../types/GraphQl';
 
@@ -50,24 +48,6 @@ async function getLocationSchema(context: coda.ExecutionContext, _: string, form
   augmentedSchema.featuredProperties.push('stock_url');
   return augmentedSchema;
 }
-
-/**
- * The properties that can be updated when updating a location.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'Name', key: 'name', type: 'string' },
-  { display: 'Address 1', key: 'address1', type: 'string' },
-  { display: 'Address 2', key: 'address2', type: 'string' },
-  { display: 'City', key: 'city', type: 'string' },
-  { display: 'Country code', key: 'country_code', type: 'string' },
-  { display: 'Phone', key: 'phone', type: 'string' },
-  { display: 'Province code', key: 'province_code', type: 'string' },
-  { display: 'Zip', key: 'zip', type: 'string' },
-];
-/**
- * The properties that can be updated when creating a location.
- */
-// const standardCreateProps = standardUpdateProps;
 
 const parameters = {
   locationID: coda.makeParameter({
@@ -185,23 +165,19 @@ export const Action_UpdateLocation = coda.makeFormula({
   name: 'UpdateLocation',
   description: 'Update an existing Shopify location and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.locationID],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The location property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Location, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    parameters.locationID,
+
+    // optional parameters
+    { ...sharedParameters.inputName, description: 'The name of the location.', optional: true },
+    { ...sharedParameters.inputAddress1, optional: true },
+    { ...sharedParameters.inputAddress2, optional: true },
+    { ...sharedParameters.inputCity, optional: true },
+    { ...sharedParameters.inputCountryCode, optional: true },
+    { ...sharedParameters.inputPhone, optional: true },
+    { ...sharedParameters.inputProvinceCode, optional: true },
+    { ...sharedParameters.inputZip, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Location metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -209,40 +185,42 @@ export const Action_UpdateLocation = coda.makeFormula({
   // on dirait que ça déconne même en ajoutant includeUnknownProperties dans les schema. Pourtant je suis quasi sûr que ça avait déjà fonctionné avec mon pack coda-sync-plus…
   schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
   // schema: LocationSchema,
-  execute: async function ([location_id, ...varargs], context) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    let update: coda.SyncUpdate<string, string, any>;
+  execute: async function (
+    [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
+    context
+  ) {
+    let obj = { id: locationId };
 
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Location, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: location_id },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
+    const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
+    const locationEditInput: LocationEditInput = {
+      name,
+      address: formatGraphQlLocationEditAddressInputNew({
+        address1,
+        address2,
+        city,
+        countryCode,
+        phone,
+        provinceCode,
+        zip,
+      }),
     };
-    // // TODO: should not be needed here if each Rest update function implement this cleaning
-    // update.newValue = cleanQueryParams(update.newValue);
+    Object.keys(locationEditInput).forEach((key) => {
+      if (locationEditInput[key] === undefined) delete locationEditInput[key];
+    });
 
-    // return handleLocationUpdateJob(update, metafieldDefinitions, context);
-    const obj = await handleLocationUpdateJob(update, metafieldDefinitions, context);
+    const restResponse = await updateLocationGraphQl(locationGid, locationEditInput, context);
+    if (restResponse.body?.data?.locationEdit?.location) {
+      obj = {
+        ...obj,
+        ...formatLocationForSchemaFromGraphQlApi(restResponse.body.data.locationEdit.location, context),
+      };
+    }
 
-    // On enleve tout ce qui est référence pour enlever de l'update withIdentity qui casse les references
-    // const metafieldDefinitionsWithReference = metafieldDefinitions.filter(filterMetafieldDefinitionWithReference);
-    // metafieldDefinitionsWithReference.forEach((definition) => {
-    //   const fullKey = getMetafieldDefinitionFullKey(definition);
-    //   const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
-    //   console.log('matchingSchemaKey', matchingSchemaKey);
-    //   console.log('obj[matchingSchemaKey]', obj[matchingSchemaKey]);
-    //   if (obj[matchingSchemaKey]) delete obj[matchingSchemaKey];
-    // });
-    // console.log('metafieldDefinitionsWithReference', metafieldDefinitionsWithReference);
+    if (metafields && metafields.length) {
+      console.log('metafields', metafields);
+      await handleResourceMetafieldsUpdateGraphQlNew(locationGid, 'location', metafields, context);
+    }
 
-    // obj[`Meta Single line text`] = obj['lgs_meta__custom.single_line_text'];
-    // obj.location_id = location_id;
-
-    // console.log('obj', obj);
     return obj;
   },
 });

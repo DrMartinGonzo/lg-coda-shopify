@@ -1,3 +1,8 @@
+/**
+ * On garde juste ça en backup, pour l'instant ça ne sert plus à rien !
+ */
+
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import isUrl from 'is-url-superb';
 
@@ -8,17 +13,18 @@ import {
   preprendPrefixToMetaFieldKey,
 } from './metafields/metafields-functions';
 import { fetchMetafieldDefinitionsGraphQl } from './metafields/metafields-functions';
-import { Metafield, MetafieldOwnerType } from './types/admin.types';
+import { MetafieldOwnerType } from './types/admin.types';
 import { MetafieldDefinitionFragment } from './types/admin.generated';
 import { maybeParseJson } from './helpers';
+// #endregion
 
-export type UpdateCreateProp = {
+type UpdateCreateProp = {
   display: string;
   key: string;
   type: string;
 };
 
-export function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDefinitionFragment[]) {
+function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDefinitionFragment[]) {
   const metafieldProps = metafieldDefinitions.map(
     (metafieldDefinition): UpdateCreateProp => ({
       display: metafieldDefinition.name,
@@ -30,14 +36,14 @@ export function getMetafieldsCreateUpdateProps(metafieldDefinitions: MetafieldDe
   // const metafieldPropsKeys = metafieldProps.map((prop) => prop.key);
 }
 
-export function getVarargsCreateUpdateKeys(varargs: string[]) {
+function getVarargsCreateUpdateKeys(varargs: string[]) {
   return varargs.filter((_, i) => i % 2 === 0);
 }
-export function getVarargsCreateUpdateValues(varargs: string[]) {
+function getVarargsCreateUpdateValues(varargs: string[]) {
   return varargs.filter((_, i) => i % 2 !== 0);
 }
 
-export function parseVarargsCreateUpdatePropsValues(
+function parseVarargsCreateUpdatePropsValues(
   varargs: string[],
   standardProps: UpdateCreateProp[],
   metafieldProps: UpdateCreateProp[] = []
@@ -93,7 +99,7 @@ export function parseVarargsCreateUpdatePropsValues(
   return newValues;
 }
 
-export async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
+async function getVarargsMetafieldDefinitionsAndUpdateCreateProps(
   varargs: string[],
   metafieldOwnerType: MetafieldOwnerType,
   context: coda.ExecutionContext

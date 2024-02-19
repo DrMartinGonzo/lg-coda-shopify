@@ -43,7 +43,6 @@ import {
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
 import { fetchShopDetails } from '../shop/shop-functions';
-import { UpdateCreateProp } from '../helpers-varargs';
 
 // #endregion
 
@@ -131,7 +130,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
 /**
  * The properties that can be updated when updating an order.
  */
-const standardUpdateProps: UpdateCreateProp[] = [
+const standardUpdateProps = [
   {
     display: 'Note',
     key: 'note',

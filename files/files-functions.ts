@@ -111,7 +111,7 @@ export const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment
 // #endregion
 
 // #region GraphQL Requests
-export async function updateFileGraphQl(fileUpdateInput: FileUpdateInput, context: coda.ExecutionContext) {
+async function updateFileGraphQl(fileUpdateInput: FileUpdateInput, context: coda.ExecutionContext) {
   const payload = {
     query: UpdateFile,
     variables: {
