@@ -20,7 +20,6 @@ export interface ArticleUpdateRestParams {
   blog_id?: number;
   body_html?: string;
   handle?: string;
-  // TODO: see if we can update the image src
   image?: {
     alt?: string;
     src?: string;

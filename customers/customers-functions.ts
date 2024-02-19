@@ -42,7 +42,7 @@ export function customerCodaParamsToRest(params: CustomerCreateRestParams & Cust
 }
 */
 
-export function formatCustomerStandardFieldsRestParams(
+function formatCustomerStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof CustomerSchema>['newValue']
 ) {

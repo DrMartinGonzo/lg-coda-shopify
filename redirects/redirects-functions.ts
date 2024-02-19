@@ -8,7 +8,7 @@ import { RedirectSchema } from '../schemas/syncTable/RedirectSchema';
 import { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
 
 // #region Helpers
-export function formatRedirectStandardFieldsRestParams(
+function formatRedirectStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof RedirectSchema>['newValue']
 ) {
@@ -73,7 +73,7 @@ export function createRedirectRest(params: RedirectCreateRestParams, context: co
   return makePostRequest({ url, payload }, context);
 }
 
-export const updateRedirectRest = async (
+const updateRedirectRest = async (
   redirectId: number,
   params: RedirectUpdateRestParams,
   context: coda.ExecutionContext

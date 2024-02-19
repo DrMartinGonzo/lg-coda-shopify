@@ -7,52 +7,47 @@ import {
   formatCustomerForSchemaFromRestApi,
   handleCustomerUpdateJob,
   fetchCustomerRest,
-  formatCustomerStandardFieldsRestParams,
+  updateCustomerRest,
 } from './customers-functions';
 
-import { CustomerSchema, customerFieldDependencies } from '../schemas/syncTable/CustomerSchema';
-import { sharedParameters } from '../shared-parameters';
 import {
-  CACHE_MINUTE,
-  IDENTITY_CUSTOMER,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+  CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
+  CONSENT_STATE__SUBSCRIBED,
+  CONSENT_STATE__UNSUBSCRIBED,
+  CustomerSchema,
+  customerFieldDependencies,
+} from '../schemas/syncTable/CustomerSchema';
+import { sharedParameters } from '../shared-parameters';
+import { IDENTITY_CUSTOMER, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  handleResourceMetafieldsUpdateGraphQlNew,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
-  findMatchingMetafieldDefinition,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
+  idToGraphQlGid,
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './customers-graphql';
 import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
-import { MetafieldRestInput } from '../types/Metafields';
-import { CustomerCreateRestParams } from '../types/Customer';
+import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldOwnerType } from '../types/admin.types';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #endregion
 
@@ -66,63 +61,12 @@ async function getCustomerSchema(context: coda.ExecutionContext, _: string, form
   return augmentedSchema;
 }
 
-/**
- * The properties that can be updated when updating a customer.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'First name', key: 'first_name', type: 'string' },
-  { display: 'Last name', key: 'last_name', type: 'string' },
-  { display: 'Email', key: 'email', type: 'string' },
-  { display: 'Phone', key: 'phone', type: 'string' },
-  { display: 'Note', key: 'note', type: 'string' },
-  { display: 'Tags', key: 'tags', type: 'string' },
-  { display: 'Accepts Email marketing', key: 'accepts_email_marketing', type: 'boolean' },
-  { display: 'Accepts SMS marketing', key: 'accepts_sms_marketing', type: 'boolean' },
-];
-/**
- * The properties that can be updated when creating a customer.
- */
-const standardCreateProps = standardUpdateProps;
-
 const parameters = {
   customerID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'customerId',
     description: 'The ID of the customer.',
   }),
-  // inputFirstName: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'firstName',
-  //   description: "The customer's first name.",
-  // }),
-  // inputLastName: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'lastName',
-  //   description: "The customer's last name.",
-  // }),
-  // inputEmail: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'email',
-  //   description:
-  //     'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
-  // }),
-  // inputNote: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'note',
-  //   description: 'A note about the customer.',
-  // }),
-  // inputPhone: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'phone',
-  //   description:
-  //     'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
-  // }),
-  // inputTags: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'tags',
-  //   description:
-  //     'Tags attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
-  // }),
 };
 
 // #region Sync Tables
@@ -322,111 +266,174 @@ export const Sync_Customers = coda.makeSyncTable({
 // #endregion
 
 // #region Actions
-export const Action_UpdateCustomer = coda.makeFormula({
-  name: 'UpdateCustomer',
-  description: 'Update an existing Shopify customer and return the updated data.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.customerID],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The customer property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Customer, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
-  ],
-  isAction: true,
-  resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
-  execute: async function ([customer_id, ...varargs], context) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Customer, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: customer_id },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
-    };
-    // TODO: should not be needed here if each Rest update function implement this cleaning
-    update.newValue = cleanQueryParams(update.newValue);
-
-    return handleCustomerUpdateJob(update, metafieldDefinitions, context);
-  },
-});
-
 export const Action_CreateCustomer = coda.makeFormula({
   name: 'CreateCustomer',
   description: `Create a new Shopify customer and return customer ID.\nCustomer must have a name, phone number or email address.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The customer property to create.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Customer, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    // optional parameters
+    { ...sharedParameters.inputFirstName, description: "The customer's first name.", optional: true },
+    { ...sharedParameters.inputLastName, description: "The customer's last name.", optional: true },
+    {
+      ...sharedParameters.inputEmail,
+      description:
+        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
+      optional: true,
+    },
+    {
+      ...sharedParameters.inputPhone,
+      description:
+        'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
+      optional: true,
+    },
+    {
+      ...sharedParameters.inputNote,
+      description: 'A note about the customer.',
+      optional: true,
+    },
+    { ...sharedParameters.inputTags, optional: true },
+    { ...sharedParameters.inputAcceptsEmailMarketing, optional: true },
+    { ...sharedParameters.inputAcceptsSmsMarketing, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Customer metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
-  execute: async function ([...varargs], context) {
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Customer, context);
-
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
-    const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
-      Object.keys(newValues)
-    );
-
-    if (!newValues['first_name'] && !newValues['last_name'] && !newValues['email'] && !newValues['phone']) {
+  execute: async function (
+    [firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
+    context
+  ) {
+    if (!firstName && !lastName && !email && !phone) {
       throw new coda.UserVisibleError('Customer must have a name, phone number or email address.');
     }
 
-    // We can use Rest Admin API to create metafields
-    let metafieldRestInputs: MetafieldRestInput[] = [];
-    prefixedMetafieldFromKeys.forEach((fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-      const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-      const input: MetafieldRestInput = {
-        namespace: metaNamespace,
-        key: metaKey,
-        value: newValues[fromKey],
-        type: matchingMetafieldDefinition?.type.name,
-      };
-      metafieldRestInputs.push(input);
-    });
-
-    const params: CustomerCreateRestParams = {
-      metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-      // @ts-ignore
-      ...formatCustomerStandardFieldsRestParams(standardFromKeys, newValues),
+    const restParams: CustomerCreateRestParams = {
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      note,
+      tags: tags ? tags.join(',') : undefined,
     };
+    if (acceptsEmailMarketing !== undefined) {
+      restParams.email_marketing_consent = {
+        state: acceptsEmailMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    }
+    if (acceptsSmsMarketing !== undefined) {
+      restParams.sms_marketing_consent = {
+        state: acceptsSmsMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    }
 
-    const response = await createCustomerRest(params, context);
+    if (metafields && metafields.length) {
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      if (metafieldRestInputs.length) {
+        restParams.metafields = metafieldRestInputs;
+      }
+    }
+
+    const response = await createCustomerRest(restParams, context);
     return response.body.customer.id;
+  },
+});
+
+export const Action_UpdateCustomer = coda.makeFormula({
+  name: 'UpdateCustomer',
+  description: 'Update an existing Shopify customer and return the updated data.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [
+    parameters.customerID,
+
+    // optional parameters
+    { ...sharedParameters.inputFirstName, description: "The customer's first name.", optional: true },
+    { ...sharedParameters.inputLastName, description: "The customer's last name.", optional: true },
+    {
+      ...sharedParameters.inputEmail,
+      description:
+        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
+      optional: true,
+    },
+    {
+      ...sharedParameters.inputPhone,
+      description:
+        'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
+      optional: true,
+    },
+    {
+      ...sharedParameters.inputNote,
+      description: 'A note about the customer.',
+      optional: true,
+    },
+    { ...sharedParameters.inputTags, optional: true },
+    { ...sharedParameters.inputAcceptsEmailMarketing, optional: true },
+    { ...sharedParameters.inputAcceptsSmsMarketing, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Customer metafields to update.' },
+  ],
+  isAction: true,
+  resultType: coda.ValueType.Object,
+  schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
+  execute: async function (
+    [customerId, firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
+    context
+  ) {
+    const restParams: CustomerUpdateRestParams = {
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      tags: tags ? tags.join(',') : undefined,
+      note,
+    };
+    if (acceptsEmailMarketing !== undefined) {
+      restParams.email_marketing_consent = {
+        state: acceptsEmailMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    }
+    if (acceptsSmsMarketing !== undefined) {
+      restParams.sms_marketing_consent = {
+        state: acceptsSmsMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
+      };
+    }
+    // Disabled for now, prefer to use simple checkboxes
+    /*
+    else if (fromKey === 'email_marketing_consent') {
+      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
+      restParams.email_marketing_consent = {
+        state: matchingOption.state,
+        opt_in_level: matchingOption.opt_in_level,
+      };
+    } else if (fromKey === 'sms_marketing_consent') {
+      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
+      restParams.sms_marketing_consent = {
+        state: matchingOption.state,
+        opt_in_level: matchingOption.opt_in_level,
+      };
+    }
+    */
+
+    let obj = { id: customerId };
+    const restResponse = await updateCustomerRest(customerId, restParams, context);
+    if (restResponse.body?.customer) {
+      obj = {
+        ...obj,
+        ...formatCustomerForSchemaFromRestApi(restResponse.body.customer, context),
+      };
+    }
+
+    if (metafields && metafields.length) {
+      await handleResourceMetafieldsUpdateGraphQlNew(
+        idToGraphQlGid(GraphQlResource.Customer, customerId),
+        'customer',
+        metafields,
+        context
+      );
+    }
+
+    return obj;
   },
 });
 

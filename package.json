@@ -4,8 +4,10 @@
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "postinstall": "npx patch-package",
+    "validate": "coda validate pack.ts",
     "push": "coda upload pack.ts",
     "graphql-codegen": "graphql-codegen --config codegen.ts",
+    "unused-exports": "npx ts-unused-exports ./tsconfig.json",
     "test-metafield-update": "coda execute ./pack.ts Metafields:update --dynamicUrl=Product \"lg_category.blend\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",

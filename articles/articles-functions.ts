@@ -15,7 +15,7 @@ import {
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
 
 // #region Helpers
-export function formatArticleStandardFieldsRestParams(
+function formatArticleStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof ArticleSchema>['newValue']
 ) {

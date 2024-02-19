@@ -173,12 +173,12 @@ export type MetafieldTypeValue = MetafieldTypes[keyof MetafieldTypes];
 
 type LegacyMetafieldTypes = typeof LEGACY_FIELD_TYPES;
 /** A union of all the supported legacy `metafield.type`s */
-export type LegacyMetafieldTypeValue = LegacyMetafieldTypes[keyof LegacyMetafieldTypes];
+type LegacyMetafieldTypeValue = LegacyMetafieldTypes[keyof LegacyMetafieldTypes];
 
 /** A union of all the supported modern and legacy `metafield.type`s */
 export type AllMetafieldTypeValue = MetafieldTypeValue | LegacyMetafieldTypeValue;
 
-export const PACK_PREFIX_KEY = 'lgs_';
+const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
 export const CODA_SUPPORTED_CURRENCIES = [
   'BRL',

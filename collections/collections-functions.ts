@@ -27,7 +27,7 @@ import { CollectionUpdateRestParams } from '../types/Collection';
 import { GraphQlResource } from '../types/GraphQl';
 
 // #region Helpers
-export function formatCollectionStandardFieldsRestParams(
+function formatCollectionStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof CollectionSchema>['newValue']
 ) {

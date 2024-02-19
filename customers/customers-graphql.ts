@@ -15,7 +15,7 @@ export function buildCustomersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-export const CustomerAddressFieldsFragment = /* GraphQL */ `
+const CustomerAddressFieldsFragment = /* GraphQL */ `
   fragment CustomerAddressFields on MailingAddress {
     address1
     address2
@@ -40,7 +40,7 @@ export const CustomerAddressFieldsFragment = /* GraphQL */ `
   }
 `;
 
-export const CustomerFieldsFragment = /* GraphQL */ `
+const CustomerFieldsFragment = /* GraphQL */ `
   ${CustomerAddressFieldsFragment}
   ${MetafieldFieldsFragment}
 

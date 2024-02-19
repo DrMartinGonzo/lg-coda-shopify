@@ -71,7 +71,7 @@ function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
 // #endregion
 
 // #region GraphQl auto throttling
-export async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
+async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
   const { response } = await makeGraphQlRequest({ payload: { query: queryCheckThrottleStatus } }, context);
   const { extensions } = response.body;
   return extensions.cost.throttleStatus;

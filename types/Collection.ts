@@ -22,8 +22,10 @@ export interface CollectionUpdateRestParams {
   title?: string;
   body_html?: string;
   handle?: string;
-  image_url?: string;
-  image_alt_text?: string;
+  image?: {
+    alt?: string;
+    src?: string;
+  };
   published?: boolean;
   template_suffix?: string;
   metafields?: MetafieldRestInput[];
@@ -32,8 +34,10 @@ export interface CollectionCreateRestParams {
   title: string;
   body_html?: string;
   handle?: string;
-  image_url?: string;
-  image_alt_text?: string;
+  image?: {
+    src: string;
+    alt?: string;
+  };
   published?: boolean;
   template_suffix?: string;
   metafields?: MetafieldRestInput[];
