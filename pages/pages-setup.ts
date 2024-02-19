@@ -17,16 +17,15 @@ import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
+  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateRestNew,
+  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import {
   fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
-  getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { SyncTableRestContinuation } from '../types/tableSync';
@@ -36,6 +35,8 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { restResources } from '../types/Rest';
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -193,11 +194,7 @@ export const Sync_Pages = coda.makeSyncTable({
           restResult.map(async (resource) => {
             let obj = { ...resource };
 
-            const response = await fetchMetafieldsRest(
-              getResourceMetafieldsRestUrl('pages', resource.id, context),
-              {},
-              context
-            );
+            const response = await fetchMetafieldsRest(resource.id, restResources.Page, {}, context);
             const metafields: MetafieldRest[] = response.body.metafields;
 
             // TODO: On pourrait peut-être tous les processer et laisser Coda se démerder derrière pour ne pas intégrer ceux qui ne sont pas définis dans le schéma
@@ -277,7 +274,10 @@ export const Action_CreatePage = coda.makeFormula({
     };
 
     if (metafields && metafields.length) {
-      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+      const metafieldRestInputs = parsedMetafieldKeyValueSets
+        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .filter((m) => m);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -335,9 +335,11 @@ export const Action_UpdatePage = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
-        getResourceMetafieldsRestUrl('pages', pageId, context),
-        metafields,
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+        pageId,
+        restResources.Page,
+        parsedMetafieldKeyValueSets,
         context
       );
     }

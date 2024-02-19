@@ -29,10 +29,9 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
+  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  getResourceMetafieldsRestUrl,
-  handleResourceMetafieldsUpdateRestNew,
+  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
@@ -48,6 +47,8 @@ import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './
 import { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { GraphQlResource } from '../types/GraphQl';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { restResources } from '../types/Rest';
 
 // #endregion
 
@@ -402,7 +403,10 @@ export const Action_CreateCollection = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+      const metafieldRestInputs = parsedMetafieldKeyValueSets
+        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .filter((m) => m);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -470,9 +474,11 @@ export const Action_UpdateCollection = coda.makeFormula({
 
     if (metafields && metafields.length) {
       // TODO: update with identity only things that are not references, and do it in all other update actions
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
-        getResourceMetafieldsRestUrl('collections', collectionId, context),
-        metafields,
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+        collectionId,
+        restResources.Collection,
+        parsedMetafieldKeyValueSets,
         context
       );
     }

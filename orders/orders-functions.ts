@@ -21,11 +21,12 @@ import { formatAddressDisplayName } from '../addresses/addresses-functions';
 import { OrderSchema } from '../schemas/syncTable/OrderSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
-  getResourceMetafieldsRestUrl,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { OrderUpdateRestParams } from '../types/Order';
+import { restResources } from '../types/Rest';
 
 // #region Helpers
 export function validateOrderParams(params) {
@@ -80,7 +81,7 @@ function getRefundQuantity(item, refunds) {
   return quantity;
 }
 
-export function formatOrderStandardFieldsRestParams(
+function formatOrderStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof OrderSchema>['newValue']
 ) {
@@ -118,9 +119,9 @@ export async function handleOrderUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateRest(
-        getResourceMetafieldsRestUrl('orders', orderId, context),
-        metafieldDefinitions,
-        update,
+        orderId,
+        restResources.Order,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

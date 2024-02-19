@@ -12,19 +12,18 @@ import {
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { FormatFunction, SyncUpdateNoPreviousValues } from '../types/misc';
+import { FormatFunction } from '../types/misc';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
-  formatMetafieldInputsFromResourceUpdate,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { MAX_OPTIONS_PER_PRODUCT, MutationUpdateProduct } from './products-graphql';
 import { queryAvailableProductTypes } from './products-storefront';
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
-import type { MetafieldDefinitionFragment, UpdateProductMutationVariables } from '../types/admin.generated';
+import type { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResource } from '../types/GraphQl';
 
@@ -87,9 +86,7 @@ export async function handleProductUpdateJob(
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid(GraphQlResource.Product, productId),
-        'product',
-        metafieldDefinitions,
-        update,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );
@@ -217,7 +214,10 @@ export async function getProductTypes(context): Promise<string[]> {
   );
   return response.body.data.productTypes.edges.map((edge) => edge.node);
 }
+// #endregion
 
+// #region Unused stuff
+/*
 export async function updateProductGraphQl(
   productGid: string,
   effectivePropertyKeys: string[],
@@ -239,13 +239,14 @@ export async function updateProductGraphQl(
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
   const productInput = formatGraphQlProductInput(update, productGid, standardFromKeys);
-  const metafieldsSetsInput = formatMetafieldInputsFromResourceUpdate(
-    update,
+  const metafieldKeyValueSets = getMetafieldKeyValueSetsFromUpdate(
     prefixedMetafieldFromKeys,
-    metafieldDefinitions,
-    'forGraphql',
-    productGid
+    update.newValue,
+    metafieldDefinitions
   );
+  const metafieldsSetsInput = metafieldKeyValueSets.map((m) =>
+    formatMetafieldGraphQlInputFromMetafieldKeyValueSet(productGid, m)
+  ).filter((m) => m);
 
   const payload = {
     query: MutationUpdateProduct,
@@ -263,40 +264,6 @@ export async function updateProductGraphQl(
 
   const { response } = await makeGraphQlRequest(
     { payload, getUserErrors: (body) => body.data.productUpdate.userErrors.concat(body.data.metafieldsSet.userErrors) },
-    context
-  );
-  return response;
-}
-// #endregion
-
-// #region Unused stuff
-/*
-export async function updateProductMetafieldsGraphQl(
-  productId: number,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  update: SyncUpdateNoPreviousValues,
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-
-  const metafieldsSetInputs = formatMetafieldInputsFromResourceUpdate(
-    update,
-    prefixedMetafieldFromKeys,
-    metafieldDefinitions,
-    'forGraphql',
-    idToGraphQlGid('Product', productId)
-  );
-
-  const payload = {
-    query: MutationSetMetafields,
-    variables: {
-      inputs: metafieldsSetInputs,
-    } as SetMetafieldsMutationVariables,
-  };
-
-  const { response } = await makeGraphQlRequest(
-    { payload, getUserErrors: (body) => body.data.metafieldsSet.userErrors },
     context
   );
   return response;

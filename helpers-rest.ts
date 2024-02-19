@@ -1,6 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { SyncTableRestContinuation } from './types/tableSync';
+import { RestResource, restResources } from './types/Rest';
+import { GraphQlResource } from './types/GraphQl';
 
 // TODO: better error handling
 
@@ -30,6 +32,35 @@ export const extractNextUrlPagination = (response) => {
 
   return nextUrl;
 };
+
+export function getRestResourceFromGraphQlResourceType(resourceType: GraphQlResource): RestResource {
+  switch (resourceType) {
+    case GraphQlResource.Article:
+      return restResources.Article;
+    case GraphQlResource.Blog:
+      return restResources.Blog;
+    case GraphQlResource.Collection:
+      return restResources.Collection;
+    case GraphQlResource.Customer:
+      return restResources.Customer;
+    case GraphQlResource.DraftOrder:
+      return restResources.DraftOrder;
+    case GraphQlResource.Location:
+      return restResources.Location;
+    case GraphQlResource.Order:
+      return restResources.Order;
+    case GraphQlResource.Page:
+      return restResources.Page;
+    case GraphQlResource.Product:
+      return restResources.Product;
+    case GraphQlResource.Shop:
+      return restResources.Shop;
+    case GraphQlResource.ProductVariant:
+      return restResources.ProductVariant;
+  }
+
+  throw new Error(`No Rest Admin Api match for GraphQl type of: \`${resourceType}\``);
+}
 
 export async function makeSyncTableGetRequest(
   params: {
