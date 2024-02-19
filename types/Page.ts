@@ -20,7 +20,7 @@ import { MetafieldRestInput } from './Metafields';
 export interface PageUpdateRestParams {
   handle?: string;
   published?: boolean;
-  published_at?: string;
+  published_at?: Date;
   title?: string;
   body_html?: string;
   author?: string;
@@ -31,7 +31,7 @@ export interface PageCreateRestParams {
   title: string;
   handle?: string;
   published?: boolean;
-  published_at?: string;
+  published_at?: Date;
   body_html?: string;
   author?: string;
   template_suffix?: string;

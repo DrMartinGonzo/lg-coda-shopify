@@ -7,6 +7,14 @@ export interface CustomerCreateRestParams {
   phone?: string;
   note?: string;
   tags?: string;
+  email_marketing_consent?: {
+    state: string;
+    opt_in_level?: string;
+  };
+  sms_marketing_consent?: {
+    state: string;
+    opt_in_level?: string;
+  };
   metafields?: MetafieldRestInput[];
 }
 

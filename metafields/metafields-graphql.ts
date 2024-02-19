@@ -15,7 +15,7 @@ export const MetafieldFieldsFragment = /* GraphQL */ `
   }
 `;
 
-export const MetafieldDefinitionFragment = /* GraphQL */ `
+const MetafieldDefinitionFragment = /* GraphQL */ `
   fragment MetafieldDefinition on MetafieldDefinition {
     key
     id

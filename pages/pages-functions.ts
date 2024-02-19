@@ -15,7 +15,7 @@ import {
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 
 // #region Helpers
-export function formatPageStandardFieldsRestParams(
+function formatPageStandardFieldsRestParams(
   standardFromKeys: string[],
   values: coda.SyncUpdate<string, string, typeof PageSchema>['newValue']
 ) {

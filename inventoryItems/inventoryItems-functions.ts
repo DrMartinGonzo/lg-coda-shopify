@@ -112,7 +112,7 @@ export const formatInventoryItemNodeForSchema: FormatFunction = (inventoryItem: 
 
 // #endregion
 
-export async function updateInventoryItemGraphQl(
+async function updateInventoryItemGraphQl(
   inventoryItemGid: string,
   inventoryItemUpdateInput: InventoryItemUpdateInput,
   context: coda.ExecutionContext

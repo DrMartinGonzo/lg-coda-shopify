@@ -417,7 +417,7 @@ export function getResourceMetafieldsRestUrl(resourceType: string, resourceId: n
   return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${resourceType}/${resourceId}/metafields.json`;
 }
 
-export function getMetafieldRestEndpointFromRestResourceType(resourceType) {
+function getMetafieldRestEndpointFromRestResourceType(resourceType) {
   switch (resourceType) {
     case 'article':
       return 'articles';
@@ -1006,7 +1006,7 @@ export function formatMetafieldForSchemaFromGraphQlApi(
 /**
  * Format a Rating cell value for GraphQL Api
  */
-export function formatRatingFieldForApi(
+function formatRatingFieldForApi(
   value: number,
   validations: MetafieldDefinitionFragment['validations']
 ): ShopifyRatingField {
@@ -1023,7 +1023,7 @@ export function formatRatingFieldForApi(
 /**
  * Format a Money cell value for GraphQL Api
  */
-export function formatMoneyFieldForApi(amount: number, currency_code: CurrencyCode): ShopifyMoneyField {
+function formatMoneyFieldForApi(amount: number, currency_code: CurrencyCode): ShopifyMoneyField {
   return {
     amount,
     currency_code,
@@ -1034,7 +1034,7 @@ export function formatMoneyFieldForApi(amount: number, currency_code: CurrencyCo
  * @param measurementString the string entered by user in format "{value}{unit}" with eventual spaces between
  * @param metafieldType the type of metafield
  */
-export function formatMeasurementFieldForApi(
+function formatMeasurementFieldForApi(
   measurementString: string,
   metafieldType: MetafieldTypeValue
 ): ShopifyMeasurementField {
@@ -1144,6 +1144,29 @@ export function formatMetafieldValueForApi(
   }
 
   throw new Error(`Unknown metafield type: ${type}`);
+}
+
+/**
+ * Formatte une liste de MetafieldRestInput depuis un paramètre Coda utilisant
+ * une formule `List(MetafieldKeyValueSet(…), MetafieldKeyValueSet(…), …)`
+ */
+export function formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields: string[]) {
+  const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+  return parsedMetafieldKeyValueSets.map(formatMetafieldRestInputFromMetafieldKeyValueSet).filter((m) => m);
+}
+function formatMetafieldRestInputFromMetafieldKeyValueSet(parsedMetafieldKeyValueSet: CodaMetafieldKeyValueSet) {
+  const { metaKey, metaNamespace } = splitMetaFieldFullKey(parsedMetafieldKeyValueSet.key);
+  if (parsedMetafieldKeyValueSet.value !== null) {
+    return {
+      namespace: metaNamespace,
+      key: metaKey,
+      value:
+        typeof parsedMetafieldKeyValueSet.value === 'string'
+          ? parsedMetafieldKeyValueSet.value
+          : JSON.stringify(parsedMetafieldKeyValueSet.value),
+      type: parsedMetafieldKeyValueSet.type,
+    } as MetafieldRestInput;
+  }
 }
 
 // TODO: better typing, ça devrait renvoyer MetafieldsSetInput quand l'argument ownerId est fourni et MetafieldRestInput sinon

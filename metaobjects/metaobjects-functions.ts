@@ -85,7 +85,7 @@ export function getMetaobjectReferenceSchema(fieldDefinition) {
 }
 
 // TODO: fetch all and not only first 20
-export async function getMetaObjectTypes(context: coda.ExecutionContext) {
+async function getMetaObjectTypes(context: coda.ExecutionContext) {
   const payload = {
     query: queryAllMetaobjectDefinitions,
     variables: {
@@ -122,7 +122,7 @@ export async function getMetaObjectDefinitionById(
   return response.body.data.metaobjectDefinition;
 }
 
-export async function getMetaObjectDefinitionByType(
+async function getMetaObjectDefinitionByType(
   type: string,
   includeCapabilities = true,
   includeFieldDefinitions = true,

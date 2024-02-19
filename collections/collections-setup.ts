@@ -11,17 +11,11 @@ import {
   fetchCollectionRest,
   validateCollectionParams,
   handleCollectionUpdateJob,
-  formatCollectionStandardFieldsRestParams,
   formatCollect,
+  updateCollectionRest,
 } from './collections-functions';
 
-import {
-  CACHE_MINUTE,
-  IDENTITY_COLLECTION,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+import { IDENTITY_COLLECTION, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { sharedParameters } from '../shared-parameters';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -35,30 +29,24 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  getResourceMetafieldsRestUrl,
+  handleResourceMetafieldsUpdateRestNew,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
-import { MetafieldRestInput } from '../types/Metafields';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
-  findMatchingMetafieldDefinition,
 } from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
-import { CollectionCreateRestParams } from '../types/Collection';
-import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
+import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { GraphQlResource } from '../types/GraphQl';
 
 // #endregion
@@ -72,26 +60,19 @@ async function getCollectionSchema(context: coda.ExecutionContext, _: string, fo
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
-/**
- * The properties that can be updated when updating a collection.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'Body HTML', key: 'body_html', type: 'string' },
-  { display: 'title', key: 'title', type: 'string' },
-  { display: 'Handle', key: 'handle', type: 'string' },
-  { display: 'Image URL', key: 'image_url', type: 'string' },
-  { display: 'Image alt text', key: 'image_alt_text', type: 'string' },
-  { display: 'Published', key: 'published', type: 'boolean' },
-  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
-];
-
-const standardCreateProps = [...standardUpdateProps.filter((prop) => prop.key !== 'title')];
 
 const parameters = {
   collectionID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'collectionId',
     description: 'The ID of the collection.',
+  }),
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'templateSuffix',
+    autocomplete: makeAutocompleteTemplateSuffixesFor('collection'),
+    description:
+      'The suffix of the Liquid template used for the collection. If this property is null, then the collection uses the default template.',
   }),
 };
 
@@ -377,122 +358,126 @@ export const Sync_Collections = coda.makeSyncTable({
 // #endregion
 
 // #region Actions
+export const Action_CreateCollection = coda.makeFormula({
+  name: 'CreateCollection',
+  description: `Create a new Shopify Collection and return GraphQl GID.`,
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [
+    { ...sharedParameters.inputTitle, description: 'The name of the collection.' },
+
+    // optional parameters
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputImageUrl, optional: true },
+    { ...sharedParameters.inputImageAlt, optional: true },
+    { ...sharedParameters.inputPublished, description: 'Whether the collection is visible.', optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Collection metafields to create.' },
+  ],
+
+  isAction: true,
+  resultType: coda.ValueType.String,
+  // TODO: support creating smart collections
+  // Collections are unpublished by default
+  execute: async function (
+    [title, bodyHtml, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
+    context
+  ) {
+    const restParams: CollectionCreateRestParams = {
+      title,
+      body_html: bodyHtml,
+      handle,
+      published,
+      template_suffix: templateSuffix,
+    };
+
+    if (imageUrl) {
+      restParams.image = {
+        ...(restParams.image ?? {}),
+        src: imageUrl,
+      };
+      if (imageAlt) {
+        restParams.image.alt = imageAlt;
+      }
+    }
+
+    if (metafields && metafields.length) {
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      if (metafieldRestInputs.length) {
+        restParams.metafields = metafieldRestInputs;
+      }
+    }
+
+    const response = await createCollectionRest(restParams, context);
+    return response.body.custom_collection.id;
+  },
+});
+
 export const Action_UpdateCollection = coda.makeFormula({
   name: 'UpdateCollection',
   description: 'Update an existing Shopify collection and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.collectionID],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The collection property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Collection, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    parameters.collectionID,
+
+    // optional parameters
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...sharedParameters.inputTitle, description: 'The title of the collection.', optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputImageUrl, optional: true },
+    { ...sharedParameters.inputImageAlt, optional: true },
+    { ...sharedParameters.inputPublished, description: 'Whether the collection is visible.', optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Collection metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   // TODO: keep this for all but disable the update for relation columns
   // TODO: ask on coda community: on fait comment pour que update les trucs dynamiques ? Genre les metafields ?
   schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
-  execute: async ([collectionId, ...varargs], context) => {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    // TODO: type is not perfect here
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Collection, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: collectionId },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
-    };
-    update.newValue = cleanQueryParams(update.newValue);
-
-    return handleCollectionUpdateJob(update, metafieldDefinitions, context);
-  },
-});
-
-export const Action_CreateCollection = coda.makeFormula({
-  name: 'CreateCollection',
-  description: `Create a new Shopify Collection and return GraphQl GID.`,
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'title',
-      description: 'The name of the collection.',
-    }),
-  ],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The collection property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Collection, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
-  ],
-  isAction: true,
-  resultType: coda.ValueType.String,
-  // TODO: support creating smart collections
-  // Collections are unpublished by default
-  execute: async function ([title, ...varargs], context) {
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Collection, context);
-
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
-    const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
-      Object.keys(newValues)
-    );
-
-    // We can use Rest Admin API to create metafields
-    let metafieldRestInputs: MetafieldRestInput[] = [];
-    prefixedMetafieldFromKeys.forEach((fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-      const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-      const input: MetafieldRestInput = {
-        namespace: metaNamespace,
-        key: metaKey,
-        value: newValues[fromKey],
-        type: matchingMetafieldDefinition?.type.name,
-      };
-      metafieldRestInputs.push(input);
-    });
-
-    const params: CollectionCreateRestParams = {
+  execute: async (
+    [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
+    context
+  ) => {
+    const restParams: CollectionUpdateRestParams = {
+      body_html: bodyHtml,
+      handle,
+      published,
+      template_suffix: templateSuffix,
       title,
-      metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-      // @ts-ignore
-      ...formatCollectionStandardFieldsRestParams(standardFromKeys, newValues),
     };
-    // default to unpublished for collection creation
-    if (params.published === undefined) {
-      params.published = false;
+    if (imageUrl) {
+      restParams.image = { ...(restParams.image ?? {}), src: imageUrl };
+    }
+    if (imageAlt) {
+      restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
     }
 
-    const response = await createCollectionRest(params, context);
-    return response.body.custom_collection.id;
+    const collectionType = await getCollectionTypeGraphQl(
+      idToGraphQlGid(GraphQlResource.Collection, collectionId),
+      context
+    );
+
+    let obj = { id: collectionId };
+
+    const restResponse = await updateCollectionRest(collectionId, collectionType, restParams, context);
+    if (restResponse.body[collectionType]) {
+      obj = {
+        ...obj,
+        ...formatCollectionForSchemaFromRestApi(restResponse.body[collectionType], context),
+      };
+    }
+
+    if (metafields && metafields.length) {
+      // TODO: update with identity only things that are not references, and do it in all other update actions
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
+        getResourceMetafieldsRestUrl('collections', collectionId, context),
+        metafields,
+        context
+      );
+    }
+
+    return obj;
   },
 });
 

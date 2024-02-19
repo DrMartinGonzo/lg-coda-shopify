@@ -1,21 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_MINUTE,
-  IDENTITY_PAGE,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+import { IDENTITY_PAGE, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
   fetchPageRest,
   deletePageRest,
-  formatPageStandardFieldsRestParams,
   createPageRest,
   validatePageParams,
   formatPageForSchemaFromRestApi,
   handlePageUpdateJob,
+  updatePageRest,
 } from './pages-functions';
 
 import { PageSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
@@ -23,32 +17,25 @@ import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  handleResourceMetafieldsUpdateRestNew,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import {
   fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
-  findMatchingMetafieldDefinition,
   removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { MetafieldOwnerType, MetafieldDefinition } from '../types/admin.types';
-import { MetafieldRestInput } from '../types/Metafields';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
-import { PageCreateRestParams } from '../types/Page';
-import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
+import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -61,23 +48,6 @@ async function getPageSchema(context: coda.ExecutionContext, _: string, formulaC
 
   return augmentedSchema;
 }
-
-/**
- * The properties that can be updated when updating a page.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'Handle', key: 'handle', type: 'string' },
-  { display: 'Published', key: 'published', type: 'boolean' },
-  { display: 'Published at', key: 'published_at', type: 'string' },
-  { display: 'Title', key: 'title', type: 'string' },
-  { display: 'Body HTML', key: 'body_html', type: 'string' },
-  { display: 'Author', key: 'author', type: 'string' },
-  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
-];
-/**
- * The properties that can be updated when creating a page.
- */
-const standardCreateProps = [...standardUpdateProps.filter((prop) => prop.key !== 'title')];
 
 const parameters = {
   pageID: coda.makeParameter({
@@ -104,6 +74,13 @@ const parameters = {
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the page.',
+  }),
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'templateSuffix',
+    autocomplete: makeAutocompleteTemplateSuffixesFor('page'),
+    description:
+      'The suffix of the Liquid template used for the page. If this property is null, then the page uses the default template.',
   }),
   // inputBodyHtml: coda.makeParameter({
   //   type: coda.ParameterType.String,
@@ -267,114 +244,105 @@ export const Sync_Pages = coda.makeSyncTable({
 // #endregion
 
 // #region Actions
+export const Action_CreatePage = coda.makeFormula({
+  name: 'CreatePage',
+  description: `Create a new Shopify page and return its ID. The page will be visible unless 'published' is set to false.`,
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [
+    { ...sharedParameters.inputTitle, description: 'The title of the page.' },
+
+    // optional parameters
+    { ...sharedParameters.inputAuthor, description: 'The name of the author of the page.', optional: true },
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputPublished, optional: true },
+    { ...sharedParameters.inputPublishedAt, optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Page metafields to create.' },
+  ],
+  isAction: true,
+  resultType: coda.ValueType.String,
+  execute: async function (
+    [title, author, bodyHtml, handle, published, publishedAt, templateSuffix, metafields],
+    context
+  ) {
+    const restParams: PageCreateRestParams = {
+      title,
+      author,
+      body_html: bodyHtml,
+      handle,
+      published,
+      published_at: publishedAt,
+      template_suffix: templateSuffix,
+    };
+
+    if (metafields && metafields.length) {
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      if (metafieldRestInputs.length) {
+        restParams.metafields = metafieldRestInputs;
+      }
+    }
+
+    const response = await createPageRest(restParams, context);
+    return response.body.page.id;
+  },
+});
+
 export const Action_UpdatePage = coda.makeFormula({
   name: 'UpdatePage',
   description: 'Update an existing Shopify page and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.pageID],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The page property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Page, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    parameters.pageID,
+
+    // optional parameters
+    { ...sharedParameters.inputAuthor, description: 'The name of the author of the page.', optional: true },
+    { ...sharedParameters.inputBodyHtml, optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...sharedParameters.inputPublished, optional: true },
+    { ...sharedParameters.inputPublishedAt, optional: true },
+    { ...sharedParameters.inputTitle, description: 'The title of the page.', optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Page metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   // TODO: keep this for all but disable the update for relation columns
   // TODO: ask on coda community: on fait comment pour que update les trucs dynamiques ? Genre les metafields ?
   schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
-  execute: async function ([page_id, ...varargs], context) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    // TODO: type is not perfect here
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Page, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: page_id },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
-    };
-    update.newValue = cleanQueryParams(update.newValue);
-
-    return handlePageUpdateJob(update, metafieldDefinitions, context);
-  },
-});
-
-export const Action_CreatePage = coda.makeFormula({
-  name: 'CreatePage',
-  description: `Create a new Shopify page and return GraphQl GID. The page will be visible unless 'published' is set to false.`,
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputTitle],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The page property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Page, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
-  ],
-  isAction: true,
-  resultType: coda.ValueType.String,
-  execute: async function ([title, ...varargs], context) {
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Page, context);
-
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
-    const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
-      Object.keys(newValues)
-    );
-
-    // We can use Rest Admin API to create metafields
-    let metafieldRestInputs: MetafieldRestInput[] = [];
-    prefixedMetafieldFromKeys.forEach((fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-      const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-      const input: MetafieldRestInput = {
-        namespace: metaNamespace,
-        key: metaKey,
-        value: newValues[fromKey],
-        type: matchingMetafieldDefinition?.type.name,
-      };
-      metafieldRestInputs.push(input);
-    });
-
-    const params: PageCreateRestParams = {
+  execute: async function (
+    [pageId, author, bodyHtml, handle, published, publishedAt, title, templateSuffix, metafields],
+    context
+  ) {
+    const restParams: PageUpdateRestParams = {
+      author,
+      body_html: bodyHtml,
+      handle,
+      published,
+      published_at: publishedAt,
       title,
-      metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-      // @ts-ignore
-      ...formatPageStandardFieldsRestParams(standardFromKeys, newValues),
+      template_suffix: templateSuffix,
     };
-    // default to unpublished for page creation
-    if (params.published === undefined) {
-      params.published = false;
+
+    let obj = { id: pageId };
+
+    const restResponse = await updatePageRest(pageId, restParams, context);
+    if (restResponse.body?.page) {
+      obj = {
+        ...obj,
+        ...formatPageForSchemaFromRestApi(restResponse.body.page, context),
+      };
     }
 
-    const response = await createPageRest(params, context);
-    return response.body.page.id;
+    if (metafields && metafields.length) {
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
+        getResourceMetafieldsRestUrl('pages', pageId, context),
+        metafields,
+        context
+      );
+    }
+
+    return obj;
   },
 });
 

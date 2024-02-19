@@ -35,7 +35,7 @@ import {
   Formula_Customer,
   Sync_Customers,
 } from './customers/customers-setup';
-import { Sync_Files } from './files/files-setup';
+import { Action_DeleteFile, Sync_Files } from './files/files-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
@@ -65,7 +65,14 @@ import {
 } from './orders/orders-setup';
 import { Sync_OrderLineItems } from './orderLineItems/orderLineItems-setup';
 import { Sync_OrderTransactions } from './orderTransactions/orderTransactions-setup';
-import { Action_CreatePage, Action_DeletePage, Action_UpdatePage, Sync_Pages } from './pages/pages-setup';
+import {
+  Action_CreatePage,
+  Action_DeletePage,
+  Action_UpdatePage,
+  Format_Page,
+  Formula_Page,
+  Sync_Pages,
+} from './pages/pages-setup';
 import {
   Action_CreateProductVariant,
   Action_DeleteProductVariant,
@@ -118,6 +125,8 @@ import {
   Formula_ProductStatus,
   Formula_ProductType,
   Formula_MetafieldValues,
+  Formula_MetafieldNumberIntegerValue,
+  Formula_MetafieldNumberDecimalValue,
 } from './helpers-setup';
 import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
 import { IS_ADMIN_RELEASE } from './constants';
@@ -126,9 +135,7 @@ import { IS_ADMIN_RELEASE } from './constants';
 
 export const pack = coda.newPack();
 
-/**====================================================================================================================
- *    Auth
- *===================================================================================================================== */
+// #region Auth
 pack.setUserAuthentication({
   type: coda.AuthenticationType.Custom,
   requiresEndpointUrl: true,
@@ -141,8 +148,9 @@ pack.setUserAuthentication({
   },
 });
 pack.addNetworkDomain('myshopify.com');
+// #endregion
 
-// Sync Tables
+// #region Sync Tables
 pack.syncTables.push(Sync_Articles);
 pack.syncTables.push(Sync_Blogs);
 pack.syncTables.push(Sync_Collects);
@@ -161,8 +169,9 @@ pack.syncTables.push(Sync_Pages);
 pack.syncTables.push(Sync_Products);
 pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
+// #endregion
 
-// Formulas
+// #region Formulas
 pack.formulas.push(Formula_Article);
 pack.formulas.push(Formula_Blog);
 pack.formulas.push(Formula_Collection);
@@ -175,12 +184,14 @@ if (IS_ADMIN_RELEASE) {
   pack.formulas.push(Formula_Orders);
   pack.formulas.push(Formula_OrderExportFormat);
 }
+pack.formulas.push(Formula_Page);
 pack.formulas.push(Formula_Product);
 pack.formulas.push(Formula_ProductVariant);
 pack.formulas.push(Formula_Redirect);
 pack.formulas.push(Formula_ShopField);
+// #endregion
 
-// Actions
+// #region Actions
 pack.formulas.push(Action_CreateArticle);
 pack.formulas.push(Action_UpdateArticle);
 pack.formulas.push(Action_DeleteArticle);
@@ -196,6 +207,8 @@ pack.formulas.push(Action_DeleteCollection);
 pack.formulas.push(Action_CreateCustomer);
 pack.formulas.push(Action_UpdateCustomer);
 pack.formulas.push(Action_DeleteCustomer);
+
+pack.formulas.push(Action_DeleteFile);
 
 pack.formulas.push(Action_UpdateInventoryItem);
 
@@ -231,17 +244,20 @@ pack.formulas.push(Action_UpdateRedirect);
 pack.formulas.push(Action_DeleteRedirect);
 
 pack.formulas.push(Action_SALUT);
+// #endregion
 
-// Column Formats
+// #region Column Formats
 pack.formats.push(Format_Article);
 pack.formats.push(Format_Blog);
 pack.formats.push(Format_Collection);
 pack.formats.push(Format_Customer);
 pack.formats.push(Format_Location);
 pack.formats.push(Format_Order);
+pack.formats.push(Format_Page);
 pack.formats.push(Format_Product);
 pack.formats.push(Format_ProductVariant);
 pack.formats.push(Format_Redirect);
+// #endregion
 
 setupTranslations(pack);
 
@@ -255,6 +271,9 @@ pack.formulas.push(Formula_MetafieldCollectionReferenceValue);
 pack.formulas.push(Formula_MetafieldColorValue);
 pack.formulas.push(Formula_MetafieldDateTimeValue);
 pack.formulas.push(Formula_MetafieldDateValue);
+pack.formulas.push(Formula_MetafieldNumberDecimalValue);
+pack.formulas.push(Formula_MetafieldNumberIntegerValue);
+
 pack.formulas.push(Formula_MetafieldMetaobjectReferenceValue);
 pack.formulas.push(Formula_MetafieldMixedReferenceValue);
 pack.formulas.push(Formula_MetafieldPageReferenceValue);

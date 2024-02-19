@@ -36,7 +36,7 @@ export const BlogSchema = coda.makeObjectSchema({
       fixedId: 'commentable',
       fromKey: 'commentable',
       mutable: true,
-      description: 'Indicates whether readers can post comments to the blog and if comments are moderated or not.',
+      description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
       options: COMMENTABLE_OPTIONS,
       requireForUpdates: true,
     },

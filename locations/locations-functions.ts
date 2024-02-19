@@ -90,6 +90,24 @@ function formatGraphQlLocationEditAddressInput(update: any): LocationEditAddress
   return ret;
 }
 
+export function formatGraphQlLocationEditAddressInputNew(parts: any): LocationEditAddressInput {
+  const ret: LocationEditAddressInput = {
+    address1: parts?.address1,
+    address2: parts?.address2,
+    city: parts?.city,
+    countryCode: parts?.countryCode,
+    phone: parts?.phone,
+    provinceCode: parts?.provinceCode,
+    zip: parts?.zip,
+  };
+
+  Object.keys(ret).forEach((key) => {
+    if (ret[key] === undefined) delete ret[key];
+  });
+
+  return ret;
+}
+
 // TODO: set metafields along with the location update ? There is still the problem that we can't update with a null value, we need to delete first
 export async function handleLocationUpdateJob(
   update: coda.SyncUpdate<string, string, typeof LocationSchema>,

@@ -33,7 +33,7 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
 // #endregion
 
 // #region Fragments
-export const OrderTransactionFieldsFragment = /* GraphQL */ `
+const OrderTransactionFieldsFragment = /* GraphQL */ `
   fragment OrderTransactionFields on OrderTransaction {
     id
     kind

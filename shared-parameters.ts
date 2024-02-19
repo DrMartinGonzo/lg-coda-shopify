@@ -9,6 +9,7 @@ import {
 } from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
 import { autocompleteLocationsWithName } from './locations/locations-functions';
+import { countryCodes } from './types/misc';
 
 export const sharedParameters = {
   optionalSyncMetafields: coda.makeParameter({
@@ -114,6 +115,128 @@ export const sharedParameters = {
   }),
 
   /**====================================================================================================================
+   *    Inputs
+   *===================================================================================================================== */
+  inputAcceptsEmailMarketing: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'acceptsEmailMarketing',
+    description: 'Wether the customer consents to receiving marketing material by email.',
+  }),
+  inputAcceptsSmsMarketing: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'acceptsSmsMarketing',
+    description: 'Wether the customer consents to receiving marketing material by SMS.',
+  }),
+  inputAddress1: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'address1',
+    description: 'The street address.',
+  }),
+  inputAddress2: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'address2',
+    description: 'The optional second line of the street address.',
+  }),
+  inputAuthor: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'author',
+    description: 'The name of the author.',
+  }),
+  inputBodyHtml: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'bodyHtml',
+    description: 'The text of the body of the item, complete with HTML markup.',
+  }),
+  inputCity: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'city',
+    description: 'The city.',
+  }),
+  inputCountryCode: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'countryCode',
+    autocomplete: countryCodes,
+    description: 'The two-letter code (ISO 3166-1 alpha-2 format) corresponding to the country.',
+  }),
+  inputEmail: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'email',
+    description: 'The unique email address of the person.',
+  }),
+  inputFirstName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'firstName',
+    description: "The person's first name.",
+  }),
+  inputHandle: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'handle',
+    description:
+      "A human-friendly unique string for the item that's automatically generated from the item's title. The handle is used in the item's URL.",
+  }),
+  inputImageUrl: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'imageUrl',
+    description: 'Source URL that specifies the location of the image.',
+  }),
+  inputImageAlt: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'imageAlt',
+    description: 'Alternative text that describes the image.',
+  }),
+  inputLastName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'lastName',
+    description: "The person's last name.",
+  }),
+  inputName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'name',
+    description: 'The name.',
+  }),
+  inputNote: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'note',
+    description: 'A note.',
+  }),
+  inputPhone: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'phone',
+    description: 'The phone number (E.164 format).',
+  }),
+  inputProvinceCode: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'provinceCode',
+    description: 'The province, state, or district code (ISO 3166-2 alpha-2 format).',
+  }),
+  inputPublished: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'published',
+    description: 'Whether the item is visible.',
+  }),
+  inputPublishedAt: coda.makeParameter({
+    type: coda.ParameterType.Date,
+    name: 'publishedAt',
+    description: 'When the item was published.',
+  }),
+  inputTags: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'tags',
+    description:
+      'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
+  }),
+  inputTitle: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'title',
+    description: 'The title of the item.',
+  }),
+  inputZip: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'zip',
+    description: 'The zip or postal code.',
+  }),
+
+  /**====================================================================================================================
    *    Filters
    *===================================================================================================================== */
   filterCreatedAtRange: coda.makeParameter({
@@ -201,6 +324,11 @@ export const sharedParameters = {
     type: coda.ParameterType.Number,
     name: 'sinceId',
     description: 'Filter results created after the specified ID.',
+  }),
+  filterAuthor: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'author',
+    description: 'Filter results by specified author.',
   }),
   filterTitle: coda.makeParameter({
     type: coda.ParameterType.String,

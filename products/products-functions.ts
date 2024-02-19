@@ -24,12 +24,7 @@ import { queryAvailableProductTypes } from './products-storefront';
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
-import type {
-  MetafieldDefinitionFragment,
-  SetMetafieldsMutationVariables,
-  UpdateProductMutationVariables,
-} from '../types/admin.generated';
-import { MutationSetMetafields } from '../metafields/metafields-graphql';
+import type { MetafieldDefinitionFragment, UpdateProductMutationVariables } from '../types/admin.generated';
 import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResource } from '../types/GraphQl';
 
@@ -272,7 +267,10 @@ export async function updateProductGraphQl(
   );
   return response;
 }
+// #endregion
 
+// #region Unused stuff
+/*
 export async function updateProductMetafieldsGraphQl(
   productId: number,
   metafieldDefinitions: MetafieldDefinitionFragment[],
@@ -303,9 +301,8 @@ export async function updateProductMetafieldsGraphQl(
   );
   return response;
 }
-// #endregion
+*/
 
-// #region Unused stuff
 /**
  * Format product for schema from a GraphQL Admin API response
  */

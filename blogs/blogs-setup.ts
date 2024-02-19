@@ -1,13 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_MINUTE,
-  IDENTITY_BLOG,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+import { IDENTITY_BLOG, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
   fetchBlogRest,
   deleteBlogRest,
@@ -15,40 +9,33 @@ import {
   validateBlogParams,
   formatBlogForSchemaFromRestApi,
   handleBlogUpdateJob,
-  formatBlogStandardFieldsRestParams,
+  updateBlogRest,
 } from './blogs-functions';
 
-import { BlogSchema, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
+import { BlogSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
 import { sharedParameters } from '../shared-parameters';
-import {
-  UpdateCreateProp,
-  getMetafieldsCreateUpdateProps,
-  getVarargsMetafieldDefinitionsAndUpdateCreateProps,
-  parseVarargsCreateUpdatePropsValues,
-} from '../helpers-varargs';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  handleResourceMetafieldsUpdateRestNew,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
-import { arrayUnique, compareByDisplayKey, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
-  findMatchingMetafieldDefinition,
   removePrefixFromMetaFieldKey,
   getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
-import { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
+import { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import { MetafieldRestInput } from '../types/Metafields';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 
 // #endregion
 
@@ -62,36 +49,30 @@ async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaC
   return augmentedSchema;
 }
 
-/**
- * The properties that can be updated when updating a blog.
- */
-const standardUpdateProps: UpdateCreateProp[] = [
-  { display: 'Title', key: 'title', type: 'string' },
-  { display: 'Handle', key: 'handle', type: 'string' },
-  { display: 'Commentable', key: 'commentable', type: 'string' },
-  { display: 'Template suffix', key: 'template_suffix', type: 'string' },
-];
-/**
- * The properties that can be updated when creating a blog.
- */
-const standardCreateProps = [...standardUpdateProps.filter((prop) => prop.key !== 'title')];
-
 const parameters = {
   blogId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'blogId',
     description: 'The Id of the blog.',
   }),
+  commentable: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'commentable',
+    description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
+    autocomplete: COMMENTABLE_OPTIONS,
+  }),
   inputTitle: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the page.',
   }),
-  // inputHandle: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'handle',
-  //   description: 'The handle of the page.',
-  // }),
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'templateSuffix',
+    autocomplete: makeAutocompleteTemplateSuffixesFor('blog'),
+    description:
+      'The suffix of the Liquid template used for the blog. If this property is null, then the blog uses the default template.',
+  }),
 };
 
 // #region Sync tables
@@ -195,45 +176,46 @@ export const Action_UpdateBlog = coda.makeFormula({
   name: 'UpdateBlog',
   description: 'Update an existing Shopify Blog and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.blogId],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The customer property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Blog, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardUpdateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    parameters.blogId,
+    // optional parameters
+    { ...sharedParameters.inputTitle, description: 'The title of the blog.', optional: true },
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...parameters.commentable, optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Blog metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: BlogSchema,
   // schema: coda.withIdentity(BlogSchema, IDENTITY_BLOG),
-  execute: async function ([blog_id, ...varargs], context) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    // TODO: type is not perfect here
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Blog, context);
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardUpdateProps, metafieldUpdateCreateProps);
-
-    update = {
-      previousValue: { id: blog_id },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
+  execute: async function ([blogId, title, handle, commentable, templateSuffix, metafields], context) {
+    const restParams: BlogUpdateRestParams = {
+      title,
+      handle,
+      commentable,
+      template_suffix: templateSuffix,
     };
-    update.newValue = cleanQueryParams(update.newValue);
 
-    return handleBlogUpdateJob(update, metafieldDefinitions, context);
+    let obj = { id: blogId };
+
+    const restResponse = await updateBlogRest(blogId, restParams, context);
+    if (restResponse.body?.blog) {
+      obj = {
+        ...obj,
+        ...formatBlogForSchemaFromRestApi(restResponse.body.blog, context),
+      };
+    }
+
+    if (metafields && metafields.length) {
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
+        getResourceMetafieldsRestUrl('blogs', blogId, context),
+        metafields,
+        context
+      );
+    }
+
+    return obj;
   },
 });
 
@@ -241,58 +223,33 @@ export const Action_CreateBlog = coda.makeFormula({
   name: 'CreateBlog',
   description: `Create a new Shopify Blog and return its ID.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputTitle],
-  varargParameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'key',
-      description: 'The customer property to update.',
-      autocomplete: async function (context: coda.ExecutionContext, search: string, args: any) {
-        const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: MetafieldOwnerType.Blog, cacheTtlSecs: CACHE_MINUTE },
-          context
-        );
-        const searchObjs = standardCreateProps.concat(getMetafieldsCreateUpdateProps(metafieldDefinitions));
-        const result = await coda.autocompleteSearchObjects(search, searchObjs, 'display', 'key');
-        return result.sort(compareByDisplayKey);
-      },
-    }),
-    sharedParameters.varArgsPropValue,
+  parameters: [
+    { ...sharedParameters.inputTitle, description: 'The title of the blog.' },
+
+    // optional parameters
+    { ...sharedParameters.inputHandle, optional: true },
+    { ...parameters.commentable, optional: true },
+    { ...parameters.templateSuffix, optional: true },
+    { ...sharedParameters.metafields, optional: true, description: 'Blog metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
-  execute: async function ([title, ...varargs], context) {
-    const { metafieldDefinitions, metafieldUpdateCreateProps } =
-      await getVarargsMetafieldDefinitionsAndUpdateCreateProps(varargs, MetafieldOwnerType.Blog, context);
-
-    const newValues = parseVarargsCreateUpdatePropsValues(varargs, standardCreateProps, metafieldUpdateCreateProps);
-    const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(
-      Object.keys(newValues)
-    );
-
-    // We can use Rest Admin API to create metafields
-    let metafieldRestInputs: MetafieldRestInput[] = [];
-    prefixedMetafieldFromKeys.forEach((fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-      const matchingMetafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-      const input: MetafieldRestInput = {
-        namespace: metaNamespace,
-        key: metaKey,
-        value: newValues[fromKey],
-        type: matchingMetafieldDefinition?.type.name,
-      };
-      metafieldRestInputs.push(input);
-    });
-
-    const params: BlogCreateRestParams = {
+  execute: async function ([title, handle, commentable, templateSuffix, metafields], context) {
+    const restParams: BlogCreateRestParams = {
       title,
-      metafields: metafieldRestInputs.length ? metafieldRestInputs : undefined,
-      // @ts-ignore
-      ...formatBlogStandardFieldsRestParams(standardFromKeys, newValues),
+      commentable,
+      handle,
+      template_suffix: templateSuffix,
     };
 
-    const response = await createBlogRest(params, context);
+    if (metafields && metafields.length) {
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      if (metafieldRestInputs.length) {
+        restParams.metafields = metafieldRestInputs;
+      }
+    }
+
+    const response = await createBlogRest(restParams, context);
     return response.body.blog.id;
   },
 });

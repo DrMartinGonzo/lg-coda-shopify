@@ -23,6 +23,7 @@ import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
+  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
   getMetaFieldFullKey,
   handleResourceMetafieldsUpdateGraphQlNew,
   preprendPrefixToMetaFieldKey,
@@ -498,21 +499,8 @@ export const Action_CreateProductVariant = coda.makeFormula({
       weight_unit: weightUnit,
     };
 
-    let metafieldRestInputs: MetafieldRestInput[] = [];
     if (metafields && metafields.length) {
-      metafields.forEach((m) => {
-        const parsedMetafieldKeyValueSet: CodaMetafieldKeyValueSet = JSON.parse(m);
-        const { metaKey, metaNamespace } = splitMetaFieldFullKey(parsedMetafieldKeyValueSet.key);
-        if (parsedMetafieldKeyValueSet.value !== null) {
-          const input: MetafieldRestInput = {
-            namespace: metaNamespace,
-            key: metaKey,
-            value: JSON.stringify(parsedMetafieldKeyValueSet.value),
-            type: parsedMetafieldKeyValueSet.type,
-          };
-          metafieldRestInputs.push(input);
-        }
-      });
+      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
