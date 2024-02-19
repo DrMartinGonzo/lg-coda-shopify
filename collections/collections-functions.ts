@@ -17,7 +17,7 @@ import { CollectionSchema } from '../schemas/syncTable/CollectionSchema';
 import { FormatFunction } from '../types/misc';
 
 import {
-  getResourceMetafieldsRestUrl,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -25,6 +25,7 @@ import {
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { CollectionUpdateRestParams } from '../types/Collection';
 import { GraphQlResource } from '../types/GraphQl';
+import { restResources } from '../types/Rest';
 
 // #region Helpers
 function formatCollectionStandardFieldsRestParams(
@@ -84,9 +85,9 @@ export async function handleCollectionUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateRest(
-        getResourceMetafieldsRestUrl('collections', collectionId, context),
-        metafieldDefinitions,
-        update,
+        collectionId,
+        restResources.Collection,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

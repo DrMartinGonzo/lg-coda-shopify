@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { FIELD_TYPES } from '../../constants';
+import { METAFIELD_TYPES } from '../../metafields/metafields-constants';
 import { ProductReference } from './ProductSchemaRest';
 import { CollectionReference } from './CollectionSchema';
 import { PageReference } from './PageSchema';
@@ -76,7 +76,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
     type: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.SelectList,
-      options: Object.values(FIELD_TYPES),
+      options: Object.values(METAFIELD_TYPES),
       required: true,
       fixedId: 'type',
       description:
@@ -101,7 +101,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editCollectionReference',
       fromKey: 'editCollectionReference',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.collection_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.collection_reference}' type.`,
     },
     editCollectionReferenceList: {
       type: coda.ValueType.Array,
@@ -109,14 +109,14 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editCollectionReferenceList',
       fromKey: 'editCollectionReferenceList',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_collection_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.list_collection_reference}' type.`,
     },
     editFileReference: {
       ...FileReference,
       fixedId: 'editFileReference',
       fromKey: 'editFileReference',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.file_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.file_reference}' type.`,
     },
     editFileReferenceList: {
       type: coda.ValueType.Array,
@@ -124,14 +124,14 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editFileReferenceList',
       fromKey: 'editFileReferenceList',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_file_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.list_file_reference}' type.`,
     },
     editPageReference: {
       ...PageReference,
       fixedId: 'editPageReference',
       fromKey: 'editPageReference',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.page_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.page_reference}' type.`,
     },
     editPageReferenceList: {
       type: coda.ValueType.Array,
@@ -139,14 +139,14 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editPageReferenceList',
       fromKey: 'editPageReferenceList',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_page_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.list_page_reference}' type.`,
     },
     editProductReference: {
       ...ProductReference,
       fixedId: 'editProductReference',
       fromKey: 'editProductReference',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.product_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.product_reference}' type.`,
     },
     editProductReferenceList: {
       type: coda.ValueType.Array,
@@ -154,14 +154,14 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editProductReferenceList',
       fromKey: 'editProductReferenceList',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_product_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.list_product_reference}' type.`,
     },
     editProductVariantReference: {
       ...ProductVariantReference,
       fixedId: 'editProductVariantReference',
       fromKey: 'editProductVariantReference',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.variant_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.variant_reference}' type.`,
     },
     editProductVariantReferenceList: {
       type: coda.ValueType.Array,
@@ -169,7 +169,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
       fixedId: 'editProductVariantReferenceList',
       fromKey: 'editProductVariantReferenceList',
       mutable: true,
-      description: `Helper column to edit a metafield whose value is of '${FIELD_TYPES.list_variant_reference}' type.`,
+      description: `Helper column to edit a metafield whose value is of '${METAFIELD_TYPES.list_variant_reference}' type.`,
     },
   },
   displayProperty: 'label',
@@ -275,14 +275,14 @@ export const MetafieldBaseSyncSchema = coda.makeObjectSchema({
 });
 
 export const metafieldSyncTableHelperEditColumns = [
-  { key: 'editCollectionReference', type: FIELD_TYPES.collection_reference },
-  { key: 'editCollectionReferenceList', type: FIELD_TYPES.list_collection_reference },
-  { key: 'editFileReference', type: FIELD_TYPES.file_reference },
-  { key: 'editFileReferenceList', type: FIELD_TYPES.list_file_reference },
-  { key: 'editPageReference', type: FIELD_TYPES.page_reference },
-  { key: 'editPageReferenceList', type: FIELD_TYPES.list_page_reference },
-  { key: 'editProductReference', type: FIELD_TYPES.product_reference },
-  { key: 'editProductReferenceList', type: FIELD_TYPES.list_product_reference },
-  { key: 'editProductVariantReference', type: FIELD_TYPES.variant_reference },
-  { key: 'editProductVariantReferenceList', type: FIELD_TYPES.list_variant_reference },
+  { key: 'editCollectionReference', type: METAFIELD_TYPES.collection_reference },
+  { key: 'editCollectionReferenceList', type: METAFIELD_TYPES.list_collection_reference },
+  { key: 'editFileReference', type: METAFIELD_TYPES.file_reference },
+  { key: 'editFileReferenceList', type: METAFIELD_TYPES.list_file_reference },
+  { key: 'editPageReference', type: METAFIELD_TYPES.page_reference },
+  { key: 'editPageReferenceList', type: METAFIELD_TYPES.list_page_reference },
+  { key: 'editProductReference', type: METAFIELD_TYPES.product_reference },
+  { key: 'editProductReferenceList', type: METAFIELD_TYPES.list_product_reference },
+  { key: 'editProductVariantReference', type: METAFIELD_TYPES.variant_reference },
+  { key: 'editProductVariantReferenceList', type: METAFIELD_TYPES.list_variant_reference },
 ];

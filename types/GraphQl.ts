@@ -1,5 +1,5 @@
 /**
- * Types of GraphQL resources that we support.
+ * Types of GraphQL Admin API resources that we support.
  */
 export enum GraphQlResource {
   Article = 'OnlineStoreArticle',
@@ -12,6 +12,9 @@ export enum GraphQlResource {
   InventoryItem = 'InventoryItem',
   Location = 'Location',
   Metaobject = 'Metaobject',
+  OnlineStoreArticle = 'OnlineStoreArticle',
+  OnlineStoreBlog = 'OnlineStoreBlog',
+  OnlineStorePage = 'OnlineStorePage',
   Order = 'Order',
   OrderTransaction = 'OrderTransaction',
   Page = 'OnlineStorePage',

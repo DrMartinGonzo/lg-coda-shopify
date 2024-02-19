@@ -25,7 +25,6 @@ import {
 } from '../helpers-graphql';
 
 import { createHash } from 'node:crypto';
-import { METAFIELDS_RESOURCE_TYPES } from '../constants';
 import { MetafieldFragmentWithDefinition, SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { QueryShopMetafieldsByKeys, makeQueryResourceMetafieldsByKeys } from './metafields-graphql';
@@ -39,10 +38,12 @@ import { PageReference } from '../schemas/syncTable/PageSchema';
 import { ProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 import { ArticleReference } from '../schemas/syncTable/ArticleSchema';
 
-import { MetafieldOwnerType, MetafieldsSetInput } from '../types/admin.types';
+import { MetafieldsSetInput } from '../types/admin.types';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
 import { GraphQlResource } from '../types/GraphQl';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
+import { restResources } from '../types/Rest';
+import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 
 // #endregion
 
@@ -54,32 +55,32 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
   // Augment schema with a relation to the owner of the metafield
   const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
   let ownerReference: coda.GenericObjectSchema & coda.ObjectSchemaProperty;
-  switch (resourceMetafieldsSyncTableDefinition.metafieldOwnerType) {
-    case MetafieldOwnerType.Article:
+  switch (resourceMetafieldsSyncTableDefinition.key) {
+    case GraphQlResource.Article:
       ownerReference = ArticleReference;
       break;
-    case MetafieldOwnerType.Blog:
+    case GraphQlResource.Blog:
       ownerReference = BlogReference;
       break;
-    case MetafieldOwnerType.Collection:
+    case GraphQlResource.Collection:
       ownerReference = CollectionReference;
       break;
-    case MetafieldOwnerType.Customer:
+    case GraphQlResource.Customer:
       ownerReference = CustomerReference;
       break;
-    case MetafieldOwnerType.Location:
+    case GraphQlResource.Location:
       ownerReference = LocationReference;
       break;
-    case MetafieldOwnerType.Order:
+    case GraphQlResource.Order:
       ownerReference = OrderReference;
       break;
-    case MetafieldOwnerType.Page:
+    case GraphQlResource.Page:
       ownerReference = PageReference;
       break;
-    case MetafieldOwnerType.Product:
+    case GraphQlResource.Product:
       ownerReference = ProductReference;
       break;
-    case MetafieldOwnerType.Productvariant:
+    case GraphQlResource.ProductVariant:
       ownerReference = ProductVariantReference;
       break;
 
@@ -97,8 +98,10 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
     augmentedSchema.featuredProperties.push('owner');
   }
 
-  // admin_url should always be the last featured property
-  augmentedSchema.featuredProperties.push('admin_url');
+  // admin_url should always be the last featured property, but Shop doesn't have one
+  if (graphQlResource !== GraphQlResource.Shop) {
+    augmentedSchema.featuredProperties.push('admin_url');
+  }
   return augmentedSchema;
 }
 
@@ -165,10 +168,17 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
     const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
     return `${resourceMetafieldsSyncTableDefinition.display} metafields`;
   },
+  /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {
     const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-    const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
-    return `${context.endpoint}/admin/settings/custom_data/${resourceMetafieldsSyncTableDefinition.metafieldsSettingsUrlPart}/metafields`;
+    // edge case: Shop doesn't have a dedicated page for metafield definitions
+    if (graphQlResource === GraphQlResource.Shop) {
+      return `${context.endpoint}/admin`;
+    }
+
+    const restResource = getRestResourceFromGraphQlResourceType(graphQlResource);
+    const metafieldDefinitionsUrlPart = restResource.singular;
+    return `${context.endpoint}/admin/settings/custom_data/${metafieldDefinitionsUrlPart}/metafields`;
   },
   getSchema: getMetafieldSchema,
   defaultAddDynamicColumns: false,
@@ -242,6 +252,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
               formatMetafieldForSchemaFromGraphQlApi(
                 metafieldNode,
                 ownerNode.id,
+                ownerNode?.parentOwner?.id,
                 resourceMetafieldsSyncTableDefinition,
                 context
               )
@@ -362,7 +373,7 @@ export const Action_CreateMetafield = coda.makeFormula({
       type: coda.ParameterType.String,
       name: 'resourceType',
       description: 'The type of resource.',
-      autocomplete: METAFIELDS_RESOURCE_TYPES,
+      autocomplete: Object.keys(restResources),
     }),
     coda.makeParameter({
       type: coda.ParameterType.String,
@@ -390,10 +401,8 @@ export const Action_CreateMetafield = coda.makeFormula({
   cacheTtlSecs: 0,
   resultType: coda.ValueType.Number,
   execute: async ([resourceId, resourceType, namespace, key, value, type], context) => {
-    const response = await createResourceMetafieldRest(
-      [resourceId, resourceType, namespace, key, value, type],
-      context
-    );
+    const restResource = restResources[resourceType];
+    const response = await createResourceMetafieldRest(resourceId, restResource, namespace, key, value, type, context);
     const { body } = response;
     return body.metafield.id;
   },
@@ -418,7 +427,7 @@ export const Action_UpdateMetafield = coda.makeFormula({
       type: coda.ParameterType.String,
       name: 'resourceType',
       description: 'The type of resource.',
-      autocomplete: METAFIELDS_RESOURCE_TYPES,
+      autocomplete: Object.keys(restResources),
     }),
     coda.makeParameter({
       type: coda.ParameterType.String,
@@ -430,7 +439,8 @@ export const Action_UpdateMetafield = coda.makeFormula({
   cacheTtlSecs: 0,
   resultType: coda.ValueType.Boolean,
   execute: async ([metafieldId, resourceId, resourceType, value], context) => {
-    const response = await updateResourceMetafieldRest([metafieldId, resourceId, resourceType, value], context);
+    const restResource = restResources[resourceType];
+    const response = await updateResourceMetafieldRest(metafieldId, resourceId, restResource, value, context);
     return true;
   },
 });
@@ -475,7 +485,7 @@ export const Formula_Metafield = coda.makeFormula({
     }
 
     const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
-    const { metafieldNode, ownerNodeGid } = await fetchSingleMetafieldGraphQl(
+    const { metafieldNode, ownerNodeGid, parentOwnerNodeGid } = await fetchSingleMetafieldGraphQl(
       {
         graphQlResource,
         fullKey,
@@ -488,6 +498,7 @@ export const Formula_Metafield = coda.makeFormula({
       return formatMetafieldForSchemaFromGraphQlApi(
         metafieldNode,
         ownerNodeGid,
+        parentOwnerNodeGid,
         resourceMetafieldsSyncTableDefinition,
         context,
         false
@@ -514,7 +525,7 @@ export const Formula_Metafields = coda.makeFormula({
     }
 
     const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
-    const { metafieldNodes, ownerNodeGid } = await fetchMetafieldsGraphQl(
+    const { metafieldNodes, ownerNodeGid, parentOwnerNodeGid } = await fetchMetafieldsGraphQl(
       {
         graphQlResource,
         ownerGid: ownerId ? idToGraphQlGid(graphQlResource, ownerId) : undefined,
@@ -528,6 +539,7 @@ export const Formula_Metafields = coda.makeFormula({
         formatMetafieldForSchemaFromGraphQlApi(
           metafieldNode,
           ownerNodeGid,
+          parentOwnerNodeGid,
           resourceMetafieldsSyncTableDefinition,
           context
         )

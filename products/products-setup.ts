@@ -37,9 +37,9 @@ import {
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
+  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateGraphQlNew,
+  handleResourceMetafieldsUpdateGraphQl,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import {
@@ -441,7 +441,10 @@ export const Action_CreateProduct = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+      const metafieldRestInputs = parsedMetafieldKeyValueSets
+        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .filter((m) => m);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -500,10 +503,10 @@ export const Action_UpdateProduct = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      await handleResourceMetafieldsUpdateGraphQlNew(
+      const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
+      await handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid(GraphQlResource.Product, productId),
-        'product',
-        metafields,
+        metafieldKeyValueSets,
         context
       );
     }

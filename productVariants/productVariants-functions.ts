@@ -9,13 +9,14 @@ import {
 } from '../constants';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema';
-import { MetafieldDefinition } from '../types/admin.types';
 import {
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import { GraphQlResource } from '../types/GraphQl';
 
 // #region Validate functions
 export function validateProductVariantParams(params: any) {
@@ -65,10 +66,8 @@ export async function handleProductVariantUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
-        idToGraphQlGid('ProductVariant', productVariantId),
-        'variant',
-        metafieldDefinitions,
-        update,
+        idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

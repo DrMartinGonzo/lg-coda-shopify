@@ -1,13 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
-import {
-  CACHE_SINGLE_FETCH,
-  CACHE_YEAR,
-  FIELD_TYPES,
-  MetafieldTypeValue,
-  OPTIONS_PRODUCT_STATUS_REST,
-} from './constants';
+import { CACHE_SINGLE_FETCH, CACHE_YEAR, OPTIONS_PRODUCT_STATUS_REST } from './constants';
+import { METAFIELD_TYPES } from './metafields/metafields-constants';
+import { MetafieldTypeValue } from './types/Metafields';
 import { arrayUnique, getUnitMap } from './helpers';
 import { autocompleteProductTypes } from './products/products-functions';
 import { GraphQlResource } from './types/GraphQl';
@@ -74,20 +70,20 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
     execute: async ([value]) => {
       let resource: GraphQlResource;
       switch (type) {
-        case FIELD_TYPES.collection_reference:
+        case METAFIELD_TYPES.collection_reference:
           resource = GraphQlResource.Collection;
           break;
-        case FIELD_TYPES.metaobject_reference:
-        case FIELD_TYPES.mixed_reference:
+        case METAFIELD_TYPES.metaobject_reference:
+        case METAFIELD_TYPES.mixed_reference:
           resource = GraphQlResource.Metaobject;
           break;
-        case FIELD_TYPES.page_reference:
+        case METAFIELD_TYPES.page_reference:
           resource = GraphQlResource.Page;
           break;
-        case FIELD_TYPES.product_reference:
+        case METAFIELD_TYPES.product_reference:
           resource = GraphQlResource.Product;
           break;
-        case FIELD_TYPES.variant_reference:
+        case METAFIELD_TYPES.variant_reference:
           resource = GraphQlResource.ProductVariant;
           break;
 
@@ -99,7 +95,7 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
       }
 
       return JSON.stringify({
-        type: FIELD_TYPES[type],
+        type: METAFIELD_TYPES[type],
         value: idToGraphQlGid(resource, value),
       } as CodaMetafieldValue);
     },
@@ -234,7 +230,7 @@ export const Formula_MetafieldValues = coda.makeFormula({
     const type: MetafieldTypeValue = uniqueTypes[0];
     const typeAsList = ('list.' + type) as MetafieldTypeValue;
     // check if typeAsList is supported by checking FIELD_TYPES
-    if (!Object.values(FIELD_TYPES).includes(typeAsList)) {
+    if (!Object.values(METAFIELD_TYPES).includes(typeAsList)) {
       throw new coda.UserVisibleError(`Shopify doesn't support lists for metafields of type: \`${type}\`.`);
     }
 
@@ -253,7 +249,7 @@ export const Formula_MetafieldBooleanValue = coda.makeFormula({
   parameters: [{ ...parameters.metaBooleanValue, description: 'True or false ?' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.boolean, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.boolean, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldColorValue = coda.makeFormula({
@@ -264,7 +260,7 @@ export const Formula_MetafieldColorValue = coda.makeFormula({
   ],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.color, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.color, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldNumberDecimalValue = coda.makeFormula({
@@ -273,7 +269,7 @@ export const Formula_MetafieldNumberDecimalValue = coda.makeFormula({
   parameters: [{ ...parameters.metaNumberValue, description: 'The decimal number value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.number_decimal, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.number_decimal, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldNumberIntegerValue = coda.makeFormula({
@@ -282,7 +278,7 @@ export const Formula_MetafieldNumberIntegerValue = coda.makeFormula({
   parameters: [{ ...parameters.metaNumberValue, description: 'The integer value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.number_integer, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.number_integer, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldDateValue = coda.makeFormula({
@@ -291,7 +287,7 @@ export const Formula_MetafieldDateValue = coda.makeFormula({
   parameters: [{ ...parameters.metaDateValue, description: 'The date value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.date, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.date, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldDateTimeValue = coda.makeFormula({
@@ -300,7 +296,7 @@ export const Formula_MetafieldDateTimeValue = coda.makeFormula({
   parameters: [{ ...parameters.metaDateValue, description: 'The date_time value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => JSON.stringify({ type: FIELD_TYPES.date_time, value } as CodaMetafieldValue),
+  execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.date_time, value } as CodaMetafieldValue),
 });
 
 export const Formula_MetafieldSingleLineTextValue = coda.makeFormula({
@@ -310,7 +306,7 @@ export const Formula_MetafieldSingleLineTextValue = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => {
-    return JSON.stringify({ type: FIELD_TYPES.single_line_text_field, value } as CodaMetafieldValue);
+    return JSON.stringify({ type: METAFIELD_TYPES.single_line_text_field, value } as CodaMetafieldValue);
   },
 });
 
@@ -324,13 +320,13 @@ export const Formula_MetafieldWeightValue = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) => {
-    const obj: CodaMetafieldValue = { type: FIELD_TYPES.weight, value: { value, unit } };
+    const obj: CodaMetafieldValue = { type: METAFIELD_TYPES.weight, value: { value, unit } };
     return JSON.stringify(obj);
   },
 });
 
 export const Formula_MetafieldCollectionReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.collection_reference
+  METAFIELD_TYPES.collection_reference
 );
 
 // TODO: support all file types, we need a function MetafieldFileImageValue, MetafieldFileVideoValue etc ?
@@ -339,23 +335,23 @@ export const Formula_MetafieldCollectionReferenceValue = makeMetafieldReferenceV
 // );
 
 export const Formula_MetafieldMetaobjectReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.metaobject_reference
+  METAFIELD_TYPES.metaobject_reference
 );
 
 // TODO: need to test this
 export const Formula_MetafieldMixedReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.mixed_reference
+  METAFIELD_TYPES.mixed_reference
 );
 
 export const Formula_MetafieldPageReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.page_reference
+  METAFIELD_TYPES.page_reference
 );
 
 export const Formula_MetafieldProductReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.product_reference
+  METAFIELD_TYPES.product_reference
 );
 
 export const Formula_MetafieldVariantReferenceValue = makeMetafieldReferenceValueFormulaDefinition(
-  FIELD_TYPES.variant_reference
+  METAFIELD_TYPES.variant_reference
 );
 // #endregion

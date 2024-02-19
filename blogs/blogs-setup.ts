@@ -17,9 +17,9 @@ import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
+  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateRestNew,
+  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
@@ -28,7 +28,6 @@ import {
   fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
-  getResourceMetafieldsRestUrl,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
@@ -36,6 +35,8 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { restResources } from '../types/Rest';
 
 // #endregion
 
@@ -127,11 +128,7 @@ export const Sync_Blogs = coda.makeSyncTable({
       if (shouldSyncMetafields) {
         restResult = await Promise.all(
           restResult.map(async (resource) => {
-            const response = await fetchMetafieldsRest(
-              getResourceMetafieldsRestUrl('blogs', resource.id, context),
-              {},
-              context
-            );
+            const response = await fetchMetafieldsRest(resource.id, restResources.Blog, {}, context);
 
             // Only keep metafields that have a definition are in the schema
             const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
@@ -208,9 +205,11 @@ export const Action_UpdateBlog = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRestNew(
-        getResourceMetafieldsRestUrl('blogs', blogId, context),
-        metafields,
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
+      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+        blogId,
+        restResources.Blog,
+        parsedMetafieldKeyValueSets,
         context
       );
     }
@@ -243,7 +242,10 @@ export const Action_CreateBlog = coda.makeFormula({
     };
 
     if (metafields && metafields.length) {
-      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+      const metafieldRestInputs = parsedMetafieldKeyValueSets
+        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .filter((m) => m);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
