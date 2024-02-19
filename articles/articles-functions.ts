@@ -8,11 +8,12 @@ import { getThumbnailUrlFromFullUrl } from '../helpers';
 import { FormatFunction } from '../types/misc';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
-  getResourceMetafieldsRestUrl,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
+import { restResources } from '../types/Rest';
 
 // #region Helpers
 function formatArticleStandardFieldsRestParams(
@@ -77,9 +78,9 @@ export async function handleArticleUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateRest(
-        getResourceMetafieldsRestUrl('articles', articleId, context),
-        metafieldDefinitions,
-        update,
+        articleId,
+        restResources.Article,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

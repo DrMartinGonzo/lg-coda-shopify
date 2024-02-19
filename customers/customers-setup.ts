@@ -22,9 +22,9 @@ import { IDENTITY_CUSTOMER, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputsFromListOfMetafieldKeyValueSet,
+  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateGraphQlNew,
+  handleResourceMetafieldsUpdateGraphQl,
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
@@ -48,6 +48,7 @@ import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } fro
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResource } from '../types/GraphQl';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 
 // #endregion
 
@@ -328,7 +329,10 @@ export const Action_CreateCustomer = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      const metafieldRestInputs = formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields);
+      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
+      const metafieldRestInputs = parsedMetafieldKeyValueSets
+        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .filter((m) => m);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -425,10 +429,10 @@ export const Action_UpdateCustomer = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      await handleResourceMetafieldsUpdateGraphQlNew(
+      const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
+      await handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid(GraphQlResource.Customer, customerId),
-        'customer',
-        metafields,
+        metafieldKeyValueSets,
         context
       );
     }

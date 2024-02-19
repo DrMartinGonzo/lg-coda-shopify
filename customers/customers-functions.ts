@@ -14,6 +14,7 @@ import { idToGraphQlGid } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,
   handleResourceMetafieldsUpdateGraphQl,
+  getMetafieldKeyValueSetsFromUpdate,
 } from '../metafields/metafields-functions';
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -112,9 +113,7 @@ export async function handleCustomerUpdateJob(
     subJobs.push(
       handleResourceMetafieldsUpdateGraphQl(
         idToGraphQlGid(GraphQlResource.Customer, customerId),
-        'customer',
-        metafieldDefinitions,
-        update,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

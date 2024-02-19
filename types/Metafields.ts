@@ -1,4 +1,6 @@
-import type { CurrencyCode, Metafield, MetafieldDefinition, MetafieldOwnerType, Scalars } from '../types/admin.types';
+import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../metafields/metafields-constants';
+import type { CurrencyCode, Metafield, Scalars } from '../types/admin.types';
+import { GraphQlResource } from './GraphQl';
 import { MetafieldDefinitionFragment, MetafieldFieldsFragment } from './admin.generated';
 
 export interface ShopifyRatingField {
@@ -65,16 +67,16 @@ export type MetafieldRestInput = {
  * Types of GraphQL resources to get metafields from that we support.
  */
 export type SupportedGraphQlResourceWithMetafields =
-  | 'Collection'
-  | 'Customer'
-  | 'Location'
-  | 'OnlineStoreArticle'
-  | 'OnlineStoreBlog'
-  | 'OnlineStorePage'
-  | 'Order'
-  | 'Product'
-  | 'ProductVariant'
-  | 'Shop';
+  | typeof GraphQlResource.Collection
+  | typeof GraphQlResource.Customer
+  | typeof GraphQlResource.Location
+  | typeof GraphQlResource.OnlineStoreArticle
+  | typeof GraphQlResource.OnlineStoreBlog
+  | typeof GraphQlResource.OnlineStorePage
+  | typeof GraphQlResource.Order
+  | typeof GraphQlResource.Product
+  | typeof GraphQlResource.ProductVariant
+  | typeof GraphQlResource.Shop;
 
 /**
  * An interface describing a resource metafields sync table definition.
@@ -82,18 +84,10 @@ export type SupportedGraphQlResourceWithMetafields =
  * Du coup derrière on peut récupérer les autres infos comme les parties d'url, etc…
  */
 export interface ResourceMetafieldsSyncTableDefinition {
-  /** The resource type, acting as key */
+  /** The GraphQL resource type, acting as key */
   key: SupportedGraphQlResourceWithMetafields;
-  /** The type of the owner of this metafield */
-  metafieldOwnerType: MetafieldOwnerType;
   /** The human readable display value of resource type*/
   display: string;
-  /** The url part to access the resource metafield settings in Shopify admin */
-  metafieldsSettingsUrlPart: string;
-  /** The url part to access the resource metafields in Shopify admin */
-  editMetafieldUrlPart: string;
-  /** The url part to access the owner via Rest Admin API */
-  ownerRestUrlPart: string;
   /** The query operation used to request all owners and their Metafields */
   syncTableGraphQlQueryOperation: string;
   /** The query operation used to request a specific owner and its Metafields */
@@ -108,3 +102,14 @@ export type MetafieldFragmentWithDefinition = MetafieldFieldsFragment & {
     id: Scalars['ID']['output'];
   };
 };
+
+type MetafieldTypes = typeof METAFIELD_TYPES;
+/** A union of all the supported `metafield.type`s */
+export type MetafieldTypeValue = MetafieldTypes[keyof MetafieldTypes];
+
+type MetafieldLegacyTypes = typeof METAFIELD_LEGACY_TYPES;
+/** A union of all the supported legacy `metafield.type`s */
+type MetafieldLegacyTypeValue = MetafieldLegacyTypes[keyof MetafieldLegacyTypes];
+
+/** A union of all the supported modern and legacy `metafield.type`s */
+export type AllMetafieldTypeValue = MetafieldTypeValue | MetafieldLegacyTypeValue;

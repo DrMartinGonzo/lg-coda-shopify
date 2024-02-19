@@ -2,7 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 
-import { AllMetafieldTypeValue, IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
+import { IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
+import { AllMetafieldTypeValue } from '../types/Metafields';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
@@ -18,8 +19,7 @@ import {
 } from './metaobjects-functions';
 import { capitalizeFirstChar, isString } from '../helpers';
 import { MetaobjectFieldInput } from '../types/admin.types';
-import { formatMetafieldValueForApi } from '../metafields/metafields-functions';
-import { mapMetaFieldToSchemaProperty } from '../metafields/metafields-functions';
+import { formatMetafieldValueForApi, mapMetaFieldToSchemaProperty } from '../metafields/metafields-functions';
 import { MetaObjectBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,

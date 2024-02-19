@@ -6,10 +6,11 @@ import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,
-  handleResourceMetafieldsUpdateGraphQl,
   preprendPrefixToMetaFieldKey,
   getMetaFieldFullKey,
   formatMetaFieldValueForSchema,
+  handleResourceMetafieldsUpdateGraphQl,
+  getMetafieldKeyValueSetsFromUpdate,
 } from '../metafields/metafields-functions';
 import {
   GetLocationsQuery,
@@ -129,7 +130,13 @@ export async function handleLocationUpdateJob(
   }
 
   if (prefixedMetafieldFromKeys.length) {
-    subJobs.push(handleResourceMetafieldsUpdateGraphQl(locationGid, 'location', metafieldDefinitions, update, context));
+    subJobs.push(
+      handleResourceMetafieldsUpdateGraphQl(
+        locationGid,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        context
+      )
+    );
   } else {
     subJobs.push(undefined);
   }

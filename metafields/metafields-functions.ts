@@ -3,16 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-import {
-  CACHE_SINGLE_FETCH,
-  FIELD_TYPES,
-  LEGACY_FIELD_TYPES,
-  METAFIELDS_RESOURCE_TYPES,
-  METAFIELD_PREFIX_KEY,
-  NOT_FOUND,
-  REST_DEFAULT_API_VERSION,
-} from '../constants';
-import type { AllMetafieldTypeValue, MetafieldTypeValue } from '../constants';
+import { CACHE_SINGLE_FETCH, METAFIELD_PREFIX_KEY, NOT_FOUND, REST_DEFAULT_API_VERSION } from '../constants';
+import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from './metafields-constants';
+import type { AllMetafieldTypeValue, MetafieldTypeValue } from '../types/Metafields';
 import {
   capitalizeFirstChar,
   extractValueAndUnitFromMeasurementString,
@@ -21,7 +14,7 @@ import {
   unitToShortName,
 } from '../helpers';
 import { GetRequestParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
+import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { CollectionReference } from '../schemas/syncTable/CollectionSchema';
 import { FileReference } from '../schemas/syncTable/FileSchema';
 import { PageReference } from '../schemas/syncTable/PageSchema';
@@ -36,7 +29,6 @@ import {
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
 import { getMetaobjectReferenceSchema } from '../metaobjects/metaobjects-functions';
 
-import { SyncUpdateNoPreviousValues } from '../types/misc';
 import {
   MetafieldFragmentWithDefinition,
   MetafieldRestInput,
@@ -51,8 +43,6 @@ import {
   CurrencyCode,
   MetafieldsSetInput,
   MetafieldDefinition,
-  MetafieldDefinitionValidation,
-  MetafieldDefinitionType,
   MetafieldOwnerType,
 } from '../types/admin.types';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
@@ -66,6 +56,8 @@ import {
 import { MetafieldSchema } from '../schemas/syncTable/MetafieldSchema';
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { RestResource, restResources } from '../types/Rest';
+import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 
 // #endregion
 
@@ -88,12 +80,7 @@ export function makeAutocompleteMetafieldWithDefinitionsKeys(ownerType: Metafiel
 export function mapMetaFieldToSchemaProperty(
   fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFragment
 ): coda.Schema & coda.ObjectSchemaProperty {
-  const typeName = fieldDefinition.type.name;
-  // Check if typeName begins with 'list.' which means it's an array
-  // If it is, remove 'list.' from typeName to get 'raw' field type
-  const isArray = typeName.startsWith('list.');
-  const typeNameNoList = isArray ? typeName.replace('list.', '') : typeName;
-
+  const type = fieldDefinition.type.name;
   let description = fieldDefinition.description;
   // Add full key to description for metafields, not metaobject fields
   if (fieldDefinition.hasOwnProperty('namespace')) {
@@ -101,281 +88,268 @@ export function mapMetaFieldToSchemaProperty(
       (description ? '\n' : '') +
       `field key: [${getMetafieldDefinitionFullKey(fieldDefinition as MetafieldDefinition)}]`;
   }
+  /* We prefix fromKey to be able to determine later wich columns are metafield values */
   const baseProperty = {
     description,
-    // TODO: not sure we need to set the key yet as its also set later in augmentSchemaWithMetafields
     fromKey: fieldDefinition.key,
     fixedId: fieldDefinition.key,
   };
 
-  // NON ARRAY PROPERTIES
-  if (!isArray) {
-    switch (typeName) {
-      // TEXT
-      case FIELD_TYPES.single_line_text_field:
-      case FIELD_TYPES.multi_line_text_field:
-      case FIELD_TYPES.json:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          mutable: true,
-        };
-
-      case FIELD_TYPES.rich_text_field:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          codaType: coda.ValueHintType.Html,
-        };
-
-      // MEASUREMENT
-      case FIELD_TYPES.weight:
-      case FIELD_TYPES.dimension:
-      case FIELD_TYPES.volume:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          mutable: true,
-          description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
-            getUnitMap(typeNameNoList)
-          ).join(', ')}.`,
-        };
-
-      // URL
-      case FIELD_TYPES.url:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          codaType: coda.ValueHintType.Url,
-          mutable: true,
-        };
-
-      // COLOR
-      case FIELD_TYPES.color:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          mutable: true,
-        };
-
-      // RATING
-      case FIELD_TYPES.rating:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Number,
-          // codaType: coda.ValueHintType.Scale,
-          // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
-          mutable: true,
-        };
-
-      // NUMBER
-      case FIELD_TYPES.number_integer:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Number,
-          precision: 0,
-          mutable: true,
-        };
-      case FIELD_TYPES.number_decimal:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Number,
-          mutable: true,
-        };
-
-      // MONEY
-      case FIELD_TYPES.money:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Number,
-          codaType: coda.ValueHintType.Currency,
-          mutable: true,
-        };
-
-      // TRUE_FALSE
-      case FIELD_TYPES.boolean:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Boolean,
-          mutable: true,
-        };
-
-      // DATE_TIME
-      case FIELD_TYPES.date:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          codaType: coda.ValueHintType.Date,
-          mutable: true,
-        };
-
-      case FIELD_TYPES.date_time:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.String,
-          codaType: coda.ValueHintType.DateTime,
-          mutable: true,
-        };
-
-      // REFERENCE
-      case FIELD_TYPES.collection_reference:
-        return {
-          ...baseProperty,
-          ...CollectionReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.metaobject_reference:
-        return {
-          ...baseProperty,
-          ...getMetaobjectReferenceSchema(fieldDefinition),
-          mutable: true,
-        };
-      case FIELD_TYPES.page_reference:
-        return {
-          ...baseProperty,
-          ...PageReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.product_reference:
-        return {
-          ...baseProperty,
-          ...ProductReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.variant_reference:
-        return {
-          ...baseProperty,
-          ...ProductVariantReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.file_reference:
-        return {
-          ...baseProperty,
-          ...FileReference,
-          mutable: true,
-        };
-
-      default:
-        return { ...baseProperty, type: coda.ValueType.String };
-    }
+  // Add eventual choices
+  const choicesValidation = fieldDefinition.validations.find((v) => v.name === 'choices');
+  if (choicesValidation && choicesValidation.value) {
+    baseProperty['codaType'] = coda.ValueHintType.SelectList;
+    baseProperty['options'] = JSON.parse(choicesValidation.value);
   }
 
-  // ARRAY PROPERTIES
-  else {
-    switch (typeName) {
-      case FIELD_TYPES.list_single_line_text_field:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String },
-        } as coda.Schema & coda.ObjectSchemaProperty;
-      case FIELD_TYPES.list_weight:
-      case FIELD_TYPES.list_dimension:
-      case FIELD_TYPES.list_volume:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String },
-          description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
-            getUnitMap(typeNameNoList)
-          ).join(', ')}.`,
-        };
-      case FIELD_TYPES.list_url:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
-        };
-      case FIELD_TYPES.list_color:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String },
-        };
-      case FIELD_TYPES.list_rating:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.Number },
-        };
-      case FIELD_TYPES.list_number_integer:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.Number, precision: 0 },
-        };
-      case FIELD_TYPES.list_number_decimal:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.Number },
-        };
-      case FIELD_TYPES.list_collection_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: CollectionReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.list_metaobject_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: getMetaobjectReferenceSchema(fieldDefinition),
-          mutable: true,
-        };
-      case FIELD_TYPES.list_page_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: PageReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.list_product_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: ProductReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.list_variant_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: ProductVariantReference,
-          mutable: true,
-        };
-      case FIELD_TYPES.list_file_reference:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: FileReference,
-          mutable: true,
-        };
+  switch (type) {
+    // Simple strings
+    case METAFIELD_TYPES.color:
+    case METAFIELD_TYPES.json:
+    case METAFIELD_TYPES.multi_line_text_field:
+    case METAFIELD_TYPES.single_line_text_field:
+    case METAFIELD_LEGACY_TYPES.string:
+    case METAFIELD_LEGACY_TYPES.json_string:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_color:
+    case METAFIELD_TYPES.list_single_line_text_field:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String },
+      } as coda.Schema & coda.ObjectSchemaProperty;
 
-      // DATE_TIME
-      case FIELD_TYPES.list_date:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Date },
-        };
+    // Rich text
+    case METAFIELD_TYPES.rich_text_field:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        codaType: coda.ValueHintType.Html,
+      };
 
-      case FIELD_TYPES.list_date_time:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
-        };
+    // MEASUREMENT
+    case METAFIELD_TYPES.weight:
+    case METAFIELD_TYPES.dimension:
+    case METAFIELD_TYPES.volume:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        mutable: true,
+        description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(getUnitMap(type)).join(
+          ', '
+        )}.`,
+      };
+    case METAFIELD_TYPES.list_weight:
+    case METAFIELD_TYPES.list_dimension:
+    case METAFIELD_TYPES.list_volume:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String },
+        description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
+          getUnitMap(type.replace('list.', ''))
+        ).join(', ')}.`,
+      };
 
-      default:
-        return {
-          ...baseProperty,
-          type: coda.ValueType.Array,
-          items: { type: coda.ValueType.String },
-        };
-    }
+    // URL
+    case METAFIELD_TYPES.url:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        codaType: coda.ValueHintType.Url,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_url:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+      };
+
+    // RATING
+    case METAFIELD_TYPES.rating:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Number,
+        // codaType: coda.ValueHintType.Scale,
+        // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_rating:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.Number },
+      };
+
+    // NUMBER
+    case METAFIELD_TYPES.number_integer:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Number,
+        precision: 0,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_number_integer:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.Number, precision: 0 },
+      };
+
+    case METAFIELD_TYPES.number_decimal:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Number,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_number_decimal:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.Number },
+      };
+
+    // MONEY
+    case METAFIELD_TYPES.money:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Number,
+        codaType: coda.ValueHintType.Currency,
+        mutable: true,
+      };
+
+    // TRUE_FALSE
+    case METAFIELD_TYPES.boolean:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Boolean,
+        mutable: true,
+      };
+
+    // DATE_TIME
+    case METAFIELD_TYPES.date:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        codaType: coda.ValueHintType.Date,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_date:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Date },
+      };
+
+    case METAFIELD_TYPES.date_time:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.String,
+        codaType: coda.ValueHintType.DateTime,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_date_time:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+      };
+
+    // REFERENCES
+    case METAFIELD_TYPES.collection_reference:
+      return {
+        ...baseProperty,
+        ...CollectionReference,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_collection_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: CollectionReference,
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.file_reference:
+      return {
+        ...baseProperty,
+        ...FileReference,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_file_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: FileReference,
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.metaobject_reference:
+      return {
+        ...baseProperty,
+        ...getMetaobjectReferenceSchema(fieldDefinition),
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_metaobject_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: getMetaobjectReferenceSchema(fieldDefinition),
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.page_reference:
+      return {
+        ...baseProperty,
+        ...PageReference,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_page_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: PageReference,
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.product_reference:
+      return {
+        ...baseProperty,
+        ...ProductReference,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_product_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: ProductReference,
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.variant_reference:
+      return {
+        ...baseProperty,
+        ...ProductVariantReference,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_variant_reference:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: ProductVariantReference,
+        mutable: true,
+      };
+
+    default:
+      break;
   }
+
+  throw new Error(`Unknown metafield type: ${type}`);
 }
 
 export async function augmentSchemaWithMetafields(
@@ -388,24 +362,8 @@ export async function augmentSchemaWithMetafields(
   const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
   metafieldDefinitions.forEach((metafieldDefinition) => {
     const name = accents.remove(metafieldDefinition.name);
-    const fullKey = getMetafieldDefinitionFullKey(metafieldDefinition);
-    const matchingSchemaKey = METAFIELD_PREFIX_KEY + fullKey;
     const propName = `Meta ${capitalizeFirstChar(name)}`;
-
-    /* We prefix fromKey to be able to determine later wich columns are metafield values */
-    schema.properties[propName] = {
-      ...mapMetaFieldToSchemaProperty(metafieldDefinition),
-      fromKey: matchingSchemaKey,
-      fixedId: matchingSchemaKey,
-      // displayName: fullKey,
-    };
-    // Add eventual choices
-    const choicesValidation = metafieldDefinition.validations.find((v) => v.name === 'choices');
-    if (choicesValidation && choicesValidation.value) {
-      schema.properties[propName]['codaType'] = coda.ValueHintType.SelectList;
-      schema.properties[propName]['options'] = JSON.parse(choicesValidation.value);
-    }
-
+    schema.properties[propName] = mapMetaFieldToSchemaProperty(metafieldDefinition);
     // always feature metafields properties so that the user know they are synced
     schema.featuredProperties.push(propName);
   });
@@ -413,39 +371,47 @@ export async function augmentSchemaWithMetafields(
   return schema;
 }
 
-export function getResourceMetafieldsRestUrl(resourceType: string, resourceId: number, context: coda.ExecutionContext) {
-  return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${resourceType}/${resourceId}/metafields.json`;
+function getResourceMetafieldsRestApiUrl(context: coda.ExecutionContext, restResource: RestResource, ownerId: number) {
+  return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restResource.plural}/${ownerId}/metafields.json`;
 }
 
-function getMetafieldRestEndpointFromRestResourceType(resourceType) {
-  switch (resourceType) {
-    case 'article':
-      return 'articles';
-    case 'blog':
-      return 'blogs';
-    case 'collection':
-      return 'collections';
-    case 'customer':
-      return 'customers';
-    case 'draft_order':
-      return 'draft_orders';
-    case 'location':
-      return 'locations';
-    case 'order':
-      return 'orders';
-    case 'page':
-      return 'pages';
-    case 'product_image':
-      return 'product_images';
-    case 'product':
-      return 'products';
-    case 'shop':
-      return 'shop';
-    case 'variant':
-      return 'variants';
+function getResourceMetafieldsAdminUrl(
+  context: coda.ExecutionContext,
+  restResource: RestResource,
+  hasMetafieldDefinition: boolean,
+  ownerId: number,
+  parentOwnerId?: number
+) {
+  let admin_url: string;
+  switch (restResource.singular) {
+    // TODO
+    case restResources.Article.singular:
+      break;
+
+    case restResources.Blog.singular:
+    case restResources.Collection.singular:
+    case restResources.Customer.singular:
+    case restResources.Order.singular:
+    case restResources.Page.singular:
+    case restResources.Product.singular:
+      admin_url = `${context.endpoint}/admin/${restResource.plural}/${ownerId}/metafields`;
+      break;
+
+    case restResources.Location.singular:
+      admin_url = `${context.endpoint}/admin/settings/${restResource.plural}/${ownerId}/metafields`;
+      break;
+
+    case restResources.ProductVariant.singular:
+      admin_url = `${context.endpoint}/admin/${restResources.Product.plural}/${parentOwnerId}/${restResource.plural}/${ownerId}/metafields`;
+      break;
+
     default:
-      return resourceType;
+      break;
   }
+  if (admin_url && !hasMetafieldDefinition) {
+    admin_url += `/unstructured`;
+  }
+  return admin_url;
 }
 
 /**
@@ -461,7 +427,7 @@ export const getValidResourceMetafieldsSyncTableDefinition = (
   return definition;
 };
 
-export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
+function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
   const metafieldDefinition = metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
   return metafieldDefinition;
@@ -471,16 +437,16 @@ export function filterMetafieldDefinitionWithReference(metafieldDefinition: Meta
   return metafieldDefinition.type.name.indexOf('_reference') !== -1;
 }
 
-export const deleteMetafieldsByKeysRest = async (
-  resourceMetafieldsUrl: string,
-  metafieldFromKeys: string[],
+const deleteMetafieldsByKeysRest = async (
+  metafieldsToDelete: CodaMetafieldKeyValueSet[],
+  ownerId: number,
+  ownerResource: RestResource,
   context: coda.ExecutionContext
 ) => {
-  const response = await fetchMetafieldsRest(resourceMetafieldsUrl, {}, context, 0);
+  const response = await fetchMetafieldsRest(ownerId, ownerResource, {}, context, 0);
   if (response && response.body.metafields) {
-    const promises = metafieldFromKeys.map(async (fromKey) => {
-      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
+    const promises = metafieldsToDelete.map(async (metafieldKeyValueSet) => {
+      const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKeyValueSet.key);
       const metafield = response.body.metafields.find((m) => m.key === metaKey && m.namespace === metaNamespace);
       if (metafield) {
         try {
@@ -491,7 +457,7 @@ export const deleteMetafieldsByKeysRest = async (
             const statusError = error as coda.StatusCodeError;
             if (statusError.statusCode === 404) {
               console.error(
-                `Metafield ${realFromKey} not found at url ${resourceMetafieldsUrl}. Possibly already deleted.`
+                `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with id ${ownerId}. Possibly already deleted.`
               );
             }
           }
@@ -499,7 +465,9 @@ export const deleteMetafieldsByKeysRest = async (
           throw error;
         }
       } else {
-        console.error(`Metafield ${realFromKey} not found at url ${resourceMetafieldsUrl}. Possibly already deleted.`);
+        console.error(
+          `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with id ${ownerId}. Possibly already deleted.`
+        );
       }
 
       // If no errors were thrown, then the metafield was deleted.
@@ -507,8 +475,8 @@ export const deleteMetafieldsByKeysRest = async (
         id: metafield?.id,
         namespace: metaNamespace,
         key: metaKey,
-        fullKey: realFromKey,
-        prefixedFullKey: fromKey,
+        fullKey: metafieldKeyValueSet.key,
+        prefixedFullKey: preprendPrefixToMetaFieldKey(metafieldKeyValueSet.key),
       };
     });
 
@@ -518,33 +486,26 @@ export const deleteMetafieldsByKeysRest = async (
 };
 
 export async function handleResourceMetafieldsUpdateGraphQl(
-  resourceGid: string,
-  // TODO: remove dependency on this variable resourceType
-  resourceType: string,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  update: SyncUpdateNoPreviousValues,
+  ownerGid: string,
+  metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
   context: coda.ExecutionContext
 ): Promise<{ [key: string]: any }> {
   let obj = {};
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const prefixedMetafieldsToDelete = prefixedMetafieldFromKeys.filter((fromKey) => {
-    const value = update.newValue[fromKey] as any;
-    return !value || value === '';
+  const graphQlResource = graphQlGidToResourceName(ownerGid);
+  const metafieldsToDelete = metafieldKeyValueSets.filter((set) => {
+    return set.value === null;
   });
-  const prefixedMetafieldsToUpdate = prefixedMetafieldFromKeys.filter(
-    (fromKey) => prefixedMetafieldsToDelete.includes(fromKey) === false
-  );
+  const metafieldsToUpdate = metafieldKeyValueSets.filter((set) => {
+    return set.value && set.value !== null;
+  });
 
-  if (prefixedMetafieldsToDelete.length) {
+  if (metafieldsToDelete.length) {
+    const restResource = getRestResourceFromGraphQlResourceType(graphQlResource);
     const deletedMetafields = await deleteMetafieldsByKeysRest(
-      getResourceMetafieldsRestUrl(
-        getMetafieldRestEndpointFromRestResourceType(resourceType),
-        graphQlGidToId(resourceGid),
-        context
-      ),
-      prefixedMetafieldsToDelete,
+      metafieldsToDelete,
+      graphQlGidToId(ownerGid),
+      restResource,
       context
     );
     if (deletedMetafields.length) {
@@ -554,14 +515,10 @@ export async function handleResourceMetafieldsUpdateGraphQl(
     }
   }
 
-  if (prefixedMetafieldsToUpdate.length) {
-    const metafieldsSetInputs = formatMetafieldInputsFromResourceUpdate(
-      update,
-      prefixedMetafieldFromKeys,
-      metafieldDefinitions,
-      'forGraphql',
-      resourceGid
-    );
+  if (metafieldsToUpdate.length) {
+    const metafieldsSetInputs = metafieldsToUpdate
+      .map((m) => formatMetafieldGraphQlInputFromMetafieldKeyValueSet(ownerGid, m))
+      .filter((m) => m);
 
     const { response: updateResponse } = await updateMetafieldsGraphQl(metafieldsSetInputs, context);
     if (updateResponse) {
@@ -581,32 +538,23 @@ export async function handleResourceMetafieldsUpdateGraphQl(
 // Pour les ressources dont les metafields ne peuvent pas être update
 // directement dans la requête de la ressource mais seulement par des requêtes
 // spécifiques pour chaque metafield
-// TODO: Il faudrait renommer la fonction poiur quelque chose de plus descriptif
-// TODO: faire la fonction équivalente quand on peut update en un seul appel ? CAD une fonction qui gere l'update de la ressource et de ses metafields et quio gere aussi la suppression des metafields
+// TODO: faire la fonction équivalente quand on peut update en un seul appel ? CAD une fonction qui gere l'update de la ressource et de ses metafields et qui gere aussi la suppression des metafields
 export async function handleResourceMetafieldsUpdateRest(
-  resourceMetafieldsUrl: string,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  update: SyncUpdateNoPreviousValues,
+  ownerId: number,
+  ownerResource: RestResource,
+  metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
   context: coda.ExecutionContext
 ): Promise<{ [key: string]: any }> {
   let obj = {};
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-
-  const prefixedMetafieldsToDelete = prefixedMetafieldFromKeys.filter((fromKey) => {
-    const value = update.newValue[fromKey] as any;
-    return !value || value === '';
+  const metafieldsToDelete = metafieldKeyValueSets.filter((set) => {
+    return set.value === null;
   });
-  const prefixedMetafieldsToUpdate = prefixedMetafieldFromKeys.filter(
-    (fromKey) => prefixedMetafieldsToDelete.includes(fromKey) === false
-  );
+  const metafieldsToUpdate = metafieldKeyValueSets.filter((set) => {
+    return set.value && set.value !== null;
+  });
 
-  if (prefixedMetafieldsToDelete.length) {
-    const deletedMetafields = await deleteMetafieldsByKeysRest(
-      resourceMetafieldsUrl,
-      prefixedMetafieldsToDelete,
-      context
-    );
+  if (metafieldsToDelete.length) {
+    const deletedMetafields = await deleteMetafieldsByKeysRest(metafieldsToDelete, ownerId, ownerResource, context);
     if (deletedMetafields.length) {
       deletedMetafields.forEach((m) => {
         obj[m.prefixedFullKey] = undefined;
@@ -614,20 +562,20 @@ export async function handleResourceMetafieldsUpdateRest(
     }
   }
 
-  if (prefixedMetafieldsToUpdate.length) {
-    const metafieldsSetInputs = formatMetafieldInputsFromResourceUpdate(
-      update,
-      prefixedMetafieldFromKeys,
-      metafieldDefinitions,
-      'forRest'
-    );
-
+  if (metafieldsToUpdate.length) {
+    const metafieldRestInputs = metafieldsToUpdate.map(formatMetafieldRestInputFromMetafieldKeyValueSet);
     const completed = await Promise.allSettled(
-      metafieldsSetInputs.map((input) => {
+      metafieldRestInputs.map((input) => {
+        const url = getResourceMetafieldsRestApiUrl(context, ownerResource, ownerId);
         const payload = {
-          metafield: { namespace: input.namespace, key: input.key, type: input.type, value: input.value },
+          metafield: {
+            namespace: input.namespace,
+            key: input.key,
+            type: input.type,
+            value: input.value,
+          },
         };
-        return makePostRequest({ url: resourceMetafieldsUrl, payload }, context);
+        return makePostRequest({ url, payload }, context);
       })
     );
 
@@ -658,7 +606,7 @@ export async function handleResourceMetafieldsUpdateRest(
  * This function checks if a given metafield key is the 'full' one or not.
  * When querying metafields via their keys, GraphQl returns the 'full' key, i.e. `${namespace}.${key}`.
  */
-export const hasMetafieldFullKey = (metafield: MetafieldFieldsFragment | MetafieldRest | MetafieldDefinitionFragment) =>
+const hasMetafieldFullKey = (metafield: MetafieldFieldsFragment | MetafieldRest | MetafieldDefinitionFragment) =>
   metafield.key.indexOf(metafield.namespace) === 0;
 
 /**
@@ -668,7 +616,7 @@ export function maybeHasMetaFieldKeys(keys: string[]) {
   return keys.some((key) => key.indexOf('.') !== -1);
 }
 
-export const getMetafieldDefinitionFullKey = (metafieldDefinition: MetafieldDefinitionFragment) =>
+const getMetafieldDefinitionFullKey = (metafieldDefinition: MetafieldDefinitionFragment) =>
   `${metafieldDefinition.namespace}.${metafieldDefinition.key}`;
 
 export function getMetaFieldFullKey(metafield: MetafieldFieldsFragment | MetafieldRest | MetafieldDefinitionFragment) {
@@ -728,73 +676,73 @@ export function formatMetaFieldValueForSchema(
   if (typeof parsedValue === 'undefined' || parsedValue === null || parsedValue === '') return;
 
   switch (metafield.type) {
-    case FIELD_TYPES.single_line_text_field:
-    case FIELD_TYPES.multi_line_text_field:
-    case FIELD_TYPES.url:
-    case FIELD_TYPES.color:
-    case FIELD_TYPES.number_integer:
-    case FIELD_TYPES.number_decimal:
-    case FIELD_TYPES.date:
-    case FIELD_TYPES.date_time:
-    case FIELD_TYPES.boolean:
-    case LEGACY_FIELD_TYPES.string:
-    case LEGACY_FIELD_TYPES.integer:
-    case FIELD_TYPES.list_single_line_text_field:
-    case FIELD_TYPES.list_url:
-    case FIELD_TYPES.list_color:
-    case FIELD_TYPES.list_number_integer:
-    case FIELD_TYPES.list_number_decimal:
-    case FIELD_TYPES.list_date:
-    case FIELD_TYPES.list_date_time:
+    case METAFIELD_TYPES.single_line_text_field:
+    case METAFIELD_TYPES.multi_line_text_field:
+    case METAFIELD_TYPES.url:
+    case METAFIELD_TYPES.color:
+    case METAFIELD_TYPES.number_integer:
+    case METAFIELD_TYPES.number_decimal:
+    case METAFIELD_TYPES.date:
+    case METAFIELD_TYPES.date_time:
+    case METAFIELD_TYPES.boolean:
+    case METAFIELD_LEGACY_TYPES.string:
+    case METAFIELD_LEGACY_TYPES.integer:
+    case METAFIELD_TYPES.list_single_line_text_field:
+    case METAFIELD_TYPES.list_url:
+    case METAFIELD_TYPES.list_color:
+    case METAFIELD_TYPES.list_number_integer:
+    case METAFIELD_TYPES.list_number_decimal:
+    case METAFIELD_TYPES.list_date:
+    case METAFIELD_TYPES.list_date_time:
       return parsedValue;
 
-    case FIELD_TYPES.rich_text_field:
+    case METAFIELD_TYPES.rich_text_field:
       return convertSchemaToHtml(parsedValue);
 
-    case FIELD_TYPES.json:
-    case LEGACY_FIELD_TYPES.json_string:
+    case METAFIELD_TYPES.json:
+    case METAFIELD_LEGACY_TYPES.json_string:
       return JSON.stringify(parsedValue);
 
     // RATING
-    case FIELD_TYPES.rating:
+    case METAFIELD_TYPES.rating:
       return parsedValue.value;
-    case FIELD_TYPES.list_rating:
+    case METAFIELD_TYPES.list_rating:
       return parsedValue.map((v) => v.value);
 
     // MONEY
-    case FIELD_TYPES.money:
+    case METAFIELD_TYPES.money:
       return parsedValue.amount;
 
     // REFERENCE
-    case FIELD_TYPES.file_reference:
+    case METAFIELD_TYPES.file_reference:
       return { id: parsedValue, name: NOT_FOUND };
-    case FIELD_TYPES.list_file_reference:
+    case METAFIELD_TYPES.list_file_reference:
       return parsedValue.map((v) => ({ id: v, name: NOT_FOUND }));
 
-    case FIELD_TYPES.metaobject_reference:
+    case METAFIELD_TYPES.metaobject_reference:
       return { id: graphQlGidToId(parsedValue), name: NOT_FOUND };
-    case FIELD_TYPES.list_metaobject_reference:
+    case METAFIELD_TYPES.list_metaobject_reference:
       return parsedValue.map((v) => ({ id: graphQlGidToId(v), name: NOT_FOUND }));
 
-    case FIELD_TYPES.page_reference:
-    case FIELD_TYPES.collection_reference:
-    case FIELD_TYPES.product_reference:
-    case FIELD_TYPES.variant_reference:
+    case METAFIELD_TYPES.page_reference:
+    case METAFIELD_TYPES.collection_reference:
+    case METAFIELD_TYPES.product_reference:
+    case METAFIELD_TYPES.variant_reference:
       return { id: graphQlGidToId(parsedValue), title: NOT_FOUND };
-    case FIELD_TYPES.list_page_reference:
-    case FIELD_TYPES.list_collection_reference:
-    case FIELD_TYPES.list_product_reference:
-    case FIELD_TYPES.list_variant_reference:
+    case METAFIELD_TYPES.list_page_reference:
+    case METAFIELD_TYPES.list_collection_reference:
+    case METAFIELD_TYPES.list_product_reference:
+    case METAFIELD_TYPES.list_variant_reference:
       return parsedValue.map((v) => ({ id: graphQlGidToId(v), title: NOT_FOUND }));
 
     // MEASUREMENT
-    case FIELD_TYPES.weight:
-    case FIELD_TYPES.dimension:
-    case FIELD_TYPES.volume:
+    case METAFIELD_TYPES.weight:
+    case METAFIELD_TYPES.dimension:
+    case METAFIELD_TYPES.volume:
       return `${parsedValue.value}${unitToShortName(parsedValue.unit)}`;
-    case FIELD_TYPES.list_weight:
-    case FIELD_TYPES.list_dimension:
-    case FIELD_TYPES.list_volume:
+    case METAFIELD_TYPES.list_weight:
+    case METAFIELD_TYPES.list_dimension:
+    case METAFIELD_TYPES.list_volume:
       return parsedValue.map((v) => `${v.value}${unitToShortName(v.unit)}`);
 
     default: {
@@ -810,6 +758,7 @@ export function formatMetaFieldValueForSchema(
 export function formatMetafieldForSchemaFromGraphQlApi(
   metafieldNode: MetafieldFragmentWithDefinition,
   ownerNodeGid: string,
+  parentOwnerNodeGid: string,
   resourceMetafieldsSyncTableDefinition: ResourceMetafieldsSyncTableDefinition,
   context: coda.ExecutionContext,
   includeHelperColumns = true
@@ -820,7 +769,10 @@ export function formatMetafieldForSchemaFromGraphQlApi(
     key = metafieldNode.key.split('.')[1];
   }
 
+  const restResource = getRestResourceFromGraphQlResourceType(resourceMetafieldsSyncTableDefinition.key);
   const ownerId = graphQlGidToId(ownerNodeGid);
+  const parentOwnerId = parentOwnerNodeGid ? graphQlGidToId(parentOwnerNodeGid) : undefined;
+  const hasMetafieldDefinition = !!metafieldNode.definition;
 
   let obj: coda.SchemaType<typeof MetafieldSchema> = {
     admin_graphql_api_id: metafieldNode.id,
@@ -835,80 +787,65 @@ export function formatMetafieldForSchemaFromGraphQlApi(
     created_at: metafieldNode.createdAt,
     updated_at: metafieldNode.updatedAt,
     hasDefinition: !!metafieldNode.definition,
+    admin_url: getResourceMetafieldsAdminUrl(context, restResource, hasMetafieldDefinition, ownerId, parentOwnerId),
   };
 
-  const { editMetafieldUrlPart } = resourceMetafieldsSyncTableDefinition;
-  switch (resourceMetafieldsSyncTableDefinition.metafieldOwnerType) {
-    case MetafieldOwnerType.Article:
+  switch (resourceMetafieldsSyncTableDefinition.key) {
+    // TODO
+    case GraphQlResource.Article:
       break;
-    case MetafieldOwnerType.Blog:
-      // obj['owner'] = {
-      //   id: ownerId,
-      //   title: NOT_FOUND,
-      // };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
+    // TODO
+    case GraphQlResource.Blog:
       break;
-    case MetafieldOwnerType.Collection:
+    case GraphQlResource.Collection:
       obj['owner'] = {
         id: ownerId,
         title: NOT_FOUND,
       };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
       break;
-    case MetafieldOwnerType.Customer:
+    case GraphQlResource.Customer:
       obj['owner'] = {
         id: ownerId,
         title: NOT_FOUND,
       };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
       break;
-    case MetafieldOwnerType.Location:
+    case GraphQlResource.Location:
       obj['owner'] = {
         id: ownerId,
         name: NOT_FOUND,
       };
-      obj.admin_url = `${context.endpoint}/admin/settings/${editMetafieldUrlPart}/${ownerId}/metafields`;
       break;
-    case MetafieldOwnerType.Order:
+    case GraphQlResource.Order:
       obj['owner'] = {
         id: ownerId,
         name: NOT_FOUND,
       };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
       break;
-    case MetafieldOwnerType.Page:
-      // obj['owner'] = {
-      //   id: ownerId,
-      //   title: NOT_FOUND,
-      // };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
+    // TODO
+    case GraphQlResource.Page:
       break;
-    case MetafieldOwnerType.Product:
+    case GraphQlResource.Product:
       obj['owner'] = {
         id: ownerId,
         title: NOT_FOUND,
       };
-      obj.admin_url = `${context.endpoint}/admin/${editMetafieldUrlPart}/${ownerId}/metafields`;
       break;
-    case MetafieldOwnerType.Productvariant:
+    case GraphQlResource.ProductVariant:
       break;
 
     default:
       break;
   }
-  if (obj.admin_url && !metafieldNode.definition) {
-    obj.admin_url += `/unstructured`;
-  }
 
   if (includeHelperColumns) {
     switch (metafieldNode.type) {
-      case FIELD_TYPES.collection_reference:
+      case METAFIELD_TYPES.collection_reference:
         obj.editCollectionReference = {
           id: graphQlGidToId(metafieldNode.value),
           title: NOT_FOUND,
         };
         break;
-      case FIELD_TYPES.list_collection_reference:
+      case METAFIELD_TYPES.list_collection_reference:
         const collectionValues = maybeParseJson(metafieldNode.value);
         if (Array.isArray(collectionValues)) {
           obj.editCollectionReferenceList = collectionValues.map((v) => {
@@ -920,13 +857,13 @@ export function formatMetafieldForSchemaFromGraphQlApi(
         }
         break;
 
-      case FIELD_TYPES.file_reference:
+      case METAFIELD_TYPES.file_reference:
         obj.editFileReference = {
           id: metafieldNode.value,
           name: NOT_FOUND,
         };
         break;
-      case FIELD_TYPES.list_file_reference:
+      case METAFIELD_TYPES.list_file_reference:
         const fileValues = maybeParseJson(metafieldNode.value);
         if (Array.isArray(fileValues)) {
           obj.editFileReferenceList = fileValues.map((v) => {
@@ -938,13 +875,13 @@ export function formatMetafieldForSchemaFromGraphQlApi(
         }
         break;
 
-      case FIELD_TYPES.page_reference:
+      case METAFIELD_TYPES.page_reference:
         obj.editPageReference = {
           id: graphQlGidToId(metafieldNode.value),
           title: NOT_FOUND,
         };
         break;
-      case FIELD_TYPES.list_page_reference:
+      case METAFIELD_TYPES.list_page_reference:
         const pageValues = maybeParseJson(metafieldNode.value);
         if (Array.isArray(pageValues)) {
           obj.editPageReferenceList = pageValues.map((v) => {
@@ -956,13 +893,13 @@ export function formatMetafieldForSchemaFromGraphQlApi(
         }
         break;
 
-      case FIELD_TYPES.product_reference:
+      case METAFIELD_TYPES.product_reference:
         obj.editProductReference = {
           id: graphQlGidToId(metafieldNode.value),
           title: NOT_FOUND,
         };
         break;
-      case FIELD_TYPES.list_product_reference:
+      case METAFIELD_TYPES.list_product_reference:
         const productValues = maybeParseJson(metafieldNode.value);
         if (Array.isArray(productValues)) {
           obj.editProductReferenceList = productValues.map((v) => {
@@ -974,13 +911,13 @@ export function formatMetafieldForSchemaFromGraphQlApi(
         }
         break;
 
-      case FIELD_TYPES.variant_reference:
+      case METAFIELD_TYPES.variant_reference:
         obj.editProductVariantReference = {
           id: graphQlGidToId(metafieldNode.value),
           title: NOT_FOUND,
         };
         break;
-      case FIELD_TYPES.list_variant_reference:
+      case METAFIELD_TYPES.list_variant_reference:
         const productVariantValues = maybeParseJson(metafieldNode.value);
         if (Array.isArray(productVariantValues)) {
           obj.editProductVariantReferenceList = productVariantValues.map((v) => {
@@ -1002,6 +939,79 @@ export function formatMetafieldForSchemaFromGraphQlApi(
 // #endregion
 
 // #region Format for API
+/**
+ * Permet de normaliser les metafields d'une two-way sync update de Coda en une
+ * liste de CodaMetafieldKeyValueSet
+ */
+export function getMetafieldKeyValueSetsFromUpdate(
+  prefixedMetafieldFromKeys: string[],
+  updateNewValue: any,
+  metafieldDefinitions: MetafieldDefinitionFragment[]
+) {
+  return prefixedMetafieldFromKeys.map((fromKey) => {
+    const value = updateNewValue[fromKey] as any;
+    const realFromKey = removePrefixFromMetaFieldKey(fromKey);
+    const metafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+    let formattedValue;
+    try {
+      formattedValue = formatMetafieldValueForApi(
+        value,
+        metafieldDefinition.type.name as AllMetafieldTypeValue,
+        metafieldDefinition.validations
+      );
+    } catch (error) {
+      throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+    }
+
+    return {
+      key: realFromKey,
+      value: formattedValue === undefined || formattedValue === '' ? null : formattedValue,
+      type: metafieldDefinition.type.name as MetafieldTypeValue,
+    } as CodaMetafieldKeyValueSet;
+  });
+}
+
+/**
+ * Formate un objet MetafieldRestInput pour Rest Admin API
+ * depuis un paramètre Coda utilisant une formule `MetafieldKeyValueSet(…)`
+ */
+export function formatMetafieldRestInputFromMetafieldKeyValueSet(metafieldKeyValueSet: CodaMetafieldKeyValueSet) {
+  const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKeyValueSet.key);
+  if (metafieldKeyValueSet.value !== null) {
+    return {
+      namespace: metaNamespace,
+      key: metaKey,
+      value:
+        typeof metafieldKeyValueSet.value === 'string'
+          ? metafieldKeyValueSet.value
+          : JSON.stringify(metafieldKeyValueSet.value),
+      type: metafieldKeyValueSet.type,
+    } as MetafieldRestInput;
+  }
+}
+
+/**
+ * Formate un objet MetafieldRestInput pour GraphQL Admin API
+ * depuis un paramètre Coda utilisant une formule `MetafieldKeyValueSet(…)`
+ */
+export function formatMetafieldGraphQlInputFromMetafieldKeyValueSet(
+  ownerGid: string,
+  metafieldKeyValueSet: CodaMetafieldKeyValueSet
+) {
+  const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKeyValueSet.key);
+  if (metafieldKeyValueSet.value !== null) {
+    return {
+      ownerId: ownerGid,
+      key: metaKey,
+      namespace: metaNamespace,
+      type: metafieldKeyValueSet.type,
+      value:
+        typeof metafieldKeyValueSet.value === 'string'
+          ? metafieldKeyValueSet.value
+          : JSON.stringify(metafieldKeyValueSet.value),
+    } as MetafieldsSetInput;
+  }
+}
 
 /**
  * Format a Rating cell value for GraphQL Api
@@ -1059,84 +1069,84 @@ export function formatMetafieldValueForApi(
   validations?: MetafieldDefinitionFragment['validations']
 ): string {
   switch (type) {
-    case FIELD_TYPES.single_line_text_field:
-    case FIELD_TYPES.multi_line_text_field:
-    case FIELD_TYPES.url:
-    case FIELD_TYPES.color:
-    case FIELD_TYPES.number_integer:
-    case FIELD_TYPES.number_decimal:
-    case FIELD_TYPES.date:
-    case FIELD_TYPES.date_time:
-    case FIELD_TYPES.boolean:
-    case FIELD_TYPES.json:
-    case LEGACY_FIELD_TYPES.string:
-    case LEGACY_FIELD_TYPES.integer:
-    case LEGACY_FIELD_TYPES.json_string:
+    case METAFIELD_TYPES.single_line_text_field:
+    case METAFIELD_TYPES.multi_line_text_field:
+    case METAFIELD_TYPES.url:
+    case METAFIELD_TYPES.color:
+    case METAFIELD_TYPES.number_integer:
+    case METAFIELD_TYPES.number_decimal:
+    case METAFIELD_TYPES.date:
+    case METAFIELD_TYPES.date_time:
+    case METAFIELD_TYPES.boolean:
+    case METAFIELD_TYPES.json:
+    case METAFIELD_LEGACY_TYPES.string:
+    case METAFIELD_LEGACY_TYPES.integer:
+    case METAFIELD_LEGACY_TYPES.json_string:
       return value;
 
-    case FIELD_TYPES.list_single_line_text_field:
-    case FIELD_TYPES.list_url:
-    case FIELD_TYPES.list_color:
-    case FIELD_TYPES.list_number_integer:
-    case FIELD_TYPES.list_number_decimal:
-    case FIELD_TYPES.list_date:
-    case FIELD_TYPES.list_date_time:
+    case METAFIELD_TYPES.list_single_line_text_field:
+    case METAFIELD_TYPES.list_url:
+    case METAFIELD_TYPES.list_color:
+    case METAFIELD_TYPES.list_number_integer:
+    case METAFIELD_TYPES.list_number_decimal:
+    case METAFIELD_TYPES.list_date:
+    case METAFIELD_TYPES.list_date_time:
       return JSON.stringify(value);
 
     // NOT SUPPORTED
-    case FIELD_TYPES.rich_text_field:
+    case METAFIELD_TYPES.rich_text_field:
       break;
 
     // RATING
-    case FIELD_TYPES.rating:
+    case METAFIELD_TYPES.rating:
       return JSON.stringify(formatRatingFieldForApi(value, validations));
-    case FIELD_TYPES.list_rating:
+    case METAFIELD_TYPES.list_rating:
       return JSON.stringify(value.map((v) => formatRatingFieldForApi(v, validations)));
 
     // MONEY
-    case FIELD_TYPES.money:
+    case METAFIELD_TYPES.money:
       // TODO: dynamic get currency_code from shop
       return JSON.stringify(formatMoneyFieldForApi(value, 'EUR' as CurrencyCode));
 
     // REFERENCE
-    case FIELD_TYPES.page_reference:
+    case METAFIELD_TYPES.page_reference:
       return idToGraphQlGid(GraphQlResource.Page, value?.id);
-    case FIELD_TYPES.list_page_reference:
+    case METAFIELD_TYPES.list_page_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.Page, v?.id)));
 
-    case FIELD_TYPES.file_reference:
+    case METAFIELD_TYPES.file_reference:
       return value?.id;
-    case FIELD_TYPES.list_file_reference:
+    case METAFIELD_TYPES.list_file_reference:
       return JSON.stringify(value.map((v) => v?.id));
 
-    case FIELD_TYPES.metaobject_reference:
+    case METAFIELD_TYPES.metaobject_reference:
       return idToGraphQlGid(GraphQlResource.Metaobject, value?.id);
-    case FIELD_TYPES.list_metaobject_reference:
+    case METAFIELD_TYPES.list_metaobject_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.Metaobject, v?.id)));
 
-    case FIELD_TYPES.collection_reference:
+    case METAFIELD_TYPES.collection_reference:
       return idToGraphQlGid(GraphQlResource.Collection, value?.id);
-    case FIELD_TYPES.list_collection_reference:
+    case METAFIELD_TYPES.list_collection_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.Collection, v?.id)));
 
-    case FIELD_TYPES.product_reference:
+    case METAFIELD_TYPES.product_reference:
       return idToGraphQlGid(GraphQlResource.Product, value?.id);
-    case FIELD_TYPES.list_product_reference:
+    case METAFIELD_TYPES.list_product_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.Product, v?.id)));
 
-    case FIELD_TYPES.variant_reference:
+    case METAFIELD_TYPES.variant_reference:
       return idToGraphQlGid(GraphQlResource.ProductVariant, value?.id);
-    case FIELD_TYPES.list_variant_reference:
+    case METAFIELD_TYPES.list_variant_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.ProductVariant, v?.id)));
 
     // MEASUREMENT
-    case FIELD_TYPES.weight:
-    case FIELD_TYPES.dimension:
-    case FIELD_TYPES.volume:
+    case METAFIELD_TYPES.weight:
+    case METAFIELD_TYPES.dimension:
+    case METAFIELD_TYPES.volume:
       return JSON.stringify(formatMeasurementFieldForApi(value, type));
-    case FIELD_TYPES.list_weight:
-    case FIELD_TYPES.list_dimension:
-    case FIELD_TYPES.list_volume:
+    case METAFIELD_TYPES.list_weight:
+    case METAFIELD_TYPES.list_dimension:
+    case METAFIELD_TYPES.list_volume:
       return JSON.stringify(value.map((v) => JSON.stringify(formatMeasurementFieldForApi(v, type))));
 
     default:
@@ -1146,76 +1156,12 @@ export function formatMetafieldValueForApi(
   throw new Error(`Unknown metafield type: ${type}`);
 }
 
-/**
- * Formatte une liste de MetafieldRestInput depuis un paramètre Coda utilisant
- * une formule `List(MetafieldKeyValueSet(…), MetafieldKeyValueSet(…), …)`
- */
-export function formatMetafieldRestInputsFromListOfMetafieldKeyValueSet(metafields: string[]) {
-  const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-  return parsedMetafieldKeyValueSets.map(formatMetafieldRestInputFromMetafieldKeyValueSet).filter((m) => m);
-}
-function formatMetafieldRestInputFromMetafieldKeyValueSet(parsedMetafieldKeyValueSet: CodaMetafieldKeyValueSet) {
-  const { metaKey, metaNamespace } = splitMetaFieldFullKey(parsedMetafieldKeyValueSet.key);
-  if (parsedMetafieldKeyValueSet.value !== null) {
-    return {
-      namespace: metaNamespace,
-      key: metaKey,
-      value:
-        typeof parsedMetafieldKeyValueSet.value === 'string'
-          ? parsedMetafieldKeyValueSet.value
-          : JSON.stringify(parsedMetafieldKeyValueSet.value),
-      type: parsedMetafieldKeyValueSet.type,
-    } as MetafieldRestInput;
-  }
-}
-
-// TODO: better typing, ça devrait renvoyer MetafieldsSetInput quand l'argument ownerId est fourni et MetafieldRestInput sinon
-export function formatMetafieldInputsFromResourceUpdate<T extends 'forGraphql' | 'forRest'>(
-  update: SyncUpdateNoPreviousValues,
-  metafieldFromKeys: string[],
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  type: T,
-  ownerGid?: string
-): (T extends 'forGraphql' ? MetafieldsSetInput : MetafieldRestInput)[] {
-  if (!metafieldFromKeys.length) return [];
-
-  // TODO: il nous faudrait une fonction qui normalise les metafields en rajoutant les prefixes, la definition etc
-  return metafieldFromKeys.map((fromKey) => {
-    const value = update.newValue[fromKey] as any;
-    const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-    const { metaKey, metaNamespace } = splitMetaFieldFullKey(realFromKey);
-    const metafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
-
-    let formattedValue;
-    try {
-      formattedValue = formatMetafieldValueForApi(
-        value,
-        metafieldDefinition.type.name as AllMetafieldTypeValue,
-        metafieldDefinition.validations
-      );
-    } catch (error) {
-      throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
-    }
-
-    const obj = {
-      key: metaKey,
-      namespace: metaNamespace,
-      type: metafieldDefinition.type.name,
-      value: formattedValue,
-    };
-
-    if (type === 'forGraphql') {
-      (obj as MetafieldsSetInput).ownerId = ownerGid;
-    }
-
-    return obj as T extends 'forGraphql' ? MetafieldsSetInput : MetafieldRestInput;
-  });
-}
 // #endregion
 
 // #region Rest requests
 export const fetchMetafieldsRest = async (
-  resourceMetafieldsUrl: string,
+  ownerId: number,
+  ownerResource: RestResource,
   filters: {
     /** Show metafields with given namespace */
     namespace?: string;
@@ -1233,7 +1179,8 @@ export const fetchMetafieldsRest = async (
     params['key'] = filters.key;
   }
 
-  const requestParams: GetRequestParams = { url: coda.withQueryParams(resourceMetafieldsUrl, params) };
+  const fetchApiUrl = getResourceMetafieldsRestApiUrl(context, ownerResource, ownerId);
+  const requestParams: GetRequestParams = { url: coda.withQueryParams(fetchApiUrl, params) };
   if (cacheTtlSecs !== undefined) {
     requestParams.cacheTtlSecs = cacheTtlSecs;
   }
@@ -1258,19 +1205,27 @@ export const fetchSingleMetafieldRest = async (
 };
 
 // TODO: handle metafield missing when trying to update (because of out of sync values in Coda)
-export const createResourceMetafieldRest = async ([resourceId, resourceType, namespace, key, value, type], context) => {
-  if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
-    throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
+export const createResourceMetafieldRest = async (
+  resourceId: number,
+  restResource: RestResource,
+  namespace: string,
+  key: string,
+  value,
+  type: string,
+  context: coda.ExecutionContext
+) => {
+  if (!restResource.supportMetafields) {
+    throw new coda.UserVisibleError(`\`${restResource.singular}\` does not support metafields.`);
   }
 
-  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
+  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restResource.plural}/${resourceId}/metafields.json`;
   // edge case
-  if (resourceType === 'Shop') {
+  if (restResource.singular === 'shop') {
     url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
   }
 
-  const value_type = type ?? (value.indexOf('{') === 0 ? LEGACY_FIELD_TYPES.json_string : LEGACY_FIELD_TYPES.string);
+  const value_type =
+    type ?? (value.indexOf('{') === 0 ? METAFIELD_LEGACY_TYPES.json_string : METAFIELD_LEGACY_TYPES.string);
   const payload = {
     metafield: {
       namespace,
@@ -1283,14 +1238,19 @@ export const createResourceMetafieldRest = async ([resourceId, resourceType, nam
   return makePostRequest({ url, payload }, context);
 };
 
-export const updateResourceMetafieldRest = async ([metafieldId, resourceId, resourceType, value], context) => {
-  if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
-    throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
+export const updateResourceMetafieldRest = async (
+  metafieldId: number,
+  resourceId: number,
+  restResource: RestResource,
+  value,
+  context
+) => {
+  if (!restResource.supportMetafields) {
+    throw new coda.UserVisibleError(`\`${restResource.singular}\` does not support metafields.`);
   }
-  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields/${metafieldId}.json`;
+  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restResource.plural}/${resourceId}/metafields/${metafieldId}.json`;
   // edge case
-  if (resourceType === 'Shop') {
+  if (restResource.singular === 'shop') {
     url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields/${metafieldId}.json`;
   }
 
@@ -1307,6 +1267,7 @@ export const deleteMetafieldRest = async (metafieldId: number, context: coda.Exe
 };
 
 // TODO: handle metafield missing when trying to update (because of out of sync values in Coda)
+/*
 export const createResourceMetafieldNew = async ([resourceId, resourceType, namespace, key, value, type], context) => {
   if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
     throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
@@ -1331,6 +1292,7 @@ export const createResourceMetafieldNew = async ([resourceId, resourceType, name
 
   return makePostRequest({ url, payload }, context);
 };
+*/
 
 // #endregion
 
@@ -1382,7 +1344,7 @@ export async function fetchMetafieldDefinitionsGraphQl(
       namespace: 'global',
       key: 'description_tag',
       type: {
-        name: FIELD_TYPES.single_line_text_field,
+        name: METAFIELD_TYPES.single_line_text_field,
       },
       description: 'The meta description.',
       validations: [],
@@ -1393,7 +1355,7 @@ export async function fetchMetafieldDefinitionsGraphQl(
       namespace: 'global',
       key: 'title_tag',
       type: {
-        name: FIELD_TYPES.single_line_text_field,
+        name: METAFIELD_TYPES.single_line_text_field,
       },
       description: 'The meta title.',
       validations: [],
@@ -1418,6 +1380,7 @@ export async function fetchSingleMetafieldGraphQl(
   context: coda.ExecutionContext
 ): Promise<{
   ownerNodeGid: string;
+  parentOwnerNodeGid: string;
   metafieldNode: MetafieldFragmentWithDefinition;
 }> {
   const { graphQlResource, fullKey, ownerGid, cacheTtlSecs } = params;
@@ -1442,6 +1405,7 @@ export async function fetchSingleMetafieldGraphQl(
     ].metafields.nodes.find((m: MetafieldFragmentWithDefinition) => m.key === fullKey);
     return {
       ownerNodeGid: response.body.data[graphQlQueryOperation].id,
+      parentOwnerNodeGid: response.body.data[graphQlQueryOperation].parentOwner?.id,
       metafieldNode,
     };
   }
@@ -1459,6 +1423,7 @@ export async function fetchMetafieldsGraphQl(
   context: coda.ExecutionContext
 ): Promise<{
   ownerNodeGid: string;
+  parentOwnerNodeGid: string;
   metafieldNodes: MetafieldFragmentWithDefinition[];
 }> {
   const { graphQlResource, ownerGid, cacheTtlSecs } = params;
@@ -1481,6 +1446,7 @@ export async function fetchMetafieldsGraphQl(
       response.body.data[graphQlQueryOperation].metafields.nodes;
     return {
       ownerNodeGid: response.body.data[graphQlQueryOperation].id,
+      parentOwnerNodeGid: response.body.data[graphQlQueryOperation].parentOwner?.id,
       metafieldNodes,
     };
   }

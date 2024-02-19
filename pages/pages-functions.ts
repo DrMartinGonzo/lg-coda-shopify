@@ -8,11 +8,12 @@ import { FormatFunction } from '../types/misc';
 import { PageSchema } from '../schemas/syncTable/PageSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
-  getResourceMetafieldsRestUrl,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
+import { restResources } from '../types/Rest';
 
 // #region Helpers
 function formatPageStandardFieldsRestParams(
@@ -53,9 +54,9 @@ export async function handlePageUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateRest(
-        getResourceMetafieldsRestUrl('pages', pageId, context),
-        metafieldDefinitions,
-        update,
+        pageId,
+        restResources.Page,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

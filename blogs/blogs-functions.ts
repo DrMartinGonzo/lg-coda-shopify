@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
@@ -8,13 +9,16 @@ import { FormatFunction } from '../types/misc';
 import { BlogSchema } from '../schemas/syncTable/BlogSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
-  getResourceMetafieldsRestUrl,
+  getMetafieldKeyValueSetsFromUpdate,
   handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { formatOptionNameId } from '../helpers';
 import { GraphQlResource } from '../types/GraphQl';
+import { restResources } from '../types/Rest';
+
+// #endregion
 
 // #region Helpers
 export async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
@@ -75,9 +79,9 @@ export async function handleBlogUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       handleResourceMetafieldsUpdateRest(
-        getResourceMetafieldsRestUrl('blogs', blogId, context),
-        metafieldDefinitions,
-        update,
+        blogId,
+        restResources.Blog,
+        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context
       )
     );

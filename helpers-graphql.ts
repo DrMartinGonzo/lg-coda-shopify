@@ -9,6 +9,7 @@ import {
   SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
 } from './types/tableSync';
+import { GraphQlResource } from './types/GraphQl';
 
 // TODO: still not ready, calculate this max ?
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
@@ -30,9 +31,9 @@ export function graphQlGidToId(gid: string) {
   if (gid === undefined) return undefined;
   return parseInt(gid.split('/').pop().split('?')[0]);
 }
-export function graphQlGidToResourceName(gid: string): string {
+export function graphQlGidToResourceName(gid: string) {
   if (gid === undefined) return undefined;
-  return gid.split('gid://shopify/')[1].split('/').pop();
+  return gid.split('gid://shopify/')[1].split('/').pop() as GraphQlResource;
 }
 // #endregion
 
