@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_COLLECTION } from '../../constants';
+import { IDENTITY_COLLECTION, NOT_FOUND } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 import { CollectionRuleSetSchema } from '../basic/CollectionRuleSetSchema';
 
@@ -213,3 +213,4 @@ export const collectionFieldDependencies: FieldDependency<typeof CollectionSchem
 ];
 
 export const CollectionReference = coda.makeReferenceSchemaFromObjectSchema(CollectionSchema, IDENTITY_COLLECTION);
+export const formatCollectionReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });

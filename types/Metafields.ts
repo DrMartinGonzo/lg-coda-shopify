@@ -1,5 +1,5 @@
 import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../metafields/metafields-constants';
-import type { CurrencyCode, Metafield, Scalars } from '../types/admin.types';
+import type { CurrencyCode, Metafield, MetafieldOwnerType, Scalars } from '../types/admin.types';
 import { GraphQlResource } from './GraphQl';
 import { MetafieldDefinitionFragment, MetafieldFieldsFragment } from './admin.generated';
 
@@ -86,7 +86,9 @@ export type SupportedGraphQlResourceWithMetafields =
 export interface ResourceMetafieldsSyncTableDefinition {
   /** The GraphQL resource type, acting as key */
   key: SupportedGraphQlResourceWithMetafields;
-  /** The human readable display value of resource type*/
+  /** Possible types of a metafield's owner resource */
+  metafieldOwnerType: MetafieldOwnerType;
+  /** The human readable display value of resource type */
   display: string;
   /** The query operation used to request all owners and their Metafields */
   syncTableGraphQlQueryOperation: string;

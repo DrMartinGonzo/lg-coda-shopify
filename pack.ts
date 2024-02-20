@@ -42,10 +42,9 @@ import {
   Sync_InventoryLevels,
 } from './inventoryLevels/inventoryLevels-setup';
 import {
-  Action_CreateMetafield,
   Action_DeleteMetafield,
   Action_SALUT,
-  Action_UpdateMetafield,
+  Action_SetMetafield,
   Formula_Metafield,
   Formula_Metafields,
   Sync_Metafields,
@@ -219,8 +218,7 @@ pack.formulas.push(Action_UpdateLocation);
 pack.formulas.push(Action_ActivateLocation);
 pack.formulas.push(Action_DeactivateLocation);
 
-pack.formulas.push(Action_CreateMetafield);
-pack.formulas.push(Action_UpdateMetafield);
+pack.formulas.push(Action_SetMetafield);
 pack.formulas.push(Action_DeleteMetafield);
 
 pack.formulas.push(Action_CreateMetaObject);

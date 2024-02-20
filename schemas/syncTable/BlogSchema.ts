@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_BLOG } from '../../constants';
+import { IDENTITY_BLOG, NOT_FOUND } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 
 export const COMMENTABLE_OPTIONS = [
@@ -99,6 +99,7 @@ export const BlogSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSchema, IDENTITY_BLOG);
+export const formatBlogReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
 export const blogFieldDependencies: FieldDependency<typeof BlogSchema.properties>[] = [
   {
     field: 'id',

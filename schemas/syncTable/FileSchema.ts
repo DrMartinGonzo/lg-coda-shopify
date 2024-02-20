@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_FILE } from '../../constants';
+import { IDENTITY_FILE, NOT_FOUND } from '../../constants';
 
 export const FileSchema = coda.makeObjectSchema({
   properties: {
@@ -75,3 +75,4 @@ export const FileSchema = coda.makeObjectSchema({
 });
 
 export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSchema, IDENTITY_FILE);
+export const formatFileReferenceValueForSchema = (id: string, name = NOT_FOUND) => ({ id, name });
