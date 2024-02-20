@@ -129,6 +129,11 @@ import {
 } from './helpers-setup';
 import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
 import { IS_ADMIN_RELEASE } from './constants';
+import {
+  Format_MetafieldDefinition,
+  Formula_MetafieldDefinition,
+  Sync_MetafieldDefinitions,
+} from './metafieldDefinitions/metafieldDefinitions-setup';
 
 // #endregion
 
@@ -160,6 +165,7 @@ pack.syncTables.push(Sync_InventoryLevels);
 pack.syncTables.push(Sync_Files);
 pack.syncTables.push(Sync_Locations);
 pack.syncTables.push(Sync_Metafields);
+pack.syncTables.push(Sync_MetafieldDefinitions);
 pack.syncTables.push(Sync_Metaobjects);
 pack.syncTables.push(Sync_OrderLineItems);
 pack.syncTables.push(Sync_Orders);
@@ -178,6 +184,7 @@ pack.formulas.push(Formula_Customer);
 pack.formulas.push(Formula_Location);
 pack.formulas.push(Formula_Metafield);
 pack.formulas.push(Formula_Metafields);
+pack.formulas.push(Formula_MetafieldDefinition);
 pack.formulas.push(Formula_Order);
 if (IS_ADMIN_RELEASE) {
   pack.formulas.push(Formula_Orders);
@@ -250,6 +257,7 @@ pack.formats.push(Format_Blog);
 pack.formats.push(Format_Collection);
 pack.formats.push(Format_Customer);
 pack.formats.push(Format_Location);
+pack.formats.push(Format_MetafieldDefinition);
 pack.formats.push(Format_Order);
 pack.formats.push(Format_Page);
 pack.formats.push(Format_Product);

@@ -146,6 +146,18 @@ export function getObjectSchemaItemProp(objectSchema, key: string) {
   }
 }
 
+/**
+ * Get object schema keys or fromKeys if present
+ */
+export function getObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.makeObjectSchema>>(objectSchema: T) {
+  const properties = objectSchema.properties;
+  return Object.keys(properties).map((key) => {
+    const property = properties[key];
+    const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
+    return propKey;
+  });
+}
+
 const getShopifyAccessToken = (context) => '{{token-' + context.invocationToken + '}}';
 export const getShopifyRequestHeaders = (context) => {
   return {

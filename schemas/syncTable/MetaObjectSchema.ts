@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { PACK_ID, IDENTITY_METAOBJECT, NOT_FOUND } from '../../constants';
+import { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
 
 export const MetaObjectBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -27,7 +28,9 @@ export const MetaObjectBaseSchema = coda.makeObjectSchema({
   featuredProperties: ['id', 'handle', 'admin_url'],
 });
 
-export function getMetaobjectReferenceSchema(fieldDefinition) {
+export function getMetaobjectReferenceSchema(
+  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFragment
+) {
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
     (v) => v.name === 'metaobject_definition_id'
   )?.value;

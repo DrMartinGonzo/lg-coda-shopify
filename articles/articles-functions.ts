@@ -9,7 +9,7 @@ import { FormatFunction } from '../types/misc';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateRest,
+  updateResourceMetafieldsFromSyncTableRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
@@ -77,7 +77,7 @@ export async function handleArticleUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateRest(
+      updateResourceMetafieldsFromSyncTableRest(
         articleId,
         restResources.Article,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
