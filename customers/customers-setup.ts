@@ -24,12 +24,11 @@ import {
   formatMetaFieldValueForSchema,
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateGraphQl,
   preprendPrefixToMetaFieldKey,
+  updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -49,6 +48,7 @@ import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Cus
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -430,7 +430,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
 
     if (metafields && metafields.length) {
       const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      await handleResourceMetafieldsUpdateGraphQl(
+      await updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.Customer, customerId),
         metafieldKeyValueSets,
         context

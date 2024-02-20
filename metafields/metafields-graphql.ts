@@ -14,44 +14,20 @@ export const MetafieldFieldsFragment = /* GraphQL */ `
     __typename
   }
 `;
-
-const MetafieldDefinitionFragment = /* GraphQL */ `
-  fragment MetafieldDefinition on MetafieldDefinition {
-    key
-    id
-    namespace
-    name
-    description
-    type {
-      name
-    }
-    validations {
-      name
-      type
-      value
-    }
-  }
-`;
 // #endregion
 
 // #region Queries
-export const queryMetafieldDefinitions = /* GraphQL */ `
-  ${MetafieldDefinitionFragment}
-
-  query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxMetafieldsPerResource: Int!) {
-    metafieldDefinitions(ownerType: $ownerType, first: $maxMetafieldsPerResource) {
-      nodes {
-        ...MetafieldDefinition
-      }
-    }
-  }
-`;
-
 /**
  * Create a GraphQl query to get all or some metafields from a specific ressource (except Shop)
  */
 export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
+  /* Ca nous sert à récupérer l'ID de la ressource parente
+  (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
+  let parentOwnerQuery = '';
+  if (graphQlQueryOperation === 'productVariant') {
+    parentOwnerQuery = 'parentOwner : product { id }';
+  }
 
   return `
     ${MetafieldFieldsFragment}
@@ -59,6 +35,7 @@ export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: s
     query ${queryName}($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
       ${graphQlQueryOperation}(id: $ownerGid) {
         id
+        ${parentOwnerQuery}
         metafields(keys: $metafieldKeys, first: $countMetafields) {
           nodes {
             ...MetafieldFields
@@ -77,6 +54,12 @@ export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: s
  */
 export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
+  /* Ca nous sert à récupérer l'ID de la ressource parente
+  (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
+  let parentOwnerQuery = '';
+  if (graphQlQueryOperation === 'productVariants') {
+    parentOwnerQuery = 'parentOwner : product { id }';
+  }
 
   return `
     ${MetafieldFieldsFragment}
@@ -85,6 +68,7 @@ export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string)
       ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
         nodes {
           id
+          ${parentOwnerQuery}
           metafields(keys: $metafieldKeys, first: $countMetafields) {
             nodes {
               ...MetafieldFields

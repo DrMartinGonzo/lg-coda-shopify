@@ -10,8 +10,8 @@ import { BlogSchema } from '../schemas/syncTable/BlogSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { formatOptionNameId } from '../helpers';
@@ -78,7 +78,7 @@ export async function handleBlogUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateRest(
+      updateResourceMetafieldsFromSyncTableRest(
         blogId,
         restResources.Blog,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),

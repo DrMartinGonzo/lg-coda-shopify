@@ -10,6 +10,8 @@ import {
   SyncTableRestAugmentedContinuation,
 } from './types/tableSync';
 import { GraphQlResource } from './types/GraphQl';
+import { restResources } from './types/Rest';
+import { MetafieldOwnerType } from './types/admin.types';
 
 // TODO: still not ready, calculate this max ?
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
@@ -22,6 +24,64 @@ const queryCheckThrottleStatus = /* GraphQL */ `
   }
 `;
 
+export function getGraphQlResourceFromRestResourceSingularType(restResourceSingular: string): GraphQlResource {
+  switch (restResourceSingular) {
+    case restResources.Article.singular:
+      return GraphQlResource.Article;
+    case restResources.Blog.singular:
+      return GraphQlResource.Blog;
+    case restResources.Collection.singular:
+      return GraphQlResource.Collection;
+    case restResources.Customer.singular:
+      return GraphQlResource.Customer;
+    case restResources.DraftOrder.singular:
+      return GraphQlResource.DraftOrder;
+    case restResources.Location.singular:
+      return GraphQlResource.Location;
+    case restResources.Order.singular:
+      return GraphQlResource.Order;
+    case restResources.Page.singular:
+      return GraphQlResource.Page;
+    case restResources.Product.singular:
+      return GraphQlResource.Product;
+    case restResources.Shop.singular:
+      return GraphQlResource.Shop;
+    case restResources.ProductVariant.singular:
+      return GraphQlResource.ProductVariant;
+  }
+
+  throw new Error(`No GraphQL Admin Api match for Rest type of: \`${restResourceSingular}\``);
+}
+
+export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: MetafieldOwnerType): GraphQlResource {
+  switch (metafieldOwnerType) {
+    case MetafieldOwnerType.Article:
+      return GraphQlResource.Article;
+    case MetafieldOwnerType.Blog:
+      return GraphQlResource.Blog;
+    case MetafieldOwnerType.Collection:
+      return GraphQlResource.Collection;
+    case MetafieldOwnerType.Customer:
+      return GraphQlResource.Customer;
+    case MetafieldOwnerType.Draftorder:
+      return GraphQlResource.DraftOrder;
+    case MetafieldOwnerType.Location:
+      return GraphQlResource.Location;
+    case MetafieldOwnerType.Order:
+      return GraphQlResource.Order;
+    case MetafieldOwnerType.Page:
+      return GraphQlResource.Page;
+    case MetafieldOwnerType.Product:
+      return GraphQlResource.Product;
+    case MetafieldOwnerType.Shop:
+      return GraphQlResource.Shop;
+    case MetafieldOwnerType.Productvariant:
+      return GraphQlResource.ProductVariant;
+  }
+
+  throw new Error(`No GraphQL Admin Api match for Metafield Owner type of: \`${metafieldOwnerType}\``);
+}
+
 // #region GID functions
 export function idToGraphQlGid(resourceType: string, id: number) {
   if (id === undefined) return undefined;
@@ -33,7 +93,7 @@ export function graphQlGidToId(gid: string) {
 }
 export function graphQlGidToResourceName(gid: string) {
   if (gid === undefined) return undefined;
-  return gid.split('gid://shopify/')[1].split('/').pop() as GraphQlResource;
+  return gid.split('gid://shopify/')[1].split('/')[0] as GraphQlResource;
 }
 // #endregion
 

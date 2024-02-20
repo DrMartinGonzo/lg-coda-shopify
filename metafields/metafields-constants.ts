@@ -62,6 +62,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Article,
     syncTableGraphQlQueryOperation: 'articles', // TODO: no graphQL here
     graphQlQueryOperation: 'article', // TODO: no graphQL here
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Blog',
@@ -70,6 +71,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     syncTableGraphQlQueryOperation: 'blogs', // TODO: no graphQL here
     graphQlQueryOperation: 'blog', // TODO: no graphQL here
     storeFront: true,
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Collection',
@@ -77,6 +79,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Collection,
     syncTableGraphQlQueryOperation: 'collections',
     graphQlQueryOperation: 'collection',
+    supportMetafieldDefinitions: true,
   },
   // {
   //   key: 'smart_collection',
@@ -85,6 +88,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   adminUrlPart: 'collection',
   //   adminEntryUrlPart: 'collections',
   //   graphQlQueryOperation: 'collections',
+  //   supportMetafieldDefinitions: false,
   // },
   {
     display: 'Customer',
@@ -92,6 +96,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Customer,
     syncTableGraphQlQueryOperation: 'customers',
     graphQlQueryOperation: 'customer',
+    supportMetafieldDefinitions: true,
   },
   // TODO: maybe add support for draft orders later
   // {
@@ -100,6 +105,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   metafieldOwnerType: MetafieldOwnerType.Draftorder,
   //   syncTableGraphQlQueryOperation: 'draftOrders',
   //   graphQlQueryOperation: 'draftOrder',
+  //   supportMetafieldDefinitions: true,
   // },
   {
     display: 'Location',
@@ -107,6 +113,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Location,
     syncTableGraphQlQueryOperation: 'locations',
     graphQlQueryOperation: 'location',
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Order',
@@ -114,6 +121,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Order,
     syncTableGraphQlQueryOperation: 'orders',
     graphQlQueryOperation: 'order',
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Page',
@@ -122,6 +130,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     syncTableGraphQlQueryOperation: 'pages', // TODO: no graphQL here
     graphQlQueryOperation: 'page', // TODO: no graphQL here
     storeFront: true,
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Product',
@@ -130,6 +139,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     syncTableGraphQlQueryOperation: 'products',
     graphQlQueryOperation: 'product',
     storeFront: true,
+    supportMetafieldDefinitions: true,
   },
   // {
   //   display: 'Product Image',
@@ -138,6 +148,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   //   adminUrlPart: 'article',
   //   adminEntryUrlPart: 'articles',
   //   graphQlQueryOperation: 'articles',
+  //   supportMetafieldDefinitions: false,
   // },
   {
     display: 'Product Variant',
@@ -145,6 +156,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Productvariant,
     syncTableGraphQlQueryOperation: 'productVariants',
     graphQlQueryOperation: 'productVariant',
+    supportMetafieldDefinitions: true,
   },
   {
     display: 'Shop',
@@ -152,5 +164,6 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     metafieldOwnerType: MetafieldOwnerType.Shop,
     syncTableGraphQlQueryOperation: 'shop',
     graphQlQueryOperation: 'shop',
+    supportMetafieldDefinitions: false,
   },
 ];

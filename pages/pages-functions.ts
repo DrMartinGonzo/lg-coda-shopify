@@ -9,8 +9,8 @@ import { PageSchema } from '../schemas/syncTable/PageSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { restResources } from '../types/Rest';
@@ -53,7 +53,7 @@ export async function handlePageUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateRest(
+      updateResourceMetafieldsFromSyncTableRest(
         pageId,
         restResources.Page,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),

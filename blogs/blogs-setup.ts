@@ -19,13 +19,12 @@ import {
   formatMetaFieldValueForSchema,
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -37,6 +36,7 @@ import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/Rest';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -132,7 +132,7 @@ export const Sync_Blogs = coda.makeSyncTable({
 
             // Only keep metafields that have a definition are in the schema
             const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
-              effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`)
+              effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta))
             );
             if (metafields.length) {
               metafields.forEach((metafield) => {
@@ -206,7 +206,7 @@ export const Action_UpdateBlog = coda.makeFormula({
 
     if (metafields && metafields.length) {
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
         blogId,
         restResources.Blog,
         parsedMetafieldKeyValueSets,
