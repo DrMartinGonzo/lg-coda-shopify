@@ -392,11 +392,16 @@ export async function augmentSchemaWithMetafields(
 
   const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
   metafieldDefinitions.forEach((metafieldDefinition) => {
-    const name = accents.remove(metafieldDefinition.name);
-    const propName = `Meta ${capitalizeFirstChar(name)}`;
-    schema.properties[propName] = mapMetaFieldToSchemaProperty(metafieldDefinition);
-    // always feature metafields properties so that the user know they are synced
-    schema.featuredProperties.push(propName);
+    const property = mapMetaFieldToSchemaProperty(metafieldDefinition);
+    if (property) {
+      const fullKey = getMetaFieldFullKey(metafieldDefinition);
+      const name = accents.remove(metafieldDefinition.name);
+      const propName = `Meta${capitalizeFirstChar(name)}`;
+      property.displayName = `${metafieldDefinition.name} [${fullKey}]`;
+      schema.properties[propName] = property;
+      // always feature metafields properties so that the user know they are synced
+      schema.featuredProperties.push(propName);
+    }
   });
 
   return schema;
