@@ -10,7 +10,6 @@ export const MetafieldSchema = coda.makeObjectSchema({
   properties: {
     graphql_gid: {
       type: coda.ValueType.String,
-      required: true,
       fixedId: 'graphql_gid',
       fromKey: 'admin_graphql_api_id',
       description: 'The GraphQL GID of the metafield.',
@@ -35,20 +34,12 @@ export const MetafieldSchema = coda.makeObjectSchema({
     },
     key: {
       type: coda.ValueType.String,
-      required: true,
       fixedId: 'key',
       description:
         'The key of the metafield. Keys can be up to 64 characters long and can contain alphanumeric characters, hyphens, underscores, and periods.',
     },
-    hasDefinition: {
-      type: coda.ValueType.Boolean,
-      required: true,
-      fixedId: 'hasDefinition',
-      description: 'Wether the metafield has a definition.',
-    },
     namespace: {
       type: coda.ValueType.String,
-      required: true,
       fixedId: 'namespace',
       description:
         'The container for a group of metafields that the metafield is or will be associated with. Used in tandem with `key` to lookup a metafield on a resource, preventing conflicts with other metafields with the same `key`. Must be 3-255 characters long and can contain alphanumeric, hyphen, and underscore characters.',
@@ -59,6 +50,13 @@ export const MetafieldSchema = coda.makeObjectSchema({
       useThousandsSeparator: false,
       fixedId: 'owner_id',
       description: 'The ID of the resource that the metafield is attached to.',
+    },
+    definition_id: {
+      type: coda.ValueType.Number,
+      useThousandsSeparator: false,
+      fixedId: 'definition_id',
+      fromKey: 'definition_id',
+      description: 'The ID of the metafield definition of the metafield, if it exists.',
     },
     owner_type: {
       type: coda.ValueType.String,
@@ -79,20 +77,17 @@ export const MetafieldSchema = coda.makeObjectSchema({
       options: Object.values(METAFIELD_TYPES),
       required: true,
       fixedId: 'type',
-      description:
-        'The type of data that the metafield stores. Refer to the list of supported types (https://shopify.dev/apps/metafields/types).',
+      description: 'The type of data that the metafield stores.',
     },
     created_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      required: true,
       fixedId: 'created_at',
       description: 'The date and time (ISO 8601 format) when the metafield was created.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
-      required: true,
       fixedId: 'updated_at',
       description: 'The date and time (ISO 8601 format) when the metafield was last updated.',
     },
@@ -216,11 +211,11 @@ export const MetafieldFormulaSchema = coda.makeObjectSchema({
       description: 'The unique ID of the resource that the metafield is attached to.',
       fixedId: 'owner_id',
     },
-    owner_resource: {
+    owner_type: {
       type: coda.ValueType.String,
       required: true,
-      description: 'The type of resource that the metafield is attached to.',
-      fixedId: 'owner_resource',
+      fixedId: 'owner_type',
+      description: 'The type of the resource that the metafield is attached to.',
     },
     value: {
       type: coda.ValueType.String,
@@ -232,8 +227,7 @@ export const MetafieldFormulaSchema = coda.makeObjectSchema({
     type: {
       type: coda.ValueType.String,
       required: true,
-      description:
-        'The type of data that the metafield stores in the `value` field. Refer to the list of supported types (https://shopify.dev/apps/metafields/types).',
+      description: 'The type of data that the metafield stores in the `value` field.',
       fixedId: 'type',
     },
     created_at: {

@@ -25,14 +25,13 @@ import {
   formatMetaFieldValueForSchema,
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateGraphQl,
   preprendPrefixToMetaFieldKey,
+  updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -56,6 +55,7 @@ import { MetafieldOwnerType } from '../types/admin.types';
 import { fetchShopDetails } from '../shop/shop-functions';
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -581,7 +581,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
 
     if (metafields && metafields.length) {
       const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafields = await handleResourceMetafieldsUpdateGraphQl(
+      const updatedMetafields = await updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
         metafieldKeyValueSets,
         context

@@ -18,8 +18,8 @@ import { FormatFunction } from '../types/misc';
 
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -84,7 +84,7 @@ export async function handleCollectionUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateRest(
+      updateResourceMetafieldsFromSyncTableRest(
         collectionId,
         restResources.Collection,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),

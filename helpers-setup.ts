@@ -8,6 +8,7 @@ import { arrayUnique, getUnitMap } from './helpers';
 import { autocompleteProductTypes } from './products/products-functions';
 import { GraphQlResource } from './types/GraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
+import { shouldDeleteMetafield } from './metafields/metafields-functions';
 
 // TODO: rename this
 export interface CodaMetafieldValue {
@@ -202,7 +203,7 @@ export const Formula_MetafieldKeyValueSet = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, value]) => {
-    if (!value || value === '') {
+    if (shouldDeleteMetafield(value)) {
       return JSON.stringify({
         key: fullKey,
         value: null,

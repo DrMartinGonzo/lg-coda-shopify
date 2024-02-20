@@ -9,8 +9,8 @@ import {
   preprendPrefixToMetaFieldKey,
   getMetaFieldFullKey,
   formatMetaFieldValueForSchema,
-  handleResourceMetafieldsUpdateGraphQl,
   getMetafieldKeyValueSetsFromUpdate,
+  updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 import {
   GetLocationsQuery,
@@ -131,7 +131,7 @@ export async function handleLocationUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateGraphQl(
+      updateResourceMetafieldsFromSyncTableGraphQL(
         locationGid,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context

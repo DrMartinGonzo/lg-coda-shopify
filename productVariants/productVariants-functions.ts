@@ -11,8 +11,8 @@ import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '
 import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateGraphQl,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -65,7 +65,7 @@ export async function handleProductVariantUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateGraphQl(
+      updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
         context

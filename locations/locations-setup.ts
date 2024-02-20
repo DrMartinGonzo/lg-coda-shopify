@@ -13,10 +13,12 @@ import {
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
 import { IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
-import { augmentSchemaWithMetafields, handleResourceMetafieldsUpdateGraphQl } from '../metafields/metafields-functions';
+import {
+  augmentSchemaWithMetafields,
+  updateResourceMetafieldsFromSyncTableGraphQL,
+} from '../metafields/metafields-functions';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -33,6 +35,7 @@ import { LocationEditInput, MetafieldOwnerType } from '../types/admin.types';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -217,7 +220,7 @@ export const Action_UpdateLocation = coda.makeFormula({
     if (metafields && metafields.length) {
       console.log('metafields', metafields);
       const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      await handleResourceMetafieldsUpdateGraphQl(locationGid, metafieldKeyValueSets, context);
+      await updateResourceMetafieldsFromSyncTableGraphQL(locationGid, metafieldKeyValueSets, context);
     }
 
     return obj;

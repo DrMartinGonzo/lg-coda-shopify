@@ -96,6 +96,8 @@ export interface ResourceMetafieldsSyncTableDefinition {
   graphQlQueryOperation: string;
   /** Wether we should use storefront to query these metafields or not */
   storeFront?: boolean;
+  /** Wether MetafieldDefinitions are supported in Shopify Admin for this resource */
+  supportMetafieldDefinitions: boolean;
 }
 
 export type MetafieldFragmentWithDefinition = MetafieldFieldsFragment & {

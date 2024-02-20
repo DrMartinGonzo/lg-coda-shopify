@@ -22,8 +22,8 @@ import { OrderSchema } from '../schemas/syncTable/OrderSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  handleResourceMetafieldsUpdateRest,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { OrderUpdateRestParams } from '../types/Order';
 import { restResources } from '../types/Rest';
@@ -118,7 +118,7 @@ export async function handleOrderUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      handleResourceMetafieldsUpdateRest(
+      updateResourceMetafieldsFromSyncTableRest(
         orderId,
         restResources.Order,
         getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),

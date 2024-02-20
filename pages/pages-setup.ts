@@ -19,11 +19,10 @@ import {
   formatMetaFieldValueForSchema,
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -37,6 +36,7 @@ import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/Rest';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -199,11 +199,11 @@ export const Sync_Pages = coda.makeSyncTable({
 
             // TODO: On pourrait peut-être tous les processer et laisser Coda se démerder derrière pour ne pas intégrer ceux qui ne sont pas définis dans le schéma
             // Process metafields that have a definition and in the schema
-            const definitionsFullKeys = metafieldDefinitions.map((def) => `${def.namespace}.${def.key}`);
+            const definitionsFullKeys = metafieldDefinitions.map((def) => getMetaFieldFullKey(def));
             const metafieldsWithDefinition = metafields.filter(
               (meta: MetafieldRest) =>
-                effectiveMetafieldKeys.includes(`${meta.namespace}.${meta.key}`) &&
-                definitionsFullKeys.includes(`${meta.namespace}.${meta.key}`)
+                effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta)) &&
+                definitionsFullKeys.includes(getMetaFieldFullKey(meta))
             );
             if (metafieldsWithDefinition.length) {
               metafieldsWithDefinition.forEach((metafield) => {
@@ -336,7 +336,7 @@ export const Action_UpdatePage = coda.makeFormula({
 
     if (metafields && metafields.length) {
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
         pageId,
         restResources.Page,
         parsedMetafieldKeyValueSets,

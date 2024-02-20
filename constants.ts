@@ -81,11 +81,14 @@ export const NOT_FOUND = 'NOT_FOUND';
 
 export const IDENTITY_ARTICLE = 'Article';
 export const IDENTITY_BLOG = 'Blog';
+export const IDENTITY_COLLECT = 'Collect';
 export const IDENTITY_COLLECTION = 'Collection';
 export const IDENTITY_CUSTOMER = 'Customer';
 export const IDENTITY_LOCATION = 'Location';
 export const IDENTITY_FILE = 'File';
 export const IDENTITY_IMAGE = 'Image';
+export const IDENTITY_METAFIELD = 'Metafield';
+export const IDENTITY_METAFIELD_DEFINITION = 'MetafieldDefinition';
 export const IDENTITY_METAOBJECT = 'Metaobject';
 export const IDENTITY_ORDER = 'Order';
 export const IDENTITY_ORDER_LINE_ITEM = 'OrderLineItem';

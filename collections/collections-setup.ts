@@ -15,7 +15,13 @@ import {
   updateCollectionRest,
 } from './collections-functions';
 
-import { IDENTITY_COLLECTION, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import {
+  IDENTITY_COLLECT,
+  IDENTITY_COLLECTION,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
 import { sharedParameters } from '../shared-parameters';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -31,13 +37,12 @@ import {
   formatMetaFieldValueForSchema,
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
-  handleResourceMetafieldsUpdateRest,
   preprendPrefixToMetaFieldKey,
+  updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -49,6 +54,7 @@ import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/Rest';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -82,7 +88,7 @@ export const Sync_Collects = coda.makeSyncTable({
   name: 'Collects',
   description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: 'Collect',
+  identityName: IDENTITY_COLLECT,
   schema: CollectSchema,
   formula: {
     name: 'SyncCollects',
@@ -475,7 +481,7 @@ export const Action_UpdateCollection = coda.makeFormula({
     if (metafields && metafields.length) {
       // TODO: update with identity only things that are not references, and do it in all other update actions
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await handleResourceMetafieldsUpdateRest(
+      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
         collectionId,
         restResources.Collection,
         parsedMetafieldKeyValueSets,

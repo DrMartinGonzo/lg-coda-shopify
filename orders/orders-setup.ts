@@ -27,7 +27,6 @@ import {
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
-  fetchMetafieldDefinitionsGraphQl,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
@@ -43,6 +42,7 @@ import {
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
 import { fetchShopDetails } from '../shop/shop-functions';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
 
@@ -469,7 +469,7 @@ export const Formula_OrderExportFormat = coda.makeFormula({
 
 export const Format_Order: coda.Format = {
   name: 'Order',
-  instructions: 'Retrieve a single order',
+  instructions: 'Paste the ID of the order into the column.',
   formulaName: 'Order',
 };
 // #endregion
