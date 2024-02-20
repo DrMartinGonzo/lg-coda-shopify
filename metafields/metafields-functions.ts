@@ -13,21 +13,44 @@ import {
   maybeParseJson,
   unitToShortName,
 } from '../helpers';
-import { GetRequestParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { CollectionReference } from '../schemas/syncTable/CollectionSchema';
-import { FileReference } from '../schemas/syncTable/FileSchema';
-import { PageReference } from '../schemas/syncTable/PageSchema';
-import { ProductReference } from '../schemas/syncTable/ProductSchemaRest';
-import { ProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+import {
+  GetRequestParams,
+  cleanQueryParams,
+  makeDeleteRequest,
+  makeGetRequest,
+  makePostRequest,
+  makePutRequest,
+  makeSyncTableGetRequest,
+} from '../helpers-rest';
+import {
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  graphQlGidToId,
+  graphQlGidToResourceName,
+  idToGraphQlGid,
+  makeGraphQlRequest,
+  makeSyncTableGraphQlRequest,
+  skipGraphQlSyncTableRun,
+} from '../helpers-graphql';
+import { CollectionReference, formatCollectionReferenceValueForSchema } from '../schemas/syncTable/CollectionSchema';
+import { FileReference, formatFileReferenceValueForSchema } from '../schemas/syncTable/FileSchema';
+import { PageReference, formatPageReferenceValueForSchema } from '../schemas/syncTable/PageSchema';
+import { ProductReference, formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
+import {
+  ProductVariantReference,
+  formatProductVariantReferenceValueForSchema,
+} from '../schemas/syncTable/ProductVariantSchema';
 import {
   MutationSetMetafields,
   QueryShopMetafieldsByKeys,
+  makeQueryResourceMetafieldsByKeys,
   makeQuerySingleResourceMetafieldsByKeys,
   queryMetafieldDefinitions,
 } from './metafields-graphql';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
-import { getMetaobjectReferenceSchema } from '../metaobjects/metaobjects-functions';
+import {
+  formatMetaobjectReferenceValueForSchema,
+  getMetaobjectReferenceSchema,
+} from '../schemas/syncTable/MetaObjectSchema';
 
 import {
   MetafieldFragmentWithDefinition,
@@ -53,16 +76,21 @@ import {
   SetMetafieldsMutation,
   SetMetafieldsMutationVariables,
 } from '../types/admin.generated';
-import { MetafieldSchema } from '../schemas/syncTable/MetafieldSchema';
+import { MetafieldSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
 import { GraphQlResource } from '../types/GraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { RestResource, restResources } from '../types/Rest';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
+import { formatCustomerReferenceValueForSchema } from '../schemas/syncTable/CustomerSchema';
+import { formatLocationReferenceValueForSchema } from '../schemas/syncTable/LocationSchema';
+import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
+import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSchema';
+import { SyncTableGraphQlContinuation, SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
 // #region Autocomplete functions
-export function makeAutocompleteMetafieldWithDefinitionsKeys(ownerType: MetafieldOwnerType) {
+export function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
     const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
     const searchObjects = metafieldDefinitions.map((metafield) => {
@@ -74,6 +102,14 @@ export function makeAutocompleteMetafieldWithDefinitionsKeys(ownerType: Metafiel
     return coda.autocompleteSearchObjects(search, searchObjects, 'name', 'fullKey');
   };
 }
+
+export function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
+    const keys = metafieldDefinitions.map((metafield) => `${metafield.namespace}.${metafield.key}`);
+    return coda.simpleAutocomplete(search, keys);
+  };
+}
 // #endregion
 
 // #region Helpers
@@ -82,17 +118,25 @@ export function mapMetaFieldToSchemaProperty(
 ): coda.Schema & coda.ObjectSchemaProperty {
   const type = fieldDefinition.type.name;
   let description = fieldDefinition.description;
-  // Add full key to description for metafields, not metaobject fields
-  if (fieldDefinition.hasOwnProperty('namespace')) {
-    description +=
-      (description ? '\n' : '') +
-      `field key: [${getMetafieldDefinitionFullKey(fieldDefinition as MetafieldDefinition)}]`;
+  const isMetaobjectFieldDefinition = !fieldDefinition.hasOwnProperty('namespace');
+
+  let schemaKey = fieldDefinition.key;
+
+  /**
+   * Add full key to description for metafields, not metaobject fields
+   * We prefix fromKey to be able to determine later wich columns are metafield values
+   */
+  if (!isMetaobjectFieldDefinition) {
+    const fullKey = getMetafieldDefinitionFullKey(fieldDefinition as MetafieldDefinition);
+    description += (description ? '\n' : '') + `field key: [${fullKey}]`;
+
+    schemaKey = METAFIELD_PREFIX_KEY + fullKey;
   }
-  /* We prefix fromKey to be able to determine later wich columns are metafield values */
+
   const baseProperty = {
     description,
-    fromKey: fieldDefinition.key,
-    fixedId: fieldDefinition.key,
+    fromKey: schemaKey,
+    fixedId: schemaKey,
   };
 
   // Add eventual choices
@@ -402,7 +446,9 @@ function getResourceMetafieldsAdminUrl(
       break;
 
     case restResources.ProductVariant.singular:
-      admin_url = `${context.endpoint}/admin/${restResources.Product.plural}/${parentOwnerId}/${restResource.plural}/${ownerId}/metafields`;
+      if (parentOwnerId) {
+        admin_url = `${context.endpoint}/admin/${restResources.Product.plural}/${parentOwnerId}/${restResource.plural}/${ownerId}/metafields`;
+      }
       break;
 
     default:
@@ -417,7 +463,7 @@ function getResourceMetafieldsAdminUrl(
 /**
  * Returns the ResourceMetafieldsSyncTableDefinition for the given resource type and also validates resource type
  */
-export const getValidResourceMetafieldsSyncTableDefinition = (
+export const requireResourceMetafieldsSyncTableDefinition = (
   graphQlResource: SupportedGraphQlResourceWithMetafields
 ) => {
   const definition = RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.find((v) => v.key === graphQlResource);
@@ -427,8 +473,11 @@ export const getValidResourceMetafieldsSyncTableDefinition = (
   return definition;
 };
 
-function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
-  const metafieldDefinition = metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
+export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
+  return metafieldDefinitions.find((f) => f && `${f.namespace}.${f.key}` === fullKey);
+}
+function requireMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
+  const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
   return metafieldDefinition;
 }
@@ -520,7 +569,7 @@ export async function handleResourceMetafieldsUpdateGraphQl(
       .map((m) => formatMetafieldGraphQlInputFromMetafieldKeyValueSet(ownerGid, m))
       .filter((m) => m);
 
-    const { response: updateResponse } = await updateMetafieldsGraphQl(metafieldsSetInputs, context);
+    const { response: updateResponse } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
     if (updateResponse) {
       const graphQldata = updateResponse.body.data as SetMetafieldsMutation;
       if (graphQldata?.metafieldsSet?.metafields?.length) {
@@ -713,27 +762,38 @@ export function formatMetaFieldValueForSchema(
     case METAFIELD_TYPES.money:
       return parsedValue.amount;
 
-    // REFERENCE
+    // REFERENCES
+    case METAFIELD_TYPES.collection_reference:
+      return formatCollectionReferenceValueForSchema(graphQlGidToId(parsedValue));
+    case METAFIELD_TYPES.list_collection_reference:
+      return parsedValue.map((v) => formatCollectionReferenceValueForSchema(graphQlGidToId(v)));
+
     case METAFIELD_TYPES.file_reference:
-      return { id: parsedValue, name: NOT_FOUND };
+      return formatFileReferenceValueForSchema(parsedValue);
     case METAFIELD_TYPES.list_file_reference:
-      return parsedValue.map((v) => ({ id: v, name: NOT_FOUND }));
+      return parsedValue.map(formatFileReferenceValueForSchema);
 
     case METAFIELD_TYPES.metaobject_reference:
-      return { id: graphQlGidToId(parsedValue), name: NOT_FOUND };
+    case METAFIELD_TYPES.mixed_reference:
+      return formatMetaobjectReferenceValueForSchema(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_metaobject_reference:
-      return parsedValue.map((v) => ({ id: graphQlGidToId(v), name: NOT_FOUND }));
+    case METAFIELD_TYPES.list_mixed_reference:
+      return parsedValue.map((v) => formatMetaobjectReferenceValueForSchema(graphQlGidToId(v)));
 
     case METAFIELD_TYPES.page_reference:
-    case METAFIELD_TYPES.collection_reference:
-    case METAFIELD_TYPES.product_reference:
-    case METAFIELD_TYPES.variant_reference:
-      return { id: graphQlGidToId(parsedValue), title: NOT_FOUND };
+      return formatPageReferenceValueForSchema(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_page_reference:
-    case METAFIELD_TYPES.list_collection_reference:
+      return parsedValue.map((v) => formatPageReferenceValueForSchema(graphQlGidToId(v)));
+
+    case METAFIELD_TYPES.product_reference:
+      return formatProductReferenceValueForSchema(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_product_reference:
+      return parsedValue.map((v) => formatProductReferenceValueForSchema(graphQlGidToId(v)));
+
+    case METAFIELD_TYPES.variant_reference:
+      return formatProductVariantReferenceValueForSchema(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_variant_reference:
-      return parsedValue.map((v) => ({ id: graphQlGidToId(v), title: NOT_FOUND }));
+      return parsedValue.map((v) => formatProductVariantReferenceValueForSchema(graphQlGidToId(v)));
 
     // MEASUREMENT
     case METAFIELD_TYPES.weight:
@@ -771,7 +831,6 @@ export function formatMetafieldForSchemaFromGraphQlApi(
 
   const restResource = getRestResourceFromGraphQlResourceType(resourceMetafieldsSyncTableDefinition.key);
   const ownerId = graphQlGidToId(ownerNodeGid);
-  const parentOwnerId = parentOwnerNodeGid ? graphQlGidToId(parentOwnerNodeGid) : undefined;
   const hasMetafieldDefinition = !!metafieldNode.definition;
 
   let obj: coda.SchemaType<typeof MetafieldSchema> = {
@@ -787,8 +846,25 @@ export function formatMetafieldForSchemaFromGraphQlApi(
     created_at: metafieldNode.createdAt,
     updated_at: metafieldNode.updatedAt,
     hasDefinition: !!metafieldNode.definition,
-    admin_url: getResourceMetafieldsAdminUrl(context, restResource, hasMetafieldDefinition, ownerId, parentOwnerId),
   };
+
+  /**
+   * We don't set it at once because parentOwnerId can be necessary but
+   * undefined when formatting from a two way sync update (ex: ProductVariants).
+   * Since this value is static, we return nothing to prevent erasing the
+   * previous value. We could also retrieve the owner id value directly in the
+   * graphQl mutation result but doing it this way reduce the GraphQL query costs.
+   */
+  const maybeAdminUrl = getResourceMetafieldsAdminUrl(
+    context,
+    restResource,
+    hasMetafieldDefinition,
+    ownerId,
+    parentOwnerNodeGid ? graphQlGidToId(parentOwnerNodeGid) : undefined
+  );
+  if (maybeAdminUrl) {
+    obj.admin_url = maybeAdminUrl;
+  }
 
   switch (resourceMetafieldsSyncTableDefinition.key) {
     // TODO
@@ -796,141 +872,36 @@ export function formatMetafieldForSchemaFromGraphQlApi(
       break;
     // TODO
     case GraphQlResource.Blog:
+      obj.owner = formatBlogReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.Collection:
-      obj['owner'] = {
-        id: ownerId,
-        title: NOT_FOUND,
-      };
+      obj.owner = formatCollectionReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.Customer:
-      obj['owner'] = {
-        id: ownerId,
-        title: NOT_FOUND,
-      };
+      obj.owner = formatCustomerReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.Location:
-      obj['owner'] = {
-        id: ownerId,
-        name: NOT_FOUND,
-      };
+      obj.owner = formatLocationReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.Order:
-      obj['owner'] = {
-        id: ownerId,
-        name: NOT_FOUND,
-      };
+      obj.owner = formatOrderReferenceValueForSchema(ownerId);
       break;
     // TODO
     case GraphQlResource.Page:
+      obj.owner = formatPageReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.Product:
-      obj['owner'] = {
-        id: ownerId,
-        title: NOT_FOUND,
-      };
+      obj.owner = formatProductReferenceValueForSchema(ownerId);
       break;
     case GraphQlResource.ProductVariant:
-      break;
-
-    default:
+      obj.owner = formatProductVariantReferenceValueForSchema(ownerId);
       break;
   }
 
   if (includeHelperColumns) {
-    switch (metafieldNode.type) {
-      case METAFIELD_TYPES.collection_reference:
-        obj.editCollectionReference = {
-          id: graphQlGidToId(metafieldNode.value),
-          title: NOT_FOUND,
-        };
-        break;
-      case METAFIELD_TYPES.list_collection_reference:
-        const collectionValues = maybeParseJson(metafieldNode.value);
-        if (Array.isArray(collectionValues)) {
-          obj.editCollectionReferenceList = collectionValues.map((v) => {
-            return {
-              id: graphQlGidToId(v),
-              title: NOT_FOUND,
-            };
-          });
-        }
-        break;
-
-      case METAFIELD_TYPES.file_reference:
-        obj.editFileReference = {
-          id: metafieldNode.value,
-          name: NOT_FOUND,
-        };
-        break;
-      case METAFIELD_TYPES.list_file_reference:
-        const fileValues = maybeParseJson(metafieldNode.value);
-        if (Array.isArray(fileValues)) {
-          obj.editFileReferenceList = fileValues.map((v) => {
-            return {
-              id: v,
-              name: NOT_FOUND,
-            };
-          });
-        }
-        break;
-
-      case METAFIELD_TYPES.page_reference:
-        obj.editPageReference = {
-          id: graphQlGidToId(metafieldNode.value),
-          title: NOT_FOUND,
-        };
-        break;
-      case METAFIELD_TYPES.list_page_reference:
-        const pageValues = maybeParseJson(metafieldNode.value);
-        if (Array.isArray(pageValues)) {
-          obj.editPageReferenceList = pageValues.map((v) => {
-            return {
-              id: graphQlGidToId(v),
-              title: NOT_FOUND,
-            };
-          });
-        }
-        break;
-
-      case METAFIELD_TYPES.product_reference:
-        obj.editProductReference = {
-          id: graphQlGidToId(metafieldNode.value),
-          title: NOT_FOUND,
-        };
-        break;
-      case METAFIELD_TYPES.list_product_reference:
-        const productValues = maybeParseJson(metafieldNode.value);
-        if (Array.isArray(productValues)) {
-          obj.editProductReferenceList = productValues.map((v) => {
-            return {
-              id: graphQlGidToId(v),
-              title: NOT_FOUND,
-            };
-          });
-        }
-        break;
-
-      case METAFIELD_TYPES.variant_reference:
-        obj.editProductVariantReference = {
-          id: graphQlGidToId(metafieldNode.value),
-          title: NOT_FOUND,
-        };
-        break;
-      case METAFIELD_TYPES.list_variant_reference:
-        const productVariantValues = maybeParseJson(metafieldNode.value);
-        if (Array.isArray(productVariantValues)) {
-          obj.editProductVariantReferenceList = productVariantValues.map((v) => {
-            return {
-              id: graphQlGidToId(v),
-              title: NOT_FOUND,
-            };
-          });
-        }
-        break;
-
-      default:
-        break;
+    const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === metafieldNode.type);
+    if (helperColumn) {
+      obj[helperColumn.key] = formatMetaFieldValueForSchema(metafieldNode);
     }
   }
 
@@ -951,7 +922,7 @@ export function getMetafieldKeyValueSetsFromUpdate(
   return prefixedMetafieldFromKeys.map((fromKey) => {
     const value = updateNewValue[fromKey] as any;
     const realFromKey = removePrefixFromMetaFieldKey(fromKey);
-    const metafieldDefinition = findMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+    const metafieldDefinition = requireMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
     let formattedValue;
     try {
       formattedValue = formatMetafieldValueForApi(
@@ -1204,13 +1175,11 @@ export const fetchSingleMetafieldRest = async (
   return makeGetRequest(requestParams, context);
 };
 
-// TODO: handle metafield missing when trying to update (because of out of sync values in Coda)
 export const createResourceMetafieldRest = async (
   resourceId: number,
   restResource: RestResource,
-  namespace: string,
-  key: string,
-  value,
+  fullKey: string,
+  value: string,
   type: string,
   context: coda.ExecutionContext
 ) => {
@@ -1218,7 +1187,9 @@ export const createResourceMetafieldRest = async (
     throw new coda.UserVisibleError(`\`${restResource.singular}\` does not support metafields.`);
   }
 
+  const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
   let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restResource.plural}/${resourceId}/metafields.json`;
+
   // edge case
   if (restResource.singular === 'shop') {
     url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
@@ -1228,8 +1199,8 @@ export const createResourceMetafieldRest = async (
     type ?? (value.indexOf('{') === 0 ? METAFIELD_LEGACY_TYPES.json_string : METAFIELD_LEGACY_TYPES.string);
   const payload = {
     metafield: {
-      namespace,
-      key,
+      namespace: metaNamespace,
+      key: metaKey,
       value,
       type: value_type,
     },
@@ -1242,7 +1213,7 @@ export const updateResourceMetafieldRest = async (
   metafieldId: number,
   resourceId: number,
   restResource: RestResource,
-  value,
+  value: string,
   context
 ) => {
   if (!restResource.supportMetafields) {
@@ -1266,38 +1237,86 @@ export const deleteMetafieldRest = async (metafieldId: number, context: coda.Exe
   return makeDeleteRequest({ url }, context);
 };
 
-// TODO: handle metafield missing when trying to update (because of out of sync values in Coda)
-/*
-export const createResourceMetafieldNew = async ([resourceId, resourceType, namespace, key, value, type], context) => {
-  if (!METAFIELDS_RESOURCE_TYPES.includes(resourceType)) {
-    throw new coda.UserVisibleError('Unknown resource type: ' + resourceType);
-  }
+export async function syncRestResourceMetafields(metafieldKeys: string[], context: coda.SyncExecutionContext) {
+  const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
+  const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
+  const restResource = getRestResourceFromGraphQlResourceType(graphQlResource);
+  const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
 
-  const endpointType = getMetafieldRestEndpointFromRestResourceType(resourceType);
-  let url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${endpointType}/${resourceId}/metafields.json`;
-  // edge case
-  if (resourceType === 'Shop') {
-    url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
-  }
+  let metafieldDefinitions =
+    prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+    (await fetchMetafieldDefinitionsGraphQl(
+      { ownerType: resourceMetafieldsSyncTableDefinition.metafieldOwnerType },
+      context
+    ));
 
-  // const value_type = type ?? (value.indexOf('{') === 0 ? LEGACY_FIELD_TYPES.json_string : LEGACY_FIELD_TYPES.string);
-  const payload = {
-    metafield: {
-      namespace,
-      key,
-      value,
-      type,
+  const params = cleanQueryParams({
+    fields: ['id'].join(', '),
+    // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
+    // TODO: calculate best possible value based on effectiveMetafieldKeys.length
+    limit: 30,
+  });
+
+  let url =
+    prevContinuation?.nextUrl ??
+    coda.withQueryParams(
+      `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restResource.plural}.json`,
+      params
+    );
+
+  let { response, continuation } = await makeSyncTableGetRequest(
+    {
+      url,
+      extraContinuationData: { metafieldDefinitions },
     },
-  };
+    context
+  );
+  if (response && response.body[restResource.plural]) {
+    // Add metafields by doing multiple Rest Admin API calls
+    const items = [];
+    await Promise.all(
+      response.body[restResource.plural]
+        .map((resource) => ({ id: resource.id }))
+        .map(async (resource) => {
+          const response = await fetchMetafieldsRest(resource.id, restResource, {}, context);
+          const metafields: MetafieldRest[] = response.body.metafields;
+          metafields
+            .filter((m) => metafieldKeys.includes(`${m.namespace}.${m.key}`))
+            .forEach((m) => {
+              const fullKey = `${m.namespace}.${m.key}`;
 
-  return makePostRequest({ url, payload }, context);
-};
-*/
+              if (metafieldKeys.includes(fullKey)) {
+                const matchDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
+                items.push(
+                  formatMetafieldForSchemaFromGraphQlApi(
+                    {
+                      id: idToGraphQlGid(GraphQlResource.Metafield, m.id),
+                      key: m.key,
+                      namespace: m.namespace,
+                      type: m.type,
+                      value: m.value as string,
+                      // @ts-ignore
+                      ownerType: m.owner_resource,
+                      definition: matchDefinition,
+                    },
+                    idToGraphQlGid(graphQlResource, m.owner_id),
+                    undefined,
+                    resourceMetafieldsSyncTableDefinition,
+                    context
+                  )
+                );
+              }
+            });
+        })
+    );
 
+    return { result: items, continuation };
+  }
+}
 // #endregion
 
 // #region GraphQL Requests
-export const updateMetafieldsGraphQl = async (
+export const setMetafieldsGraphQl = async (
   metafieldsSetInputs: MetafieldsSetInput[],
   context: coda.ExecutionContext
 ) => {
@@ -1385,7 +1404,7 @@ export async function fetchSingleMetafieldGraphQl(
 }> {
   const { graphQlResource, fullKey, ownerGid, cacheTtlSecs } = params;
   const isShopQuery = graphQlResource === GraphQlResource.Shop;
-  const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
+  const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   const { graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
 
   const payload = {
@@ -1398,16 +1417,18 @@ export async function fetchSingleMetafieldGraphQl(
   };
 
   const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
-  if (response?.body?.data[graphQlQueryOperation]?.metafields) {
+  if (response?.body?.data[graphQlQueryOperation]?.metafields?.nodes) {
     // When querying metafields via their keys, GraphQl returns the 'full' key, i.e. `${namespace}.${key}`.
     const metafieldNode: MetafieldFragmentWithDefinition = response.body.data[
       graphQlQueryOperation
     ].metafields.nodes.find((m: MetafieldFragmentWithDefinition) => m.key === fullKey);
-    return {
-      ownerNodeGid: response.body.data[graphQlQueryOperation].id,
-      parentOwnerNodeGid: response.body.data[graphQlQueryOperation].parentOwner?.id,
-      metafieldNode,
-    };
+    if (metafieldNode) {
+      return {
+        ownerNodeGid: response.body.data[graphQlQueryOperation].id,
+        parentOwnerNodeGid: response.body.data[graphQlQueryOperation].parentOwner?.id,
+        metafieldNode,
+      };
+    }
   }
 }
 
@@ -1428,7 +1449,7 @@ export async function fetchMetafieldsGraphQl(
 }> {
   const { graphQlResource, ownerGid, cacheTtlSecs } = params;
   const isShopQuery = graphQlResource === GraphQlResource.Shop;
-  const resourceMetafieldsSyncTableDefinition = getValidResourceMetafieldsSyncTableDefinition(graphQlResource);
+  const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   const { graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
 
   const payload = {
@@ -1450,6 +1471,88 @@ export async function fetchMetafieldsGraphQl(
       metafieldNodes,
     };
   }
+}
+
+export async function syncGraphQlResourceMetafields(metafieldKeys: string[], context: coda.SyncExecutionContext) {
+  const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
+  const isRestSync = graphQlResource === GraphQlResource.Page || graphQlResource === GraphQlResource.Blog;
+  if (isRestSync) {
+    return syncRestResourceMetafields(metafieldKeys, context);
+  }
+  // TODO: separate GraphQL function too
+
+  const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
+  // TODO: get an approximation for first run by using count of relation columns ?
+  const defaultMaxEntriesPerRun = 50;
+  const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+    defaultMaxEntriesPerRun,
+    prevContinuation,
+    context
+  );
+  if (shouldDeferBy > 0) {
+    return skipGraphQlSyncTableRun(prevContinuation as unknown as SyncTableGraphQlContinuation, shouldDeferBy);
+  }
+
+  const isShopQuery = graphQlResource === GraphQlResource.Shop;
+  const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
+  const { syncTableGraphQlQueryOperation: graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
+
+  const query = isShopQuery ? QueryShopMetafieldsByKeys : makeQueryResourceMetafieldsByKeys(graphQlQueryOperation);
+
+  const payload = {
+    query: query,
+    variables: {
+      metafieldKeys,
+      countMetafields: metafieldKeys.length,
+      maxEntriesPerRun,
+      cursor: prevContinuation?.cursor ?? null,
+    },
+  };
+
+  const { response, continuation } = await makeSyncTableGraphQlRequest(
+    {
+      payload,
+      maxEntriesPerRun,
+      prevContinuation,
+      getPageInfo: isShopQuery ? undefined : (data: any) => data[graphQlQueryOperation]?.pageInfo,
+    },
+    context
+  );
+
+  let items: any[];
+  if (isShopQuery) {
+    items = response.body.data[graphQlQueryOperation].metafields.nodes
+      .map((metafieldNode: MetafieldFragmentWithDefinition) =>
+        formatMetafieldForSchemaFromGraphQlApi(
+          metafieldNode,
+          response.body.data[graphQlQueryOperation].id,
+          undefined,
+          resourceMetafieldsSyncTableDefinition,
+          context
+        )
+      )
+      .filter((m) => m);
+  } else {
+    items = response.body.data[graphQlQueryOperation].nodes
+      .map((ownerNode) =>
+        ownerNode.metafields.nodes.map((metafieldNode: MetafieldFragmentWithDefinition) =>
+          formatMetafieldForSchemaFromGraphQlApi(
+            metafieldNode,
+            ownerNode.id,
+            ownerNode?.parentOwner?.id,
+            resourceMetafieldsSyncTableDefinition,
+            context
+          )
+        )
+      )
+      .flat()
+      .filter((m) => m);
+  }
+
+  return {
+    result: items,
+    continuation: continuation,
+  };
 }
 // #endregion
 

@@ -120,7 +120,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
     },
     editFileReferenceList: {
       type: coda.ValueType.Array,
-      items: CollectionReference,
+      items: FileReference,
       fixedId: 'editFileReferenceList',
       fromKey: 'editFileReferenceList',
       mutable: true,
@@ -135,7 +135,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
     },
     editPageReferenceList: {
       type: coda.ValueType.Array,
-      items: CollectionReference,
+      items: PageReference,
       fixedId: 'editPageReferenceList',
       fromKey: 'editPageReferenceList',
       mutable: true,
@@ -165,7 +165,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
     },
     editProductVariantReferenceList: {
       type: coda.ValueType.Array,
-      items: CollectionReference,
+      items: ProductVariantReference,
       fixedId: 'editProductVariantReferenceList',
       fromKey: 'editProductVariantReferenceList',
       mutable: true,
@@ -174,7 +174,7 @@ export const MetafieldSchema = coda.makeObjectSchema({
   },
   displayProperty: 'label',
   idProperty: 'id',
-  featuredProperties: ['key', 'owner_id', 'rawValue', 'type'],
+  featuredProperties: ['key', 'id', 'owner_id', 'rawValue', 'type'],
 
   // Card fields.
   subtitleProperties: ['id', 'type', 'owner_type', 'updated_at'],

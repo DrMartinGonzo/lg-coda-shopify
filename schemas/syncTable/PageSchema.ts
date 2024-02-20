@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_PAGE } from '../../constants';
+import { IDENTITY_PAGE, NOT_FOUND } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 
 export const PageSchema = coda.makeObjectSchema({
@@ -116,7 +116,7 @@ export const PageSchema = coda.makeObjectSchema({
   snippetProperty: 'body',
   linkProperty: 'admin_url',
 });
-export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSchema, IDENTITY_PAGE);
+
 export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties>[] = [
   {
     field: 'body_html',
@@ -135,3 +135,6 @@ export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties
     dependencies: ['store_url'],
   },
 ];
+
+export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSchema, IDENTITY_PAGE);
+export const formatPageReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });

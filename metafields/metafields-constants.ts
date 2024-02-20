@@ -1,5 +1,6 @@
 import { GraphQlResource } from '../types/GraphQl';
 import { ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 // TODO: switch to enum ?
 export const METAFIELD_TYPES = {
@@ -58,12 +59,14 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Article',
     key: GraphQlResource.Article,
+    metafieldOwnerType: MetafieldOwnerType.Article,
     syncTableGraphQlQueryOperation: 'articles', // TODO: no graphQL here
     graphQlQueryOperation: 'article', // TODO: no graphQL here
   },
   {
     display: 'Blog',
     key: GraphQlResource.Blog,
+    metafieldOwnerType: MetafieldOwnerType.Blog,
     syncTableGraphQlQueryOperation: 'blogs', // TODO: no graphQL here
     graphQlQueryOperation: 'blog', // TODO: no graphQL here
     storeFront: true,
@@ -71,6 +74,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Collection',
     key: GraphQlResource.Collection,
+    metafieldOwnerType: MetafieldOwnerType.Collection,
     syncTableGraphQlQueryOperation: 'collections',
     graphQlQueryOperation: 'collection',
   },
@@ -85,6 +89,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Customer',
     key: GraphQlResource.Customer,
+    metafieldOwnerType: MetafieldOwnerType.Customer,
     syncTableGraphQlQueryOperation: 'customers',
     graphQlQueryOperation: 'customer',
   },
@@ -99,18 +104,21 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Location',
     key: GraphQlResource.Location,
+    metafieldOwnerType: MetafieldOwnerType.Location,
     syncTableGraphQlQueryOperation: 'locations',
     graphQlQueryOperation: 'location',
   },
   {
     display: 'Order',
     key: GraphQlResource.Order,
+    metafieldOwnerType: MetafieldOwnerType.Order,
     syncTableGraphQlQueryOperation: 'orders',
     graphQlQueryOperation: 'order',
   },
   {
     display: 'Page',
     key: GraphQlResource.Page,
+    metafieldOwnerType: MetafieldOwnerType.Page,
     syncTableGraphQlQueryOperation: 'pages', // TODO: no graphQL here
     graphQlQueryOperation: 'page', // TODO: no graphQL here
     storeFront: true,
@@ -118,6 +126,7 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Product',
     key: GraphQlResource.Product,
+    metafieldOwnerType: MetafieldOwnerType.Product,
     syncTableGraphQlQueryOperation: 'products',
     graphQlQueryOperation: 'product',
     storeFront: true,
@@ -133,12 +142,14 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
   {
     display: 'Product Variant',
     key: GraphQlResource.ProductVariant,
+    metafieldOwnerType: MetafieldOwnerType.Productvariant,
     syncTableGraphQlQueryOperation: 'productVariants',
     graphQlQueryOperation: 'productVariant',
   },
   {
     display: 'Shop',
     key: GraphQlResource.Shop,
+    metafieldOwnerType: MetafieldOwnerType.Shop,
     syncTableGraphQlQueryOperation: 'shop',
     graphQlQueryOperation: 'shop',
   },

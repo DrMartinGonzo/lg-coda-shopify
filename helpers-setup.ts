@@ -10,11 +10,11 @@ import { GraphQlResource } from './types/GraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
 
 // TODO: rename this
-interface CodaMetafieldValue {
+export interface CodaMetafieldValue {
   type: MetafieldTypeValue;
   value: any;
 }
-interface CodaMetafieldListValue {
+export interface CodaMetafieldListValue {
   type: MetafieldTypeValue;
   value: any[];
 }
@@ -59,6 +59,20 @@ const parameters = {
     suggestedValue: 'GRAMS',
   }),
 };
+
+export function parseAndValidateMetafieldValueFormulaInput(value: string) {
+  const defaultErrorMessage = 'Invalid value. Did you use one of the `Metafield{…}Value` formulas to set it?';
+  let parsedValue: CodaMetafieldValue | CodaMetafieldListValue;
+  try {
+    parsedValue = JSON.parse(value);
+  } catch (error) {
+    throw new coda.UserVisibleError(defaultErrorMessage);
+  }
+  if (!parsedValue.type) {
+    throw new coda.UserVisibleError(defaultErrorMessage);
+  }
+  return parsedValue;
+}
 
 function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) {
   return coda.makeFormula({
@@ -182,7 +196,7 @@ export const Formula_MetafieldKeyValueSet = coda.makeFormula({
     coda.makeParameter({
       type: coda.ParameterType.String,
       name: 'value',
-      description: 'A single metafield value or a list of metafield values wrapped with `MetafieldValues` formula.',
+      description: 'A single metafield value or a list of metafield values wrapped with the `MetafieldValues` formula.',
     }),
   ],
   resultType: coda.ValueType.String,
