@@ -14,6 +14,7 @@ import {
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
 import { restResources } from '../types/Rest';
+import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSchema';
 
 // #region Helpers
 function formatArticleStandardFieldsRestParams(
@@ -122,10 +123,7 @@ export const formatArticleForSchemaFromRestApi: FormatFunction = (article, conte
   };
 
   if (article.blog_id) {
-    obj.blog = {
-      id: article.blog_id,
-      title: NOT_FOUND,
-    };
+    obj.blog = formatBlogReferenceValueForSchema(article.blog_id);
   }
 
   if (article.image) {

@@ -17,6 +17,7 @@ import {
 import { idToGraphQlGid } from '../helpers-graphql';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { GraphQlResource } from '../types/GraphQl';
+import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
 
 // #region Validate functions
 export function validateProductVariantParams(params: any) {
@@ -100,10 +101,7 @@ export const formatProductVariantForSchemaFromRestApi = (variant, parentProduct,
   let obj: any = {
     ...variant,
     admin_url: `${context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
-    product: {
-      id: variant.product_id,
-      title: parentProduct?.title,
-    },
+    product: formatProductReferenceValueForSchema(variant.product_id, parentProduct?.title),
     displayTitle: parentProduct?.title ? `${parentProduct.title} - ${variant.title}` : variant.title,
   };
 

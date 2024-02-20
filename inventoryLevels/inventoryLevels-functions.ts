@@ -6,6 +6,8 @@ import { FormatFunction } from '../types/misc';
 
 import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { InventoryLevelAdjustRestParams, InventoryLevelSetRestParams } from '../types/InventoryLevel';
+import { formatLocationReferenceValueForSchema } from '../schemas/syncTable/LocationSchema';
+import { formatInventoryItemReferenceValueForSchema } from '../schemas/syncTable/InventoryItemSchema';
 
 // #region Helpers
 export async function handleInventoryLevelUpdateJob(
@@ -42,15 +44,10 @@ export const formatInventoryLevelForSchemaFromRestApi: FormatFunction = (invento
     inventory_history_url: `${context.endpoint}/admin/products/inventory/${inventoryLevel.inventory_item_id}/inventory_history?location_id=${inventoryLevel.location_id}`,
   };
   if (inventoryLevel.location_id) {
-    obj.location = {
-      id: inventoryLevel.location_id,
-      name: NOT_FOUND,
-    };
+    obj.location = formatLocationReferenceValueForSchema(inventoryLevel.location_id);
   }
   if (inventoryLevel.inventory_item_id) {
-    obj.inventory_item = {
-      id: inventoryLevel.inventory_item_id,
-    };
+    obj.inventory_item = formatInventoryItemReferenceValueForSchema(inventoryLevel.inventory_item_id);
   }
 
   return obj;

@@ -13,7 +13,7 @@ import {
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
-import { CollectionSchema } from '../schemas/syncTable/CollectionSchema';
+import { CollectionSchema, formatCollectionReferenceValueForSchema } from '../schemas/syncTable/CollectionSchema';
 import { FormatFunction } from '../types/misc';
 
 import {
@@ -26,6 +26,7 @@ import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { CollectionUpdateRestParams } from '../types/Collection';
 import { GraphQlResource } from '../types/GraphQl';
 import { restResources } from '../types/Rest';
+import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
 
 // #region Helpers
 function formatCollectionStandardFieldsRestParams(
@@ -139,16 +140,10 @@ export const formatCollect: FormatFunction = (collect, context) => {
     ...collect,
   };
   if (collect.product_id) {
-    obj.product = {
-      id: collect.product_id,
-      title: NOT_FOUND,
-    };
+    obj.product = formatProductReferenceValueForSchema(collect.product_id);
   }
   if (collect.collection_id) {
-    obj.collection = {
-      id: collect.collection_id,
-      title: NOT_FOUND,
-    };
+    obj.collection = formatCollectionReferenceValueForSchema(collect.collection_id);
   }
   return obj;
 };

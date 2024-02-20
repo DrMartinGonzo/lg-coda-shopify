@@ -1,4 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
+import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
+import { formatProductVariantReferenceValueForSchema } from '../schemas/syncTable/ProductVariantSchema';
 
 // #region Helpers
 // TODO
@@ -12,14 +14,8 @@ export const formatOrderLineItemForSchemaFromRestApi = (orderLineItem, parentOrd
   let obj: any = {
     ...orderLineItem,
     order_id: parentOrder.id,
-    order: {
-      id: parentOrder.id,
-      name: parentOrder.name,
-    },
-    variant: {
-      id: orderLineItem.variant_id,
-      title: orderLineItem.variant_title,
-    },
+    order: formatOrderReferenceValueForSchema(parentOrder.id, parentOrder.name),
+    variant: formatProductVariantReferenceValueForSchema(orderLineItem.variant_id, orderLineItem.variant_title),
   };
 
   return obj;

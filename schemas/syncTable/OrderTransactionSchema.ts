@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderReference } from './OrderSchema';
-import { IDENTITY_ORDER_TRANSACTION } from '../../constants';
+import { IDENTITY_ORDER_TRANSACTION, NOT_FOUND } from '../../constants';
 import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchema';
 
 export const OrderTransactionSchema = coda.makeObjectSchema({
@@ -178,3 +178,5 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
   idProperty: 'id',
   featuredProperties: ['id', 'amount'],
 });
+
+export const formatOrderTransactionReferenceValueForSchema = (id: number, label = NOT_FOUND) => ({ id, label });
