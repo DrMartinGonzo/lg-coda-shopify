@@ -123,6 +123,7 @@ export const InventoryItemReference = coda.makeReferenceSchemaFromObjectSchema(
   InventoryItemSchema,
   IDENTITY_INVENTORYITEM
 );
+export const formatInventoryItemReferenceValueForSchema = (id: number) => ({ id });
 
 export const InventoryItemFieldDependencies: FieldDependency<typeof InventoryItemSchema.properties>[] = [
   {
