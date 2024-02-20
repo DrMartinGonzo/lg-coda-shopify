@@ -62,7 +62,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   getName: async function (context) {
     const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
     const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    return `${resourceMetafieldsSyncTableDefinition.display} Metafield Definitions`;
+    return `MetafieldDefinitions_${resourceMetafieldsSyncTableDefinition.display}`;
   },
   /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {

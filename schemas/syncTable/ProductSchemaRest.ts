@@ -33,6 +33,7 @@ export const ProductSchemaRest = coda.makeObjectSchema({
       fixedId: 'product_id',
       fromKey: 'id',
       required: true,
+      useThousandsSeparator: false,
       description: 'unique identifier for the product',
     },
     graphql_gid: {
