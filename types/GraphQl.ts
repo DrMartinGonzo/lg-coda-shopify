@@ -12,6 +12,7 @@ export enum GraphQlResource {
   InventoryItem = 'InventoryItem',
   Location = 'Location',
   Metaobject = 'Metaobject',
+  Metafield = 'Metafield',
   OnlineStoreArticle = 'OnlineStoreArticle',
   OnlineStoreBlog = 'OnlineStoreBlog',
   OnlineStorePage = 'OnlineStorePage',

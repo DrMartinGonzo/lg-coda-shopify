@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER } from '../../constants';
+import { IDENTITY_ORDER, NOT_FOUND } from '../../constants';
 import { CustomerReference } from './CustomerSchema';
 import { FieldDependency } from '../../types/tableSync';
 import { NameValueSchema } from '../basic/NameValueSchema';
@@ -706,3 +706,4 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSchema.properti
   },
 ];
 export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSchema, IDENTITY_ORDER);
+export const formatOrderReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });

@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_LOCATION } from '../../constants';
+import { IDENTITY_LOCATION, NOT_FOUND } from '../../constants';
 import { countryCodes } from '../../types/misc';
 import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 
@@ -144,3 +144,4 @@ export const LocationSchema = coda.makeObjectSchema({
 });
 
 export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSchema, IDENTITY_LOCATION);
+export const formatLocationReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });

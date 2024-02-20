@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
-import { CACHE_SINGLE_FETCH, IDENTITY_METAOBJECT, PACK_ID } from '../constants';
+import { CACHE_SINGLE_FETCH } from '../constants';
 import {
   createMetaobjectMutation,
   deleteMetaobjectMutation,
@@ -63,27 +63,6 @@ export async function autocompleteMetaobjectType(context: coda.ExecutionContext,
 // #endregion
 
 // #region Helpers
-export function getMetaobjectReferenceSchema(fieldDefinition) {
-  const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
-    (v) => v.name === 'metaobject_definition_id'
-  )?.value;
-
-  return coda.makeObjectSchema({
-    codaType: coda.ValueHintType.Reference,
-    properties: {
-      id: { type: coda.ValueType.Number, required: true },
-      handle: { type: coda.ValueType.String, required: true },
-    },
-    displayProperty: 'handle',
-    idProperty: 'id',
-    identity: {
-      packId: PACK_ID,
-      name: IDENTITY_METAOBJECT,
-      dynamicUrl: metaobjectReferenceDefinitionId,
-    },
-  });
-}
-
 // TODO: fetch all and not only first 20
 async function getMetaObjectTypes(context: coda.ExecutionContext) {
   const payload = {

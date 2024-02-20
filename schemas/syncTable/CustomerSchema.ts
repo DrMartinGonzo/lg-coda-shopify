@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_CUSTOMER } from '../../constants';
+import { IDENTITY_CUSTOMER, NOT_FOUND } from '../../constants';
 import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
 
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
@@ -254,6 +254,7 @@ export const CustomerSchema = coda.makeObjectSchema({
 });
 
 export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSchema, IDENTITY_CUSTOMER);
+export const formatCustomerReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
 
 export const customerFieldDependencies = [
   {
