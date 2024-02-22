@@ -95,7 +95,7 @@ const parameters = {
   productVariantId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'productVariantId',
-    description: 'The Id of the product variant.',
+    description: 'The ID of the product variant.',
   }),
   option1: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -441,10 +441,10 @@ export const Sync_ProductVariants = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateProductVariant = coda.makeFormula({
   name: 'CreateProductVariant',
-  description: 'Create a new Shopify Product Variant and return Product Variant Id.',
+  description: 'Create a new Shopify Product Variant and return Product Variant ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...sharedParameters.productId, description: 'The Id of the parent product.' },
+    { ...sharedParameters.productId, description: 'The ID of the parent product.' },
     { ...parameters.option1, description: 'Option 1 of 3 of the product variant. At least one option is required.' },
     // optional parameters
     { ...parameters.barcode, optional: true },
@@ -639,7 +639,7 @@ export const Formula_ProductVariant = coda.makeFormula({
 
 export const Format_ProductVariant: coda.Format = {
   name: 'ProductVariant',
-  instructions: 'Paste the Id of the product variant into the column.',
+  instructions: 'Paste the ID of the product variant into the column.',
   formulaName: 'ProductVariant',
 };
 // #endregion

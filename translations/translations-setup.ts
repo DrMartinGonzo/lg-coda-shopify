@@ -40,7 +40,7 @@ export const setupTranslations = (pack: coda.PackDefinitionBuilder) => {
       coda.makeParameter({
         type: coda.ParameterType.String,
         name: 'resourceId',
-        description: 'The id of the resource to translate.',
+        description: 'The ID of the resource to translate.',
       }),
     ],
     varargParameters: [

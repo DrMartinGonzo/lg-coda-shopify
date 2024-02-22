@@ -54,7 +54,7 @@ const parameters = {
   pageID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'pageId',
-    description: 'The Id of the page.',
+    description: 'The ID of the page.',
   }),
   // inputHandle: coda.makeParameter({
   //   type: coda.ParameterType.String,
@@ -380,7 +380,7 @@ export const Formula_Page = coda.makeFormula({
 
 export const Format_Page: coda.Format = {
   name: 'Page',
-  instructions: 'Paste the page Id into the column.',
+  instructions: 'Paste the page ID into the column.',
   formulaName: 'Page',
 };
 // #endregion

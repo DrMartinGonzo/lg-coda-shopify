@@ -534,7 +534,7 @@ export const Formula_Collection = coda.makeFormula({
 
 export const Format_Collection: coda.Format = {
   name: 'Collection',
-  instructions: 'Paste the collection Id into the column.',
+  instructions: 'Paste the collection ID into the column.',
   formulaName: 'Collection',
 };
 
@@ -546,7 +546,7 @@ pack.addFormula({
     coda.makeParameter({
       type: coda.ParameterType.String,
       name: 'collectID',
-      description: 'The id of the collection.',
+      description: 'The ID of the collection.',
     }),
     coda.makeParameter({
       type: coda.ParameterType.String,

@@ -25,7 +25,7 @@ export const ArticleSchema = coda.makeObjectSchema({
       fixedId: 'admin_url',
       description: 'A link to the article in the Shopify admin.',
     },
-    // Pas possible sans faire de reqûete supplémentaire pour récupérer le handle du blog à partir de blog_id
+    // TODO: Pas possible sans faire de requête supplémentaire pour récupérer le handle du blog à partir de blog_id
     // store_url: {
     //   type: coda.ValueType.String,
     //   codaType: coda.ValueHintType.Url,

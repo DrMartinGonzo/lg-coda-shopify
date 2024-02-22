@@ -15,9 +15,9 @@ export const ProductOptionSchema = coda.makeObjectSchema({
     },
     // The order of the product image in the list. The first product image is at position 1 and is the "main" image for the product.
     position: { type: coda.ValueType.Number },
-    // The id of the product associated with the image.
+    // The ID of the product associated with the image.
     product_id: { type: coda.ValueType.Number },
-    // An array of variant ids associated with the image.
+    // An array of variant IDs associated with the image.
     variant_ids: {
       type: coda.ValueType.Array,
       items: { type: coda.ValueType.Number },
