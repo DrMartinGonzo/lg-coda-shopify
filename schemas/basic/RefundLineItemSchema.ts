@@ -2,9 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 export const RefundLineItemSchema = coda.makeObjectSchema({
   properties: {
-    refund_line_item_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'refund_line_item_id',
+      fixedId: 'id',
       fromKey: 'id',
       useThousandsSeparator: false,
       description: 'The unique identifier of the line item in the refund.',
@@ -77,5 +77,5 @@ export const RefundLineItemSchema = coda.makeObjectSchema({
     },
     */
   },
-  displayProperty: 'refund_line_item_id',
+  displayProperty: 'id',
 });

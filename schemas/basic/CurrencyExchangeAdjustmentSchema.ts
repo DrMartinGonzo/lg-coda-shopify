@@ -2,9 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 export const CurrencyExchangeAdjustmentSchema = coda.makeObjectSchema({
   properties: {
-    currency_exchange_adjustment_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'currency_exchange_adjustment_id',
+      fixedId: 'id',
       fromKey: 'id',
       useThousandsSeparator: false,
       description: 'The ID of the adjustment.',
@@ -34,5 +34,5 @@ export const CurrencyExchangeAdjustmentSchema = coda.makeObjectSchema({
       description: 'The shop currency.',
     },
   },
-  displayProperty: 'order_adjustment_id',
+  displayProperty: 'id',
 });

@@ -29,11 +29,11 @@ export const OrderSchema = coda.makeObjectSchema({
       fixedId: 'graphql_gid',
       description: 'The GraphQL GID of the order.',
     },
-    order_id: {
+    id: {
       type: coda.ValueType.Number,
       required: true,
       fromKey: 'id',
-      fixedId: 'order_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description:
         'The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.',
@@ -667,9 +667,9 @@ export const OrderSchema = coda.makeObjectSchema({
   },
 
   displayProperty: 'name',
-  idProperty: 'order_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
-  featuredProperties: ['order_id', 'customer', 'shipping_lines', 'line_items'],
+  featuredProperties: ['id', 'customer', 'shipping_lines', 'line_items'],
 });
 export const orderFieldDependencies: FieldDependency<typeof OrderSchema.properties>[] = [
   //   {

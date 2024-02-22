@@ -7,11 +7,11 @@ import { CollectionReference } from './CollectionSchema';
 export const CollectSchema = coda.makeObjectSchema({
   properties: {
     //! admin_graphql_api_id DOES NOT EXIST
-    collect_id: {
+    id: {
       type: coda.ValueType.Number,
       required: true,
       fromKey: 'id',
-      fixedId: 'collect_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
     },
     collection_id: {
@@ -60,9 +60,9 @@ export const CollectSchema = coda.makeObjectSchema({
       description: 'The date and time when the collect was last updated.',
     },
   },
-  displayProperty: 'collect_id',
-  idProperty: 'collect_id',
-  featuredProperties: ['collect_id', 'collection', 'product', 'created_at', 'updated_at'],
+  displayProperty: 'id',
+  idProperty: 'id',
+  featuredProperties: ['id', 'collection', 'product', 'created_at', 'updated_at'],
 });
 export const collectFieldDependencies: FieldDependency<typeof CollectSchema.properties>[] = [
   {

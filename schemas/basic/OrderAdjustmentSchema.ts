@@ -2,9 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 export const OrderAdjustmentSchema = coda.makeObjectSchema({
   properties: {
-    order_adjustment_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'order_adjustment_id',
+      fixedId: 'id',
       fromKey: 'id',
       useThousandsSeparator: false,
       description: 'The unique identifier for the order adjustment',
@@ -66,5 +66,5 @@ export const OrderAdjustmentSchema = coda.makeObjectSchema({
     },
     */
   },
-  displayProperty: 'order_adjustment_id',
+  displayProperty: 'id',
 });

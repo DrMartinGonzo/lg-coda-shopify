@@ -14,11 +14,11 @@ export const RedirectSchema = coda.makeObjectSchema({
       fixedId: 'test_url',
       description: 'A link to test the redirect. Uses the value in `path` and should land you in `target`.',
     },
-    redirect_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
+      fixedId: 'id',
       required: true,
-      fixedId: 'redirect_id',
       useThousandsSeparator: false,
       description: 'The ID for the redirect.',
     },
@@ -40,8 +40,8 @@ export const RedirectSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'path',
-  idProperty: 'redirect_id',
-  featuredProperties: ['redirect_id', 'path', 'target', 'admin_url'],
+  idProperty: 'id',
+  featuredProperties: ['id', 'path', 'target', 'admin_url'],
 });
 
 export const redirectFieldDependencies = [

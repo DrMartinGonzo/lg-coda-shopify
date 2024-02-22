@@ -5,7 +5,7 @@ export const ProductImageSchema = coda.makeObjectSchema({
     // The date and time when the product image was created. The API returns this value in ISO 8601 format.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     // A unique numeric identifier for the product image.
-    product_image_id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
+    id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
     // The order of the product image in the list. The first product image is at position 1 and is the "main" image for the product.
     position: { type: coda.ValueType.Number },
     // The id of the product associated with the image.
