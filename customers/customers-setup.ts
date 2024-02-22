@@ -474,7 +474,7 @@ export const Formula_Customer = coda.makeFormula({
 
 export const Format_Customer: coda.Format = {
   name: 'Customer',
-  instructions: 'Paste the customer Id into the column.',
+  instructions: 'Paste the customer ID into the column.',
   formulaName: 'Customer',
 };
 // #endregion

@@ -185,7 +185,7 @@ export const Formula_Redirect = coda.makeFormula({
 
 export const Format_Redirect: coda.Format = {
   name: 'Redirect',
-  instructions: 'Paste the redirect Id into the column.',
+  instructions: 'Paste the redirect ID into the column.',
   formulaName: 'Redirect',
 };
 // #endregion

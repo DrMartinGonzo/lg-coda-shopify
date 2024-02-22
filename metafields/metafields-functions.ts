@@ -500,7 +500,7 @@ const deleteMetafieldsByKeysRest = async (
             const statusError = error as coda.StatusCodeError;
             if (statusError.statusCode === 404) {
               console.error(
-                `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with id ${ownerId}. Possibly already deleted.`
+                `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with ID ${ownerId}. Possibly already deleted.`
               );
             }
           }
@@ -509,7 +509,7 @@ const deleteMetafieldsByKeysRest = async (
         }
       } else {
         console.error(
-          `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with id ${ownerId}. Possibly already deleted.`
+          `Metafield ${metafieldKeyValueSet.key} not found for resource ${ownerResource.singular} with ID ${ownerId}. Possibly already deleted.`
         );
       }
 
@@ -916,7 +916,7 @@ export function formatMetafieldForSchemaFromGraphQlApi(
    * We don't set it at once because parentOwnerId can be necessary but
    * undefined when formatting from a two way sync update (ex: ProductVariants).
    * Since this value is static, we return nothing to prevent erasing the
-   * previous value. We could also retrieve the owner id value directly in the
+   * previous value. We could also retrieve the owner ID value directly in the
    * graphQl mutation result but doing it this way reduce the GraphQL query costs.
    */
   const maybeAdminUrl = getResourceMetafieldsAdminUrl(

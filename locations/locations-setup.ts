@@ -297,7 +297,7 @@ export const Formula_Location = coda.makeFormula({
 
 export const Format_Location: coda.Format = {
   name: 'Location',
-  instructions: 'Paste the location Id into the column.',
+  instructions: 'Paste the location ID into the column.',
   formulaName: 'Location',
 };
 // #endregion

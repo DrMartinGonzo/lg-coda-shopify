@@ -54,7 +54,7 @@ const parameters = {
   blogId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'blogId',
-    description: 'The Id of the blog.',
+    description: 'The ID of the blog.',
   }),
   commentable: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -290,7 +290,7 @@ export const Formula_Blog = coda.makeFormula({
 
 export const Format_Blog: coda.Format = {
   name: 'Blog',
-  instructions: 'Paste the blog Id into the column.',
+  instructions: 'Paste the blog ID into the column.',
   formulaName: 'Blog',
 };
 // #endregion
