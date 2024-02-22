@@ -1,5 +1,3 @@
-export const IS_ADMIN_RELEASE = true;
-
 /**
  open: Show only open orders.
  closed: Show only closed orders.
@@ -76,7 +74,6 @@ export const METAFIELDS_RESOURCE_TYPES = [
   'variant',
 ];
 
-export const PACK_ID = 11612;
 export const NOT_FOUND = 'NOT_FOUND';
 
 export const IDENTITY_ARTICLE = 'Article';

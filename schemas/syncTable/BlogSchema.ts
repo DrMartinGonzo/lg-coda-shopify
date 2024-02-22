@@ -98,6 +98,7 @@ export const BlogSchema = coda.makeObjectSchema({
   subtitleProperties: ['handle', 'tags', 'commentable', 'template_suffix'],
   linkProperty: 'admin_url',
 });
+
 export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSchema, IDENTITY_BLOG);
 export const formatBlogReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
 export const blogFieldDependencies: FieldDependency<typeof BlogSchema.properties>[] = [

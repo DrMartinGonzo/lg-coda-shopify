@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { PACK_ID, IDENTITY_METAOBJECT, NOT_FOUND } from '../../constants';
+import { CODA_PACK_ID } from '../../pack-config.json';
+import { IDENTITY_METAOBJECT, NOT_FOUND } from '../../constants';
 import { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
 
 export const MetaObjectBaseSchema = coda.makeObjectSchema({
@@ -44,7 +44,7 @@ export function getMetaobjectReferenceSchema(
     displayProperty: 'handle',
     idProperty: 'id',
     identity: {
-      packId: PACK_ID,
+      packId: CODA_PACK_ID,
       name: IDENTITY_METAOBJECT,
       dynamicUrl: metaobjectReferenceDefinitionId,
     },
