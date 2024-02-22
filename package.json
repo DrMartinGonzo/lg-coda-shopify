@@ -4,11 +4,15 @@
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "postinstall": "npx patch-package",
-    "validate": "coda validate pack.ts",
-    "push": "coda upload pack.ts",
+    "set_release:admin": "IS_ADMIN_RELEASE=true node set-pack-config.js",
+    "set_release:user": "IS_ADMIN_RELEASE=false node set-pack-config.js",
+    "validate:admin": "yarn set_release:admin && coda validate pack.ts",
+    "validate:user": "yarn set_release:user && coda validate pack.ts",
+    "push:admin": "yarn set_release:admin && coda upload pack.ts",
+    "push:user": "yarn set_release:user && coda upload pack.ts",
     "graphql-codegen": "graphql-codegen --config codegen.ts",
     "unused-exports": "npx ts-unused-exports ./tsconfig.json",
-    "test-metafield-update": "coda execute ./pack.ts Metafields:update --dynamicUrl=Product \"lg_category.blend\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
+    "test-metafield-update": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=OnlineStoreArticle \"lg_custom.audio\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",
   "license": "MIT",

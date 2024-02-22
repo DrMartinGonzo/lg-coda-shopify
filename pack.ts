@@ -2,6 +2,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { IS_ADMIN_RELEASE } from './pack-config.json';
+
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -128,7 +130,6 @@ import {
   Formula_MetafieldNumberDecimalValue,
 } from './helpers-setup';
 import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
-import { IS_ADMIN_RELEASE } from './constants';
 import {
   Format_MetafieldDefinition,
   Formula_MetafieldDefinition,
@@ -144,6 +145,7 @@ pack.setUserAuthentication({
   type: coda.AuthenticationType.Custom,
   requiresEndpointUrl: true,
   endpointDomain: 'myshopify.com',
+  instructionsUrl: 'https://help.shopify.com/en/manual/apps/app-types/custom-apps#create-and-install-a-custom-app',
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
@@ -248,7 +250,9 @@ pack.formulas.push(Action_CreateRedirect);
 pack.formulas.push(Action_UpdateRedirect);
 pack.formulas.push(Action_DeleteRedirect);
 
-pack.formulas.push(Action_SALUT);
+if (IS_ADMIN_RELEASE) {
+  pack.formulas.push(Action_SALUT);
+}
 // #endregion
 
 // #region Column Formats

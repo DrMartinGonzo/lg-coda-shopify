@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_METAFIELD_DEFINITION, NOT_FOUND, PACK_ID } from '../../constants';
+import { CODA_PACK_ID } from '../../pack-config.json';
+import { IDENTITY_METAFIELD_DEFINITION, NOT_FOUND } from '../../constants';
 import { ValidationSchema } from '../basic/ValidationSchema';
 import { ResourceMetafieldsSyncTableDefinition } from '../../types/Metafields';
 
@@ -115,7 +116,7 @@ export function getMetafieldDefinitionReferenceSchema(
     displayProperty: 'name',
     idProperty: 'id',
     identity: {
-      packId: PACK_ID,
+      packId: CODA_PACK_ID,
       name: IDENTITY_METAFIELD_DEFINITION,
       dynamicUrl: resourceMetafieldsSyncTableDefinition.key,
     },

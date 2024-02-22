@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { DEFAULT_THUMBNAIL_SIZE, IS_ADMIN_RELEASE } from './constants';
+import { DEFAULT_THUMBNAIL_SIZE } from './constants';
+import { IS_ADMIN_RELEASE } from './pack-config.json';
 import { ShopifyGraphQlError } from './shopifyErrors';
 import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
 import { LengthUnit, WeightUnit } from './types/admin.types';
