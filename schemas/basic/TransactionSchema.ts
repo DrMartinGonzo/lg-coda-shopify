@@ -4,9 +4,9 @@ import { ExtendedAuthorizationAttributesSchema } from './ExtendedAuthorizationAt
 
 export const TransactionSchema = coda.makeObjectSchema({
   properties: {
-    transaction_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'transaction_id',
+      fixedId: 'id',
       fromKey: 'id',
       useThousandsSeparator: false,
       description: 'The ID for the transaction.',
@@ -168,5 +168,5 @@ export const TransactionSchema = coda.makeObjectSchema({
     },
     */
   },
-  displayProperty: 'transaction_id',
+  displayProperty: 'id',
 });

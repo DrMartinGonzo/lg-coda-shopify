@@ -28,12 +28,12 @@ export const ProductSchemaGraphQl = coda.makeObjectSchema({
       fixedId: 'onlineStoreUrl',
       fromKey: 'onlineStoreUrl',
     },
-    product_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,
       description: 'unique identifier for the product',
-      fixedId: 'product_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
     },
     graphql_gid: {
@@ -164,7 +164,7 @@ export const ProductSchemaGraphQl = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'product_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'product_type', 'status', 'options', 'tags'],
 

@@ -2,10 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 
 export const CompanySchema = coda.makeObjectSchema({
   properties: {
-    company_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'company_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'The browser screen height in pixels, if available.',
     },
@@ -15,5 +15,5 @@ export const CompanySchema = coda.makeObjectSchema({
       description: 'The browser screen width in pixels, if available.',
     },
   },
-  displayProperty: 'company_id',
+  displayProperty: 'id',
 });

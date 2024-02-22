@@ -5,10 +5,10 @@ import { IDENTITY_ARTICLE, NOT_FOUND } from '../../constants';
 
 export const ArticleSchema = coda.makeObjectSchema({
   properties: {
-    article_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'article_id',
+      fixedId: 'id',
       required: true,
       useThousandsSeparator: false,
       description: 'The ID of the article.',
@@ -166,7 +166,7 @@ export const ArticleSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'article_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Articles dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'body_html', 'published'],
 

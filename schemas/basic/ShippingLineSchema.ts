@@ -6,10 +6,10 @@ import { TaxLineSchema } from './TaxLineSchema';
  */
 export const ShippingLineSchema = coda.makeObjectSchema({
   properties: {
-    shipping_line_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'shipping_line_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'The ID of the shipping line.',
     },
@@ -87,5 +87,5 @@ export const ShippingLineSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'shipping_line_id',
+  idProperty: 'id',
 });

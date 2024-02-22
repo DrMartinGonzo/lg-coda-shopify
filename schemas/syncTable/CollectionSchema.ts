@@ -66,10 +66,10 @@ export const CollectionSchema = coda.makeObjectSchema({
       description: 'A link to the collection in the Shopify admin.',
     },
 
-    collection_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'collection_id',
+      fixedId: 'id',
       required: true,
       useThousandsSeparator: false,
       description: 'The ID for the collection.',
@@ -191,7 +191,7 @@ export const CollectionSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'collection_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Collections dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'handle'],
 

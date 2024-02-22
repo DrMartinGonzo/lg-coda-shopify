@@ -22,10 +22,10 @@ export const PageSchema = coda.makeObjectSchema({
       fixedId: 'graphql_gid',
       description: 'The GraphQL GID of the page.',
     },
-    page_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'page_id',
+      fixedId: 'id',
       required: true,
       useThousandsSeparator: false,
       description: 'The unique numeric identifier for the page.',
@@ -107,7 +107,7 @@ export const PageSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'page_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Pages dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'author', 'handle', 'template_suffix'],
 

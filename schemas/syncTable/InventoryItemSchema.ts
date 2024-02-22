@@ -11,11 +11,11 @@ export const InventoryItemSchema = coda.makeObjectSchema({
       fromKey: 'admin_graphql_api_id',
       fixedId: 'graphql_gid',
     },
-    inventory_item_id: {
+    id: {
       type: coda.ValueType.Number,
       useThousandsSeparator: false,
       required: true,
-      fixedId: 'inventory_item_id',
+      fixedId: 'id',
       fromKey: 'id',
     },
     inventory_history_url: {
@@ -105,10 +105,10 @@ export const InventoryItemSchema = coda.makeObjectSchema({
       description: 'The ID of the variant that owns this inventory item.',
     },
   },
-  displayProperty: 'inventory_item_id',
-  idProperty: 'inventory_item_id',
+  displayProperty: 'id',
+  idProperty: 'id',
   featuredProperties: [
-    'inventory_item_id',
+    'id',
     'country_code_of_origin',
     'harmonized_system_code',
     'updated_at',
@@ -128,6 +128,6 @@ export const formatInventoryItemReferenceValueForSchema = (id: number) => ({ id 
 export const InventoryItemFieldDependencies: FieldDependency<typeof InventoryItemSchema.properties>[] = [
   {
     field: 'graphql_gid',
-    dependencies: ['inventory_item_id'],
+    dependencies: ['id'],
   },
 ];

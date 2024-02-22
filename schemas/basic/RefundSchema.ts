@@ -8,10 +8,10 @@ import { RefundLineItemSchema } from './RefundLineItemSchema';
 
 export const RefundSchema = coda.makeObjectSchema({
   properties: {
-    refund_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'refund_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'The unique identifier for the refund.',
     },
@@ -80,5 +80,5 @@ export const RefundSchema = coda.makeObjectSchema({
       description: 'The unique identifier of the user who performed the refund.',
     },
   },
-  displayProperty: 'refund_id',
+  displayProperty: 'id',
 });

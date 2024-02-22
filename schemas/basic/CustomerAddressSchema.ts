@@ -4,7 +4,7 @@ import { AddressSchema } from './AddressSchema';
 export const CustomerAddressSchema = coda.makeObjectSchema({
   properties: {
     ...AddressSchema.properties,
-    address_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,

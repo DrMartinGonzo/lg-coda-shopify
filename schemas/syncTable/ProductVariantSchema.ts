@@ -53,9 +53,9 @@ export const ProductVariantSchema = coda.makeObjectSchema({
       fromKey: 'grams',
       description: 'The weight of the product variant in grams.',
     },
-    product_variant_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'product_variant_id',
+      fixedId: 'id',
       fromKey: 'id',
       required: true,
       useThousandsSeparator: false,
@@ -208,9 +208,9 @@ export const ProductVariantSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'product_variant_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
-  featuredProperties: ['product_variant_id', 'title', 'sku', 'price'],
+  featuredProperties: ['id', 'title', 'sku', 'price'],
 
   // Card fields.
   titleProperty: 'displayTitle',
