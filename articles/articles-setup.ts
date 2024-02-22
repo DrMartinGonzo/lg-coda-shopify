@@ -61,12 +61,12 @@ const parameters = {
   articleID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'articleID',
-    description: 'The id of the article.',
+    description: 'The ID of the article.',
   }),
   blogId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'blogId',
-    description: 'The Id of the blog containing the article.',
+    description: 'The ID of the blog containing the article.',
     autocomplete: autocompleteBlogIdParameter,
   }),
   blogIdOptionName: coda.makeParameter({
@@ -476,7 +476,7 @@ export const Formula_Article = coda.makeFormula({
 
 export const Format_Article: coda.Format = {
   name: 'Article',
-  instructions: 'Paste the article Id into the column.',
+  instructions: 'Paste the article ID into the column.',
   formulaName: 'Article',
 };
 // #endregion

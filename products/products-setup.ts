@@ -391,7 +391,7 @@ export const Sync_Products = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateProduct = coda.makeFormula({
   name: 'CreateProduct',
-  description: 'Create a new Shopify Product and return Product Id.',
+  description: 'Create a new Shopify Product and return Product ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     parameters.title,

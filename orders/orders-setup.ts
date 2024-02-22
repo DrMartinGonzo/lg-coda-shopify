@@ -159,9 +159,9 @@ const standardUpdateProps = [
 
 const parameters = {
   orderId: coda.makeParameter({
-    type: coda.ParameterType.String,
+    type: coda.ParameterType.Number,
     name: 'orderID',
-    description: 'The id of the order.',
+    description: 'The ID of the order.',
   }),
   filterFields: coda.makeParameter({
     type: coda.ParameterType.String,

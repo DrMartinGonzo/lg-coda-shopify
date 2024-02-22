@@ -54,7 +54,7 @@ export const sharedParameters = {
   productId: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'productId',
-    description: 'The Id of the product.',
+    description: 'The ID of the product.',
   }),
   productType: coda.makeParameter({
     type: coda.ParameterType.String,

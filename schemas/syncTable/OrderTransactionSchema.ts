@@ -107,7 +107,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       useThousandsSeparator: false,
       fromKey: 'parentTransactionId',
       fixedId: 'parentTransactionId',
-      description: 'The associated parent transaction Id.',
+      description: 'The associated parent transaction ID.',
     },
     receiptJson: {
       type: coda.ValueType.String,

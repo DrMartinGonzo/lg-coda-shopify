@@ -419,7 +419,7 @@ export async function makeSyncTableGraphQlRequest(
 
 /**
  * A special function used when we try to augment a Rest request with GraphQL results
- * Il n'y a jamais de continuation, puisque l'on query uniquement spécifiquement par id
+ * Il n'y a jamais de continuation, puisque l'on query uniquement spécifiquement par ID
  * Du coup, il faut renvoyer la continuation qui provient elle de la requête Rest initiale agrémentée de diverses choses
  * @param params
  * @param context

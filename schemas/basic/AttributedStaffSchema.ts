@@ -9,7 +9,7 @@ export const AttributedStaffSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'graphql_gid',
       fromKey: 'id',
-      description: 'The id of the staff member.',
+      description: 'The ID of the staff member.',
     },
     quantity: {
       type: coda.ValueType.Number,
