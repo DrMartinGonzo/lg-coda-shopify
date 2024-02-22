@@ -17,10 +17,10 @@ export const FulfillmentSchema = coda.makeObjectSchema({
       fromKey: 'created_at',
       description: 'The date and time when the fulfillment was created.',
     },
-    fulfillment_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'fulfillment_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'The ID for the fulfillment.',
     },

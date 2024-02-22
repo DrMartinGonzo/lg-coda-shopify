@@ -57,11 +57,11 @@ export const CustomerSchema = coda.makeObjectSchema({
       fixedId: 'graphql_gid',
       description: 'The GraphQL GID of the customer.',
     },
-    customer_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,
-      fixedId: 'customer_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'A unique identifier for the customer.',
     },
@@ -243,7 +243,7 @@ export const CustomerSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'display',
-  idProperty: 'customer_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Customers dynamicOptions after the eventual metafields
   featuredProperties: ['email', 'first_name', 'last_name', 'phone', 'total_spent'],
 

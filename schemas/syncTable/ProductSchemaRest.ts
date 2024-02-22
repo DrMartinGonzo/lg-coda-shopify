@@ -28,9 +28,9 @@ export const ProductSchemaRest = coda.makeObjectSchema({
       description: 'A link to the product in the online shop.',
       fixedId: 'storeUrl',
     },
-    product_id: {
+    id: {
       type: coda.ValueType.Number,
-      fixedId: 'product_id',
+      fixedId: 'id',
       fromKey: 'id',
       required: true,
       useThousandsSeparator: false,
@@ -174,9 +174,9 @@ export const ProductSchemaRest = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'product_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
-  featuredProperties: ['product_id', 'title', 'product_type', 'status', 'options', 'tags'],
+  featuredProperties: ['id', 'title', 'product_type', 'status', 'options', 'tags'],
 
   // Card fields.
   subtitleProperties: ['product_type', 'status', 'options', 'vendor'],

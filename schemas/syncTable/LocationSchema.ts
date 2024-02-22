@@ -5,11 +5,11 @@ import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 
 export const LocationSchema = coda.makeObjectSchema({
   properties: {
-    location_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
       required: true,
-      fixedId: 'location_id',
+      fixedId: 'id',
       useThousandsSeparator: false,
       description: 'The ID of the location.',
     },
@@ -133,7 +133,7 @@ export const LocationSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'name',
-  idProperty: 'location_id',
+  idProperty: 'id',
   // admin_url and stock_url will be the last featured properties, added in Locations dynamicOptions after the eventual metafields
   featuredProperties: ['address1', 'address2', 'name', 'phone', 'city'],
 

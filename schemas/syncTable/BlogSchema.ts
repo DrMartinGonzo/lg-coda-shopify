@@ -16,10 +16,10 @@ export const BlogSchema = coda.makeObjectSchema({
       fixedId: 'admin_url',
       description: 'A link to the blog in the Shopify admin.',
     },
-    blog_id: {
+    id: {
       type: coda.ValueType.Number,
       fromKey: 'id',
-      fixedId: 'blog_id',
+      fixedId: 'id',
       required: true,
       useThousandsSeparator: false,
       description: 'A unique numeric identifier for the blog.',
@@ -90,7 +90,7 @@ export const BlogSchema = coda.makeObjectSchema({
     },
   },
   displayProperty: 'title',
-  idProperty: 'blog_id',
+  idProperty: 'id',
   // admin_url will be the last featured property, added in Blogs dynamicOptions after the eventual metafields
   featuredProperties: ['title', 'handle', 'tags'],
 
