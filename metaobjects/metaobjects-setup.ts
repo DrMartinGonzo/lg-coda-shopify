@@ -8,14 +8,14 @@ import {
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
-  getMetaObjectFieldDefinitionsByMetaobjectDefinition,
+  fetchMetaObjectFieldDefinitionsByMetaobjectDefinition,
   deleteMetaObjectGraphQl,
   updateMetaObjectGraphQl,
   formatMetaobjectUpdateInput,
   formatMetaobjectCreateInputInput,
   createMetaObjectGraphQl,
   formatMetaobjectForSchemaFromGraphQlApi,
-  getMetaObjectDefinitionById,
+  fetchSingleMetaObjectDefinitionById,
 } from './metaobjects-functions';
 import { capitalizeFirstChar, isString } from '../helpers';
 import { MetaobjectFieldInput } from '../types/admin.types';
@@ -33,12 +33,12 @@ import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { buildQueryAllMetaObjectsWithFields, queryAllMetaobjectDefinitions } from './metaobjects-graphql';
 import { GetMetaobjectDefinitionsQueryVariables } from '../types/admin.generated';
 import { sharedParameters } from '../shared-parameters';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 
 // #endregion
 
 async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
-  const metaobjectDefinition = await getMetaObjectDefinitionById(context.sync.dynamicUrl, true, true, context);
+  const metaobjectDefinition = await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, true, true, context);
   const { displayNameKey, fieldDefinitions } = metaobjectDefinition;
   const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
   let displayProperty = 'handle';
@@ -137,11 +137,11 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
     }
   },
   getName: async function getMetaobjectSyncTableName(context: coda.SyncExecutionContext) {
-    const { type } = await getMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context);
+    const { type } = await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context);
     return `Metaobjects_${capitalizeFirstChar(type)}`;
   },
   getDisplayUrl: async function getMetaobjectSyncTableDisplayUrl(context: coda.SyncExecutionContext) {
-    const { type } = await getMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context);
+    const { type } = await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context);
     return `${context.endpoint}/admin/content/entries/${type}`;
   },
   getSchema: getMetaobjectSyncTableSchema,
@@ -167,10 +167,10 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
       // TODO: get type & fieldDefinitions in one GraphQL call
       const { type } =
         prevContinuation?.extraContinuationData ??
-        (await getMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context));
+        (await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context));
       const fieldDefinitions =
         prevContinuation?.extraContinuationData?.fieldDefinitions ??
-        (await getMetaObjectFieldDefinitionsByMetaobjectDefinition(context.sync.dynamicUrl, context));
+        (await fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(context.sync.dynamicUrl, context));
 
       // TODO: separate 'metafields' keys from others
       const constantFieldsKeys = ['id']; // will always be fetched
@@ -217,7 +217,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function ([], updates, context: coda.SyncExecutionContext) {
-      const metaobjectFieldDefinitions = await getMetaObjectFieldDefinitionsByMetaobjectDefinition(
+      const metaobjectFieldDefinitions = await fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
         context.sync.dynamicUrl,
         context
       );

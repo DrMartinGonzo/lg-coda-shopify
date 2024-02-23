@@ -1,12 +1,16 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { FormatFunction } from '../types/misc';
-import { InventoryItemFieldsFragment, InventoryItemUpdateMutationVariables } from '../types/admin.generated';
+import { FetchRequestOptions } from '../types/Requests';
+import {
+  InventoryItemFieldsFragment,
+  InventoryItemUpdateMutation,
+  InventoryItemUpdateMutationVariables,
+} from '../types/admin.generated';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryItemUpdateInput } from '../types/admin.types';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { formatProductVariantReferenceValueForSchema } from '../schemas/syncTable/ProductVariantSchema';
 
 // #region Helpers
@@ -39,7 +43,7 @@ export async function handleInventoryItemUpdateJob(
       if (updateJob.value.body?.data?.inventoryItemUpdate?.inventoryItem) {
         obj = {
           ...obj,
-          ...formatInventoryItemNodeForSchema(updateJob.value.body.data.inventoryItemUpdate.inventoryItem, context),
+          ...formatInventoryItemNodeForSchema(updateJob.value.body.data.inventoryItemUpdate.inventoryItem),
         };
       }
     } else if (updateJob.status === 'rejected') {
@@ -81,7 +85,7 @@ function formatGraphQlInventoryItemUpdateInput(update: any, fromKeys: string[]):
   return ret;
 }
 
-export const formatInventoryItemNodeForSchema: FormatFunction = (inventoryItem: InventoryItemFieldsFragment) => {
+export const formatInventoryItemNodeForSchema = (inventoryItem: InventoryItemFieldsFragment) => {
   const obj: any = {
     ...inventoryItem,
     admin_graphql_api_id: inventoryItem.id,
@@ -112,7 +116,8 @@ export const formatInventoryItemNodeForSchema: FormatFunction = (inventoryItem: 
 async function updateInventoryItemGraphQl(
   inventoryItemGid: string,
   inventoryItemUpdateInput: InventoryItemUpdateInput,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
     query: UpdateInventoryItem,
@@ -125,7 +130,7 @@ async function updateInventoryItemGraphQl(
   const { response } = await makeGraphQlRequest(
     {
       payload,
-      getUserErrors: (body) => body.data.inventoryItemUpdate.userErrors,
+      getUserErrors: (body: { data: InventoryItemUpdateMutation }) => body.data.inventoryItemUpdate.userErrors,
     },
     context
   );

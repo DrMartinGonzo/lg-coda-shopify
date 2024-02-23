@@ -8,7 +8,7 @@ import {
   ResourceMetafieldsSyncTableDefinition,
   SupportedGraphQlResourceWithMetafields,
 } from '../types/Metafields';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from '../metafields/metafields-constants';
 import { requireResourceMetafieldsSyncTableDefinition } from '../metafields/metafields-functions';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
@@ -24,7 +24,7 @@ import {
   fetchSingleMetafieldDefinitionGraphQl,
   formatMetafieldDefinitionForSchemaFromGraphQlApi,
 } from './metafieldDefinitions-functions';
-import { IDENTITY_METAFIELD_DEFINITION } from '../constants';
+import { CACHE_DEFAULT, IDENTITY_METAFIELD_DEFINITION } from '../constants';
 
 // #endregion
 
@@ -260,20 +260,13 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   parameters: [parameters.inputMetafieldDefinitionID],
   resultType: coda.ValueType.Object,
   schema: MetafieldDefinitionSchema,
+  cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([metafieldDefinitionID], context) {
     const metafieldDefinitionNode = await fetchSingleMetafieldDefinitionGraphQl(
-      {
-        metafieldDefinitionGid: idToGraphQlGid(GraphQlResource.MetafieldDefinition, metafieldDefinitionID),
-        // cacheTtlSecs: 0,
-      },
+      idToGraphQlGid(GraphQlResource.MetafieldDefinition, metafieldDefinitionID),
       context
     );
 
-    // let resourceMetafieldsSyncTableDefinition: ResourceMetafieldsSyncTableDefinition;
-    // resourceMetafieldsSyncTableDefinition = RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.find(
-    //   (v) => v.metafieldOwnerType === metafieldDefinitionNode.ownerType
-    // );
-    // const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(ownerType);
     if (metafieldDefinitionNode) {
       return formatMetafieldDefinitionForSchemaFromGraphQlApi(metafieldDefinitionNode, context);
     }

@@ -1,6 +1,6 @@
 import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../metafields/metafields-constants';
 import type { CurrencyCode, Metafield, MetafieldOwnerType, Scalars } from '../types/admin.types';
-import { GraphQlResource } from './GraphQl';
+import { GraphQlResource } from './RequestsGraphQl';
 import { MetafieldDefinitionFragment, MetafieldFieldsFragment } from './admin.generated';
 
 export interface ShopifyRatingField {

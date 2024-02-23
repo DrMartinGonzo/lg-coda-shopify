@@ -1,11 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { NOT_FOUND, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import { ArticleSchema } from '../schemas/syncTable/ArticleSchema';
 import { getThumbnailUrlFromFullUrl } from '../helpers';
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -13,7 +13,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSchema';
 
 // #region Helpers
@@ -113,7 +113,7 @@ export async function handleArticleUpdateJob(
 // #endregion
 
 // #region Formatting functions
-export const formatArticleForSchemaFromRestApi: FormatFunction = (article, context) => {
+export const formatArticleForSchemaFromRestApi = (article, context: coda.ExecutionContext) => {
   let obj: any = {
     ...article,
     body: striptags(article.body_html),
@@ -144,12 +144,21 @@ export function validateArticleParams(params: any) {
 // #endregion
 
 // #region Rest Requests
-export const fetchArticleRest = (articleId: number, context: coda.ExecutionContext) => {
+export const fetchSingleArticleRest = (
+  articleId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: 10 }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export const createArticleRest = (params: ArticleCreateRestParams, context: coda.ExecutionContext) => {
+export const createArticleRest = (
+  params: ArticleCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   validateArticleParams(params);
   const payload = { article: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles.json`;
@@ -159,7 +168,8 @@ export const createArticleRest = (params: ArticleCreateRestParams, context: coda
 export const updateArticleRest = (
   articleId: number,
   params: ArticleUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   // validateBlogParams(params);
@@ -168,7 +178,11 @@ export const updateArticleRest = (
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteArticleRest = async (articleId: number, context) => {
+export const deleteArticleRest = async (
+  articleId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
   return makeDeleteRequest({ url }, context);
 };

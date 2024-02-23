@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
-import { CACHE_SINGLE_FETCH, METAFIELD_PREFIX_KEY, NOT_FOUND, REST_DEFAULT_API_VERSION } from '../constants';
+import { CACHE_DEFAULT, CACHE_DISABLED, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION } from '../constants';
 import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from './metafields-constants';
 import type { AllMetafieldTypeValue, MetafieldTypeValue } from '../types/Metafields';
 import {
@@ -45,7 +45,6 @@ import {
   makeQueryResourceMetafieldsByKeys,
   makeQuerySingleResourceMetafieldsByKeys,
 } from './metafields-graphql';
-import { queryMetafieldDefinitions } from '../metafieldDefinitions/metafieldDefinitions-graphql';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
 import {
   formatMetaobjectReferenceValueForSchema,
@@ -77,9 +76,9 @@ import {
   SetMetafieldsMutationVariables,
 } from '../types/admin.generated';
 import { MetafieldSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { RestResource, restResources } from '../types/Rest';
+import { RestResource, restResources } from '../types/RequestsRest';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 import { formatCustomerReferenceValueForSchema } from '../schemas/syncTable/CustomerSchema';
 import { formatLocationReferenceValueForSchema } from '../schemas/syncTable/LocationSchema';
@@ -89,6 +88,7 @@ import { SyncTableGraphQlContinuation, SyncTableRestContinuation } from '../type
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { formatMetafieldDefinitionReferenceValueForSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { formatArticleReferenceValueForSchema } from '../schemas/syncTable/ArticleSchema';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #endregion
 
@@ -486,7 +486,7 @@ const deleteMetafieldsByKeysRest = async (
   ownerResource: RestResource,
   context: coda.ExecutionContext
 ): Promise<DeletedMetafieldsByKeysRest[]> => {
-  const response = await fetchMetafieldsRest(ownerId, ownerResource, {}, context, 0);
+  const response = await fetchMetafieldsRest(ownerId, ownerResource, {}, context, { cacheTtlSecs: CACHE_DISABLED });
   if (response && response.body.metafields) {
     const promises = metafieldsToDelete.map(async (metafieldKeyValueSet) => {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKeyValueSet.key);
@@ -1203,8 +1203,9 @@ export const fetchMetafieldsRest = async (
     key?: string;
   } = {},
   context: coda.ExecutionContext,
-  cacheTtlSecs?: number
+  requestOptions: FetchRequestOptions = {}
 ) => {
+  const { cacheTtlSecs } = requestOptions;
   const params = {};
   if (filters.namespace) {
     params['namespace'] = filters.namespace;
@@ -1214,27 +1215,19 @@ export const fetchMetafieldsRest = async (
   }
 
   const fetchApiUrl = getResourceMetafieldsRestApiUrl(context, ownerResource, ownerId);
-  const requestParams: GetRequestParams = { url: coda.withQueryParams(fetchApiUrl, params) };
-  if (cacheTtlSecs !== undefined) {
-    requestParams.cacheTtlSecs = cacheTtlSecs;
-  }
+  const requestParams: GetRequestParams = { url: coda.withQueryParams(fetchApiUrl, params), cacheTtlSecs };
   return makeGetRequest(requestParams, context);
 };
 
 export const fetchSingleMetafieldRest = async (
-  params: {
-    metafieldId: number;
-    cacheTtlSecs?: number;
-  },
-  context: coda.ExecutionContext
+  metafieldId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<coda.FetchResponse<{ metafield: MetafieldRest }>> => {
-  const { metafieldId, cacheTtlSecs } = params;
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields/${metafieldId}.json`;
 
-  const requestParams: GetRequestParams = { url };
-  if (cacheTtlSecs !== undefined) {
-    requestParams.cacheTtlSecs = cacheTtlSecs;
-  }
+  const requestParams: GetRequestParams = { url, cacheTtlSecs };
   return makeGetRequest(requestParams, context);
 };
 
@@ -1244,7 +1237,8 @@ export const createResourceMetafieldRest = async (
   fullKey: string,
   value: string,
   type: string,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   if (!restResource.supportMetafields) {
     throw new coda.UserVisibleError(`\`${restResource.singular}\` does not support metafields.`);
@@ -1277,7 +1271,8 @@ export const updateResourceMetafieldRest = async (
   resourceId: number,
   restResource: RestResource,
   value: string,
-  context
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   if (!restResource.supportMetafields) {
     throw new coda.UserVisibleError(`\`${restResource.singular}\` does not support metafields.`);
@@ -1295,7 +1290,11 @@ export const updateResourceMetafieldRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteMetafieldRest = async (metafieldId: number, context: coda.ExecutionContext) => {
+export const deleteMetafieldRest = async (
+  metafieldId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields/${metafieldId}.json`;
   return makeDeleteRequest({ url }, context);
 };
@@ -1365,19 +1364,6 @@ export async function syncRestResourceMetafields(metafieldKeys: string[], contex
 // #endregion
 
 // #region GraphQL Requests
-export const setMetafieldsGraphQl = async (
-  metafieldsSetInputs: MetafieldsSetInput[],
-  context: coda.ExecutionContext
-) => {
-  const payload = {
-    query: MutationSetMetafields,
-    variables: {
-      inputs: metafieldsSetInputs,
-    } as SetMetafieldsMutationVariables,
-  };
-  return makeGraphQlRequest({ payload, getUserErrors: (body) => body.data.metafieldsSet.userErrors }, context);
-};
-
 /**
  * Get a single Metafield from a specific resource and return the metafield node
  * along with its owner GID
@@ -1387,15 +1373,16 @@ export async function fetchSingleMetafieldGraphQl(
     graphQlResource: SupportedGraphQlResourceWithMetafields;
     fullKey: string;
     ownerGid?: string;
-    cacheTtlSecs?: number;
   },
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<{
   ownerNodeGid: string;
   parentOwnerNodeGid: string;
   metafieldNode: MetafieldFragmentWithDefinition;
 }> {
-  const { graphQlResource, fullKey, ownerGid, cacheTtlSecs } = params;
+  const { cacheTtlSecs } = requestOptions;
+  const { graphQlResource, fullKey, ownerGid } = params;
   const isShopQuery = graphQlResource === GraphQlResource.Shop;
   const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   const { graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
@@ -1409,7 +1396,7 @@ export async function fetchSingleMetafieldGraphQl(
     },
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
   if (response?.body?.data[graphQlQueryOperation]?.metafields?.nodes) {
     // When querying metafields via their keys, GraphQl returns the 'full' key, i.e. `${namespace}.${key}`.
     const metafieldNode: MetafieldFragmentWithDefinition = response.body.data[
@@ -1432,15 +1419,16 @@ export async function fetchMetafieldsGraphQl(
   params: {
     graphQlResource: SupportedGraphQlResourceWithMetafields;
     ownerGid?: string;
-    cacheTtlSecs?: number;
   },
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<{
   ownerNodeGid: string;
   parentOwnerNodeGid: string;
   metafieldNodes: MetafieldFragmentWithDefinition[];
 }> {
-  const { graphQlResource, ownerGid, cacheTtlSecs } = params;
+  const { cacheTtlSecs } = requestOptions;
+  const { graphQlResource, ownerGid } = params;
   const isShopQuery = graphQlResource === GraphQlResource.Shop;
   const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   const { graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
@@ -1454,7 +1442,7 @@ export async function fetchMetafieldsGraphQl(
     },
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
   if (response?.body?.data[graphQlQueryOperation]?.metafields) {
     const metafieldNodes: MetafieldFragmentWithDefinition[] =
       response.body.data[graphQlQueryOperation].metafields.nodes;
@@ -1465,6 +1453,20 @@ export async function fetchMetafieldsGraphQl(
     };
   }
 }
+
+export const setMetafieldsGraphQl = async (
+  metafieldsSetInputs: MetafieldsSetInput[],
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const payload = {
+    query: MutationSetMetafields,
+    variables: {
+      inputs: metafieldsSetInputs,
+    } as SetMetafieldsMutationVariables,
+  };
+  return makeGraphQlRequest({ payload, getUserErrors: (body) => body.data.metafieldsSet.userErrors }, context);
+};
 
 export async function syncGraphQlResourceMetafields(metafieldKeys: string[], context: coda.SyncExecutionContext) {
   const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;

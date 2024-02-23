@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
-import { CACHE_SINGLE_FETCH } from '../constants';
+import { CACHE_DEFAULT } from '../constants';
 import {
   createMetaobjectMutation,
   deleteMetaobjectMutation,
@@ -28,7 +28,8 @@ import {
   MetaobjectDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
 } from '../types/admin.generated';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete functions
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
@@ -39,7 +40,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
   if (!args.metaobjectId || args.metaobjectId === '') {
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
-  const results = await getMetaObjectFieldDefinitionsByMetaobject(
+  const results = await fetchMetaObjectFieldDefinitionsByMetaobject(
     idToGraphQlGid(GraphQlResource.Metaobject, args.metaobjectId),
     context
   );
@@ -53,99 +54,12 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   if (!args.type || args.type === '') {
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
-  const { fieldDefinitions } = await getMetaObjectDefinitionByType(args.type, false, true, context);
+  const { fieldDefinitions } = await fetchSingleMetaObjectDefinitionByType(args.type, false, true, context);
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 export async function autocompleteMetaobjectType(context: coda.ExecutionContext, search: string, args: any) {
-  const results = await getMetaObjectTypes(context);
+  const results = await fetchMetaObjectTypes(context);
   return coda.autocompleteSearchObjects(search, results, 'name', 'type');
-}
-// #endregion
-
-// #region Helpers
-// TODO: fetch all and not only first 20
-async function getMetaObjectTypes(context: coda.ExecutionContext) {
-  const payload = {
-    query: queryAllMetaobjectDefinitions,
-    variables: {
-      cursor: undefined,
-      batchSize: 20,
-      includeCapabilities: false,
-      includeFieldDefinitions: false,
-    } as GetMetaobjectDefinitionsQueryVariables,
-  };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metaobjectDefinitions.nodes.map((node) => {
-    return {
-      name: node.name,
-      type: node.type,
-    };
-  });
-}
-
-export async function getMetaObjectDefinitionById(
-  metaobjectDefinitionGid: string,
-  includeCapabilities = true,
-  includeFieldDefinitions = true,
-  context: coda.ExecutionContext
-): Promise<MetaobjectDefinitionFragment> {
-  const payload = {
-    query: queryMetaobjectDefinition,
-    variables: {
-      id: metaobjectDefinitionGid,
-      includeCapabilities,
-      includeFieldDefinitions,
-    } as GetMetaobjectDefinitionQueryVariables,
-  };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metaobjectDefinition;
-}
-
-async function getMetaObjectDefinitionByType(
-  type: string,
-  includeCapabilities = true,
-  includeFieldDefinitions = true,
-  context: coda.ExecutionContext
-): Promise<MetaobjectDefinition> {
-  const payload = {
-    query: queryMetaobjectDefinitionByType,
-    variables: {
-      type,
-      includeCapabilities,
-      includeFieldDefinitions,
-    } as GetMetaobjectDefinitionByTypeQueryVariables,
-  };
-
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metaobjectDefinitionByType;
-}
-
-export async function getMetaObjectFieldDefinitionsByMetaobjectDefinition(
-  metaObjectDefinitionGid: string,
-  context: coda.ExecutionContext
-): Promise<MetaobjectFieldDefinitionFragment[]> {
-  const payload = {
-    query: queryMetaObjectDefinitionFieldDefinitions,
-    variables: {
-      id: metaObjectDefinitionGid,
-    },
-  };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metaobjectDefinition.fieldDefinitions;
-}
-
-export async function getMetaObjectFieldDefinitionsByMetaobject(
-  metaObjectGid: string,
-  context: coda.ExecutionContext
-): Promise<MetaobjectFieldDefinitionFragment[]> {
-  const payload = {
-    query: queryMetaObjectFieldDefinitions,
-    variables: {
-      id: metaObjectGid,
-    },
-  };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
-  return response.body.data.metaobject.definition.fieldDefinitions;
 }
 // #endregion
 
@@ -224,10 +138,105 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
 // #endregion
 
 // #region GraphQl requests
+// TODO: fetch all and not only first 20
+async function fetchMetaObjectTypes(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: queryAllMetaobjectDefinitions,
+    variables: {
+      cursor: undefined,
+      batchSize: 20,
+      includeCapabilities: false,
+      includeFieldDefinitions: false,
+    } as GetMetaobjectDefinitionsQueryVariables,
+  };
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response.body.data.metaobjectDefinitions.nodes.map((node) => {
+    return {
+      name: node.name,
+      type: node.type,
+    };
+  });
+}
+
+export async function fetchSingleMetaObjectDefinitionById(
+  metaobjectDefinitionGid: string,
+  includeCapabilities = true,
+  includeFieldDefinitions = true,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<MetaobjectDefinitionFragment> {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: queryMetaobjectDefinition,
+    variables: {
+      id: metaobjectDefinitionGid,
+      includeCapabilities,
+      includeFieldDefinitions,
+    } as GetMetaobjectDefinitionQueryVariables,
+  };
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response.body.data.metaobjectDefinition;
+}
+
+async function fetchSingleMetaObjectDefinitionByType(
+  type: string,
+  includeCapabilities = true,
+  includeFieldDefinitions = true,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<MetaobjectDefinition> {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: queryMetaobjectDefinitionByType,
+    variables: {
+      type,
+      includeCapabilities,
+      includeFieldDefinitions,
+    } as GetMetaobjectDefinitionByTypeQueryVariables,
+  };
+
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response.body.data.metaobjectDefinitionByType;
+}
+
+export async function fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
+  metaObjectDefinitionGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<MetaobjectFieldDefinitionFragment[]> {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: queryMetaObjectDefinitionFieldDefinitions,
+    variables: {
+      id: metaObjectDefinitionGid,
+    },
+  };
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response.body.data.metaobjectDefinition.fieldDefinitions;
+}
+
+export async function fetchMetaObjectFieldDefinitionsByMetaobject(
+  metaObjectGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<MetaobjectFieldDefinitionFragment[]> {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: queryMetaObjectFieldDefinitions,
+    variables: {
+      id: metaObjectGid,
+    },
+  };
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response.body.data.metaobject.definition.fieldDefinitions;
+}
+
 export const updateMetaObjectGraphQl = async (
   metaobjectGid: string,
   metaobjectUpdateInput: MetaobjectUpdateInput,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
     query: updateMetaobjectMutation,
@@ -245,7 +254,8 @@ export const updateMetaObjectGraphQl = async (
 
 export const createMetaObjectGraphQl = async (
   metaobjectCreateInput: MetaobjectCreateInput,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
     query: createMetaobjectMutation,
@@ -260,7 +270,11 @@ export const createMetaObjectGraphQl = async (
   return response;
 };
 
-export const deleteMetaObjectGraphQl = async (id: string, context: coda.ExecutionContext) => {
+export const deleteMetaObjectGraphQl = async (
+  id: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const payload = {
     query: deleteMetaobjectMutation,
     variables: {

@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { SyncTableRestContinuation } from './types/tableSync';
-import { RestResource, restResources } from './types/Rest';
-import { GraphQlResource } from './types/GraphQl';
+import { RestResource, restResources } from './types/RequestsRest';
+import { GraphQlResource } from './types/RequestsGraphQl';
+import { CACHE_DEFAULT } from './constants';
 
 // TODO: better error handling
 
@@ -110,10 +111,8 @@ export async function makeGetRequest(params: GetRequestParams, context: coda.Exe
     method: 'GET',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
+    cacheTtlSecs: params.cacheTtlSecs ?? CACHE_DEFAULT,
   };
-  if (params.cacheTtlSecs !== undefined) {
-    options.cacheTtlSecs = params.cacheTtlSecs;
-  }
 
   const response = await doRequest(options, context);
   const isCachedResponse = isCodaCached(response);

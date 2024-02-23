@@ -14,7 +14,7 @@ import {
 } from '../helpers-graphql';
 
 import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
-import { fetchShopDetails } from '../shop/shop-functions';
+import { fetchShopDetailsRest } from '../shop/shop-functions';
 
 // #endregion
 
@@ -26,7 +26,7 @@ async function getOrderTransactionSchema(
   let augmentedSchema: any = OrderTransactionSchema;
   // let augmentedSchema = OrderSchema;
 
-  const shop = await fetchShopDetails(['currency'], context);
+  const shop = await fetchShopDetailsRest(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
     if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
