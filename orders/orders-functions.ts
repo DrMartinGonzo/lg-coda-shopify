@@ -6,7 +6,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
-  NOT_FOUND,
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
@@ -16,7 +15,7 @@ import { convertTTCtoHT } from '../helpers';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePutRequest } from '../helpers-rest';
 
 import { formatCustomerForSchemaFromRestApi } from '../customers/customers-functions';
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
 import { OrderSchema } from '../schemas/syncTable/OrderSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -26,7 +25,8 @@ import {
   updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { OrderUpdateRestParams } from '../types/Order';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
+import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
 
 // #region Helpers
 export function validateOrderParams(params) {
@@ -327,6 +327,7 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
   if (address) {
     return {
       name: address?.name ?? '' + (address?.company != '' ? `\n${address?.company}` : ''),
+      countryCode: address?.country_code,
       address:
         [
           address?.address1,
@@ -344,7 +345,7 @@ const formatMultilineAddress = (address, fallback = ''): SheetExport.Address => 
   };
 };
 
-export const formatOrderForSchemaFromRestApi: FormatFunction = (order, context) => {
+export const formatOrderForSchemaFromRestApi = (order, context: coda.ExecutionContext) => {
   let obj: any = {
     ...order,
     admin_url: `${context.endpoint}/admin/orders/${order.id}`,
@@ -389,18 +390,23 @@ export const formatOrderForSchemaFromRestApi: FormatFunction = (order, context) 
 };
 // #endregion
 
-// #region Requests
-export const fetchOrder = async ([orderID], context) => {
+// #region Rest Requests
+export const fetchSingleOrderRest = (
+  orderID: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<coda.FetchResponse<{ order: OrderRest }>> => {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderID}.json`;
-  const response = await makeGetRequest({ url, cacheTtlSecs: 10 }, context);
-  const { body } = response;
-
-  if (body.order) {
-    return formatOrderForSchemaFromRestApi(body.order, context);
-  }
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export const updateOrderRest = (orderId: number, params: OrderUpdateRestParams, context: coda.ExecutionContext) => {
+export const updateOrderRest = (
+  orderId: number,
+  params: OrderUpdateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const restParams = cleanQueryParams(params);
   // validateOrderParams(params);
   const payload = { order: restParams };

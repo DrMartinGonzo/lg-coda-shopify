@@ -3,14 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 
 import {
   formatRedirectForSchemaFromRestApi,
-  fetchRedirectRest,
+  fetchSingleRedirectRest,
   deleteRedirect,
   createRedirectRest,
   handleRedirectUpdateJob,
 } from './redirects-functions';
 
 import { RedirectSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
-import { IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
@@ -172,11 +172,11 @@ export const Formula_Redirect = coda.makeFormula({
   description: 'Return a single redirect from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.redirectID],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: RedirectSchema,
   execute: async ([redirect_id], context) => {
-    const redirectResponse = await fetchRedirectRest(redirect_id, context);
+    const redirectResponse = await fetchSingleRedirectRest(redirect_id, context);
     if (redirectResponse.body?.redirect) {
       return formatRedirectForSchemaFromRestApi(redirectResponse.body.redirect, context);
     }

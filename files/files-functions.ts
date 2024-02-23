@@ -2,11 +2,12 @@ import * as coda from '@codahq/packs-sdk';
 
 import { getThumbnailUrlFromFullUrl } from '../helpers';
 import { makeGraphQlRequest } from '../helpers-graphql';
-import { deleteFiles, UpdateFile } from './files-graphql';
-import { FormatFunction } from '../types/misc';
-import { FileFieldsFragment, FileUpdateMutationVariables } from '../types/admin.generated';
+import { deleteFiles, querySingleFile, UpdateFile } from './files-graphql';
+import { FetchRequestOptions } from '../types/Requests';
+import { FileFieldsFragment, FileUpdateMutationVariables, GetSingleFileQueryVariables } from '../types/admin.generated';
 import { FileSchema } from '../schemas/syncTable/FileSchema';
 import { FileUpdateInput } from '../types/admin.types';
+import { CACHE_DEFAULT } from '../constants';
 
 // #region Helpers
 export async function handleFileUpdateJob(
@@ -33,7 +34,7 @@ export async function handleFileUpdateJob(
         const file = updateJob.value.body.data.fileUpdate.files.find((file) => file.id === fileId);
         obj = {
           ...obj,
-          ...formatFileNodeForSchema(file, context),
+          ...formatFileNodeForSchema(file),
         };
       }
     } else if (updateJob.status === 'rejected') {
@@ -74,7 +75,7 @@ function formatGraphQlFileUpdateInput(update: any, fromKeys: string[]): FileUpda
   return ret;
 }
 
-export const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment) => {
+export const formatFileNodeForSchema = (file: FileFieldsFragment) => {
   const obj: any = {
     ...file,
     type: file.__typename,
@@ -111,7 +112,38 @@ export const formatFileNodeForSchema: FormatFunction = (file: FileFieldsFragment
 // #endregion
 
 // #region GraphQL Requests
-async function updateFileGraphQl(fileUpdateInput: FileUpdateInput, context: coda.ExecutionContext) {
+export async function fetchSingleFileGraphQl(
+  fileGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: querySingleFile,
+    variables: {
+      id: fileGid,
+      includeAlt: true,
+      includeCreatedAt: true,
+      includeDuration: true,
+      includeFileSize: true,
+      includeHeight: true,
+      includeMimeType: true,
+      includeThumbnail: true,
+      includeUpdatedAt: true,
+      includeUrl: true,
+      includeWidth: true,
+    } as GetSingleFileQueryVariables,
+  };
+
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response;
+}
+
+async function updateFileGraphQl(
+  fileUpdateInput: FileUpdateInput,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const payload = {
     query: UpdateFile,
     variables: {
@@ -144,7 +176,11 @@ async function updateFileGraphQl(fileUpdateInput: FileUpdateInput, context: coda
  * @param fileGid - The GraphQL GID of the file to be deleted.
  * @param context - The context object containing necessary information.
  */
-export const deleteFileGraphQl = async (fileGid: string, context: coda.ExecutionContext): Promise<string> => {
+export const deleteFileGraphQl = async (
+  fileGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<string> => {
   const variables = {
     fileIds: [fileGid],
   };

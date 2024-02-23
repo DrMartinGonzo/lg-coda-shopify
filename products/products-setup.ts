@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_DEFAULT,
   DEFAULT_PRODUCT_OPTION_NAME,
   DEFAULT_PRODUCT_STATUS_REST,
   IDENTITY_PRODUCT,
@@ -11,11 +12,11 @@ import {
   REST_DEFAULT_LIMIT,
 } from '../constants';
 import {
-  fetchProductRest,
+  fetchSingleProductRest,
   formatProductForSchemaFromRestApi,
   validateProductParams,
   createProductRest,
-  getProductTypes,
+  fetchProductTypesGraphQl,
   deleteProductRest,
   handleProductUpdateJob,
   autocompleteProductTypes,
@@ -56,7 +57,7 @@ import { ProductSyncTableRestParams, ProductCreateRestParams, ProductUpdateRestP
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
@@ -154,7 +155,7 @@ export const Sync_Products = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'product_type') {
-        return getProductTypes(context);
+        return fetchProductTypesGraphQl(context);
       }
       if (context.propertyName === 'template_suffix') {
         return getTemplateSuffixesFor('product', context);
@@ -535,11 +536,11 @@ export const Formula_Product = coda.makeFormula({
   description: 'Get a single product data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [sharedParameters.productId],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ProductSchemaRest,
   execute: async ([productId], context) => {
-    const response = await fetchProductRest(productId, context);
+    const response = await fetchSingleProductRest(productId, context);
     if (response.body.product) {
       return formatProductForSchemaFromRestApi(response.body.product, context);
     }
@@ -782,7 +783,7 @@ export const Format_Product: coda.Format = {
         description: 'The gid of the collection.',
       }),
     ],
-    cacheTtlSecs: 10,
+    cacheTtlSecs: CACHE_DEFAULT,
     resultType: coda.ValueType.Boolean,
     execute: checkProductInCollection,
   });

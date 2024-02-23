@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_SINGLE_FETCH } from '../constants';
+import { CACHE_DEFAULT } from '../constants';
 
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
@@ -35,25 +35,20 @@ import {
   UpdateLocation,
 } from './locations-graphql';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete functions
 export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
-  const payload = {
-    query: QueryLocations,
-    variables: {
-      maxEntriesPerRun: 250,
-      includeMetafields: false,
-      includeLocalPickupSettings: false,
-      includeFulfillmentService: false,
-    } as GetLocationsQueryVariables,
-  };
-  const response: coda.FetchResponse<{
-    data: GetLocationsQuery;
-    extensions: ShopifyGraphQlRequestExtensions;
-  }> = (await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_SINGLE_FETCH }, context)).response;
+  const variables = {
+    maxEntriesPerRun: 250,
+    includeMetafields: false,
+    includeLocalPickupSettings: false,
+    includeFulfillmentService: false,
+  } as GetLocationsQueryVariables;
+  const response = await fetchLocationsGraphQl(variables, context);
 
-  return response.body.data.locations.nodes.map((location) =>
+  return response.body.data.locations.nodes.map((location: LocationFragment) =>
     formatOptionNameId(location.name, graphQlGidToId(location.id))
   );
 }
@@ -215,8 +210,28 @@ export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment
 };
 // #endregion
 
-// #region Rest requests
-export const fetchLocationGraphQl = async (locationGid: string, context: coda.ExecutionContext) => {
+// #region GraphQl requests
+export const fetchLocationsGraphQl = async (
+  variables: GetLocationsQueryVariables,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
+  const payload = {
+    query: QueryLocations,
+    variables,
+  };
+
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  return response;
+};
+
+export const fetchSingleLocationGraphQl = async (
+  locationGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: QuerySingleLocation,
     variables: {
@@ -227,16 +242,15 @@ export const fetchLocationGraphQl = async (locationGid: string, context: coda.Ex
     } as GetSingleLocationQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
   return response;
 };
-// #endregion
 
-// #region GraphQl requests
 export async function updateLocationGraphQl(
   locationGid: string,
   locationEditInput: LocationEditInput,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<coda.FetchResponse<{ data: LocationEditMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
   const payload = {
     query: UpdateLocation,
@@ -261,7 +275,8 @@ export async function updateLocationGraphQl(
 
 export async function activateLocationGraphQl(
   locationGid: string,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<coda.FetchResponse<{ data: LocationActivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
   const payload = {
     query: ActivateLocation,
@@ -283,7 +298,8 @@ export async function activateLocationGraphQl(
 export async function deactivateLocationGraphQl(
   locationGid: string,
   destinationLocationGid: string,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<coda.FetchResponse<{ data: LocationDeactivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
   const payload = {
     query: DeactivateLocation,

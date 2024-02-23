@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { REST_DEFAULT_API_VERSION } from '../constants';
 import { makeGetRequest } from '../helpers-rest';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete
 export function makeAutocompleteTemplateSuffixesFor(kind: string) {
@@ -40,13 +41,19 @@ async function getActiveTheme(context: coda.ExecutionContext) {
 // #endregion
 
 // #region Rest requests
-function fetchThemesRest(context: coda.ExecutionContext) {
+function fetchThemesRest(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes.json`;
-  return makeGetRequest({ url }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 }
 
-function fetchThemeAssetsRest(theme_id: number, context: coda.ExecutionContext) {
+function fetchThemeAssetsRest(
+  theme_id: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes/${theme_id}/assets.json`;
-  return makeGetRequest({ url }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 }
 // #endregion

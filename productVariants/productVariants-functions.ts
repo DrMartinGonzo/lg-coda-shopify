@@ -1,12 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import {
-  CACHE_SINGLE_FETCH,
-  OPTIONS_PRODUCT_STATUS_REST,
-  OPTIONS_PUBLISHED_STATUS,
-  REST_DEFAULT_API_VERSION,
-} from '../constants';
+import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema';
 import {
@@ -16,8 +11,9 @@ import {
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #region Validate functions
 export function validateProductVariantParams(params: any) {
@@ -117,12 +113,21 @@ export const formatProductVariantForSchemaFromRestApi = (variant, parentProduct,
 // #endregion
 
 // #region Rest requests
-export function fetchProductVariantRest(productVariantID: number, context: coda.ExecutionContext) {
+export function fetchProductVariantRest(
+  productVariantID: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 }
 
-export function createProductVariantRest(params: ProductVariantCreateRestParams, context: coda.ExecutionContext) {
+export function createProductVariantRest(
+  params: ProductVariantCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const restParams = cleanQueryParams(params);
   validateProductVariantParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${params.product_id}/variants.json`;
@@ -133,7 +138,8 @@ export function createProductVariantRest(params: ProductVariantCreateRestParams,
 export const updateProductVariantRest = async (
   productVariantId: number,
   params: ProductVariantUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   validateProductVariantParams(restParams);
@@ -143,7 +149,11 @@ export const updateProductVariantRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export function deleteProductVariantRest(productVariantID: number, context: coda.ExecutionContext) {
+export function deleteProductVariantRest(
+  productVariantID: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
   return makeDeleteRequest({ url }, context);
 }

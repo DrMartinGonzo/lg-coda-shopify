@@ -4,17 +4,15 @@ import striptags from 'striptags';
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import {
-  CACHE_DAY,
-  CACHE_SINGLE_FETCH,
+  CACHE_MAX,
   COLLECTION_TYPE__CUSTOM,
   COLLECTION_TYPE__SMART,
-  NOT_FOUND,
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
 import { CollectionSchema, formatCollectionReferenceValueForSchema } from '../schemas/syncTable/CollectionSchema';
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -24,8 +22,8 @@ import {
 
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { CollectionUpdateRestParams } from '../types/Collection';
-import { GraphQlResource } from '../types/GraphQl';
-import { restResources } from '../types/Rest';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import { restResources } from '../types/RequestsRest';
 import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
 
 // #region Helpers
@@ -135,7 +133,7 @@ export function validateCollectionParams(params: any) {
   }
 }
 
-export const formatCollect: FormatFunction = (collect, context) => {
+export const formatCollect = (collect, context: coda.ExecutionContext) => {
   let obj: any = {
     ...collect,
   };
@@ -148,7 +146,7 @@ export const formatCollect: FormatFunction = (collect, context) => {
   return obj;
 };
 
-export const formatCollectionForSchemaFromRestApi: FormatFunction = (collection, context) => {
+export const formatCollectionForSchemaFromRestApi = (collection, context: coda.ExecutionContext) => {
   let obj: any = {
     ...collection,
     admin_url: `${context.endpoint}/admin/collections/${collection.id}`,
@@ -165,8 +163,13 @@ export const formatCollectionForSchemaFromRestApi: FormatFunction = (collection,
 
 // #endregion
 
-// #region Requests
-export const getCollectionTypeGraphQl = async (collectionGid: string, context: coda.ExecutionContext) => {
+// #region GraphQL Requests
+export const getCollectionTypeGraphQl = async (
+  collectionGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: isSmartCollection,
     variables: {
@@ -174,22 +177,31 @@ export const getCollectionTypeGraphQl = async (collectionGid: string, context: c
     },
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: CACHE_DAY }, context);
+  // Cache max if unspecified because the collection type cannot be changed after creation
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_MAX }, context);
   const { body } = response;
 
   return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
 };
+// #endregion
 
-export const fetchCollectionRest = async (collectionId: number, context) => {
+// #region Requests
+export const fetchSingleCollectionRest = async (
+  collectionId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/collections/${collectionId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
 export const updateCollectionRest = async (
   collectionId: number,
   collectionType: string,
   params: CollectionUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   validateCollectionParams(params);
@@ -202,7 +214,11 @@ export const updateCollectionRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export const createCollectionRest = async (params: any, context: coda.ExecutionContext) => {
+export const createCollectionRest = async (
+  params: any,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const collectionType = 'custom_collections';
   const payload = { custom_collection: params };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${collectionType}.json`;
@@ -210,7 +226,12 @@ export const createCollectionRest = async (params: any, context: coda.ExecutionC
   return makePostRequest({ url, payload }, context);
 };
 
-export const deleteCollectionRest = async (collectionId: number, collectionType: string, context) => {
+export const deleteCollectionRest = async (
+  collectionId: number,
+  collectionType: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
   return makeDeleteRequest({ url }, context);
@@ -367,7 +388,7 @@ export const fetchCollect = async ([id, fields], context) => {
   const params = cleanQueryParams({ fields });
 
   const url = coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/collects/${id}.json`, params);
-  const response = await restGetRequest({ url, cacheTtlSecs: 10 }, context);
+  const response = await restGetRequest({ url, cacheTtlSecs: CACHE_DEFAULT }, context);
   const { body } = response;
   if (body.collect) {
     return body.collect;

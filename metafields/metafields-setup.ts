@@ -38,7 +38,7 @@ import { ArticleReference } from '../schemas/syncTable/ArticleSchema';
 
 import { MetafieldsSetInput } from '../types/admin.types';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { getObjectSchemaEffectiveKeys } from '../helpers';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -46,7 +46,7 @@ import {
   fetchMetafieldDefinitionsGraphQl,
   makeAutocompleteMetafieldKeysWithDefinitions,
 } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { IDENTITY_METAFIELD } from '../constants';
+import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_METAFIELD } from '../constants';
 import { getMetafieldDefinitionReferenceSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 
 // #endregion
@@ -375,10 +375,12 @@ export const Action_SetMetafield = coda.makeFormula({
       {
         fullKey,
         graphQlResource: graphQlOwnerType as SupportedGraphQlResourceWithMetafields,
-        cacheTtlSecs: 0,
         ownerGid,
       },
-      context
+      context,
+      {
+        cacheTtlSecs: CACHE_DISABLED,
+      }
     );
 
     let action: string;
@@ -491,7 +493,6 @@ export const Action_DeleteMetafield = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [{ ...parameters.inputMetafieldID, description: 'The ID of the metafield to delete.' }],
   isAction: true,
-  cacheTtlSecs: 0,
   resultType: coda.ValueType.Boolean,
   execute: async ([metafieldId], context) => {
     await deleteMetafieldRest(metafieldId, context);
@@ -506,7 +507,7 @@ export const Formula_Metafield = coda.makeFormula({
   description: 'Get a single metafield by its fullkey.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.inputOwnerType, parameters.inputFullKeyWithAutocomplete, parameters.inputOwnerIdOptional],
-  cacheTtlSecs: 0,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: MetafieldSchema,
   execute: async function ([ownerType, fullKey, ownerId], context) {
@@ -524,9 +525,11 @@ export const Formula_Metafield = coda.makeFormula({
         graphQlResource,
         fullKey,
         ownerGid: ownerId ? idToGraphQlGid(graphQlResource, ownerId) : undefined,
-        cacheTtlSecs: 0,
       },
-      context
+      context,
+      {
+        cacheTtlSecs: CACHE_DISABLED,
+      }
     );
     if (singleMetafieldResponse) {
       const { metafieldNode, ownerNodeGid, parentOwnerNodeGid } = singleMetafieldResponse;
@@ -547,7 +550,7 @@ export const Formula_Metafields = coda.makeFormula({
   description: 'Get all metafields from a specific resource.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.inputOwnerType, parameters.inputOwnerIdOptional],
-  cacheTtlSecs: 0,
+  cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
   resultType: coda.ValueType.Array,
   items: MetafieldSchema,
   execute: async function ([ownerType, ownerId], context) {
@@ -564,9 +567,11 @@ export const Formula_Metafields = coda.makeFormula({
       {
         graphQlResource,
         ownerGid: ownerId ? idToGraphQlGid(graphQlResource, ownerId) : undefined,
-        cacheTtlSecs: 0,
       },
-      context
+      context,
+      {
+        cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
+      }
     );
 
     if (metafieldNodes) {

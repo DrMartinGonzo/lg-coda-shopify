@@ -1,8 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { CACHE_SINGLE_FETCH, REST_DEFAULT_API_VERSION } from '../constants';
-import { FormatFunction } from '../types/misc';
+import { REST_DEFAULT_API_VERSION } from '../constants';
+import { FetchRequestOptions } from '../types/Requests';
 
 import { RedirectSchema } from '../schemas/syncTable/RedirectSchema';
 import { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
@@ -46,7 +46,7 @@ export async function handleRedirectUpdateJob(
 // #endregion
 
 // #region Formatting
-export const formatRedirectForSchemaFromRestApi: FormatFunction = (redirect, context) => {
+export const formatRedirectForSchemaFromRestApi = (redirect, context: coda.ExecutionContext) => {
   let obj: any = {
     ...redirect,
     admin_url: `${context.endpoint}/admin/redirects/${redirect.id}`,
@@ -60,12 +60,21 @@ export const formatRedirectForSchemaFromRestApi: FormatFunction = (redirect, con
 // #endregion
 
 // #region Rest requests
-export const fetchRedirectRest = (redirect_id: number, context: coda.ExecutionContext) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirect_id}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+export const fetchSingleRedirectRest = (
+  redirectId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export function createRedirectRest(params: RedirectCreateRestParams, context: coda.ExecutionContext) {
+export function createRedirectRest(
+  params: RedirectCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const restParams = cleanQueryParams(params);
   // validateRedirectsParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects.json`;
@@ -76,7 +85,8 @@ export function createRedirectRest(params: RedirectCreateRestParams, context: co
 const updateRedirectRest = async (
   redirectId: number,
   params: RedirectUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   // validateRedirectsParams(params);
@@ -85,8 +95,12 @@ const updateRedirectRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteRedirect = async (redirect_id: number, context) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirect_id}.json`;
+export const deleteRedirect = async (
+  redirectId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
   return makeDeleteRequest({ url }, context);
 };
 // #endregion

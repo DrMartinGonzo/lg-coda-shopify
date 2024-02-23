@@ -4,7 +4,7 @@ import striptags from 'striptags';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 import { PageSchema } from '../schemas/syncTable/PageSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
@@ -13,7 +13,7 @@ import {
   updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 
 // #region Helpers
 function formatPageStandardFieldsRestParams(
@@ -95,7 +95,7 @@ export async function handlePageUpdateJob(
 // #endregion
 
 // #region Formatting functions
-export const formatPageForSchemaFromRestApi: FormatFunction = (page, context) => {
+export const formatPageForSchemaFromRestApi = (page, context: coda.ExecutionContext) => {
   let obj: any = {
     ...page,
     admin_url: `${context.endpoint}/admin/pages/${page.id}`,
@@ -119,19 +119,33 @@ export function validatePageParams(params: any) {
 // #endregion
 
 // #region Rest Requests
-export const fetchPageRest = (pageId: number, context: coda.ExecutionContext) => {
+export const fetchSinglePageRest = (
+  pageId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: 10 }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export const createPageRest = (params: PageCreateRestParams, context: coda.ExecutionContext) => {
+export const createPageRest = (
+  params: PageCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   validatePageParams(params);
   const payload = { page: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`;
   return makePostRequest({ url, payload }, context);
 };
 
-export const updatePageRest = (pageId: number, params: PageUpdateRestParams, context: coda.ExecutionContext) => {
+export const updatePageRest = (
+  pageId: number,
+  params: PageUpdateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const restParams = cleanQueryParams(params);
   validatePageParams(restParams);
   const payload = { page: restParams };
@@ -139,7 +153,11 @@ export const updatePageRest = (pageId: number, params: PageUpdateRestParams, con
   return makePutRequest({ url, payload }, context);
 };
 
-export const deletePageRest = (pageId: number, context) => {
+export const deletePageRest = (
+  pageId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
   return makeDeleteRequest({ url }, context);
 };

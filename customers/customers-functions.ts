@@ -1,8 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { CACHE_SINGLE_FETCH, REST_DEFAULT_API_VERSION } from '../constants';
-import { FormatFunction } from '../types/misc';
+import { REST_DEFAULT_API_VERSION } from '../constants';
+import { FetchRequestOptions } from '../types/Requests';
 
 import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
@@ -19,7 +19,7 @@ import {
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 
 // #region Helpers
 /*
@@ -144,7 +144,7 @@ export async function handleCustomerUpdateJob(
 // #endregion
 
 // #region Formatting
-export const formatCustomerForSchemaFromRestApi: FormatFunction = (customer, context) => {
+export const formatCustomerForSchemaFromRestApi = (customer, context: coda.ExecutionContext) => {
   let obj: any = {
     ...customer,
     admin_url: `${context.endpoint}/admin/customers/${customer.id}`,
@@ -184,12 +184,21 @@ export const formatCustomerForSchemaFromRestApi: FormatFunction = (customer, con
 // #endregion
 
 // #region Rest requests
-export const fetchCustomerRest = (customer_id: number, context: coda.ExecutionContext) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customer_id}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+export const fetchSingleCustomerRest = (
+  customerId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export function createCustomerRest(params: CustomerCreateRestParams, context: coda.ExecutionContext) {
+export function createCustomerRest(
+  params: CustomerCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const restParams = cleanQueryParams(params);
   // validateCustomerParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`;
@@ -200,7 +209,8 @@ export function createCustomerRest(params: CustomerCreateRestParams, context: co
 export const updateCustomerRest = async (
   customerId: number,
   params: CustomerUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   // validateCustomerParams(params);
@@ -209,8 +219,12 @@ export const updateCustomerRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteCustomer = async (customer_id: number, context) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customer_id}.json`;
+export const deleteCustomer = async (
+  customerId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
   return makeDeleteRequest({ url }, context);
 };
 // #endregion

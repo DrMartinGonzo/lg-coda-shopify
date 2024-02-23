@@ -72,6 +72,12 @@ export const FileSchema = coda.makeObjectSchema({
   displayProperty: 'name',
   idProperty: 'graphql_gid',
   featuredProperties: ['name', 'thumbnail', 'url'],
+
+  // Card fields.
+  subtitleProperties: ['mimeType', 'fileSize', 'createdAt'],
+  snippetProperty: 'alt',
+  imageProperty: 'thumbnail',
+  linkProperty: 'url',
 });
 
 export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSchema, IDENTITY_FILE);

@@ -1,7 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { fetchShopDetails } from './shop-functions';
+import { fetchShopDetailsRest } from './shop-functions';
+import { CACHE_DEFAULT } from '../constants';
 
 // #endregion
 
@@ -80,12 +81,13 @@ export const Formula_ShopField = coda.makeFormula({
       autocomplete: validShopFields,
     }),
   ],
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.String,
   execute: async function ([field], context: coda.SyncExecutionContext) {
     if (validShopFields.indexOf(field) === -1) {
       throw new coda.UserVisibleError(`Unknown field '${field}' provided`);
     }
-    const shop = await fetchShopDetails([field], context);
+    const shop = await fetchShopDetailsRest([field], context);
     if (shop && shop[field]) return shop[field];
   },
 });

@@ -1,9 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_BLOG, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
-  fetchBlogRest,
+  CACHE_DEFAULT,
+  IDENTITY_BLOG,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
+import {
+  fetchSingleBlogRest,
   deleteBlogRest,
   createBlogRest,
   validateBlogParams,
@@ -35,7 +41,7 @@ import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin
 import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
@@ -276,12 +282,11 @@ export const Formula_Blog = coda.makeFormula({
   description: 'Return a single Blog from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.blogId],
-  // TODO: check cacheTtlSecs for all single fetch formulas
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: BlogSchema,
   execute: async ([blogId], context) => {
-    const blogResponse = await fetchBlogRest(blogId, context);
+    const blogResponse = await fetchSingleBlogRest(blogId, context);
     if (blogResponse.body?.blog) {
       return formatBlogForSchemaFromRestApi(blogResponse.body.blog, context);
     }

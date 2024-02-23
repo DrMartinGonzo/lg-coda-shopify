@@ -34069,8 +34069,6 @@ export type QuantityRuleConnection = {
   nodes: Array<QuantityRule>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
-  /** The total count of QuantityRules. */
-  totalCount: Scalars['UnsignedInt64']['output'];
 };
 
 /**
@@ -40067,7 +40065,10 @@ export type Shop = HasMetafields & HasPublishedTranslations & Node & {
    * @deprecated Use `QueryRoot.productByHandle` instead.
    */
   productByHandle?: Maybe<Product>;
-  /** The list of all images of all products for the shop. */
+  /**
+   * The list of all images of all products for the shop.
+   * @deprecated Use `files` instead. See [filesQuery](https://shopify.dev/docs/api/admin-graphql/latest/queries/files) and its [query](https://shopify.dev/docs/api/admin-graphql/2024-01/queries/files#argument-query) argument for more information.
+   */
   productImages: ImageConnection;
   /**
    * List of the shop's product saved searches.
