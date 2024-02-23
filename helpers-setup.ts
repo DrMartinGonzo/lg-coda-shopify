@@ -1,12 +1,12 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
-import { CACHE_SINGLE_FETCH, CACHE_YEAR, OPTIONS_PRODUCT_STATUS_REST } from './constants';
+import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from './constants';
 import { METAFIELD_TYPES } from './metafields/metafields-constants';
 import { MetafieldTypeValue } from './types/Metafields';
 import { arrayUnique, getUnitMap } from './helpers';
 import { autocompleteProductTypes } from './products/products-functions';
-import { GraphQlResource } from './types/GraphQl';
+import { GraphQlResource } from './types/RequestsGraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
 import { shouldDeleteMetafield } from './metafields/metafields-functions';
 
@@ -130,7 +130,7 @@ export const Formula_WeightUnit = coda.makeFormula({
       suggestedValue: 'GRAMS',
     }),
   ],
-  cacheTtlSecs: CACHE_YEAR,
+  cacheTtlSecs: CACHE_MAX,
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([unit]) => {
@@ -154,7 +154,7 @@ export const Formula_ProductType = coda.makeFormula({
       autocomplete: autocompleteProductTypes,
     }),
   ],
-  cacheTtlSecs: CACHE_SINGLE_FETCH,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.String,
   execute: async ([productType]) => {
     return productType;

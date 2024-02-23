@@ -6,7 +6,7 @@ import {
   createCustomerRest,
   formatCustomerForSchemaFromRestApi,
   handleCustomerUpdateJob,
-  fetchCustomerRest,
+  fetchSingleCustomerRest,
   updateCustomerRest,
 } from './customers-functions';
 
@@ -18,7 +18,13 @@ import {
   customerFieldDependencies,
 } from '../schemas/syncTable/CustomerSchema';
 import { sharedParameters } from '../shared-parameters';
-import { IDENTITY_CUSTOMER, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import {
+  CACHE_DEFAULT,
+  IDENTITY_CUSTOMER,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
@@ -46,7 +52,7 @@ import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './cust
 import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
@@ -461,11 +467,11 @@ export const Formula_Customer = coda.makeFormula({
   description: 'Return a single customer from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.customerID],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: CustomerSchema,
   execute: async ([customer_id], context) => {
-    const customerResponse = await fetchCustomerRest(customer_id, context);
+    const customerResponse = await fetchSingleCustomerRest(customer_id, context);
     if (customerResponse.body?.customer) {
       return formatCustomerForSchemaFromRestApi(customerResponse.body.customer, context);
     }

@@ -1,9 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_PAGE, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import {
-  fetchPageRest,
+  CACHE_DEFAULT,
+  IDENTITY_PAGE,
+  METAFIELD_PREFIX_KEY,
+  REST_DEFAULT_API_VERSION,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
+import {
+  fetchSinglePageRest,
   deletePageRest,
   createPageRest,
   validatePageParams,
@@ -35,7 +41,7 @@ import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 // #endregion
 
@@ -369,9 +375,10 @@ export const Formula_Page = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.pageID],
   resultType: coda.ValueType.Object,
+  cacheTtlSecs: CACHE_DEFAULT,
   schema: PageSchema,
   execute: async ([pageId], context) => {
-    const pageResponse = await fetchPageRest(pageId, context);
+    const pageResponse = await fetchSinglePageRest(pageId, context);
     if (pageResponse.body?.page) {
       return formatPageForSchemaFromRestApi(pageResponse.body.page, context);
     }

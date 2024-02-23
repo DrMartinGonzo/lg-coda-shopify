@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_DEFAULT,
   CODA_SUPPORTED_CURRENCIES,
   IDENTITY_PRODUCT_VARIANT,
   METAFIELD_PREFIX_KEY,
@@ -49,11 +50,11 @@ import {
   GetProductVariantsMetafieldsQuery,
   GetProductVariantsMetafieldsQueryVariables,
 } from '../types/admin.generated';
-import { fetchProductRest } from '../products/products-functions';
+import { fetchSingleProductRest } from '../products/products-functions';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { fetchShopDetails } from '../shop/shop-functions';
-import { GraphQlResource } from '../types/GraphQl';
+import { fetchShopDetailsRest } from '../shop/shop-functions';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
@@ -74,7 +75,7 @@ async function getProductVariantsSchema(
   }
 
   // TODO: need a generic setCurrencyCode function
-  const shop = await fetchShopDetails(['currency'], context);
+  const shop = await fetchShopDetailsRest(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
     if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
@@ -618,14 +619,14 @@ export const Formula_ProductVariant = coda.makeFormula({
   description: 'Get a single product variant data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.productVariantId],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ProductVariantSchema,
   execute: async ([productVariantId], context) => {
     const variantResponse = await fetchProductVariantRest(productVariantId, context);
     if (variantResponse.body.variant) {
       const productId = variantResponse.body.variant.product_id;
-      const productResponse = await fetchProductRest(productId, context);
+      const productResponse = await fetchSingleProductRest(productId, context);
       if (productResponse.body.product) {
         return formatProductVariantForSchemaFromRestApi(
           variantResponse.body.variant,

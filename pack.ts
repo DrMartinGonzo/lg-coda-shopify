@@ -1,3 +1,5 @@
+// TODO: trouver un moyen d'importer les types Shopify Rest depuis la bonne version de l'API de façon dynamique, en suivant la valeur de 'REST_DEFAULT_API_VERSION'
+
 /// <reference path="./node_modules/gas-coda-export-bills/Interfaces.d.ts"/>
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
@@ -37,7 +39,7 @@ import {
   Formula_Customer,
   Sync_Customers,
 } from './customers/customers-setup';
-import { Action_DeleteFile, Sync_Files } from './files/files-setup';
+import { Action_DeleteFile, Formula_File, Sync_Files } from './files/files-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
@@ -100,7 +102,7 @@ import {
   Formula_Redirect,
   Sync_Redirects,
 } from './redirects/redirects-setup';
-import { fetchShopDetails } from './shop/shop-functions';
+import { fetchShopDetailsRest } from './shop/shop-functions';
 import {
   Action_CreateProduct,
   Action_DeleteProduct,
@@ -149,7 +151,7 @@ pack.setUserAuthentication({
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
-    const shop = await fetchShopDetails(['myshopify_domain'], context);
+    const shop = await fetchShopDetailsRest(['myshopify_domain'], context);
     if (shop && shop['myshopify_domain']) return shop['myshopify_domain'];
   },
 });
@@ -183,12 +185,13 @@ pack.formulas.push(Formula_Article);
 pack.formulas.push(Formula_Blog);
 pack.formulas.push(Formula_Collection);
 pack.formulas.push(Formula_Customer);
+pack.formulas.push(Formula_File);
 pack.formulas.push(Formula_Location);
 pack.formulas.push(Formula_Metafield);
-pack.formulas.push(Formula_Metafields);
 pack.formulas.push(Formula_MetafieldDefinition);
 pack.formulas.push(Formula_Order);
 if (IS_ADMIN_RELEASE) {
+  pack.formulas.push(Formula_Metafields);
   pack.formulas.push(Formula_Orders);
   pack.formulas.push(Formula_OrderExportFormat);
 }

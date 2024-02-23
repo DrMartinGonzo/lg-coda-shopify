@@ -1,4 +1,4 @@
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
 import { MetafieldOwnerType } from '../types/admin.types';
 

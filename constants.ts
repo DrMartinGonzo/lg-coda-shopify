@@ -108,12 +108,11 @@ export const GRAPHQL_BUDGET__MAX = 900;
 export const GRAPHQL_RETRIES__MAX = 5;
 export const GRAPHQL_DEFAULT_API_VERSION = '2023-07';
 
-// TODO: rename these
-export const CACHE_DAY = 86400; // 1 day
-export const CACHE_YEAR = CACHE_DAY * 365; // 1 year
+export const CACHE_DISABLED = 0;
+export const CACHE_DEFAULT = 60 * 5; // 5 minute, Coda default as of 23/02/2024
+export const CACHE_MAX = 60 * 60 * 24 * 365; // 1 year
+export const CACHE_DAY = 60 * 60 * 24; // 1 day
 export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
-export const CACHE_MINUTE = 60; // 1 minute
-export const CACHE_SINGLE_FETCH = 10; // 10s
 
 const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;

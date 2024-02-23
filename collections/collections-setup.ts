@@ -8,7 +8,7 @@ import {
   deleteCollectionRest,
   createCollectionRest,
   formatCollectionForSchemaFromRestApi,
-  fetchCollectionRest,
+  fetchSingleCollectionRest,
   validateCollectionParams,
   handleCollectionUpdateJob,
   formatCollect,
@@ -16,6 +16,7 @@ import {
 } from './collections-functions';
 
 import {
+  CACHE_DEFAULT,
   IDENTITY_COLLECT,
   IDENTITY_COLLECTION,
   METAFIELD_PREFIX_KEY,
@@ -51,9 +52,9 @@ import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables }
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
 import { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
@@ -521,11 +522,11 @@ export const Formula_Collection = coda.makeFormula({
     //! field filter Doesn't seem to work
     // { ...sharedParameters.filterFields, optional: true }
   ],
-  // cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: CollectionSchema,
   execute: async function ([collectionId], context) {
-    const response = await fetchCollectionRest(collectionId, context);
+    const response = await fetchSingleCollectionRest(collectionId, context);
     if (response.body.collection) {
       return formatCollectionForSchemaFromRestApi(response.body.collection, context);
     }
@@ -555,7 +556,7 @@ pack.addFormula({
       optional: true,
     }),
   ],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: CollectSchema,
   execute: fetchCollect,

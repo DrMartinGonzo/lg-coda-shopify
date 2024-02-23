@@ -5,7 +5,7 @@ import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
 import { idToGraphQlGid } from '../helpers-graphql';
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 import { BlogSchema } from '../schemas/syncTable/BlogSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
@@ -13,31 +13,29 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
   updateResourceMetafieldsFromSyncTableRest,
 } from '../metafields/metafields-functions';
-import { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
+import { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { formatOptionNameId } from '../helpers';
-import { GraphQlResource } from '../types/GraphQl';
-import { restResources } from '../types/Rest';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import { restResources } from '../types/RequestsRest';
 
 // #endregion
 
 // #region Helpers
 export async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
-  const params = cleanQueryParams({
+  const params = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
-  });
-  let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
-  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+  };
+  const response = await fetchBlogsRest(params, context);
   return coda.autocompleteSearchObjects(search, response.body.blogs, 'title', 'id');
 }
 
 export async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
-  const params = cleanQueryParams({
+  const params = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
-  });
-  let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`, params);
-  const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+  };
+  const response = await fetchBlogsRest(params, context);
   return response.body.blogs.map((blog) => formatOptionNameId(blog.title, blog.id));
 }
 
@@ -120,7 +118,7 @@ export async function handleBlogUpdateJob(
 // #endregion
 
 // #region Formatting functions
-export const formatBlogForSchemaFromRestApi: FormatFunction = (blog, context) => {
+export const formatBlogForSchemaFromRestApi = (blog, context: coda.ExecutionContext) => {
   let obj: any = {
     ...blog,
     admin_url: `${context.endpoint}/admin/blogs/${blog.id}`,
@@ -139,19 +137,48 @@ export function validateBlogParams(params: any) {
 // #endregion
 
 // #region Rest requests
-export const fetchBlogRest = (blogId: number, context: coda.ExecutionContext) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: 10 }, context);
+export const fetchBlogsRest = (
+  params: BlogSyncTableRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs, url: forceUrl } = requestOptions;
+  let url =
+    forceUrl ??
+    coda.withQueryParams(
+      `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`,
+      cleanQueryParams(params)
+    );
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 };
 
-export const createBlogRest = (params: BlogCreateRestParams, context: coda.ExecutionContext) => {
+export const fetchSingleBlogRest = (
+  blogId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
+  const { cacheTtlSecs } = requestOptions;
+  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
+  return makeGetRequest({ url, cacheTtlSecs }, context);
+};
+
+export const createBlogRest = (
+  params: BlogCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   // validateBlogParams(params);
   const payload = { blog: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`;
   return makePostRequest({ url, payload }, context);
 };
 
-export const updateBlogRest = (blogId: number, params: BlogUpdateRestParams, context: coda.ExecutionContext) => {
+export const updateBlogRest = (
+  blogId: number,
+  params: BlogUpdateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const restParams = cleanQueryParams(params);
   // validateBlogParams(params);
   const payload = { blog: restParams };
@@ -159,7 +186,11 @@ export const updateBlogRest = (blogId: number, params: BlogUpdateRestParams, con
   return makePutRequest({ url, payload }, context);
 };
 
-export const deleteBlogRest = (blogId: number, context) => {
+export const deleteBlogRest = (
+  blogId: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
   return makeDeleteRequest({ url }, context);
 };

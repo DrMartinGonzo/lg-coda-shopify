@@ -2,6 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_DEFAULT,
+  CACHE_DISABLED,
   CODA_SUPPORTED_CURRENCIES,
   IDENTITY_ORDER,
   METAFIELD_PREFIX_KEY,
@@ -9,7 +11,7 @@ import {
   REST_DEFAULT_LIMIT,
 } from '../constants';
 import {
-  fetchOrder,
+  fetchSingleOrderRest,
   formatOrderForDocExport,
   formatOrderForSchemaFromRestApi,
   handleOrderUpdateJob,
@@ -40,7 +42,7 @@ import {
 } from '../helpers-graphql';
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
-import { fetchShopDetails } from '../shop/shop-functions';
+import { fetchShopDetailsRest } from '../shop/shop-functions';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
@@ -52,7 +54,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     augmentedSchema = await augmentSchemaWithMetafields(OrderSchema, MetafieldOwnerType.Order, context);
   }
 
-  const shop = await fetchShopDetails(['currency'], context);
+  const shop = await fetchShopDetailsRest(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
     if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
@@ -389,10 +391,15 @@ export const Formula_Order = coda.makeFormula({
   description: 'Get a single order data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.orderId],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: OrderSchema,
-  execute: fetchOrder,
+  execute: async function ([orderId], context) {
+    const response = await fetchSingleOrderRest(orderId, context);
+    if (response.body?.order) {
+      return formatOrderForSchemaFromRestApi(response.body.order, context);
+    }
+  },
 });
 
 export const Formula_Orders = coda.makeFormula({
@@ -409,7 +416,7 @@ export const Formula_Orders = coda.makeFormula({
     { ...sharedParameters.filterUpdatedAtRange, optional: true },
     { ...parameters.filterFields, optional: true },
   ],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: 10, // Cache is reduced to 10 seconds intentionnaly
   resultType: coda.ValueType.Array,
   items: OrderSchema,
   execute: async function (
@@ -439,7 +446,13 @@ export const Formula_Orders = coda.makeFormula({
       let url =
         nextUrl ??
         coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, params);
-      const response = await makeGetRequest({ url, cacheTtlSecs: 0 }, context);
+      const response = await makeGetRequest(
+        {
+          url,
+          cacheTtlSecs: CACHE_DISABLED, // cache is disabled intentionnaly (we need fresh results when preparing Shopify orders)
+        },
+        context
+      );
       const { body } = response;
       if (body.orders && body.orders.length) {
         items = items.concat(body.orders.map((order) => formatOrderForSchemaFromRestApi(order, context)));
@@ -458,11 +471,15 @@ export const Formula_OrderExportFormat = coda.makeFormula({
   description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.orderId],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: 10, // small cache because we need fresh results
   resultType: coda.ValueType.String,
   execute: async ([orderID], context) => {
-    const order = await fetchOrder([orderID], context);
-    return formatOrderForDocExport(order);
+    const response = await fetchSingleOrderRest(orderID, context, {
+      cacheTtlSecs: CACHE_DISABLED, // we need fresh results
+    });
+    if (response.body?.order) {
+      return formatOrderForDocExport(response.body.order);
+    }
   },
 });
 

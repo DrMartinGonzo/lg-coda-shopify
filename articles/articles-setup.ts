@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import {
+  CACHE_DEFAULT,
   IDENTITY_ARTICLE,
   METAFIELD_PREFIX_KEY,
   OPTIONS_PUBLISHED_STATUS,
@@ -13,7 +14,7 @@ import {
   formatArticleForSchemaFromRestApi,
   validateArticleParams,
   handleArticleUpdateJob,
-  fetchArticleRest,
+  fetchSingleArticleRest,
   createArticleRest,
   updateArticleRest,
 } from './articles-functions';
@@ -42,7 +43,7 @@ import { autocompleteBlogIdParameter, autocompleteBlogParameterWithName } from '
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { restResources } from '../types/Rest';
+import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
@@ -63,16 +64,16 @@ const parameters = {
     name: 'articleID',
     description: 'The ID of the article.',
   }),
-  blogId: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'blogId',
-    description: 'The ID of the blog containing the article.',
-    autocomplete: autocompleteBlogIdParameter,
-  }),
+  // blogId: coda.makeParameter({
+  //   type: coda.ParameterType.Number,
+  //   name: 'blogId',
+  //   description: 'The ID of the blog containing the article.',
+  //   autocomplete: autocompleteBlogIdParameter,
+  // }),
   blogIdOptionName: coda.makeParameter({
     type: coda.ParameterType.String,
-    name: 'blog',
-    description: 'The blog containing the article.',
+    name: 'blogId',
+    description: 'The ID of the blog containing the article.',
     autocomplete: autocompleteBlogParameterWithName,
   }),
   filterBlogs: coda.makeParameter({
@@ -271,7 +272,7 @@ export const Action_CreateArticle = coda.makeFormula({
   description: 'Create a new Shopify article and return its ID. The article will be unpublished by default.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.blogId,
+    parameters.blogIdOptionName,
     { ...sharedParameters.inputTitle, description: 'The title of the article.' },
 
     // optional parameters
@@ -295,7 +296,7 @@ export const Action_CreateArticle = coda.makeFormula({
   resultType: coda.ValueType.String,
   execute: async (
     [
-      blogId,
+      blog,
       title,
       author,
       bodyHtml,
@@ -312,7 +313,7 @@ export const Action_CreateArticle = coda.makeFormula({
     context
   ) => {
     const restParams: ArticleCreateRestParams = {
-      blog_id: blogId,
+      blog_id: parseOptionId(blog),
       title,
       author,
       body_html: bodyHtml,
@@ -463,11 +464,11 @@ export const Formula_Article = coda.makeFormula({
   description: 'Return a single article from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.articleID],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ArticleSchema,
   execute: async ([articleId], context) => {
-    const articleResponse = await fetchArticleRest(articleId, context);
+    const articleResponse = await fetchSingleArticleRest(articleId, context);
     if (articleResponse.body?.article) {
       return formatArticleForSchemaFromRestApi(articleResponse.body.article, context);
     }

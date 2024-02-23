@@ -6,13 +6,13 @@ import {
   deactivateLocationGraphQl,
   formatLocationForSchemaFromGraphQlApi,
   activateLocationGraphQl,
-  fetchLocationGraphQl,
+  fetchSingleLocationGraphQl,
   updateLocationGraphQl,
   formatGraphQlLocationEditAddressInputNew,
 } from './locations-functions';
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
-import { IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
+import { CACHE_DEFAULT, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
 import {
   augmentSchemaWithMetafields,
   updateResourceMetafieldsFromSyncTableGraphQL,
@@ -33,7 +33,7 @@ import { QueryLocations } from './locations-graphql';
 import { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
 import { LocationEditInput, MetafieldOwnerType } from '../types/admin.types';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
@@ -280,14 +280,14 @@ export const Formula_Location = coda.makeFormula({
   description: 'Return a single location from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [sharedParameters.locationID],
-  cacheTtlSecs: 10,
+  cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: LocationSchema,
   execute: async ([location_id], context) => {
     const locationResponse: coda.FetchResponse<{
       data: GetSingleLocationQuery;
       extensions: ShopifyGraphQlRequestExtensions;
-    }> = await fetchLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, location_id), context);
+    }> = await fetchSingleLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, location_id), context);
 
     if (locationResponse.body?.data?.location) {
       return formatLocationForSchemaFromGraphQlApi(locationResponse.body.data.location, context);

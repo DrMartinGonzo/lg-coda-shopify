@@ -12,7 +12,7 @@ import {
 } from '../helpers-graphql';
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
 import { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
-import { fetchShopDetails } from '../shop/shop-functions';
+import { fetchShopDetailsRest } from '../shop/shop-functions';
 import { sharedParameters } from '../shared-parameters';
 import { countryCodes } from '../types/misc';
 import { cleanQueryParams } from '../helpers-rest';
@@ -23,7 +23,7 @@ async function getInventoryItemSchema(context: coda.ExecutionContext, _: string,
   let augmentedSchema: any = InventoryItemSchema;
 
   // TODO: need a generic setCurrencyCode function
-  const shop = await fetchShopDetails(['currency'], context);
+  const shop = await fetchShopDetailsRest(['currency'], context);
   if (shop && shop['currency']) {
     let currencyCode = shop['currency'];
     if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {

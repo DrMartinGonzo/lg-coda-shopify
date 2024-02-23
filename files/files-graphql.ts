@@ -77,6 +77,29 @@ export const queryAllFiles = /* GraphQL */ `
     }
   }
 `;
+
+export const querySingleFile = /* GraphQL */ `
+  ${FileFieldsFragment}
+
+  query GetSingleFile(
+    $id: ID!
+    $includeAlt: Boolean!
+    $includeCreatedAt: Boolean!
+    $includeDuration: Boolean!
+    $includeFileSize: Boolean!
+    $includeHeight: Boolean!
+    $includeMimeType: Boolean!
+    $includeThumbnail: Boolean!
+    $includeUpdatedAt: Boolean!
+    $includeUrl: Boolean!
+    $includeWidth: Boolean!
+  ) {
+    node(id: $id) {
+      id
+      ...FileFields
+    }
+  }
+`;
 // #endregion
 
 // #region Mutations

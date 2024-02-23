@@ -9,8 +9,8 @@ import {
   SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
 } from './types/tableSync';
-import { GraphQlResource } from './types/GraphQl';
-import { restResources } from './types/Rest';
+import { GraphQlResource } from './types/RequestsGraphQl';
+import { restResources } from './types/RequestsRest';
 import { MetafieldOwnerType } from './types/admin.types';
 
 // TODO: still not ready, calculate this max ?

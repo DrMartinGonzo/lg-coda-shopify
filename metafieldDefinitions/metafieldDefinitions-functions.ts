@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_SINGLE_FETCH } from '../constants';
+import { CACHE_DEFAULT } from '../constants';
 import { getGraphQlResourceFromMetafieldOwnerType, graphQlGidToId, makeGraphQlRequest } from '../helpers-graphql';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../types/admin.types';
 import {
@@ -13,7 +13,7 @@ import { METAFIELD_TYPES } from '../metafields/metafields-constants';
 import { getMetaFieldFullKey } from '../metafields/metafields-functions';
 import { QuerySingleMetafieldDefinition, queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
 import { MetafieldDefinitionSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
-import { ResourceMetafieldsSyncTableDefinition, SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
+import { FetchRequestOptions } from '../types/Requests';
 
 // #endregion
 
@@ -89,12 +89,13 @@ export function formatMetafieldDefinitionForSchemaFromGraphQlApi(
 export async function fetchMetafieldDefinitionsGraphQl(
   params: {
     ownerType: MetafieldOwnerType;
-    cacheTtlSecs?: number;
     includeFakeExtraDefinitions?: boolean;
   },
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<MetafieldDefinitionFragment[]> {
-  const { ownerType, cacheTtlSecs } = params;
+  const { cacheTtlSecs } = requestOptions;
+  const { ownerType } = params;
   let { includeFakeExtraDefinitions } = params;
   if (params.includeFakeExtraDefinitions === undefined) {
     includeFakeExtraDefinitions = true;
@@ -152,7 +153,7 @@ export async function fetchMetafieldDefinitionsGraphQl(
     });
   }
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
   return response.body.data.metafieldDefinitions.nodes.concat(extraDefinitions);
 }
 
@@ -160,13 +161,11 @@ export async function fetchMetafieldDefinitionsGraphQl(
  * Get a single Metafield Definition from a specific resource type and return the node
  */
 export async function fetchSingleMetafieldDefinitionGraphQl(
-  params: {
-    metafieldDefinitionGid?: string;
-    cacheTtlSecs?: number;
-  },
-  context: coda.ExecutionContext
+  metafieldDefinitionGid: string,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ): Promise<MetafieldDefinitionFragment> {
-  const { metafieldDefinitionGid, cacheTtlSecs } = params;
+  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: QuerySingleMetafieldDefinition,
     variables: {
@@ -174,7 +173,7 @@ export async function fetchSingleMetafieldDefinitionGraphQl(
     } as GetSingleMetafieldDefinitionQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_SINGLE_FETCH }, context);
+  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
   if (response?.body?.data.metafieldDefinition) {
     return response.body.data.metafieldDefinition;
   }

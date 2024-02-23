@@ -1,8 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { makePostRequest } from '../helpers-rest';
-import { NOT_FOUND, REST_DEFAULT_API_VERSION } from '../constants';
-import { FormatFunction } from '../types/misc';
+import { REST_DEFAULT_API_VERSION } from '../constants';
+import { FetchRequestOptions } from '../types/Requests';
 
 import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { InventoryLevelAdjustRestParams, InventoryLevelSetRestParams } from '../types/InventoryLevel';
@@ -37,7 +37,7 @@ export async function handleInventoryLevelUpdateJob(
 // #endregion
 
 // #region Formatting
-export const formatInventoryLevelForSchemaFromRestApi: FormatFunction = (inventoryLevel, context) => {
+export const formatInventoryLevelForSchemaFromRestApi = (inventoryLevel, context: coda.ExecutionContext) => {
   let obj: any = {
     ...inventoryLevel,
     id: [inventoryLevel.inventory_item_id, inventoryLevel.location_id].join(','),
@@ -55,12 +55,20 @@ export const formatInventoryLevelForSchemaFromRestApi: FormatFunction = (invento
 // #endregion
 
 // #region Rest requests
-export const adjustInventoryLevelRest = (payload: InventoryLevelAdjustRestParams, context: coda.ExecutionContext) => {
+export const adjustInventoryLevelRest = (
+  payload: InventoryLevelAdjustRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/inventory_levels/adjust.json`;
   return makePostRequest({ url, payload }, context);
 };
 
-export const setInventoryLevelRest = (payload: InventoryLevelSetRestParams, context: coda.ExecutionContext) => {
+export const setInventoryLevelRest = (
+  payload: InventoryLevelSetRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/inventory_levels/set.json`;
   return makePostRequest({ url, payload }, context);
 };

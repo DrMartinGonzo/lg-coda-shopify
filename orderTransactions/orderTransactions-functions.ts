@@ -1,7 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import toSentenceCase from 'to-sentence-case';
 
-import { NOT_FOUND } from '../constants';
 import { graphQlGidToId } from '../helpers-graphql';
 import { OrderTransactionFieldsFragment } from '../types/admin.generated';
 import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';

@@ -4,15 +4,14 @@ import striptags from 'striptags';
 import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
 
 import {
-  CACHE_SINGLE_FETCH,
-  CACHE_TEN_MINUTES,
+  CACHE_DEFAULT,
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PRODUCT_STATUS_REST,
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { FormatFunction } from '../types/misc';
+import { FetchRequestOptions } from '../types/Requests';
 import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -25,11 +24,11 @@ import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import type { ProductInput } from '../types/admin.types';
 import type { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
-import { GraphQlResource } from '../types/GraphQl';
+import { GraphQlResource } from '../types/RequestsGraphQl';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
-  const productTypes = await getProductTypes(context);
+  const productTypes = await fetchProductTypesGraphQl(context);
   return coda.simpleAutocomplete(search, productTypes);
 }
 // #endregion
@@ -118,10 +117,7 @@ export async function handleProductUpdateJob(
 /**
  * Format product for schema from a Rest Admin API response
  */
-export const formatProductForSchemaFromRestApi: FormatFunction = (
-  product: ProductRest,
-  context: coda.ExecutionContext
-) => {
+export const formatProductForSchemaFromRestApi = (product: ProductRest, context: coda.ExecutionContext) => {
   let obj: any = {
     ...product,
     admin_url: `${context.endpoint}/admin/products/${product.id}`,
@@ -174,12 +170,21 @@ function formatGraphQlProductInput(update: any, productGid: string, fromKeys: st
 // #endregion
 
 // #region Rest Requests
-export function fetchProductRest(productID: number, context: coda.ExecutionContext) {
+export function fetchSingleProductRest(
+  productID: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
+  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
-  return makeGetRequest({ url, cacheTtlSecs: CACHE_SINGLE_FETCH }, context);
+  return makeGetRequest({ url, cacheTtlSecs }, context);
 }
 
-export function createProductRest(params: ProductCreateRestParams, context: coda.ExecutionContext) {
+export function createProductRest(
+  params: ProductCreateRestParams,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const restParams = cleanQueryParams(params);
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
@@ -190,7 +195,8 @@ export function createProductRest(params: ProductCreateRestParams, context: coda
 export const updateProductRest = async (
   productId: number,
   params: ProductUpdateRestParams,
-  context: coda.ExecutionContext
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
   validateProductParams(restParams, true);
@@ -199,17 +205,25 @@ export const updateProductRest = async (
   return makePutRequest({ url, payload }, context);
 };
 
-export function deleteProductRest(productID: number, context: coda.ExecutionContext) {
+export function deleteProductRest(
+  productID: number,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
   return makeDeleteRequest({ url }, context);
 }
 // #endregion
 
 // #region GraphQL Requests
-export async function getProductTypes(context): Promise<string[]> {
+export async function fetchProductTypesGraphQl(
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<string[]> {
+  const { cacheTtlSecs } = requestOptions;
   const payload = { query: queryAvailableProductTypes };
   const { response } = await makeGraphQlRequest(
-    { payload, storeFront: true, cacheTtlSecs: CACHE_TEN_MINUTES },
+    { payload, storeFront: true, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
   return response.body.data.productTypes.edges.map((edge) => edge.node);
