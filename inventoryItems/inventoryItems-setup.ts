@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
-import { CODA_SUPPORTED_CURRENCIES, IDENTITY_INVENTORYITEM } from '../constants';
+import { IDENTITY_INVENTORYITEM } from '../constants';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -12,29 +12,16 @@ import {
 } from '../helpers-graphql';
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
 import { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
-import { fetchShopDetailsRest } from '../shop/shop-functions';
 import { sharedParameters } from '../shared-parameters';
 import { countryCodes } from '../types/misc';
 import { cleanQueryParams } from '../helpers-rest';
+import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
 // #endregion
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema: any = InventoryItemSchema;
-
-  // TODO: need a generic setCurrencyCode function
-  const shop = await fetchShopDetailsRest(['currency'], context);
-  if (shop && shop['currency']) {
-    let currencyCode = shop['currency'];
-    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
-      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
-      currencyCode = 'USD';
-    }
-
-    // Main props
-    augmentedSchema.properties.cost.currencyCode = currencyCode;
-  }
-
+  augmentedSchema.properties.cost.currencyCode = await getSchemaCurrencyCode(context);
   return augmentedSchema;
 }
 

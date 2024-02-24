@@ -39,7 +39,7 @@ import {
   Formula_Customer,
   Sync_Customers,
 } from './customers/customers-setup';
-import { Action_DeleteFile, Formula_File, Sync_Files } from './files/files-setup';
+import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './files/files-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
@@ -263,6 +263,7 @@ pack.formats.push(Format_Article);
 pack.formats.push(Format_Blog);
 pack.formats.push(Format_Collection);
 pack.formats.push(Format_Customer);
+pack.formats.push(Format_File);
 pack.formats.push(Format_Location);
 pack.formats.push(Format_MetafieldDefinition);
 pack.formats.push(Format_Order);

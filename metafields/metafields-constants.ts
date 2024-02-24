@@ -60,16 +60,16 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     display: 'Article',
     key: GraphQlResource.Article,
     metafieldOwnerType: MetafieldOwnerType.Article,
-    syncTableGraphQlQueryOperation: 'articles', // TODO: no graphQL here
-    graphQlQueryOperation: 'article', // TODO: no graphQL here
+    syncTableGraphQlQueryOperation: 'articles', // no graphQL here
+    graphQlQueryOperation: 'article', // no graphQL here
     supportMetafieldDefinitions: true,
   },
   {
     display: 'Blog',
     key: GraphQlResource.Blog,
     metafieldOwnerType: MetafieldOwnerType.Blog,
-    syncTableGraphQlQueryOperation: 'blogs', // TODO: no graphQL here
-    graphQlQueryOperation: 'blog', // TODO: no graphQL here
+    syncTableGraphQlQueryOperation: 'blogs', // no graphQL here
+    graphQlQueryOperation: 'blog', // no graphQL here
     storeFront: true,
     supportMetafieldDefinitions: true,
   },
@@ -127,8 +127,8 @@ export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncT
     display: 'Page',
     key: GraphQlResource.Page,
     metafieldOwnerType: MetafieldOwnerType.Page,
-    syncTableGraphQlQueryOperation: 'pages', // TODO: no graphQL here
-    graphQlQueryOperation: 'page', // TODO: no graphQL here
+    syncTableGraphQlQueryOperation: 'pages', // no graphQL here
+    graphQlQueryOperation: 'page', // no graphQL here
     storeFront: true,
     supportMetafieldDefinitions: true,
   },

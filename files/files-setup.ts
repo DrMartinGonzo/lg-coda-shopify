@@ -141,7 +141,7 @@ export const Action_DeleteFile = coda.makeFormula({
 // #region Formulas
 export const Formula_File = coda.makeFormula({
   name: 'File',
-  description: 'Get a single file by its ID.',
+  description: 'Get a single file by its graphQL GID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.fileGid],
   resultType: coda.ValueType.Object,

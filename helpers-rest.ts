@@ -4,6 +4,7 @@ import { SyncTableRestContinuation } from './types/tableSync';
 import { RestResource, restResources } from './types/RequestsRest';
 import { GraphQlResource } from './types/RequestsGraphQl';
 import { CACHE_DEFAULT } from './constants';
+import { FetchRequestOptions } from './types/Requests';
 
 // TODO: better error handling
 
@@ -66,7 +67,6 @@ export function getRestResourceFromGraphQlResourceType(resourceType: GraphQlReso
 export async function makeSyncTableGetRequest(
   params: {
     url: string;
-    cacheTtlSecs?: number;
     extraContinuationData?: any;
   },
   context: coda.SyncExecutionContext
@@ -74,7 +74,7 @@ export async function makeSyncTableGetRequest(
   logAdmin(`🚀  Rest Admin API: Starting sync…`);
 
   let continuation: SyncTableRestContinuation = null;
-  const response = await makeGetRequest({ url: params.url, cacheTtlSecs: params.cacheTtlSecs }, context);
+  const response = await makeGetRequest({ url: params.url }, context);
 
   // Check if we have paginated results
   const nextUrl = extractNextUrlPagination(response);
@@ -91,7 +91,21 @@ export async function makeSyncTableGetRequest(
   };
 }
 
-async function doRequest(options: coda.FetchRequest, context: coda.ExecutionContext) {
+interface GetRequestParams extends FetchRequestOptions {
+  url: string;
+}
+export async function makeGetRequest(params: GetRequestParams, context: coda.ExecutionContext) {
+  const options: coda.FetchRequest = {
+    method: 'GET',
+    url: params.url,
+    headers: getShopifyRequestHeaders(context),
+  };
+  // always disable cache when in a synctable context, unless forceSyncContextCache is set
+  if (context.sync && !params.forceSyncContextCache) {
+    options.cacheTtlSecs = 0;
+  } else {
+    options.cacheTtlSecs = params.cacheTtlSecs ?? CACHE_DEFAULT;
+  }
   let response: coda.FetchResponse<any>;
   try {
     response = await context.fetcher.fetch(options);
@@ -102,48 +116,57 @@ async function doRequest(options: coda.FetchRequest, context: coda.ExecutionCont
   }
 }
 
-export interface GetRequestParams {
+interface PutRequestParams extends Omit<FetchRequestOptions, 'cacheTtlSecs' | 'forceSyncContextCache'> {
   url: string;
-  cacheTtlSecs?: number;
+  payload: any;
 }
-export async function makeGetRequest(params: GetRequestParams, context: coda.ExecutionContext) {
-  const options: coda.FetchRequest = {
-    method: 'GET',
-    url: params.url,
-    headers: getShopifyRequestHeaders(context),
-    cacheTtlSecs: params.cacheTtlSecs ?? CACHE_DEFAULT,
-  };
-
-  const response = await doRequest(options, context);
-  const isCachedResponse = isCodaCached(response);
-  return response;
-}
-
-export async function makePutRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
+export async function makePutRequest(params: PutRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'PUT',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
-  return doRequest(options, context);
+  let response: coda.FetchResponse<any>;
+  try {
+    response = await context.fetcher.fetch(options);
+    return response;
+  } catch (error) {
+    throw new coda.UserVisibleError(error);
+  }
 }
 
-export async function makePostRequest(params: { url: string; payload: any }, context: coda.ExecutionContext) {
+interface PostRequestParams extends PutRequestParams {}
+export async function makePostRequest(params: PostRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'POST',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
-  return doRequest(options, context);
+  let response: coda.FetchResponse<any>;
+  try {
+    response = await context.fetcher.fetch(options);
+    return response;
+  } catch (error) {
+    throw new coda.UserVisibleError(error);
+  }
 }
 
-export async function makeDeleteRequest(params: { url: string }, context: coda.ExecutionContext) {
+interface DeleteRequestParams extends Omit<FetchRequestOptions, 'cacheTtlSecs' | 'forceSyncContextCache'> {
+  url: string;
+}
+export async function makeDeleteRequest(params: DeleteRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'DELETE',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
   };
-  return doRequest(options, context);
+  let response: coda.FetchResponse<any>;
+  try {
+    response = await context.fetcher.fetch(options);
+    return response;
+  } catch (error) {
+    throw new coda.UserVisibleError(error);
+  }
 }

@@ -1,7 +1,5 @@
 import '../types/admin.generated.d.ts';
 
-// TODO: clean no longer needed queries
-
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers

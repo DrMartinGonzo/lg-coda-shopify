@@ -120,8 +120,7 @@ export const Sync_Customers = coda.makeSyncTable({
       let shouldDeferBy = 0;
 
       if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
+        const defaultMaxEntriesPerRun = 250;
         const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
           defaultMaxEntriesPerRun,
           prevContinuation,
@@ -151,9 +150,6 @@ export const Sync_Customers = coda.makeSyncTable({
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
         });
-
-        // TODO: validateCustomerParams
-        // validateCustomerParams(restParams);
 
         let url: string;
         if (prevContinuation?.nextUrl) {

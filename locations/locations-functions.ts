@@ -128,7 +128,12 @@ export async function handleLocationUpdateJob(
     subJobs.push(
       updateResourceMetafieldsFromSyncTableGraphQL(
         locationGid,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -138,31 +143,22 @@ export async function handleLocationUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [graphQlResponse, metafields] = await Promise.allSettled(subJobs);
-  if (graphQlResponse.status === 'fulfilled' && graphQlResponse.value) {
-    const response: coda.FetchResponse<{ data: LocationEditMutation; extensions: ShopifyGraphQlRequestExtensions }> =
-      graphQlResponse.value;
-    if (response.body?.data?.locationEdit?.location) {
-      obj = {
-        ...obj,
-        ...formatLocationForSchemaFromGraphQlApi(response.body.data.locationEdit.location, context),
-      };
-    }
-  } else if (graphQlResponse.status === 'rejected') {
-    throw new coda.UserVisibleError(graphQlResponse.reason);
+  const [graphQlResponse, metafields] = (await Promise.all(subJobs)) as [
+    coda.FetchResponse<{ data: LocationEditMutation; extensions: ShopifyGraphQlRequestExtensions }>,
+    { [key: string]: any }
+  ];
+  if (graphQlResponse?.body?.data?.locationEdit?.location) {
+    obj = {
+      ...obj,
+      ...formatLocationForSchemaFromGraphQlApi(graphQlResponse.body.data.locationEdit.location, context),
+    };
   }
-
-  if (metafields.status === 'fulfilled' && metafields.value) {
-    if (metafields.value) {
-      obj = {
-        ...obj,
-        ...metafields.value,
-      };
-    }
-  } else if (metafields.status === 'rejected') {
-    throw new coda.UserVisibleError(metafields.reason);
+  if (metafields) {
+    obj = {
+      ...obj,
+      ...metafields,
+    };
   }
-
   return obj;
 }
 // #endregion
@@ -216,13 +212,15 @@ export const fetchLocationsGraphQl = async (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: QueryLocations,
     variables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response;
 };
 
@@ -231,7 +229,6 @@ export const fetchSingleLocationGraphQl = async (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: QuerySingleLocation,
     variables: {
@@ -242,7 +239,10 @@ export const fetchSingleLocationGraphQl = async (
     } as GetSingleLocationQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response;
 };
 
@@ -264,10 +264,7 @@ export async function updateLocationGraphQl(
   };
 
   const { response } = await makeGraphQlRequest(
-    {
-      payload,
-      getUserErrors: (body) => body.data.locationEdit.userErrors,
-    },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.locationEdit.userErrors },
     context
   );
   return response;
@@ -286,10 +283,7 @@ export async function activateLocationGraphQl(
   };
 
   const { response } = await makeGraphQlRequest(
-    {
-      payload,
-      getUserErrors: (body) => body.data.locationActivate.locationActivateUserErrors,
-    },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.locationActivate.locationActivateUserErrors },
     context
   );
   return response;
@@ -311,6 +305,7 @@ export async function deactivateLocationGraphQl(
 
   const { response } = await makeGraphQlRequest(
     {
+      ...requestOptions,
       payload,
       getUserErrors: (body) => body.data.locationDeactivate.locationDeactivateUserErrors,
     },
