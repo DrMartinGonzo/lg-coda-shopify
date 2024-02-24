@@ -85,7 +85,12 @@ export async function handleProductUpdateJob(
     subJobs.push(
       updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.Product, productId),
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -94,13 +99,11 @@ export async function handleProductUpdateJob(
   }
 
   const [restResponse, metafields] = await Promise.all(subJobs);
-  if (restResponse) {
-    if (restResponse.body?.product) {
-      obj = {
-        ...obj,
-        ...formatProductForSchemaFromRestApi(restResponse.body.product, context),
-      };
-    }
+  if (restResponse?.body?.product) {
+    obj = {
+      ...obj,
+      ...formatProductForSchemaFromRestApi(restResponse.body.product, context),
+    };
   }
   if (metafields) {
     obj = {
@@ -175,9 +178,8 @@ export function fetchSingleProductRest(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 }
 
 export function createProductRest(
@@ -189,7 +191,7 @@ export function createProductRest(
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
   const payload = { product: { ...restParams } };
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 }
 
 export const updateProductRest = async (
@@ -202,7 +204,7 @@ export const updateProductRest = async (
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productId}.json`;
   const payload = { product: restParams };
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export function deleteProductRest(
@@ -211,7 +213,7 @@ export function deleteProductRest(
   requestOptions: FetchRequestOptions = {}
 ) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 }
 // #endregion
 
@@ -220,10 +222,10 @@ export async function fetchProductTypesGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<string[]> {
-  const { cacheTtlSecs } = requestOptions;
+  // TODO: query without using Storefront ?
   const payload = { query: queryAvailableProductTypes };
   const { response } = await makeGraphQlRequest(
-    { payload, storeFront: true, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT },
+    { ...requestOptions, payload, storeFront: true, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
   return response.body.data.productTypes.edges.map((edge) => edge.node);

@@ -31,13 +31,11 @@ export async function handleRedirectUpdateJob(
   if (updatedFields.length) {
     const restParams: RedirectUpdateRestParams = formatRedirectStandardFieldsRestParams(updatedFields, update.newValue);
     const restResponse = await updateRedirectRest(redirectId, restParams, context);
-    if (restResponse) {
-      if (restResponse.body?.redirect) {
-        obj = {
-          ...obj,
-          ...formatRedirectForSchemaFromRestApi(restResponse.body.redirect, context),
-        };
-      }
+    if (restResponse?.body?.redirect) {
+      obj = {
+        ...obj,
+        ...formatRedirectForSchemaFromRestApi(restResponse.body.redirect, context),
+      };
     }
   }
 
@@ -65,9 +63,8 @@ export const fetchSingleRedirectRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export function createRedirectRest(
@@ -79,7 +76,7 @@ export function createRedirectRest(
   // validateRedirectsParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects.json`;
   const payload = { redirect: restParams };
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 }
 
 const updateRedirectRest = async (
@@ -92,7 +89,7 @@ const updateRedirectRest = async (
   // validateRedirectsParams(params);
   const payload = { redirect: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deleteRedirect = async (
@@ -101,6 +98,6 @@ export const deleteRedirect = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion

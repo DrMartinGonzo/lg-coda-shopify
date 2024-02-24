@@ -56,7 +56,12 @@ export async function handlePageUpdateJob(
       updateResourceMetafieldsFromSyncTableRest(
         pageId,
         restResources.Page,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -66,30 +71,19 @@ export async function handlePageUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body?.page) {
-        obj = {
-          ...obj,
-          ...formatPageForSchemaFromRestApi(updateJob.value.body.page, context),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
+  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.page) {
+    obj = {
+      ...obj,
+      ...formatPageForSchemaFromRestApi(updateJob.body.page, context),
+    };
   }
   if (metafieldsJob) {
-    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
-      obj = {
-        ...obj,
-        ...metafieldsJob.value,
-      };
-    } else if (metafieldsJob.status === 'rejected') {
-      throw new coda.UserVisibleError(metafieldsJob.reason);
-    }
+    obj = {
+      ...obj,
+      ...metafieldsJob,
+    };
   }
-
   return obj;
 }
 // #endregion
@@ -124,9 +118,8 @@ export const fetchSinglePageRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const createPageRest = (
@@ -137,7 +130,7 @@ export const createPageRest = (
   validatePageParams(params);
   const payload = { page: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`;
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const updatePageRest = (
@@ -150,7 +143,7 @@ export const updatePageRest = (
   validatePageParams(restParams);
   const payload = { page: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deletePageRest = (
@@ -159,6 +152,6 @@ export const deletePageRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion

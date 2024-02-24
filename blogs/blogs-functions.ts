@@ -79,7 +79,12 @@ export async function handleBlogUpdateJob(
       updateResourceMetafieldsFromSyncTableRest(
         blogId,
         restResources.Blog,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -89,30 +94,20 @@ export async function handleBlogUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body?.blog) {
-        obj = {
-          ...obj,
-          ...formatBlogForSchemaFromRestApi(updateJob.value.body.blog, context),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
-  }
-  if (metafieldsJob) {
-    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
-      obj = {
-        ...obj,
-        ...metafieldsJob.value,
-      };
-    } else if (metafieldsJob.status === 'rejected') {
-      throw new coda.UserVisibleError(metafieldsJob.reason);
-    }
+  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.blog) {
+    obj = {
+      ...obj,
+      ...formatBlogForSchemaFromRestApi(updateJob.body.blog, context),
+    };
   }
 
+  if (metafieldsJob) {
+    obj = {
+      ...obj,
+      ...metafieldsJob,
+    };
+  }
   return obj;
 }
 // #endregion
@@ -142,14 +137,13 @@ export const fetchBlogsRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs, url: forceUrl } = requestOptions;
   let url =
-    forceUrl ??
+    requestOptions.url ??
     coda.withQueryParams(
       `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`,
       cleanQueryParams(params)
     );
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const fetchSingleBlogRest = (
@@ -159,7 +153,7 @@ export const fetchSingleBlogRest = (
 ) => {
   const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const createBlogRest = (
@@ -170,7 +164,7 @@ export const createBlogRest = (
   // validateBlogParams(params);
   const payload = { blog: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs.json`;
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const updateBlogRest = (
@@ -183,7 +177,7 @@ export const updateBlogRest = (
   // validateBlogParams(params);
   const payload = { blog: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deleteBlogRest = (
@@ -192,6 +186,6 @@ export const deleteBlogRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion

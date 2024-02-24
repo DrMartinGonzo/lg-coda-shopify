@@ -86,7 +86,12 @@ export async function handleCollectionUpdateJob(
       updateResourceMetafieldsFromSyncTableRest(
         collectionId,
         restResources.Collection,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -96,31 +101,19 @@ export async function handleCollectionUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  // TODO: rajouter le coda uservisible error partout où on utilise une fonction du même genre
-  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body[collectionType]) {
-        obj = {
-          ...obj,
-          ...formatCollectionForSchemaFromRestApi(updateJob.value.body[collectionType], context),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
+  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
+  if (updateJob?.body[collectionType]) {
+    obj = {
+      ...obj,
+      ...formatCollectionForSchemaFromRestApi(updateJob.body[collectionType], context),
+    };
   }
   if (metafieldsJob) {
-    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
-      obj = {
-        ...obj,
-        ...metafieldsJob.value,
-      };
-    } else if (metafieldsJob.status === 'rejected') {
-      throw new coda.UserVisibleError(metafieldsJob.reason);
-    }
+    obj = {
+      ...obj,
+      ...metafieldsJob,
+    };
   }
-
   return obj;
 }
 // #endregion
@@ -169,7 +162,6 @@ export const getCollectionTypeGraphQl = async (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: isSmartCollection,
     variables: {
@@ -178,7 +170,10 @@ export const getCollectionTypeGraphQl = async (
   };
 
   // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_MAX }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
+    context
+  );
   const { body } = response;
 
   return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
@@ -191,9 +186,8 @@ export const fetchSingleCollectionRest = async (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/collections/${collectionId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const updateCollectionRest = async (
@@ -211,7 +205,7 @@ export const updateCollectionRest = async (
 
   const payload = { [payloadObjKey]: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const createCollectionRest = async (
@@ -223,7 +217,7 @@ export const createCollectionRest = async (
   const payload = { custom_collection: params };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${collectionType}.json`;
 
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deleteCollectionRest = async (
@@ -234,7 +228,7 @@ export const deleteCollectionRest = async (
 ) => {
   const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion
 

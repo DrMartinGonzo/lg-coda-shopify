@@ -4,7 +4,6 @@ import * as coda from '@codahq/packs-sdk';
 import {
   CACHE_DEFAULT,
   CACHE_DISABLED,
-  CODA_SUPPORTED_CURRENCIES,
   IDENTITY_ORDER,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
@@ -26,6 +25,7 @@ import {
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { getSchemaCurrencyCode } from '../shop/shop-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   removePrefixFromMetaFieldKey,
@@ -42,7 +42,6 @@ import {
 } from '../helpers-graphql';
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
-import { fetchShopDetailsRest } from '../shop/shop-functions';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 
 // #endregion
@@ -54,74 +53,66 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     augmentedSchema = await augmentSchemaWithMetafields(OrderSchema, MetafieldOwnerType.Order, context);
   }
 
-  const shop = await fetchShopDetailsRest(['currency'], context);
-  if (shop && shop['currency']) {
-    let currencyCode = shop['currency'];
-    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
-      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
-      currencyCode = 'USD';
-    }
+  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  // Refund order adjustments
+  [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
+    properties.amount.currencyCode = shopCurrencyCode;
+    properties.tax_amount.currencyCode = shopCurrencyCode;
+  });
 
-    // Refund order adjustments
-    [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
-      properties.amount.currencyCode = currencyCode;
-      properties.tax_amount.currencyCode = currencyCode;
-    });
+  // Refund transactions
+  [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
+    properties.amount.currencyCode = shopCurrencyCode;
+    properties.total_unsettled.currencyCode = shopCurrencyCode;
+  });
 
-    // Refund transactions
-    [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
-      properties.amount.currencyCode = currencyCode;
-      properties.total_unsettled.currencyCode = currencyCode;
-    });
+  // Refund line items
+  [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
+    properties.subtotal.currencyCode = shopCurrencyCode;
+    properties.total_tax.currencyCode = shopCurrencyCode;
+  });
 
-    // Refund line items
-    [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
-      properties.subtotal.currencyCode = currencyCode;
-      properties.total_tax.currencyCode = currencyCode;
-    });
+  // Line items
+  [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
+    properties.price.currencyCode = shopCurrencyCode;
+    properties.total_discount.currencyCode = shopCurrencyCode;
+    properties.discount_allocations.items.properties.amount.currencyCode = shopCurrencyCode;
+  });
 
-    // Line items
-    [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-      properties.price.currencyCode = currencyCode;
-      properties.total_discount.currencyCode = currencyCode;
-      properties.discount_allocations.items.properties.amount.currencyCode = currencyCode;
-    });
+  // Shipping lines
+  [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
+    properties.discounted_price.currencyCode = shopCurrencyCode;
+    properties.price.currencyCode = shopCurrencyCode;
+  });
 
-    // Shipping lines
-    [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
-      properties.discounted_price.currencyCode = currencyCode;
-      properties.price.currencyCode = currencyCode;
-    });
+  // Tax lines
+  [
+    augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
+    augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
+    augmentedSchema.properties.tax_lines.items.properties,
+    augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
+    augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
+  ].forEach((properties) => {
+    properties.price.currencyCode = shopCurrencyCode;
+  });
 
-    // Tax lines
-    [
-      augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.tax_lines.items.properties,
-      augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
-    ].forEach((properties) => {
-      properties.price.currencyCode = currencyCode;
-    });
+  // Main props
+  augmentedSchema.properties.current_subtotal_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_total_additional_fees.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_total_discounts.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_total_duties.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_total_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_total_tax.currencyCode = shopCurrencyCode;
 
-    // Main props
-    augmentedSchema.properties.current_subtotal_price.currencyCode = currencyCode;
-    augmentedSchema.properties.current_total_additional_fees.currencyCode = currencyCode;
-    augmentedSchema.properties.current_total_discounts.currencyCode = currencyCode;
-    augmentedSchema.properties.current_total_duties.currencyCode = currencyCode;
-    augmentedSchema.properties.current_total_price.currencyCode = currencyCode;
-    augmentedSchema.properties.current_total_tax.currencyCode = currencyCode;
+  augmentedSchema.properties.subtotal_price.currencyCode = shopCurrencyCode;
 
-    augmentedSchema.properties.subtotal_price.currencyCode = currencyCode;
-
-    augmentedSchema.properties.total_discounts.currencyCode = currencyCode;
-    augmentedSchema.properties.total_line_items_price.currencyCode = currencyCode;
-    augmentedSchema.properties.total_outstanding.currencyCode = currencyCode;
-    augmentedSchema.properties.total_price.currencyCode = currencyCode;
-    augmentedSchema.properties.total_shipping_price.currencyCode = currencyCode;
-    augmentedSchema.properties.total_tax.currencyCode = currencyCode;
-    augmentedSchema.properties.total_tip_received.currencyCode = currencyCode;
-  }
+  augmentedSchema.properties.total_discounts.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_line_items_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_outstanding.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_shipping_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_tax.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_tip_received.currencyCode = shopCurrencyCode;
 
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');

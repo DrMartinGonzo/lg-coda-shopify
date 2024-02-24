@@ -3,7 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 
 import {
   CACHE_DEFAULT,
-  CODA_SUPPORTED_CURRENCIES,
   IDENTITY_PRODUCT_VARIANT,
   METAFIELD_PREFIX_KEY,
   REST_DEFAULT_API_VERSION,
@@ -37,6 +36,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, weightUnitsMap, wrapGetSchemaForCli } from '../helpers';
+import { getSchemaCurrencyCode } from '../shop/shop-functions';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -53,7 +53,6 @@ import {
 import { fetchSingleProductRest } from '../products/products-functions';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { fetchShopDetailsRest } from '../shop/shop-functions';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
@@ -74,18 +73,9 @@ async function getProductVariantsSchema(
     );
   }
 
-  // TODO: need a generic setCurrencyCode function
-  const shop = await fetchShopDetailsRest(['currency'], context);
-  if (shop && shop['currency']) {
-    let currencyCode = shop['currency'];
-    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
-      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
-      currencyCode = 'USD';
-    }
-
-    // Main props
-    augmentedSchema.properties.price.currencyCode = currencyCode;
-  }
+  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  // Main props
+  augmentedSchema.properties.price.currencyCode = shopCurrencyCode;
 
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');

@@ -94,7 +94,6 @@ export async function fetchMetafieldDefinitionsGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetafieldDefinitionFragment[]> {
-  const { cacheTtlSecs } = requestOptions;
   const { ownerType } = params;
   let { includeFakeExtraDefinitions } = params;
   if (params.includeFakeExtraDefinitions === undefined) {
@@ -153,7 +152,10 @@ export async function fetchMetafieldDefinitionsGraphQl(
     });
   }
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metafieldDefinitions.nodes.concat(extraDefinitions);
 }
 
@@ -165,7 +167,6 @@ export async function fetchSingleMetafieldDefinitionGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetafieldDefinitionFragment> {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: QuerySingleMetafieldDefinition,
     variables: {
@@ -173,7 +174,10 @@ export async function fetchSingleMetafieldDefinitionGraphQl(
     } as GetSingleMetafieldDefinitionQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   if (response?.body?.data.metafieldDefinition) {
     return response.body.data.metafieldDefinition;
   }

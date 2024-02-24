@@ -251,10 +251,11 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
 
         // We use rawValue as default, but if any helper edit column is set and has matching type, we use its value
         let value = update.newValue.rawValue as string;
-        metafieldSyncTableHelperEditColumns.forEach((item) => {
+        for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
+          const item = metafieldSyncTableHelperEditColumns[i];
           if (updatedFields.includes(item.key)) {
             if (type === item.type) {
-              value = formatMetafieldValueForApi(update.newValue[item.key], type);
+              value = await formatMetafieldValueForApi(update.newValue[item.key], type, context);
             } else {
               const goodColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === type);
               let errorMsg = `Metafield type mismatch. You tried to update using an helper column that doesn't match the metafield type.`;
@@ -266,14 +267,14 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
               throw new coda.UserVisibleError(errorMsg);
             }
           }
-        });
+        }
 
         let deletedMetafields: DeletedMetafieldsByKeysRest[];
         let updatedMetafields: MetafieldRest[] | MetafieldFragmentWithDefinition[];
         const fullKey = update.previousValue.label as string;
         const metafieldKeyValueSet: CodaMetafieldKeyValueSet = {
           key: fullKey,
-          value: shouldDeleteMetafield(value) ? null : (value as any),
+          value,
           type,
         };
 
@@ -317,7 +318,11 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
             return {
               ...update.previousValue,
               ...formatMetafieldForSchemaFromGraphQlApi(
-                normalizeRestMetafieldResponseToGraphQLResponse(updatedMetafield, metafieldDefinitions),
+                normalizeRestMetafieldResponseToGraphQLResponse(
+                  updatedMetafield,
+                  resourceMetafieldsSyncTableDefinition.metafieldOwnerType,
+                  metafieldDefinitions
+                ),
                 idToGraphQlGid(graphQlResource, updatedMetafield.owner_id),
                 undefined,
                 resourceMetafieldsSyncTableDefinition,
