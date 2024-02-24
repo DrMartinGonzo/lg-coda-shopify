@@ -27,27 +27,19 @@ export async function handleFileUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body?.data?.fileUpdate?.files) {
-        const file = updateJob.value.body.data.fileUpdate.files.find((file) => file.id === fileId);
-        obj = {
-          ...obj,
-          ...formatFileNodeForSchema(file),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
+  const [updateJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.data?.fileUpdate?.files) {
+    const file = updateJob.body.data.fileUpdate.files.find((file) => file.id === fileId);
+    obj = {
+      ...obj,
+      ...formatFileNodeForSchema(file),
+    };
   }
-
   return obj;
 }
 // #endregion
 
 // #region Formatting functions
-// TODO: rewrite this without looping over fromKeys but explicitly set FileUpdateInput props
 function formatGraphQlFileUpdateInput(update: any, fromKeys: string[]): FileUpdateInput {
   const ret: FileUpdateInput = {
     id: update.previousValue.id,
@@ -57,19 +49,17 @@ function formatGraphQlFileUpdateInput(update: any, fromKeys: string[]): FileUpda
   fromKeys.forEach((fromKey) => {
     const value = update.newValue[fromKey];
     let inputKey = fromKey;
-    switch (fromKey) {
-      case 'name':
-        inputKey = 'filename';
-        break;
-      default:
-        break;
+    let inputValue = value !== undefined && value !== '' ? value : null;
+
+    if (fromKey === 'name') {
+      inputKey = 'filename';
+    }
+    // alt is the only value that can be null
+    if (inputKey === 'alt') {
+      inputValue = value;
     }
 
-    if (fromKey === 'alt') {
-      ret.alt = value;
-    } else {
-      ret[inputKey] = value !== undefined && value !== '' ? value : null;
-    }
+    ret[inputKey] = inputValue;
   });
 
   return ret;
@@ -117,7 +107,6 @@ export async function fetchSingleFileGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: querySingleFile,
     variables: {
@@ -135,7 +124,10 @@ export async function fetchSingleFileGraphQl(
     } as GetSingleFileQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response;
 }
 
@@ -162,10 +154,7 @@ async function updateFileGraphQl(
   };
 
   const { response } = await makeGraphQlRequest(
-    {
-      payload,
-      getUserErrors: (body) => body.data.fileUpdate.userErrors,
-    },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.fileUpdate.userErrors },
     context
   );
   return response;
@@ -191,10 +180,7 @@ export const deleteFileGraphQl = async (
   };
 
   const { response } = await makeGraphQlRequest(
-    {
-      payload,
-      getUserErrors: (body) => body.data.fileDelete.userErrors,
-    },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.fileDelete.userErrors },
     context
   );
 

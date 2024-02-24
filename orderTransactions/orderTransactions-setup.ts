@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CODA_SUPPORTED_CURRENCIES, IDENTITY_ORDER_TRANSACTION } from '../constants';
+import { IDENTITY_ORDER_TRANSACTION } from '../constants';
 import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
 import { OrderTransactionSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { sharedParameters } from '../shared-parameters';
@@ -14,7 +14,7 @@ import {
 } from '../helpers-graphql';
 
 import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
-import { fetchShopDetailsRest } from '../shop/shop-functions';
+import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
 // #endregion
 
@@ -26,18 +26,10 @@ async function getOrderTransactionSchema(
   let augmentedSchema: any = OrderTransactionSchema;
   // let augmentedSchema = OrderSchema;
 
-  const shop = await fetchShopDetailsRest(['currency'], context);
-  if (shop && shop['currency']) {
-    let currencyCode = shop['currency'];
-    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
-      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
-      currencyCode = 'USD';
-    }
-
-    // Main props
-    augmentedSchema.properties.amount.currencyCode = currencyCode;
-    augmentedSchema.properties.totalUnsettled.currencyCode = currencyCode;
-  }
+  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  // Main props
+  augmentedSchema.properties.amount.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.totalUnsettled.currencyCode = shopCurrencyCode;
 
   return augmentedSchema;
 }

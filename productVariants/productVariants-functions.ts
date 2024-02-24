@@ -64,7 +64,12 @@ export async function handleProductVariantUpdateJob(
     subJobs.push(
       updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -73,13 +78,11 @@ export async function handleProductVariantUpdateJob(
   }
 
   const [restResponse, metafields] = await Promise.all(subJobs);
-  if (restResponse) {
-    if (restResponse.body?.variant) {
-      obj = {
-        ...obj,
-        ...formatProductVariantForSchemaFromRestApi(restResponse.body.variant, {}, context),
-      };
-    }
+  if (restResponse?.body?.variant) {
+    obj = {
+      ...obj,
+      ...formatProductVariantForSchemaFromRestApi(restResponse.body.variant, {}, context),
+    };
   }
   if (metafields) {
     obj = {
@@ -118,9 +121,8 @@ export function fetchProductVariantRest(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 }
 
 export function createProductVariantRest(
@@ -132,7 +134,7 @@ export function createProductVariantRest(
   validateProductVariantParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${params.product_id}/variants.json`;
   const payload = { variant: { ...restParams } };
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 }
 
 export const updateProductVariantRest = async (
@@ -146,7 +148,7 @@ export const updateProductVariantRest = async (
 
   const payload = { variant: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export function deleteProductVariantRest(
@@ -155,6 +157,6 @@ export function deleteProductVariantRest(
   requestOptions: FetchRequestOptions = {}
 ) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 }
 // #endregion

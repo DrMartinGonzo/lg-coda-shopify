@@ -113,7 +113,12 @@ export async function handleCustomerUpdateJob(
     subJobs.push(
       updateResourceMetafieldsFromSyncTableGraphQL(
         idToGraphQlGid(GraphQlResource.Customer, customerId),
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -124,13 +129,11 @@ export async function handleCustomerUpdateJob(
   let obj = { ...update.previousValue };
 
   const [restResponse, metafields] = await Promise.all(subJobs);
-  if (restResponse) {
-    if (restResponse.body?.customer) {
-      obj = {
-        ...obj,
-        ...formatCustomerForSchemaFromRestApi(restResponse.body.customer, context),
-      };
-    }
+  if (restResponse?.body?.customer) {
+    obj = {
+      ...obj,
+      ...formatCustomerForSchemaFromRestApi(restResponse.body.customer, context),
+    };
   }
   if (metafields) {
     obj = {
@@ -189,9 +192,8 @@ export const fetchSingleCustomerRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export function createCustomerRest(
@@ -203,7 +205,7 @@ export function createCustomerRest(
   // validateCustomerParams(restParams);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`;
   const payload = { customer: restParams };
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 }
 
 export const updateCustomerRest = async (
@@ -216,7 +218,7 @@ export const updateCustomerRest = async (
   // validateCustomerParams(params);
   const payload = { customer: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deleteCustomer = async (
@@ -225,7 +227,7 @@ export const deleteCustomer = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion
 
@@ -293,8 +295,6 @@ export const formatCustomerForSchemaFromGraphQlApi = (
       ...metafields,
     };
   }
-
-  // // TODO: format CustomerAddressSchema so that the object pill display something when address1 is empty. Something like name + country name
 
   return obj;
 };

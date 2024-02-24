@@ -42,9 +42,8 @@ async function getActiveTheme(context: coda.ExecutionContext) {
 
 // #region Rest requests
 function fetchThemesRest(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 }
 
 function fetchThemeAssetsRest(
@@ -52,8 +51,7 @@ function fetchThemeAssetsRest(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes/${theme_id}/assets.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 }
 // #endregion

@@ -25,7 +25,7 @@ export async function handleInventoryLevelUpdateJob(
     available: update.newValue.available,
   };
   const response = await setInventoryLevelRest(restParams, context);
-  if (response.body?.inventory_level) {
+  if (response?.body?.inventory_level) {
     obj = {
       ...obj,
       ...formatInventoryLevelForSchemaFromRestApi(response.body.inventory_level, context),
@@ -61,7 +61,7 @@ export const adjustInventoryLevelRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/inventory_levels/adjust.json`;
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const setInventoryLevelRest = (
@@ -70,6 +70,6 @@ export const setInventoryLevelRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/inventory_levels/set.json`;
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 // #endregion

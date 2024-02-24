@@ -218,7 +218,6 @@ export const Action_UpdateLocation = coda.makeFormula({
     }
 
     if (metafields && metafields.length) {
-      console.log('metafields', metafields);
       const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
       await updateResourceMetafieldsFromSyncTableGraphQL(locationGid, metafieldKeyValueSets, context);
     }

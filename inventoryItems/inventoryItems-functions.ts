@@ -37,20 +37,13 @@ export async function handleInventoryItemUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body?.data?.inventoryItemUpdate?.inventoryItem) {
-        obj = {
-          ...obj,
-          ...formatInventoryItemNodeForSchema(updateJob.value.body.data.inventoryItemUpdate.inventoryItem),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
+  const [updateJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.data?.inventoryItemUpdate?.inventoryItem) {
+    obj = {
+      ...obj,
+      ...formatInventoryItemNodeForSchema(updateJob.body.data.inventoryItemUpdate.inventoryItem),
+    };
   }
-
   return obj;
 }
 // #endregion
@@ -129,10 +122,12 @@ async function updateInventoryItemGraphQl(
 
   const { response } = await makeGraphQlRequest(
     {
+      ...requestOptions,
       payload,
       getUserErrors: (body: { data: InventoryItemUpdateMutation }) => body.data.inventoryItemUpdate.userErrors,
     },
     context
   );
+
   return response;
 }

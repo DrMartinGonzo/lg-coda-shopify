@@ -81,7 +81,12 @@ export async function handleArticleUpdateJob(
       updateResourceMetafieldsFromSyncTableRest(
         articleId,
         restResources.Article,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -91,23 +96,19 @@ export async function handleArticleUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob && updateJob.status === 'fulfilled' && updateJob.value) {
-    if (updateJob.value.body?.article) {
-      obj = {
-        ...obj,
-        ...formatArticleForSchemaFromRestApi(updateJob.value.body.article, context),
-      };
-    }
-  }
-
-  if (metafieldsJob && metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
+  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.article) {
     obj = {
       ...obj,
-      ...metafieldsJob.value,
+      ...formatArticleForSchemaFromRestApi(updateJob.body.article, context),
     };
   }
-
+  if (metafieldsJob) {
+    obj = {
+      ...obj,
+      ...metafieldsJob,
+    };
+  }
   return obj;
 }
 // #endregion
@@ -149,9 +150,8 @@ export const fetchSingleArticleRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const createArticleRest = (
@@ -162,7 +162,7 @@ export const createArticleRest = (
   validateArticleParams(params);
   const payload = { article: cleanQueryParams(params) };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles.json`;
-  return makePostRequest({ url, payload }, context);
+  return makePostRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const updateArticleRest = (
@@ -175,7 +175,7 @@ export const updateArticleRest = (
   // validateBlogParams(params);
   const payload = { article: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 export const deleteArticleRest = async (
@@ -184,6 +184,6 @@ export const deleteArticleRest = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makeDeleteRequest({ url }, context);
+  return makeDeleteRequest({ ...requestOptions, url }, context);
 };
 // #endregion

@@ -21,7 +21,7 @@ export interface CodaMetafieldListValue {
 }
 export interface CodaMetafieldKeyValueSet {
   key: string;
-  value: CodaMetafieldValue | CodaMetafieldListValue | null;
+  value: CodaMetafieldValue | CodaMetafieldListValue | string | null;
   type?: MetafieldTypeValue;
 }
 

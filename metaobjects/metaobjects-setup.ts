@@ -230,27 +230,30 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
         const handle = updatedFields['handle'];
         const status = updatedFields['status'];
 
-        const fields = metaobjectFieldFromKeys.map((fromKey): MetaobjectFieldInput => {
-          const value = update.newValue[fromKey] as string;
-          const fieldDefinition = metaobjectFieldDefinitions.find((f) => f.key === fromKey);
-          if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
+        const fields = await Promise.all(
+          metaobjectFieldFromKeys.map(async (fromKey): Promise<MetaobjectFieldInput> => {
+            const value = update.newValue[fromKey] as string;
+            const fieldDefinition = metaobjectFieldDefinitions.find((f) => f.key === fromKey);
+            if (!fieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
 
-          let formattedValue;
-          try {
-            formattedValue = formatMetafieldValueForApi(
-              value,
-              fieldDefinition.type.name as AllMetafieldTypeValue,
-              fieldDefinition.validations
-            );
-          } catch (error) {
-            throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
-          }
+            let formattedValue: string;
+            try {
+              formattedValue = await formatMetafieldValueForApi(
+                value,
+                fieldDefinition.type.name as AllMetafieldTypeValue,
+                context,
+                fieldDefinition.validations
+              );
+            } catch (error) {
+              throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+            }
 
-          return {
-            key: fromKey,
-            value: formattedValue,
-          };
-        });
+            return {
+              key: fromKey,
+              value: formattedValue ?? '',
+            };
+          })
+        );
 
         const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
         const response = await updateMetaObjectGraphQl(metaobjectGid, metaobjectUpdateInput, context);

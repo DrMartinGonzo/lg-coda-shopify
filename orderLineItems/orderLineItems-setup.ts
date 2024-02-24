@@ -1,19 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CODA_SUPPORTED_CURRENCIES,
-  IDENTITY_ORDER_LINE_ITEM,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { formatOrderLineItemForSchemaFromRestApi, validateOrderLineItemParams } from './orderLineItems-functions';
 import { OrderLineItemSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { sharedParameters } from '../shared-parameters';
 
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { fetchShopDetailsRest } from '../shop/shop-functions';
+import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
 // #endregion
 
@@ -21,19 +16,12 @@ async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string,
   let augmentedSchema: any = OrderLineItemSchema;
   // let augmentedSchema = OrderSchema;
 
-  const shop = await fetchShopDetailsRest(['currency'], context);
-  if (shop && shop['currency']) {
-    let currencyCode = shop['currency'];
-    if (!CODA_SUPPORTED_CURRENCIES.includes(currencyCode)) {
-      console.error(`Shop currency ${currencyCode} not supported. Falling back to USD.`);
-      currencyCode = 'USD';
-    }
+  const shopCurrencyCode = await getSchemaCurrencyCode(context);
 
-    // Main props
-    augmentedSchema.properties.price.currencyCode = currencyCode;
-    augmentedSchema.properties.total_discount.currencyCode = currencyCode;
-    augmentedSchema.properties.discount_allocations.items.properties.amount.currencyCode = currencyCode;
-  }
+  // Main props
+  augmentedSchema.properties.price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_discount.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.discount_allocations.items.properties.amount.currencyCode = shopCurrencyCode;
 
   return augmentedSchema;
 }

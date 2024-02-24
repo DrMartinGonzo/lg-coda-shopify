@@ -140,7 +140,6 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
 // #region GraphQl requests
 // TODO: fetch all and not only first 20
 async function fetchMetaObjectTypes(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: queryAllMetaobjectDefinitions,
     variables: {
@@ -150,7 +149,10 @@ async function fetchMetaObjectTypes(context: coda.ExecutionContext, requestOptio
       includeFieldDefinitions: false,
     } as GetMetaobjectDefinitionsQueryVariables,
   };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metaobjectDefinitions.nodes.map((node) => {
     return {
       name: node.name,
@@ -166,7 +168,6 @@ export async function fetchSingleMetaObjectDefinitionById(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetaobjectDefinitionFragment> {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: queryMetaobjectDefinition,
     variables: {
@@ -175,7 +176,10 @@ export async function fetchSingleMetaObjectDefinitionById(
       includeFieldDefinitions,
     } as GetMetaobjectDefinitionQueryVariables,
   };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metaobjectDefinition;
 }
 
@@ -186,7 +190,6 @@ async function fetchSingleMetaObjectDefinitionByType(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetaobjectDefinition> {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: queryMetaobjectDefinitionByType,
     variables: {
@@ -196,7 +199,10 @@ async function fetchSingleMetaObjectDefinitionByType(
     } as GetMetaobjectDefinitionByTypeQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metaobjectDefinitionByType;
 }
 
@@ -205,14 +211,16 @@ export async function fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetaobjectFieldDefinitionFragment[]> {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: queryMetaObjectDefinitionFieldDefinitions,
     variables: {
       id: metaObjectDefinitionGid,
     },
   };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metaobjectDefinition.fieldDefinitions;
 }
 
@@ -221,14 +229,16 @@ export async function fetchMetaObjectFieldDefinitionsByMetaobject(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<MetaobjectFieldDefinitionFragment[]> {
-  const { cacheTtlSecs } = requestOptions;
   const payload = {
     query: queryMetaObjectFieldDefinitions,
     variables: {
       id: metaObjectGid,
     },
   };
-  const { response } = await makeGraphQlRequest({ payload, cacheTtlSecs: cacheTtlSecs ?? CACHE_DEFAULT }, context);
+  const { response } = await makeGraphQlRequest(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
   return response.body.data.metaobject.definition.fieldDefinitions;
 }
 
@@ -246,7 +256,7 @@ export const updateMetaObjectGraphQl = async (
     },
   };
   const { response } = await makeGraphQlRequest(
-    { payload, getUserErrors: (body) => body.data.metaobjectUpdate.userErrors },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectUpdate.userErrors },
     context
   );
   return response;
@@ -264,7 +274,7 @@ export const createMetaObjectGraphQl = async (
     },
   };
   const { response } = await makeGraphQlRequest(
-    { payload, getUserErrors: (body) => body.data.metaobjectCreate.userErrors },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectCreate.userErrors },
     context
   );
   return response;
@@ -283,7 +293,7 @@ export const deleteMetaObjectGraphQl = async (
   };
 
   const { response } = await makeGraphQlRequest(
-    { payload, getUserErrors: (body) => body.data.metaobjectDelete.userErrors },
+    { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectDelete.userErrors },
     context
   );
   return response;

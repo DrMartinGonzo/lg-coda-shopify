@@ -121,7 +121,12 @@ export async function handleOrderUpdateJob(
       updateResourceMetafieldsFromSyncTableRest(
         orderId,
         restResources.Order,
-        getMetafieldKeyValueSetsFromUpdate(prefixedMetafieldFromKeys, update.newValue, metafieldDefinitions),
+        await getMetafieldKeyValueSetsFromUpdate(
+          prefixedMetafieldFromKeys,
+          update.newValue,
+          metafieldDefinitions,
+          context
+        ),
         context
       )
     );
@@ -131,30 +136,19 @@ export async function handleOrderUpdateJob(
 
   let obj = { ...update.previousValue };
 
-  const [updateJob, metafieldsJob] = await Promise.allSettled(subJobs);
-  if (updateJob) {
-    if (updateJob.status === 'fulfilled' && updateJob.value) {
-      if (updateJob.value.body?.order) {
-        obj = {
-          ...obj,
-          ...formatOrderForSchemaFromRestApi(updateJob.value.body.order, context),
-        };
-      }
-    } else if (updateJob.status === 'rejected') {
-      throw new coda.UserVisibleError(updateJob.reason);
-    }
+  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
+  if (updateJob?.body?.order) {
+    obj = {
+      ...obj,
+      ...formatOrderForSchemaFromRestApi(updateJob.body.order, context),
+    };
   }
   if (metafieldsJob) {
-    if (metafieldsJob.status === 'fulfilled' && metafieldsJob.value) {
-      obj = {
-        ...obj,
-        ...metafieldsJob.value,
-      };
-    } else if (metafieldsJob.status === 'rejected') {
-      throw new coda.UserVisibleError(metafieldsJob.reason);
-    }
+    obj = {
+      ...obj,
+      ...metafieldsJob,
+    };
   }
-
   return obj;
 }
 // #endregion
@@ -396,9 +390,8 @@ export const fetchSingleOrderRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<coda.FetchResponse<{ order: OrderRest }>> => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderID}.json`;
-  return makeGetRequest({ url, cacheTtlSecs }, context);
+  return makeGetRequest({ ...requestOptions, url }, context);
 };
 
 export const updateOrderRest = (
@@ -411,7 +404,7 @@ export const updateOrderRest = (
   // validateOrderParams(params);
   const payload = { order: restParams };
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderId}.json`;
-  return makePutRequest({ url, payload }, context);
+  return makePutRequest({ ...requestOptions, url, payload }, context);
 };
 
 };

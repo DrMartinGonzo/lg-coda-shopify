@@ -12,6 +12,7 @@ import {
 import { GraphQlResource } from './types/RequestsGraphQl';
 import { restResources } from './types/RequestsRest';
 import { MetafieldOwnerType } from './types/admin.types';
+import { FetchRequestOptions } from './types/Requests';
 
 // TODO: still not ready, calculate this max ?
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
@@ -230,15 +231,15 @@ export async function skipGraphQlSyncTableRun(prevContinuation: SyncTableGraphQl
 // #endregion
 
 // #region GraphQL Request functions
+interface GraphQlRequestParams extends Omit<FetchRequestOptions, 'url'> {
+  payload: any;
+  apiVersion?: string;
+  getUserErrors?: CallableFunction;
+  retries?: number;
+  storeFront?: boolean;
+}
 export async function makeGraphQlRequest(
-  params: {
-    payload: any;
-    cacheTtlSecs?: number;
-    apiVersion?: string;
-    storeFront?: boolean;
-    retries?: number;
-    getUserErrors?: CallableFunction;
-  },
+  params: GraphQlRequestParams,
   context: coda.ExecutionContext | coda.SyncExecutionContext
 ) {
   let currRetries = params.retries ?? 0;
@@ -249,7 +250,12 @@ export async function makeGraphQlRequest(
     headers: params.storeFront ? getShopifyStorefrontRequestHeaders(context) : getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
-  if (params.cacheTtlSecs !== undefined) {
+
+  // always disable cache when in a synctable context, unless forceSyncContextCache is set
+  if (context.sync && !params.forceSyncContextCache) {
+    options.cacheTtlSecs = 0;
+    options.forceCache = false;
+  } else {
     options.cacheTtlSecs = params.cacheTtlSecs;
     options.forceCache = true;
   }
@@ -311,17 +317,14 @@ export async function makeGraphQlRequest(
   }
 }
 
+interface GraphQlSyncTableRequestParams extends Omit<GraphQlRequestParams, 'retries' | 'getUserErrors'> {
+  maxEntriesPerRun: number;
+  prevContinuation: SyncTableGraphQlContinuation;
+  extraContinuationData?: any;
+  getPageInfo?: CallableFunction;
+}
 export async function makeSyncTableGraphQlRequest(
-  params: {
-    payload: any;
-    cacheTtlSecs?: number;
-    apiVersion?: string;
-    maxEntriesPerRun: number;
-    prevContinuation: SyncTableGraphQlContinuation;
-    extraContinuationData?: any;
-    getPageInfo?: CallableFunction;
-    storeFront?: boolean;
-  },
+  params: GraphQlSyncTableRequestParams,
   context: coda.SyncExecutionContext
 ) {
   if (params.prevContinuation?.retries) {
@@ -333,7 +336,6 @@ export async function makeSyncTableGraphQlRequest(
     const { response, retries } = await makeGraphQlRequest(
       {
         payload: params.payload,
-        cacheTtlSecs: params.cacheTtlSecs,
         apiVersion: params.apiVersion,
         storeFront: params.storeFront,
         retries: params.prevContinuation?.retries ?? 0,
@@ -417,6 +419,11 @@ export async function makeSyncTableGraphQlRequest(
   }
 }
 
+interface GraphQlAugmentedSyncTableRequestParams
+  extends Omit<GraphQlSyncTableRequestParams, 'getPageInfo' | 'getUserErrors'> {
+  prevContinuation: SyncTableRestAugmentedContinuation;
+  nextRestUrl?: string;
+}
 /**
  * A special function used when we try to augment a Rest request with GraphQL results
  * Il n'y a jamais de continuation, puisque l'on query uniquement spécifiquement par ID
@@ -426,16 +433,7 @@ export async function makeSyncTableGraphQlRequest(
  * @returns
  */
 export async function makeAugmentedSyncTableGraphQlRequest(
-  params: {
-    payload: any;
-    cacheTtlSecs?: number;
-    apiVersion?: string;
-    maxEntriesPerRun: number;
-    prevContinuation: SyncTableRestAugmentedContinuation;
-    nextRestUrl?: string;
-    extraContinuationData?: any;
-    storeFront?: boolean;
-  },
+  params: GraphQlAugmentedSyncTableRequestParams,
   context: coda.SyncExecutionContext
 ): Promise<{
   response: coda.FetchResponse<any>;
@@ -450,7 +448,6 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     const { response, retries } = await makeGraphQlRequest(
       {
         payload: params.payload,
-        cacheTtlSecs: params.cacheTtlSecs,
         apiVersion: params.apiVersion,
         storeFront: params.storeFront,
         retries: params.prevContinuation?.retries ?? 0,
@@ -555,17 +552,12 @@ export function getMixedSyncTableRemainingAndToProcessItems(
   return { toProcess, remaining };
 }
 
+interface GraphQlMixedSyncTableRequestParams extends Omit<GraphQlSyncTableRequestParams, 'getUserErrors'> {
+  prevContinuation: SyncTableMixedContinuation;
+  nextRestUrl?: string;
+}
 export async function makeMixedSyncTableGraphQlRequest(
-  params: {
-    payload: any;
-    cacheTtlSecs?: number;
-    apiVersion?: string;
-    maxEntriesPerRun: number;
-    prevContinuation: SyncTableMixedContinuation;
-    nextRestUrl?: string;
-    getPageInfo?: CallableFunction;
-    extraContinuationData?: any;
-  },
+  params: GraphQlMixedSyncTableRequestParams,
   context: coda.SyncExecutionContext
 ): Promise<{
   response: coda.FetchResponse<any>;
@@ -580,7 +572,6 @@ export async function makeMixedSyncTableGraphQlRequest(
     const { response, retries } = await makeGraphQlRequest(
       {
         payload: params.payload,
-        cacheTtlSecs: params.cacheTtlSecs,
         apiVersion: params.apiVersion,
         retries: params.prevContinuation?.retries ?? 0,
       },
