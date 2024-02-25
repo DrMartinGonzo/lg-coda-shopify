@@ -152,7 +152,7 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         type: coda.ValueType.Array,
         items: { type: coda.ValueType.String },
-      } as coda.Schema & coda.ObjectSchemaProperty;
+      };
 
     // Rich text
     case METAFIELD_TYPES.rich_text_field:
@@ -332,6 +332,22 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         type: coda.ValueType.Array,
         items: getMetaobjectReferenceSchema(fieldDefinition),
+        mutable: true,
+      };
+
+    case METAFIELD_TYPES.mixed_reference:
+      return {
+        ...baseProperty,
+        description: '⚠️ We only support raw value for mixed references.\n' + baseProperty.description,
+        type: coda.ValueType.String,
+        mutable: true,
+      };
+    case METAFIELD_TYPES.list_mixed_reference:
+      return {
+        ...baseProperty,
+        description: '⚠️ We only support raw values for mixed references.\n' + baseProperty.description,
+        type: coda.ValueType.Array,
+        items: { type: coda.ValueType.String },
         mutable: true,
       };
 
@@ -813,11 +829,14 @@ export function formatMetaFieldValueForSchema(
       return parsedValue.map(formatFileReferenceValueForSchema);
 
     case METAFIELD_TYPES.metaobject_reference:
-    case METAFIELD_TYPES.mixed_reference:
       return formatMetaobjectReferenceValueForSchema(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_metaobject_reference:
-    case METAFIELD_TYPES.list_mixed_reference:
       return parsedValue.map((v) => formatMetaobjectReferenceValueForSchema(graphQlGidToId(v)));
+
+    // We only support raw value for mixed references
+    case METAFIELD_TYPES.mixed_reference:
+    case METAFIELD_TYPES.list_mixed_reference:
+      return parsedValue;
 
     case METAFIELD_TYPES.page_reference:
       return formatPageReferenceValueForSchema(graphQlGidToId(parsedValue));
@@ -1165,6 +1184,13 @@ export async function formatMetafieldValueForApi(
       return idToGraphQlGid(GraphQlResource.Metaobject, value?.id);
     case METAFIELD_TYPES.list_metaobject_reference:
       return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResource.Metaobject, v?.id)));
+
+    // We only support raw value for mixed references
+    case METAFIELD_TYPES.mixed_reference:
+      return value;
+    case METAFIELD_TYPES.list_mixed_reference:
+      // The value could have been converted to a real string by coda
+      return JSON.stringify(Array.isArray(value) ? value : value.split(',').map((v: string) => v.trim()));
 
     case METAFIELD_TYPES.collection_reference:
       return idToGraphQlGid(GraphQlResource.Collection, value?.id);
