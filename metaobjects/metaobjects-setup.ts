@@ -8,7 +8,7 @@ import {
   autocompleteMetaobjectFieldkeyFromMetaobjectGid,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
-  fetchMetaObjectFieldDefinitionsByMetaobjectDefinition,
+  fetchMetaObjectFieldDefinitionsByMetaobjectDefinitionId,
   deleteMetaObjectGraphQl,
   updateMetaObjectGraphQl,
   formatMetaobjectUpdateInput,
@@ -164,13 +164,9 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
 
       const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
 
-      // TODO: get type & fieldDefinitions in one GraphQL call
-      const { type } =
+      const { type, fieldDefinitions } =
         prevContinuation?.extraContinuationData ??
-        (await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, false, false, context));
-      const fieldDefinitions =
-        prevContinuation?.extraContinuationData?.fieldDefinitions ??
-        (await fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(context.sync.dynamicUrl, context));
+        (await fetchSingleMetaObjectDefinitionById(context.sync.dynamicUrl, false, true, context));
 
       // TODO: separate 'metafields' keys from others
       const constantFieldsKeys = ['id']; // will always be fetched
@@ -217,7 +213,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function ([], updates, context: coda.SyncExecutionContext) {
-      const metaobjectFieldDefinitions = await fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
+      const metaobjectFieldDefinitions = await fetchMetaObjectFieldDefinitionsByMetaobjectDefinitionId(
         context.sync.dynamicUrl,
         context
       );
