@@ -40,7 +40,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectGid(
   if (!args.metaobjectId || args.metaobjectId === '') {
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
-  const results = await fetchMetaObjectFieldDefinitionsByMetaobject(
+  const results = await fetchMetaObjectFieldDefinitionsByMetaobjectId(
     idToGraphQlGid(GraphQlResource.Metaobject, args.metaobjectId),
     context
   );
@@ -180,7 +180,11 @@ export async function fetchSingleMetaObjectDefinitionById(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
-  return response.body.data.metaobjectDefinition;
+  if (response?.body?.data?.metaobjectDefinition) {
+    return response.body.data.metaobjectDefinition;
+  } else {
+    throw new coda.UserVisibleError(`Metaobject definition with id ${metaobjectDefinitionGid} not found.`);
+  }
 }
 
 async function fetchSingleMetaObjectDefinitionByType(
@@ -203,10 +207,14 @@ async function fetchSingleMetaObjectDefinitionByType(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
-  return response.body.data.metaobjectDefinitionByType;
+  if (response?.body?.data?.metaobjectDefinitionByType) {
+    return response.body.data.metaobjectDefinitionByType;
+  } else {
+    throw new coda.UserVisibleError(`Metaobject definition with type ${type} not found.`);
+  }
 }
 
-export async function fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
+export async function fetchMetaObjectFieldDefinitionsByMetaobjectDefinitionId(
   metaObjectDefinitionGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
@@ -221,10 +229,16 @@ export async function fetchMetaObjectFieldDefinitionsByMetaobjectDefinition(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
-  return response.body.data.metaobjectDefinition.fieldDefinitions;
+  if (response?.body?.data?.metaobjectDefinition?.fieldDefinitions) {
+    return response.body.data.metaobjectDefinition.fieldDefinitions;
+  } else {
+    throw new coda.UserVisibleError(
+      `Metaobject fields from metaobject definition with id ${metaObjectDefinitionGid} not found.`
+    );
+  }
 }
 
-export async function fetchMetaObjectFieldDefinitionsByMetaobject(
+export async function fetchMetaObjectFieldDefinitionsByMetaobjectId(
   metaObjectGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
@@ -239,7 +253,11 @@ export async function fetchMetaObjectFieldDefinitionsByMetaobject(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
-  return response.body.data.metaobject.definition.fieldDefinitions;
+  if (response?.body?.data?.metaobject?.definition?.fieldDefinitions) {
+    return response.body.data.metaobject.definition.fieldDefinitions;
+  } else {
+    throw new coda.UserVisibleError(`Metaobject fields from metaobject with id ${metaObjectGid} not found.`);
+  }
 }
 
 export const updateMetaObjectGraphQl = async (

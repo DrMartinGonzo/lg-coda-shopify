@@ -10,7 +10,6 @@ import { GraphQlResource } from './types/RequestsGraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
 import { shouldDeleteMetafield } from './metafields/metafields-functions';
 
-// TODO: rename this
 export interface CodaMetafieldValue {
   type: MetafieldTypeValue;
   value: any;
@@ -56,8 +55,6 @@ const parameters = {
     name: 'unit',
     description: 'The weight unit supported by Shopify.',
     autocomplete: Object.keys(getUnitMap('weight')),
-    // TODO: should be a constant
-    suggestedValue: 'GRAMS',
   }),
 };
 
@@ -328,10 +325,7 @@ export const Formula_MetafieldSingleLineTextValue = coda.makeFormula({
 export const Formula_MetafieldWeightValue = coda.makeFormula({
   name: 'MetafieldWeightValue',
   description: 'Helper function to build a `weight` metafield value.',
-  parameters: [
-    { ...parameters.metaNumberValue, description: 'The weight value.', suggestedValue: 0 },
-    parameters.dimensionUnit,
-  ],
+  parameters: [{ ...parameters.metaNumberValue, description: 'The weight value.' }, parameters.dimensionUnit],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) => {

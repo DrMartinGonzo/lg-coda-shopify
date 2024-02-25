@@ -61,7 +61,6 @@ function buildOptionalFieldsFragment(fieldsKey: string[]) {
 
 // #region Queries
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
-  // no GraphQL tag as it confuses graphql codegen */
   return `
     ${buildOptionalFieldsFragment(fieldsKey)}
 
