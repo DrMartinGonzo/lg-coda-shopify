@@ -17845,7 +17845,7 @@ export type LineItem = Node & {
    * @deprecated Use `discountedTotalSet` instead.
    */
   discountedTotal: Scalars['Money']['output'];
-  /** The total line price after discounts are applied, in shop and presentment currencies. */
+  /** The total discounted price of the line item in shop and presentment currencies, including refunded and removed quantities. This value doesn't include order-level discounts. Code-based discounts aren't included by default. */
   discountedTotalSet: MoneyBag;
   /**
    * The approximate split price of a line item unit, in shop currency. This value doesn't include discounts applied to the entire order.

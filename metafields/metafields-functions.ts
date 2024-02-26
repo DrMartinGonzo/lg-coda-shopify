@@ -4,7 +4,7 @@ import * as accents from 'remove-accents';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 
 import { CACHE_DEFAULT, CACHE_DISABLED, METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION } from '../constants';
-import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from './metafields-constants';
+import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES, METAFIELD_TYPES_RAW_REFERENCE } from './metafields-constants';
 import type { AllMetafieldTypeValue, MetafieldTypeValue } from '../types/Metafields';
 import {
   capitalizeFirstChar,
@@ -490,6 +490,26 @@ function requireMatchingMetafieldDefinition(fullKey: string, metafieldDefinition
 
 export function filterMetafieldDefinitionWithReference(metafieldDefinition: MetafieldDefinitionFragment) {
   return metafieldDefinition.type.name.indexOf('_reference') !== -1;
+}
+
+/**
+ * Determine if a table cell value derived from a metafield ot metaobject field
+ * value should be updated or not.
+ * They are updatable if the value is not a reference to another resource
+ * (except for references in METAFIELD_TYPES_RAW_REFERENCE, wich uses raw text
+ * columns), or if is, it should not come from an action using `coda.withIdentity`
+ * This is to prevent breaking existing relations when using `coda.withIdentity`.
+ *
+ * @param fieldType the type of the field definition
+ * @param schemaWithIdentity wether the data will be consumed by an action wich result use a `coda.withIdentity` schema.
+ * @returns `true` if the value should be updated
+ */
+export function shouldUpdateSyncTableMetafieldValue(fieldType: string, schemaWithIdentity = false): boolean {
+  const isReference = fieldType.indexOf('_reference') !== -1;
+  const shouldUpdateReference =
+    !schemaWithIdentity || (schemaWithIdentity && METAFIELD_TYPES_RAW_REFERENCE.includes(fieldType as any));
+
+  return !isReference || (isReference && shouldUpdateReference);
 }
 
 export interface DeletedMetafieldsByKeysRest {

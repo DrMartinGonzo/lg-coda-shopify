@@ -55,6 +55,12 @@ export const METAFIELD_LEGACY_TYPES = {
   json_string: 'json_string',
 } as const;
 
+// these are simple strings, not using Coda relation type columns
+export const METAFIELD_TYPES_RAW_REFERENCE = [
+  METAFIELD_TYPES.mixed_reference,
+  METAFIELD_TYPES.list_mixed_reference,
+] as const;
+
 export const RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS: ResourceMetafieldsSyncTableDefinition[] = [
   {
     display: 'Article',

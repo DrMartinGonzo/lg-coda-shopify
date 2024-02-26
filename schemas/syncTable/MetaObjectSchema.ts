@@ -15,7 +15,14 @@ export const MetaObjectBaseSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       required: true,
       mutable: true,
-      description: 'The unique handle of the object',
+      description: 'The unique handle of the object.',
+    },
+    updatedAt: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      fixedId: 'updatedAt',
+      fromKey: 'updatedAt',
+      description: 'When the object was last updated.',
     },
     admin_url: {
       type: coda.ValueType.String,
@@ -25,7 +32,7 @@ export const MetaObjectBaseSchema = coda.makeObjectSchema({
   },
   displayProperty: 'handle',
   idProperty: 'id',
-  featuredProperties: ['id', 'handle', 'admin_url'],
+  featuredProperties: ['id', 'handle'],
 });
 
 export function getMetaobjectReferenceSchema(

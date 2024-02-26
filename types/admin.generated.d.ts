@@ -433,40 +433,14 @@ export type MetaobjectDefinitionFragment = (
   )> }
 );
 
-export type GetMetaObjectFieldDefinitionsFromMetaobjectDefinitionQueryVariables = AdminTypes.Exact<{
+export type GetSingleMetaObjectDefinitionQueryVariables = AdminTypes.Exact<{
   id: AdminTypes.Scalars['ID']['input'];
-}>;
-
-
-export type GetMetaObjectFieldDefinitionsFromMetaobjectDefinitionQuery = { metaobjectDefinition?: AdminTypes.Maybe<{ fieldDefinitions: Array<(
-      Pick<AdminTypes.MetaobjectFieldDefinition, 'key' | 'description' | 'name' | 'required'>
-      & { type: (
-        Pick<AdminTypes.MetafieldDefinitionType, 'category' | 'name' | 'supportsDefinitionMigrations'>
-        & { supportedValidations: Array<Pick<AdminTypes.MetafieldDefinitionSupportedValidation, 'name' | 'type'>> }
-      ), validations: Array<Pick<AdminTypes.MetafieldDefinitionValidation, 'name' | 'type' | 'value'>> }
-    )> }> };
-
-export type GetMetaObjectFieldDefinitionsQueryVariables = AdminTypes.Exact<{
-  id: AdminTypes.Scalars['ID']['input'];
-}>;
-
-
-export type GetMetaObjectFieldDefinitionsQuery = { metaobject?: AdminTypes.Maybe<{ definition: { fieldDefinitions: Array<(
-        Pick<AdminTypes.MetaobjectFieldDefinition, 'key' | 'description' | 'name' | 'required'>
-        & { type: (
-          Pick<AdminTypes.MetafieldDefinitionType, 'category' | 'name' | 'supportsDefinitionMigrations'>
-          & { supportedValidations: Array<Pick<AdminTypes.MetafieldDefinitionSupportedValidation, 'name' | 'type'>> }
-        ), validations: Array<Pick<AdminTypes.MetafieldDefinitionValidation, 'name' | 'type' | 'value'>> }
-      )> } }> };
-
-export type GetMetaobjectDefinitionByTypeQueryVariables = AdminTypes.Exact<{
-  type: AdminTypes.Scalars['String']['input'];
   includeCapabilities: AdminTypes.Scalars['Boolean']['input'];
   includeFieldDefinitions: AdminTypes.Scalars['Boolean']['input'];
 }>;
 
 
-export type GetMetaobjectDefinitionByTypeQuery = { metaobjectDefinitionByType?: AdminTypes.Maybe<(
+export type GetSingleMetaObjectDefinitionQuery = { metaobjectDefinition?: AdminTypes.Maybe<(
     Pick<AdminTypes.MetaobjectDefinition, 'id' | 'name' | 'displayNameKey' | 'type'>
     & { capabilities?: { publishable: Pick<AdminTypes.MetaobjectCapabilitiesPublishable, 'enabled'> }, fieldDefinitions?: Array<(
       Pick<AdminTypes.MetaobjectFieldDefinition, 'key' | 'description' | 'name' | 'required'>
@@ -477,14 +451,14 @@ export type GetMetaobjectDefinitionByTypeQuery = { metaobjectDefinitionByType?: 
     )> }
   )> };
 
-export type GetMetaobjectDefinitionQueryVariables = AdminTypes.Exact<{
-  id: AdminTypes.Scalars['ID']['input'];
+export type GetSingleMetaObjectDefinitionByTypeQueryVariables = AdminTypes.Exact<{
+  type: AdminTypes.Scalars['String']['input'];
   includeCapabilities: AdminTypes.Scalars['Boolean']['input'];
   includeFieldDefinitions: AdminTypes.Scalars['Boolean']['input'];
 }>;
 
 
-export type GetMetaobjectDefinitionQuery = { metaobjectDefinition?: AdminTypes.Maybe<(
+export type GetSingleMetaObjectDefinitionByTypeQuery = { metaobjectDefinitionByType?: AdminTypes.Maybe<(
     Pick<AdminTypes.MetaobjectDefinition, 'id' | 'name' | 'displayNameKey' | 'type'>
     & { capabilities?: { publishable: Pick<AdminTypes.MetaobjectCapabilitiesPublishable, 'enabled'> }, fieldDefinitions?: Array<(
       Pick<AdminTypes.MetaobjectFieldDefinition, 'key' | 'description' | 'name' | 'required'>
@@ -496,7 +470,7 @@ export type GetMetaobjectDefinitionQuery = { metaobjectDefinition?: AdminTypes.M
   )> };
 
 export type GetMetaobjectDefinitionsQueryVariables = AdminTypes.Exact<{
-  batchSize: AdminTypes.Scalars['Int']['input'];
+  maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
   cursor?: AdminTypes.InputMaybe<AdminTypes.Scalars['String']['input']>;
   includeCapabilities: AdminTypes.Scalars['Boolean']['input'];
   includeFieldDefinitions: AdminTypes.Scalars['Boolean']['input'];
@@ -520,14 +494,6 @@ export type CreateMetaobjectMutationVariables = AdminTypes.Exact<{
 
 
 export type CreateMetaobjectMutation = { metaobjectCreate?: AdminTypes.Maybe<{ metaobject?: AdminTypes.Maybe<Pick<AdminTypes.Metaobject, 'id'>>, userErrors: Array<Pick<AdminTypes.MetaobjectUserError, 'field' | 'message' | 'code'>> }> };
-
-export type UpdateMetaobjectMutationVariables = AdminTypes.Exact<{
-  id: AdminTypes.Scalars['ID']['input'];
-  metaobject: AdminTypes.MetaobjectUpdateInput;
-}>;
-
-
-export type UpdateMetaobjectMutation = { metaobjectUpdate?: AdminTypes.Maybe<{ metaobject?: AdminTypes.Maybe<Pick<AdminTypes.Metaobject, 'id'>>, userErrors: Array<Pick<AdminTypes.MetaobjectUserError, 'field' | 'message' | 'code'>> }> };
 
 export type DeleteMetaobjectMutationVariables = AdminTypes.Exact<{
   id: AdminTypes.Scalars['ID']['input'];
@@ -685,11 +651,9 @@ interface GeneratedQueryTypes {
   "\n  \n  fragment MetafieldDefinition on MetafieldDefinition {\n    key\n    id\n    namespace\n    name\n    description\n    metafieldsCount\n    ownerType\n    pinnedPosition\n    type {\n      name\n    }\n    validations {\n      name\n      type\n      value\n    }\n    validationStatus\n    visibleToStorefrontApi\n  }\n\n\n  query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {\n    metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {\n      nodes {\n        ...MetafieldDefinition\n      }\n    }\n  }\n": {return: GetMetafieldDefinitionsQuery, variables: GetMetafieldDefinitionsQueryVariables},
   "\n  \n  fragment MetafieldDefinition on MetafieldDefinition {\n    key\n    id\n    namespace\n    name\n    description\n    metafieldsCount\n    ownerType\n    pinnedPosition\n    type {\n      name\n    }\n    validations {\n      name\n      type\n      value\n    }\n    validationStatus\n    visibleToStorefrontApi\n  }\n\n\n  query GetSingleMetafieldDefinition($id: ID!) {\n    metafieldDefinition(id: $id) {\n      ...MetafieldDefinition\n    }\n  }\n": {return: GetSingleMetafieldDefinitionQuery, variables: GetSingleMetafieldDefinitionQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query GetShopMetafields($metafieldKeys: [String!], $countMetafields: Int!) {\n    shop {\n      id\n      metafields(keys: $metafieldKeys, first: $countMetafields) {\n        nodes {\n          ...MetafieldFields\n          definition {\n            id\n          }\n        }\n      }\n    }\n  }\n": {return: GetShopMetafieldsQuery, variables: GetShopMetafieldsQueryVariables},
-  "\n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  query GetMetaObjectFieldDefinitionsFromMetaobjectDefinition($id: ID!) {\n    metaobjectDefinition(id: $id) {\n      fieldDefinitions {\n        ...MetaobjectFieldDefinition\n      }\n    }\n  }\n": {return: GetMetaObjectFieldDefinitionsFromMetaobjectDefinitionQuery, variables: GetMetaObjectFieldDefinitionsFromMetaobjectDefinitionQueryVariables},
-  "\n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  query GetMetaObjectFieldDefinitions($id: ID!) {\n    metaobject(id: $id) {\n      definition {\n        fieldDefinitions {\n          ...MetaobjectFieldDefinition\n        }\n      }\n    }\n  }\n": {return: GetMetaObjectFieldDefinitionsQuery, variables: GetMetaObjectFieldDefinitionsQueryVariables},
-  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetMetaobjectDefinitionByType(\n    $type: String!\n    $includeCapabilities: Boolean!\n    $includeFieldDefinitions: Boolean!\n  ) {\n    metaobjectDefinitionByType(type: $type) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetMetaobjectDefinitionByTypeQuery, variables: GetMetaobjectDefinitionByTypeQueryVariables},
-  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetMetaobjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {\n    metaobjectDefinition(id: $id) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetMetaobjectDefinitionQuery, variables: GetMetaobjectDefinitionQueryVariables},
-  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetMetaobjectDefinitions(\n    $batchSize: Int!\n    $cursor: String\n    $includeCapabilities: Boolean!\n    $includeFieldDefinitions: Boolean!\n  ) {\n    metaobjectDefinitions(first: $batchSize, after: $cursor) {\n      nodes {\n        ...MetaobjectDefinition\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetMetaobjectDefinitionsQuery, variables: GetMetaobjectDefinitionsQueryVariables},
+  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetSingleMetaObjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {\n    metaobjectDefinition(id: $id) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetSingleMetaObjectDefinitionQuery, variables: GetSingleMetaObjectDefinitionQueryVariables},
+  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetSingleMetaObjectDefinitionByType(\n    $type: String!\n    $includeCapabilities: Boolean!\n    $includeFieldDefinitions: Boolean!\n  ) {\n    metaobjectDefinitionByType(type: $type) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetSingleMetaObjectDefinitionByTypeQuery, variables: GetSingleMetaObjectDefinitionByTypeQueryVariables},
+  "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetMetaobjectDefinitions(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $includeCapabilities: Boolean!\n    $includeFieldDefinitions: Boolean!\n  ) {\n    metaobjectDefinitions(first: $maxEntriesPerRun, after: $cursor) {\n      nodes {\n        ...MetaobjectDefinition\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetMetaobjectDefinitionsQuery, variables: GetMetaobjectDefinitionsQueryVariables},
   "\n  \n  fragment OrderTransactionFields on OrderTransaction {\n    id\n    kind\n    status\n    gateway\n    createdAt\n    authorizationCode\n    receiptJson @include(if: $includeReceiptJson)\n    settlementCurrency\n    settlementCurrencyRate\n    errorCode\n    processedAt\n    test\n    paymentId\n    paymentIcon {\n      url\n    }\n    amountSet {\n      shopMoney {\n        amount\n      }\n    }\n    totalUnsettledSet {\n      shopMoney {\n        amount\n      }\n    }\n    parentTransaction @include(if: $includeParentTransaction) {\n      id\n    }\n    paymentDetails @include(if: $includePaymentDetails) {\n      ... on CardPaymentDetails {\n        avsResultCode\n        bin\n        company\n        cvvResultCode\n        expirationMonth\n        expirationYear\n        name\n        number\n        wallet\n      }\n      # ... on ShopPayInstallmentsPaymentDetails {\n      #   paymentMethodName\n      # }\n    }\n  }\n\n\n  query getOrderTransactions(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $searchQuery: String\n    $includeParentTransaction: Boolean!\n    $includePaymentDetails: Boolean!\n    $includeReceiptJson: Boolean!\n  ) {\n    orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        id\n        name\n        transactions(first: 5) {\n          ...OrderTransactionFields\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetOrderTransactionsQuery, variables: GetOrderTransactionsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query getOrdersMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetOrdersMetafieldsQuery, variables: GetOrdersMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query getProductVariantsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    productVariants(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetProductVariantsMetafieldsQuery, variables: GetProductVariantsMetafieldsQueryVariables},
@@ -709,7 +673,6 @@ interface GeneratedMutationTypes {
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {\n    metafieldsSet(metafields: $inputs) {\n      metafields {\n        ...MetafieldFields\n        definition {\n          id\n        }\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: SetMetafieldsMutation, variables: SetMetafieldsMutationVariables},
   "\n  mutation metafieldDelete($input: MetafieldDeleteInput!) {\n    metafieldDelete(input: $input) {\n      deletedId\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: MetafieldDeleteMutation, variables: MetafieldDeleteMutationVariables},
   "\n  mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {\n    metaobjectCreate(metaobject: $metaobject) {\n      metaobject {\n        id\n      }\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: CreateMetaobjectMutation, variables: CreateMetaobjectMutationVariables},
-  "\n  mutation UpdateMetaobject($id: ID!, $metaobject: MetaobjectUpdateInput!) {\n    metaobjectUpdate(id: $id, metaobject: $metaobject) {\n      metaobject {\n        id\n      }\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: UpdateMetaobjectMutation, variables: UpdateMetaobjectMutationVariables},
   "\n  mutation DeleteMetaobject($id: ID!) {\n    metaobjectDelete(id: $id) {\n      deletedId\n\n      userErrors {\n        field\n        message\n        code\n      }\n    }\n  }\n": {return: DeleteMetaobjectMutation, variables: DeleteMetaobjectMutationVariables},
   "\n  \n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  fragment ProductFields on Product {\n    id\n    handle\n    createdAt\n    title\n    productType\n    publishedAt\n    status\n    tags\n    templateSuffix\n    updatedAt\n    vendor\n    isGiftCard\n    descriptionHtml\n    onlineStoreUrl\n\n    # Optional fields and connections\n    options(first: $maxOptions) @include(if: $includeOptions) {\n      name\n    }\n    featuredImage @include(if: $includeFeaturedImage) {\n      url\n    }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n\n    # availableForSale\n    # publishedOnPublication(publicationId: \"gid://shopify/Publication/42911268979\")\n    # seo {\n    #   description\n    #   title\n    # }\n    # trackingParameters\n    # media(first: 10) {\n    #   nodes {\n    #     mediaContentType\n    #   }\n    # }\n  }\n\n\n  mutation UpdateProduct(\n    $countMetafields: Int\n    $includeFeaturedImage: Boolean!\n    $includeMetafields: Boolean!\n    $includeOptions: Boolean!\n    $maxOptions: Int\n    $metafieldKeys: [String!]\n    $metafieldsSetsInput: [MetafieldsSetInput!]!\n    $productInput: ProductInput!\n  ) {\n    metafieldsSet(metafields: $metafieldsSetsInput) {\n      metafields {\n        key\n        namespace\n        value\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n    productUpdate(input: $productInput) {\n      product {\n        ...ProductFields\n      }\n      userErrors {\n        field\n        message\n      }\n    }\n  }\n": {return: UpdateProductMutation, variables: UpdateProductMutationVariables},
 }
