@@ -126,7 +126,7 @@ export const Sync_Blogs = coda.makeSyncTable({
 
       let restResult = [];
       let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-      if (response && response.body?.blogs) {
+      if (response?.body?.blogs) {
         restResult = response.body.blogs.map((blog) => formatBlogForSchemaFromRestApi(blog, context));
       }
 

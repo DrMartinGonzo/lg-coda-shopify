@@ -95,7 +95,7 @@ export const Sync_Files = coda.makeSyncTable({
         },
         context
       );
-      if (response && response.body.data?.files) {
+      if (response?.body?.data?.files) {
         const data = response.body.data as GetFilesQuery;
         return {
           result: data.files.nodes.map((file) => formatFileNodeForSchema(file)),

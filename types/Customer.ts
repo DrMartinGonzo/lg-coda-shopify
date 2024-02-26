@@ -1,5 +1,15 @@
 import { MetafieldRestInput } from './Metafields';
 
+export interface CustomerSyncRestParams {
+  fields: string;
+  limit: number;
+  ids?: string;
+  created_at_min?: Date;
+  created_at_max?: Date;
+  updated_at_min?: Date;
+  updated_at_max?: Date;
+}
+
 export interface CustomerCreateRestParams {
   first_name?: string;
   last_name?: string;
@@ -36,5 +46,3 @@ export interface CustomerUpdateRestParams {
     opt_in_level?: string;
   };
 }
-
-// TODO: we need an interface for Coda Update and an interface for Rest Update

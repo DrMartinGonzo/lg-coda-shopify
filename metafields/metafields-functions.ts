@@ -524,7 +524,7 @@ const deleteMetafieldsByKeysRest = async (
   context: coda.ExecutionContext
 ): Promise<DeletedMetafieldsByKeysRest[]> => {
   const response = await fetchMetafieldsRest(ownerId, ownerResource, {}, context, { cacheTtlSecs: CACHE_DISABLED });
-  if (response && response.body.metafields) {
+  if (response?.body?.metafields) {
     const promises = metafieldsToDelete.map(async (metafieldKeyValueSet) => {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldKeyValueSet.key);
       const metafield = response.body.metafields.find((m) => m.key === metaKey && m.namespace === metaNamespace);
@@ -1383,7 +1383,7 @@ export async function syncRestResourceMetafields(metafieldKeys: string[], contex
     },
     context
   );
-  if (response && response.body[restResource.plural]) {
+  if (response?.body[restResource.plural]) {
     // Add metafields by doing multiple Rest Admin API calls
     const items = [];
     await Promise.all(
@@ -1652,7 +1652,7 @@ export async function formatMetafieldDeleteInputFromResourceUpdate(
   if (!metafieldFromKeys.length) return [];
 
   const response = await fetchResourceMetafields(resourceId, 'variant', {}, context);
-  if (response && response.body.metafields) {
+  if (response?.body?.metafields) {
     return metafieldFromKeys.map((fromKey) => {
       // const value = update.newValue[fromKey] as any;
       const realFromKey = getMetaFieldRealFromKey(fromKey);

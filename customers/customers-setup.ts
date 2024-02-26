@@ -50,7 +50,7 @@ import {
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './customers-graphql';
 import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
-import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
+import { CustomerCreateRestParams, CustomerSyncRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
@@ -149,7 +149,7 @@ export const Sync_Customers = coda.makeSyncTable({
           created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
-        });
+        } as CustomerSyncRestParams);
 
         let url: string;
         if (prevContinuation?.nextUrl) {
@@ -163,7 +163,7 @@ export const Sync_Customers = coda.makeSyncTable({
         const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
         restContinuation = continuation;
 
-        if (response && response.body?.customers) {
+        if (response?.body?.customers) {
           restItems = response.body.customers.map((customer) => formatCustomerForSchemaFromRestApi(customer, context));
         }
 
@@ -212,7 +212,7 @@ export const Sync_Customers = coda.makeSyncTable({
             context
           );
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const customersData = augmentedResponse.body.data as GetCustomersMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {

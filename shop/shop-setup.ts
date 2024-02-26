@@ -1,74 +1,67 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { fetchShopDetailsRest } from './shop-functions';
-import { CACHE_DEFAULT } from '../constants';
+import { fetchShopRest, formatShopForSchemaFromRest } from './shop-functions';
+import { CACHE_DEFAULT, IDENTITY_SHOP, REST_DEFAULT_API_VERSION } from '../constants';
+import { ShopSchema } from '../schemas/syncTable/ShopSchema';
+import { SyncTableRestContinuation } from '../types/tableSync';
+import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 
 // #endregion
 
-// TODO: url for shop metafields is:
-// `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/metafields.json`;
+const validShopFields = Object.keys(ShopSchema.properties)
+  .map((key) => ShopSchema.properties[key].fromKey)
+  .filter(Boolean);
 
-const validShopFields = [
-  'address1',
-  'address2',
-  'checkout_api_supported',
-  'city',
-  'country',
-  'country_code',
-  'country_name',
-  'county_taxes',
-  'created_at',
-  'customer_email',
-  'currency',
-  'domain',
-  'enabled_presentment_currencies',
-  'eligible_for_card_reader_giveaway',
-  'eligible_for_payments',
-  'email',
-  'finances',
-  'force_ssl',
-  'google_apps_domain',
-  'google_apps_login_enabled',
-  'has_discounts',
-  'has_gift_cards',
-  'has_storefront',
-  'iana_timezone',
-  'id',
-  'latitude',
-  'longitude',
-  'money_format',
-  'money_in_emails_format',
-  'money_with_currency_format',
-  'money_with_currency_in_emails_format',
-  'multi_location_enabled',
-  'myshopify_domain',
-  'name',
-  'password_enabled',
-  'phone',
-  'plan_display_name',
-  'pre_launch_enabled',
-  'cookie_consent_level',
-  'plan_name',
-  'primary_locale',
-  'primary_location_id',
-  'province',
-  'province_code',
-  'requires_extra_payments_agreement',
-  'setup_required',
-  'shop_owner',
-  'source',
-  'taxes_included',
-  'tax_shipping',
-  'timezone',
-  'transactional_sms_disabled',
-  'updated_at',
-  'weight_unit',
-  'zip',
-  'marketing_sms_consent_enabled_at_checkout',
-];
+// #region Sync Table
+export const Sync_Shops = coda.makeSyncTable({
+  name: 'Shops',
+  description: 'Return Shop from specified account.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  identityName: IDENTITY_SHOP,
+  schema: ShopSchema,
+  formula: {
+    name: 'SyncShops',
+    description: '<Help text for the sync formula, not show to the user>',
+    parameters: [],
+    execute: async function ([], context: coda.SyncExecutionContext) {
+      const schema = context.sync.schema ?? ShopSchema;
+      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
+
+      const restParams = cleanQueryParams({
+        fields: effectivePropertyKeys.filter((key) => !['admin_url'].includes(key)).join(','),
+      });
+
+      let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/shop.json`, restParams);
+
+      let restResult = [];
+      let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+      if (response?.body?.shop) {
+        restResult = [formatShopForSchemaFromRest(response.body.shop, context)];
+      }
+
+      return { result: restResult, continuation };
+    },
+  },
+});
+// #endregion
 
 // #region Formulas
+export const Formula_Shop = coda.makeFormula({
+  name: 'Shop',
+  description: 'Get a single shop.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [],
+  cacheTtlSecs: CACHE_DEFAULT,
+  resultType: coda.ValueType.Object,
+  schema: ShopSchema,
+  execute: async function ([], context: coda.SyncExecutionContext) {
+    const shop = await fetchShopRest(undefined, context);
+    if (shop) return formatShopForSchemaFromRest(shop, context);
+  },
+});
+
+// TODO: maybe no longer needed, we can use Formula_Shop and get the property directly from it
 export const Formula_ShopField = coda.makeFormula({
   name: 'ShopField',
   description: 'Get a single shop field.',
@@ -87,7 +80,7 @@ export const Formula_ShopField = coda.makeFormula({
     if (validShopFields.indexOf(field) === -1) {
       throw new coda.UserVisibleError(`Unknown field '${field}' provided`);
     }
-    const shop = await fetchShopDetailsRest([field], context);
+    const shop = await fetchShopRest([field], context);
     if (shop && shop[field]) return shop[field];
   },
 });

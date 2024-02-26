@@ -190,7 +190,7 @@ export const Sync_Pages = coda.makeSyncTable({
         { url, extraContinuationData: { metafieldDefinitions } },
         context
       );
-      if (response && response.body?.pages) {
+      if (response?.body?.pages) {
         restResult = response.body.pages.map((page) => formatPageForSchemaFromRestApi(page, context));
       }
 

@@ -362,7 +362,7 @@ export const syncCustomersGraphQlAdmin = async (
     },
     context
   );
-  if (response && response.body.data?.customers) {
+  if (response?.body.data?.customers) {
     const data = response.body.data as GetCustomersWithMetafieldsQuery;
     return {
       result: data.customers.nodes.map((customer) =>

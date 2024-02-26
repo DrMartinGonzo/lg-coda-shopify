@@ -13,7 +13,7 @@ export async function getTemplateSuffixesFor(kind: string, context: coda.Executi
   const activeTheme = await getActiveTheme(context);
   if (activeTheme) {
     const assetsResponse = await fetchThemeAssetsRest(activeTheme.id, context);
-    if (assetsResponse && assetsResponse.body.assets) {
+    if (assetsResponse?.body?.assets) {
       const regex = new RegExp(`templates\\\/${kind}\\.(.*)\\.`, '');
 
       return assetsResponse.body.assets

@@ -84,7 +84,7 @@ import {
   Formula_ProductVariant,
   Sync_ProductVariants,
 } from './productVariants/productVariants-setup';
-import { Formula_ShopField } from './shop/shop-setup';
+import { Formula_Shop, Formula_ShopField, Sync_Shops } from './shop/shop-setup';
 import { setupTranslations } from './translations/translations-setup';
 import {
   Action_ActivateLocation,
@@ -102,7 +102,7 @@ import {
   Formula_Redirect,
   Sync_Redirects,
 } from './redirects/redirects-setup';
-import { fetchShopDetailsRest } from './shop/shop-functions';
+import { fetchShopRest } from './shop/shop-functions';
 import {
   Action_CreateProduct,
   Action_DeleteProduct,
@@ -151,7 +151,7 @@ pack.setUserAuthentication({
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
-    const shop = await fetchShopDetailsRest(['myshopify_domain'], context);
+    const shop = await fetchShopRest(['myshopify_domain'], context);
     if (shop && shop['myshopify_domain']) return shop['myshopify_domain'];
   },
 });
@@ -178,6 +178,7 @@ pack.syncTables.push(Sync_Pages);
 pack.syncTables.push(Sync_Products);
 pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
+pack.syncTables.push(Sync_Shops);
 // #endregion
 
 // #region Formulas
@@ -199,7 +200,10 @@ pack.formulas.push(Formula_Page);
 pack.formulas.push(Formula_Product);
 pack.formulas.push(Formula_ProductVariant);
 pack.formulas.push(Formula_Redirect);
-pack.formulas.push(Formula_ShopField);
+pack.formulas.push(Formula_Shop);
+if (IS_ADMIN_RELEASE) {
+  pack.formulas.push(Formula_ShopField);
+}
 // #endregion
 
 // #region Actions

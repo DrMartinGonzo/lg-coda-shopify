@@ -147,7 +147,6 @@ export const FulfillmentSchema = coda.makeObjectSchema({
         'The URL to track the fulfillment. If multiple tracking urls are set on this fulfillment, only the first one will be returned in the tracking_url field. Use the tracking_urls array field for accessing all tracking URLs associated with this fulfillment.',
     },
     // The URLs of tracking pages for the fulfillment.
-    // The date and time (ISO 8601 format) when the fulfillment was last modified..
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,

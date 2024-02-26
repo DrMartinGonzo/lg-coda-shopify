@@ -75,7 +75,6 @@ const CustomerFieldsFragment = /* GraphQL */ `
       currencyCode
     }
     canDelete
-    # TODO: breaks graphql-codegen
     # events(first: 2) {
     #   nodes {
     #     ... on CommentEvent {

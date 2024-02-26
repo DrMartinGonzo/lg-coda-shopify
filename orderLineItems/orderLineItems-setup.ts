@@ -110,7 +110,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
       const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
       restContinuation = continuation;
 
-      if (response && response.body?.orders) {
+      if (response?.body?.orders) {
         restItems = response.body.orders
           .map((order) =>
             order.line_items.map((line_item) => formatOrderLineItemForSchemaFromRestApi(line_item, order, context))
