@@ -151,7 +151,6 @@ export const fetchSingleBlogRest = (
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
-  const { cacheTtlSecs } = requestOptions;
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${blogId}.json`;
   return makeGetRequest({ ...requestOptions, url }, context);
 };

@@ -116,6 +116,7 @@ export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
 
 const PACK_PREFIX_KEY = 'lgs_';
 export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
+export const METAOBJECT_CUSTOM_FIELD_PREFIX_KEY = METAFIELD_PREFIX_KEY;
 export const CODA_SUPPORTED_CURRENCIES = [
   'BRL',
   'CHF',
