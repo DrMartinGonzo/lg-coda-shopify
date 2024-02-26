@@ -18,13 +18,13 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
   updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
-import { queryAvailableProductTypes } from './products-storefront';
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
 import type { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResource } from '../types/RequestsGraphQl';
+import { queryProductTypes } from './products-graphql';
 
 // #region Autocomplete functions
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
@@ -222,13 +222,15 @@ export async function fetchProductTypesGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<string[]> {
-  // TODO: query without using Storefront ?
-  const payload = { query: queryAvailableProductTypes };
+  const payload = { query: queryProductTypes };
   const { response } = await makeGraphQlRequest(
-    { ...requestOptions, payload, storeFront: true, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
-  return response.body.data.productTypes.edges.map((edge) => edge.node);
+  if (response?.body?.data?.shop?.productTypes?.edges) {
+    return response.body.data.shop.productTypes.edges.map((edge) => edge.node);
+  }
+  return [];
 }
 // #endregion
 
