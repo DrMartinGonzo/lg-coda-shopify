@@ -13,7 +13,6 @@ import {
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
 import { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
 import { sharedParameters } from '../shared-parameters';
-import { countryCodes } from '../types/misc';
 import { cleanQueryParams } from '../helpers-rest';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
@@ -35,12 +34,6 @@ const parameters = {
     type: coda.ParameterType.Number,
     name: 'cost',
     description: "Unit cost associated with the inventory item, the currency is the shop's default currency.",
-  }),
-  countryCodeOfOrigin: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'countryCodeOfOrigin',
-    description: 'The ISO 3166-1 alpha-2 country code of where the item originated from.',
-    autocomplete: countryCodes,
   }),
   provinceCodeOfOrigin: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -160,7 +153,12 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
       description:
         "Unit cost associated with the inventory item, the currency is the shop's default currency. Set to 0 to delete the cost value.",
     },
-    { ...parameters.countryCodeOfOrigin, optional: true },
+    {
+      ...sharedParameters.inputCountryCode,
+      name: 'countryCodeOfOrigin',
+      description: 'The ISO 3166-1 alpha-2 country code of where the item originated from.',
+      optional: true,
+    },
     { ...parameters.harmonizedSystemCode, optional: true },
     { ...parameters.provinceCodeOfOrigin, optional: true },
     { ...parameters.tracked, optional: true },
