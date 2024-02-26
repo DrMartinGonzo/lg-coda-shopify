@@ -1,3 +1,5 @@
+import { countryNames } from './contants--generated';
+
 /**
  open: Show only open orders.
  closed: Show only closed orders.
@@ -136,3 +138,9 @@ export const CODA_SUPPORTED_CURRENCIES = [
   'VND',
   'XBT',
 ] as const;
+
+/** Noms complets des pays formattés avec leur clé pour autocompletion */
+export const countryNameAutocompleteValues = Object.keys(countryNames).map((key) => ({
+  display: countryNames[key],
+  value: key,
+}));

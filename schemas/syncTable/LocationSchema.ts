@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_LOCATION, NOT_FOUND } from '../../constants';
-import { countryCodes } from '../../types/misc';
+import { countryNameAutocompleteValues } from '../../constants';
 import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 
 export const LocationSchema = coda.makeObjectSchema({
@@ -45,7 +45,7 @@ export const LocationSchema = coda.makeObjectSchema({
     country_code: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.SelectList,
-      options: countryCodes,
+      options: countryNameAutocompleteValues,
       fixedId: 'country_code',
       mutable: true,
       requireForUpdates: false,

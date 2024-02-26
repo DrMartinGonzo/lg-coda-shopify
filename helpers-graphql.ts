@@ -14,7 +14,6 @@ import { restResources } from './types/RequestsRest';
 import { MetafieldOwnerType } from './types/admin.types';
 import { FetchRequestOptions } from './types/Requests';
 
-// TODO: still not ready, calculate this max ?
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
 
 const queryCheckThrottleStatus = /* GraphQL */ `
