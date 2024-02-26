@@ -85,6 +85,20 @@ const ProductFieldsFragment = /* GraphQL */ `
 // #endregion
 
 // #region Queries
+// List max 250 available product types
+export const queryProductTypes = /* GraphQL */ `
+  query QueryProductTypes {
+    shop {
+      name
+      productTypes(first: 250) {
+        edges {
+          node
+        }
+      }
+    }
+  }
+`;
+
 export const QueryProductsAdmin = /* GraphQL */ `
   ${ProductFieldsFragment}
 
