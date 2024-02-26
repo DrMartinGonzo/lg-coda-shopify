@@ -49,10 +49,6 @@ function requireMatchingMetafieldDefinition(fullKey: string, metafieldDefinition
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
   return metafieldDefinition;
 }
-
-export function filterMetafieldDefinitionWithReference(metafieldDefinition: MetafieldDefinitionFragment) {
-  return metafieldDefinition.type.name.indexOf('_reference') !== -1;
-}
 // #endregion
 
 // #region Format for Schema
