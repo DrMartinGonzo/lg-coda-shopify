@@ -43,9 +43,7 @@ export interface SyncTableMixedContinuation extends SyncTableRestContinuation, S
   };
 }
 
-// TODO: ça marche pas, le but serait de chopper la clé de T ou la clé de fromKey si présente
 export interface FieldDependency<T extends coda.ObjectSchemaProperties> {
   field: keyof T | string;
   dependencies: (keyof T)[] | string[];
-  // test?: T[keyof T] extends { fromKey: string } ? T[keyof T]['fromKey'] : never;
 }

@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_INVENTORYITEM } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 import { ProductVariantReference } from './ProductVariantSchema';
-import { countryCodes } from '../../types/misc';
+import { countryNameAutocompleteValues } from '../../constants';
 
 export const InventoryItemSchema = coda.makeObjectSchema({
   properties: {
@@ -34,7 +34,7 @@ export const InventoryItemSchema = coda.makeObjectSchema({
     country_code_of_origin: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.SelectList,
-      options: countryCodes,
+      options: countryNameAutocompleteValues,
       fixedId: 'country_code_of_origin',
       fromKey: 'country_code_of_origin',
       mutable: true,

@@ -1,21 +1,19 @@
 import { MetafieldRestInput } from './Metafields';
-// TODO: all
 
 export interface CollectionSyncTableRestParams {
   fields?: string;
   limit?: number;
+  ids?: string;
   handle?: string;
-  // published_status?: string;
-  // status?: string;
-  // ids?: string;
-  // product_type?: string;
-  // vendor?: string;
-  // created_at_min?: Date | string;
-  // created_at_max?: Date | string;
-  // updated_at_min?: Date | string;
-  // updated_at_max?: Date | string;
-  // published_at_min?: Date | string;
-  // published_at_max?: Date | string;
+  product_id?: number;
+  title?: string;
+  published_status?: string;
+  created_at_min?: Date;
+  created_at_max?: Date;
+  updated_at_min?: Date;
+  updated_at_max?: Date;
+  published_at_min?: Date;
+  published_at_max?: Date;
 }
 
 export interface CollectionUpdateRestParams {

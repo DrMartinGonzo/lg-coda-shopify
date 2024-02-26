@@ -9,7 +9,7 @@ import {
 } from './constants';
 import { autocompleteProductTypes } from './products/products-functions';
 import { autocompleteLocationsWithName } from './locations/locations-functions';
-import { countryCodes } from './types/misc';
+import { countryNameAutocompleteValues } from './constants';
 
 export const sharedParameters = {
   optionalSyncMetafields: coda.makeParameter({
@@ -155,7 +155,7 @@ export const sharedParameters = {
   inputCountryCode: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'countryCode',
-    autocomplete: countryCodes,
+    autocomplete: countryNameAutocompleteValues,
     description: 'The two-letter code (ISO 3166-1 alpha-2 format) corresponding to the country.',
   }),
   inputEmail: coda.makeParameter({
