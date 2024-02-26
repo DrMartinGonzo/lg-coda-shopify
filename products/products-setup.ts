@@ -284,7 +284,7 @@ export const Sync_Products = coda.makeSyncTable({
         const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
         restContinuation = continuation;
 
-        if (response && response.body?.products) {
+        if (response?.body?.products) {
           restItems = response.body.products.map((product) => formatProductForSchemaFromRestApi(product, context));
         }
 
@@ -333,7 +333,7 @@ export const Sync_Products = coda.makeSyncTable({
             context
           );
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const customersData = augmentedResponse.body.data as GetProductsMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {
@@ -719,7 +719,7 @@ export const Format_Product: coda.Format = {
           context
         );
 
-        if (response && response.body.data?.products) {
+        if (response?.body?.data?.products) {
           const data = response.body.data as GetProductsWithMetafieldsQuery;
           return {
             result: data.products.nodes.map((product) =>

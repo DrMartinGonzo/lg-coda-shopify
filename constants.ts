@@ -98,6 +98,7 @@ export const IDENTITY_INVENTORYLEVEL = 'InventoryLevel';
 export const IDENTITY_PRODUCT = 'Product';
 export const IDENTITY_PRODUCT_VARIANT = 'ProductVariant';
 export const IDENTITY_REDIRECT = 'Redirect';
+export const IDENTITY_SHOP = 'Shop';
 
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';

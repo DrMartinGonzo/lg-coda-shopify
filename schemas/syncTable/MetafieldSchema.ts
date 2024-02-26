@@ -83,13 +83,13 @@ export const MetafieldSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'created_at',
-      description: 'The date and time (ISO 8601 format) when the metafield was created.',
+      description: 'The date and time when the metafield was created.',
     },
     updated_at: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'updated_at',
-      description: 'The date and time (ISO 8601 format) when the metafield was last updated.',
+      description: 'The date and time when the metafield was last updated.',
     },
     editCollectionReference: {
       ...CollectionReference,

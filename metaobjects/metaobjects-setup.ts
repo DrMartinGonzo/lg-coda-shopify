@@ -175,10 +175,9 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
         },
         context
       );
-      if (response && response.body.data?.metaobjects) {
-        const data = response.body.data;
+      if (response?.body?.data?.metaobjects?.nodes) {
         return {
-          result: data.metaobjects.nodes.map((metaobject) =>
+          result: response.body.data.metaobjects.nodes.map((metaobject) =>
             formatMetaobjectForSchemaFromGraphQlApi(metaobject, context)
           ),
           continuation,

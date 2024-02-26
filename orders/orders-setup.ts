@@ -271,7 +271,7 @@ export const Sync_Orders = coda.makeSyncTable({
         const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
         restContinuation = continuation;
 
-        if (response && response.body?.orders) {
+        if (response?.body?.orders) {
           restItems = response.body.orders.map((order) => formatOrderForSchemaFromRestApi(order, context));
         }
 
@@ -320,7 +320,7 @@ export const Sync_Orders = coda.makeSyncTable({
             context
           );
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const customersData = augmentedResponse.body.data as GetOrdersMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {

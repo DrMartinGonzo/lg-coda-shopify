@@ -206,7 +206,7 @@ export const Sync_Articles = coda.makeSyncTable({
         },
         context
       );
-      if (response && response.body?.articles) {
+      if (response?.body?.articles) {
         restResult = response.body.articles.map((article) => formatArticleForSchemaFromRestApi(article, context));
       }
 

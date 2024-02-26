@@ -12,8 +12,11 @@ export const CollectionImageSchema = coda.makeObjectSchema({
     width: { type: coda.ValueType.Number },
     // The height of the image in pixels.
     height: { type: coda.ValueType.Number },
-    // The time and date (ISO 8601 format) when the image was added to the collection.
-    created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+    created_at: {
+      type: coda.ValueType.String,
+      codaType: coda.ValueHintType.DateTime,
+      description: 'The time and date when the image was added to the collection.',
+    },
   },
   displayProperty: 'src',
 });

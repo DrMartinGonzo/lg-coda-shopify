@@ -72,7 +72,7 @@ export const ArticleSchema = coda.makeObjectSchema({
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'created_at',
       fromKey: 'created_at',
-      description: 'The date and time (ISO 8601 format) when the article was created.',
+      description: 'The date and time when the article was created.',
     },
     handle: {
       type: coda.ValueType.String,
@@ -107,7 +107,7 @@ export const ArticleSchema = coda.makeObjectSchema({
       mutable: true,
       fixedId: 'published_at',
       fromKey: 'published_at',
-      description: 'The date and time (ISO 8601 format) when the article was published.',
+      description: 'The date and time when the article was published.',
     },
     summary: {
       type: coda.ValueType.String,
@@ -155,7 +155,7 @@ export const ArticleSchema = coda.makeObjectSchema({
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'updated_at',
       fromKey: 'updated_at',
-      description: 'The date and time (ISO 8601 format) when the article was last updated.',
+      description: 'The date and time when the article was last updated.',
     },
     user_id: {
       type: coda.ValueType.Number,

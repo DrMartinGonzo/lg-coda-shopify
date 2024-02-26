@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 export const ProductImageSchema = coda.makeObjectSchema({
   properties: {
-    // The date and time when the product image was created. The API returns this value in ISO 8601 format.
+    // The date and time when the product image was created.
     created_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
     // A unique numeric identifier for the product image.
     id: { type: coda.ValueType.Number, fromKey: 'id', required: true },
@@ -18,7 +18,7 @@ export const ProductImageSchema = coda.makeObjectSchema({
     width: { type: coda.ValueType.Number },
     // Height dimension of the image which is determined on upload.
     height: { type: coda.ValueType.Number },
-    // The date and time when the product image was last modified. The API returns this value in ISO 8601 format.
+    // The date and time when the product image was last modified.
     updated_at: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
   },
   displayProperty: 'src',
