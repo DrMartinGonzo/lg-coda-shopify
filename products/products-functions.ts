@@ -404,7 +404,7 @@ export const syncProductsGraphQlStorefront = async (
     },
     context
   );
-  if (response && response.body.data?.products) {
+  if (response?.body?.data?.products) {
     const data = response.body.data as GetProductsWithMetafieldsQuery;
     return {
       result: data.products.nodes.map((product) =>

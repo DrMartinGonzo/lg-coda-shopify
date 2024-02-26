@@ -311,7 +311,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
         const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
         restContinuation = continuation;
 
-        if (response && response.body?.products) {
+        if (response?.body?.products) {
           restItems = response.body.products
             .map((product) =>
               product.variants.map((variant) => formatProductVariantForSchemaFromRestApi(variant, product, context))
@@ -364,7 +364,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
             context
           );
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const variantsData = augmentedResponse.body.data as GetProductVariantsMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {
@@ -796,7 +796,7 @@ export const Format_ProductVariant: coda.Format = {
           const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
           restContinuation = continuation;
 
-          if (response && response.body?.products) {
+          if (response?.body?.products) {
             restItems = response.body.products
               .map((product) =>
                 product.variants.map((variant) => formatProductVariantForSchemaFromRestApi(variant, product, context))
@@ -879,7 +879,7 @@ export const Format_ProductVariant: coda.Format = {
 
         // console.log('augmentedResponse', augmentedResponse);
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const augmentedItems = restItemsToprocess
             .map((variant) => {
               const graphQlNodeMatch = augmentedResponse.body.data.productVariants.nodes.find(

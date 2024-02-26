@@ -84,7 +84,7 @@ export const Sync_Redirects = coda.makeSyncTable({
       const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
       restContinuation = continuation;
 
-      if (response && response.body?.redirects) {
+      if (response?.body?.redirects) {
         restItems = response.body.redirects.map((redirect) => formatRedirectForSchemaFromRestApi(redirect, context));
       }
 

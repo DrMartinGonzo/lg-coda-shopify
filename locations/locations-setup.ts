@@ -126,7 +126,7 @@ export const Sync_Locations = coda.makeSyncTable({
         },
         context
       );
-      if (response && response.body.data?.locations) {
+      if (response?.body?.data?.locations) {
         const data = response.body.data as GetLocationsQuery;
         return {
           result: data.locations.nodes.map((location) => formatLocationForSchemaFromGraphQlApi(location, context)),

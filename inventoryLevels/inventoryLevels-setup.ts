@@ -75,7 +75,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
       const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
       restContinuation = continuation;
 
-      if (response && response.body?.inventory_levels) {
+      if (response?.body?.inventory_levels) {
         restItems = response.body.inventory_levels.map((redirect) =>
           formatInventoryLevelForSchemaFromRestApi(redirect, context)
         );

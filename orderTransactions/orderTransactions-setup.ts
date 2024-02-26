@@ -117,7 +117,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
         },
         context
       );
-      if (response && response.body.data?.orders) {
+      if (response?.body?.data?.orders) {
         const data = response.body.data as GetOrderTransactionsQuery;
         return {
           result: data.orders.nodes

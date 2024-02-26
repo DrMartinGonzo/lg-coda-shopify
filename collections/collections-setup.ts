@@ -50,7 +50,11 @@ import {
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
-import { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
+import {
+  CollectionCreateRestParams,
+  CollectionSyncTableRestParams,
+  CollectionUpdateRestParams,
+} from '../types/Collection';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
@@ -118,7 +122,7 @@ export const Sync_Collects = coda.makeSyncTable({
 
       let restResult = [];
       let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-      if (response && response.body?.collects) {
+      if (response?.body?.collects) {
         restResult = response.body.collects.map((collect) => formatCollect(collect, context));
       }
 
@@ -217,7 +221,7 @@ export const Sync_Collections = coda.makeSyncTable({
           updated_at_max: updated_at ? updated_at[1] : undefined,
           published_at_min: published_at ? published_at[0] : undefined,
           published_at_max: published_at ? published_at[1] : undefined,
-        });
+        } as CollectionSyncTableRestParams);
 
         validateCollectionParams(restParams);
 
@@ -239,7 +243,7 @@ export const Sync_Collections = coda.makeSyncTable({
         );
         restContinuation = continuation;
 
-        if (response && response.body[restType]) {
+        if (response?.body[restType]) {
           restItems = response.body[restType].map((collection) =>
             formatCollectionForSchemaFromRestApi(collection, context)
           );
@@ -307,7 +311,7 @@ export const Sync_Collections = coda.makeSyncTable({
             context
           );
 
-        if (augmentedResponse && augmentedResponse.body?.data) {
+        if (augmentedResponse?.body?.data) {
           const collectionsData = augmentedResponse.body.data as GetCollectionsMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {

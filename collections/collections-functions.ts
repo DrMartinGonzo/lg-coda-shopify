@@ -360,7 +360,7 @@ export const syncCollectionsGraphQlAdmin = async (
     },
     context
   );
-  if (response && response.body.data?.collections) {
+  if (response?.body?.data?.collections) {
     const data = response.body.data as GetCollectionsQuery;
     return {
       result: data.collections.nodes.map((collection) =>

@@ -112,7 +112,7 @@ export const Sync_InventoryItems = coda.makeSyncTable({
         },
         context
       );
-      if (response && response.body.data?.inventoryItems) {
+      if (response?.body?.data?.inventoryItems) {
         const data = response.body.data as GetInventoryItemsQuery;
         return {
           result: data.inventoryItems.nodes.map((inventoryItem) => formatInventoryItemNodeForSchema(inventoryItem)),

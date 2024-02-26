@@ -45,7 +45,7 @@ export const BlogSchema = coda.makeObjectSchema({
       codaType: coda.ValueHintType.DateTime,
       fixedId: 'created_at',
       fromKey: 'created_at',
-      description: 'The date and time when the blog was created. The API returns this value in ISO 8601 format.',
+      description: 'The date and time when the blog was created.',
     },
     handle: {
       type: coda.ValueType.String,
@@ -86,7 +86,7 @@ export const BlogSchema = coda.makeObjectSchema({
       fixedId: 'updated_at',
       fromKey: 'updated_at',
       description:
-        "The date and time when changes were last made to the blog's properties. Note that this is not updated when creating, modifying or deleting articles in the blog. The API returns this value in ISO 8601 format.",
+        "The date and time when changes were last made to the blog's properties. Note that this is not updated when creating, modifying or deleting articles in the blog.",
     },
   },
   displayProperty: 'title',
