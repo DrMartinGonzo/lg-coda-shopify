@@ -14,7 +14,7 @@ import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAUL
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { RedirectCreateRestParams } from '../types/Redirect';
+import { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
 
 // #endregion
 
@@ -67,10 +67,7 @@ export const Sync_Redirects = coda.makeSyncTable({
         limit: REST_DEFAULT_LIMIT,
         path,
         target,
-      });
-
-      // TODO: validateRedirectParams
-      // validateRedirectParams(restParams);
+      } as RedirectSyncRestParams);
 
       let url: string;
       if (prevContinuation?.nextUrl) {
