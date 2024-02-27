@@ -654,46 +654,43 @@ export async function updateResourceMetafieldsRest(
   metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
   context: coda.ExecutionContext
 ): Promise<{ deletedMetafields: DeletedMetafieldsByKeysRest[]; updatedMetafields: MetafieldRest[] }> {
-  let deletedMetafields: DeletedMetafieldsByKeysRest[] = [];
-  const updatedMetafields: MetafieldRest[] = [];
-
   const metafieldsToDelete = metafieldKeyValueSets.filter((set) => set.value === null);
   const metafieldsToUpdate = metafieldKeyValueSets.filter((set) => set.value && set.value !== null);
 
-  // TODO: wrap delete and updat in a single Promise.all
+  const promises = [];
   if (metafieldsToDelete.length) {
-    deletedMetafields = await deleteMetafieldsByKeysRest(metafieldsToDelete, ownerId, ownerResource, context);
+    promises.push(deleteMetafieldsByKeysRest(metafieldsToDelete, ownerId, ownerResource, context));
+  } else {
+    promises.push(undefined);
   }
 
   if (metafieldsToUpdate.length) {
     const metafieldRestInputs = metafieldsToUpdate.map(formatMetafieldRestInputFromMetafieldKeyValueSet);
-    const completed = await Promise.allSettled(
-      metafieldRestInputs.map((input) => {
-        const url = getResourceMetafieldsRestApiUrl(context, ownerResource, ownerId);
-        const payload = {
-          metafield: {
-            namespace: input.namespace,
-            key: input.key,
-            type: input.type,
-            value: input.value,
-          },
-        };
-        return makePostRequest({ url, payload }, context);
-      })
-    );
-
-    completed.forEach((job) => {
-      if (job.status === 'fulfilled') {
-        if (job.value.body?.metafield) {
-          updatedMetafields.push(job.value.body.metafield);
-        }
-      } else if (job.status === 'rejected') {
-        throw new coda.UserVisibleError(job.reason);
-      }
+    metafieldRestInputs.forEach((input) => {
+      const url = getResourceMetafieldsRestApiUrl(context, ownerResource, ownerId);
+      const payload = {
+        metafield: {
+          namespace: input.namespace,
+          key: input.key,
+          type: input.type,
+          value: input.value,
+        },
+      };
+      promises.push(makePostRequest({ url, payload }, context).then((response) => response.body.metafield));
     });
+  } else {
+    promises.push(undefined);
   }
 
-  return { deletedMetafields, updatedMetafields };
+  const [deletedMetafields, ...updatedMetafields] = (await Promise.all(promises)) as [
+    DeletedMetafieldsByKeysRest[],
+    ...MetafieldRest[]
+  ];
+
+  return {
+    deletedMetafields: deletedMetafields ? deletedMetafields.filter(Boolean) : [],
+    updatedMetafields: updatedMetafields ? updatedMetafields.filter(Boolean) : [],
+  };
 }
 
 /**

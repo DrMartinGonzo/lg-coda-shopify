@@ -1,5 +1,4 @@
 // #region Fragments
-// TODO: mayve don't walays include everything ? e.g. only metafieldsCount, pinnedPosition are not always necessary
 export const MetafieldDefinitionFragment = /* GraphQL */ `
   fragment MetafieldDefinition on MetafieldDefinition {
     key
