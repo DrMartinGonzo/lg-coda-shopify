@@ -110,7 +110,6 @@ export function formatGraphQlLocationEditAddressInputNew(parts: {
   return ret;
 }
 
-// TODO: set metafields along with the location update ? There is still the problem that we can't update with a null value, we need to delete first
 export async function handleLocationUpdateJob(
   update: coda.SyncUpdate<string, string, typeof LocationSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
