@@ -6,13 +6,6 @@ import { OrderTransactionFieldsFragment } from '../types/admin.generated';
 import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReferenceValueForSchema } from '../schemas/syncTable/OrderTransactionSchema';
 
-// #region Helpers
-// TODO
-export function validateOrderTransactionParams(params) {
-  return true;
-}
-// #endregion
-
 // #region Formatting functions
 export const formatOrderTransactionForSchemaFromGraphQlApi = (
   orderTransaction: OrderTransactionFieldsFragment,

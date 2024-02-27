@@ -230,6 +230,11 @@ export const sharedParameters = {
     name: 'title',
     description: 'The title of the item.',
   }),
+  inputVendor: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'vendor',
+    description: 'The vendor.',
+  }),
   inputZip: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'zip',
@@ -263,6 +268,11 @@ export const sharedParameters = {
     type: coda.ParameterType.Date,
     name: 'updatedAtMin',
     description: 'Filter results last updated after this date.',
+  }),
+  filterVendor: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'vendor',
+    description: 'Filter results by vendor.',
   }),
 
   filterFields: coda.makeParameter({

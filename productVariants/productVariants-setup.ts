@@ -201,7 +201,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
         optional: true,
       },
       {
-        ...sharedParameters.productVendor,
+        ...sharedParameters.filterVendor,
         optional: true,
         description: 'Sync only variants for products by given vendor.',
       },
@@ -562,7 +562,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
 
     const response = await updateProductVariantRest(productVariantId, restParams, context);
     let obj = { id: productVariantId };
-    if (response.body?.variant) {
+    if (response?.body?.variant) {
       obj = {
         ...obj,
         // TODO: find a way to pass parent product data
@@ -682,7 +682,7 @@ export const Format_ProductVariant: coda.Format = {
           optional: true,
         },
         {
-          ...sharedParameters.productVendor,
+          ...sharedParameters.filterVendor,
           optional: true,
           description: 'Sync only variants for products by given vendor.',
         },
