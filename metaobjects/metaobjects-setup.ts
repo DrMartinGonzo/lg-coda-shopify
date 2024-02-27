@@ -332,7 +332,9 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(MetaObjectBaseSchema, IDENTITY_METAOBJECT),
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
+  // schema: coda.withIdentity(MetaObjectBaseSchema, IDENTITY_METAOBJECT),
+  schema: MetaObjectBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
     const fields: MetaobjectFieldInput[] = [];
     while (varargs.length > 0) {
@@ -355,7 +357,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
     );
 
     if (response?.body?.data?.metaobjectUpdate?.metaobject) {
-      return formatMetaobjectForSchemaFromGraphQlApi(response.body.data.metaobjectUpdate.metaobject, context, true);
+      return formatMetaobjectForSchemaFromGraphQlApi(response.body.data.metaobjectUpdate.metaobject, context);
     }
   },
 });

@@ -10,7 +10,7 @@ import {
   getMetaFieldFullKey,
   formatMetaFieldValueForSchema,
   getMetafieldKeyValueSetsFromUpdate,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import {
   GetLocationsQueryVariables,
@@ -142,14 +142,16 @@ export async function handleLocationUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableGraphQL(
-        locationGid,
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsGraphQl(
+        {
+          ownerGid: locationGid,
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );

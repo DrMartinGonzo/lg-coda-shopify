@@ -39,7 +39,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
@@ -447,9 +447,9 @@ export const Action_UpdateCollection = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  // TODO: keep this for all but disable the update for relation columns
-  // TODO: ask on coda community: on fait comment pour que update les trucs dynamiques ? Genre les metafields ?
-  schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
+  // schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
+  schema: CollectionSchema,
   execute: async (
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
@@ -473,26 +473,33 @@ export const Action_UpdateCollection = coda.makeFormula({
       context
     );
 
-    let obj = { id: collectionId };
-
-    const restResponse = await updateCollectionRest(collectionId, collectionType, restParams, context);
-    if (restResponse.body[collectionType]) {
-      obj = {
-        ...obj,
-        ...formatCollectionForSchemaFromRestApi(restResponse.body[collectionType], context),
-      };
-    }
-
+    const promises = [];
+    promises.push(updateCollectionRest(collectionId, collectionType, restParams, context));
     if (metafields && metafields.length) {
-      // TODO: update with identity only things that are not references, and do it in all other update actions
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
-        collectionId,
-        restResources.Collection,
-        parsedMetafieldKeyValueSets,
-        context
+      // TODO: Je pense qu'on peut le faire avec GraphQL
+      promises.push(
+        updateAndFormatResourceMetafieldsRest(
+          {
+            ownerId: collectionId,
+            ownerResource: restResources.Collection,
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
       );
+    } else {
+      promises.push(undefined);
     }
+
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: collectionId,
+      ...(restResponse?.body[collectionType]
+        ? formatCollectionForSchemaFromRestApi(restResponse.body[collectionType], context)
+        : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

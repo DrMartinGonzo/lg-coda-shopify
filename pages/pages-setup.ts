@@ -26,7 +26,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import {
   fetchMetafieldsRest,
@@ -307,9 +307,9 @@ export const Action_UpdatePage = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  // TODO: keep this for all but disable the update for relation columns
-  // TODO: ask on coda community: on fait comment pour que update les trucs dynamiques ? Genre les metafields ?
-  schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
+  // schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
+  schema: PageSchema,
   execute: async function (
     [pageId, author, bodyHtml, handle, published, publishedAt, title, templateSuffix, metafields],
     context
@@ -324,25 +324,30 @@ export const Action_UpdatePage = coda.makeFormula({
       template_suffix: templateSuffix,
     };
 
-    let obj = { id: pageId };
-
-    const restResponse = await updatePageRest(pageId, restParams, context);
-    if (restResponse.body?.page) {
-      obj = {
-        ...obj,
-        ...formatPageForSchemaFromRestApi(restResponse.body.page, context),
-      };
-    }
-
+    const promises = [];
+    promises.push(updatePageRest(pageId, restParams, context));
     if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
-        pageId,
-        restResources.Page,
-        parsedMetafieldKeyValueSets,
-        context
+      promises.push(
+        updateAndFormatResourceMetafieldsRest(
+          {
+            ownerId: pageId,
+            ownerResource: restResources.Page,
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
       );
+    } else {
+      promises.push(undefined);
     }
+
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: pageId,
+      ...(restResponse?.body?.page ? formatPageForSchemaFromRestApi(restResponse.body.page, context) : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

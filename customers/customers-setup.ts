@@ -31,7 +31,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
@@ -379,7 +379,9 @@ export const Action_UpdateCustomer = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
+  // schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
+  schema: CustomerSchema,
   execute: async function (
     [customerId, firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
     context
@@ -421,23 +423,29 @@ export const Action_UpdateCustomer = coda.makeFormula({
     }
     */
 
-    let obj = { id: customerId };
-    const restResponse = await updateCustomerRest(customerId, restParams, context);
-    if (restResponse.body?.customer) {
-      obj = {
-        ...obj,
-        ...formatCustomerForSchemaFromRestApi(restResponse.body.customer, context),
-      };
+    const promises = [];
+    promises.push(updateCustomerRest(customerId, restParams, context));
+    if (metafields && metafields.length) {
+      promises.push(
+        updateAndFormatResourceMetafieldsGraphQl(
+          {
+            ownerGid: idToGraphQlGid(GraphQlResource.Customer, customerId),
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
+      );
+    } else {
+      promises.push(undefined);
     }
 
-    if (metafields && metafields.length) {
-      const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      await updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.Customer, customerId),
-        metafieldKeyValueSets,
-        context
-      );
-    }
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: customerId,
+      ...(restResponse?.body?.customer ? formatCustomerForSchemaFromRestApi(restResponse.body.customer, context) : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },
