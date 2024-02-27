@@ -28,7 +28,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, parseOptionId, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
@@ -379,7 +379,7 @@ export const Action_UpdateArticle = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  //! withIdentity breaks relations when updating
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
   schema: ArticleSchema,
   execute: async function (
@@ -420,25 +420,30 @@ export const Action_UpdateArticle = coda.makeFormula({
       restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
     }
 
-    let obj = { id: articleId };
-
-    const restResponse = await updateArticleRest(articleId, restParams, context);
-    if (restResponse.body?.article) {
-      obj = {
-        ...obj,
-        ...formatArticleForSchemaFromRestApi(restResponse.body.article, context),
-      };
-    }
-
+    const promises = [];
+    promises.push(updateArticleRest(articleId, restParams, context));
     if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
-        articleId,
-        restResources.Article,
-        parsedMetafieldKeyValueSets,
-        context
+      promises.push(
+        updateAndFormatResourceMetafieldsRest(
+          {
+            ownerId: articleId,
+            ownerResource: restResources.Article,
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
       );
+    } else {
+      promises.push(undefined);
     }
+
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: articleId,
+      ...(restResponse?.body?.article ? formatArticleForSchemaFromRestApi(restResponse.body.article, context) : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

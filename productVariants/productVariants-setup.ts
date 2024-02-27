@@ -26,7 +26,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
@@ -451,10 +451,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
     { ...sharedParameters.metafields, optional: true, description: 'Product Variant metafields to create.' },
   ],
   isAction: true,
-  resultType: coda.ValueType.Object,
-  //! withIdentity breaks relations when updating
-  // schema: coda.withIdentity(ProductVariantSchema, IDENTITY_PRODUCT_VARIANT),
-  schema: ProductVariantSchema,
+  resultType: coda.ValueType.Number,
   execute: async function (
     [
       productId,
@@ -525,7 +522,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  //! withIdentity breaks relations when updating
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(ProductVariantSchema, IDENTITY_PRODUCT_VARIANT),
   schema: ProductVariantSchema,
   execute: async function (
@@ -560,30 +557,32 @@ export const Action_UpdateProductVariant = coda.makeFormula({
       weight_unit: weightUnit,
     };
 
-    const response = await updateProductVariantRest(productVariantId, restParams, context);
-    let obj = { id: productVariantId };
-    if (response?.body?.variant) {
-      obj = {
-        ...obj,
-        // TODO: find a way to pass parent product data
-        ...formatProductVariantForSchemaFromRestApi(response.body.variant, {}, context),
-      };
+    const promises = [];
+    promises.push(updateProductVariantRest(productVariantId, restParams, context));
+    if (metafields && metafields.length) {
+      promises.push(
+        updateAndFormatResourceMetafieldsGraphQl(
+          {
+            ownerGid: idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
+      );
+    } else {
+      promises.push(undefined);
     }
 
-    if (metafields && metafields.length) {
-      const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafields = await updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
-        metafieldKeyValueSets,
-        context
-      );
-      if (updatedMetafields) {
-        obj = {
-          ...obj,
-          ...updatedMetafields,
-        };
-      }
-    }
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: productVariantId,
+      // TODO: find a way to pass parent product data
+      ...(restResponse?.body?.variant
+        ? formatProductVariantForSchemaFromRestApi(restResponse.body.variant, {}, context)
+        : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

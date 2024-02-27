@@ -14,7 +14,7 @@ import { idToGraphQlGid } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,
   getMetafieldKeyValueSetsFromUpdate,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -111,14 +111,16 @@ export async function handleCustomerUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.Customer, customerId),
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsGraphQl(
+        {
+          ownerGid: idToGraphQlGid(GraphQlResource.Customer, customerId),
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -215,10 +217,12 @@ export const updateCustomerRest = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  // validateCustomerParams(params);
-  const payload = { customer: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+  if (Object.keys(restParams).length) {
+    // validateCustomerParams(params);
+    const payload = { customer: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export const deleteCustomer = async (

@@ -10,7 +10,7 @@ import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { restResources } from '../types/RequestsRest';
@@ -53,15 +53,17 @@ export async function handlePageUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableRest(
-        pageId,
-        restResources.Page,
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsRest(
+        {
+          ownerId: pageId,
+          ownerResource: restResources.Page,
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -140,10 +142,12 @@ export const updatePageRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  validatePageParams(restParams);
-  const payload = { page: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+  if (Object.keys(restParams).length) {
+    validatePageParams(restParams);
+    const payload = { page: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages/${pageId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export const deletePageRest = (

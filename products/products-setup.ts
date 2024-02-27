@@ -41,17 +41,15 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
 } from '../metafields/metafields-functions';
 
 // Import types
 import { GetProductsMetafieldsQuery, GetProductsMetafieldsQueryVariables } from '../types/admin.generated';
-import { MetafieldRestInput } from '../types/Metafields';
 import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import { ProductSyncTableRestParams, ProductCreateRestParams, ProductUpdateRestParams } from '../types/Product';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
@@ -471,8 +469,8 @@ export const Action_UpdateProduct = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  //! withIdentity breaks relations when updating
-  // schema: coda.withIdentity(ProductSchema, IDENTITY_PRODUCT),
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
+  // schema: coda.withIdentity(ProductSchemaRest, IDENTITY_PRODUCT),
   schema: ProductSchemaRest,
   execute: async function (
     [productId, title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, metafields],
@@ -489,23 +487,29 @@ export const Action_UpdateProduct = coda.makeFormula({
       status,
     };
 
-    let obj = { id: productId };
-    const restResponse = await updateProductRest(productId, restParams, context);
-    if (restResponse.body?.product) {
-      obj = {
-        ...obj,
-        ...formatProductForSchemaFromRestApi(restResponse.body.product, context),
-      };
+    const promises = [];
+    promises.push(updateProductRest(productId, restParams, context));
+    if (metafields && metafields.length) {
+      promises.push(
+        updateAndFormatResourceMetafieldsGraphQl(
+          {
+            ownerGid: idToGraphQlGid(GraphQlResource.Product, productId),
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
+      );
+    } else {
+      promises.push(undefined);
     }
 
-    if (metafields && metafields.length) {
-      const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      await updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.Product, productId),
-        metafieldKeyValueSets,
-        context
-      );
-    }
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: productId,
+      ...(restResponse?.body?.product ? formatProductForSchemaFromRestApi(restResponse.body.product, context) : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

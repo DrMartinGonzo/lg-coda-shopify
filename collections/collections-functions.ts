@@ -17,7 +17,7 @@ import { FetchRequestOptions } from '../types/Requests';
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -83,15 +83,17 @@ export async function handleCollectionUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableRest(
-        collectionId,
-        restResources.Collection,
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsRest(
+        {
+          ownerId: collectionId,
+          ownerResource: restResources.Collection,
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -198,14 +200,16 @@ export const updateCollectionRest = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  validateCollectionParams(params);
+  if (Object.keys(restParams).length) {
+    validateCollectionParams(params);
 
-  const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
-  const payloadObjKey = collectionType === COLLECTION_TYPE__SMART ? 'smart_collection' : 'custom_collection';
+    const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
+    const payloadObjKey = collectionType === COLLECTION_TYPE__SMART ? 'smart_collection' : 'custom_collection';
 
-  const payload = { [payloadObjKey]: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+    const payload = { [payloadObjKey]: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export const createCollectionRest = async (

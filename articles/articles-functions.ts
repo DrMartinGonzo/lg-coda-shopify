@@ -9,7 +9,7 @@ import { FetchRequestOptions } from '../types/Requests';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
@@ -78,15 +78,17 @@ export async function handleArticleUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableRest(
-        articleId,
-        restResources.Article,
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsRest(
+        {
+          ownerId: articleId,
+          ownerResource: restResources.Article,
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -172,10 +174,12 @@ export const updateArticleRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  // validateBlogParams(params);
-  const payload = { article: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+  if (Object.keys(restParams).length) {
+    // validateBlogParams(params);
+    const payload = { article: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export const deleteArticleRest = async (
