@@ -119,11 +119,6 @@ const parameters = {
     name: 'bodyHtml',
     description: 'The description of the product, complete with HTML markup.',
   }),
-  vendor: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'vendor',
-    description: 'The product vendor.',
-  }),
   tags: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'tags',
@@ -187,7 +182,7 @@ export const Sync_Products = coda.makeSyncTable({
         optional: true,
       },
       {
-        ...sharedParameters.productVendor,
+        ...sharedParameters.filterVendor,
         description: 'Return products by product vendor.',
         optional: true,
       },
@@ -401,7 +396,7 @@ export const Action_CreateProduct = coda.makeFormula({
     { ...parameters.bodyHtml, optional: true },
     { ...parameters.productType, optional: true },
     { ...parameters.tags, optional: true },
-    { ...parameters.vendor, optional: true },
+    { ...sharedParameters.inputVendor, description: 'The product vendor.', optional: true },
     { ...parameters.inputStatus, optional: true },
     { ...parameters.handle, optional: true },
     { ...parameters.templateSuffix, optional: true },
@@ -468,7 +463,7 @@ export const Action_UpdateProduct = coda.makeFormula({
     { ...parameters.bodyHtml, optional: true },
     { ...parameters.productType, optional: true },
     { ...parameters.tags, optional: true },
-    { ...parameters.vendor, optional: true },
+    { ...sharedParameters.inputVendor, description: 'The product vendor.', optional: true },
     { ...parameters.inputStatus, optional: true },
     { ...parameters.handle, optional: true },
     { ...parameters.templateSuffix, optional: true },
@@ -612,7 +607,7 @@ export const Format_Product: coda.Format = {
           optional: true,
         },
         {
-          ...sharedParameters.productVendors,
+          ...sharedParameters.filterVendor,
           description: 'Return products by product vendors.',
           optional: true,
         },

@@ -201,23 +201,17 @@ export const Sync_Pages = coda.makeSyncTable({
             let obj = { ...resource };
 
             const response = await fetchMetafieldsRest(resource.id, restResources.Page, {}, context);
-            const metafields: MetafieldRest[] = response.body.metafields;
 
-            // TODO: On pourrait peut-être tous les processer et laisser Coda se démerder derrière pour ne pas intégrer ceux qui ne sont pas définis dans le schéma
-            // Process metafields that have a definition and in the schema
-            const definitionsFullKeys = metafieldDefinitions.map((def) => getMetaFieldFullKey(def));
-            const metafieldsWithDefinition = metafields.filter(
-              (meta: MetafieldRest) =>
-                effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta)) &&
-                definitionsFullKeys.includes(getMetaFieldFullKey(meta))
+            // Only keep metafields that are in the schema
+            const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
+              effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta))
             );
-            if (metafieldsWithDefinition.length) {
-              metafieldsWithDefinition.forEach((metafield) => {
+            if (metafields.length) {
+              metafields.forEach((metafield) => {
                 const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
                 obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
               });
             }
-
             return obj;
           })
         );

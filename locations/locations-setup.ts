@@ -8,13 +8,15 @@ import {
   activateLocationGraphQl,
   fetchSingleLocationGraphQl,
   updateLocationGraphQl,
-  formatGraphQlLocationEditAddressInputNew,
+  formatGraphQlLocationEditInputNew,
 } from './locations-functions';
 import { LocationSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
 import { CACHE_DEFAULT, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
 import {
   augmentSchemaWithMetafields,
+  preprendPrefixToMetaFieldKey,
+  shouldUpdateSyncTableMetafieldValue,
   updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
@@ -31,7 +33,7 @@ import {
 } from '../helpers-graphql';
 import { QueryLocations } from './locations-graphql';
 import { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
-import { LocationEditInput, MetafieldOwnerType } from '../types/admin.types';
+import { CountryCode, MetafieldOwnerType } from '../types/admin.types';
 import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
@@ -182,10 +184,8 @@ export const Action_UpdateLocation = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  // TODO: get it to update metafield values added in dynamic schema
-  // on dirait que ça déconne même en ajoutant includeUnknownProperties dans les schema. Pourtant je suis quasi sûr que ça avait déjà fonctionné avec mon pack coda-sync-plus…
+  // Ne fonctionne que quand le bouton est dans la table pour les colonnes ajoutés dynamiquement dans le schéma
   schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
-  // schema: LocationSchema,
   execute: async function (
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
@@ -193,20 +193,15 @@ export const Action_UpdateLocation = coda.makeFormula({
     let obj = { id: locationId };
 
     const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
-    const locationEditInput: LocationEditInput = {
+    const locationEditInput = formatGraphQlLocationEditInputNew({
       name,
-      address: formatGraphQlLocationEditAddressInputNew({
-        address1,
-        address2,
-        city,
-        countryCode,
-        phone,
-        provinceCode,
-        zip,
-      }),
-    };
-    Object.keys(locationEditInput).forEach((key) => {
-      if (locationEditInput[key] === undefined) delete locationEditInput[key];
+      address1,
+      address2,
+      city,
+      countryCode: countryCode as CountryCode,
+      phone,
+      provinceCode,
+      zip,
     });
 
     const restResponse = await updateLocationGraphQl(locationGid, locationEditInput, context);
@@ -219,7 +214,24 @@ export const Action_UpdateLocation = coda.makeFormula({
 
     if (metafields && metafields.length) {
       const metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      await updateResourceMetafieldsFromSyncTableGraphQL(locationGid, metafieldKeyValueSets, context);
+      const updatedMetafields = await updateResourceMetafieldsFromSyncTableGraphQL(
+        locationGid,
+        metafieldKeyValueSets,
+        context
+      );
+      metafieldKeyValueSets.forEach((set) => {
+        const shouldUpdateSyncTableValue = shouldUpdateSyncTableMetafieldValue(set.type, true);
+        if (!shouldUpdateSyncTableValue) {
+          const matchingSchemaKey = preprendPrefixToMetaFieldKey(set.key);
+          if (updatedMetafields.hasOwnProperty(matchingSchemaKey)) {
+            delete updatedMetafields[matchingSchemaKey];
+          }
+        }
+      });
+      obj = {
+        ...obj,
+        ...updatedMetafields,
+      };
     }
 
     return obj;
