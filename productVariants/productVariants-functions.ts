@@ -7,7 +7,7 @@ import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema'
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -62,14 +62,16 @@ export async function handleProductVariantUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsGraphQl(
+        {
+          ownerGid: idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -144,11 +146,13 @@ export const updateProductVariantRest = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  validateProductVariantParams(restParams);
+  if (Object.keys(restParams).length) {
+    validateProductVariantParams(restParams);
 
-  const payload = { variant: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+    const payload = { variant: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export function deleteProductVariantRest(

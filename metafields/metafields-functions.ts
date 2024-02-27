@@ -608,16 +608,20 @@ export async function updateResourceMetafieldsGraphQl(
  * Perform metafields update / deletions using GraphQL Admin API and return the
  * result formatted in a way to be incorporated in a sync table row
  */
-export async function updateResourceMetafieldsFromSyncTableGraphQL(
-  ownerGid: string,
-  metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
+export async function updateAndFormatResourceMetafieldsGraphQl(
+  params: {
+    ownerGid: string;
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[];
+    /** Wether the data will be consumed by an action wich result use a `coda.withIdentity` schema. */
+    schemaWithIdentity?: boolean;
+  },
   context: coda.ExecutionContext
 ): Promise<{ [key: string]: any }> {
   let obj = {};
 
   const { deletedMetafields, updatedMetafields } = await updateResourceMetafieldsGraphQl(
-    ownerGid,
-    metafieldKeyValueSets,
+    params.ownerGid,
+    params.metafieldKeyValueSets,
     context
   );
   if (deletedMetafields.length) {
@@ -630,7 +634,9 @@ export async function updateResourceMetafieldsFromSyncTableGraphQL(
   if (updatedMetafields.length) {
     updatedMetafields.forEach((metafield) => {
       const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-      obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+      if (shouldUpdateSyncTableMetafieldValue(metafield.type, params.schemaWithIdentity)) {
+        obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+      }
     });
   }
 
@@ -654,6 +660,7 @@ export async function updateResourceMetafieldsRest(
   const metafieldsToDelete = metafieldKeyValueSets.filter((set) => set.value === null);
   const metafieldsToUpdate = metafieldKeyValueSets.filter((set) => set.value && set.value !== null);
 
+  // TODO: wrap delete and updat in a single Promise.all
   if (metafieldsToDelete.length) {
     deletedMetafields = await deleteMetafieldsByKeysRest(metafieldsToDelete, ownerId, ownerResource, context);
   }
@@ -693,18 +700,22 @@ export async function updateResourceMetafieldsRest(
  * Perform metafields update / deletions using Rest Admin API and return the
  * result formatted in a way to be incorporated in a sync table row
  */
-export async function updateResourceMetafieldsFromSyncTableRest(
-  ownerId: number,
-  ownerResource: RestResource,
-  metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
+export async function updateAndFormatResourceMetafieldsRest(
+  params: {
+    ownerId: number;
+    ownerResource: RestResource;
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[];
+    /** Wether the data will be consumed by an action wich result use a `coda.withIdentity` schema. */
+    schemaWithIdentity?: boolean;
+  },
   context: coda.ExecutionContext
 ): Promise<{ [key: string]: any }> {
   let obj = {};
 
   const { deletedMetafields, updatedMetafields } = await updateResourceMetafieldsRest(
-    ownerId,
-    ownerResource,
-    metafieldKeyValueSets,
+    params.ownerId,
+    params.ownerResource,
+    params.metafieldKeyValueSets,
     context
   );
   if (deletedMetafields.length) {
@@ -717,7 +728,9 @@ export async function updateResourceMetafieldsFromSyncTableRest(
   if (updatedMetafields.length) {
     updatedMetafields.forEach((metafield) => {
       const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-      obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+      if (shouldUpdateSyncTableMetafieldValue(metafield.type, params.schemaWithIdentity)) {
+        obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
+      }
     });
   }
 

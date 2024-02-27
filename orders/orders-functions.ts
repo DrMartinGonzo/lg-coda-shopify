@@ -22,7 +22,7 @@ import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { OrderUpdateRestParams } from '../types/Order';
 import { restResources } from '../types/RequestsRest';
@@ -118,7 +118,7 @@ export async function handleOrderUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableRest(
+      updateAndFormatResourceMetafieldsRest(
         orderId,
         restResources.Order,
         await getMetafieldKeyValueSetsFromUpdate(

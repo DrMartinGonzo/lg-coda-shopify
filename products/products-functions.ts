@@ -16,7 +16,7 @@ import { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Produ
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateResourceMetafieldsFromSyncTableGraphQL,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
@@ -83,14 +83,16 @@ export async function handleProductUpdateJob(
 
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
-      updateResourceMetafieldsFromSyncTableGraphQL(
-        idToGraphQlGid(GraphQlResource.Product, productId),
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+      updateAndFormatResourceMetafieldsGraphQl(
+        {
+          ownerGid: idToGraphQlGid(GraphQlResource.Product, productId),
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -201,10 +203,12 @@ export const updateProductRest = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  validateProductParams(restParams, true);
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productId}.json`;
-  const payload = { product: restParams };
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+  if (Object.keys(restParams).length) {
+    validateProductParams(restParams, true);
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productId}.json`;
+    const payload = { product: restParams };
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 export function deleteProductRest(

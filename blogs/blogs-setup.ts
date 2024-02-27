@@ -26,7 +26,7 @@ import {
   formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
-  updateResourceMetafieldsFromSyncTableRest,
+  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
@@ -190,8 +190,9 @@ export const Action_UpdateBlog = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: BlogSchema,
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(BlogSchema, IDENTITY_BLOG),
+  schema: BlogSchema,
   execute: async function ([blogId, title, handle, commentable, templateSuffix, metafields], context) {
     const restParams: BlogUpdateRestParams = {
       title,
@@ -200,25 +201,30 @@ export const Action_UpdateBlog = coda.makeFormula({
       template_suffix: templateSuffix,
     };
 
-    let obj = { id: blogId };
-
-    const restResponse = await updateBlogRest(blogId, restParams, context);
-    if (restResponse.body?.blog) {
-      obj = {
-        ...obj,
-        ...formatBlogForSchemaFromRestApi(restResponse.body.blog, context),
-      };
-    }
-
+    const promises = [];
+    promises.push(updateBlogRest(blogId, restParams, context));
     if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((s) => JSON.parse(s));
-      const updatedMetafieldFields = await updateResourceMetafieldsFromSyncTableRest(
-        blogId,
-        restResources.Blog,
-        parsedMetafieldKeyValueSets,
-        context
+      promises.push(
+        updateAndFormatResourceMetafieldsRest(
+          {
+            ownerId: blogId,
+            ownerResource: restResources.Blog,
+            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
+            schemaWithIdentity: false,
+          },
+          context
+        )
       );
+    } else {
+      promises.push(undefined);
     }
+
+    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
+    const obj = {
+      id: blogId,
+      ...(restResponse?.body?.blog ? formatBlogForSchemaFromRestApi(restResponse.body.blog, context) : {}),
+      ...(updatedFormattedMetafields ?? {}),
+    };
 
     return obj;
   },

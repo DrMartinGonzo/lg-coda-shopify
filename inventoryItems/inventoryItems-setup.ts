@@ -165,7 +165,7 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  //! withIdentity breaks relations when updating
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryItemSchema, IDENTITY_INVENTORYITEM),
   schema: InventoryItemSchema,
   execute: async function (

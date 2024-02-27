@@ -33,9 +33,8 @@ export async function getTemplateSuffixesFor(kind: string, context: coda.Executi
 // #region Helpers
 async function getActiveTheme(context: coda.ExecutionContext) {
   const themesResponse = await fetchThemesRest(context);
-  if (themesResponse) {
-    const themes = themesResponse.body.themes;
-    return themes.find((theme) => theme.role === 'main');
+  if (themesResponse?.body?.themes) {
+    return themesResponse.body.themes.find((theme) => theme.role === 'main');
   }
 }
 // #endregion

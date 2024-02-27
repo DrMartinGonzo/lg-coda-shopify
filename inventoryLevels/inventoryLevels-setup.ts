@@ -113,7 +113,7 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  // TODO: withIdentity breaks update for relations
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
   schema: InventoryLevelSchema,
   execute: async function ([inventory_item_id, location_id, available], context) {
@@ -125,7 +125,7 @@ export const Action_SetInventoryLevel = coda.makeFormula({
       },
       context
     );
-    if (response.body?.inventory_level) {
+    if (response?.body?.inventory_level) {
       return formatInventoryLevelForSchemaFromRestApi(response.body.inventory_level, context);
     }
   },
@@ -146,7 +146,7 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  // TODO: withIdentity breaks update for relations
+  //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
   schema: InventoryLevelSchema,
   execute: async function ([inventory_item_id, location_id, available_adjustment], context) {
@@ -158,7 +158,7 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
       },
       context
     );
-    if (response.body?.inventory_level) {
+    if (response?.body?.inventory_level) {
       return formatInventoryLevelForSchemaFromRestApi(response.body.inventory_level, context);
     }
   },
