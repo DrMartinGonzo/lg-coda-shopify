@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { formatOrderLineItemForSchemaFromRestApi, validateOrderLineItemParams } from './orderLineItems-functions';
+import { formatOrderLineItemForSchemaFromRestApi } from './orderLineItems-functions';
 import { OrderLineItemSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { sharedParameters } from '../shared-parameters';
 
@@ -98,8 +98,6 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
         processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
         processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
       });
-
-      validateOrderLineItemParams(restParams);
 
       let url: string;
       if (prevContinuation?.nextUrl) {

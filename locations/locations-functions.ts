@@ -13,7 +13,6 @@ import {
   updateResourceMetafieldsFromSyncTableGraphQL,
 } from '../metafields/metafields-functions';
 import {
-  GetLocationsQuery,
   GetLocationsQueryVariables,
   GetSingleLocationQueryVariables,
   LocationActivateMutation,
@@ -26,7 +25,7 @@ import {
   MetafieldDefinitionFragment,
 } from '../types/admin.generated';
 import { formatOptionNameId } from '../helpers';
-import { LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
+import { CountryCode, LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
 import {
   ActivateLocation,
   DeactivateLocation,
@@ -56,10 +55,27 @@ export async function autocompleteLocationsWithName(context: coda.ExecutionConte
 // #endregion
 
 // #region Helpers
-function formatGraphQlLocationEditInput(update: any, fromKeys: string[]): LocationEditInput {
+export function formatGraphQlLocationEditInputNew(params: {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  countryCode?: CountryCode;
+  phone?: string;
+  provinceCode?: string;
+  zip?: string;
+}): LocationEditInput {
   const ret: LocationEditInput = {
-    name: update.newValue.name,
-    address: formatGraphQlLocationEditAddressInput(update),
+    name: params.name,
+    address: formatGraphQlLocationEditAddressInputNew({
+      address1: params.address1,
+      address2: params.address2,
+      city: params.city,
+      countryCode: params.countryCode,
+      phone: params.phone,
+      provinceCode: params.provinceCode,
+      zip: params.zip,
+    }),
   };
 
   Object.keys(ret).forEach((key) => {
@@ -68,25 +84,15 @@ function formatGraphQlLocationEditInput(update: any, fromKeys: string[]): Locati
   return ret;
 }
 
-function formatGraphQlLocationEditAddressInput(update: any): LocationEditAddressInput {
-  const ret: LocationEditAddressInput = {
-    address1: update.newValue.address1,
-    address2: update.newValue.address2,
-    city: update.newValue.city,
-    countryCode: update.newValue.country_code,
-    phone: update.newValue.phone,
-    provinceCode: update.newValue.province_code,
-    zip: update.newValue.zip,
-  };
-
-  Object.keys(ret).forEach((key) => {
-    if (ret[key] === undefined) delete ret[key];
-  });
-
-  return ret;
-}
-
-export function formatGraphQlLocationEditAddressInputNew(parts: any): LocationEditAddressInput {
+export function formatGraphQlLocationEditAddressInputNew(parts: {
+  address1?: string;
+  address2?: string;
+  city?: string;
+  countryCode?: CountryCode;
+  phone?: string;
+  provinceCode?: string;
+  zip?: string;
+}): LocationEditAddressInput {
   const ret: LocationEditAddressInput = {
     address1: parts?.address1,
     address2: parts?.address2,
@@ -118,7 +124,17 @@ export async function handleLocationUpdateJob(
   const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
 
   if (standardFromKeys.length) {
-    const locationEditInput = formatGraphQlLocationEditInput(update, standardFromKeys);
+    const locationEditInput = formatGraphQlLocationEditInputNew({
+      name: update.newValue.name,
+      address1: update.newValue.address1,
+      address2: update.newValue.address2,
+      city: update.newValue.city,
+      countryCode: update.newValue.country_code as CountryCode,
+      phone: update.newValue.phone,
+      provinceCode: update.newValue.province_code,
+      zip: update.newValue.zip,
+    });
+
     subJobs.push(updateLocationGraphQl(locationGid, locationEditInput, context));
   } else {
     subJobs.push(undefined);

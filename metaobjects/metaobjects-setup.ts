@@ -64,7 +64,6 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
     const name = accents.remove(fieldDefinition.name);
     const property = mapMetaFieldToSchemaProperty(fieldDefinition);
     if (property) {
-      // TODO: add displayName directly in mapMetaFieldToSchemaProperty
       property.displayName = fieldDefinition.name;
       augmentedSchema.properties[name] = property;
 

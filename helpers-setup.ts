@@ -21,7 +21,7 @@ export interface CodaMetafieldListValue {
 export interface CodaMetafieldKeyValueSet {
   key: string;
   value: string | null;
-  type?: MetafieldTypeValue;
+  type: MetafieldTypeValue;
 }
 
 const parameters = {
