@@ -16,7 +16,7 @@ export const CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN = { display: 'Single opt-in', v
 // The customer receives marketing information but how they were opted in is unknown.
 const CONSENT_OPT_IN_LEVEL__UNKNOWN = { display: 'Unknown', value: 'unknown' };
 
-export const MARKETING_CONSENT_ALL_OPTIONS = [
+const MARKETING_CONSENT_ALL_OPTIONS = [
   CONSENT_STATE__SUBSCRIBED,
   CONSENT_STATE__NOT_SUBSCRIBED,
   CONSENT_STATE__UNSUBSCRIBED,
@@ -37,7 +37,7 @@ export const MARKETING_CONSENT_ALL_OPTIONS = [
   )
   .flat();
 
-export const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.filter(
+const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.filter(
   (option) =>
     [CONSENT_STATE__SUBSCRIBED, CONSENT_STATE__UNSUBSCRIBED].map((s) => s.value).includes(option.state) &&
     option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value

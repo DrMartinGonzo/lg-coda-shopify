@@ -55,36 +55,7 @@ export async function autocompleteLocationsWithName(context: coda.ExecutionConte
 // #endregion
 
 // #region Helpers
-export function formatGraphQlLocationEditInputNew(params: {
-  name?: string;
-  address1?: string;
-  address2?: string;
-  city?: string;
-  countryCode?: CountryCode;
-  phone?: string;
-  provinceCode?: string;
-  zip?: string;
-}): LocationEditInput {
-  const ret: LocationEditInput = {
-    name: params.name,
-    address: formatGraphQlLocationEditAddressInputNew({
-      address1: params.address1,
-      address2: params.address2,
-      city: params.city,
-      countryCode: params.countryCode,
-      phone: params.phone,
-      provinceCode: params.provinceCode,
-      zip: params.zip,
-    }),
-  };
-
-  Object.keys(ret).forEach((key) => {
-    if (ret[key] === undefined) delete ret[key];
-  });
-  return ret;
-}
-
-export function formatGraphQlLocationEditAddressInputNew(parts: {
+function formatGraphQlLocationEditAddressInput(parts: {
   address1?: string;
   address2?: string;
   city?: string;
@@ -106,7 +77,35 @@ export function formatGraphQlLocationEditAddressInputNew(parts: {
   Object.keys(ret).forEach((key) => {
     if (ret[key] === undefined) delete ret[key];
   });
+  return ret;
+}
 
+export function formatGraphQlLocationEditInput(params: {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  countryCode?: CountryCode;
+  phone?: string;
+  provinceCode?: string;
+  zip?: string;
+}): LocationEditInput {
+  const ret: LocationEditInput = {
+    name: params.name,
+    address: formatGraphQlLocationEditAddressInput({
+      address1: params.address1,
+      address2: params.address2,
+      city: params.city,
+      countryCode: params.countryCode,
+      phone: params.phone,
+      provinceCode: params.provinceCode,
+      zip: params.zip,
+    }),
+  };
+
+  Object.keys(ret).forEach((key) => {
+    if (ret[key] === undefined) delete ret[key];
+  });
   return ret;
 }
 
@@ -123,7 +122,7 @@ export async function handleLocationUpdateJob(
   const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
 
   if (standardFromKeys.length) {
-    const locationEditInput = formatGraphQlLocationEditInputNew({
+    const locationEditInput = formatGraphQlLocationEditInput({
       name: update.newValue.name,
       address1: update.newValue.address1,
       address2: update.newValue.address2,

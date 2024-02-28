@@ -33,7 +33,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
   if (!args.metaobjectId || args.metaobjectId === '') {
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
-  const response = await fetchSingleMetaObject(
+  const response = await fetchSingleMetaObjectGraphQl(
     {
       gid: idToGraphQlGid(GraphQlResource.Metaobject, args.metaobjectId),
       includeFieldDefinitions: true,
@@ -146,7 +146,7 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
 // #endregion
 
 // #region GraphQl requests
-export async function fetchSingleMetaObject(
+async function fetchSingleMetaObjectGraphQl(
   params: {
     gid: string;
     fields?: string[];

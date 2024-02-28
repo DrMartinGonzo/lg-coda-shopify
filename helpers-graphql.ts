@@ -31,7 +31,8 @@ const queryCheckThrottleStatus = /* GraphQL */ `
   }
 `;
 
-export function getGraphQlResourceFromRestResourceSingularType(restResourceSingular: string): GraphQlResource {
+/*
+function getGraphQlResourceFromRestResourceSingularType(restResourceSingular: string): GraphQlResource {
   switch (restResourceSingular) {
     case restResources.Article.singular:
       return GraphQlResource.Article;
@@ -59,6 +60,7 @@ export function getGraphQlResourceFromRestResourceSingularType(restResourceSingu
 
   throw new Error(`No GraphQL Admin Api match for Rest type of: \`${restResourceSingular}\``);
 }
+*/
 
 export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: MetafieldOwnerType): GraphQlResource {
   switch (metafieldOwnerType) {

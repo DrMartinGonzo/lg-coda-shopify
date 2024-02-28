@@ -19,7 +19,7 @@ import {
 } from './pages-functions';
 
 import { PageSyncTableSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
@@ -55,60 +55,11 @@ async function getPageSchema(context: coda.ExecutionContext, _: string, formulaC
   return augmentedSchema;
 }
 
-const parameters = {
-  pageID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'pageId',
-    description: 'The ID of the page.',
-  }),
-  // inputHandle: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'handle',
-  //   description: 'The handle of the page.',
-  // }),
-  // inputPublished: coda.makeParameter({
-  //   type: coda.ParameterType.Boolean,
-  //   name: 'published',
-  //   description: 'The visibility status of the page.',
-  // }),
-  // inputPublishedAt: coda.makeParameter({
-  //   type: coda.ParameterType.Date,
-  //   name: 'publishedAt',
-  //   description: 'The published date and time of the page.',
-  // }),
-  inputTitle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'title',
-    description: 'The title of the page.',
-  }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('page'),
-    description:
-      'The suffix of the Liquid template used for the page. If this property is null, then the page uses the default template.',
-  }),
-  // inputBodyHtml: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'bodyHtml',
-  //   description: 'The html content of the page.',
-  // }),
-  // inputAuthor: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'author',
-  //   description: 'The author of the page.',
-  // }),
-  // inputTemplateSuffix: coda.makeParameter({
-  //   type: coda.ParameterType.String,
-  //   name: 'templateSuffix',
-  //   description: 'The template suffix of the page.',
-  // }),
-};
-
 // #region Sync Tables
 export const Sync_Pages = coda.makeSyncTable({
   name: 'Pages',
-  description: 'Return Pages from this shop.',
+  description:
+    "Return Pages from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for pages, we have to do a separate Rest call for each page to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_PAGE,
   schema: PageSyncTableSchema,
@@ -126,17 +77,18 @@ export const Sync_Pages = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
       {
-        ...sharedParameters.optionalSyncMetafields,
+        ...filters.general.syncMetafields,
         description:
-          "description: 'Also retrieve metafields. Not recommanded if you have lots of pages, the sync will be much slower as the pack will have to do another API call for each page. Still waiting for Shopify to add GraphQL access to pages...',",
+          "description: 'Also retrieve metafields. Not recommanded if you have lots of pages, the sync will be much slower as the pack will have to do another API call for each page. Waiting for Shopify to add GraphQL access to pages...',",
+        optional: true,
       },
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterPublishedAtRange, optional: true },
-      { ...sharedParameters.filterHandle, optional: true },
-      { ...sharedParameters.filterPublishedStatus, optional: true },
-      { ...sharedParameters.filterSinceId, optional: true },
-      { ...sharedParameters.filterTitle, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.general.publishedAtRange, optional: true },
+      { ...filters.general.handle, optional: true },
+      { ...filters.general.publishedStatus, optional: true },
+      { ...filters.general.sinceId, optional: true },
+      { ...filters.general.title, optional: true },
     ],
     execute: async function (
       [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title],
@@ -245,16 +197,16 @@ export const Action_CreatePage = coda.makeFormula({
   description: `Create a new Shopify page and return its ID. The page will be visible unless 'published' is set to false.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...sharedParameters.inputTitle, description: 'The title of the page.' },
+    { ...inputs.general.title, description: 'The title of the page.' },
 
     // optional parameters
-    { ...sharedParameters.inputAuthor, description: 'The name of the author of the page.', optional: true },
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputPublished, optional: true },
-    { ...sharedParameters.inputPublishedAt, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Page metafields to create.' },
+    { ...inputs.general.author, optional: true },
+    { ...inputs.page.bodyHtml, optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.published, optional: true },
+    { ...inputs.general.publishedAt, optional: true },
+    { ...inputs.page.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Page metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
@@ -292,17 +244,17 @@ export const Action_UpdatePage = coda.makeFormula({
   description: 'Update an existing Shopify page and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.pageID,
+    inputs.page.id,
 
     // optional parameters
-    { ...sharedParameters.inputAuthor, description: 'The name of the author of the page.', optional: true },
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputPublished, optional: true },
-    { ...sharedParameters.inputPublishedAt, optional: true },
-    { ...sharedParameters.inputTitle, description: 'The title of the page.', optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Page metafields to update.' },
+    { ...inputs.general.author, optional: true },
+    { ...inputs.page.bodyHtml, optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.published, optional: true },
+    { ...inputs.general.publishedAt, optional: true },
+    { ...inputs.general.title, description: 'The title of the page.', optional: true },
+    { ...inputs.page.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Page metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -356,7 +308,7 @@ export const Action_DeletePage = coda.makeFormula({
   name: 'DeletePage',
   description: 'Delete an existing Shopify page and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.pageID],
+  parameters: [inputs.page.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([pageId], context) {
@@ -371,7 +323,7 @@ export const Formula_Page = coda.makeFormula({
   name: 'Page',
   description: 'Return a single page from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.pageID],
+  parameters: [inputs.page.id],
   resultType: coda.ValueType.Object,
   cacheTtlSecs: CACHE_DEFAULT,
   schema: PageSyncTableSchema,

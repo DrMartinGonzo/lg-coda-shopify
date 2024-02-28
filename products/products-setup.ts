@@ -19,12 +19,11 @@ import {
   fetchProductTypesGraphQl,
   deleteProductRest,
   handleProductUpdateJob,
-  autocompleteProductTypes,
   updateProductRest,
 } from './products-functions';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
 import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {
@@ -76,75 +75,12 @@ async function getProductSchema(context: coda.ExecutionContext, _: string, formu
   return augmentedSchema;
 }
 
-const parameters = {
-  productGid: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'productGid',
-    description: 'The GraphQL GID of the product.',
-  }),
-  inputStatus: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'status',
-    autocomplete: OPTIONS_PRODUCT_STATUS_REST,
-    description: 'The status of the product.',
-  }),
-  // giftCard: coda.makeParameter({
-  //   type: coda.ParameterType.Boolean,
-  //   name: 'giftCard',
-  //   description: 'Whether the product is a gift card.',
-  // }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('product'),
-    description:
-      'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
-  }),
-  handle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description:
-      "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
-  }),
-  title: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'title',
-    description: 'The name of the product.',
-  }),
-  productType: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'productType',
-    autocomplete: autocompleteProductTypes,
-    description: 'The product type.',
-  }),
-  bodyHtml: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'bodyHtml',
-    description: 'The description of the product, complete with HTML markup.',
-  }),
-  tags: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tags',
-    description: 'A string of comma-separated tags.',
-  }),
-  options: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'options',
-    description:
-      'A comma-separated list of up to 3 options for how this product can vary. Options are things like "Size" or "Color".',
-  }),
-  imageUrls: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'imageUrls',
-    description: 'A comma-separated list of image urls for the product. ',
-  }),
-};
-
 // #region Sync Tables
 // Products Sync Table via Rest Admin API
 export const Sync_Products = coda.makeSyncTable({
   name: 'Products',
-  description: 'Return Products from this shop. You can also fetch metafields by selecting them in advanced settings.',
+  description:
+    'Return Products from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_PRODUCT,
   schema: ProductSyncTableSchemaRest,
@@ -165,36 +101,16 @@ export const Sync_Products = coda.makeSyncTable({
     name: 'SyncProducts',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      {
-        ...sharedParameters.productType,
-        description: 'Filter results by product type.',
-        optional: true,
-      },
-      sharedParameters.optionalSyncMetafields,
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterPublishedAtRange, optional: true },
-      {
-        ...sharedParameters.productStatusRest,
-        description: 'Return only products matching these statuses.',
-        optional: true,
-      },
-      {
-        ...sharedParameters.productPublishedStatus,
-        description: 'Return products by their published status.',
-        optional: true,
-      },
-      {
-        ...sharedParameters.filterVendor,
-        description: 'Return products by product vendor.',
-        optional: true,
-      },
-      { ...sharedParameters.filterHandles, optional: true },
-      {
-        ...sharedParameters.productIds,
-        description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
-        optional: true,
-      },
+      { ...filters.product.productType, optional: true },
+      { ...filters.general.syncMetafields, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.general.publishedAtRange, optional: true },
+      { ...filters.product.statusArray, optional: true },
+      { ...filters.product.publishedStatus, optional: true },
+      { ...filters.product.vendor, optional: true },
+      { ...filters.general.handleArray, optional: true },
+      { ...filters.product.idArray, optional: true },
     ],
     /**
      * Sync products using Rest Admin API, optionally augmenting the sync with
@@ -393,19 +309,19 @@ export const Action_CreateProduct = coda.makeFormula({
   description: 'Create a new Shopify Product and return Product ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.title,
+    inputs.product.title,
 
     // optional parameters
-    { ...parameters.bodyHtml, optional: true },
-    { ...parameters.productType, optional: true },
-    { ...parameters.tags, optional: true },
-    { ...sharedParameters.inputVendor, description: 'The product vendor.', optional: true },
-    { ...parameters.inputStatus, optional: true },
-    { ...parameters.handle, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...parameters.options, optional: true },
-    { ...parameters.imageUrls, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Product metafields to create.' },
+    { ...inputs.product.bodyHtml, optional: true },
+    { ...filters.product.productType, optional: true },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.product.vendor, optional: true },
+    { ...inputs.product.status, optional: true },
+    { ...inputs.product.handle, optional: true },
+    { ...inputs.product.templateSuffix, optional: true },
+    { ...inputs.product.options, optional: true },
+    { ...inputs.product.imageUrls, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Product metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -418,7 +334,7 @@ export const Action_CreateProduct = coda.makeFormula({
       body_html: bodyHtml,
       handle,
       product_type: productType,
-      tags,
+      tags: tags ? tags.join(',') : undefined,
       template_suffix: templateSuffix,
       vendor,
       status,
@@ -459,18 +375,18 @@ export const Action_UpdateProduct = coda.makeFormula({
   description: 'Update an existing Shopify product and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    sharedParameters.productId,
+    inputs.product.id,
 
     // optional parameters
-    { ...parameters.title, optional: true },
-    { ...parameters.bodyHtml, optional: true },
-    { ...parameters.productType, optional: true },
-    { ...parameters.tags, optional: true },
-    { ...sharedParameters.inputVendor, description: 'The product vendor.', optional: true },
-    { ...parameters.inputStatus, optional: true },
-    { ...parameters.handle, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Product metafields to update.' },
+    { ...inputs.product.title, optional: true },
+    { ...inputs.product.bodyHtml, optional: true },
+    { ...filters.product.productType, optional: true },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.product.vendor, optional: true },
+    { ...inputs.product.status, optional: true },
+    { ...inputs.product.handle, optional: true },
+    { ...inputs.product.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Product metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -485,7 +401,7 @@ export const Action_UpdateProduct = coda.makeFormula({
       body_html: bodyHtml,
       handle,
       product_type: productType,
-      tags,
+      tags: tags ? tags.join(',') : undefined,
       template_suffix: templateSuffix,
       title,
       vendor,
@@ -524,7 +440,7 @@ export const Action_DeleteProduct = coda.makeFormula({
   name: 'DeleteProduct',
   description: 'Delete an existing Shopify product and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [sharedParameters.productId],
+  parameters: [inputs.product.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([productId], context) {
@@ -539,7 +455,7 @@ export const Formula_Product = coda.makeFormula({
   name: 'Product',
   description: 'Get a single product data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [sharedParameters.productId],
+  parameters: [inputs.product.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ProductSyncTableSchemaRest,
@@ -566,7 +482,7 @@ export const Format_Product: coda.Format = {
   pack.addSyncTable({
     name: 'ProductsGraphQL',
     description:
-      'Return Products from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync.',
+      'Return Products from this shop.',
     identityName: IDENTITY_PRODUCT + '_GRAPHQL',
     schema: ProductSchemaGraphQl,
     dynamicOptions: {
@@ -601,32 +517,24 @@ export const Format_Product: coda.Format = {
           description: 'Filter results by product types.',
           optional: true,
         },
-        { ...sharedParameters.filterCreatedAtRange, optional: true },
-        { ...sharedParameters.filterUpdatedAtRange, optional: true },
-        sharedParameters.optionalSyncMetafields,
-        // { ...sharedParameters.filterPublishedAtRange, optional: true },
+        { ...sharedFilters.general.filterCreatedAtRange, optional: true },
+        { ...sharedFilters.general.filterUpdatedAtRange, optional: true },
+        {...sharedFilters.general.optionalSyncMetafields, optional:true},
+        // { ...sharedFilters.general.filterPublishedAtRange, optional: true },
         {
           ...parameters.status,
           description: 'Return only products matching these statuses.',
           optional: true,
         },
-        {
-          ...sharedParameters.productPublishedStatus,
-          description: 'Return products by their published status.',
-          optional: true,
-        },
-        {
-          ...sharedParameters.filterVendor,
-          description: 'Return products by product vendors.',
-          optional: true,
-        },
+        { ...sharedParameters.productPublishedStatus, optional: true, },
+        { ...sharedFilterParameters.filterVendor, optional: true },
         {
           ...parameters.giftCard,
           description: 'Return only products marked as gift cards.',
           optional: true,
         },
         {
-          ...sharedParameters.productIds,
+          ...sharedFilters.product.idArray,
           description: 'Return only products specified by a comma-separated list of product IDs or GraphQL GIDs.',
           optional: true,
         },

@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_ORDER_TRANSACTION } from '../constants';
 import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
 import { OrderTransactionSyncTableSchema } from '../schemas/syncTable/OrderTransactionSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters } from '../shared-parameters';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
 import {
@@ -36,7 +36,7 @@ async function getOrderTransactionSchema(
 // #region Sync tables
 export const Sync_OrderTransactions = coda.makeSyncTable({
   name: 'OrderTransactions',
-  description: 'All Shopify order transactions.',
+  description: 'Return Order Transactions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER_TRANSACTION,
   schema: OrderTransactionSyncTableSchema,
@@ -48,12 +48,12 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
     name: 'SyncOrderTransactions',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      { ...sharedParameters.filterCreatedAtRange, name: 'orderCreatedAt', optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, name: 'orderUpdatedAt', optional: true },
-      { ...sharedParameters.filterProcessedAtRange, name: 'orderProcessedAt', optional: true },
-      { ...sharedParameters.filterFinancialStatus, name: 'orderFinancialStatus', optional: true },
-      { ...sharedParameters.filterFulfillmentStatus, name: 'orderFulfillmentStatus', optional: true },
-      { ...sharedParameters.orderStatus, name: 'orderStatus', suggestedValue: 'closed', optional: true },
+      { ...filters.general.createdAtRange, name: 'orderCreatedAt', optional: true },
+      { ...filters.general.updatedAtRange, name: 'orderUpdatedAt', optional: true },
+      { ...filters.general.processedAtRange, name: 'orderProcessedAt', optional: true },
+      { ...filters.order.financialStatus, name: 'orderFinancialStatus', optional: true },
+      { ...filters.order.fulfillmentStatus, name: 'orderFulfillmentStatus', optional: true },
+      { ...filters.order.status, name: 'orderStatus', suggestedValue: 'closed', optional: true },
       coda.makeParameter({
         type: coda.ParameterType.StringArray,
         name: 'gateways',

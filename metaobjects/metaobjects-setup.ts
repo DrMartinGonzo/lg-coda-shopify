@@ -27,7 +27,7 @@ import {
 } from '../helpers-graphql';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
-import { sharedParameters } from '../shared-parameters';
+import { inputs } from '../shared-parameters';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import {
   fetchAllMetaObjectDefinitions,
@@ -81,25 +81,6 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
-
-const parameters = {
-  metaobjectID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'metaobjectId',
-    description: 'The ID of the metaobject.',
-  }),
-  handle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'handle',
-    description: 'The handle of the metaobject.',
-  }),
-  status: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'status',
-    description: 'The status of the metaobject.',
-    autocomplete: OPTIONS_METAOBJECT_STATUS,
-  }),
-};
 
 // #region SyncTables
 export const Sync_Metaobjects = coda.makeDynamicSyncTable({
@@ -271,11 +252,11 @@ export const Action_CreateMetaObject = coda.makeFormula({
       autocomplete: autocompleteMetaobjectType,
     }),
     {
-      ...parameters.handle,
+      ...inputs.metafieldObject.handle,
       optional: true,
     },
     {
-      ...parameters.status,
+      ...inputs.metafieldObject.status,
       description:
         'The status of the metaobject. Only useful if the metaobject has publishable capabilities. Defaults to DRAFT',
       optional: true,
@@ -288,7 +269,7 @@ export const Action_CreateMetaObject = coda.makeFormula({
       description: 'The metaobject property to update (metaobject type must be provided for autocomplete to work).',
       autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectType,
     }),
-    sharedParameters.varArgsPropValue,
+    inputs.general.varArgsPropValue,
   ],
   isAction: true,
   resultType: coda.ValueType.String,
@@ -311,14 +292,14 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   description: 'Update an existing metaobject and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.metaobjectID,
+    inputs.metafieldObject.id,
     {
-      ...parameters.handle,
+      ...inputs.metafieldObject.handle,
       description: 'The new handle of the metaobject. A blank value will leave the handle unchanged.',
       optional: true,
     },
     {
-      ...parameters.status,
+      ...inputs.metafieldObject.status,
       description: 'The new status of the metaobject. Only useful if the metaobject has publishable capabilities.',
       optional: true,
     },
@@ -331,7 +312,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
         'The metaobject property to update (ID of the metaobject must be provided for autocomplete to work).',
       autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectId,
     }),
-    sharedParameters.varArgsPropValue,
+    inputs.general.varArgsPropValue,
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -369,7 +350,7 @@ export const Action_DeleteMetaObject = coda.makeFormula({
   name: 'DeleteMetaObject',
   description: 'Delete a metaobject.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.metaobjectID],
+  parameters: [inputs.metafieldObject.id],
   isAction: true,
   resultType: coda.ValueType.String,
   execute: async function ([metaobjectId], context) {
