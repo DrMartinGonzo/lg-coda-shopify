@@ -84,12 +84,35 @@ import { formatLocationReferenceValueForSchema } from '../schemas/syncTable/Loca
 import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
 import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSchema';
 import { SyncTableGraphQlContinuation, SyncTableRestContinuation } from '../types/tableSync';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import {
+  fetchMetafieldDefinitionsGraphQl,
+  makeAutocompleteMetafieldKeysWithDefinitions,
+} from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { formatMetafieldDefinitionReferenceValueForSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { formatArticleReferenceValueForSchema } from '../schemas/syncTable/ArticleSchema';
 import { FetchRequestOptions } from '../types/Requests';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
+// #endregion
+
+// #region Autocomplete functions
+export async function autoCompleteMetafieldWithDefinitionFullKeys(
+  context: coda.ExecutionContext,
+  search: string,
+  formulaContext: coda.MetadataContext
+) {
+  /**
+   * graphQlResource can be the dynamic url of a metafields sync table or
+   * formulaContext.ownerType (a key from RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS)
+   */
+  const graphQlResource =
+    (context.sync?.dynamicUrl as SupportedGraphQlResourceWithMetafields) || formulaContext.ownerType;
+  if (graphQlResource === undefined || graphQlResource === '') {
+    return [];
+  }
+  const { metafieldOwnerType } = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
+  return makeAutocompleteMetafieldKeysWithDefinitions(metafieldOwnerType)(context, search, {});
+}
 // #endregion
 
 // #region Helpers
@@ -1268,7 +1291,7 @@ export const fetchMetafieldsRest = async (
   } = {},
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-) => {
+): Promise<coda.FetchResponse<{ metafields: MetafieldRest[] }>> => {
   const params = {};
   if (filters.namespace) {
     params['namespace'] = filters.namespace;
@@ -1397,29 +1420,26 @@ export async function syncRestResourceMetafields(metafieldKeys: string[], contex
     // Add metafields by doing multiple Rest Admin API calls
     const items = [];
     await Promise.all(
-      response.body[restResource.plural]
-        .map((resource) => ({ id: resource.id }))
-        .map(async (resource) => {
-          const response = await fetchMetafieldsRest(resource.id, restResource, {}, context);
-          const metafields: MetafieldRest[] = response.body.metafields;
-          metafields.forEach((m) => {
-            if (metafieldKeys.includes(getMetaFieldFullKey(m))) {
-              items.push(
-                formatMetafieldForSchemaFromGraphQlApi(
-                  normalizeRestMetafieldResponseToGraphQLResponse(
-                    m,
-                    resourceMetafieldsSyncTableDefinition.metafieldOwnerType,
-                    metafieldDefinitions
-                  ),
-                  idToGraphQlGid(graphQlResource, m.owner_id),
-                  undefined,
-                  resourceMetafieldsSyncTableDefinition,
-                  context
-                )
-              );
-            }
+      response.body[restResource.plural].map(async (resource) => {
+        const response = await fetchMetafieldsRest(resource.id, restResource, {}, context);
+        response?.body?.metafields
+          .filter((m) => (metafieldKeys.length ? metafieldKeys.includes(getMetaFieldFullKey(m)) : true))
+          .forEach((m) => {
+            items.push(
+              formatMetafieldForSchemaFromGraphQlApi(
+                normalizeRestMetafieldResponseToGraphQLResponse(
+                  m,
+                  resourceMetafieldsSyncTableDefinition.metafieldOwnerType,
+                  metafieldDefinitions
+                ),
+                idToGraphQlGid(graphQlResource, m.owner_id),
+                undefined,
+                resourceMetafieldsSyncTableDefinition,
+                context
+              )
+            );
           });
-        })
+      })
     );
 
     return { result: items, continuation };
@@ -1543,8 +1563,11 @@ export const setMetafieldsGraphQl = async (
 export async function syncGraphQlResourceMetafields(metafieldKeys: string[], context: coda.SyncExecutionContext) {
   const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-  // TODO: get an approximation for first run by using count of relation columns ?
-  const defaultMaxEntriesPerRun = 50;
+  /**
+   * Apparemment le max (une query de 250 productVariants avec le produit
+   * parent et 250 metafields) coute 167, donc on est large
+   */
+  const defaultMaxEntriesPerRun = 250;
   const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
     defaultMaxEntriesPerRun,
     prevContinuation,
@@ -1558,13 +1581,15 @@ export async function syncGraphQlResourceMetafields(metafieldKeys: string[], con
   const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   const { syncTableGraphQlQueryOperation: graphQlQueryOperation } = resourceMetafieldsSyncTableDefinition;
 
-  const query = isShopQuery ? QueryShopMetafieldsByKeys : makeQueryResourceMetafieldsByKeys(graphQlQueryOperation);
+  const query = isShopQuery
+    ? QueryShopMetafieldsByKeys
+    : makeQueryResourceMetafieldsByKeys(graphQlQueryOperation, metafieldKeys.length ? false : true);
 
   const payload = {
     query: query,
     variables: {
       metafieldKeys,
-      countMetafields: metafieldKeys.length,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : 250,
       maxEntriesPerRun,
       cursor: prevContinuation?.cursor ?? null,
     },

@@ -37,7 +37,6 @@ import {
 } from '../metafields/metafields-functions';
 import { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
@@ -137,8 +136,8 @@ export const Sync_Blogs = coda.makeSyncTable({
             const response = await fetchMetafieldsRest(resource.id, restResources.Blog, {}, context);
 
             // Only keep metafields that have a definition are in the schema
-            const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
-              effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta))
+            const metafields = response.body.metafields.filter((m) =>
+              effectiveMetafieldKeys.includes(getMetaFieldFullKey(m))
             );
             if (metafields.length) {
               metafields.forEach((metafield) => {
