@@ -52,7 +52,7 @@ export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: s
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
  */
-export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
+export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string, requestAllMetafields = false) => {
   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
   /* Ca nous sert à récupérer l'ID de la ressource parente
   (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
@@ -61,15 +61,24 @@ export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string)
     parentOwnerQuery = 'parentOwner : product { id }';
   }
 
+  const queryArgs = ['$countMetafields: Int!', '$maxEntriesPerRun: Int!', '$cursor: String'];
+  if (!requestAllMetafields) {
+    queryArgs.push('$metafieldKeys: [String!]');
+  }
+  const metafieldArgs = ['first: $countMetafields'];
+  if (!requestAllMetafields) {
+    metafieldArgs.push('keys: $metafieldKeys');
+  }
+
   return `
     ${MetafieldFieldsFragment}
 
-    query ${queryName}($metafieldKeys: [String!], $countMetafields: Int!, $maxEntriesPerRun: Int!, $cursor: String) {
+    query ${queryName}(${queryArgs.join(', ')}) {
       ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
         nodes {
           id
           ${parentOwnerQuery}
-          metafields(keys: $metafieldKeys, first: $countMetafields) {
+          metafields(${metafieldArgs.join(', ')}) {
             nodes {
               ...MetafieldFields
               definition {

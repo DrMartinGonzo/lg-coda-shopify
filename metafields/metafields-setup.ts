@@ -17,6 +17,7 @@ import {
   updateResourceMetafieldsGraphQl,
   DeletedMetafieldsByKeysRest,
   shouldDeleteMetafield,
+  autoCompleteMetafieldWithDefinitionFullKeys,
 } from './metafields-functions';
 
 import { MetafieldSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
@@ -42,12 +43,10 @@ import { GraphQlResource } from '../types/RequestsGraphQl';
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { getObjectSchemaEffectiveKeys } from '../helpers';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
-import {
-  fetchMetafieldDefinitionsGraphQl,
-  makeAutocompleteMetafieldKeysWithDefinitions,
-} from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_METAFIELD } from '../constants';
 import { getMetafieldDefinitionReferenceSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
+import { sharedParameters } from '../shared-parameters';
 
 // #endregion
 
@@ -122,23 +121,6 @@ const parameters = {
     name: 'metafieldId',
     description: 'The ID of the metafield.',
   }),
-  inputFullKeyWithAutocomplete: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'fullKey',
-    description:
-      'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key". If ownerType is completed and valid, you will get autocmplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter a custom metafield key that doesn\'t have a definition.',
-    autocomplete: async function (context, search, { ownerType }) {
-      if (ownerType === undefined || ownerType === '') {
-        return [];
-      }
-      const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(ownerType);
-      return makeAutocompleteMetafieldKeysWithDefinitions(resourceMetafieldsSyncTableDefinition.metafieldOwnerType)(
-        context,
-        search,
-        {}
-      );
-    },
-  }),
   inputOwnerID: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'ownerId',
@@ -203,23 +185,18 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   formula: {
     name: 'SyncMetafields',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [
-      coda.makeParameter({
-        type: coda.ParameterType.StringArray,
-        name: 'metafieldKeys',
-        description: 'Metafield key to sync. In the format of <namespace.key>. For example: `coda.title`.',
-      }),
-    ],
+    parameters: [{ ...sharedParameters.filterMetafieldKeys, optional: true }],
     execute: async function ([metafieldKeys], context) {
       const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
       const isRestSync =
         graphQlResource === GraphQlResource.Article ||
         graphQlResource === GraphQlResource.Page ||
         graphQlResource === GraphQlResource.Blog;
+      const filteredMetafieldKeys = Array.isArray(metafieldKeys) ? metafieldKeys.filter((key) => key !== '') : [];
       if (isRestSync) {
-        return syncRestResourceMetafields(metafieldKeys, context);
+        return syncRestResourceMetafields(filteredMetafieldKeys, context);
       } else {
-        return syncGraphQlResourceMetafields(metafieldKeys, context);
+        return syncGraphQlResourceMetafields(filteredMetafieldKeys, context);
       }
     },
     maxUpdateBatchSize: 10,
@@ -362,7 +339,7 @@ export const Action_SetMetafield = coda.makeFormula({
   parameters: [
     parameters.inputOwnerID,
     parameters.inputOwnerType,
-    parameters.inputFullKeyWithAutocomplete,
+    sharedParameters.inputMetafieldKeys,
     parameters.inputValue,
   ],
   isAction: true,
@@ -511,7 +488,7 @@ export const Formula_Metafield = coda.makeFormula({
   name: 'Metafield',
   description: 'Get a single metafield by its fullkey.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputOwnerType, parameters.inputFullKeyWithAutocomplete, parameters.inputOwnerIdOptional],
+  parameters: [parameters.inputOwnerType, sharedParameters.inputMetafieldKeys, parameters.inputOwnerIdOptional],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: MetafieldSchema,
