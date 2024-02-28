@@ -37,7 +37,6 @@ import { SyncTableRestContinuation } from '../types/tableSync';
 import { MetafieldOwnerType, MetafieldDefinition } from '../types/admin.types';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
@@ -203,8 +202,8 @@ export const Sync_Pages = coda.makeSyncTable({
             const response = await fetchMetafieldsRest(resource.id, restResources.Page, {}, context);
 
             // Only keep metafields that are in the schema
-            const metafields: MetafieldRest[] = response.body.metafields.filter((meta: MetafieldRest) =>
-              effectiveMetafieldKeys.includes(getMetaFieldFullKey(meta))
+            const metafields = response.body.metafields.filter((m) =>
+              effectiveMetafieldKeys.includes(getMetaFieldFullKey(m))
             );
             if (metafields.length) {
               metafields.forEach((metafield) => {

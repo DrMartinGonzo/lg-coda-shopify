@@ -10,6 +10,7 @@ import {
 import { autocompleteProductTypes } from './products/products-functions';
 import { autocompleteLocationsWithName } from './locations/locations-functions';
 import { countryNameAutocompleteValues } from './constants';
+import { autoCompleteMetafieldWithDefinitionFullKeys } from './metafields/metafields-functions';
 
 export const sharedParameters = {
   optionalSyncMetafields: coda.makeParameter({
@@ -189,6 +190,13 @@ export const sharedParameters = {
     name: 'lastName',
     description: "The person's last name.",
   }),
+  inputMetafieldKeys: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'fullKey',
+    description:
+      'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key". If ownerType is completed and valid, you will get autocomplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter a metafield key that doesn\'t have a definition.',
+    autocomplete: autoCompleteMetafieldWithDefinitionFullKeys,
+  }),
   inputName: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'name',
@@ -275,6 +283,13 @@ export const sharedParameters = {
     description: 'Filter results by vendor.',
   }),
 
+  filterMetafieldKeys: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'metafieldKeys',
+    description:
+      "Filter results by Metafield keys. In the format of <namespace.key>, separated by commas. For example: `coda.title, coda.content`. You will get autocomplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter metafield keys that doesn't have a definition.",
+    autocomplete: autoCompleteMetafieldWithDefinitionFullKeys,
+  }),
   filterFields: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'fields',
