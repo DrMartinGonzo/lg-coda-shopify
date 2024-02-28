@@ -16,28 +16,9 @@ import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
 import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+import { inputs, filters } from '../shared-parameters';
 
 // #endregion
-
-const parameters = {
-  redirectID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'redirectId',
-    description: 'The ID of the redirect.',
-  }),
-  path: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'path',
-    description:
-      'The old path to be redirected. When the user visits this path, they will be redirected to the target. (maximum: 1024 characters).',
-  }),
-  target: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'target',
-    description:
-      "The target location where the user will be redirected. When the user visits the old path specified by the path property, they will be redirected to this location. This property can be set to any path on the shop's site, or to an external URL. (maximum: 255 characters)",
-  }),
-};
 
 // #region Sync Tables
 export const Sync_Redirects = coda.makeSyncTable({
@@ -50,8 +31,8 @@ export const Sync_Redirects = coda.makeSyncTable({
     name: 'SyncRedirects',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      { ...parameters.path, optional: true, description: 'Show redirects with a given path.' },
-      { ...parameters.target, optional: true, description: 'Show redirects with a given target.' },
+      { ...filters.redirect.path, optional: true },
+      { ...filters.redirect.target, optional: true },
     ],
     execute: async function ([path, target], context: coda.SyncExecutionContext) {
       // If executing from CLI, schema is undefined, we have to retrieve it first
@@ -111,7 +92,11 @@ export const Action_UpdateRedirect = coda.makeFormula({
   name: 'UpdateRedirect',
   description: 'Update an existing Shopify redirect and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.redirectID, { ...parameters.path, optional: true }, { ...parameters.target, optional: true }],
+  parameters: [
+    inputs.redirect.id,
+    { ...inputs.redirect.path, optional: true },
+    { ...inputs.redirect.target, optional: true },
+  ],
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: coda.withIdentity(RedirectSyncTableSchema, IDENTITY_REDIRECT),
@@ -137,7 +122,7 @@ export const Action_CreateRedirect = coda.makeFormula({
   name: 'CreateRedirect',
   description: 'Create a new Shopify redirect and return redirect ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.path, parameters.target],
+  parameters: [inputs.redirect.path, inputs.redirect.target],
   isAction: true,
   resultType: coda.ValueType.String,
   execute: async function ([path, target], context) {
@@ -154,7 +139,7 @@ export const Action_DeleteRedirect = coda.makeFormula({
   name: 'DeleteRedirect',
   description: 'Delete an existing Shopify redirect and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.redirectID],
+  parameters: [inputs.redirect.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([redirectId], context) {
@@ -169,7 +154,7 @@ export const Formula_Redirect = coda.makeFormula({
   name: 'Redirect',
   description: 'Return a single redirect from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.redirectID],
+  parameters: [inputs.redirect.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: RedirectSyncTableSchema,

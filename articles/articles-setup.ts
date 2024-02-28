@@ -5,7 +5,6 @@ import {
   CACHE_DEFAULT,
   IDENTITY_ARTICLE,
   METAFIELD_PREFIX_KEY,
-  OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -21,7 +20,7 @@ import {
 
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
@@ -38,8 +37,7 @@ import {
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
-import { autocompleteBlogParameterWithName } from '../blogs/blogs-functions';
-import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/RequestsRest';
@@ -57,63 +55,11 @@ async function getArticleSchema(context: coda.ExecutionContext, _: string, formu
   return augmentedSchema;
 }
 
-const parameters = {
-  articleID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'articleID',
-    description: 'The ID of the article.',
-  }),
-  // blogId: coda.makeParameter({
-  //   type: coda.ParameterType.Number,
-  //   name: 'blogId',
-  //   description: 'The ID of the blog containing the article.',
-  //   autocomplete: autocompleteBlogIdParameter,
-  // }),
-  blogIdOptionName: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'blogId',
-    description: 'The ID of the blog containing the article.',
-    autocomplete: autocompleteBlogParameterWithName,
-  }),
-  filterBlogs: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'blogs',
-    description: 'Only fetch articles from the specified blog IDs.',
-    autocomplete: autocompleteBlogParameterWithName,
-  }),
-  published_status: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'publishedStatus',
-    description: 'Retrieve results based on their published status.',
-    optional: true,
-    autocomplete: OPTIONS_PUBLISHED_STATUS,
-  }),
-  summaryHtml: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'summaryHtml',
-    description:
-      'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
-  }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('article'),
-    description:
-      'The suffix of the Liquid template used for the article. If this property is null, then the article uses the default template.',
-  }),
-  tag: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'tag',
-    description: 'Filter articles with a specific tag.',
-    optional: true,
-  }),
-};
-
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
   name: 'Articles',
   description:
-    "Return Articles from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each blog to get its metafields).",
+    "Return Articles from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each article to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ARTICLE,
   schema: ArticleSyncTableSchema,
@@ -130,15 +76,20 @@ export const Sync_Articles = coda.makeSyncTable({
     name: 'SyncArticles',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      sharedParameters.optionalSyncMetafields,
-      { ...parameters.filterBlogs, optional: true },
-      { ...sharedParameters.filterAuthor, optional: true },
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterPublishedAtRange, optional: true },
-      { ...sharedParameters.filterHandle, optional: true },
-      { ...parameters.published_status, optional: true },
-      { ...parameters.tag, optional: true },
+      {
+        ...filters.general.syncMetafields,
+        description:
+          "description: 'Also retrieve metafields. Not recommanded if you have lots of articles, the sync will be much slower as the pack will have to do another API call for each article. Waiting for Shopify to add GraphQL access to articles...',",
+        optional: true,
+      },
+      { ...filters.blog.idOptionNameArray, optional: true },
+      { ...filters.article.author, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.general.publishedAtRange, optional: true },
+      { ...filters.general.handle, optional: true },
+      { ...filters.general.publishedStatus, optional: true },
+      { ...filters.general.tagLOL, optional: true },
     ],
     execute: async function (
       [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag],
@@ -271,25 +222,25 @@ export const Action_CreateArticle = coda.makeFormula({
   description: 'Create a new Shopify article and return its ID. The article will be unpublished by default.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.blogIdOptionName,
-    { ...sharedParameters.inputTitle, description: 'The title of the article.' },
+    { ...inputs.blog.idOptionName, name: 'blogId' },
+    { ...inputs.general.title, description: 'The title of the article.' },
 
     // optional parameters
-    { ...sharedParameters.inputAuthor, description: 'The name of the author of the article.', optional: true },
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...parameters.summaryHtml, optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputImageUrl, optional: true },
-    { ...sharedParameters.inputImageAlt, optional: true },
-    { ...sharedParameters.inputPublished, description: 'Whether the article is visible.', optional: true },
+    { ...inputs.general.author, optional: true },
+    { ...inputs.article.bodyHtml, optional: true },
+    { ...inputs.article.summaryHtml, optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.imageUrl, optional: true },
+    { ...inputs.general.imageAlt, optional: true },
+    { ...inputs.general.published, description: 'Whether the article is visible.', optional: true },
     {
-      ...sharedParameters.inputPublishedAt,
+      ...inputs.general.publishedAt,
       description: 'The date and time when the article was published.',
       optional: true,
     },
-    { ...sharedParameters.inputTags, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Article metafields to create.' },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.article.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Article metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
@@ -355,26 +306,26 @@ export const Action_UpdateArticle = coda.makeFormula({
   description: 'Update an existing Shopify article and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.articleID,
+    inputs.article.id,
 
     // optional parameters
-    { ...sharedParameters.inputAuthor, description: 'The name of the author of the article.', optional: true },
-    { ...parameters.blogIdOptionName, optional: true },
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...parameters.summaryHtml, optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputImageUrl, optional: true },
-    { ...sharedParameters.inputImageAlt, optional: true },
-    { ...sharedParameters.inputPublished, description: 'Whether the article is visible.', optional: true },
+    { ...inputs.general.author, optional: true },
+    { ...inputs.blog.idOptionName, name: 'blogId', optional: true },
+    { ...inputs.article.bodyHtml, optional: true },
+    { ...inputs.article.summaryHtml, optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.imageUrl, optional: true },
+    { ...inputs.general.imageAlt, optional: true },
+    { ...inputs.general.published, description: 'Whether the article is visible.', optional: true },
     {
-      ...sharedParameters.inputPublishedAt,
+      ...inputs.general.publishedAt,
       description: 'The date and time when the article was published.',
       optional: true,
     },
-    { ...sharedParameters.inputTags, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.inputTitle, description: 'The title of the article.', optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Article metafields to update.' },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.article.templateSuffix, optional: true },
+    { ...inputs.general.title, description: 'The title of the article.', optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Article metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -452,7 +403,7 @@ export const Action_DeleteArticle = coda.makeFormula({
   name: 'DeleteArticle',
   description: 'Delete an existing Shopify article and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.articleID],
+  parameters: [inputs.article.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([articleId], context) => {
@@ -467,7 +418,7 @@ export const Formula_Article = coda.makeFormula({
   name: 'Article',
   description: 'Return a single article from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.articleID],
+  parameters: [inputs.article.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ArticleSyncTableSchema,

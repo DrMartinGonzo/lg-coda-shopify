@@ -12,26 +12,12 @@ import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLev
 import { IDENTITY_INVENTORYLEVEL, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import { parseOptionId } from '../helpers';
 import { InventoryLevelSyncTableRestParams } from '../types/InventoryLevel';
 import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
-
-const parameters = {
-  available: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'available',
-    description: 'Sets the available inventory quantity.',
-  }),
-  availableAdjustment: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'availableAdjustment',
-    description:
-      'The amount to adjust the available inventory quantity. Send negative values to subtract from the current available quantity.',
-  }),
-};
 
 // #region Sync Tables
 export const Sync_InventoryLevels = coda.makeSyncTable({
@@ -43,10 +29,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
   formula: {
     name: 'SyncInventoryLevels',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [
-      { ...sharedParameters.filterLocations, description: 'Fetch inventory levels for the specified locations.' },
-      { ...sharedParameters.filterUpdatedAtMin, optional: true },
-    ],
+    parameters: [filters.location.idOptionNameArray, { ...filters.general.updatedAtMin, optional: true }],
     execute: async function ([location_ids, updated_at_min], context) {
       if (!location_ids || !location_ids.length) {
         throw new coda.UserVisibleError('At least one location is required.');
@@ -108,9 +91,12 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   description: 'Sets the Inventory Level for an Inventory Item at a given Location and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    sharedParameters.inventoryItemID,
-    { ...sharedParameters.location, description: 'The Location for which the available quantity should be set.' },
-    parameters.available,
+    inputs.inventoryItem.id,
+    {
+      ...inputs.location.idOptionName,
+      description: 'The Location for which the available quantity should be set.',
+    },
+    inputs.InventoryLevel.available,
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -138,12 +124,12 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
     'Adjusts the Inventory level by a certain quantity for an Inventory Item at a given Location and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    sharedParameters.inventoryItemID,
+    inputs.inventoryItem.id,
     {
-      ...sharedParameters.location,
+      ...inputs.location.idOptionName,
       description: 'The Location for which the available quantity should be adjusted.',
     },
-    parameters.availableAdjustment,
+    inputs.InventoryLevel.availableAdjustment,
   ],
   isAction: true,
   resultType: coda.ValueType.Object,

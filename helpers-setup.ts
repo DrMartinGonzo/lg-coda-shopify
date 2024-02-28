@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
@@ -9,12 +10,15 @@ import { autocompleteProductTypes } from './products/products-functions';
 import { GraphQlResource } from './types/RequestsGraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
 import { shouldDeleteMetafield } from './metafields/metafields-functions';
+import { inputs } from './shared-parameters';
 
-export interface CodaMetafieldValue {
+// #endregion
+
+interface CodaMetafieldValue {
   type: MetafieldTypeValue;
   value: any;
 }
-export interface CodaMetafieldListValue {
+interface CodaMetafieldListValue {
   type: MetafieldTypeValue;
   value: any[];
 }
@@ -23,40 +27,6 @@ export interface CodaMetafieldKeyValueSet {
   value: string | null;
   type: MetafieldTypeValue;
 }
-
-const parameters = {
-  metaBooleanValue: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'value',
-    description: 'A boolean value.',
-  }),
-  metaNumberValue: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'value',
-    description: 'A number value.',
-  }),
-  metaStringValue: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'text',
-    description: 'A string value.',
-  }),
-  metaReferenceId: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'id',
-    description: 'The ID of the referenced resource.',
-  }),
-  metaDateValue: coda.makeParameter({
-    type: coda.ParameterType.Date,
-    name: 'date',
-    description: 'A date value.',
-  }),
-  dimensionUnit: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'unit',
-    description: 'The weight unit supported by Shopify.',
-    autocomplete: Object.keys(getUnitMap('weight')),
-  }),
-};
 
 export function parseAndValidateMetafieldValueFormulaInput(value: string) {
   const defaultErrorMessage = 'Invalid value. Did you use one of the `Metafield{…}Value` formulas to set it?';
@@ -76,7 +46,7 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
   return coda.makeFormula({
     name: `Metafield${toPascalCase(type)}Value`,
     description: `Helper function to build a \`${type}\` metafield value.`,
-    parameters: [{ ...parameters.metaReferenceId, description: `The ID of the referenced ${type.split('_')[0]}.` }],
+    parameters: [{ ...inputs.metafield.referenceId, description: `The ID of the referenced ${type.split('_')[0]}.` }],
     resultType: coda.ValueType.String,
     connectionRequirement: coda.ConnectionRequirement.None,
     execute: async ([value]) => {
@@ -258,7 +228,7 @@ export const Formula_MetafieldValues = coda.makeFormula({
 export const Formula_MetafieldBooleanValue = coda.makeFormula({
   name: 'MetafieldBooleanValue',
   description: 'Helper function to build a `boolean` metafield value.',
-  parameters: [{ ...parameters.metaBooleanValue, description: 'True or false ?' }],
+  parameters: [{ ...inputs.metafield.boolean, description: 'True or false ?' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.boolean, value } as CodaMetafieldValue),
@@ -268,7 +238,10 @@ export const Formula_MetafieldColorValue = coda.makeFormula({
   name: 'MetafieldColorValue',
   description: 'Helper function to build a `color` metafield value.',
   parameters: [
-    { ...parameters.metaStringValue, description: 'The color value. Supports RGB values in #RRGGBB format.' },
+    {
+      ...inputs.metafield.string,
+      description: 'The color value. Supports RGB values in #RRGGBB format.',
+    },
   ],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
@@ -278,7 +251,7 @@ export const Formula_MetafieldColorValue = coda.makeFormula({
 export const Formula_MetafieldNumberDecimalValue = coda.makeFormula({
   name: 'MetafieldNumberDecimalValue',
   description: 'Helper function to build a `number_decimal` metafield value.',
-  parameters: [{ ...parameters.metaNumberValue, description: 'The decimal number value.' }],
+  parameters: [{ ...inputs.metafield.number, description: 'The decimal number value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.number_decimal, value } as CodaMetafieldValue),
@@ -287,7 +260,7 @@ export const Formula_MetafieldNumberDecimalValue = coda.makeFormula({
 export const Formula_MetafieldNumberIntegerValue = coda.makeFormula({
   name: 'MetafieldNumberIntegerValue',
   description: 'Helper function to build a `number_integer` metafield value.',
-  parameters: [{ ...parameters.metaNumberValue, description: 'The integer value.' }],
+  parameters: [{ ...inputs.metafield.number, description: 'The integer value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.number_integer, value } as CodaMetafieldValue),
@@ -296,7 +269,7 @@ export const Formula_MetafieldNumberIntegerValue = coda.makeFormula({
 export const Formula_MetafieldDateValue = coda.makeFormula({
   name: 'MetafieldDateValue',
   description: 'Helper function to build a `date` metafield value.',
-  parameters: [{ ...parameters.metaDateValue, description: 'The date value.' }],
+  parameters: [{ ...inputs.metafield.date, description: 'The date value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.date, value } as CodaMetafieldValue),
@@ -305,7 +278,7 @@ export const Formula_MetafieldDateValue = coda.makeFormula({
 export const Formula_MetafieldDateTimeValue = coda.makeFormula({
   name: 'MetafieldDateTimeValue',
   description: 'Helper function to build a `date_time` metafield value.',
-  parameters: [{ ...parameters.metaDateValue, description: 'The date_time value.' }],
+  parameters: [{ ...inputs.metafield.date, description: 'The date_time value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => JSON.stringify({ type: METAFIELD_TYPES.date_time, value } as CodaMetafieldValue),
@@ -314,7 +287,7 @@ export const Formula_MetafieldDateTimeValue = coda.makeFormula({
 export const Formula_MetafieldSingleLineTextValue = coda.makeFormula({
   name: 'MetafieldSingleLineTextValue',
   description: 'Helper function to build a `single_line_text_field` metafield value.',
-  parameters: [{ ...parameters.metaStringValue, description: 'The text content.' }],
+  parameters: [{ ...inputs.metafield.string, description: 'The text content.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => {
@@ -325,7 +298,7 @@ export const Formula_MetafieldSingleLineTextValue = coda.makeFormula({
 export const Formula_MetafieldWeightValue = coda.makeFormula({
   name: 'MetafieldWeightValue',
   description: 'Helper function to build a `weight` metafield value.',
-  parameters: [{ ...parameters.metaNumberValue, description: 'The weight value.' }, parameters.dimensionUnit],
+  parameters: [{ ...inputs.metafield.number, description: 'The weight value.' }, inputs.metafield.weightUnitGraphQl],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) => {

@@ -12,7 +12,7 @@ import {
 } from '../helpers-graphql';
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
 import { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import { cleanQueryParams } from '../helpers-rest';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
 
@@ -23,34 +23,6 @@ async function getInventoryItemSchema(context: coda.ExecutionContext, _: string,
   augmentedSchema.properties.cost['currencyCode'] = await getSchemaCurrencyCode(context);
   return augmentedSchema;
 }
-
-const parameters = {
-  inventoryItemId: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'inventoryItemId',
-    description: 'The ID of the Inventory Item.',
-  }),
-  cost: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'cost',
-    description: "Unit cost associated with the inventory item, the currency is the shop's default currency.",
-  }),
-  provinceCodeOfOrigin: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'provinceCodeOfOrigin',
-    description: 'The ISO 3166-2 alpha-2 province/state code of where the item originated from.',
-  }),
-  harmonizedSystemCode: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'harmonizedSystemCode',
-    description: 'The harmonized system code of the inventory item. This must be a number between 6 and 13 digits.',
-  }),
-  tracked: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'tracked',
-    description: "Whether the inventory item is tracked. The value must be true to adjust the item's inventory levels.",
-  }),
-};
 
 // #region Sync tables
 export const Sync_InventoryItems = coda.makeSyncTable({
@@ -67,9 +39,9 @@ export const Sync_InventoryItems = coda.makeSyncTable({
     name: 'SyncInventoryItems',
     description: '<Help text for the sync formula, not shown to the user>',
     parameters: [
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterSkus, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.productVariant.skuArray, optional: true },
     ],
     execute: async function ([createdAtRange, updatedAtRange, skus], context: coda.SyncExecutionContext) {
       const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
@@ -146,22 +118,25 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
   description: 'Update an existing Shopify Inventory Item and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.inventoryItemId,
+    inputs.inventoryItem.id,
     {
-      ...parameters.cost,
+      ...inputs.inventoryItem.cost,
+      description: inputs.inventoryItem.cost.description + ' Set to 0 to delete the cost value.',
       optional: true,
-      description:
-        "Unit cost associated with the inventory item, the currency is the shop's default currency. Set to 0 to delete the cost value.",
     },
     {
-      ...sharedParameters.inputCountryCode,
+      ...inputs.location.countryCode,
       name: 'countryCodeOfOrigin',
       description: 'The ISO 3166-1 alpha-2 country code of where the item originated from.',
       optional: true,
     },
-    { ...parameters.harmonizedSystemCode, optional: true },
-    { ...parameters.provinceCodeOfOrigin, optional: true },
-    { ...parameters.tracked, optional: true },
+    { ...inputs.inventoryItem.harmonizedSystemCode, optional: true },
+    {
+      ...inputs.location.provinceCode,
+      description: 'The province/state code of where the item originated from (ISO 3166-2 alpha-2 format).',
+      optional: true,
+    },
+    { ...inputs.inventoryItem.tracked, optional: true },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,

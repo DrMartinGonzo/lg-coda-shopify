@@ -18,8 +18,8 @@ import {
   updateBlogRest,
 } from './blogs-functions';
 
-import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
-import { sharedParameters } from '../shared-parameters';
+import { BlogSyncTableSchema, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
+import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
@@ -38,7 +38,7 @@ import {
 import { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
@@ -55,37 +55,11 @@ async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaC
   return augmentedSchema;
 }
 
-const parameters = {
-  blogId: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'blogId',
-    description: 'The ID of the blog.',
-  }),
-  commentable: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'commentable',
-    description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
-    autocomplete: COMMENTABLE_OPTIONS,
-  }),
-  inputTitle: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'title',
-    description: 'The title of the page.',
-  }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('blog'),
-    description:
-      'The suffix of the Liquid template used for the blog. If this property is null, then the blog uses the default template.',
-  }),
-};
-
 // #region Sync tables
 export const Sync_Blogs = coda.makeSyncTable({
   name: 'Blogs',
   description:
-    "Return Blogs from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
+    "Return Blogs from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_BLOG,
   schema: BlogSyncTableSchema,
@@ -101,7 +75,14 @@ export const Sync_Blogs = coda.makeSyncTable({
   formula: {
     name: 'SyncBlogs',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [sharedParameters.optionalSyncMetafields],
+    parameters: [
+      {
+        ...filters.general.syncMetafields,
+        description:
+          "description: 'Also retrieve metafields. Not recommanded if you have lots of blogs, the sync will be much slower as the pack will have to do another API call for each blog. Waiting for Shopify to add GraphQL access to blogs...',",
+        optional: true,
+      },
+    ],
     execute: async function ([syncMetafields], context) {
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getBlogSchema, context, { syncMetafields }));
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
@@ -179,13 +160,13 @@ export const Action_UpdateBlog = coda.makeFormula({
   description: 'Update an existing Shopify Blog and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.blogId,
+    inputs.blog.id,
     // optional parameters
-    { ...sharedParameters.inputTitle, description: 'The title of the blog.', optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...parameters.commentable, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Blog metafields to update.' },
+    { ...inputs.general.title, description: 'The title of the blog.', optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.blog.commentable, optional: true },
+    { ...inputs.blog.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Blog metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -234,13 +215,13 @@ export const Action_CreateBlog = coda.makeFormula({
   description: `Create a new Shopify Blog and return its ID.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...sharedParameters.inputTitle, description: 'The title of the blog.' },
+    { ...inputs.general.title, description: 'The title of the blog.' },
 
     // optional parameters
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...parameters.commentable, optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Blog metafields to create.' },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.blog.commentable, optional: true },
+    { ...inputs.blog.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Blog metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
@@ -271,7 +252,7 @@ export const Action_DeleteBlog = coda.makeFormula({
   name: 'DeleteBlog',
   description: 'Delete an existing Shopify Blog and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.blogId],
+  parameters: [inputs.blog.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([blogId], context) {
@@ -286,7 +267,7 @@ export const Formula_Blog = coda.makeFormula({
   name: 'Blog',
   description: 'Return a single Blog from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.blogId],
+  parameters: [inputs.blog.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: BlogSyncTableSchema,

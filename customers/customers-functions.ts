@@ -63,22 +63,6 @@ function formatCustomerStandardFieldsRestParams(
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
     }
-    // Disabled for now, prefer to use simple checkboxes
-    /*
-    else if (fromKey === 'email_marketing_consent') {
-      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
-      restParams.email_marketing_consent = {
-        state: matchingOption.state,
-        opt_in_level: matchingOption.opt_in_level,
-      };
-    } else if (fromKey === 'sms_marketing_consent') {
-      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
-      restParams.sms_marketing_consent = {
-        state: matchingOption.state,
-        opt_in_level: matchingOption.opt_in_level,
-      };
-    }
-    */
     // No processing needed
     else {
       restParams[fromKey] = value;
@@ -236,15 +220,6 @@ export const deleteCustomer = async (
 // #endregion
 
 // #region Unused stuff
-/*
-function formatEmailMarketingConsent(consent) {
-  if (!consent) return undefined;
-  return MARKETING_CONSENT_ALL_OPTIONS.find((option) => {
-    return option.state === consent.state && option.opt_in_level === consent.opt_in_level;
-  })?.display;
-}
-*/
-
 /*
 function formatCustomerAddressForSchemaFromGraphQl(address) {
   return {

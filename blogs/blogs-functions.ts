@@ -21,7 +21,7 @@ import { restResources } from '../types/RequestsRest';
 // #endregion
 
 // #region Helpers
-export async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
+async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
   const params = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
@@ -119,7 +119,7 @@ export const formatBlogForSchemaFromRestApi = (blog, context: coda.ExecutionCont
   let obj: any = {
     ...blog,
     admin_url: `${context.endpoint}/admin/blogs/${blog.id}`,
-    graphql_gid: idToGraphQlGid(GraphQlResource.Blog, blog.blog_id),
+    graphql_gid: idToGraphQlGid(GraphQlResource.Blog, blog.id),
   };
 
   return obj;
@@ -134,7 +134,7 @@ export function validateBlogParams(params: any) {
 // #endregion
 
 // #region Rest requests
-export const fetchBlogsRest = (
+const fetchBlogsRest = (
   params: BlogSyncTableRestParams,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}

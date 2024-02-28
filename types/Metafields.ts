@@ -17,18 +17,6 @@ export interface ShopifyMeasurementField {
   value: number;
 }
 
-/** An interface describing a metafield with its value parsed and acompagnying augmented definition */
-export interface ParsedMetafieldWithAugmentedDefinition extends Metafield {
-  value: any;
-  augmentedDefinition: AugmentedMetafieldDefinition;
-}
-
-/** An interface describing a metafield definition with some extra props */
-export interface AugmentedMetafieldDefinition extends MetafieldDefinitionFragment {
-  fullKey: string;
-  matchingSchemaKey: string;
-}
-
 /** The input fields for a metafield value to set. */
 export type MetafieldRestInput = {
   /**

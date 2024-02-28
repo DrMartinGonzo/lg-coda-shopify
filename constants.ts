@@ -62,7 +62,7 @@ export const OPTIONS_FILE_TYPE = [
 
 export const DEFAULT_PRODUCT_OPTION_NAME = 'Coda Default';
 
-export const METAFIELDS_RESOURCE_TYPES = [
+const METAFIELDS_RESOURCE_TYPES = [
   'article',
   'blog',
   'collection',
