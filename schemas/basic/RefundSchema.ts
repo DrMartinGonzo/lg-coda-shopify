@@ -2,9 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { DutySchema } from './DutySchema';
 import { OrderAdjustmentSchema } from './OrderAdjustmentSchema';
-import { TransactionSchema } from './TransactionSchema';
 import { RefundDutySchema } from './RefundDutySchema';
 import { RefundLineItemSchema } from './RefundLineItemSchema';
+import { OrderTransactionSchema } from './OrderTransactionSchema';
 
 export const RefundSchema = coda.makeObjectSchema({
   properties: {
@@ -66,7 +66,7 @@ export const RefundSchema = coda.makeObjectSchema({
     },
     transactions: {
       type: coda.ValueType.Array,
-      items: TransactionSchema,
+      items: OrderTransactionSchema,
       fixedId: 'transactions',
       fromKey: 'transactions',
       description:

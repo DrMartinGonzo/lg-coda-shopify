@@ -8,7 +8,7 @@ import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
   CONSENT_STATE__SUBSCRIBED,
   CONSENT_STATE__UNSUBSCRIBED,
-  CustomerSchema,
+  CustomerSyncTableSchema,
 } from '../schemas/syncTable/CustomerSchema';
 import { idToGraphQlGid } from '../helpers-graphql';
 import {
@@ -45,7 +45,7 @@ export function customerCodaParamsToRest(params: CustomerCreateRestParams & Cust
 
 function formatCustomerStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof CustomerSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof CustomerSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -89,7 +89,7 @@ function formatCustomerStandardFieldsRestParams(
 }
 
 export async function handleCustomerUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof CustomerSchema>,
+  update: coda.SyncUpdate<string, string, typeof CustomerSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

@@ -5,7 +5,7 @@ import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 
 import { FetchRequestOptions } from '../types/Requests';
-import { PageSchema } from '../schemas/syncTable/PageSchema';
+import { PageSyncTableSchema } from '../schemas/syncTable/PageSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -18,7 +18,7 @@ import { restResources } from '../types/RequestsRest';
 // #region Helpers
 function formatPageStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof PageSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof PageSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -34,7 +34,7 @@ function formatPageStandardFieldsRestParams(
  * appel séparé pour chaque metafield
  */
 export async function handlePageUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof PageSchema>,
+  update: coda.SyncUpdate<string, string, typeof PageSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

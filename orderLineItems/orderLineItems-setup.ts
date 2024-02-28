@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { formatOrderLineItemForSchemaFromRestApi } from './orderLineItems-functions';
-import { OrderLineItemSchema } from '../schemas/syncTable/OrderLineItemSchema';
+import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { sharedParameters } from '../shared-parameters';
 
 import { SyncTableRestContinuation } from '../types/tableSync';
@@ -13,7 +13,7 @@ import { getSchemaCurrencyCode } from '../shop/shop-functions';
 // #endregion
 
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = OrderLineItemSchema;
+  let augmentedSchema: any = OrderLineItemSyncTableSchema;
   // let augmentedSchema = OrderSchema;
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
@@ -40,7 +40,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
   description: 'All Shopify OrderLineItems',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER_LINE_ITEM,
-  schema: OrderLineItemSchema,
+  schema: OrderLineItemSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderLineItemSchema,
     defaultAddDynamicColumns: false,

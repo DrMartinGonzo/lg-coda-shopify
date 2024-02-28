@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CollectSchema, collectFieldDependencies } from '../schemas/syncTable/CollectSchema';
-import { CollectionSchema, collectionFieldDependencies } from '../schemas/syncTable/CollectionSchema';
+import { CollectSyncTableSchema, collectFieldDependencies } from '../schemas/syncTable/CollectSchema';
+import { CollectionSyncTableSchema, collectionFieldDependencies } from '../schemas/syncTable/CollectionSchema';
 import {
   getCollectionTypeGraphQl,
   deleteCollectionRest,
@@ -64,9 +64,13 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getCollectionSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = CollectionSchema;
+  let augmentedSchema: any = CollectionSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(CollectionSchema, MetafieldOwnerType.Collection, context);
+    augmentedSchema = await augmentSchemaWithMetafields(
+      CollectionSyncTableSchema,
+      MetafieldOwnerType.Collection,
+      context
+    );
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -94,7 +98,7 @@ export const Sync_Collects = coda.makeSyncTable({
   description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_COLLECT,
-  schema: CollectSchema,
+  schema: CollectSyncTableSchema,
   formula: {
     name: 'SyncCollects',
     description: '<Help text for the sync formula, not show to the user>',
@@ -137,7 +141,7 @@ export const Sync_Collections = coda.makeSyncTable({
     'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_COLLECTION,
-  schema: CollectionSchema,
+  schema: CollectionSyncTableSchema,
   dynamicOptions: {
     getSchema: getCollectionSchema,
     defaultAddDynamicColumns: false,
@@ -449,7 +453,7 @@ export const Action_UpdateCollection = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
-  schema: CollectionSchema,
+  schema: CollectionSyncTableSchema,
   execute: async (
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
@@ -535,7 +539,7 @@ export const Formula_Collection = coda.makeFormula({
   ],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: CollectionSchema,
+  schema: CollectionSyncTableSchema,
   execute: async function ([collectionId], context) {
     const response = await fetchSingleCollectionRest(collectionId, context);
     if (response.body.collection) {

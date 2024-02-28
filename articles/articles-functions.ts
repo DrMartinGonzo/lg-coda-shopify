@@ -3,7 +3,7 @@ import striptags from 'striptags';
 
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { ArticleSchema } from '../schemas/syncTable/ArticleSchema';
+import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import { getThumbnailUrlFromFullUrl } from '../helpers';
 import { FetchRequestOptions } from '../types/Requests';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
@@ -19,7 +19,7 @@ import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSche
 // #region Helpers
 function formatArticleStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof ArticleSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof ArticleSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
 
@@ -56,7 +56,7 @@ function formatArticleStandardFieldsRestParams(
  * Il va falloir faire un appel séparé pour chaque metafield
  */
 export async function handleArticleUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof ArticleSchema>,
+  update: coda.SyncUpdate<string, string, typeof ArticleSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

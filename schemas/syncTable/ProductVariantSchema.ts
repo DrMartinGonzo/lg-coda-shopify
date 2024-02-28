@@ -5,7 +5,7 @@ import { IDENTITY_PRODUCT_VARIANT, NOT_FOUND } from '../../constants';
 import { getUnitMap } from '../../helpers';
 import { FieldDependency } from '../../types/tableSync';
 
-export const ProductVariantSchema = coda.makeObjectSchema({
+export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,
@@ -220,7 +220,7 @@ export const ProductVariantSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const productVariantFieldDependencies: FieldDependency<typeof ProductVariantSchema.properties>[] = [
+export const productVariantFieldDependencies: FieldDependency<typeof ProductVariantSyncTableSchema.properties>[] = [
   {
     field: 'images',
     dependencies: ['image'],
@@ -240,7 +240,7 @@ export const productVariantFieldDependencies: FieldDependency<typeof ProductVari
 ];
 
 export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(
-  ProductVariantSchema,
+  ProductVariantSyncTableSchema,
   IDENTITY_PRODUCT_VARIANT
 );
 export const formatProductVariantReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });

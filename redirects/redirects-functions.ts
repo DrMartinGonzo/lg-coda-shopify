@@ -4,13 +4,13 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 import { REST_DEFAULT_API_VERSION } from '../constants';
 import { FetchRequestOptions } from '../types/Requests';
 
-import { RedirectSchema } from '../schemas/syncTable/RedirectSchema';
+import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
 
 // #region Helpers
 function formatRedirectStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof RedirectSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof RedirectSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -20,7 +20,7 @@ function formatRedirectStandardFieldsRestParams(
 }
 
 export async function handleRedirectUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof RedirectSchema>,
+  update: coda.SyncUpdate<string, string, typeof RedirectSyncTableSchema>,
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;

@@ -20,7 +20,7 @@ import {
   autoCompleteMetafieldWithDefinitionFullKeys,
 } from './metafields-functions';
 
-import { MetafieldSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
+import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 import { CodaMetafieldKeyValueSet, parseAndValidateMetafieldValueFormulaInput } from '../helpers-setup';
@@ -52,7 +52,7 @@ import { sharedParameters } from '../shared-parameters';
 
 // #region Helpers
 async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = MetafieldSchema;
+  let augmentedSchema: any = MetafieldSyncTableSchema;
   const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
 
   // Augment schema with a relation to the owner of the metafield
@@ -344,9 +344,9 @@ export const Action_SetMetafield = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: MetafieldSchema,
+  schema: MetafieldSyncTableSchema,
   execute: async ([ownerId, graphQlOwnerType, fullKey, value], context) => {
-    const schemaEffectiveKeys = getObjectSchemaEffectiveKeys(MetafieldSchema);
+    const schemaEffectiveKeys = getObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
     const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(
       graphQlOwnerType as SupportedGraphQlResourceWithMetafields
     );
@@ -491,7 +491,7 @@ export const Formula_Metafield = coda.makeFormula({
   parameters: [parameters.inputOwnerType, sharedParameters.inputMetafieldKeys, parameters.inputOwnerIdOptional],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: MetafieldSchema,
+  schema: MetafieldSyncTableSchema,
   execute: async function ([ownerType, fullKey, ownerId], context) {
     const graphQlResource = ownerType as SupportedGraphQlResourceWithMetafields;
     const isShopQuery = graphQlResource === GraphQlResource.Shop;
@@ -534,7 +534,7 @@ export const Formula_Metafields = coda.makeFormula({
   parameters: [parameters.inputOwnerType, parameters.inputOwnerIdOptional],
   cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
   resultType: coda.ValueType.Array,
-  items: MetafieldSchema,
+  items: MetafieldSyncTableSchema,
   execute: async function ([ownerType, ownerId], context) {
     const graphQlResource = ownerType as SupportedGraphQlResourceWithMetafields;
     const isShopQuery = graphQlResource === GraphQlResource.Shop;

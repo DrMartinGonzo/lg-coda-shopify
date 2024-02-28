@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_PAGE, NOT_FOUND } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 
-export const PageSchema = coda.makeObjectSchema({
+export const PageSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,
@@ -117,7 +117,7 @@ export const PageSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties>[] = [
+export const pageFieldDependencies: FieldDependency<typeof PageSyncTableSchema.properties>[] = [
   {
     field: 'body_html',
     dependencies: ['body'],
@@ -136,5 +136,5 @@ export const pageFieldDependencies: FieldDependency<typeof PageSchema.properties
   },
 ];
 
-export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSchema, IDENTITY_PAGE);
+export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSyncTableSchema, IDENTITY_PAGE);
 export const formatPageReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });

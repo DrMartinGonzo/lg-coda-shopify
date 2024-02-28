@@ -17,7 +17,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePutRequest } f
 import { formatCustomerForSchemaFromRestApi } from '../customers/customers-functions';
 import { FetchRequestOptions } from '../types/Requests';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { OrderSchema } from '../schemas/syncTable/OrderSchema';
+import { OrderSyncTableSchema } from '../schemas/syncTable/OrderSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -83,7 +83,7 @@ function getRefundQuantity(item, refunds) {
 
 function formatOrderStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof OrderSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof OrderSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -99,7 +99,7 @@ function formatOrderStandardFieldsRestParams(
  * appel séparé pour chaque metafield
  */
 export async function handleOrderUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof OrderSchema>,
+  update: coda.SyncUpdate<string, string, typeof OrderSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {
@@ -119,14 +119,16 @@ export async function handleOrderUpdateJob(
   if (prefixedMetafieldFromKeys.length) {
     subJobs.push(
       updateAndFormatResourceMetafieldsRest(
-        orderId,
-        restResources.Order,
-        await getMetafieldKeyValueSetsFromUpdate(
-          prefixedMetafieldFromKeys,
-          update.newValue,
-          metafieldDefinitions,
-          context
-        ),
+        {
+          ownerId: orderId,
+          ownerResource: restResources.Order,
+          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
+            prefixedMetafieldFromKeys,
+            update.newValue,
+            metafieldDefinitions,
+            context
+          ),
+        },
         context
       )
     );
@@ -378,6 +380,31 @@ export const formatOrderForSchemaFromRestApi = (order, context: coda.ExecutionCo
   if (order.client_details) {
     obj.browser_user_agent = order.client_details?.user_agent;
     obj.browser_accept_language = order.client_details?.accept_language;
+  }
+  if (order.refunds) {
+    obj.refunds = order.refunds.map((refund) => {
+      return {
+        ...refund,
+        transactions: refund.transactions.map((transaction) => {
+          return {
+            id: transaction.id,
+            label: transaction.label,
+            amount: transaction.amount,
+            createdAt: transaction.created_at,
+            currency: transaction.currency,
+            errorCode: transaction.error_code,
+            gateway: transaction.gateway,
+            kind: transaction.kind,
+            parentTransactionId: transaction.parent_id,
+            paymentId: transaction.payment_id,
+            processedAt: transaction.processed_at,
+            status: transaction.status,
+            test: transaction.test,
+            totalUnsettled: transaction.total_unsettled_set?.shop_money?.amount,
+          };
+        }),
+      };
+    });
   }
 
   return obj;

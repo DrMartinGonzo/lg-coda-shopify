@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
+import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
 import { IDENTITY_INVENTORYITEM } from '../constants';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
@@ -19,7 +19,7 @@ import { getSchemaCurrencyCode } from '../shop/shop-functions';
 // #endregion
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = InventoryItemSchema;
+  let augmentedSchema: any = InventoryItemSyncTableSchema;
   augmentedSchema.properties.cost.currencyCode = await getSchemaCurrencyCode(context);
   return augmentedSchema;
 }
@@ -58,7 +58,7 @@ export const Sync_InventoryItems = coda.makeSyncTable({
   description: 'Return Inventory Items from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_INVENTORYITEM,
-  schema: InventoryItemSchema,
+  schema: InventoryItemSyncTableSchema,
   dynamicOptions: {
     getSchema: getInventoryItemSchema,
     defaultAddDynamicColumns: false,
@@ -167,7 +167,7 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryItemSchema, IDENTITY_INVENTORYITEM),
-  schema: InventoryItemSchema,
+  schema: InventoryItemSyncTableSchema,
   execute: async function (
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],
     context

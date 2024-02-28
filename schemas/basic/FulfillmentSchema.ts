@@ -3,7 +3,6 @@ import { OrderLineItemSchema } from './OrderLineItemSchema';
 
 export const FulfillmentSchema = coda.makeObjectSchema({
   properties: {
-    // TODO: check if admin_graphql_api_id is really returned by Shopify for fulfillments
     graphql_gid: {
       type: coda.ValueType.String,
       fixedId: 'graphql_gid',

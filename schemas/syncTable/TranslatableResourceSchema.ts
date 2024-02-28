@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { TranslationSchema } from '../basic/TranslationSchema';
 
-export const TranslatableResourceSchema = coda.makeObjectSchema({
+export const TranslatableResourceSyncTableSchema = coda.makeObjectSchema({
   properties: {
     translatableResourceId: { type: coda.ValueType.String, fromKey: 'resourceId', fixedId: 'translatableResourceId' },
     translations: { type: coda.ValueType.Array, items: TranslationSchema, fixedId: 'translations' },

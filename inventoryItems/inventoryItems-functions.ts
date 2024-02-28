@@ -7,7 +7,7 @@ import {
   InventoryItemUpdateMutationVariables,
 } from '../types/admin.generated';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { InventoryItemSchema } from '../schemas/syncTable/InventoryItemSchema';
+import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryItemUpdateInput } from '../types/admin.types';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
 import { GraphQlResource } from '../types/RequestsGraphQl';
@@ -15,7 +15,7 @@ import { formatProductVariantReferenceValueForSchema } from '../schemas/syncTabl
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof InventoryItemSchema>,
+  update: coda.SyncUpdate<string, string, typeof InventoryItemSyncTableSchema>,
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;

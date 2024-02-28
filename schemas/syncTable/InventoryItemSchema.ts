@@ -4,7 +4,7 @@ import { FieldDependency } from '../../types/tableSync';
 import { ProductVariantReference } from './ProductVariantSchema';
 import { countryNameAutocompleteValues } from '../../constants';
 
-export const InventoryItemSchema = coda.makeObjectSchema({
+export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
     graphql_gid: {
       type: coda.ValueType.String,
@@ -120,12 +120,12 @@ export const InventoryItemSchema = coda.makeObjectSchema({
 });
 
 export const InventoryItemReference = coda.makeReferenceSchemaFromObjectSchema(
-  InventoryItemSchema,
+  InventoryItemSyncTableSchema,
   IDENTITY_INVENTORYITEM
 );
 export const formatInventoryItemReferenceValueForSchema = (id: number) => ({ id });
 
-export const InventoryItemFieldDependencies: FieldDependency<typeof InventoryItemSchema.properties>[] = [
+export const InventoryItemFieldDependencies: FieldDependency<typeof InventoryItemSyncTableSchema.properties>[] = [
   {
     field: 'graphql_gid',
     dependencies: ['id'],

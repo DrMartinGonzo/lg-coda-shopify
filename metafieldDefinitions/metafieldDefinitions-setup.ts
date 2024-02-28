@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldDefinitionSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
+import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 import {
   MetafieldFragmentWithDefinition,
@@ -34,7 +34,7 @@ async function getMetafieldDefinitionSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  return MetafieldDefinitionSchema;
+  return MetafieldDefinitionSyncTableSchema;
 }
 
 const parameters = {
@@ -137,7 +137,7 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.inputMetafieldDefinitionID],
   resultType: coda.ValueType.Object,
-  schema: MetafieldDefinitionSchema,
+  schema: MetafieldDefinitionSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([metafieldDefinitionID], context) {
     const metafieldDefinitionNode = await fetchSingleMetafieldDefinitionGraphQl(

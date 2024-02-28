@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
-import { ProductVariantSchema } from '../schemas/syncTable/ProductVariantSchema';
+import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import {
   getMetafieldKeyValueSetsFromUpdate,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -37,7 +37,7 @@ export function validateProductVariantParams(params: any) {
 
 // #region helpers
 export async function handleProductVariantUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof ProductVariantSchema>,
+  update: coda.SyncUpdate<string, string, typeof ProductVariantSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

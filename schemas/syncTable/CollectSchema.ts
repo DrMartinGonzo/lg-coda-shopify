@@ -4,7 +4,7 @@ import { ProductReference } from './ProductSchemaRest';
 import { FieldDependency } from '../../types/tableSync';
 import { CollectionReference } from './CollectionSchema';
 
-export const CollectSchema = coda.makeObjectSchema({
+export const CollectSyncTableSchema = coda.makeObjectSchema({
   properties: {
     //! admin_graphql_api_id DOES NOT EXIST
     id: {
@@ -64,7 +64,7 @@ export const CollectSchema = coda.makeObjectSchema({
   idProperty: 'id',
   featuredProperties: ['id', 'collection', 'product', 'created_at', 'updated_at'],
 });
-export const collectFieldDependencies: FieldDependency<typeof CollectSchema.properties>[] = [
+export const collectFieldDependencies: FieldDependency<typeof CollectSyncTableSchema.properties>[] = [
   {
     field: 'product_id',
     dependencies: ['product'],

@@ -3,7 +3,7 @@ import { CODA_PACK_ID } from '../../pack-config.json';
 import { IDENTITY_METAOBJECT, NOT_FOUND } from '../../constants';
 import { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
 
-export const MetaObjectBaseSchema = coda.makeObjectSchema({
+export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
     id: { type: coda.ValueType.Number, fromKey: 'id', required: true, useThousandsSeparator: false },
     graphql_gid: {

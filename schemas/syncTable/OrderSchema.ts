@@ -15,7 +15,7 @@ import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
 
-export const OrderSchema = coda.makeObjectSchema({
+export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,
@@ -671,7 +671,7 @@ export const OrderSchema = coda.makeObjectSchema({
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
   featuredProperties: ['id', 'customer', 'shipping_lines', 'line_items'],
 });
-export const orderFieldDependencies: FieldDependency<typeof OrderSchema.properties>[] = [
+export const orderFieldDependencies: FieldDependency<typeof OrderSyncTableSchema.properties>[] = [
   //   {
   //   field: 'handle',
   //   dependencies: ['storeUrl'],
@@ -705,5 +705,5 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSchema.properti
     dependencies: ['admin_url'],
   },
 ];
-export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSchema, IDENTITY_ORDER);
+export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, IDENTITY_ORDER);
 export const formatOrderReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });

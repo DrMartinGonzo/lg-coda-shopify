@@ -9,7 +9,7 @@ import {
   handleRedirectUpdateJob,
 } from './redirects-functions';
 
-import { RedirectSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
+import { RedirectSyncTableSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
 import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
@@ -44,7 +44,7 @@ export const Sync_Redirects = coda.makeSyncTable({
   description: 'Return Redirects from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_REDIRECT,
-  schema: RedirectSchema,
+  schema: RedirectSyncTableSchema,
   formula: {
     name: 'SyncRedirects',
     description: '<Help text for the sync formula, not show to the user>',
@@ -54,7 +54,7 @@ export const Sync_Redirects = coda.makeSyncTable({
     ],
     execute: async function ([path, target], context: coda.SyncExecutionContext) {
       // If executing from CLI, schema is undefined, we have to retrieve it first
-      const schema = RedirectSchema;
+      const schema = RedirectSyncTableSchema;
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       const standardFromKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
@@ -113,7 +113,7 @@ export const Action_UpdateRedirect = coda.makeFormula({
   parameters: [parameters.redirectID, { ...parameters.path, optional: true }, { ...parameters.target, optional: true }],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(RedirectSchema, IDENTITY_REDIRECT),
+  schema: coda.withIdentity(RedirectSyncTableSchema, IDENTITY_REDIRECT),
   execute: async function ([redirect_id, path, target], context) {
     if (path === undefined && target === undefined) {
       throw new coda.UserVisibleError('Either path or target must be provided');
@@ -171,7 +171,7 @@ export const Formula_Redirect = coda.makeFormula({
   parameters: [parameters.redirectID],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: RedirectSchema,
+  schema: RedirectSyncTableSchema,
   execute: async ([redirect_id], context) => {
     const redirectResponse = await fetchSingleRedirectRest(redirect_id, context);
     if (redirectResponse.body?.redirect) {

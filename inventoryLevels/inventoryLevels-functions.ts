@@ -4,14 +4,14 @@ import { makePostRequest } from '../helpers-rest';
 import { REST_DEFAULT_API_VERSION } from '../constants';
 import { FetchRequestOptions } from '../types/Requests';
 
-import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
+import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { InventoryLevelAdjustRestParams, InventoryLevelSetRestParams } from '../types/InventoryLevel';
 import { formatLocationReferenceValueForSchema } from '../schemas/syncTable/LocationSchema';
 import { formatInventoryItemReferenceValueForSchema } from '../schemas/syncTable/InventoryItemSchema';
 
 // #region Helpers
 export async function handleInventoryLevelUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof InventoryLevelSchema>,
+  update: coda.SyncUpdate<string, string, typeof InventoryLevelSyncTableSchema>,
   context: coda.ExecutionContext
 ) {
   const inventoryLevelUniqueId = update.previousValue.id as string;

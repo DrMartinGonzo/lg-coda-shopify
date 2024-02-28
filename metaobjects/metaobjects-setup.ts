@@ -18,7 +18,7 @@ import {
 import { capitalizeFirstChar, compareByDisplayKey, getObjectSchemaEffectiveKeys, isString } from '../helpers';
 import { MetaobjectFieldInput } from '../types/admin.types';
 import { formatMetafieldValueForApi, mapMetaFieldToSchemaProperty } from '../metafields/metafields-functions';
-import { MetaObjectBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
+import { MetaObjectSyncTableBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   idToGraphQlGid,
@@ -46,7 +46,7 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
   const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
   let displayProperty = 'handle';
 
-  let augmentedSchema: any = MetaObjectBaseSchema;
+  let augmentedSchema: any = MetaObjectSyncTableBaseSchema;
 
   if (isPublishable) {
     augmentedSchema.properties['status'] = {
@@ -149,7 +149,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
         (await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context));
 
       // Separate constant fields keys from the custom ones
-      const constantKeys = getObjectSchemaEffectiveKeys(MetaObjectBaseSchema).concat('status');
+      const constantKeys = getObjectSchemaEffectiveKeys(MetaObjectSyncTableBaseSchema).concat('status');
       const optionalFieldsKeys = effectivePropertyKeys.filter((key) => !constantKeys.includes(key));
 
       const payload = {
@@ -334,7 +334,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(MetaObjectBaseSchema, IDENTITY_METAOBJECT),
-  schema: MetaObjectBaseSchema,
+  schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
     const fields: MetaobjectFieldInput[] = [];
     while (varargs.length > 0) {

@@ -19,7 +19,7 @@ import {
   updateArticleRest,
 } from './articles-functions';
 
-import { ArticleSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
+import { ArticleSyncTableSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { sharedParameters } from '../shared-parameters';
 import {
@@ -48,9 +48,9 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getArticleSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = ArticleSchema;
+  let augmentedSchema: any = ArticleSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(ArticleSchema, MetafieldOwnerType.Article, context);
+    augmentedSchema = await augmentSchemaWithMetafields(ArticleSyncTableSchema, MetafieldOwnerType.Article, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -116,7 +116,7 @@ export const Sync_Articles = coda.makeSyncTable({
     "Return Articles from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ARTICLE,
-  schema: ArticleSchema,
+  schema: ArticleSyncTableSchema,
   dynamicOptions: {
     getSchema: getArticleSchema,
     defaultAddDynamicColumns: false,
@@ -380,7 +380,7 @@ export const Action_UpdateArticle = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
-  schema: ArticleSchema,
+  schema: ArticleSyncTableSchema,
   execute: async function (
     [
       articleId,
@@ -470,7 +470,7 @@ export const Formula_Article = coda.makeFormula({
   parameters: [parameters.articleID],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: ArticleSchema,
+  schema: ArticleSyncTableSchema,
   execute: async ([articleId], context) => {
     const articleResponse = await fetchSingleArticleRest(articleId, context);
     if (articleResponse.body?.article) {
