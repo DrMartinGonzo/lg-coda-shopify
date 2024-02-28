@@ -9,19 +9,19 @@ import { sharedParameters } from '../shared-parameters';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = OrderLineItemSyncTableSchema;
-  // let augmentedSchema = OrderSchema;
+  let augmentedSchema = OrderLineItemSyncTableSchema;
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
 
   // Main props
-  augmentedSchema.properties.price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_discount.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.discount_allocations.items.properties.amount.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_discount['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
 
   return augmentedSchema;
 }
@@ -79,7 +79,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
     ) {
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       let restLimit = REST_DEFAULT_LIMIT;
-      let restItems = [];
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof OrderLineItemSyncTableSchema>> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       // Rest Admin API Sync

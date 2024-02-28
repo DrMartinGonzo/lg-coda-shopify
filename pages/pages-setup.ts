@@ -45,11 +45,11 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = PageSyncTableSchema;
+  let augmentedSchema = PageSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(PageSyncTableSchema, MetafieldOwnerType.Page, context);
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
 
   return augmentedSchema;
@@ -276,7 +276,7 @@ export const Action_CreatePage = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -323,7 +323,7 @@ export const Action_UpdatePage = coda.makeFormula({
       template_suffix: templateSuffix,
     };
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updatePageRest(pageId, restParams, context));
     if (metafields && metafields.length) {
       promises.push(

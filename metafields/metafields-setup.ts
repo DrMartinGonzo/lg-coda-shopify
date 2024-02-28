@@ -52,7 +52,7 @@ import { sharedParameters } from '../shared-parameters';
 
 // #region Helpers
 async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = MetafieldSyncTableSchema;
+  let augmentedSchema = MetafieldSyncTableSchema;
   const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
 
   // Augment schema with a relation to the owner of the metafield
@@ -98,6 +98,7 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
       required: true,
       description: 'A relation to the owner of this metafield.',
     };
+    // @ts-ignore
     augmentedSchema.featuredProperties.push('owner');
   }
 
@@ -108,8 +109,8 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
     description: 'The metafield definition of the metafield, if it exists.',
   };
 
-  // admin_url should always be the last featured property, but Shop doesn't have one
   if (graphQlResource !== GraphQlResource.Shop) {
+    // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
     augmentedSchema.featuredProperties.push('admin_url');
   }
   return augmentedSchema;
@@ -192,7 +193,9 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
         graphQlResource === GraphQlResource.Article ||
         graphQlResource === GraphQlResource.Page ||
         graphQlResource === GraphQlResource.Blog;
-      const filteredMetafieldKeys = Array.isArray(metafieldKeys) ? metafieldKeys.filter((key) => key !== '') : [];
+      const filteredMetafieldKeys = Array.isArray(metafieldKeys)
+        ? metafieldKeys.filter((key) => key !== undefined && key !== '')
+        : [];
       if (isRestSync) {
         return syncRestResourceMetafields(filteredMetafieldKeys, context);
       } else {
@@ -227,7 +230,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
         const { type, owner_id } = update.previousValue;
 
         // We use rawValue as default, but if any helper edit column is set and has matching type, we use its value
-        let value = update.newValue.rawValue as string;
+        let value: string | null = update.newValue.rawValue as string;
         for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
           const item = metafieldSyncTableHelperEditColumns[i];
           if (updatedFields.includes(item.key)) {

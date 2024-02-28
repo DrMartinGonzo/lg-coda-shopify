@@ -23,13 +23,12 @@ async function getOrderTransactionSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema: any = OrderTransactionSyncTableSchema;
-  // let augmentedSchema = OrderSchema;
+  let augmentedSchema = OrderTransactionSyncTableSchema;
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
   // Main props
-  augmentedSchema.properties.amount.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.totalUnsettled.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.amount['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
 
   return augmentedSchema;
 }

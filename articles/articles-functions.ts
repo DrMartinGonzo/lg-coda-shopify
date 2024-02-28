@@ -63,7 +63,7 @@ export async function handleArticleUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const articleId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {

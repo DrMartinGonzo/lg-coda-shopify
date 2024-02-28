@@ -60,11 +60,12 @@ import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
 async function getCollectionSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = CollectionSyncTableSchema;
+  let augmentedSchema = CollectionSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       CollectionSyncTableSchema,
@@ -72,7 +73,7 @@ async function getCollectionSchema(context: coda.ExecutionContext, _: string, fo
       context
     );
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -202,8 +203,8 @@ export const Sync_Collections = coda.makeSyncTable({
         }
       }
 
-      let restItems = [];
-      let restContinuation: SyncTableRestContinuation = null;
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof CollectionSyncTableSchema>> = [];
+      let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
       let restType = prevContinuation?.extraContinuationData?.restType ?? 'custom_collections';
@@ -421,7 +422,7 @@ export const Action_CreateCollection = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -477,7 +478,7 @@ export const Action_UpdateCollection = coda.makeFormula({
       context
     );
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateCollectionRest(collectionId, collectionType, restParams, context));
     if (metafields && metafields.length) {
       // TODO: Je pense qu'on peut le faire avec GraphQL

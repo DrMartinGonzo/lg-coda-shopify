@@ -96,7 +96,7 @@ export async function handleCustomerUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const customerId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {

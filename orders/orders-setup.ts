@@ -43,12 +43,12 @@ import {
 import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
 async function getOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = OrderSyncTableSchema;
-  // let augmentedSchema = OrderSchema;
+  let augmentedSchema = OrderSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
   }
@@ -56,33 +56,33 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
   // Refund order adjustments
   [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
-    properties.amount.currencyCode = shopCurrencyCode;
-    properties.tax_amount.currencyCode = shopCurrencyCode;
+    properties.amount['currencyCode'] = shopCurrencyCode;
+    properties.tax_amount['currencyCode'] = shopCurrencyCode;
   });
 
   // Refund transactions
   [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
-    properties.amount.currencyCode = shopCurrencyCode;
-    properties.totalUnsettled.currencyCode = shopCurrencyCode;
+    properties.amount['currencyCode'] = shopCurrencyCode;
+    properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
   });
 
   // Refund line items
   [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
-    properties.subtotal.currencyCode = shopCurrencyCode;
-    properties.total_tax.currencyCode = shopCurrencyCode;
+    properties.subtotal['currencyCode'] = shopCurrencyCode;
+    properties.total_tax['currencyCode'] = shopCurrencyCode;
   });
 
   // Line items
   [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-    properties.price.currencyCode = shopCurrencyCode;
-    properties.total_discount.currencyCode = shopCurrencyCode;
-    properties.discount_allocations.items.properties.amount.currencyCode = shopCurrencyCode;
+    properties.price['currencyCode'] = shopCurrencyCode;
+    properties.total_discount['currencyCode'] = shopCurrencyCode;
+    properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
   });
 
   // Shipping lines
   [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
-    properties.discounted_price.currencyCode = shopCurrencyCode;
-    properties.price.currencyCode = shopCurrencyCode;
+    properties.discounted_price['currencyCode'] = shopCurrencyCode;
+    properties.price['currencyCode'] = shopCurrencyCode;
   });
 
   // Tax lines
@@ -93,28 +93,28 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
     augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
   ].forEach((properties) => {
-    properties.price.currencyCode = shopCurrencyCode;
+    properties.price['currencyCode'] = shopCurrencyCode;
   });
 
   // Main props
-  augmentedSchema.properties.current_subtotal_price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.current_total_additional_fees.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.current_total_discounts.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.current_total_duties.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.current_total_price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.current_total_tax.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.current_subtotal_price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.current_total_additional_fees['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.current_total_discounts['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.current_total_duties['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.current_total_price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.current_total_tax['currencyCode'] = shopCurrencyCode;
 
-  augmentedSchema.properties.subtotal_price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
 
-  augmentedSchema.properties.total_discounts.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_line_items_price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_outstanding.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_shipping_price.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_tax.currencyCode = shopCurrencyCode;
-  augmentedSchema.properties.total_tip_received.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.total_discounts['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_line_items_price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_outstanding['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_shipping_price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.total_tip_received['currencyCode'] = shopCurrencyCode;
 
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -234,8 +234,8 @@ export const Sync_Orders = coda.makeSyncTable({
         }
       }
 
-      let restItems = [];
-      let restContinuation: SyncTableRestContinuation = null;
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof OrderSyncTableSchema>> = [];
+      let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
       // Rest Admin API Sync

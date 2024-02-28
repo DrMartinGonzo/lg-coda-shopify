@@ -19,8 +19,8 @@ import { getSchemaCurrencyCode } from '../shop/shop-functions';
 // #endregion
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = InventoryItemSyncTableSchema;
-  augmentedSchema.properties.cost.currencyCode = await getSchemaCurrencyCode(context);
+  let augmentedSchema = InventoryItemSyncTableSchema;
+  augmentedSchema.properties.cost['currencyCode'] = await getSchemaCurrencyCode(context);
   return augmentedSchema;
 }
 

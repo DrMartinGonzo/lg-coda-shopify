@@ -66,7 +66,7 @@ export async function handleCollectionUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const collectionId = update.previousValue.id as number;
   const collectionType = await getCollectionTypeGraphQl(
     idToGraphQlGid(GraphQlResource.Collection, collectionId),
