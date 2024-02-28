@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_SHOP, NOT_FOUND } from '../../constants';
 
-export const ShopSchema = coda.makeObjectSchema({
+export const ShopSyncTableSchema = coda.makeObjectSchema({
   properties: {
     id: {
       type: coda.ValueType.Number,
@@ -336,5 +336,5 @@ export const ShopSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSchema, IDENTITY_SHOP);
+export const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, IDENTITY_SHOP);
 export const formatShopReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });

@@ -4,7 +4,10 @@ import toSentenceCase from 'to-sentence-case';
 import { graphQlGidToId } from '../helpers-graphql';
 import { OrderTransactionFieldsFragment } from '../types/admin.generated';
 import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
-import { formatOrderTransactionReferenceValueForSchema } from '../schemas/syncTable/OrderTransactionSchema';
+import {
+  OrderTransactionSyncTableSchema,
+  formatOrderTransactionReferenceValueForSchema,
+} from '../schemas/syncTable/OrderTransactionSchema';
 
 // #region Formatting functions
 export const formatOrderTransactionForSchemaFromGraphQlApi = (
@@ -16,7 +19,7 @@ export const formatOrderTransactionForSchemaFromGraphQlApi = (
     ...orderTransaction,
     id: graphQlGidToId(orderTransaction.id),
     label: `Order ${parentOrder.name} - ${toSentenceCase(orderTransaction.kind)}`,
-    order_id: parentOrderId,
+    orderId: parentOrderId,
     order: formatOrderReferenceValueForSchema(parentOrderId, parentOrder.name),
   };
 
@@ -25,11 +28,22 @@ export const formatOrderTransactionForSchemaFromGraphQlApi = (
     obj.parentTransactionId = parentTransactionId;
     obj.parentTransaction = formatOrderTransactionReferenceValueForSchema(parentTransactionId);
   }
+  /**
+   * Unused. see comment in {@link OrderTransactionSyncTableSchema}
+   */
+  /*
+  if (orderTransaction.user?.id) {
+    obj.userId = graphQlGidToId(orderTransaction.user.id);
+  }
+  */
   if (orderTransaction.paymentIcon?.url) {
     obj.paymentIcon = orderTransaction.paymentIcon.url;
   }
   if (orderTransaction.amountSet?.shopMoney?.amount) {
     obj.amount = parseFloat(orderTransaction.amountSet.shopMoney.amount);
+  }
+  if (orderTransaction.amountSet?.presentmentMoney?.currencyCode) {
+    obj.currency = orderTransaction.amountSet.presentmentMoney.currencyCode;
   }
   if (orderTransaction.totalUnsettledSet?.shopMoney?.amount) {
     obj.totalUnsettled = parseFloat(orderTransaction.totalUnsettledSet.shopMoney.amount);

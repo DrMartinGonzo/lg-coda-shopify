@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_DEFAULT } from '../constants';
 
-import { LocationSchema } from '../schemas/syncTable/LocationSchema';
+import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import {
   separatePrefixedMetafieldsKeysFromKeys,
@@ -111,7 +111,7 @@ export function formatGraphQlLocationEditAddressInputNew(parts: {
 }
 
 export async function handleLocationUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof LocationSchema>,
+  update: coda.SyncUpdate<string, string, typeof LocationSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {
@@ -184,7 +184,7 @@ export async function handleLocationUpdateJob(
 export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment, context) => {
   const location_id = graphQlGidToId(location.id);
 
-  let obj: coda.SchemaType<typeof LocationSchema> = {
+  let obj: coda.SchemaType<typeof LocationSyncTableSchema> = {
     // ...location,
     id: location_id,
     graphql_gid: location.id,

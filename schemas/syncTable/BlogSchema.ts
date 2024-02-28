@@ -8,7 +8,7 @@ export const COMMENTABLE_OPTIONS = [
   { display: 'Yes', value: 'yes' },
 ];
 
-export const BlogSchema = coda.makeObjectSchema({
+export const BlogSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,
@@ -99,9 +99,9 @@ export const BlogSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSchema, IDENTITY_BLOG);
+export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSyncTableSchema, IDENTITY_BLOG);
 export const formatBlogReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
-export const blogFieldDependencies: FieldDependency<typeof BlogSchema.properties>[] = [
+export const blogFieldDependencies: FieldDependency<typeof BlogSyncTableSchema.properties>[] = [
   {
     field: 'id',
     dependencies: ['graphql_gid', 'admin_url'],

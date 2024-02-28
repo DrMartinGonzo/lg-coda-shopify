@@ -109,7 +109,7 @@ export const REST_DEFAULT_LIMIT = 250;
 // Don't put this at 1000 (theoretical max) because we can have multiple syncs happening at the same time in different documents
 export const GRAPHQL_BUDGET__MAX = 900;
 export const GRAPHQL_RETRIES__MAX = 5;
-export const GRAPHQL_DEFAULT_API_VERSION = '2023-07';
+export const GRAPHQL_DEFAULT_API_VERSION = '2023-10';
 
 export const CACHE_DISABLED = 0;
 export const CACHE_DEFAULT = 60 * 5; // 5 minute, Coda default as of 23/02/2024

@@ -3,7 +3,7 @@ import { IDENTITY_LOCATION, NOT_FOUND } from '../../constants';
 import { countryNameAutocompleteValues } from '../../constants';
 import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 
-export const LocationSchema = coda.makeObjectSchema({
+export const LocationSyncTableSchema = coda.makeObjectSchema({
   properties: {
     id: {
       type: coda.ValueType.Number,
@@ -143,5 +143,5 @@ export const LocationSchema = coda.makeObjectSchema({
 
 });
 
-export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSchema, IDENTITY_LOCATION);
+export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSyncTableSchema, IDENTITY_LOCATION);
 export const formatLocationReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });

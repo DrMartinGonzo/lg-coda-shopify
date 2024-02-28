@@ -22,7 +22,7 @@ import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
 import type { MetafieldDefinitionFragment } from '../types/admin.generated';
-import { ProductSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
+import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { queryProductTypes } from './products-graphql';
 
@@ -58,7 +58,7 @@ export function validateProductParams(params: any, isRest = false) {
 }
 
 export async function handleProductUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof ProductSchemaRest>,
+  update: coda.SyncUpdate<string, string, typeof ProductSyncTableSchemaRest>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

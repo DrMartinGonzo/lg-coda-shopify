@@ -74,7 +74,7 @@ import {
   SetMetafieldsMutation,
   SetMetafieldsMutationVariables,
 } from '../types/admin.generated';
-import { MetafieldSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
+import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { RestResource, restResources } from '../types/RequestsRest';
@@ -964,7 +964,7 @@ export function formatMetafieldForSchemaFromGraphQlApi(
   const ownerId = graphQlGidToId(ownerNodeGid);
   const hasMetafieldDefinition = !!metafieldNode.definition;
 
-  let obj: coda.SchemaType<typeof MetafieldSchema> = {
+  let obj: coda.SchemaType<typeof MetafieldSyncTableSchema> = {
     admin_graphql_api_id: metafieldNode.id,
     id: graphQlGidToId(metafieldNode.id),
     key: metaKey,

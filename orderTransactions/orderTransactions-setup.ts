@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_ORDER_TRANSACTION } from '../constants';
 import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
-import { OrderTransactionSchema } from '../schemas/syncTable/OrderTransactionSchema';
+import { OrderTransactionSyncTableSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { sharedParameters } from '../shared-parameters';
 import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
@@ -23,7 +23,7 @@ async function getOrderTransactionSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema: any = OrderTransactionSchema;
+  let augmentedSchema: any = OrderTransactionSyncTableSchema;
   // let augmentedSchema = OrderSchema;
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
@@ -40,7 +40,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
   description: 'All Shopify order transactions.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER_TRANSACTION,
-  schema: OrderTransactionSchema,
+  schema: OrderTransactionSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderTransactionSchema,
     defaultAddDynamicColumns: false,
@@ -105,6 +105,10 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
             effectivePropertyKeys.includes('parentTransactionId'),
           includePaymentDetails: effectivePropertyKeys.includes('paymentDetails'),
           includeReceiptJson: effectivePropertyKeys.includes('receiptJson'),
+          includeAmount: effectivePropertyKeys.includes('amount'),
+          includeIcon: effectivePropertyKeys.includes('paymentIcon'),
+          includeTotalUnsettled: effectivePropertyKeys.includes('totalUnsettled'),
+          includeTransactionCurrency: effectivePropertyKeys.includes('currency'),
         } as GetOrderTransactionsQueryVariables,
       };
 

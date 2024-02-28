@@ -16,7 +16,7 @@ import {
   handleOrderUpdateJob,
   validateOrderParams,
 } from './orders-functions';
-import { OrderSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
+import { OrderSyncTableSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
@@ -47,10 +47,10 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = OrderSchema;
+  let augmentedSchema: any = OrderSyncTableSchema;
   // let augmentedSchema = OrderSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(OrderSchema, MetafieldOwnerType.Order, context);
+    augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
   }
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
@@ -63,7 +63,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
   // Refund transactions
   [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
     properties.amount.currencyCode = shopCurrencyCode;
-    properties.total_unsettled.currencyCode = shopCurrencyCode;
+    properties.totalUnsettled.currencyCode = shopCurrencyCode;
   });
 
   // Refund line items
@@ -169,7 +169,7 @@ export const Sync_Orders = coda.makeSyncTable({
   description: 'Return Orders from this shop. You can also fetch metafields by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER,
-  schema: OrderSchema,
+  schema: OrderSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderSchema,
     defaultAddDynamicColumns: false,
@@ -384,7 +384,7 @@ export const Formula_Order = coda.makeFormula({
   parameters: [parameters.orderId],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: OrderSchema,
+  schema: OrderSyncTableSchema,
   execute: async function ([orderId], context) {
     const response = await fetchSingleOrderRest(orderId, context);
     if (response.body?.order) {
@@ -409,7 +409,7 @@ export const Formula_Orders = coda.makeFormula({
   ],
   cacheTtlSecs: 10, // Cache is reduced to 10 seconds intentionnaly
   resultType: coda.ValueType.Array,
-  items: OrderSchema,
+  items: OrderSyncTableSchema,
   execute: async function (
     [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
     context

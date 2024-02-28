@@ -3,14 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 
 import { fetchShopRest, formatShopForSchemaFromRest } from './shop-functions';
 import { CACHE_DEFAULT, IDENTITY_SHOP, REST_DEFAULT_API_VERSION } from '../constants';
-import { ShopSchema } from '../schemas/syncTable/ShopSchema';
+import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 
 // #endregion
 
-const validShopFields = Object.keys(ShopSchema.properties)
-  .map((key) => ShopSchema.properties[key].fromKey)
+const validShopFields = Object.keys(ShopSyncTableSchema.properties)
+  .map((key) => ShopSyncTableSchema.properties[key].fromKey)
   .filter(Boolean);
 
 // #region Sync Table
@@ -19,13 +19,13 @@ export const Sync_Shops = coda.makeSyncTable({
   description: 'Return Shop from specified account.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_SHOP,
-  schema: ShopSchema,
+  schema: ShopSyncTableSchema,
   formula: {
     name: 'SyncShops',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
     execute: async function ([], context: coda.SyncExecutionContext) {
-      const schema = context.sync.schema ?? ShopSchema;
+      const schema = context.sync.schema ?? ShopSyncTableSchema;
       const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
       const restParams = cleanQueryParams({
@@ -54,7 +54,7 @@ export const Formula_Shop = coda.makeFormula({
   parameters: [],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: ShopSchema,
+  schema: ShopSyncTableSchema,
   execute: async function ([], context: coda.SyncExecutionContext) {
     const shop = await fetchShopRest(undefined, context);
     if (shop) return formatShopForSchemaFromRest(shop, context);

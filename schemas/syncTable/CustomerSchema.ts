@@ -43,7 +43,7 @@ export const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.fi
     option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value
 );
 
-export const CustomerSchema = coda.makeObjectSchema({
+export const CustomerSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,
@@ -253,7 +253,7 @@ export const CustomerSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSchema, IDENTITY_CUSTOMER);
+export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSyncTableSchema, IDENTITY_CUSTOMER);
 export const formatCustomerReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
 
 export const customerFieldDependencies = [

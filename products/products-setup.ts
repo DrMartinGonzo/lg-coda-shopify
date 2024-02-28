@@ -22,7 +22,7 @@ import {
   autocompleteProductTypes,
   updateProductRest,
 } from './products-functions';
-import { ProductSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
+import { ProductSyncTableSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
 import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
 import { sharedParameters } from '../shared-parameters';
 
@@ -62,9 +62,13 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = ProductSchemaRest;
+  let augmentedSchema: any = ProductSyncTableSchemaRest;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaRest, MetafieldOwnerType.Product, context);
+    augmentedSchema = await augmentSchemaWithMetafields(
+      ProductSyncTableSchemaRest,
+      MetafieldOwnerType.Product,
+      context
+    );
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -142,7 +146,7 @@ export const Sync_Products = coda.makeSyncTable({
   description: 'Return Products from this shop. You can also fetch metafields by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_PRODUCT,
-  schema: ProductSchemaRest,
+  schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
     getSchema: getProductSchema,
     defaultAddDynamicColumns: false,
@@ -471,7 +475,7 @@ export const Action_UpdateProduct = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(ProductSchemaRest, IDENTITY_PRODUCT),
-  schema: ProductSchemaRest,
+  schema: ProductSyncTableSchemaRest,
   execute: async function (
     [productId, title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, metafields],
     context
@@ -537,7 +541,7 @@ export const Formula_Product = coda.makeFormula({
   parameters: [sharedParameters.productId],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: ProductSchemaRest,
+  schema: ProductSyncTableSchemaRest,
   execute: async ([productId], context) => {
     const response = await fetchSingleProductRest(productId, context);
     if (response.body.product) {

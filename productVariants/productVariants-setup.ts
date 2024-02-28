@@ -18,7 +18,10 @@ import {
   validateProductVariantParams,
 } from './productVariants-functions';
 
-import { ProductVariantSchema, productVariantFieldDependencies } from '../schemas/syncTable/ProductVariantSchema';
+import {
+  ProductVariantSyncTableSchema,
+  productVariantFieldDependencies,
+} from '../schemas/syncTable/ProductVariantSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
@@ -64,10 +67,10 @@ async function getProductVariantsSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema: any = ProductVariantSchema;
+  let augmentedSchema: any = ProductVariantSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
-      ProductVariantSchema,
+      ProductVariantSyncTableSchema,
       MetafieldOwnerType.Productvariant,
       context
     );
@@ -154,7 +157,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   description: 'All Shopify product variants',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_PRODUCT_VARIANT,
-  schema: ProductVariantSchema,
+  schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
     getSchema: getProductVariantsSchema,
     defaultAddDynamicColumns: false,
@@ -524,7 +527,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(ProductVariantSchema, IDENTITY_PRODUCT_VARIANT),
-  schema: ProductVariantSchema,
+  schema: ProductVariantSyncTableSchema,
   execute: async function (
     [
       productVariantId,
@@ -610,7 +613,7 @@ export const Formula_ProductVariant = coda.makeFormula({
   parameters: [parameters.productVariantId],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: ProductVariantSchema,
+  schema: ProductVariantSyncTableSchema,
   execute: async ([productVariantId], context) => {
     const variantResponse = await fetchProductVariantRest(productVariantId, context);
     if (variantResponse.body.variant) {

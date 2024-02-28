@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { getTranslatableResource, translateResource } from './translations-functions';
-import { TranslatableResourceSchema } from '../schemas/syncTable/TranslatableResourceSchema';
+import { TranslatableResourceSyncTableSchema } from '../schemas/syncTable/TranslatableResourceSchema';
 
 export const setupTranslations = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================
@@ -25,7 +25,7 @@ export const setupTranslations = (pack: coda.PackDefinitionBuilder) => {
     ],
     cacheTtlSecs: 0,
     resultType: coda.ValueType.Object,
-    schema: TranslatableResourceSchema,
+    schema: TranslatableResourceSyncTableSchema,
     execute: getTranslatableResource,
   });
 
