@@ -5,7 +5,7 @@ import { ProductVariantReference } from './ProductVariantSchema';
 import { OrderReference } from './OrderSchema';
 import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
 
-export const OrderLineItemSchema = coda.makeObjectSchema({
+export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
     ...OrderLineItemBasicSchema.properties,
     order_id: {
@@ -49,6 +49,6 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
 });
 
 export const OrderLineItemReference = coda.makeReferenceSchemaFromObjectSchema(
-  OrderLineItemSchema,
+  OrderLineItemSyncTableSchema,
   IDENTITY_ORDER_LINE_ITEM
 );

@@ -4,7 +4,7 @@ import { IDENTITY_METAFIELD_DEFINITION, NOT_FOUND } from '../../constants';
 import { ValidationSchema } from '../basic/ValidationSchema';
 import { ResourceMetafieldsSyncTableDefinition } from '../../types/Metafields';
 
-export const MetafieldDefinitionSchema = coda.makeObjectSchema({
+export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,

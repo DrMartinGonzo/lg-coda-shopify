@@ -1,6 +1,13 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getShopifyRequestHeaders, getShopifyStorefrontRequestHeaders, isCodaCached, logAdmin, wait } from './helpers';
+import {
+  arrayUnique,
+  getShopifyRequestHeaders,
+  getShopifyStorefrontRequestHeaders,
+  isCodaCached,
+  logAdmin,
+  wait,
+} from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import { ShopifyGraphQlError, ShopifyGraphQlUserError, ShopifyMaxExceededError } from './shopifyErrors';
 import { ShopifyGraphQlThrottleStatus } from './types/ShopifyGraphQlErrors';
@@ -120,14 +127,14 @@ function getGraphQlErrorByCode(errors: ShopifyGraphQlError[], code: string) {
 }
 
 function formatGraphQlErrors(errors: ShopifyGraphQlError[]) {
-  return errors.map((error) => `• ${error.message}`).join('\n\n');
+  return arrayUnique(errors.map((error) => `• ${error.message}`)).join('\n\n');
 }
 function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
-  return userErrors
-    .map((error) => {
+  return arrayUnique(
+    userErrors.map((error) => {
       return `• ${error.code ? error.code + ': ' : ''}${error.message}`;
     })
-    .join('\n\n');
+  ).join('\n\n');
 }
 // #endregion
 

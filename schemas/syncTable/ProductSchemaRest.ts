@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_PRODUCT, NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
 import { FieldDependency } from '../../types/tableSync';
 
-export const ProductSchemaRest = coda.makeObjectSchema({
+export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
   properties: {
     /**
      * ! Deprecated
@@ -184,7 +184,7 @@ export const ProductSchemaRest = coda.makeObjectSchema({
   imageProperty: 'featuredImage',
   linkProperty: 'admin_url',
 });
-export const productFieldDependencies: FieldDependency<typeof ProductSchemaRest.properties>[] = [
+export const productFieldDependencies: FieldDependency<typeof ProductSyncTableSchemaRest.properties>[] = [
   {
     field: 'body_html',
     dependencies: ['body'],
@@ -198,5 +198,5 @@ export const productFieldDependencies: FieldDependency<typeof ProductSchemaRest.
     dependencies: ['storeUrl'],
   },
 ];
-export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSchemaRest, IDENTITY_PRODUCT);
+export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSyncTableSchemaRest, IDENTITY_PRODUCT);
 export const formatProductReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });

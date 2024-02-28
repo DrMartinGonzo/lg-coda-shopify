@@ -973,60 +973,6 @@ export type AppRevenueAttributionRecordConnection = {
   pageInfo: PageInfo;
 };
 
-/** Return type for `appRevenueAttributionRecordCreate` mutation. */
-export type AppRevenueAttributionRecordCreatePayload = {
-  __typename?: 'AppRevenueAttributionRecordCreatePayload';
-  /** The created app revenue attribution record. */
-  appRevenueAttributionRecord?: Maybe<AppRevenueAttributionRecord>;
-  /** The list of errors that occurred from executing the mutation. */
-  userErrors: Array<AppRevenueAttributionRecordCreateUserError>;
-};
-
-/** An error that occurs during the execution of `AppRevenueAttributionRecordCreate`. */
-export type AppRevenueAttributionRecordCreateUserError = DisplayableError & {
-  __typename?: 'AppRevenueAttributionRecordCreateUserError';
-  /** The error code. */
-  code?: Maybe<AppRevenueAttributionRecordCreateUserErrorCode>;
-  /** The path to the input field that caused the error. */
-  field?: Maybe<Array<Scalars['String']['output']>>;
-  /** The error message. */
-  message: Scalars['String']['output'];
-};
-
-/** Possible error codes that can be returned by `AppRevenueAttributionRecordCreateUserError`. */
-export enum AppRevenueAttributionRecordCreateUserErrorCode {
-  /** The input value is invalid. */
-  Invalid = 'INVALID',
-  /** The input value is already taken. */
-  Taken = 'TAKEN'
-}
-
-/** Return type for `appRevenueAttributionRecordDelete` mutation. */
-export type AppRevenueAttributionRecordDeletePayload = {
-  __typename?: 'AppRevenueAttributionRecordDeletePayload';
-  /** The ID of the revenue attribution that was deleted, if one was. */
-  deletedId?: Maybe<Scalars['ID']['output']>;
-  /** The list of errors that occurred from executing the mutation. */
-  userErrors: Array<AppRevenueAttributionRecordDeleteUserError>;
-};
-
-/** An error that occurs during the execution of `AppRevenueAttributionRecordDelete`. */
-export type AppRevenueAttributionRecordDeleteUserError = DisplayableError & {
-  __typename?: 'AppRevenueAttributionRecordDeleteUserError';
-  /** The error code. */
-  code?: Maybe<AppRevenueAttributionRecordDeleteUserErrorCode>;
-  /** The path to the input field that caused the error. */
-  field?: Maybe<Array<Scalars['String']['output']>>;
-  /** The error message. */
-  message: Scalars['String']['output'];
-};
-
-/** Possible error codes that can be returned by `AppRevenueAttributionRecordDeleteUserError`. */
-export enum AppRevenueAttributionRecordDeleteUserErrorCode {
-  /** The input value is invalid. */
-  Invalid = 'INVALID'
-}
-
 /**
  * An auto-generated type which holds one AppRevenueAttributionRecord and a cursor during pagination.
  *
@@ -1037,25 +983,6 @@ export type AppRevenueAttributionRecordEdge = {
   cursor: Scalars['String']['output'];
   /** The item at the end of AppRevenueAttributionRecordEdge. */
   node: AppRevenueAttributionRecord;
-};
-
-/** The input fields to supply an app revenue attribution record. */
-export type AppRevenueAttributionRecordInput = {
-  /** The financial amount captured in this attribution. */
-  amount: MoneyInput;
-  /** The timestamp when the financial amount was captured. */
-  capturedAt: Scalars['DateTime']['input'];
-  /**
-   * The unique value submitted during creation.
-   * For more information, refer to
-   * [Idempotent requests](https://shopify.dev/api/usage/idempotent-requests).
-   *
-   */
-  idempotencyKey: Scalars['String']['input'];
-  /** Indicates whether this is a test submission. */
-  test: Scalars['Boolean']['input'];
-  /** The type of revenue attribution. */
-  type: AppRevenueAttributionType;
 };
 
 /** The set of valid sort keys for the AppRevenueAttributionRecord query. */
@@ -1530,6 +1457,12 @@ export enum BadgeType {
   Warning = 'WARNING'
 }
 
+/** Generic payment details that are related to a transaction. */
+export type BasePaymentDetails = {
+  /** The name of payment method used by the buyer. */
+  paymentMethodName?: Maybe<Scalars['String']['output']>;
+};
+
 /**
  * Basic events chronicle resource activities such as the creation of an article, the fulfillment of an order, or
  * the addition of a product.
@@ -1570,6 +1503,8 @@ export enum BillingAttemptUserErrorCode {
   Blank = 'BLANK',
   /** Subscription contract does not exist. */
   ContractNotFound = 'CONTRACT_NOT_FOUND',
+  /** Subscription contract is under review. */
+  ContractUnderReview = 'CONTRACT_UNDER_REVIEW',
   /** Billing cycle selector cannot select billing cycle outside of index range. */
   CycleIndexOutOfRange = 'CYCLE_INDEX_OUT_OF_RANGE',
   /** Billing cycle selector cannot select billing cycle outside of start date range. */
@@ -2336,7 +2271,7 @@ export type CalculatedScriptDiscountApplication = CalculatedDiscountApplication 
 };
 
 /** Card payment details related to a transaction. */
-export type CardPaymentDetails = {
+export type CardPaymentDetails = BasePaymentDetails & {
   __typename?: 'CardPaymentDetails';
   /** The response code from the address verification system (AVS). The code is always a single letter. */
   avsResultCode?: Maybe<Scalars['String']['output']>;
@@ -2354,6 +2289,8 @@ export type CardPaymentDetails = {
   name?: Maybe<Scalars['String']['output']>;
   /** The customer's credit card number, with most of the leading digits redacted. */
   number?: Maybe<Scalars['String']['output']>;
+  /** The name of payment method used by the buyer. */
+  paymentMethodName?: Maybe<Scalars['String']['output']>;
   /** Digital wallet used for the payment. */
   wallet?: Maybe<DigitalWallet>;
 };
@@ -2730,6 +2667,8 @@ export enum CatalogUserErrorCode {
   CannotModifyAppCatalog = 'CANNOT_MODIFY_APP_CATALOG',
   /** Cannot modify a catalog for a market. */
   CannotModifyMarketCatalog = 'CANNOT_MODIFY_MARKET_CATALOG',
+  /** Quantity price breaks can be associated only with company location catalogs. */
+  CatalogContextDoesNotSupportQuantityPriceBreaks = 'CATALOG_CONTEXT_DOES_NOT_SUPPORT_QUANTITY_PRICE_BREAKS',
   /** Quantity rules can be associated only with company location catalogs. */
   CatalogContextDoesNotSupportQuantityRules = 'CATALOG_CONTEXT_DOES_NOT_SUPPORT_QUANTITY_RULES',
   /** Catalog failed to save. */
@@ -2976,6 +2915,1070 @@ export type ChannelInformation = Node & {
   /** A globally-unique ID. */
   id: Scalars['ID']['output'];
 };
+
+/**
+ * The settings of checkout visual customizations.
+ *
+ * To learn more about updating checkout branding settings, refer to the
+ * [checkoutBrandingUpsert](https://shopify.dev/api/admin-graphql/unstable/mutations/checkoutBrandingUpsert) mutation.
+ *
+ */
+export type CheckoutBranding = {
+  __typename?: 'CheckoutBranding';
+  /** The customizations that apply to specific components or areas of the user interface. */
+  customizations?: Maybe<CheckoutBrandingCustomizations>;
+  /**
+   * The design system allows you to set values that represent specific attributes
+   * of your brand like color and font. These attributes are used throughout the user
+   * interface. This brings consistency and allows you to easily make broad design changes.
+   *
+   */
+  designSystem?: Maybe<CheckoutBrandingDesignSystem>;
+};
+
+/** Possible values for the background style. */
+export enum CheckoutBrandingBackgroundStyle {
+  /** The None background style. */
+  None = 'NONE',
+  /** The Solid background style. */
+  Solid = 'SOLID'
+}
+
+/** Possible values for the border. */
+export enum CheckoutBrandingBorder {
+  /** The Block End border. */
+  BlockEnd = 'BLOCK_END',
+  /** The Full border. */
+  Full = 'FULL',
+  /** The None border. */
+  None = 'NONE'
+}
+
+/** The buttons customizations. */
+export type CheckoutBrandingButton = {
+  __typename?: 'CheckoutBrandingButton';
+  /** The background style used for buttons. */
+  background?: Maybe<CheckoutBrandingBackgroundStyle>;
+  /** The block padding used for buttons. */
+  blockPadding?: Maybe<CheckoutBrandingSpacing>;
+  /** The border used for buttons. */
+  border?: Maybe<CheckoutBrandingSimpleBorder>;
+  /** The corner radius used for buttons. */
+  cornerRadius?: Maybe<CheckoutBrandingCornerRadius>;
+  /** The inline padding used for buttons. */
+  inlinePadding?: Maybe<CheckoutBrandingSpacing>;
+  /** The typography used for buttons. */
+  typography?: Maybe<CheckoutBrandingTypographyStyle>;
+};
+
+/** Colors for buttons. */
+export type CheckoutBrandingButtonColorRoles = {
+  __typename?: 'CheckoutBrandingButtonColorRoles';
+  /** The color of accented objects (links and focused state). */
+  accent?: Maybe<Scalars['String']['output']>;
+  /** The color of the background. */
+  background?: Maybe<Scalars['String']['output']>;
+  /** The color of borders. */
+  border?: Maybe<Scalars['String']['output']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: Maybe<Scalars['String']['output']>;
+  /** The colors of the button on hover. */
+  hover?: Maybe<CheckoutBrandingColorRoles>;
+  /** The color of icons. */
+  icon?: Maybe<Scalars['String']['output']>;
+  /** The color of text. */
+  text?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields to set colors for buttons. */
+export type CheckoutBrandingButtonColorRolesInput = {
+  /** The color of accented objects (links and focused state). */
+  accent?: InputMaybe<Scalars['String']['input']>;
+  /** The color of the background. */
+  background?: InputMaybe<Scalars['String']['input']>;
+  /** The color of borders. */
+  border?: InputMaybe<Scalars['String']['input']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: InputMaybe<Scalars['String']['input']>;
+  /** The colors of the button on hover. */
+  hover?: InputMaybe<CheckoutBrandingColorRolesInput>;
+  /** The color of icons. */
+  icon?: InputMaybe<Scalars['String']['input']>;
+  /** The color of text. */
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** The input fields used to update the buttons customizations. */
+export type CheckoutBrandingButtonInput = {
+  /** The background style used for buttons. */
+  background?: InputMaybe<CheckoutBrandingBackgroundStyle>;
+  /** The block padding used for buttons. */
+  blockPadding?: InputMaybe<CheckoutBrandingSpacing>;
+  /** The border used for buttons. */
+  border?: InputMaybe<CheckoutBrandingSimpleBorder>;
+  /** The corner radius used for buttons. */
+  cornerRadius?: InputMaybe<CheckoutBrandingCornerRadius>;
+  /** The inline padding used for buttons. */
+  inlinePadding?: InputMaybe<CheckoutBrandingSpacing>;
+  /** The typography style used for buttons. */
+  typography?: InputMaybe<CheckoutBrandingTypographyStyleInput>;
+};
+
+/** The checkboxes customizations. */
+export type CheckoutBrandingCheckbox = {
+  __typename?: 'CheckoutBrandingCheckbox';
+  /** The corner radius used for checkboxes. */
+  cornerRadius?: Maybe<CheckoutBrandingCornerRadius>;
+};
+
+/** The input fields used to update the checkboxes customizations. */
+export type CheckoutBrandingCheckboxInput = {
+  /** The corner radius used for checkboxes. */
+  cornerRadius?: InputMaybe<CheckoutBrandingCornerRadius>;
+};
+
+/** A set of colors for customizing the overall look and feel of the checkout. */
+export type CheckoutBrandingColorGlobal = {
+  __typename?: 'CheckoutBrandingColorGlobal';
+  /** A color used for interaction, like links and focus states. */
+  accent?: Maybe<Scalars['String']['output']>;
+  /**
+   * A color strongly associated with the merchant, currently used for elements
+   * like primary and secondary buttons.
+   *
+   */
+  brand?: Maybe<Scalars['String']['output']>;
+  /** A semantic color used for components that communicate critical content. */
+  critical?: Maybe<Scalars['String']['output']>;
+  /** A color used to highlight certain areas of the user interface. */
+  decorative?: Maybe<Scalars['String']['output']>;
+  /** A semantic color used for components that communicate informative content. */
+  info?: Maybe<Scalars['String']['output']>;
+  /** A semantic color used for components that communicate successful actions. */
+  success?: Maybe<Scalars['String']['output']>;
+  /** A semantic color used for components that display content that requires attention. */
+  warning?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields to customize the overall look and feel of the checkout. */
+export type CheckoutBrandingColorGlobalInput = {
+  /** A color used for interaction, like links and focus states. */
+  accent?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * A color strongly associated with the merchant, currently used for elements
+   * like primary and secondary buttons.
+   *
+   */
+  brand?: InputMaybe<Scalars['String']['input']>;
+  /** A semantic color used for components that communicate critical content. */
+  critical?: InputMaybe<Scalars['String']['input']>;
+  /** A color used to highlight certain areas of the user interface. */
+  decorative?: InputMaybe<Scalars['String']['input']>;
+  /** A semantic color used for components that communicate informative content. */
+  info?: InputMaybe<Scalars['String']['input']>;
+  /** A semantic color used for components that communicate successful actions. */
+  success?: InputMaybe<Scalars['String']['input']>;
+  /** A semantic color used for components that display content that requires attention. */
+  warning?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A group of colors used together on a surface. */
+export type CheckoutBrandingColorRoles = {
+  __typename?: 'CheckoutBrandingColorRoles';
+  /** The color of accented objects (links and focused state). */
+  accent?: Maybe<Scalars['String']['output']>;
+  /** The color of the background. */
+  background?: Maybe<Scalars['String']['output']>;
+  /** The color of borders. */
+  border?: Maybe<Scalars['String']['output']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: Maybe<Scalars['String']['output']>;
+  /** The color of icons. */
+  icon?: Maybe<Scalars['String']['output']>;
+  /** The color of text. */
+  text?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields for a group of colors used together on a surface. */
+export type CheckoutBrandingColorRolesInput = {
+  /** The color of accented objects (links and focused state). */
+  accent?: InputMaybe<Scalars['String']['input']>;
+  /** The color of the background. */
+  background?: InputMaybe<Scalars['String']['input']>;
+  /** The color of borders. */
+  border?: InputMaybe<Scalars['String']['input']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: InputMaybe<Scalars['String']['input']>;
+  /** The color of icons. */
+  icon?: InputMaybe<Scalars['String']['input']>;
+  /** The color of text. */
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+/**
+ * A base set of color customizations that is applied to an area of Checkout, from which every component
+ * pulls its colors from.
+ *
+ */
+export type CheckoutBrandingColorScheme = {
+  __typename?: 'CheckoutBrandingColorScheme';
+  /** The main colors of a scheme. */
+  base?: Maybe<CheckoutBrandingColorRoles>;
+  /** The colors of form controls. */
+  control?: Maybe<CheckoutBrandingControlColorRoles>;
+  /** The colors of the primary button. */
+  primaryButton?: Maybe<CheckoutBrandingButtonColorRoles>;
+  /** The colors of the secondary button. */
+  secondaryButton?: Maybe<CheckoutBrandingButtonColorRoles>;
+};
+
+/**
+ * The input fields for a base set of color customizations that is applied to an area of Checkout, from which
+ * every component pulls its colors from.
+ *
+ */
+export type CheckoutBrandingColorSchemeInput = {
+  /** The main colors of a scheme. */
+  base?: InputMaybe<CheckoutBrandingColorRolesInput>;
+  /** The colors of form controls. */
+  control?: InputMaybe<CheckoutBrandingControlColorRolesInput>;
+  /** The colors of the primary button. */
+  primaryButton?: InputMaybe<CheckoutBrandingButtonColorRolesInput>;
+  /** The colors of the secondary button. */
+  secondaryButton?: InputMaybe<CheckoutBrandingButtonColorRolesInput>;
+};
+
+/** The possible color schemes. */
+export enum CheckoutBrandingColorSchemeSelection {
+  /** Color Scheme1 color scheme selection. */
+  ColorScheme1 = 'COLOR_SCHEME1',
+  /** Color Scheme2 color scheme selection. */
+  ColorScheme2 = 'COLOR_SCHEME2',
+  /** Transparent color scheme selection. */
+  Transparent = 'TRANSPARENT'
+}
+
+/** The color schemes. */
+export type CheckoutBrandingColorSchemes = {
+  __typename?: 'CheckoutBrandingColorSchemes';
+  /** The primary scheme. By default, it’s used for the main area of the interface. */
+  scheme1?: Maybe<CheckoutBrandingColorScheme>;
+  /** The secondary scheme. By default, it’s used for secondary areas, like Checkout’s Order Summary. */
+  scheme2?: Maybe<CheckoutBrandingColorScheme>;
+};
+
+/** The input fields for the color schemes. */
+export type CheckoutBrandingColorSchemesInput = {
+  /** The primary scheme. By default, it’s used for the main area of the interface. */
+  scheme1?: InputMaybe<CheckoutBrandingColorSchemeInput>;
+  /** The secondary scheme. By default, it’s used for secondary areas, like Checkout’s Order Summary. */
+  scheme2?: InputMaybe<CheckoutBrandingColorSchemeInput>;
+};
+
+/** The possible colors. */
+export enum CheckoutBrandingColorSelection {
+  /** Transparent color selection. */
+  Transparent = 'TRANSPARENT'
+}
+
+/** The color settings for global colors and color schemes. */
+export type CheckoutBrandingColors = {
+  __typename?: 'CheckoutBrandingColors';
+  /** A group of global colors for customizing the overall look and feel of the user interface. */
+  global?: Maybe<CheckoutBrandingColorGlobal>;
+  /** A set of color schemes which apply to different areas of the user interface. */
+  schemes?: Maybe<CheckoutBrandingColorSchemes>;
+};
+
+/** The input fields used to update the color settings for global colors and color schemes. */
+export type CheckoutBrandingColorsInput = {
+  /**
+   * The input to update global colors for customizing the overall look and feel of the user interface.
+   *
+   */
+  global?: InputMaybe<CheckoutBrandingColorGlobalInput>;
+  /** The input to define color schemes which apply to different areas of the user interface. */
+  schemes?: InputMaybe<CheckoutBrandingColorSchemesInput>;
+};
+
+/** The form controls customizations. */
+export type CheckoutBrandingControl = {
+  __typename?: 'CheckoutBrandingControl';
+  /** The border used for form controls. */
+  border?: Maybe<CheckoutBrandingSimpleBorder>;
+  /**
+   * Set to TRANSPARENT to define transparent form controls. If null, form controls inherit colors from their scheme settings (for example, the main section inherits from `design_system.colors.schemes.scheme1.control` by default). Note that usage of the `customizations.control.color` setting to customize the form control color is deprecated.
+   *
+   */
+  color?: Maybe<CheckoutBrandingColorSelection>;
+  /** The corner radius used for form controls. */
+  cornerRadius?: Maybe<CheckoutBrandingCornerRadius>;
+  /** The label position used for form controls. */
+  labelPosition?: Maybe<CheckoutBrandingLabelPosition>;
+};
+
+/** Colors for form controls. */
+export type CheckoutBrandingControlColorRoles = {
+  __typename?: 'CheckoutBrandingControlColorRoles';
+  /** The color of accented objects (links and focused state). */
+  accent?: Maybe<Scalars['String']['output']>;
+  /** The color of the background. */
+  background?: Maybe<Scalars['String']['output']>;
+  /** The color of borders. */
+  border?: Maybe<Scalars['String']['output']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: Maybe<Scalars['String']['output']>;
+  /** The color of icons. */
+  icon?: Maybe<Scalars['String']['output']>;
+  /** The colors of selected controls. */
+  selected?: Maybe<CheckoutBrandingColorRoles>;
+  /** The color of text. */
+  text?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields to define colors for form controls. */
+export type CheckoutBrandingControlColorRolesInput = {
+  /** The color of accented objects (links and focused state). */
+  accent?: InputMaybe<Scalars['String']['input']>;
+  /** The color of the background. */
+  background?: InputMaybe<Scalars['String']['input']>;
+  /** The color of borders. */
+  border?: InputMaybe<Scalars['String']['input']>;
+  /** The decorative color for highlighting specific parts of the user interface. */
+  decorative?: InputMaybe<Scalars['String']['input']>;
+  /** The color of icons. */
+  icon?: InputMaybe<Scalars['String']['input']>;
+  /** The colors of selected controls. */
+  selected?: InputMaybe<CheckoutBrandingColorRolesInput>;
+  /** The color of text. */
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** The input fields used to update the form controls customizations. */
+export type CheckoutBrandingControlInput = {
+  /** The border used for form controls. */
+  border?: InputMaybe<CheckoutBrandingSimpleBorder>;
+  /**
+   * Set to TRANSPARENT to define transparent form controls. If null, form controls inherit colors from their scheme settings (for example, the main section inherits from `design_system.colors.schemes.scheme1.control` by default). Note that usage of the `customizations.control.color` setting to customize the form control color is deprecated.
+   *
+   */
+  color?: InputMaybe<CheckoutBrandingColorSelection>;
+  /** The corner radius used for form controls. */
+  cornerRadius?: InputMaybe<CheckoutBrandingCornerRadius>;
+  /** The label position used for form controls. */
+  labelPosition?: InputMaybe<CheckoutBrandingLabelPosition>;
+};
+
+/**
+ * The options for customizing the corner radius of checkout-related objects. Examples include the primary
+ * button, the name text fields and the sections within the main area (if they have borders).
+ * Refer to this complete [list](https://shopify.dev/docs/api/admin-graphql/latest/enums/CheckoutBrandingCornerRadius#fieldswith)
+ * for objects with customizable corner radii.
+ *
+ * The design system defines the corner radius pixel size for each option. Modify the defaults by setting the
+ * [designSystem.cornerRadius](https://shopify.dev/docs/api/admin-graphql/latest/input-objects/CheckoutBrandingDesignSystemInput#field-checkoutbrandingdesignsysteminput-cornerradius)
+ * input fields.
+ *
+ */
+export enum CheckoutBrandingCornerRadius {
+  /**
+   * The corner radius with a pixel value defined by designSystem.cornerRadius.base.
+   *
+   */
+  Base = 'BASE',
+  /**
+   * The corner radius with a pixel value defined by designSystem.cornerRadius.large.
+   *
+   */
+  Large = 'LARGE',
+  /** The 0px corner radius (square corners). */
+  None = 'NONE',
+  /**
+   * The corner radius with a pixel value defined by designSystem.cornerRadius.small.
+   *
+   */
+  Small = 'SMALL'
+}
+
+/**
+ * Define the pixel size of corner radius options.
+ *
+ */
+export type CheckoutBrandingCornerRadiusVariables = {
+  __typename?: 'CheckoutBrandingCornerRadiusVariables';
+  /** The value in pixels for base corner radii. Example: 5. */
+  base?: Maybe<Scalars['Int']['output']>;
+  /** The value in pixels for large corner radii. Example: 10. */
+  large?: Maybe<Scalars['Int']['output']>;
+  /** The value in pixels for small corner radii. Example: 3. */
+  small?: Maybe<Scalars['Int']['output']>;
+};
+
+/** The input fields used to update the corner radius variables. */
+export type CheckoutBrandingCornerRadiusVariablesInput = {
+  /**
+   * The value in pixels for base corner radii. It should be greater than zero. Example: 5.
+   *
+   */
+  base?: InputMaybe<Scalars['Int']['input']>;
+  /**
+   * The value in pixels for large corner radii. It should be greater than zero. Example: 10.
+   *
+   */
+  large?: InputMaybe<Scalars['Int']['input']>;
+  /**
+   * The value in pixels for small corner radii. It should be greater than zero. Example: 3.
+   *
+   */
+  small?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** A custom font. */
+export type CheckoutBrandingCustomFont = CheckoutBrandingFont & {
+  __typename?: 'CheckoutBrandingCustomFont';
+  /** Globally unique ID reference to the custom font file. */
+  genericFileId?: Maybe<Scalars['ID']['output']>;
+  /** The font sources. */
+  sources?: Maybe<Scalars['String']['output']>;
+  /** The font weight. */
+  weight?: Maybe<Scalars['Int']['output']>;
+};
+
+/** The input fields required to update a custom font group. */
+export type CheckoutBrandingCustomFontGroupInput = {
+  /** The base font. */
+  base: CheckoutBrandingCustomFontInput;
+  /** The bold font. */
+  bold: CheckoutBrandingCustomFontInput;
+  /** The font loading strategy. */
+  loadingStrategy?: InputMaybe<CheckoutBrandingFontLoadingStrategy>;
+};
+
+/** The input fields required to update a font. */
+export type CheckoutBrandingCustomFontInput = {
+  /**
+   * A globally-unique ID for a font file uploaded via the Files api.
+   * Allowed font types are .woff and .woff2.
+   *
+   */
+  genericFileId: Scalars['ID']['input'];
+  /** The font weight. Its value should be between 100 and 900. */
+  weight: Scalars['Int']['input'];
+};
+
+/** The customizations that apply to specific components or areas of the user interface. */
+export type CheckoutBrandingCustomizations = {
+  __typename?: 'CheckoutBrandingCustomizations';
+  /** The checkboxes customizations. */
+  checkbox?: Maybe<CheckoutBrandingCheckbox>;
+  /** The form controls customizations. */
+  control?: Maybe<CheckoutBrandingControl>;
+  /** The favicon image. */
+  favicon?: Maybe<CheckoutBrandingImage>;
+  /** The global customizations. */
+  global?: Maybe<CheckoutBrandingGlobal>;
+  /** The header customizations. */
+  header?: Maybe<CheckoutBrandingHeader>;
+  /** The Heading Level 1 customizations. */
+  headingLevel1?: Maybe<CheckoutBrandingHeadingLevel>;
+  /** The Heading Level 2 customizations. */
+  headingLevel2?: Maybe<CheckoutBrandingHeadingLevel>;
+  /** The Heading Level 3 customizations. */
+  headingLevel3?: Maybe<CheckoutBrandingHeadingLevel>;
+  /** The main area customizations. */
+  main?: Maybe<CheckoutBrandingMain>;
+  /** The merchandise thumbnails customizations. */
+  merchandiseThumbnail?: Maybe<CheckoutBrandingMerchandiseThumbnail>;
+  /** The order summary customizations. */
+  orderSummary?: Maybe<CheckoutBrandingOrderSummary>;
+  /** The primary buttons customizations. */
+  primaryButton?: Maybe<CheckoutBrandingButton>;
+  /** The secondary buttons customizations. */
+  secondaryButton?: Maybe<CheckoutBrandingButton>;
+  /** The selects customizations. */
+  select?: Maybe<CheckoutBrandingSelect>;
+  /** The text fields customizations. */
+  textField?: Maybe<CheckoutBrandingTextField>;
+};
+
+/** The input fields used to update the components customizations. */
+export type CheckoutBrandingCustomizationsInput = {
+  /** The checkboxes customizations. */
+  checkbox?: InputMaybe<CheckoutBrandingCheckboxInput>;
+  /** The form controls customizations. */
+  control?: InputMaybe<CheckoutBrandingControlInput>;
+  /** The favicon image (must be of PNG format). */
+  favicon?: InputMaybe<CheckoutBrandingImageInput>;
+  /** The global customizations. */
+  global?: InputMaybe<CheckoutBrandingGlobalInput>;
+  /** The header customizations. */
+  header?: InputMaybe<CheckoutBrandingHeaderInput>;
+  /** The Heading Level 1 customizations. */
+  headingLevel1?: InputMaybe<CheckoutBrandingHeadingLevelInput>;
+  /** The Heading Level 2 customizations. */
+  headingLevel2?: InputMaybe<CheckoutBrandingHeadingLevelInput>;
+  /** The Heading Level 3 customizations. */
+  headingLevel3?: InputMaybe<CheckoutBrandingHeadingLevelInput>;
+  /** The main area customizations. */
+  main?: InputMaybe<CheckoutBrandingMainInput>;
+  /** The merchandise thumbnails customizations. */
+  merchandiseThumbnail?: InputMaybe<CheckoutBrandingMerchandiseThumbnailInput>;
+  /** The order summary customizations. */
+  orderSummary?: InputMaybe<CheckoutBrandingOrderSummaryInput>;
+  /** The primary buttons customizations. */
+  primaryButton?: InputMaybe<CheckoutBrandingButtonInput>;
+  /** The secondary buttons customizations. */
+  secondaryButton?: InputMaybe<CheckoutBrandingButtonInput>;
+  /** The selects customizations. */
+  select?: InputMaybe<CheckoutBrandingSelectInput>;
+  /** The text fields customizations. */
+  textField?: InputMaybe<CheckoutBrandingTextFieldInput>;
+};
+
+/**
+ * The design system allows you to set values that represent specific attributes
+ * of your brand like color and font. These attributes are used throughout the user
+ * interface. This brings consistency and allows you to easily make broad design changes.
+ *
+ */
+export type CheckoutBrandingDesignSystem = {
+  __typename?: 'CheckoutBrandingDesignSystem';
+  /** The color settings for global colors and color schemes. */
+  colors?: Maybe<CheckoutBrandingColors>;
+  /** The corner radius variables. */
+  cornerRadius?: Maybe<CheckoutBrandingCornerRadiusVariables>;
+  /** The typography. */
+  typography?: Maybe<CheckoutBrandingTypography>;
+};
+
+/** The input fields used to update the design system. */
+export type CheckoutBrandingDesignSystemInput = {
+  /** The color settings for global colors and color schemes. */
+  colors?: InputMaybe<CheckoutBrandingColorsInput>;
+  /** The corner radius variables. */
+  cornerRadius?: InputMaybe<CheckoutBrandingCornerRadiusVariablesInput>;
+  /** The typography. */
+  typography?: InputMaybe<CheckoutBrandingTypographyInput>;
+};
+
+/** A font. */
+export type CheckoutBrandingFont = {
+  /** The font sources. */
+  sources?: Maybe<Scalars['String']['output']>;
+  /** The font weight. */
+  weight?: Maybe<Scalars['Int']['output']>;
+};
+
+/**
+ * A font group. To learn more about updating fonts, refer to the
+ * [checkoutBrandingUpsert](https://shopify.dev/api/admin-graphql/unstable/mutations/checkoutBrandingUpsert)
+ * mutation and the checkout branding [tutorial](https://shopify.dev/docs/apps/checkout/styling).
+ *
+ */
+export type CheckoutBrandingFontGroup = {
+  __typename?: 'CheckoutBrandingFontGroup';
+  /** The base font. */
+  base?: Maybe<CheckoutBrandingFont>;
+  /** The bold font. */
+  bold?: Maybe<CheckoutBrandingFont>;
+  /** The font loading strategy. */
+  loadingStrategy?: Maybe<CheckoutBrandingFontLoadingStrategy>;
+  /** The font group name. */
+  name?: Maybe<Scalars['String']['output']>;
+};
+
+/**
+ * The input fields used to update a font group. To learn more about updating fonts, refer to the
+ * [checkoutBrandingUpsert](https://shopify.dev/api/admin-graphql/unstable/mutations/checkoutBrandingUpsert)
+ * mutation and the checkout branding [tutorial](https://shopify.dev/docs/apps/checkout/styling).
+ *
+ */
+export type CheckoutBrandingFontGroupInput = {
+  /** A custom font group. */
+  customFontGroup?: InputMaybe<CheckoutBrandingCustomFontGroupInput>;
+  /** A Shopify font group. */
+  shopifyFontGroup?: InputMaybe<CheckoutBrandingShopifyFontGroupInput>;
+};
+
+/**
+ * The font loading strategy determines how a font face is displayed after it is loaded or failed to load.
+ * For more information: https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display.
+ *
+ */
+export enum CheckoutBrandingFontLoadingStrategy {
+  /** The font display strategy is defined by the browser user agent. */
+  Auto = 'AUTO',
+  /** Gives the font face a short block period and an infinite swap period. */
+  Block = 'BLOCK',
+  /** Gives the font face an extremely small block period and a short swap period. */
+  Fallback = 'FALLBACK',
+  /** Gives the font face an extremely small block period and no swap period. */
+  Optional = 'OPTIONAL',
+  /** Gives the font face an extremely small block period and an infinite swap period. */
+  Swap = 'SWAP'
+}
+
+/** The font size. */
+export type CheckoutBrandingFontSize = {
+  __typename?: 'CheckoutBrandingFontSize';
+  /** The base font size. */
+  base?: Maybe<Scalars['Float']['output']>;
+  /** The scale ratio used to derive all font sizes such as small and large. */
+  ratio?: Maybe<Scalars['Float']['output']>;
+};
+
+/** The input fields used to update the font size. */
+export type CheckoutBrandingFontSizeInput = {
+  /** The base font size. Its value should be between 12.0 and 18.0. */
+  base?: InputMaybe<Scalars['Float']['input']>;
+  /** The scale ratio used to derive all font sizes such as small and large. Its value should be between 1.0 and 1.4. */
+  ratio?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** The global customizations. */
+export type CheckoutBrandingGlobal = {
+  __typename?: 'CheckoutBrandingGlobal';
+  /**
+   * The global corner radius setting that overrides all other [corner radius](https://shopify.dev/docs/api/admin-graphql/latest/enums/CheckoutBrandingCornerRadius)
+   * customizations.
+   *
+   */
+  cornerRadius?: Maybe<CheckoutBrandingGlobalCornerRadius>;
+  /** The global typography customizations. */
+  typography?: Maybe<CheckoutBrandingTypographyStyleGlobal>;
+};
+
+/**
+ * Possible choices to override corner radius customizations on all applicable objects. Note that this selection
+ * can only be used to set the override to `NONE` (0px).
+ *
+ * For more customizations options, set the [corner radius](https://shopify.dev/docs/api/admin-graphql/latest/enums/CheckoutBrandingCornerRadius)
+ * selection on specific objects while leaving the global corner radius unset.
+ *
+ */
+export enum CheckoutBrandingGlobalCornerRadius {
+  /** Set the global corner radius override to 0px (square corners). */
+  None = 'NONE'
+}
+
+/** The input fields used to update the global customizations. */
+export type CheckoutBrandingGlobalInput = {
+  /**
+   * Select a global corner radius setting that overrides all other [corner radii](https://shopify.dev/docs/api/admin-graphql/latest/enums/CheckoutBrandingCornerRadius)
+   * customizations.
+   *
+   */
+  cornerRadius?: InputMaybe<CheckoutBrandingGlobalCornerRadius>;
+  /** The global typography customizations. */
+  typography?: InputMaybe<CheckoutBrandingTypographyStyleGlobalInput>;
+};
+
+/** The header customizations. */
+export type CheckoutBrandingHeader = {
+  __typename?: 'CheckoutBrandingHeader';
+  /** The header alignment. */
+  alignment?: Maybe<CheckoutBrandingHeaderAlignment>;
+  /** The background image of the header. */
+  banner?: Maybe<CheckoutBrandingImage>;
+  /** The store logo. */
+  logo?: Maybe<CheckoutBrandingLogo>;
+  /** The header position. */
+  position?: Maybe<CheckoutBrandingHeaderPosition>;
+};
+
+/** The possible header alignments. */
+export enum CheckoutBrandingHeaderAlignment {
+  /** Center alignment. */
+  Center = 'CENTER',
+  /** End alignment. */
+  End = 'END',
+  /** Start alignment. */
+  Start = 'START'
+}
+
+/** The input fields used to update the header customizations. */
+export type CheckoutBrandingHeaderInput = {
+  /** The header alignment. */
+  alignment?: InputMaybe<CheckoutBrandingHeaderAlignment>;
+  /** The background image of the header (must not be of SVG format). */
+  banner?: InputMaybe<CheckoutBrandingImageInput>;
+  /** The store logo. */
+  logo?: InputMaybe<CheckoutBrandingLogoInput>;
+  /** The header position. */
+  position?: InputMaybe<CheckoutBrandingHeaderPosition>;
+};
+
+/** The possible header positions. */
+export enum CheckoutBrandingHeaderPosition {
+  /** Inline position. */
+  Inline = 'INLINE',
+  /** Secondary inline position. */
+  InlineSecondary = 'INLINE_SECONDARY',
+  /** Start position. */
+  Start = 'START'
+}
+
+/** The heading level customizations. */
+export type CheckoutBrandingHeadingLevel = {
+  __typename?: 'CheckoutBrandingHeadingLevel';
+  /** The typography customizations used for headings. */
+  typography?: Maybe<CheckoutBrandingTypographyStyle>;
+};
+
+/** The input fields for heading level customizations. */
+export type CheckoutBrandingHeadingLevelInput = {
+  /** The typography customizations used for headings. */
+  typography?: InputMaybe<CheckoutBrandingTypographyStyleInput>;
+};
+
+/** A checkout branding image. */
+export type CheckoutBrandingImage = {
+  __typename?: 'CheckoutBrandingImage';
+  /** The image details. */
+  image?: Maybe<Image>;
+};
+
+/** The input fields used to update a checkout branding image uploaded via the Files API. */
+export type CheckoutBrandingImageInput = {
+  /** A globally-unique ID. */
+  mediaImageId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** The input fields used to upsert the checkout branding settings. */
+export type CheckoutBrandingInput = {
+  /** The customizations that apply to specific components or areas of the user interface. */
+  customizations?: InputMaybe<CheckoutBrandingCustomizationsInput>;
+  /**
+   * The design system allows you to set values that represent specific attributes
+   * of your brand like color and font. These attributes are used throughout the user
+   * interface. This brings consistency and allows you to easily make broad design changes.
+   *
+   */
+  designSystem?: InputMaybe<CheckoutBrandingDesignSystemInput>;
+};
+
+/** Possible values for the label position. */
+export enum CheckoutBrandingLabelPosition {
+  /** The Inside label position. */
+  Inside = 'INSIDE',
+  /** The Outside label position. */
+  Outside = 'OUTSIDE'
+}
+
+/** The store logo customizations. */
+export type CheckoutBrandingLogo = {
+  __typename?: 'CheckoutBrandingLogo';
+  /** The logo image. */
+  image?: Maybe<Image>;
+  /** The maximum width of the logo. */
+  maxWidth?: Maybe<Scalars['Int']['output']>;
+};
+
+/** The input fields used to update the logo customizations. */
+export type CheckoutBrandingLogoInput = {
+  /** The logo image (must not be of SVG format). */
+  image?: InputMaybe<CheckoutBrandingImageInput>;
+  /** The maximum width of the logo. */
+  maxWidth?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** The main container customizations. */
+export type CheckoutBrandingMain = {
+  __typename?: 'CheckoutBrandingMain';
+  /** The background image of the main container. */
+  backgroundImage?: Maybe<CheckoutBrandingImage>;
+  /** The selected color scheme of the main container. */
+  colorScheme?: Maybe<CheckoutBrandingColorSchemeSelection>;
+};
+
+/** The input fields used to update the main container customizations. */
+export type CheckoutBrandingMainInput = {
+  /** The background image of the main container (must not be of SVG format). */
+  backgroundImage?: InputMaybe<CheckoutBrandingImageInput>;
+  /** The selected color scheme for the main container of the checkout. */
+  colorScheme?: InputMaybe<CheckoutBrandingColorSchemeSelection>;
+};
+
+/** The merchandise thumbnails customizations. */
+export type CheckoutBrandingMerchandiseThumbnail = {
+  __typename?: 'CheckoutBrandingMerchandiseThumbnail';
+  /** The border used for merchandise thumbnails. */
+  border?: Maybe<CheckoutBrandingSimpleBorder>;
+  /** The corner radius used for merchandise thumbnails. */
+  cornerRadius?: Maybe<CheckoutBrandingCornerRadius>;
+};
+
+/** The input fields used to update the merchandise thumbnails customizations. */
+export type CheckoutBrandingMerchandiseThumbnailInput = {
+  /** The border used for merchandise thumbnails. */
+  border?: InputMaybe<CheckoutBrandingSimpleBorder>;
+  /** The corner radius used for merchandise thumbnails. */
+  cornerRadius?: InputMaybe<CheckoutBrandingCornerRadius>;
+};
+
+/** The order summary customizations. */
+export type CheckoutBrandingOrderSummary = {
+  __typename?: 'CheckoutBrandingOrderSummary';
+  /** The background image of the order summary container. */
+  backgroundImage?: Maybe<CheckoutBrandingImage>;
+  /** The selected color scheme of the order summary container. */
+  colorScheme?: Maybe<CheckoutBrandingColorSchemeSelection>;
+};
+
+/** The input fields used to update the order summary container customizations. */
+export type CheckoutBrandingOrderSummaryInput = {
+  /** The background image of the order summary container (must not be of SVG format). */
+  backgroundImage?: InputMaybe<CheckoutBrandingImageInput>;
+  /** The selected color scheme for the order summary container of the checkout. */
+  colorScheme?: InputMaybe<CheckoutBrandingColorSchemeSelection>;
+};
+
+/** The selects customizations. */
+export type CheckoutBrandingSelect = {
+  __typename?: 'CheckoutBrandingSelect';
+  /** The border used for selects. */
+  border?: Maybe<CheckoutBrandingBorder>;
+  /** The typography customizations used for selects. */
+  typography?: Maybe<CheckoutBrandingTypographyStyle>;
+};
+
+/** The input fields used to update the selects customizations. */
+export type CheckoutBrandingSelectInput = {
+  /** The border used for selects. */
+  border?: InputMaybe<CheckoutBrandingBorder>;
+  /** The typography customizations used for selects. */
+  typography?: InputMaybe<CheckoutBrandingTypographyStyleInput>;
+};
+
+/** A Shopify font. */
+export type CheckoutBrandingShopifyFont = CheckoutBrandingFont & {
+  __typename?: 'CheckoutBrandingShopifyFont';
+  /** The font sources. */
+  sources?: Maybe<Scalars['String']['output']>;
+  /** The font weight. */
+  weight?: Maybe<Scalars['Int']['output']>;
+};
+
+/** The input fields used to update a Shopify font group. */
+export type CheckoutBrandingShopifyFontGroupInput = {
+  /** The base font weight. */
+  baseWeight?: InputMaybe<Scalars['Int']['input']>;
+  /** The bold font weight. */
+  boldWeight?: InputMaybe<Scalars['Int']['input']>;
+  /** The font loading strategy. */
+  loadingStrategy?: InputMaybe<CheckoutBrandingFontLoadingStrategy>;
+  /** The Shopify font name from [the list of available fonts](https://shopify.dev/themes/architecture/settings/fonts#available-fonts), such as `Alegreya Sans` or `Anonymous Pro`. */
+  name: Scalars['String']['input'];
+};
+
+/** Possible values for the simple border. */
+export enum CheckoutBrandingSimpleBorder {
+  /** The Full simple border. */
+  Full = 'FULL',
+  /** The None simple border. */
+  None = 'NONE'
+}
+
+/** Possible values for the spacing. */
+export enum CheckoutBrandingSpacing {
+  /** The Base spacing. */
+  Base = 'BASE',
+  /** The Extra Loose spacing. */
+  ExtraLoose = 'EXTRA_LOOSE',
+  /** The Extra Tight spacing. */
+  ExtraTight = 'EXTRA_TIGHT',
+  /** The Loose spacing. */
+  Loose = 'LOOSE',
+  /** The None spacing. */
+  None = 'NONE',
+  /** The Tight spacing. */
+  Tight = 'TIGHT'
+}
+
+/** The text fields customizations. */
+export type CheckoutBrandingTextField = {
+  __typename?: 'CheckoutBrandingTextField';
+  /** The border used for text fields. */
+  border?: Maybe<CheckoutBrandingBorder>;
+  /** The typography customizations used for text fields. */
+  typography?: Maybe<CheckoutBrandingTypographyStyle>;
+};
+
+/** The input fields used to update the text fields customizations. */
+export type CheckoutBrandingTextFieldInput = {
+  /** The border used for text fields. */
+  border?: InputMaybe<CheckoutBrandingBorder>;
+  /** The typography customizations used for text fields. */
+  typography?: InputMaybe<CheckoutBrandingTypographyStyleInput>;
+};
+
+/**
+ * The typography settings used for checkout-related text. Use these settings to customize the
+ * font family and size for primary and secondary text elements.
+ *
+ * Refer to the [typography tutorial](https://shopify.dev/docs/apps/checkout/styling/customize-typography)
+ * for further information on typography customization.
+ *
+ */
+export type CheckoutBrandingTypography = {
+  __typename?: 'CheckoutBrandingTypography';
+  /** A font group used for most components such as text, buttons and form controls. */
+  primary?: Maybe<CheckoutBrandingFontGroup>;
+  /** A font group used for heading components by default. */
+  secondary?: Maybe<CheckoutBrandingFontGroup>;
+  /** The font size design system (base size in pixels and scaling between different sizes). */
+  size?: Maybe<CheckoutBrandingFontSize>;
+};
+
+/** The font selection. */
+export enum CheckoutBrandingTypographyFont {
+  /** The primary font. */
+  Primary = 'PRIMARY',
+  /** The secondary font. */
+  Secondary = 'SECONDARY'
+}
+
+/**
+ * The input fields used to update the typography. Refer to the [typography tutorial](https://shopify.dev/docs/apps/checkout/styling/customize-typography)
+ * for more information on how to set these fields.
+ *
+ */
+export type CheckoutBrandingTypographyInput = {
+  /** A font group used for most components such as text, buttons and form controls. */
+  primary?: InputMaybe<CheckoutBrandingFontGroupInput>;
+  /** A font group used for heading components by default. */
+  secondary?: InputMaybe<CheckoutBrandingFontGroupInput>;
+  /** The font size. */
+  size?: InputMaybe<CheckoutBrandingFontSizeInput>;
+};
+
+/** Possible values for the typography kerning. */
+export enum CheckoutBrandingTypographyKerning {
+  /** Base or default kerning. */
+  Base = 'BASE',
+  /** Extra loose kerning, leaving even more space in between characters. */
+  ExtraLoose = 'EXTRA_LOOSE',
+  /** Loose kerning, leaving more space than the default in between characters. */
+  Loose = 'LOOSE'
+}
+
+/** Possible values for the typography letter case. */
+export enum CheckoutBrandingTypographyLetterCase {
+  /** All letters are is lower case. */
+  Lower = 'LOWER',
+  /** No letter casing applied. */
+  None = 'NONE',
+  /** Capitalize the first letter of each word. */
+  Title = 'TITLE',
+  /** All letters are uppercase. */
+  Upper = 'UPPER'
+}
+
+/**
+ * Possible choices for the font size.
+ *
+ * Note that the value in pixels of these settings can be customized with the
+ * [typography size](https://shopify.dev/docs/api/admin-graphql/latest/input-objects/CheckoutBrandingFontSizeInput)
+ * object. Refer to the [typography tutorial](https://shopify.dev/docs/apps/checkout/styling/customize-typography)
+ * for more information.
+ *
+ */
+export enum CheckoutBrandingTypographySize {
+  /** The base font size. Example: 14px. */
+  Base = 'BASE',
+  /** The extra extra large font size. Example: 24px. */
+  ExtraExtraLarge = 'EXTRA_EXTRA_LARGE',
+  /** The extra large font size. Example: 21px. */
+  ExtraLarge = 'EXTRA_LARGE',
+  /** The extra small font size. Example: 10px. */
+  ExtraSmall = 'EXTRA_SMALL',
+  /** The large font size. Example: 17px. */
+  Large = 'LARGE',
+  /** The medium font size. Example: 15px. */
+  Medium = 'MEDIUM',
+  /** The small font size. Example: 12px. */
+  Small = 'SMALL'
+}
+
+/** The typography customizations. */
+export type CheckoutBrandingTypographyStyle = {
+  __typename?: 'CheckoutBrandingTypographyStyle';
+  /** The font. */
+  font?: Maybe<CheckoutBrandingTypographyFont>;
+  /** The kerning. */
+  kerning?: Maybe<CheckoutBrandingTypographyKerning>;
+  /** The letter case. */
+  letterCase?: Maybe<CheckoutBrandingTypographyLetterCase>;
+  /** The font size. */
+  size?: Maybe<CheckoutBrandingTypographySize>;
+  /** The font weight. */
+  weight?: Maybe<CheckoutBrandingTypographyWeight>;
+};
+
+/** The global typography customizations. */
+export type CheckoutBrandingTypographyStyleGlobal = {
+  __typename?: 'CheckoutBrandingTypographyStyleGlobal';
+  /** The kerning. */
+  kerning?: Maybe<CheckoutBrandingTypographyKerning>;
+  /** The letter case. */
+  letterCase?: Maybe<CheckoutBrandingTypographyLetterCase>;
+};
+
+/** The input fields used to update the global typography customizations. */
+export type CheckoutBrandingTypographyStyleGlobalInput = {
+  /** The kerning. */
+  kerning?: InputMaybe<CheckoutBrandingTypographyKerning>;
+  /** The letter case. */
+  letterCase?: InputMaybe<CheckoutBrandingTypographyLetterCase>;
+};
+
+/** The input fields used to update the typography customizations. */
+export type CheckoutBrandingTypographyStyleInput = {
+  /** The font. */
+  font?: InputMaybe<CheckoutBrandingTypographyFont>;
+  /** The kerning. */
+  kerning?: InputMaybe<CheckoutBrandingTypographyKerning>;
+  /** The letter case. */
+  letterCase?: InputMaybe<CheckoutBrandingTypographyLetterCase>;
+  /** The font size. */
+  size?: InputMaybe<CheckoutBrandingTypographySize>;
+  /** The font weight. */
+  weight?: InputMaybe<CheckoutBrandingTypographyWeight>;
+};
+
+/** Possible values for the font weight. */
+export enum CheckoutBrandingTypographyWeight {
+  /** The base weight. */
+  Base = 'BASE',
+  /** The bold weight. */
+  Bold = 'BOLD'
+}
+
+/** Return type for `checkoutBrandingUpsert` mutation. */
+export type CheckoutBrandingUpsertPayload = {
+  __typename?: 'CheckoutBrandingUpsertPayload';
+  /** Returns the new checkout branding settings. */
+  checkoutBranding?: Maybe<CheckoutBranding>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<CheckoutBrandingUpsertUserError>;
+};
+
+/** An error that occurs during the execution of `CheckoutBrandingUpsert`. */
+export type CheckoutBrandingUpsertUserError = DisplayableError & {
+  __typename?: 'CheckoutBrandingUpsertUserError';
+  /** The error code. */
+  code?: Maybe<CheckoutBrandingUpsertUserErrorCode>;
+  /** The path to the input field that caused the error. */
+  field?: Maybe<Array<Scalars['String']['output']>>;
+  /** The error message. */
+  message: Scalars['String']['output'];
+};
+
+/** Possible error codes that can be returned by `CheckoutBrandingUpsertUserError`. */
+export enum CheckoutBrandingUpsertUserErrorCode {
+  /** Unexpected internal error happened. */
+  InternalError = 'INTERNAL_ERROR'
+}
 
 /** A checkout profile defines the branding settings and the UI extensions for a store's checkout. A checkout profile could be published or draft. A store might have at most one published checkout profile, which is used to render their live checkout. The store could also have multiple draft profiles that were created, previewed, and published using the admin checkout editor. */
 export type CheckoutProfile = Node & {
@@ -6245,16 +7248,6 @@ export type Customer = CommentEventSubject & HasEvents & HasMetafieldDefinitions
   /** The total amount that the customer has spent on orders in their lifetime. */
   amountSpent: MoneyV2;
   /**
-   * The average amount that the customer spent per order.
-   * @deprecated This field is no longer supported.
-   */
-  averageOrderAmount?: Maybe<Scalars['Money']['output']>;
-  /**
-   * The average amount that the customer spent per order.
-   * @deprecated This field is no longer supported.
-   */
-  averageOrderAmountV2?: Maybe<MoneyV2>;
-  /**
    * Whether the merchant can delete the customer from their store.
    *
    * A customer can be deleted from a store only if they haven't yet made an order. After a customer makes an
@@ -6554,6 +7547,27 @@ export type CustomerSubscriptionContractsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   reverse?: InputMaybe<Scalars['Boolean']['input']>;
 };
+
+/** Information about the shop's customer accounts. */
+export type CustomerAccountsV2 = {
+  __typename?: 'CustomerAccountsV2';
+  /** Indicates which version of customer accounts the merchant is using in online store and checkout. */
+  customerAccountsVersion: CustomerAccountsVersion;
+  /** Login links are shown in online store and checkout. */
+  loginLinksVisibleOnStorefrontAndCheckout: Scalars['Boolean']['output'];
+  /** Customers are required to log in to their account before checkout. */
+  loginRequiredAtCheckout: Scalars['Boolean']['output'];
+  /** The root url for the customer accounts pages. */
+  url?: Maybe<Scalars['URL']['output']>;
+};
+
+/** The login redirection target for customer accounts. */
+export enum CustomerAccountsVersion {
+  /** The customer is redirected to the classic customer accounts login page. */
+  Classic = 'CLASSIC',
+  /** The customer is redirected to the new customer accounts login page. */
+  NewCustomerAccounts = 'NEW_CUSTOMER_ACCOUNTS'
+}
 
 /** Return type for `customerAddTaxExemptions` mutation. */
 export type CustomerAddTaxExemptionsPayload = {
@@ -9047,6 +10061,8 @@ export type DeliveryMethod = Node & {
   methodType: DeliveryMethodType;
   /** The earliest delivery date and time when the fulfillment is expected to arrive at the buyer's location. */
   minDeliveryDateTime?: Maybe<Scalars['DateTime']['output']>;
+  /** A reference to the shipping method. */
+  serviceCode?: Maybe<Scalars['String']['output']>;
 };
 
 /**
@@ -9614,7 +10630,7 @@ export enum DigitalWallet {
 }
 
 /** A discount. */
-export type Discount = DiscountAutomaticApp | DiscountAutomaticBasic | DiscountAutomaticBxgy | DiscountCodeApp | DiscountCodeBasic | DiscountCodeBxgy | DiscountCodeFreeShipping;
+export type Discount = DiscountAutomaticApp | DiscountAutomaticBasic | DiscountAutomaticBxgy | DiscountAutomaticFreeShipping | DiscountCodeApp | DiscountCodeBasic | DiscountCodeBxgy | DiscountCodeFreeShipping;
 
 /** An amount that's allocated to a line based on an associated discount application. */
 export type DiscountAllocation = {
@@ -9754,7 +10770,7 @@ export enum DiscountApplicationTargetType {
 }
 
 /** The type of discount associated to the automatic discount. For example, the automatic discount might offer a basic discount using a fixed percentage, or a fixed amount, on specific products from the order. The automatic discount may also be a BXGY discount, which offers customer discounts on select products if they add a specific product to their order. */
-export type DiscountAutomatic = DiscountAutomaticApp | DiscountAutomaticBasic | DiscountAutomaticBxgy;
+export type DiscountAutomatic = DiscountAutomaticApp | DiscountAutomaticBasic | DiscountAutomaticBxgy | DiscountAutomaticFreeShipping;
 
 /** Return type for `discountAutomaticActivate` mutation. */
 export type DiscountAutomaticActivatePayload = {
@@ -9845,6 +10861,8 @@ export type DiscountAutomaticBasic = {
   endsAt?: Maybe<Scalars['DateTime']['output']>;
   /** The minimum subtotal or quantity that's required for the discount to be applied. */
   minimumRequirement: DiscountMinimumRequirement;
+  /** The number of times a discount applies on recurring purchases (subscriptions). */
+  recurringCycleLimit: Scalars['Int']['output'];
   /** A short summary of the discount. */
   shortSummary: Scalars['String']['output'];
   /** The date and time when the discount starts. */
@@ -9883,6 +10901,8 @@ export type DiscountAutomaticBasicInput = {
   endsAt?: InputMaybe<Scalars['DateTime']['input']>;
   /** The minimum subtotal or quantity that's required for the discount to be applied. */
   minimumRequirement?: InputMaybe<DiscountMinimumRequirementInput>;
+  /** The number of times a discount applies on recurring purchases (subscriptions). */
+  recurringCycleLimit?: InputMaybe<Scalars['Int']['input']>;
   /** The date and time when the discount starts. */
   startsAt?: InputMaybe<Scalars['DateTime']['input']>;
   /** The title of the discount. */
@@ -10040,6 +11060,91 @@ export type DiscountAutomaticEdge = {
   cursor: Scalars['String']['output'];
   /** The item at the end of DiscountAutomaticEdge. */
   node: DiscountAutomatic;
+};
+
+/** An automatic discount that offers customers free shipping on their order. */
+export type DiscountAutomaticFreeShipping = {
+  __typename?: 'DiscountAutomaticFreeShipping';
+  /** Whether the discount applies on regular one-time-purchase shipping lines. */
+  appliesOnOneTimePurchase: Scalars['Boolean']['output'];
+  /** Whether the discount applies on subscription shipping lines. */
+  appliesOnSubscription: Scalars['Boolean']['output'];
+  /** The number of times that the discount has been used. This value is updated asynchronously and can be different than the actual usage count. */
+  asyncUsageCount: Scalars['Int']['output'];
+  /** Determines which discount classes the discount can combine with. */
+  combinesWith: DiscountCombinesWith;
+  /** The date and time when the discount was created. */
+  createdAt: Scalars['DateTime']['output'];
+  /** A shipping destination that qualifies for the discount. */
+  destinationSelection: DiscountShippingDestinationSelection;
+  /** The class of the discount for combining purposes. */
+  discountClass: ShippingDiscountClass;
+  /** The date and time when the discount ends. For open-ended discounts, use `null`. */
+  endsAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Indicates whether there are any timeline comments on the discount. */
+  hasTimelineComment: Scalars['Boolean']['output'];
+  /** The maximum shipping price amount accepted to qualify for the discount. */
+  maximumShippingPrice?: Maybe<MoneyV2>;
+  /** The minimum subtotal or quantity that's required for the discount to be applied. */
+  minimumRequirement: DiscountMinimumRequirement;
+  /** The number of times a discount applies on recurring purchases (subscriptions). */
+  recurringCycleLimit: Scalars['Int']['output'];
+  /** A short summary of the discount. */
+  shortSummary: Scalars['String']['output'];
+  /** The date and time when the discount starts. */
+  startsAt: Scalars['DateTime']['output'];
+  /** The status of the discount. */
+  status: DiscountStatus;
+  /** A detailed summary of the discount. */
+  summary: Scalars['String']['output'];
+  /** The title of the discount. */
+  title: Scalars['String']['output'];
+  /** The total sales from orders where the discount was used. */
+  totalSales?: Maybe<MoneyV2>;
+  /** The date and time when the discount was updated. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** Return type for `discountAutomaticFreeShippingCreate` mutation. */
+export type DiscountAutomaticFreeShippingCreatePayload = {
+  __typename?: 'DiscountAutomaticFreeShippingCreatePayload';
+  /** The created automatic discount. */
+  automaticDiscountNode?: Maybe<DiscountAutomaticNode>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<DiscountUserError>;
+};
+
+/** The input fields to create or update free shipping automatic discount. */
+export type DiscountAutomaticFreeShippingInput = {
+  /** Whether the discount applies on regular one-time-purchase items. */
+  appliesOnOneTimePurchase?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Whether the discount applies on subscription items. */
+  appliesOnSubscription?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Determines which discount classes the shipping discount can combine with. */
+  combinesWith?: InputMaybe<DiscountCombinesWithInput>;
+  /** A list of destinations where the discount will apply. */
+  destination?: InputMaybe<DiscountShippingDestinationSelectionInput>;
+  /** The date and time when the discount ends. For open-ended discounts, use `null`. */
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The maximum shipping price that qualifies for the discount. */
+  maximumShippingPrice?: InputMaybe<Scalars['Decimal']['input']>;
+  /** The minimum subtotal or quantity that's required for the discount to be applied. */
+  minimumRequirement?: InputMaybe<DiscountMinimumRequirementInput>;
+  /** The number of times a discount applies on recurring purchases (subscriptions). */
+  recurringCycleLimit?: InputMaybe<Scalars['Int']['input']>;
+  /** The date and time when the discount starts. */
+  startsAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The title of the discount. */
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Return type for `discountAutomaticFreeShippingUpdate` mutation. */
+export type DiscountAutomaticFreeShippingUpdatePayload = {
+  __typename?: 'DiscountAutomaticFreeShippingUpdatePayload';
+  /** The updated automatic discount. */
+  automaticDiscountNode?: Maybe<DiscountAutomaticNode>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<DiscountUserError>;
 };
 
 /** A node containing an automatic discount and its related events. */
@@ -13459,6 +14564,134 @@ export type FulfillmentConnection = {
   pageInfo: PageInfo;
 };
 
+/** A fulfillment constraint rule. */
+export type FulfillmentConstraintRule = HasMetafields & Node & {
+  __typename?: 'FulfillmentConstraintRule';
+  /** The ID for the fulfillment constraint function. */
+  function: ShopifyFunction;
+  /** A globally-unique ID. */
+  id: Scalars['ID']['output'];
+  /** Returns a metafield by namespace and key that belongs to the resource. */
+  metafield?: Maybe<Metafield>;
+  /** List of metafields that belong to the resource. */
+  metafields: MetafieldConnection;
+  /**
+   * Returns a private metafield by namespace and key that belongs to the resource.
+   * @deprecated Metafields created using a reserved namespace are private by default. See our guide for
+   * [migrating private metafields](https://shopify.dev/docs/apps/custom-data/metafields/migrate-private-metafields).
+   *
+   */
+  privateMetafield?: Maybe<PrivateMetafield>;
+  /**
+   * List of private metafields that belong to the resource.
+   * @deprecated Metafields created using a reserved namespace are private by default. See our guide for
+   * [migrating private metafields](https://shopify.dev/docs/apps/custom-data/metafields/migrate-private-metafields).
+   *
+   */
+  privateMetafields: PrivateMetafieldConnection;
+};
+
+
+/** A fulfillment constraint rule. */
+export type FulfillmentConstraintRuleMetafieldArgs = {
+  key: Scalars['String']['input'];
+  namespace?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+/** A fulfillment constraint rule. */
+export type FulfillmentConstraintRuleMetafieldsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  keys?: InputMaybe<Array<Scalars['String']['input']>>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  namespace?: InputMaybe<Scalars['String']['input']>;
+  reverse?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** A fulfillment constraint rule. */
+export type FulfillmentConstraintRulePrivateMetafieldArgs = {
+  key: Scalars['String']['input'];
+  namespace: Scalars['String']['input'];
+};
+
+
+/** A fulfillment constraint rule. */
+export type FulfillmentConstraintRulePrivateMetafieldsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  namespace?: InputMaybe<Scalars['String']['input']>;
+  reverse?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Return type for `fulfillmentConstraintRuleCreate` mutation. */
+export type FulfillmentConstraintRuleCreatePayload = {
+  __typename?: 'FulfillmentConstraintRuleCreatePayload';
+  /** The newly created fulfillment constraint rule. */
+  fulfillmentConstraintRule?: Maybe<FulfillmentConstraintRule>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<FulfillmentConstraintRuleCreateUserError>;
+};
+
+/** An error that occurs during the execution of `FulfillmentConstraintRuleCreate`. */
+export type FulfillmentConstraintRuleCreateUserError = DisplayableError & {
+  __typename?: 'FulfillmentConstraintRuleCreateUserError';
+  /** The error code. */
+  code?: Maybe<FulfillmentConstraintRuleCreateUserErrorCode>;
+  /** The path to the input field that caused the error. */
+  field?: Maybe<Array<Scalars['String']['output']>>;
+  /** The error message. */
+  message: Scalars['String']['output'];
+};
+
+/** Possible error codes that can be returned by `FulfillmentConstraintRuleCreateUserError`. */
+export enum FulfillmentConstraintRuleCreateUserErrorCode {
+  /** Shop must be on a Shopify Plus plan to activate functions from a custom app. */
+  CustomAppFunctionNotEligible = 'CUSTOM_APP_FUNCTION_NOT_ELIGIBLE',
+  /** A fulfillment constraint rule already exists for the provided function_id. */
+  FunctionAlreadyRegistered = 'FUNCTION_ALREADY_REGISTERED',
+  /** Function does not implement the required interface for this fulfillment constraint rule. */
+  FunctionDoesNotImplement = 'FUNCTION_DOES_NOT_IMPLEMENT',
+  /** No Shopify Function found for provided function_id. */
+  FunctionNotFound = 'FUNCTION_NOT_FOUND',
+  /** Function is pending deletion and cannot have new rules created against it. */
+  FunctionPendingDeletion = 'FUNCTION_PENDING_DELETION',
+  /** Failed to create fulfillment constraint rule due to invalid input. */
+  InputInvalid = 'INPUT_INVALID'
+}
+
+/** Return type for `fulfillmentConstraintRuleDelete` mutation. */
+export type FulfillmentConstraintRuleDeletePayload = {
+  __typename?: 'FulfillmentConstraintRuleDeletePayload';
+  /** Whether or not the fulfillment constraint rule was successfully deleted. */
+  success?: Maybe<Scalars['Boolean']['output']>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<FulfillmentConstraintRuleDeleteUserError>;
+};
+
+/** An error that occurs during the execution of `FulfillmentConstraintRuleDelete`. */
+export type FulfillmentConstraintRuleDeleteUserError = DisplayableError & {
+  __typename?: 'FulfillmentConstraintRuleDeleteUserError';
+  /** The error code. */
+  code?: Maybe<FulfillmentConstraintRuleDeleteUserErrorCode>;
+  /** The path to the input field that caused the error. */
+  field?: Maybe<Array<Scalars['String']['output']>>;
+  /** The error message. */
+  message: Scalars['String']['output'];
+};
+
+/** Possible error codes that can be returned by `FulfillmentConstraintRuleDeleteUserError`. */
+export enum FulfillmentConstraintRuleDeleteUserErrorCode {
+  /** Could not find fulfillment constraint rule for provided id. */
+  NotFound = 'NOT_FOUND',
+  /** Unauthorized app scope. */
+  UnauthorizedAppScope = 'UNAUTHORIZED_APP_SCOPE'
+}
+
 /** Return type for `fulfillmentCreateV2` mutation. */
 export type FulfillmentCreateV2Payload = {
   __typename?: 'FulfillmentCreateV2Payload';
@@ -13911,6 +15144,8 @@ export type FulfillmentOrder = Node & {
    *
    */
   assignedLocation: FulfillmentOrderAssignedLocation;
+  /** ID of the channel that created the order. */
+  channelId?: Maybe<Scalars['ID']['output']>;
   /** Date and time when the fulfillment order was created. */
   createdAt: Scalars['DateTime']['output'];
   /** Delivery method of this fulfillment order. */
@@ -13937,6 +15172,21 @@ export type FulfillmentOrder = Node & {
   merchantRequests: FulfillmentOrderMerchantRequestConnection;
   /** The order that's associated with the fulfillment order. */
   order: Order;
+  /** ID of the order that's associated with the fulfillment order. */
+  orderId: Scalars['ID']['output'];
+  /**
+   * The unique identifier for the order that appears on the order page in the Shopify admin and the <b>Order status</b> page.
+   * For example, "#1001", "EN1001", or "1001-A".
+   * This value isn't unique across multiple stores.
+   *
+   */
+  orderName: Scalars['String']['output'];
+  /**
+   * The date and time when the order was processed.
+   * This date and time might not match the date and time when the order was created.
+   *
+   */
+  orderProcessedAt: Scalars['DateTime']['output'];
   /** The request status of the fulfillment order. */
   requestStatus: FulfillmentOrderRequestStatus;
   /** The status of the fulfillment order. */
@@ -17834,25 +19084,27 @@ export type LineItem = Node & {
   canRestock: Scalars['Boolean']['output'];
   /** The subscription contract associated with this line item. */
   contract?: Maybe<SubscriptionContract>;
-  /** The line item's quantity, minus the removed quantity. */
+  /** The number of units ordered, excluding refunded and removed units. */
   currentQuantity: Scalars['Int']['output'];
   /** A list of attributes that represent custom features or special requests. */
   customAttributes: Array<Attribute>;
-  /** The discounts that have been allocated onto the line item by discount applications, not including order edits and refunds. */
+  /** The discounts that have been allocated to the line item by discount applications, including discounts allocated to refunded and removed quantities. */
   discountAllocations: Array<DiscountAllocation>;
   /**
-   * The total line price after discounts are applied, in shop currency.
+   * The total discounted price of the line item in shop currency, including refunded and removed quantities. This value doesn't include order-level discounts.
    * @deprecated Use `discountedTotalSet` instead.
    */
   discountedTotal: Scalars['Money']['output'];
   /** The total discounted price of the line item in shop and presentment currencies, including refunded and removed quantities. This value doesn't include order-level discounts. Code-based discounts aren't included by default. */
   discountedTotalSet: MoneyBag;
   /**
-   * The approximate split price of a line item unit, in shop currency. This value doesn't include discounts applied to the entire order.
+   * The approximate unit price of the line item in shop currency. This value includes line-level discounts and discounts applied to refunded and removed quantities. It doesn't include order-level discounts.
    * @deprecated Use `discountedUnitPriceSet` instead.
    */
   discountedUnitPrice: Scalars['Money']['output'];
-  /** The approximate split price of a line item unit, in shop and presentment currencies. This value doesn't include discounts applied to the entire order. */
+  /** The approximate unit price of the line item in shop and presentment currencies. This value includes discounts applied to refunded and removed quantities. */
+  discountedUnitPriceAfterAllDiscountsSet: MoneyBag;
+  /** The approximate unit price of the line item in shop and presentment currencies. This value includes line-level discounts and discounts applied to refunded and removed quantities. It doesn't include order-level discounts. */
   discountedUnitPriceSet: MoneyBag;
   /** The duties associated with the line item. */
   duties: Array<Duty>;
@@ -17907,26 +19159,30 @@ export type LineItem = Node & {
   /** The total number of units that can't be fulfilled. For example, if items have been refunded, or the item is not something that can be fulfilled, like a tip. Please see the [FulfillmentOrder](https://shopify.dev/api/admin-graphql/latest/objects/FulfillmentOrder) object for more fulfillment details. */
   nonFulfillableQuantity: Scalars['Int']['output'];
   /**
-   * The total price without discounts applied, in shop currency.
-   * This value is based on the unit price of the variant x quantity.
+   * In shop currency, the total price of the line item when the order was created.
+   * This value doesn't include discounts.
    *
    * @deprecated Use `originalTotalSet` instead.
    */
   originalTotal: Scalars['Money']['output'];
-  /** The total price in shop and presentment currencies, without discounts applied. This value is based on the unit price of the variant x quantity. */
+  /**
+   * In shop and presentment currencies, the total price of the line item when the order was created.
+   * This value doesn't include discounts.
+   *
+   */
   originalTotalSet: MoneyBag;
   /**
-   * The variant unit price without discounts applied, in shop currency.
+   * In shop currency, the unit price of the line item when the order was created. This value doesn't include discounts.
    * @deprecated Use `originalUnitPriceSet` instead.
    */
   originalUnitPrice: Scalars['Money']['output'];
-  /** The variant unit price without discounts applied, in shop and presentment currencies. */
+  /** In shop and presentment currencies, the unit price of the line item when the order was created. This value doesn't include discounts. */
   originalUnitPriceSet: MoneyBag;
   /** The Product object associated with this line item's variant. */
   product?: Maybe<Product>;
-  /** The number of variant units ordered. */
+  /** The number of units ordered, including refunded and removed units. */
   quantity: Scalars['Int']['output'];
-  /** The line item's quantity, minus the refunded quantity. */
+  /** The number of units ordered, excluding refunded units. */
   refundableQuantity: Scalars['Int']['output'];
   /** Whether physical shipping is required for the variant. */
   requiresShipping: Scalars['Boolean']['output'];
@@ -17938,32 +19194,32 @@ export type LineItem = Node & {
   sku?: Maybe<Scalars['String']['output']>;
   /** Staff attributed to the line item. */
   staffMember?: Maybe<StaffMember>;
-  /** The taxes charged for this line item. */
+  /** The taxes charged for the line item, including taxes charged for refunded and removed quantities. */
   taxLines: Array<TaxLine>;
   /** Whether the variant is taxable. */
   taxable: Scalars['Boolean']['output'];
   /** The title of the product at time of order creation. */
   title: Scalars['String']['output'];
   /**
-   * The total amount of the discount allocated to the line item in the shop currency.
+   * The total discount allocated to the line item in shop currency, including the total allocated to refunded and removed quantities. This value doesn't include order-level discounts.
    * @deprecated Use `totalDiscountSet` instead.
    */
   totalDiscount: Scalars['Money']['output'];
-  /** The total amount of the discount that's allocated to the line item, in the shop and presentment currencies. This field must be explicitly set using draft orders, Shopify scripts, or the API. */
+  /** The total discount allocated to the line item in shop and presentment currencies, including the total allocated to refunded and removed quantities. This value doesn't include order-level discounts. */
   totalDiscountSet: MoneyBag;
   /**
-   * The total discounted value of unfulfilled units, in shop currency.
+   * In shop currency, the total discounted price of the unfulfilled quantity for the line item.
    * @deprecated Use `unfulfilledDiscountedTotalSet` instead.
    */
   unfulfilledDiscountedTotal: Scalars['Money']['output'];
-  /** The total discounted value of unfulfilled units, in shop and presentment currencies. */
+  /** In shop and presentment currencies, the total discounted price of the unfulfilled quantity for the line item. */
   unfulfilledDiscountedTotalSet: MoneyBag;
   /**
-   * The total price, without any discounts applied. This value is based on the unit price of the variant x quantity of all unfulfilled units, in shop currency.
+   * In shop currency, the total price of the unfulfilled quantity for the line item. This value doesn't include discounts.
    * @deprecated Use `unfulfilledOriginalTotalSet` instead.
    */
   unfulfilledOriginalTotal: Scalars['Money']['output'];
-  /** The total price, without any discounts applied. This value is based on the unit price of the variant x quantity of all unfulfilled units, in shop and presentment currencies. */
+  /** In shop and presentment currencies, the total price of the unfulfilled quantity for the line item. This value doesn't include discounts. */
   unfulfilledOriginalTotalSet: MoneyBag;
   /** The number of units not yet fulfilled. */
   unfulfilledQuantity: Scalars['Int']['output'];
@@ -18016,6 +19272,10 @@ export type LineItemGroup = {
   quantity: Scalars['Int']['output'];
   /** Title of the line item group. */
   title: Scalars['String']['output'];
+  /** ID of the variant of the line item group. */
+  variantId?: Maybe<Scalars['ID']['output']>;
+  /** SKU of the variant of the line item group. */
+  variantSku?: Maybe<Scalars['String']['output']>;
 };
 
 /** Represents a single line item on an order. */
@@ -18813,6 +20073,8 @@ export enum LocationEditUserErrorCode {
   Blank = 'BLANK',
   /** At least one location must fulfill online orders. */
   CannotDisableOnlineOrderFulfillment = 'CANNOT_DISABLE_ONLINE_ORDER_FULFILLMENT',
+  /** Cannot modify the online order fulfillment preference for fulfillment service locations. */
+  CannotModifyOnlineOrderFulfillmentForFsLocation = 'CANNOT_MODIFY_ONLINE_ORDER_FULFILLMENT_FOR_FS_LOCATION',
   /** Owner type can't be used in this mutation. */
   DisallowedOwnerType = 'DISALLOWED_OWNER_TYPE',
   /** An error occurred while editing the location. */
@@ -19168,6 +20430,15 @@ export type Market = HasMetafieldDefinitions & HasMetafields & Node & {
    *
    */
   webPresence?: Maybe<MarketWebPresence>;
+  /**
+   * The market’s web presences, which defines its SEO strategy. This can be a different domain,
+   * subdomain, or subfolders of the primary domain. Each web presence comprises one or more
+   * language variants. If a market doesn't have any web presences, then the market is accessible on the
+   * primary market's domains using [country
+   * selectors](https://shopify.dev/themes/internationalization/multiple-currencies-languages#the-country-selector).
+   *
+   */
+  webPresences: MarketWebPresenceConnection;
 };
 
 
@@ -19290,6 +20561,24 @@ export type MarketPrivateMetafieldsArgs = {
  *
  */
 export type MarketRegionsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  reverse?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/**
+ * A market is a group of one or more regions that you want to target for international sales.
+ * By creating a market, you can configure a distinct, localized shopping experience for
+ * customers from a specific area of the world. For example, you can
+ * [change currency](https://shopify.dev/api/admin-graphql/current/mutations/marketCurrencySettingsUpdate),
+ * [configure international pricing](https://shopify.dev/apps/internationalization/product-price-lists),
+ * or [add market-specific domains or subfolders](https://shopify.dev/api/admin-graphql/current/objects/MarketWebPresence).
+ *
+ */
+export type MarketWebPresencesArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -19747,6 +21036,10 @@ export enum MarketUserErrorCode {
   CannotDeletePrimaryMarketWebPresence = 'CANNOT_DELETE_PRIMARY_MARKET_WEB_PRESENCE',
   /** Can't disable the primary market. */
   CannotDisablePrimaryMarket = 'CANNOT_DISABLE_PRIMARY_MARKET',
+  /** Can't have both subfolder and domain web presences. */
+  CannotHaveBothSubfolderAndDomainWebPresences = 'CANNOT_HAVE_BOTH_SUBFOLDER_AND_DOMAIN_WEB_PRESENCES',
+  /** Can't have multiple subfolder web presences per market. */
+  CannotHaveMultipleSubfoldersPerMarket = 'CANNOT_HAVE_MULTIPLE_SUBFOLDERS_PER_MARKET',
   /** Can't pass both `subfolderSuffix` and `domainId`. */
   CannotHaveSubfolderAndDomain = 'CANNOT_HAVE_SUBFOLDER_AND_DOMAIN',
   /** Can't set default locale to null. */
@@ -19761,6 +21054,8 @@ export enum MarketUserErrorCode {
   Invalid = 'INVALID',
   /** The market wasn't found. */
   MarketNotFound = 'MARKET_NOT_FOUND',
+  /** Can't add another web presence to the market. */
+  MarketReachedWebPresenceLimit = 'MARKET_REACHED_WEB_PRESENCE_LIMIT',
   /** No languages selected. */
   NoLanguages = 'NO_LANGUAGES',
   /** The primary market must use the primary domain. */
@@ -19844,6 +21139,20 @@ export type MarketWebPresence = Node & {
   subfolderSuffix?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * An auto-generated type for paginating through multiple MarketWebPresences.
+ *
+ */
+export type MarketWebPresenceConnection = {
+  __typename?: 'MarketWebPresenceConnection';
+  /** A list of edges. */
+  edges: Array<MarketWebPresenceEdge>;
+  /** A list of the nodes contained in MarketWebPresenceEdge. */
+  nodes: Array<MarketWebPresence>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+};
+
 /** The input fields used to create a web presence for a market. */
 export type MarketWebPresenceCreateInput = {
   /**
@@ -19888,6 +21197,18 @@ export type MarketWebPresenceDeletePayload = {
   market?: Maybe<Market>;
   /** The list of errors that occurred from executing the mutation. */
   userErrors: Array<MarketUserError>;
+};
+
+/**
+ * An auto-generated type which holds one MarketWebPresence and a cursor during pagination.
+ *
+ */
+export type MarketWebPresenceEdge = {
+  __typename?: 'MarketWebPresenceEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of MarketWebPresenceEdge. */
+  node: MarketWebPresence;
 };
 
 /**
@@ -20834,6 +22155,8 @@ export type MediaImageOriginalSource = {
   __typename?: 'MediaImageOriginalSource';
   /** The size of the original file in bytes. */
   fileSize?: Maybe<Scalars['Int']['output']>;
+  /** The URL of the original image, valid only for a short period. */
+  url?: Maybe<Scalars['URL']['output']>;
 };
 
 /** Represents the preview image for a media. */
@@ -21036,6 +22359,66 @@ export type MetafieldAccess = {
   __typename?: 'MetafieldAccess';
   /** The default admin access setting used for the metafields under this definition. */
   admin?: Maybe<MetafieldAdminAccess>;
+  /**
+   * The explicit grants for this metafield definition, superseding the default admin access
+   * for the specified grantees.
+   *
+   */
+  grants: Array<MetafieldAccessGrant>;
+};
+
+/**
+ * An explicit access grant for the metafields under this definition.
+ *
+ */
+export type MetafieldAccessGrant = {
+  __typename?: 'MetafieldAccessGrant';
+  /** The level of access the grantee has. */
+  access: MetafieldGrantAccessLevel;
+  /** The grantee being granted access. */
+  grantee: Scalars['String']['output'];
+};
+
+/**
+ * The input fields for an explicit access grant to be deleted for the metafields under this definition.
+ *
+ */
+export type MetafieldAccessGrantDeleteInput = {
+  /** The grantee whose grant should be deleted. */
+  grantee: Scalars['String']['input'];
+};
+
+/**
+ * The input fields for an explicit access grant to be created or updated for the metafields under this definition.
+ *
+ */
+export type MetafieldAccessGrantInput = {
+  /** The level of access being granted. */
+  access: MetafieldGrantAccessLevel;
+  /** The grantee being granted access. */
+  grantee: Scalars['String']['input'];
+};
+
+/**
+ * The input fields for possible operations for modifying access grants. Exactly one option is required.
+ *
+ */
+export type MetafieldAccessGrantOperationInput = {
+  /**
+   * The input fields for an explicit access grant to be created or updated for the metafields under this definition.
+   *
+   */
+  create?: InputMaybe<MetafieldAccessGrantInput>;
+  /**
+   * The input fields for an explicit access grant to be deleted for the metafields under this definition.
+   *
+   */
+  delete?: InputMaybe<MetafieldAccessGrantDeleteInput>;
+  /**
+   * The input fields for an explicit access grant to be created or updated for the metafields under this definition.
+   *
+   */
+  update?: InputMaybe<MetafieldAccessGrantInput>;
 };
 
 /**
@@ -21045,6 +22428,22 @@ export type MetafieldAccess = {
 export type MetafieldAccessInput = {
   /** The admin access setting to use for the metafields under this definition. */
   admin: MetafieldAdminAccess;
+  /**
+   * The list of explicit grants to grant for the metafields under this definition.
+   *
+   */
+  grants?: InputMaybe<Array<MetafieldAccessGrantInput>>;
+};
+
+/**
+ * The input fields for the access settings for the metafields under the definition.
+ *
+ */
+export type MetafieldAccessUpdateInput = {
+  /** The admin access setting to use for the metafields under this definition. */
+  admin: MetafieldAdminAccess;
+  /** The set of grant operations to perform. */
+  grants?: InputMaybe<Array<MetafieldAccessGrantOperationInput>>;
 };
 
 /** Possible admin access settings for metafields. */
@@ -21190,6 +22589,8 @@ export type MetafieldDefinitionCreateUserError = DisplayableError & {
 export enum MetafieldDefinitionCreateUserErrorCode {
   /** A duplicate option. */
   DuplicateOption = 'DUPLICATE_OPTION',
+  /** The maximum limit of grants per definition type has been exceeded. */
+  GrantLimitExceeded = 'GRANT_LIMIT_EXCEEDED',
   /** The input value isn't included in the list. */
   Inclusion = 'INCLUSION',
   /** The input value is invalid. */
@@ -21289,12 +22690,13 @@ export type MetafieldDefinitionInput = {
   /** The human-readable name for the metafield definition. */
   name: Scalars['String']['input'];
   /**
-   * The container for a group of metafields that the metafield definition will be associated with.
+   * The container for a group of metafields that the metafield definition will be associated with. If omitted, the
+   * app-reserved namespace will be used.
    *
    * Must be 3-255 characters long and only contain alphanumeric, hyphen, and underscore characters.
    *
    */
-  namespace: Scalars['String']['input'];
+  namespace?: InputMaybe<Scalars['String']['input']>;
   /** The resource type that the metafield definition is attached to. */
   ownerType: MetafieldOwnerType;
   /**
@@ -21461,7 +22863,7 @@ export enum MetafieldDefinitionUnpinUserErrorCode {
  */
 export type MetafieldDefinitionUpdateInput = {
   /** The access settings that apply to each of the metafields that belong to the metafield definition. */
-  access?: InputMaybe<MetafieldAccessInput>;
+  access?: InputMaybe<MetafieldAccessUpdateInput>;
   /** The description for the metafield definition. */
   description?: InputMaybe<Scalars['String']['input']>;
   /**
@@ -21474,10 +22876,10 @@ export type MetafieldDefinitionUpdateInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   /**
    * The container for a group of metafields that the metafield definition is associated with. Used to help identify
-   * the metafield definition, but cannot be updated itself.
+   * the metafield definition, but cannot be updated itself. If omitted, the app-reserved namespace will be used.
    *
    */
-  namespace: Scalars['String']['input'];
+  namespace?: InputMaybe<Scalars['String']['input']>;
   /**
    * The resource type that the metafield definition is attached to. Used to help identify the metafield definition,
    * but can't be updated itself.
@@ -21527,12 +22929,16 @@ export type MetafieldDefinitionUpdateUserError = DisplayableError & {
 
 /** Possible error codes that can be returned by `MetafieldDefinitionUpdateUserError`. */
 export enum MetafieldDefinitionUpdateUserErrorCode {
+  /** The maximum limit of grants per definition type has been exceeded. */
+  GrantLimitExceeded = 'GRANT_LIMIT_EXCEEDED',
   /** An internal error occurred. */
   InternalError = 'INTERNAL_ERROR',
   /** An invalid input. */
   InvalidInput = 'INVALID_INPUT',
   /** Action cannot proceed. Definition is currently in use. */
   MetafieldDefinitionInUse = 'METAFIELD_DEFINITION_IN_USE',
+  /** You cannot change the metaobject definition pointed to by a metaobject reference metafield definition. */
+  MetaobjectDefinitionChanged = 'METAOBJECT_DEFINITION_CHANGED',
   /** The metafield definition wasn't found. */
   NotFound = 'NOT_FOUND',
   /** You have reached the maximum allowed definitions for automated collections. */
@@ -21619,6 +23025,14 @@ export type MetafieldEdge = {
   node: Metafield;
 };
 
+/** Possible access levels for explicit metafield access grants. */
+export enum MetafieldGrantAccessLevel {
+  /** Read metafield access. */
+  Read = 'READ',
+  /** Read and write metafield access. */
+  ReadWrite = 'READ_WRITE'
+}
+
 /**
  * The input fields to use to create or update a metafield through a mutation on the owning resource.
  * An alternative way to create or update a metafield is by using the
@@ -21693,6 +23107,8 @@ export enum MetafieldOwnerType {
   Discount = 'DISCOUNT',
   /** The Draft Order metafield owner type. */
   Draftorder = 'DRAFTORDER',
+  /** The Fulfillment Constraint Rule metafield owner type. */
+  FulfillmentConstraintRule = 'FULFILLMENT_CONSTRAINT_RULE',
   /** The Location metafield owner type. */
   Location = 'LOCATION',
   /** The Market metafield owner type. */
@@ -21884,8 +23300,8 @@ export type MetafieldStorefrontVisibilityEdge = {
 export type MetafieldStorefrontVisibilityInput = {
   /** The key of a metafield to make visible in the Storefront API. */
   key: Scalars['String']['input'];
-  /** The namespace of a metafield to make visible in the Storefront API. */
-  namespace: Scalars['String']['input'];
+  /** The namespace of a metafield to make visible in the Storefront API. If omitted the app reserved namespace will be used. */
+  namespace?: InputMaybe<Scalars['String']['input']>;
   /** The owner type of a metafield to make visible in the Storefront API. */
   ownerType: MetafieldOwnerType;
 };
@@ -21928,12 +23344,12 @@ export type MetafieldsSetInput = {
   /**
    * The container for a group of metafields that the metafield is or will be associated with. Used in tandem
    * with `key` to lookup a metafield on a resource, preventing conflicts with other metafields with the
-   * same `key`.
+   * same `key`. If omitted the app-reserved namespace will be used.
    *
    * Must be 3-255 characters long and can contain alphanumeric, hyphen, and underscore characters.
    *
    */
-  namespace: Scalars['String']['input'];
+  namespace?: InputMaybe<Scalars['String']['input']>;
   /** The unique ID of the resource that the metafield is attached to. */
   ownerId: Scalars['ID']['input'];
   /**
@@ -22129,15 +23545,37 @@ export type MetaobjectBulkDeleteWhereCondition = {
 /** Provides the capabilities of a metaobject definition. */
 export type MetaobjectCapabilities = {
   __typename?: 'MetaobjectCapabilities';
+  /** Indicates whether a metaobject definition can be displayed as a page on the Online Store. */
+  onlineStore?: Maybe<MetaobjectCapabilitiesOnlineStore>;
   /** Indicate whether a metaobject definition is publishable. */
   publishable: MetaobjectCapabilitiesPublishable;
+  /** Indicate whether a metaobject definition is renderable and exposes SEO data. */
+  renderable?: Maybe<MetaobjectCapabilitiesRenderable>;
   /** Indicate whether a metaobject definition is translatable. */
   translatable: MetaobjectCapabilitiesTranslatable;
+};
+
+/** The Online Store capability of a metaobject definition. */
+export type MetaobjectCapabilitiesOnlineStore = {
+  __typename?: 'MetaobjectCapabilitiesOnlineStore';
+  /** The data associated with the Online Store capability. */
+  data?: Maybe<MetaobjectCapabilityDefinitionDataOnlineStore>;
+  /** Indicates if the capability is enabled. */
+  enabled: Scalars['Boolean']['output'];
 };
 
 /** The publishable capability of a metaobject definition. */
 export type MetaobjectCapabilitiesPublishable = {
   __typename?: 'MetaobjectCapabilitiesPublishable';
+  /** Indicates if the capability is enabled. */
+  enabled: Scalars['Boolean']['output'];
+};
+
+/** The renderable capability of a metaobject definition. */
+export type MetaobjectCapabilitiesRenderable = {
+  __typename?: 'MetaobjectCapabilitiesRenderable';
+  /** The data associated with the renderable capability. */
+  data?: Maybe<MetaobjectCapabilityDefinitionDataRenderable>;
   /** Indicates if the capability is enabled. */
   enabled: Scalars['Boolean']['output'];
 };
@@ -22151,8 +23589,12 @@ export type MetaobjectCapabilitiesTranslatable = {
 
 /** The input fields for creating a metaobject capability. */
 export type MetaobjectCapabilityCreateInput = {
+  /** The input for enabling the Online Store capability. */
+  onlineStore?: InputMaybe<MetaobjectCapabilityOnlineStoreInput>;
   /** The input for enabling the publishable capability. */
   publishable?: InputMaybe<MetaobjectCapabilityPublishableInput>;
+  /** The input for enabling the renderable capability. */
+  renderable?: InputMaybe<MetaobjectCapabilityRenderableInput>;
   /** The input for enabling the translatable capability. */
   translatable?: InputMaybe<MetaobjectCapabilityTranslatableInput>;
 };
@@ -22160,14 +23602,31 @@ export type MetaobjectCapabilityCreateInput = {
 /** Provides the capabilities of a metaobject. */
 export type MetaobjectCapabilityData = {
   __typename?: 'MetaobjectCapabilityData';
+  /** The Online Store capability for this metaobject. */
+  onlineStore?: Maybe<MetaobjectCapabilityDataOnlineStore>;
   /** The publishable capability for this metaobject. */
   publishable?: Maybe<MetaobjectCapabilityDataPublishable>;
 };
 
 /** The input fields for metaobject capabilities. */
 export type MetaobjectCapabilityDataInput = {
+  /** Online Store capability input. */
+  onlineStore?: InputMaybe<MetaobjectCapabilityDataOnlineStoreInput>;
   /** Publishable capability input. */
   publishable?: InputMaybe<MetaobjectCapabilityDataPublishableInput>;
+};
+
+/** The Online Store capability for the parent metaobject. */
+export type MetaobjectCapabilityDataOnlineStore = {
+  __typename?: 'MetaobjectCapabilityDataOnlineStore';
+  /** The theme template used when viewing the metaobject in a store. */
+  templateSuffix?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields for the Online Store capability to control renderability on the Online Store. */
+export type MetaobjectCapabilityDataOnlineStoreInput = {
+  /** The theme template used when viewing the metaobject in a store. */
+  templateSuffix?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The publishable capability for the parent metaobject. */
@@ -22183,8 +23642,58 @@ export type MetaobjectCapabilityDataPublishableInput = {
   status: MetaobjectStatus;
 };
 
+/** The Online Store capability data for the metaobject definition. */
+export type MetaobjectCapabilityDefinitionDataOnlineStore = {
+  __typename?: 'MetaobjectCapabilityDefinitionDataOnlineStore';
+  /** Flag indicating if a sufficient number of redirects are available to redirect all published entries. */
+  canCreateRedirects: Scalars['Boolean']['output'];
+  /** The URL handle for accessing pages of this metaobject type in the Online Store. */
+  urlHandle: Scalars['String']['output'];
+};
+
+/** The input fields of the Online Store capability. */
+export type MetaobjectCapabilityDefinitionDataOnlineStoreInput = {
+  /** Whether to redirect published metaobjects automatically when the URL handle changes. */
+  createRedirects?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The URL handle for accessing pages of this metaobject type in the Online Store. */
+  urlHandle: Scalars['String']['input'];
+};
+
+/** The renderable capability data for the metaobject definition. */
+export type MetaobjectCapabilityDefinitionDataRenderable = {
+  __typename?: 'MetaobjectCapabilityDefinitionDataRenderable';
+  /** The metaobject field used as an alias for the SEO page description. */
+  metaDescriptionKey?: Maybe<Scalars['String']['output']>;
+  /** The metaobject field used as an alias for the SEO page title. */
+  metaTitleKey?: Maybe<Scalars['String']['output']>;
+};
+
+/** The input fields of the renderable capability for SEO aliases. */
+export type MetaobjectCapabilityDefinitionDataRenderableInput = {
+  /** The metaobject field used as an alias for the SEO page description. */
+  metaDescriptionKey?: InputMaybe<Scalars['String']['input']>;
+  /** The metaobject field used as an alias for the SEO page title. */
+  metaTitleKey?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** The input fields for enabling and disabling the Online Store capability. */
+export type MetaobjectCapabilityOnlineStoreInput = {
+  /** The data associated with the Online Store capability. */
+  data?: InputMaybe<MetaobjectCapabilityDefinitionDataOnlineStoreInput>;
+  /** Indicates whether the capability should be enabled or disabled. */
+  enabled: Scalars['Boolean']['input'];
+};
+
 /** The input fields for enabling and disabling the publishable capability. */
 export type MetaobjectCapabilityPublishableInput = {
+  /** Indicates whether the capability should be enabled or disabled. */
+  enabled: Scalars['Boolean']['input'];
+};
+
+/** The input fields for enabling and disabling the renderable capability. */
+export type MetaobjectCapabilityRenderableInput = {
+  /** The data associated with the renderable capability. */
+  data?: InputMaybe<MetaobjectCapabilityDefinitionDataRenderableInput>;
   /** Indicates whether the capability should be enabled or disabled. */
   enabled: Scalars['Boolean']['input'];
 };
@@ -22197,8 +23706,12 @@ export type MetaobjectCapabilityTranslatableInput = {
 
 /** The input fields for updating a metaobject capability. */
 export type MetaobjectCapabilityUpdateInput = {
+  /** The input for enabling the Online Store capability. */
+  onlineStore?: InputMaybe<MetaobjectCapabilityOnlineStoreInput>;
   /** The input for updating the publishable capability. */
   publishable?: InputMaybe<MetaobjectCapabilityPublishableInput>;
+  /** The input for enabling the renderable capability. */
+  renderable?: InputMaybe<MetaobjectCapabilityRenderableInput>;
   /** The input for updating the translatable capability. */
   translatable?: InputMaybe<MetaobjectCapabilityTranslatableInput>;
 };
@@ -22548,6 +24061,8 @@ export type MetaobjectUpdateInput = {
   fields?: InputMaybe<Array<MetaobjectFieldInput>>;
   /** A unique handle for the metaobject. */
   handle?: InputMaybe<Scalars['String']['input']>;
+  /** Whether to create a redirect for the metaobject. */
+  redirectNewHandle?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** Return type for `metaobjectUpdate` mutation. */
@@ -22601,6 +24116,8 @@ export enum MetaobjectUserErrorCode {
   CapabilityNotEnabled = 'CAPABILITY_NOT_ENABLED',
   /** Duplicate inputs were provided for this field key. */
   DuplicateFieldInput = 'DUPLICATE_FIELD_INPUT',
+  /** Renderable data input is referencing an invalid field. */
+  FieldTypeInvalid = 'FIELD_TYPE_INVALID',
   /** The targeted object cannot be modified. */
   Immutable = 'IMMUTABLE',
   /** The input value isn't included in the list. */
@@ -22619,6 +24136,8 @@ export enum MetaobjectUserErrorCode {
   MaxDefinitionsExceeded = 'MAX_DEFINITIONS_EXCEEDED',
   /** The maximum number of metaobjects per shop has been exceeded. */
   MaxObjectsExceeded = 'MAX_OBJECTS_EXCEEDED',
+  /** The input is missing required keys. */
+  MissingRequiredKeys = 'MISSING_REQUIRED_KEYS',
   /** Not authorized. */
   NotAuthorized = 'NOT_AUTHORIZED',
   /** Missing required fields were found for this object. */
@@ -22640,7 +24159,13 @@ export enum MetaobjectUserErrorCode {
   /** No field definition found for this key. */
   UndefinedObjectField = 'UNDEFINED_OBJECT_FIELD',
   /** No metaobject definition found for this type. */
-  UndefinedObjectType = 'UNDEFINED_OBJECT_TYPE'
+  UndefinedObjectType = 'UNDEFINED_OBJECT_TYPE',
+  /** The Online Store URL handle cannot be blank. */
+  UrlHandleBlank = 'URL_HANDLE_BLANK',
+  /** The Online Store URL handle is invalid. */
+  UrlHandleInvalid = 'URL_HANDLE_INVALID',
+  /** The Online Store URL handle is already taken. */
+  UrlHandleTaken = 'URL_HANDLE_TAKEN'
 }
 
 /** The set of valid sort keys for the MethodDefinition query. */
@@ -22783,16 +24308,6 @@ export type Mutation = {
    *
    */
   appPurchaseOneTimeCreate?: Maybe<AppPurchaseOneTimeCreatePayload>;
-  /**
-   * Creates a record of the attributed revenue for the app. This mutation should only be used to capture transactions that are not managed by the Billing API.
-   * @deprecated This mutation will be removed in a future version.
-   */
-  appRevenueAttributionRecordCreate?: Maybe<AppRevenueAttributionRecordCreatePayload>;
-  /**
-   * Deletes a record of the attributed revenue for the app.
-   * @deprecated This mutation will be removed in a future version.
-   */
-  appRevenueAttributionRecordDelete?: Maybe<AppRevenueAttributionRecordDeletePayload>;
   /** Cancels an app subscription on a store. */
   appSubscriptionCancel?: Maybe<AppSubscriptionCancelPayload>;
   /** Allows an app to charge a store for features or services on a recurring basis. */
@@ -22844,6 +24359,19 @@ export type Mutation = {
   catalogDelete?: Maybe<CatalogDeletePayload>;
   /** Updates an existing catalog. */
   catalogUpdate?: Maybe<CatalogUpdatePayload>;
+  /**
+   * Updates the checkout branding settings for a
+   * [checkout profile](https://shopify.dev/api/admin-graphql/unstable/queries/checkoutProfile).
+   *
+   * If the settings don't exist, then new settings are created. The checkout branding settings applied to a
+   * published checkout profile will be immediately visible within the store's checkout. The checkout branding
+   * settings applied to a draft checkout profile could be previewed within the admin checkout editor.
+   *
+   * To learn more about updating checkout branding settings, refer to the checkout branding
+   * [tutorial](https://shopify.dev/docs/apps/checkout/styling).
+   *
+   */
+  checkoutBrandingUpsert?: Maybe<CheckoutBrandingUpsertPayload>;
   /** Adds products to a collection. */
   collectionAddProducts?: Maybe<CollectionAddProductsPayload>;
   /** Asynchronously adds a set of products to a given collection. It can take a long time to run. Instead of returning a collection, it returns a job which should be polled. */
@@ -23063,6 +24591,10 @@ export type Mutation = {
   discountAutomaticDeactivate?: Maybe<DiscountAutomaticDeactivatePayload>;
   /** Deletes an automatic discount. */
   discountAutomaticDelete?: Maybe<DiscountAutomaticDeletePayload>;
+  /** Creates a free shipping automatic discount. */
+  discountAutomaticFreeShippingCreate?: Maybe<DiscountAutomaticFreeShippingCreatePayload>;
+  /** Updates a free shipping automatic discount. */
+  discountAutomaticFreeShippingUpdate?: Maybe<DiscountAutomaticFreeShippingUpdatePayload>;
   /** Activates a code discount. */
   discountCodeActivate?: Maybe<DiscountCodeActivatePayload>;
   /** Creates a code app discount. */
@@ -23189,6 +24721,10 @@ export type Mutation = {
   flowTriggerReceive?: Maybe<FlowTriggerReceivePayload>;
   /** Cancels a fulfillment. */
   fulfillmentCancel?: Maybe<FulfillmentCancelPayload>;
+  /** Creates a fulfillment constraint rule and its metafield. */
+  fulfillmentConstraintRuleCreate?: Maybe<FulfillmentConstraintRuleCreatePayload>;
+  /** Deletes a fulfillment constraint rule and its metafields. */
+  fulfillmentConstraintRuleDelete?: Maybe<FulfillmentConstraintRuleDeletePayload>;
   /**
    * Creates a fulfillment for one or many fulfillment orders.
    * The fulfillment orders are associated with the same order and are assigned to the same location.
@@ -23842,6 +25378,8 @@ export type Mutation = {
   publishableUnpublish?: Maybe<PublishableUnpublishPayload>;
   /** Unpublishes a resource from the current channel. If the resource is a product, then it's visible in the channel only if the product status is `active`. */
   publishableUnpublishToCurrentChannel?: Maybe<PublishableUnpublishToCurrentChannelPayload>;
+  /** Updates quantity pricing on a price list. You can use the `quantityPricingByVariantUpdate` mutation to set fixed prices, quantity rules, and quantity price breaks. This mutation does not allow partial successes. If any of the requested resources fail to update, none of the requested resources will be updated. Delete operations are executed before create operations. */
+  quantityPricingByVariantUpdate?: Maybe<QuantityPricingByVariantUpdatePayload>;
   /**
    * Creates or updates existing quantity rules on a price list.
    * You can use the `quantityRulesAdd` mutation to set order level minimums, maximumums and increments for specific product variants.
@@ -24228,18 +25766,6 @@ export type MutationAppPurchaseOneTimeCreateArgs = {
 
 
 /** The schema's entry point for all mutation operations. */
-export type MutationAppRevenueAttributionRecordCreateArgs = {
-  appRevenueAttributionRecord: AppRevenueAttributionRecordInput;
-};
-
-
-/** The schema's entry point for all mutation operations. */
-export type MutationAppRevenueAttributionRecordDeleteArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-/** The schema's entry point for all mutation operations. */
 export type MutationAppSubscriptionCancelArgs = {
   id: Scalars['ID']['input'];
   prorate?: InputMaybe<Scalars['Boolean']['input']>;
@@ -24343,6 +25869,13 @@ export type MutationCatalogDeleteArgs = {
 export type MutationCatalogUpdateArgs = {
   id: Scalars['ID']['input'];
   input: CatalogUpdateInput;
+};
+
+
+/** The schema's entry point for all mutation operations. */
+export type MutationCheckoutBrandingUpsertArgs = {
+  checkoutBrandingInput: CheckoutBrandingInput;
+  checkoutProfileId: Scalars['ID']['input'];
 };
 
 
@@ -24895,6 +26428,19 @@ export type MutationDiscountAutomaticDeleteArgs = {
 
 
 /** The schema's entry point for all mutation operations. */
+export type MutationDiscountAutomaticFreeShippingCreateArgs = {
+  freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput;
+};
+
+
+/** The schema's entry point for all mutation operations. */
+export type MutationDiscountAutomaticFreeShippingUpdateArgs = {
+  freeShippingAutomaticDiscount: DiscountAutomaticFreeShippingInput;
+  id: Scalars['ID']['input'];
+};
+
+
+/** The schema's entry point for all mutation operations. */
 export type MutationDiscountCodeActivateArgs = {
   id: Scalars['ID']['input'];
 };
@@ -25156,12 +26702,26 @@ export type MutationFlowGenerateSignatureArgs = {
 
 /** The schema's entry point for all mutation operations. */
 export type MutationFlowTriggerReceiveArgs = {
-  body: Scalars['String']['input'];
+  handle?: InputMaybe<Scalars['String']['input']>;
+  payload?: InputMaybe<Scalars['JSON']['input']>;
 };
 
 
 /** The schema's entry point for all mutation operations. */
 export type MutationFulfillmentCancelArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+/** The schema's entry point for all mutation operations. */
+export type MutationFulfillmentConstraintRuleCreateArgs = {
+  functionId: Scalars['String']['input'];
+  metafields?: InputMaybe<Array<MetafieldInput>>;
+};
+
+
+/** The schema's entry point for all mutation operations. */
+export type MutationFulfillmentConstraintRuleDeleteArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -25528,14 +27088,14 @@ export type MutationMarketWebPresenceCreateArgs = {
 
 /** The schema's entry point for all mutation operations. */
 export type MutationMarketWebPresenceDeleteArgs = {
-  marketId: Scalars['ID']['input'];
+  webPresenceId: Scalars['ID']['input'];
 };
 
 
 /** The schema's entry point for all mutation operations. */
 export type MutationMarketWebPresenceUpdateArgs = {
-  marketId: Scalars['ID']['input'];
   webPresence: MarketWebPresenceUpdateInput;
+  webPresenceId: Scalars['ID']['input'];
 };
 
 
@@ -26246,6 +27806,13 @@ export type MutationPublishableUnpublishArgs = {
 /** The schema's entry point for all mutation operations. */
 export type MutationPublishableUnpublishToCurrentChannelArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+/** The schema's entry point for all mutation operations. */
+export type MutationQuantityPricingByVariantUpdateArgs = {
+  input: QuantityPricingByVariantUpdateInput;
+  priceListId: Scalars['ID']['input'];
 };
 
 
@@ -27032,6 +28599,8 @@ export type Order = CommentEventSubject & HasEvents & HasLocalizationExtensions 
    *
    */
   cancelReason?: Maybe<OrderCancelReason>;
+  /** Cancellation details for the order. */
+  cancellation?: Maybe<OrderCancellation>;
   /**
    * The date and time when the order was canceled.
    * Returns `null` if the order wasn't canceled.
@@ -27416,6 +28985,8 @@ export type Order = CommentEventSubject & HasEvents & HasLocalizationExtensions 
   shippingLine?: Maybe<ShippingLine>;
   /** A list of the order's shipping lines. */
   shippingLines: ShippingLineConnection;
+  /** The Shopify Protect details for the order. If Shopify Protect is disabled for the shop, then this will be null. */
+  shopifyProtect?: Maybe<ShopifyProtectOrderSummary>;
   /**
    * A unique POS or third party order identifier.
    * For example, "1234-12-1000" or "111-98567-54". The `receipt_number` field is derived from this value for POS orders.
@@ -28087,8 +29658,17 @@ export enum OrderCancelReason {
   /** There was insufficient inventory. */
   Inventory = 'INVENTORY',
   /** The order was canceled for an unlisted reason. */
-  Other = 'OTHER'
+  Other = 'OTHER',
+  /** Staff made an error. */
+  Staff = 'STAFF'
 }
+
+/** Details about the order cancellation. */
+export type OrderCancellation = {
+  __typename?: 'OrderCancellation';
+  /** Staff provided note for the order cancellation. */
+  staffNote?: Maybe<Scalars['String']['output']>;
+};
 
 /** The input fields for the authorized transaction to capture and the total amount to capture from it. */
 export type OrderCaptureInput = {
@@ -29315,7 +30895,7 @@ export type PaymentCustomizationUpdatePayload = {
 };
 
 /** Payment details related to a transaction. */
-export type PaymentDetails = CardPaymentDetails;
+export type PaymentDetails = CardPaymentDetails | ShopPayInstallmentsPaymentDetails;
 
 /** All possible instrument outputs for Payment Mandates. */
 export type PaymentInstrument = VaultCreditCard | VaultPaypalBillingAgreement;
@@ -30004,8 +31584,24 @@ export type PriceListPrice = {
   originType: PriceListPriceOriginType;
   /** The price of the product variant on this price list. */
   price: MoneyV2;
+  /** A list of quantity breaks for the product variant. */
+  quantityPriceBreaks: QuantityPriceBreakConnection;
   /** The product variant associated with this price. */
   variant: ProductVariant;
+};
+
+
+/**
+ * Represents information about pricing for a product variant
+ *         as defined on a price list, such as the price, compare at price, and origin type. You can use a PriceListPrice to specify a fixed price for a specific product variant.
+ */
+export type PriceListPriceQuantityPriceBreaksArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  reverse?: InputMaybe<Scalars['Boolean']['input']>;
+  sortKey?: InputMaybe<QuantityPriceBreakSortKeys>;
 };
 
 /**
@@ -30147,6 +31743,8 @@ export enum PriceListUserErrorCode {
   CatalogAssignmentNotAllowed = 'CATALOG_ASSIGNMENT_NOT_ALLOWED',
   /** The context type of a catalog cannot be changed. */
   CatalogCannotChangeContextType = 'CATALOG_CANNOT_CHANGE_CONTEXT_TYPE',
+  /** Quantity price breaks can be associated only with company location catalogs. */
+  CatalogContextDoesNotSupportQuantityPriceBreaks = 'CATALOG_CONTEXT_DOES_NOT_SUPPORT_QUANTITY_PRICE_BREAKS',
   /** Quantity rules can be associated only with company location catalogs. */
   CatalogContextDoesNotSupportQuantityRules = 'CATALOG_CONTEXT_DOES_NOT_SUPPORT_QUANTITY_RULES',
   /** The specified catalog does not exist. */
@@ -31255,6 +32853,8 @@ export type Product = HasMetafieldDefinitions & HasMetafields & HasPublishedTran
   bodyHtml?: Maybe<Scalars['String']['output']>;
   /** A list of the collections that include the product. */
   collections: CollectionConnection;
+  /** The compare-at price range of the product in the default shop currency. */
+  compareAtPriceRange?: Maybe<ProductCompareAtPriceRange>;
   /** The pricing that applies for a customer in a given context. */
   contextualPricing: ProductContextualPricing;
   /**
@@ -31297,6 +32897,8 @@ export type Product = HasMetafieldDefinitions & HasMetafields & HasPublishedTran
   hasOnlyDefaultVariant: Scalars['Boolean']['output'];
   /** Whether the product has out of stock variants. */
   hasOutOfStockVariants: Scalars['Boolean']['output'];
+  /** Determines if at least one of the product variant requires components. The default value is `false`. */
+  hasVariantsThatRequiresComponents: Scalars['Boolean']['output'];
   /** A globally-unique ID. */
   id: Scalars['ID']['output'];
   /** The images associated with the product. */
@@ -31738,6 +33340,21 @@ export enum ProductChangeStatusUserErrorCode {
   ProductNotFound = 'PRODUCT_NOT_FOUND'
 }
 
+/** The input fields to claim ownership for Product features such as Bundles. */
+export type ProductClaimOwnershipInput = {
+  /**
+   * Claiming ownership of bundles lets the app render a custom UI for the bundles' card on the
+   * products details page in the Shopify admin.
+   *
+   * Bundle ownership can only be claimed when creating the product. If you create `ProductVariantComponents`
+   * in any of its product variants, then the bundle ownership is automatically assigned to the app making the call.
+   *
+   * [Learn more](https://shopify.dev/docs/apps/selling-strategies/bundles/product-config).
+   *
+   */
+  bundles?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 /** The set of valid sort keys for the ProductCollection query. */
 export enum ProductCollectionSortKeys {
   /** Sort by the `best-selling` value. */
@@ -31761,6 +33378,15 @@ export enum ProductCollectionSortKeys {
   /** Sort by the `title` value. */
   Title = 'TITLE'
 }
+
+/** The compare-at price range of the product. */
+export type ProductCompareAtPriceRange = {
+  __typename?: 'ProductCompareAtPriceRange';
+  /** The highest variant's compare-at price. */
+  maxVariantCompareAtPrice: MoneyV2;
+  /** The lowest variant's compare-at price. */
+  minVariantCompareAtPrice: MoneyV2;
+};
 
 /**
  * An auto-generated type for paginating through multiple Products.
@@ -32151,6 +33777,8 @@ export type ProductImageUpdatePayload = {
 
 /** The input fields required to create a product. */
 export type ProductInput = {
+  /** Claim ownership of a product. */
+  claimOwnership?: InputMaybe<ProductClaimOwnershipInput>;
   /** The IDs of the collections that this product will be added to. */
   collectionsToJoin?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** The IDs of collections that will no longer include the existing product. */
@@ -32904,8 +34532,25 @@ export type ProductVariantContextualPricing = {
   compareAtPrice?: Maybe<MoneyV2>;
   /** The final price after all adjustments are applied. */
   price: MoneyV2;
+  /** A list of quantity breaks for the product variant. */
+  quantityPriceBreaks: QuantityPriceBreakConnection;
   /** The quantity rule applied for a given context. */
   quantityRule: QuantityRule;
+};
+
+
+/**
+ * The price of a product variant in a specific country.
+ * Prices vary between countries.
+ *
+ */
+export type ProductVariantContextualPricingQuantityPriceBreaksArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  reverse?: InputMaybe<Scalars['Boolean']['input']>;
+  sortKey?: InputMaybe<QuantityPriceBreakSortKeys>;
 };
 
 /** Return type for `productVariantCreate` mutation. */
@@ -34023,6 +35668,188 @@ export type PurchasingEntityInput = {
 };
 
 /**
+ * Quantity price breaks lets you offer different rates that are based on the
+ * amount of a specific variant being ordered.
+ *
+ */
+export type QuantityPriceBreak = Node & {
+  __typename?: 'QuantityPriceBreak';
+  /** A globally-unique ID. */
+  id: Scalars['ID']['output'];
+  /** Minimum quantity required to reach new quantity break price. */
+  minimumQuantity: Scalars['Int']['output'];
+  /** The price of variant after reaching the minimum quanity. */
+  price: MoneyV2;
+  /**
+   * The price list associated with this quantity break.
+   *
+   */
+  priceList: PriceList;
+  /** The product variant associated with this quantity break. */
+  variant: ProductVariant;
+};
+
+/**
+ * An auto-generated type for paginating through multiple QuantityPriceBreaks.
+ *
+ */
+export type QuantityPriceBreakConnection = {
+  __typename?: 'QuantityPriceBreakConnection';
+  /** A list of edges. */
+  edges: Array<QuantityPriceBreakEdge>;
+  /** A list of the nodes contained in QuantityPriceBreakEdge. */
+  nodes: Array<QuantityPriceBreak>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+};
+
+/**
+ * An auto-generated type which holds one QuantityPriceBreak and a cursor during pagination.
+ *
+ */
+export type QuantityPriceBreakEdge = {
+  __typename?: 'QuantityPriceBreakEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String']['output'];
+  /** The item at the end of QuantityPriceBreakEdge. */
+  node: QuantityPriceBreak;
+};
+
+/** The input fields and values to use when creating quantity price breaks. */
+export type QuantityPriceBreakInput = {
+  /** The minimum required quantity for a variant to qualify for this price. */
+  minimumQuantity: Scalars['Int']['input'];
+  /** The price of the product variant when its quantity meets the break's minimum quantity. */
+  price: MoneyInput;
+  /** The product variant ID associated with the quantity break. */
+  variantId: Scalars['ID']['input'];
+};
+
+/** The set of valid sort keys for the QuantityPriceBreak query. */
+export enum QuantityPriceBreakSortKeys {
+  /** Sort by the `id` value. */
+  Id = 'ID',
+  /** Sort by the `minimum_quantity` value. */
+  MinimumQuantity = 'MINIMUM_QUANTITY',
+  /**
+   * Sort by relevance to the search terms when the `query` parameter is specified on the connection.
+   * Don't use this sort key when no search query is specified.
+   *
+   */
+  Relevance = 'RELEVANCE'
+}
+
+/** The input fields used to update quantity pricing. */
+export type QuantityPricingByVariantUpdateInput = {
+  /** A list of fixed prices to add. */
+  pricesToAdd: Array<PriceListPriceInput>;
+  /** A list of variant IDs that identify which fixed prices to remove. */
+  pricesToDeleteByVariantId: Array<Scalars['ID']['input']>;
+  /** A list of quantity price breaks to add. */
+  quantityPriceBreaksToAdd: Array<QuantityPriceBreakInput>;
+  /** A list of quantity price break IDs that identify which quantity breaks to remove. */
+  quantityPriceBreaksToDelete: Array<Scalars['ID']['input']>;
+  /** A list of quantity rules to add. */
+  quantityRulesToAdd: Array<QuantityRuleInput>;
+  /** A list of variant IDs that identify which quantity rules to remove. */
+  quantityRulesToDeleteByVariantId: Array<Scalars['ID']['input']>;
+};
+
+/** Return type for `quantityPricingByVariantUpdate` mutation. */
+export type QuantityPricingByVariantUpdatePayload = {
+  __typename?: 'QuantityPricingByVariantUpdatePayload';
+  /** The variants for which quantity pricing was created successfully in the price list. */
+  productVariants?: Maybe<Array<ProductVariant>>;
+  /** The list of errors that occurred from executing the mutation. */
+  userErrors: Array<QuantityPricingByVariantUserError>;
+};
+
+/** Error codes for failed volume pricing operations. */
+export type QuantityPricingByVariantUserError = DisplayableError & {
+  __typename?: 'QuantityPricingByVariantUserError';
+  /** The error code. */
+  code?: Maybe<QuantityPricingByVariantUserErrorCode>;
+  /** The path to the input field that caused the error. */
+  field?: Maybe<Array<Scalars['String']['output']>>;
+  /** The error message. */
+  message: Scalars['String']['output'];
+};
+
+/** Possible error codes that can be returned by `QuantityPricingByVariantUserError`. */
+export enum QuantityPricingByVariantUserErrorCode {
+  /** The input value is blank. */
+  Blank = 'BLANK',
+  /** Something went wrong when trying to update quantity pricing. Please try again later. */
+  GenericError = 'GENERIC_ERROR',
+  /** Price list and fixed price currency mismatch. */
+  PriceAddCurrencyMismatch = 'PRICE_ADD_CURRENCY_MISMATCH',
+  /** Prices to add inputs must be unique by variant id. */
+  PriceAddDuplicateInputForVariant = 'PRICE_ADD_DUPLICATE_INPUT_FOR_VARIANT',
+  /** Fixed price's variant not found. */
+  PriceAddVariantNotFound = 'PRICE_ADD_VARIANT_NOT_FOUND',
+  /** Price is not fixed. */
+  PriceDeletePriceNotFixed = 'PRICE_DELETE_PRICE_NOT_FIXED',
+  /** Fixed price's variant not found. */
+  PriceDeleteVariantNotFound = 'PRICE_DELETE_VARIANT_NOT_FOUND',
+  /** Price List does not exist. */
+  PriceListNotFound = 'PRICE_LIST_NOT_FOUND',
+  /** Price list and quantity price break currency mismatch. */
+  QuantityPriceBreakAddCurrencyMismatch = 'QUANTITY_PRICE_BREAK_ADD_CURRENCY_MISMATCH',
+  /** Quantity price breaks to add inputs must be unique by variant id and minimum quantity. */
+  QuantityPriceBreakAddDuplicateInputForVariantAndMin = 'QUANTITY_PRICE_BREAK_ADD_DUPLICATE_INPUT_FOR_VARIANT_AND_MIN',
+  /** Failed to save quantity price break. */
+  QuantityPriceBreakAddFailedToSave = 'QUANTITY_PRICE_BREAK_ADD_FAILED_TO_SAVE',
+  /** Invalid quantity price break. */
+  QuantityPriceBreakAddInvalid = 'QUANTITY_PRICE_BREAK_ADD_INVALID',
+  /** Exceeded the allowed number of quantity price breaks per variant. */
+  QuantityPriceBreakAddLimitExceeded = 'QUANTITY_PRICE_BREAK_ADD_LIMIT_EXCEEDED',
+  /** Quantity price break miniumum is higher than the quantity rule maximum. */
+  QuantityPriceBreakAddMinHigherThanQuantityRulesMax = 'QUANTITY_PRICE_BREAK_ADD_MIN_HIGHER_THAN_QUANTITY_RULES_MAX',
+  /** Quantity price break miniumum is less than the quantity rule minimum. */
+  QuantityPriceBreakAddMinLowerThanQuantityRulesMin = 'QUANTITY_PRICE_BREAK_ADD_MIN_LOWER_THAN_QUANTITY_RULES_MIN',
+  /** Quantity price break miniumum is not multiple of the quantity rule increment. */
+  QuantityPriceBreakAddMinNotAMultipleOfQuantityRulesIncrement = 'QUANTITY_PRICE_BREAK_ADD_MIN_NOT_A_MULTIPLE_OF_QUANTITY_RULES_INCREMENT',
+  /** Quantity price break's fixed price not found. */
+  QuantityPriceBreakAddPriceListPriceNotFound = 'QUANTITY_PRICE_BREAK_ADD_PRICE_LIST_PRICE_NOT_FOUND',
+  /** Quantity price break variant not found. */
+  QuantityPriceBreakAddVariantNotFound = 'QUANTITY_PRICE_BREAK_ADD_VARIANT_NOT_FOUND',
+  /** Failed to delete quantity price break. */
+  QuantityPriceBreakDeleteFailed = 'QUANTITY_PRICE_BREAK_DELETE_FAILED',
+  /** Quantity price break not found. */
+  QuantityPriceBreakDeleteNotFound = 'QUANTITY_PRICE_BREAK_DELETE_NOT_FOUND',
+  /** Quantity rule catalog context not supported. */
+  QuantityRuleAddCatalogContextNotSupported = 'QUANTITY_RULE_ADD_CATALOG_CONTEXT_NOT_SUPPORTED',
+  /** Quantity rules to add inputs must be unique by variant id. */
+  QuantityRuleAddDuplicateInputForVariant = 'QUANTITY_RULE_ADD_DUPLICATE_INPUT_FOR_VARIANT',
+  /** Quantity rule increment is greater than minimum. */
+  QuantityRuleAddIncrementIsGreaterThanMinimum = 'QUANTITY_RULE_ADD_INCREMENT_IS_GREATER_THAN_MINIMUM',
+  /** Quantity rule increment is less than one. */
+  QuantityRuleAddIncrementIsLessThanOne = 'QUANTITY_RULE_ADD_INCREMENT_IS_LESS_THAN_ONE',
+  /** Quantity rule increment must be a multiple of the quantity price break minimum. */
+  QuantityRuleAddIncrementNotAMultipleOfQuantityPriceBreakMin = 'QUANTITY_RULE_ADD_INCREMENT_NOT_A_MULTIPLE_OF_QUANTITY_PRICE_BREAK_MIN',
+  /** Quantity rule maximum is less than one. */
+  QuantityRuleAddMaximumIsLessThanOne = 'QUANTITY_RULE_ADD_MAXIMUM_IS_LESS_THAN_ONE',
+  /** Quantity rule maximum is not a multiple of increment. */
+  QuantityRuleAddMaximumNotAMultipleOfIncrement = 'QUANTITY_RULE_ADD_MAXIMUM_NOT_A_MULTIPLE_OF_INCREMENT',
+  /** Quantity rule maximum is less than the quantity price break minimum. */
+  QuantityRuleAddMaxLowerThanQuantityPriceBreakMin = 'QUANTITY_RULE_ADD_MAX_LOWER_THAN_QUANTITY_PRICE_BREAK_MIN',
+  /** Quantity rule minimum is greater than maximum. */
+  QuantityRuleAddMinimumGreaterThanMaximum = 'QUANTITY_RULE_ADD_MINIMUM_GREATER_THAN_MAXIMUM',
+  /** Quantity rule minimum is less than one. */
+  QuantityRuleAddMinimumIsLessThanOne = 'QUANTITY_RULE_ADD_MINIMUM_IS_LESS_THAN_ONE',
+  /** Quantity rule minimum is not a multiple of increment. */
+  QuantityRuleAddMinimumNotAMultipleOfIncrement = 'QUANTITY_RULE_ADD_MINIMUM_NOT_A_MULTIPLE_OF_INCREMENT',
+  /** Quantity rule minimum is higher than the quantity price break minimum. */
+  QuantityRuleAddMinHigherThanQuantityPriceBreakMin = 'QUANTITY_RULE_ADD_MIN_HIGHER_THAN_QUANTITY_PRICE_BREAK_MIN',
+  /** Quantity rule variant not found. */
+  QuantityRuleAddVariantNotFound = 'QUANTITY_RULE_ADD_VARIANT_NOT_FOUND',
+  /** Quantity rule not found. */
+  QuantityRuleDeleteRuleNotFound = 'QUANTITY_RULE_DELETE_RULE_NOT_FOUND',
+  /** Quantity rule variant not found. */
+  QuantityRuleDeleteVariantNotFound = 'QUANTITY_RULE_DELETE_VARIANT_NOT_FOUND'
+}
+
+/**
  * The quantity rule for the product variant in a given context.
  *
  */
@@ -34126,16 +35953,24 @@ export enum QuantityRuleUserErrorCode {
   Blank = 'BLANK',
   /** Quantity rules can be associated only with company location catalogs. */
   CatalogContextDoesNotSupportQuantityRules = 'CATALOG_CONTEXT_DOES_NOT_SUPPORT_QUANTITY_RULES',
+  /** Quantity rule inputs must be unique by variant id. */
+  DuplicateInputForVariant = 'DUPLICATE_INPUT_FOR_VARIANT',
   /** Something went wrong when trying to save the quantity rule. Please try again later. */
   GenericError = 'GENERIC_ERROR',
   /** Value must be greater than or equal to 1. */
   GreaterThanOrEqualTo = 'GREATER_THAN_OR_EQUAL_TO',
   /** Increment must be lower than or equal to the minimum. */
   IncrementIsGreaterThanMinimum = 'INCREMENT_IS_GREATER_THAN_MINIMUM',
+  /** Increment must be a multiple of all quantity price break minimums associated with this variant in the specified price list. */
+  IncrementNotAMultipleOfQuantityPriceBreakMinimum = 'INCREMENT_NOT_A_MULTIPLE_OF_QUANTITY_PRICE_BREAK_MINIMUM',
+  /** Maximum must be greater than or equal to all quantity price break minimums associated with this variant in the specified price list. */
+  MaximumIsLowerThanQuantityPriceBreakMinimum = 'MAXIMUM_IS_LOWER_THAN_QUANTITY_PRICE_BREAK_MINIMUM',
   /** The maximum must be a multiple of the increment. */
   MaximumNotMultipleOfIncrement = 'MAXIMUM_NOT_MULTIPLE_OF_INCREMENT',
   /** Minimum must be lower than or equal to the maximum. */
   MinimumIsGreaterThanMaximum = 'MINIMUM_IS_GREATER_THAN_MAXIMUM',
+  /** Minimum must be less than or equal to all quantity price break minimums associated with this variant in the specified price list. */
+  MinimumIsHigherThanQuantityPriceBreakMinimum = 'MINIMUM_IS_HIGHER_THAN_QUANTITY_PRICE_BREAK_MINIMUM',
   /** The minimum must be a multiple of the increment. */
   MinimumNotMultipleOfIncrement = 'MINIMUM_NOT_MULTIPLE_OF_INCREMENT',
   /** Price list does not exist. */
@@ -34242,6 +36077,15 @@ export type QueryRoot = {
    * @deprecated Use `publications` instead.
    */
   channels: ChannelConnection;
+  /**
+   * Returns the visual customizations for checkout for a given checkout profile.
+   *
+   * To learn more about updating checkout branding settings, refer to the
+   * [checkoutBrandingUpsert](https://shopify.dev/api/admin-graphql/unstable/mutations/checkoutBrandingUpsert)
+   * mutation and the checkout branding [tutorial](https://shopify.dev/docs/apps/checkout/styling).
+   *
+   */
+  checkoutBranding?: Maybe<CheckoutBranding>;
   /** A checkout profile on a shop. */
   checkoutProfile?: Maybe<CheckoutProfile>;
   /** List of checkout profiles on a shop. */
@@ -34347,6 +36191,8 @@ export type QueryRoot = {
   files: FileConnection;
   /** Returns a Fulfillment resource by ID. */
   fulfillment?: Maybe<Fulfillment>;
+  /** The fulfillment constraint rules that belong to a shop. */
+  fulfillmentConstraintRules: Array<FulfillmentConstraintRule>;
   /** Returns a Fulfillment order resource by ID. */
   fulfillmentOrder?: Maybe<FulfillmentOrder>;
   /**
@@ -34428,8 +36274,6 @@ export type QueryRoot = {
   marketingEvents: MarketingEventConnection;
   /** The markets configured for the shop. */
   markets: MarketConnection;
-  /** Returns a metafield by ID. */
-  metafield?: Maybe<Metafield>;
   /** Returns a metafield definition by ID. */
   metafieldDefinition?: Maybe<MetafieldDefinition>;
   /**
@@ -34842,6 +36686,12 @@ export type QueryRootChannelsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   reverse?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** The schema's entry-point for queries. This acts as the public, top-level API from which all queries must start. */
+export type QueryRootCheckoutBrandingArgs = {
+  checkoutProfileId: Scalars['ID']['input'];
 };
 
 
@@ -35433,12 +37283,6 @@ export type QueryRootMarketsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   reverse?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-
-/** The schema's entry-point for queries. This acts as the public, top-level API from which all queries must start. */
-export type QueryRootMetafieldArgs = {
-  id: Scalars['ID']['input'];
 };
 
 
@@ -36534,19 +38378,6 @@ export enum ResourceFeedbackState {
   /** The merchant needs to resolve an issue with the resource. */
   RequiresAction = 'REQUIRES_ACTION'
 }
-
-/** A resource limit represents the limits that the resource has. */
-export type ResourceLimit = {
-  __typename?: 'ResourceLimit';
-  /** Whether the resource is available. */
-  available: Scalars['Boolean']['output'];
-  /** Quantity available. If null the quantity available is unlimited. */
-  quantityAvailable?: Maybe<Scalars['Int']['output']>;
-  /** Quantity limit of the resource. If null the quantity is unlimited. */
-  quantityLimit?: Maybe<Scalars['Int']['output']>;
-  /** Quantity used of the resource. If null the quantity used can't be retrieved. */
-  quantityUsed?: Maybe<Scalars['Int']['output']>;
-};
 
 /** Represents a merchandising background operation interface. */
 export type ResourceOperation = {
@@ -39206,10 +41037,14 @@ export type SellingPlanGroupUserError = DisplayableError & {
 export enum SellingPlanGroupUserErrorCode {
   /** Billing and delivery policy types must be the same. */
   BillingAndDeliveryPolicyTypesMustBeTheSame = 'BILLING_AND_DELIVERY_POLICY_TYPES_MUST_BE_THE_SAME',
+  /** Billing policy's interval is too large. */
+  BillingPolicyIntervalTooLarge = 'BILLING_POLICY_INTERVAL_TOO_LARGE',
   /** The input value is blank. */
   Blank = 'BLANK',
   /** A fixed billing policy's checkout charge value and type must match. */
   CheckoutChargeValueAndTypeMustMatch = 'CHECKOUT_CHARGE_VALUE_AND_TYPE_MUST_MATCH',
+  /** Delivery policy's interval is too large. */
+  DeliveryPolicyIntervalTooLarge = 'DELIVERY_POLICY_INTERVAL_TOO_LARGE',
   /** The input value should be equal to the value allowed. */
   EqualTo = 'EQUAL_TO',
   /** Could not add the resource to the selling plan group. */
@@ -39924,6 +41759,8 @@ export type Shop = HasMetafields & HasPublishedTranslations & Node & {
   currencySettings: CurrencySettingConnection;
   /** Whether customer accounts are required, optional, or disabled for the shop. */
   customerAccounts: ShopCustomerAccountsSetting;
+  /** Information about the shop's customer accounts. */
+  customerAccountsV2: CustomerAccountsV2;
   /**
    * List of the shop's customer saved searches.
    * @deprecated Use `QueryRoot.customerSavedSearches` instead.
@@ -40107,11 +41944,6 @@ export type Shop = HasMetafields & HasPublishedTranslations & Node & {
   shipsToCountries: Array<CountryCode>;
   /** The list of all legal policies associated with a shop. */
   shopPolicies: Array<ShopPolicy>;
-  /**
-   * Shopify Payments account information, including balances and payouts.
-   * @deprecated Use `QueryRoot.shopifyPaymentsAccount` instead.
-   */
-  shopifyPaymentsAccount?: Maybe<ShopifyPaymentsAccount>;
   /** The paginated list of the shop's staff members. */
   staffMembers: StaffMemberConnection;
   /** The storefront access token of a private application. These are scoped per-application. */
@@ -40928,6 +42760,13 @@ export type ShopLocaleUpdatePayload = {
   userErrors: Array<UserError>;
 };
 
+/** Shop Pay Installments payment details related to a transaction. */
+export type ShopPayInstallmentsPaymentDetails = BasePaymentDetails & {
+  __typename?: 'ShopPayInstallmentsPaymentDetails';
+  /** The name of payment method used by the buyer. */
+  paymentMethodName?: Maybe<Scalars['String']['output']>;
+};
+
 /**
  * The billing plan of the shop.
  *
@@ -41061,12 +42900,6 @@ export type ShopResourceLimits = {
   maxProductVariants: Scalars['Int']['output'];
   /** Whether the shop has reached the limit of the number of URL redirects it can make for resources. */
   redirectLimitReached: Scalars['Boolean']['output'];
-  /**
-   * The maximum number of variants allowed per shop. If the shop has unlimited SKUs, then the quantity used can't be retrieved.
-   * @deprecated This field is deprecated. After the 2023-10 version, we no longer set limits on number of SKUs per shop. Use `maxProductVariants` instead.
-   *
-   */
-  skuResourceLimits: ResourceLimit;
 };
 
 /** Possible sort of tags. */
@@ -41859,6 +43692,63 @@ export type ShopifyPaymentsVerificationSubject = {
   /** The given name of the individual to verify. */
   givenName: Scalars['String']['output'];
 };
+
+/**
+ * The status of an order's eligibility for protection against fraudulent chargebacks by Shopify Protect.
+ *
+ */
+export enum ShopifyProtectEligibilityStatus {
+  /**
+   * The order is eligible for protection against fraudulent chargebacks.
+   * If an order is updated, the order's eligibility may change and protection could be removed.
+   *
+   */
+  Eligible = 'ELIGIBLE',
+  /** The order isn't eligible for protection against fraudulent chargebacks. */
+  NotEligible = 'NOT_ELIGIBLE',
+  /** The eligibility of the order is pending and has not yet been determined. */
+  Pending = 'PENDING'
+}
+
+/** The eligibility details of an order's protection against fraudulent chargebacks by Shopify Protect. */
+export type ShopifyProtectOrderEligibility = {
+  __typename?: 'ShopifyProtectOrderEligibility';
+  /** The status of whether an order is eligible for protection against fraudulent chargebacks. */
+  status: ShopifyProtectEligibilityStatus;
+};
+
+/**
+ * A summary of Shopify Protect details for an order.
+ *
+ */
+export type ShopifyProtectOrderSummary = {
+  __typename?: 'ShopifyProtectOrderSummary';
+  /** The eligibility details of an order's protection against fraudulent chargebacks. */
+  eligibility: ShopifyProtectOrderEligibility;
+  /** The status of the order's protection against fraudulent chargebacks. */
+  status: ShopifyProtectStatus;
+};
+
+/** The status of an order's protection with Shopify Protect. */
+export enum ShopifyProtectStatus {
+  /**
+   * The protection for the order is active and eligible for reimbursement against fraudulent chargebacks.
+   * If an order is updated, the order's eligibility may change and protection could become inactive.
+   *
+   */
+  Active = 'ACTIVE',
+  /** The protection for an order isn't active because the order didn't meet eligibility requirements. */
+  Inactive = 'INACTIVE',
+  /**
+   * The order received a chargeback but the order wasn't protected because it didn't meet coverage requirements.
+   *
+   */
+  NotProtected = 'NOT_PROTECTED',
+  /** The protection for the order is pending and has not yet been determined. */
+  Pending = 'PENDING',
+  /** The order received a fraudulent chargeback and it was protected. */
+  Protected = 'PROTECTED'
+}
 
 /** A response to a ShopifyQL query. */
 export type ShopifyqlResponse = {
@@ -46121,6 +48011,8 @@ export enum WebhookSubscriptionTopic {
   OrdersPaid = 'ORDERS_PAID',
   /** The webhook topic for `orders/partially_fulfilled` events. Occurs whenever an order is partially fulfilled. Requires at least one of the following scopes: read_orders, read_marketplace_orders. */
   OrdersPartiallyFulfilled = 'ORDERS_PARTIALLY_FULFILLED',
+  /** The webhook topic for `orders/shopify_protect_eligibility_changed` events. Occurs whenever Shopify Protect's eligibility for an order is changed. Requires the `read_orders` scope. */
+  OrdersShopifyProtectEligibilityChanged = 'ORDERS_SHOPIFY_PROTECT_ELIGIBILITY_CHANGED',
   /** The webhook topic for `orders/updated` events. Occurs whenever an order is updated. Requires at least one of the following scopes: read_orders, read_marketplace_orders, read_buyer_membership_orders. */
   OrdersUpdated = 'ORDERS_UPDATED',
   /** The webhook topic for `order_transactions/create` events. Occurs when a order transaction is created or when it's status is updated. Only occurs for transactions with a status of success, failure or error. Requires at least one of the following scopes: read_orders, read_marketplace_orders, read_buyer_membership_orders. */
@@ -46165,6 +48057,8 @@ export enum WebhookSubscriptionTopic {
   ProfilesDelete = 'PROFILES_DELETE',
   /** The webhook topic for `profiles/update` events. Occurs whenever a delivery profile is updated Requires at least one of the following scopes: read_shipping, read_assigned_shipping. */
   ProfilesUpdate = 'PROFILES_UPDATE',
+  /** The webhook topic for `publications/delete` events. Occurs whenever a publication is deleted. Requires the `read_publications` scope. */
+  PublicationsDelete = 'PUBLICATIONS_DELETE',
   /** The webhook topic for `refunds/create` events. Occurs whenever a new refund is created without errors on an order, independent from the movement of money. Requires at least one of the following scopes: read_orders, read_marketplace_orders, read_buyer_membership_orders. */
   RefundsCreate = 'REFUNDS_CREATE',
   /** The webhook topic for `returns/approve` events. Occurs whenever a return is approved. This means `Return.status` is `OPEN`. Requires at least one of the following scopes: read_returns, read_marketplace_returns, read_buyer_membership_orders. */

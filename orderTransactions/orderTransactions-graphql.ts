@@ -41,6 +41,7 @@ const OrderTransactionFieldsFragment = /* GraphQL */ `
     gateway
     createdAt
     authorizationCode
+    accountNumber
     receiptJson @include(if: $includeReceiptJson)
     settlementCurrency
     settlementCurrencyRate
@@ -48,15 +49,18 @@ const OrderTransactionFieldsFragment = /* GraphQL */ `
     processedAt
     test
     paymentId
-    paymentIcon {
+    paymentIcon @include(if: $includeIcon) {
       url
     }
     amountSet {
-      shopMoney {
+      shopMoney @include(if: $includeAmount) {
         amount
       }
+      presentmentMoney @include(if: $includeTransactionCurrency) {
+        currencyCode
+      }
     }
-    totalUnsettledSet {
+    totalUnsettledSet @include(if: $includeTotalUnsettled) {
       shopMoney {
         amount
       }
@@ -65,6 +69,9 @@ const OrderTransactionFieldsFragment = /* GraphQL */ `
       id
     }
     paymentDetails @include(if: $includePaymentDetails) {
+      ... on BasePaymentDetails {
+        paymentMethodName
+      }
       ... on CardPaymentDetails {
         avsResultCode
         bin
@@ -76,10 +83,10 @@ const OrderTransactionFieldsFragment = /* GraphQL */ `
         number
         wallet
       }
-      # ... on ShopPayInstallmentsPaymentDetails {
-      #   paymentMethodName
-      # }
     }
+    # user @include(if: $includeUser) {
+    #   id
+    # }
   }
 `;
 // #endregion
@@ -92,9 +99,13 @@ export const QueryOrderTransactions = /* GraphQL */ `
     $maxEntriesPerRun: Int!
     $cursor: String
     $searchQuery: String
+    $includeAmount: Boolean!
+    $includeIcon: Boolean!
     $includeParentTransaction: Boolean!
     $includePaymentDetails: Boolean!
     $includeReceiptJson: Boolean!
+    $includeTotalUnsettled: Boolean!
+    $includeTransactionCurrency: Boolean!
   ) {
     orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
       nodes {

@@ -5,13 +5,13 @@ import { makeGraphQlRequest } from '../helpers-graphql';
 import { deleteFiles, querySingleFile, UpdateFile } from './files-graphql';
 import { FetchRequestOptions } from '../types/Requests';
 import { FileFieldsFragment, FileUpdateMutationVariables, GetSingleFileQueryVariables } from '../types/admin.generated';
-import { FileSchema } from '../schemas/syncTable/FileSchema';
+import { FileSyncTableSchema } from '../schemas/syncTable/FileSchema';
 import { FileUpdateInput } from '../types/admin.types';
 import { CACHE_DEFAULT } from '../constants';
 
 // #region Helpers
 export async function handleFileUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof FileSchema>,
+  update: coda.SyncUpdate<string, string, typeof FileSyncTableSchema>,
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;

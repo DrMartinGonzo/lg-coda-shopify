@@ -14,7 +14,7 @@ import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
   CONSENT_STATE__SUBSCRIBED,
   CONSENT_STATE__UNSUBSCRIBED,
-  CustomerSchema,
+  CustomerSyncTableSchema,
   customerFieldDependencies,
 } from '../schemas/syncTable/CustomerSchema';
 import { sharedParameters } from '../shared-parameters';
@@ -59,9 +59,9 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getCustomerSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = CustomerSchema;
+  let augmentedSchema: any = CustomerSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(CustomerSchema, MetafieldOwnerType.Customer, context);
+    augmentedSchema = await augmentSchemaWithMetafields(CustomerSyncTableSchema, MetafieldOwnerType.Customer, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -82,7 +82,7 @@ export const Sync_Customers = coda.makeSyncTable({
   description: 'Return Customers from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_CUSTOMER,
-  schema: CustomerSchema,
+  schema: CustomerSyncTableSchema,
   dynamicOptions: {
     getSchema: getCustomerSchema,
     defaultAddDynamicColumns: false,
@@ -381,7 +381,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
-  schema: CustomerSchema,
+  schema: CustomerSyncTableSchema,
   execute: async function (
     [customerId, firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
     context
@@ -473,7 +473,7 @@ export const Formula_Customer = coda.makeFormula({
   parameters: [parameters.customerID],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: CustomerSchema,
+  schema: CustomerSyncTableSchema,
   execute: async ([customer_id], context) => {
     const customerResponse = await fetchSingleCustomerRest(customer_id, context);
     if (customerResponse.body?.customer) {

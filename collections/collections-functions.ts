@@ -11,7 +11,10 @@ import {
   REST_DEFAULT_API_VERSION,
 } from '../constants';
 import { isSmartCollection } from './collections-graphql';
-import { CollectionSchema, formatCollectionReferenceValueForSchema } from '../schemas/syncTable/CollectionSchema';
+import {
+  CollectionSyncTableSchema,
+  formatCollectionReferenceValueForSchema,
+} from '../schemas/syncTable/CollectionSchema';
 import { FetchRequestOptions } from '../types/Requests';
 
 import {
@@ -29,7 +32,7 @@ import { formatProductReferenceValueForSchema } from '../schemas/syncTable/Produ
 // #region Helpers
 function formatCollectionStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof CollectionSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof CollectionSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -56,7 +59,7 @@ function formatCollectionStandardFieldsRestParams(
 }
 
 export async function handleCollectionUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof CollectionSchema>,
+  update: coda.SyncUpdate<string, string, typeof CollectionSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

@@ -18,7 +18,7 @@ import {
   updateBlogRest,
 } from './blogs-functions';
 
-import { BlogSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
+import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
@@ -46,9 +46,9 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = BlogSchema;
+  let augmentedSchema: any = BlogSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(BlogSchema, MetafieldOwnerType.Blog, context);
+    augmentedSchema = await augmentSchemaWithMetafields(BlogSyncTableSchema, MetafieldOwnerType.Blog, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -88,7 +88,7 @@ export const Sync_Blogs = coda.makeSyncTable({
     "Return Blogs from this shop. You can also fetch metafields by selecting them in advanced settings but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_BLOG,
-  schema: BlogSchema,
+  schema: BlogSyncTableSchema,
   dynamicOptions: {
     getSchema: getBlogSchema,
     defaultAddDynamicColumns: false,
@@ -191,7 +191,7 @@ export const Action_UpdateBlog = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(BlogSchema, IDENTITY_BLOG),
-  schema: BlogSchema,
+  schema: BlogSyncTableSchema,
   execute: async function ([blogId, title, handle, commentable, templateSuffix, metafields], context) {
     const restParams: BlogUpdateRestParams = {
       title,
@@ -289,7 +289,7 @@ export const Formula_Blog = coda.makeFormula({
   parameters: [parameters.blogId],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: BlogSchema,
+  schema: BlogSyncTableSchema,
   execute: async ([blogId], context) => {
     const blogResponse = await fetchSingleBlogRest(blogId, context);
     if (blogResponse.body?.blog) {

@@ -6,7 +6,7 @@ import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, m
 
 import { idToGraphQlGid } from '../helpers-graphql';
 import { FetchRequestOptions } from '../types/Requests';
-import { BlogSchema } from '../schemas/syncTable/BlogSchema';
+import { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   getMetafieldKeyValueSetsFromUpdate,
@@ -41,7 +41,7 @@ export async function autocompleteBlogParameterWithName(context: coda.ExecutionC
 
 function formatBlogStandardFieldsRestParams(
   standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof BlogSchema>['newValue']
+  values: coda.SyncUpdate<string, string, typeof BlogSyncTableSchema>['newValue']
 ) {
   const restParams: any = {};
   standardFromKeys.forEach((fromKey) => {
@@ -57,7 +57,7 @@ function formatBlogStandardFieldsRestParams(
  * appel séparé pour chaque metafield
  */
 export async function handleBlogUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof BlogSchema>,
+  update: coda.SyncUpdate<string, string, typeof BlogSyncTableSchema>,
   metafieldDefinitions: MetafieldDefinitionFragment[],
   context: coda.ExecutionContext
 ) {

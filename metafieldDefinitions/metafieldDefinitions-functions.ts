@@ -12,7 +12,7 @@ import {
 import { METAFIELD_TYPES } from '../metafields/metafields-constants';
 import { getMetaFieldFullKey } from '../metafields/metafields-functions';
 import { QuerySingleMetafieldDefinition, queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
-import { MetafieldDefinitionSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
+import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { FetchRequestOptions } from '../types/Requests';
 
 // #endregion
@@ -62,7 +62,7 @@ export function formatMetafieldDefinitionForSchemaFromGraphQlApi(
   const graphQlResourceType = getGraphQlResourceFromMetafieldOwnerType(metafieldDefinitionNode.ownerType);
 
   const definitionId = graphQlGidToId(metafieldDefinitionNode.id);
-  let obj: coda.SchemaType<typeof MetafieldDefinitionSchema> = {
+  let obj: coda.SchemaType<typeof MetafieldDefinitionSyncTableSchema> = {
     ...metafieldDefinitionNode,
     admin_graphql_api_id: metafieldDefinitionNode.id,
     id: definitionId,

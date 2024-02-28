@@ -8,7 +8,7 @@ import {
   setInventoryLevelRest,
 } from './inventoryLevels-functions';
 
-import { InventoryLevelSchema } from '../schemas/syncTable/InventoryLevelSchema';
+import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { IDENTITY_INVENTORYLEVEL, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
@@ -38,7 +38,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
   description: 'Return Inventory Levels from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_INVENTORYLEVEL,
-  schema: InventoryLevelSchema,
+  schema: InventoryLevelSyncTableSchema,
   formula: {
     name: 'SyncInventoryLevels',
     description: '<Help text for the sync formula, not show to the user>',
@@ -115,7 +115,7 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
-  schema: InventoryLevelSchema,
+  schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available], context) {
     const response = await setInventoryLevelRest(
       {
@@ -148,7 +148,7 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
-  schema: InventoryLevelSchema,
+  schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available_adjustment], context) {
     const response = await adjustInventoryLevelRest(
       {

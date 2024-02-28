@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-export const RedirectSchema = coda.makeObjectSchema({
+export const RedirectSyncTableSchema = coda.makeObjectSchema({
   properties: {
     admin_url: {
       type: coda.ValueType.String,

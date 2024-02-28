@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import { InventoryItemReference } from './InventoryItemSchema';
 import { LocationReference } from './LocationSchema';
 
-export const InventoryLevelSchema = coda.makeObjectSchema({
+export const InventoryLevelSyncTableSchema = coda.makeObjectSchema({
   properties: {
     graphql_gid: {
       type: coda.ValueType.String,

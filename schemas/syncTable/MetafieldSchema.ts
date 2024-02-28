@@ -6,7 +6,7 @@ import { PageReference } from './PageSchema';
 import { FileReference } from './FileSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
 
-export const MetafieldSchema = coda.makeObjectSchema({
+export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   properties: {
     graphql_gid: {
       type: coda.ValueType.String,

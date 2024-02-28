@@ -18,7 +18,7 @@ import {
   updatePageRest,
 } from './pages-functions';
 
-import { PageSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
+import { PageSyncTableSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
 import { sharedParameters } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
@@ -45,9 +45,9 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = PageSchema;
+  let augmentedSchema: any = PageSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(PageSchema, MetafieldOwnerType.Page, context);
+    augmentedSchema = await augmentSchemaWithMetafields(PageSyncTableSchema, MetafieldOwnerType.Page, context);
   }
   // admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -111,7 +111,7 @@ export const Sync_Pages = coda.makeSyncTable({
   description: 'Return Pages from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_PAGE,
-  schema: PageSchema,
+  schema: PageSyncTableSchema,
   dynamicOptions: {
     getSchema: getPageSchema,
     defaultAddDynamicColumns: false,
@@ -308,7 +308,7 @@ export const Action_UpdatePage = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
-  schema: PageSchema,
+  schema: PageSyncTableSchema,
   execute: async function (
     [pageId, author, bodyHtml, handle, published, publishedAt, title, templateSuffix, metafields],
     context
@@ -374,7 +374,7 @@ export const Formula_Page = coda.makeFormula({
   parameters: [parameters.pageID],
   resultType: coda.ValueType.Object,
   cacheTtlSecs: CACHE_DEFAULT,
-  schema: PageSchema,
+  schema: PageSyncTableSchema,
   execute: async ([pageId], context) => {
     const pageResponse = await fetchSinglePageRest(pageId, context);
     if (pageResponse.body?.page) {

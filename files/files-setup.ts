@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FileSchema } from '../schemas/syncTable/FileSchema';
+import { FileSyncTableSchema } from '../schemas/syncTable/FileSchema';
 import {
   deleteFileGraphQl,
   handleFileUpdateJob,
@@ -34,7 +34,7 @@ export const Sync_Files = coda.makeSyncTable({
   description: 'Return Files from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_FILE,
-  schema: FileSchema,
+  schema: FileSyncTableSchema,
   formula: {
     name: 'SyncFiles',
     description: '<Help text for the sync formula, not shown to the user>',
@@ -145,7 +145,7 @@ export const Formula_File = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [parameters.fileGid],
   resultType: coda.ValueType.Object,
-  schema: FileSchema,
+  schema: FileSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([fileGid], context) {
     const response = await fetchSingleFileGraphQl(fileGid, context);

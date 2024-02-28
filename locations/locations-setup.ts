@@ -10,7 +10,7 @@ import {
   updateLocationGraphQl,
   formatGraphQlLocationEditInputNew,
 } from './locations-functions';
-import { LocationSchema } from '../schemas/syncTable/LocationSchema';
+import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { sharedParameters } from '../shared-parameters';
 import { CACHE_DEFAULT, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
 import {
@@ -39,9 +39,9 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = LocationSchema;
+  let augmentedSchema: any = LocationSyncTableSchema;
   if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(LocationSchema, MetafieldOwnerType.Location, context);
+    augmentedSchema = await augmentSchemaWithMetafields(LocationSyncTableSchema, MetafieldOwnerType.Location, context);
   }
   // admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
@@ -69,7 +69,7 @@ export const Sync_Locations = coda.makeSyncTable({
   description: 'Return Locations from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_LOCATION,
-  schema: LocationSchema,
+  schema: LocationSyncTableSchema,
   dynamicOptions: {
     getSchema: getLocationSchema,
     defaultAddDynamicColumns: false,
@@ -183,7 +183,7 @@ export const Action_UpdateLocation = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
-  schema: LocationSchema,
+  schema: LocationSyncTableSchema,
   execute: async function (
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
@@ -239,7 +239,7 @@ export const Action_ActivateLocation = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
-  schema: LocationSchema,
+  schema: LocationSyncTableSchema,
   execute: async function ([locationID], context) {
     const response = await activateLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, locationID), context);
     const location = response?.body?.data?.locationActivate?.location;
@@ -247,7 +247,7 @@ export const Action_ActivateLocation = coda.makeFormula({
       id: locationID,
       name: location?.name,
       active: location?.isActive,
-    } as coda.SchemaType<typeof LocationSchema>;
+    } as coda.SchemaType<typeof LocationSyncTableSchema>;
   },
 });
 
@@ -264,7 +264,7 @@ export const Action_DeactivateLocation = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
-  schema: LocationSchema,
+  schema: LocationSyncTableSchema,
   execute: async function ([locationID, destinationLocationID], context) {
     const response = await deactivateLocationGraphQl(
       idToGraphQlGid(GraphQlResource.Location, locationID),
@@ -276,7 +276,7 @@ export const Action_DeactivateLocation = coda.makeFormula({
       id: locationID,
       name: location?.name,
       active: location?.isActive,
-    } as coda.SchemaType<typeof LocationSchema>;
+    } as coda.SchemaType<typeof LocationSyncTableSchema>;
   },
 });
 // #endregion
@@ -289,7 +289,7 @@ export const Formula_Location = coda.makeFormula({
   parameters: [sharedParameters.locationID],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: LocationSchema,
+  schema: LocationSyncTableSchema,
   execute: async ([location_id], context) => {
     const locationResponse: coda.FetchResponse<{
       data: GetSingleLocationQuery;
