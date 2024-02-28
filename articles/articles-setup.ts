@@ -48,11 +48,11 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getArticleSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = ArticleSyncTableSchema;
+  let augmentedSchema = ArticleSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(ArticleSyncTableSchema, MetafieldOwnerType.Article, context);
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -339,7 +339,7 @@ export const Action_CreateArticle = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -419,7 +419,7 @@ export const Action_UpdateArticle = coda.makeFormula({
       restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
     }
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateArticleRest(articleId, restParams, context));
     if (metafields && metafields.length) {
       promises.push(

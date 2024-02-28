@@ -15,7 +15,7 @@ export async function handleFileUpdateJob(
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const fileId = update.previousValue.id as number;
 
   if (updatedFields.length) {
@@ -77,7 +77,9 @@ export const formatFileNodeForSchema = (file: FileFieldsFragment) => {
       obj.name = file.url.split('/').pop().split('?').shift();
       break;
     case 'MediaImage':
-      obj.name = file.image.url.split('/').pop().split('?').shift();
+      if (file.image?.url) {
+        obj.name = file.image.url.split('/').pop().split('?').shift();
+      }
       obj.fileSize = file.originalSource?.fileSize;
       obj.url = file.image?.url;
       obj.width = file.image?.width;

@@ -19,7 +19,7 @@ export async function handleInventoryItemUpdateJob(
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const inventoryItemId = update.previousValue.id as number;
 
   if (updatedFields.length) {

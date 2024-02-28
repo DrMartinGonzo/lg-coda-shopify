@@ -133,21 +133,6 @@ export async function wait(ms: number) {
 }
 
 /**
- * Get an object Schema item property by its key name or its fromKey property
- * @param objectSchema
- * @param key property key or fromKey property
- * @returns schema property
- */
-export function getObjectSchemaItemProp(objectSchema, key: string) {
-  const properties = objectSchema.items.properties;
-  for (const currKey of Object.keys(properties)) {
-    const prop = properties[currKey];
-    if (currKey === key) return prop;
-    if (prop.fromKey && prop.fromKey === key) return prop;
-  }
-}
-
-/**
  * Get object schema keys or fromKeys if present
  */
 export function getObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.makeObjectSchema>>(objectSchema: T) {
@@ -155,18 +140,18 @@ export function getObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.ma
   return Object.keys(properties).map((key) => {
     const property = properties[key];
     const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
-    return propKey;
+    return propKey as string;
   });
 }
 
-const getShopifyAccessToken = (context) => '{{token-' + context.invocationToken + '}}';
-export const getShopifyRequestHeaders = (context) => {
+const getShopifyAccessToken = (context: coda.ExecutionContext) => '{{token-' + context.invocationToken + '}}';
+export const getShopifyRequestHeaders = (context: coda.ExecutionContext) => {
   return {
     'Content-Type': 'application/json',
     'X-Shopify-Access-Token': getShopifyAccessToken(context),
   };
 };
-export const getShopifyStorefrontRequestHeaders = (context) => {
+export const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContext) => {
   return {
     'Content-Type': 'application/json',
     'Shopify-Storefront-Private-Token': getShopifyAccessToken(context),
@@ -197,7 +182,7 @@ export function handleFieldDependencies(effectivePropertyKeys: string[], fieldDe
 /**
  * Try to parse a json string, if it fails return the original value
  */
-export function maybeParseJson(value) {
+export function maybeParseJson(value: any) {
   if (!value) return value;
   try {
     return JSON.parse(value);
@@ -207,7 +192,7 @@ export function maybeParseJson(value) {
 }
 
 export function isCodaCached(response: coda.FetchResponse<any>): boolean {
-  return (response.headers['Coda-Fetcher-Cache-Hit'] && response.headers['Coda-Fetcher-Cache-Hit'] === '1') ?? false;
+  return (!!response.headers['Coda-Fetcher-Cache-Hit'] && response.headers['Coda-Fetcher-Cache-Hit'] === '1') ?? false;
 }
 
 export function arrayUnique(array: any[]) {
@@ -215,7 +200,7 @@ export function arrayUnique(array: any[]) {
 }
 
 export function wrapGetSchemaForCli(fn: coda.MetadataFunction, context: coda.ExecutionContext, args: any) {
-  return fn(context, undefined, { ...args, __brand: 'MetadataContext' }) as Promise<coda.ArraySchema<coda.Schema>>;
+  return fn(context, '', { ...args, __brand: 'MetadataContext' }) as Promise<coda.ArraySchema<coda.Schema>>;
 }
 
 export function logAdmin(msg: string) {
@@ -252,9 +237,8 @@ export function compareByValueKey(a: any, b: any) {
  */
 export function parseOptionId(label: string): number {
   if (!label) return undefined;
-  if (!Number.isNaN(parseInt(label))) {
-    return Number(label);
-  }
+  if (!Number.isNaN(parseInt(label))) return Number(label);
+
   let match = label.match(/\((\d+)\)$/);
   if (!match) {
     throw new coda.UserVisibleError(`Invalid option: ${label}`);
@@ -266,7 +250,7 @@ export function formatOptionNameId(name: string, id: number): string {
   return `${trimStringWithEllipsis(name, 25)} (${id})`;
 }
 
-function trimStringWithEllipsis(inputString, maxLength) {
+function trimStringWithEllipsis(inputString: string, maxLength: number) {
   if (inputString.length > maxLength) {
     return inputString.substring(0, maxLength - 1) + '…';
   }

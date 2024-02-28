@@ -3,7 +3,7 @@ import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './Shopi
 import { MetafieldDefinition } from './admin.types';
 
 export interface SyncTableRestContinuation extends coda.Continuation {
-  nextUrl: string;
+  nextUrl?: string;
   extraContinuationData: any;
 }
 
@@ -28,7 +28,7 @@ export interface SyncTableRestAugmentedContinuation extends SyncTableRestContinu
 }
 
 export interface SyncTableMixedContinuation extends SyncTableRestContinuation, SyncTableGraphQlContinuation {
-  scheduledNextRestUrl: string;
+  scheduledNextRestUrl?: string;
   // @ts-ignore
   extraContinuationData: {
     skipNextRestSync: boolean;

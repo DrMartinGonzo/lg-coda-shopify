@@ -46,7 +46,7 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
   const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
   let displayProperty = 'handle';
 
-  let augmentedSchema: any = MetaObjectSyncTableBaseSchema;
+  let augmentedSchema = MetaObjectSyncTableBaseSchema;
 
   if (isPublishable) {
     augmentedSchema.properties['status'] = {
@@ -68,13 +68,16 @@ async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, 
       augmentedSchema.properties[name] = property;
 
       if (displayNameKey === fieldDefinition.key) {
+        // @ts-ignore
         augmentedSchema.displayProperty = name;
         augmentedSchema.properties[name].required = true;
+        // @ts-ignore
         augmentedSchema.featuredProperties.unshift(displayProperty);
       }
     }
   });
 
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any custom field keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }

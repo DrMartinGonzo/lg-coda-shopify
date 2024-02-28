@@ -58,11 +58,12 @@ import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = ProductSyncTableSchemaRest;
+  let augmentedSchema = ProductSyncTableSchemaRest;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       ProductSyncTableSchemaRest,
@@ -70,7 +71,7 @@ async function getProductSchema(context: coda.ExecutionContext, _: string, formu
       context
     );
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -244,8 +245,8 @@ export const Sync_Products = coda.makeSyncTable({
         }
       }
 
-      let restItems = [];
-      let restContinuation: SyncTableRestContinuation = null;
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof ProductSyncTableSchemaRest>> = [];
+      let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
       // Rest Admin API Sync
@@ -442,7 +443,7 @@ export const Action_CreateProduct = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -491,7 +492,7 @@ export const Action_UpdateProduct = coda.makeFormula({
       status,
     };
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateProductRest(productId, restParams, context));
     if (metafields && metafields.length) {
       promises.push(

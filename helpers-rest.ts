@@ -73,7 +73,7 @@ export async function makeSyncTableGetRequest(
 ) {
   logAdmin(`🚀  Rest Admin API: Starting sync…`);
 
-  let continuation: SyncTableRestContinuation = null;
+  let continuation: SyncTableRestContinuation | null = null;
   const response = await makeGetRequest({ url: params.url }, context);
 
   // Check if we have paginated results

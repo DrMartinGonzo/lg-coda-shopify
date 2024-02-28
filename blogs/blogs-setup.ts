@@ -46,11 +46,11 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getBlogSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = BlogSyncTableSchema;
+  let augmentedSchema = BlogSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(BlogSyncTableSchema, MetafieldOwnerType.Blog, context);
   }
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -200,7 +200,7 @@ export const Action_UpdateBlog = coda.makeFormula({
       template_suffix: templateSuffix,
     };
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateBlogRest(blogId, restParams, context));
     if (metafields && metafields.length) {
       promises.push(
@@ -256,7 +256,7 @@ export const Action_CreateBlog = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }

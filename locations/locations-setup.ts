@@ -39,13 +39,12 @@ import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafi
 // #endregion
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema: any = LocationSyncTableSchema;
+  let augmentedSchema = LocationSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(LocationSyncTableSchema, MetafieldOwnerType.Location, context);
   }
-  // admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  augmentedSchema.featuredProperties.push('stock_url');
+  // @ts-ignore: admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
+  augmentedSchema.featuredProperties = [...augmentedSchema.featuredProperties, 'admin_url', 'stock_url'];
   return augmentedSchema;
 }
 
@@ -200,7 +199,7 @@ export const Action_UpdateLocation = coda.makeFormula({
       zip,
     });
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateLocationGraphQl(locationGid, locationEditInput, context));
     if (metafields && metafields.length) {
       promises.push(

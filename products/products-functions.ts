@@ -65,7 +65,7 @@ export async function handleProductUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
   let obj = { ...update.previousValue };
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const productId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {
@@ -268,7 +268,7 @@ export async function updateProductGraphQl(
   );
   const metafieldsSetsInput = metafieldKeyValueSets.map((m) =>
     formatMetafieldGraphQlInputFromMetafieldKeyValueSet(productGid, m)
-  ).filter((m) => m);
+  ).filter(Boolean);
 
   const payload = {
     query: MutationUpdateProduct,

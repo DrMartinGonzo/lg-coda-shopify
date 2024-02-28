@@ -118,7 +118,7 @@ export async function handleLocationUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
 
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const locationId = update.previousValue.id as number;
   const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
 
