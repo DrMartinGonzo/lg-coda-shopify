@@ -17,16 +17,9 @@ import {
 } from '../helpers-graphql';
 import { queryAllFiles } from './files-graphql';
 import { GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
+import { inputs } from '../shared-parameters';
 
 // #endregion
-
-const parameters = {
-  fileGid: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'fileGid',
-    description: 'The GraphQl GID of the file.',
-  }),
-};
 
 // #region Sync Tables
 export const Sync_Files = coda.makeSyncTable({
@@ -128,7 +121,7 @@ export const Action_DeleteFile = coda.makeFormula({
   name: 'DeleteFile',
   description: 'Delete an existing Shopify File and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [{ ...parameters.fileGid, description: 'The GraphQl GID of the file to delete.' }],
+  parameters: [{ ...inputs.file.gid, description: 'The GraphQl GID of the file to delete.' }],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([fileGid], context) {
@@ -143,7 +136,7 @@ export const Formula_File = coda.makeFormula({
   name: 'File',
   description: 'Get a single file by its graphQL GID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.fileGid],
+  parameters: [inputs.file.gid],
   resultType: coda.ValueType.Object,
   schema: FileSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,

@@ -18,7 +18,7 @@ import { FetchRequestOptions } from '../types/Requests';
 // #endregion
 
 // #region Autocomplete functions
-export function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
+function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
     const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
     const searchObjects = metafieldDefinitions.map((metafield) => {
@@ -44,7 +44,10 @@ export function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: Metafiel
 export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
   return metafieldDefinitions.find((f) => f && getMetaFieldFullKey(f) === fullKey);
 }
-function requireMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
+export function requireMatchingMetafieldDefinition(
+  fullKey: string,
+  metafieldDefinitions: MetafieldDefinitionFragment[]
+) {
   const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
   return metafieldDefinition;

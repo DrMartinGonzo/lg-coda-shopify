@@ -3,11 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
-import {
-  MetafieldFragmentWithDefinition,
-  ResourceMetafieldsSyncTableDefinition,
-  SupportedGraphQlResourceWithMetafields,
-} from '../types/Metafields';
+import { SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from '../metafields/metafields-constants';
 import { requireResourceMetafieldsSyncTableDefinition } from '../metafields/metafields-functions';
@@ -25,17 +21,8 @@ import {
   formatMetafieldDefinitionForSchemaFromGraphQlApi,
 } from './metafieldDefinitions-functions';
 import { CACHE_DEFAULT, IDENTITY_METAFIELD_DEFINITION } from '../constants';
+import { inputs } from '../shared-parameters';
 
-// #endregion
-
-// #region Helpers
-const parameters = {
-  inputMetafieldDefinitionID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'metafieldDefinitionId',
-    description: 'The ID of the metafield definition.',
-  }),
-};
 // #endregion
 
 // #region Sync tables
@@ -127,7 +114,7 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   name: 'MetafieldDefinition',
   description: 'Get a single metafield definition by its ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputMetafieldDefinitionID],
+  parameters: [inputs.metafieldDefinition.id],
   resultType: coda.ValueType.Object,
   schema: MetafieldDefinitionSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,

@@ -17,7 +17,7 @@ import {
   CustomerSyncTableSchema,
   customerFieldDependencies,
 } from '../schemas/syncTable/CustomerSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import {
   CACHE_DEFAULT,
   IDENTITY_CUSTOMER,
@@ -69,18 +69,11 @@ async function getCustomerSchema(context: coda.ExecutionContext, _: string, form
   return augmentedSchema;
 }
 
-const parameters = {
-  customerID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'customerId',
-    description: 'The ID of the customer.',
-  }),
-};
-
 // #region Sync Tables
 export const Sync_Customers = coda.makeSyncTable({
   name: 'Customers',
-  description: 'Return Customers from this shop.',
+  description:
+    'Return Customers from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_CUSTOMER,
   schema: CustomerSyncTableSchema,
@@ -92,18 +85,18 @@ export const Sync_Customers = coda.makeSyncTable({
     name: 'SyncCustomers',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      sharedParameters.optionalSyncMetafields,
+      { ...filters.general.syncMetafields, optional: true },
       {
-        ...sharedParameters.filterCreatedAtRange,
+        ...filters.general.createdAtRange,
         optional: true,
         description: 'Sync only customers created in the given date range.',
       },
       {
-        ...sharedParameters.filterUpdatedAtRange,
+        ...filters.general.updatedAtRange,
         optional: true,
         description: 'Sync only customers updated in the given date range.',
       },
-      { ...sharedParameters.filterIds, optional: true },
+      { ...filters.customer.idArray, optional: true },
     ],
     execute: async function ([syncMetafields, created_at, updated_at, ids], context: coda.SyncExecutionContext) {
       // If executing from CLI, schema is undefined, we have to retrieve it first
@@ -276,29 +269,25 @@ export const Action_CreateCustomer = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     // optional parameters
-    { ...sharedParameters.inputFirstName, description: "The customer's first name.", optional: true },
-    { ...sharedParameters.inputLastName, description: "The customer's last name.", optional: true },
+    { ...inputs.customer.firstName, description: "The customer's first name.", optional: true },
+    { ...inputs.customer.lastName, description: "The customer's last name.", optional: true },
     {
-      ...sharedParameters.inputEmail,
+      ...inputs.customer.email,
       description:
         'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
       optional: true,
     },
     {
-      ...sharedParameters.inputPhone,
+      ...inputs.general.phone,
       description:
         'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
       optional: true,
     },
-    {
-      ...sharedParameters.inputNote,
-      description: 'A note about the customer.',
-      optional: true,
-    },
-    { ...sharedParameters.inputTags, optional: true },
-    { ...sharedParameters.inputAcceptsEmailMarketing, optional: true },
-    { ...sharedParameters.inputAcceptsSmsMarketing, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Customer metafields to create.' },
+    { ...inputs.customer.note, optional: true },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.customer.acceptsEmailMarketing, optional: true },
+    { ...inputs.customer.acceptsSmsMarketing, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Customer metafields to create.' },
   ],
   isAction: true,
   resultType: coda.ValueType.String,
@@ -351,32 +340,27 @@ export const Action_UpdateCustomer = coda.makeFormula({
   description: 'Update an existing Shopify customer and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.customerID,
+    inputs.customer.id,
 
     // optional parameters
-    { ...sharedParameters.inputFirstName, description: "The customer's first name.", optional: true },
-    { ...sharedParameters.inputLastName, description: "The customer's last name.", optional: true },
+    { ...inputs.customer.firstName, optional: true },
+    { ...inputs.customer.lastName, optional: true },
+    { ...inputs.customer.email, optional: true },
     {
-      ...sharedParameters.inputEmail,
-      description:
-        'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
-      optional: true,
-    },
-    {
-      ...sharedParameters.inputPhone,
+      ...inputs.general.phone,
       description:
         'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error.',
       optional: true,
     },
     {
-      ...sharedParameters.inputNote,
+      ...inputs.customer.note,
       description: 'A note about the customer.',
       optional: true,
     },
-    { ...sharedParameters.inputTags, optional: true },
-    { ...sharedParameters.inputAcceptsEmailMarketing, optional: true },
-    { ...sharedParameters.inputAcceptsSmsMarketing, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Customer metafields to update.' },
+    { ...inputs.general.tagsArray, optional: true },
+    { ...inputs.customer.acceptsEmailMarketing, optional: true },
+    { ...inputs.customer.acceptsSmsMarketing, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Customer metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -407,22 +391,6 @@ export const Action_UpdateCustomer = coda.makeFormula({
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
     }
-    // Disabled for now, prefer to use simple checkboxes
-    /*
-    else if (fromKey === 'email_marketing_consent') {
-      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
-      restParams.email_marketing_consent = {
-        state: matchingOption.state,
-        opt_in_level: matchingOption.opt_in_level,
-      };
-    } else if (fromKey === 'sms_marketing_consent') {
-      const matchingOption = MARKETING_CONSENT_UPDATE_OPTIONS.find((option) => option.display === value);
-      restParams.sms_marketing_consent = {
-        state: matchingOption.state,
-        opt_in_level: matchingOption.opt_in_level,
-      };
-    }
-    */
 
     const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateCustomerRest(customerId, restParams, context));
@@ -456,7 +424,7 @@ export const Action_DeleteCustomer = coda.makeFormula({
   name: 'DeleteCustomer',
   description: 'Delete an existing Shopify customer and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.customerID],
+  parameters: [inputs.customer.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([customerId], context) {
@@ -469,9 +437,9 @@ export const Action_DeleteCustomer = coda.makeFormula({
 // #region Formulas
 export const Formula_Customer = coda.makeFormula({
   name: 'Customer',
-  description: 'Return a single customer from this shop.',
+  description: 'Return a single Customer from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.customerID],
+  parameters: [inputs.customer.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: CustomerSyncTableSchema,

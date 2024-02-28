@@ -124,10 +124,3 @@ export const InventoryItemReference = coda.makeReferenceSchemaFromObjectSchema(
   IDENTITY_INVENTORYITEM
 );
 export const formatInventoryItemReferenceValueForSchema = (id: number) => ({ id });
-
-export const InventoryItemFieldDependencies: FieldDependency<typeof InventoryItemSyncTableSchema.properties>[] = [
-  {
-    field: 'graphql_gid',
-    dependencies: ['id'],
-  },
-];

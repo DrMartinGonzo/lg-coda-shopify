@@ -8,11 +8,12 @@ import {
   activateLocationGraphQl,
   fetchSingleLocationGraphQl,
   updateLocationGraphQl,
-  formatGraphQlLocationEditInputNew,
+  formatGraphQlLocationEditInput,
 } from './locations-functions';
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import { CACHE_DEFAULT, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
+
 import {
   augmentSchemaWithMetafields,
   updateAndFormatResourceMetafieldsGraphQl,
@@ -48,24 +49,11 @@ async function getLocationSchema(context: coda.ExecutionContext, _: string, form
   return augmentedSchema;
 }
 
-const parameters = {
-  locationID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'locationId',
-    description: 'The ID of the location.',
-  }),
-  destinationLocationID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'destinationLocationId',
-    description:
-      'The ID of a destination location to which inventory, pending orders and moving transfers will be moved from the location to deactivate.',
-  }),
-};
-
 // #region Sync Tables
 export const Sync_Locations = coda.makeSyncTable({
   name: 'Locations',
-  description: 'Return Locations from this shop.',
+  description:
+    'Return Locations from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_LOCATION,
   schema: LocationSyncTableSchema,
@@ -76,7 +64,7 @@ export const Sync_Locations = coda.makeSyncTable({
   formula: {
     name: 'SyncLocations',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [sharedParameters.optionalSyncMetafields],
+    parameters: [{ ...filters.general.syncMetafields, optional: true }],
     execute: async function ([syncMetafields], context: coda.SyncExecutionContext) {
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getLocationSchema, context, { syncMetafields }));
@@ -165,18 +153,18 @@ export const Action_UpdateLocation = coda.makeFormula({
   description: 'Update an existing Shopify location and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.locationID,
+    inputs.location.id,
 
     // optional parameters
-    { ...sharedParameters.inputName, description: 'The name of the location.', optional: true },
-    { ...sharedParameters.inputAddress1, optional: true },
-    { ...sharedParameters.inputAddress2, optional: true },
-    { ...sharedParameters.inputCity, optional: true },
-    { ...sharedParameters.inputCountryCode, optional: true },
-    { ...sharedParameters.inputPhone, optional: true },
-    { ...sharedParameters.inputProvinceCode, optional: true },
-    { ...sharedParameters.inputZip, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Location metafields to update.' },
+    { ...inputs.location.name, description: 'The name of the location.', optional: true },
+    { ...inputs.location.address1, optional: true },
+    { ...inputs.location.address2, optional: true },
+    { ...inputs.location.city, optional: true },
+    { ...inputs.location.countryCode, optional: true },
+    { ...inputs.general.phone, optional: true },
+    { ...inputs.location.provinceCode, optional: true },
+    { ...inputs.location.zip, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Location metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -188,7 +176,7 @@ export const Action_UpdateLocation = coda.makeFormula({
     context
   ) {
     const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
-    const locationEditInput = formatGraphQlLocationEditInputNew({
+    const locationEditInput = formatGraphQlLocationEditInput({
       name,
       address1,
       address2,
@@ -233,7 +221,7 @@ export const Action_ActivateLocation = coda.makeFormula({
   name: 'ActivateLocation',
   description: 'Activates a location.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [{ ...parameters.locationID, description: 'The ID of a location to deactivate.' }],
+  parameters: [{ ...inputs.location.id, description: 'The ID of a location to deactivate.' }],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
@@ -256,8 +244,8 @@ export const Action_DeactivateLocation = coda.makeFormula({
     'Deactivates a location and potentially moves inventory, pending orders, and moving transfers to a destination location.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...parameters.locationID, description: 'The ID of a location to deactivate.' },
-    { ...parameters.destinationLocationID, optional: true },
+    { ...inputs.location.id, description: 'The ID of a location to deactivate.' },
+    { ...inputs.location.deactivateDestinationId, optional: true },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -285,7 +273,7 @@ export const Formula_Location = coda.makeFormula({
   name: 'Location',
   description: 'Return a single location from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [sharedParameters.locationID],
+  parameters: [inputs.location.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: LocationSyncTableSchema,

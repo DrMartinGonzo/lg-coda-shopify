@@ -86,7 +86,9 @@ import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSche
 import { SyncTableGraphQlContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldDefinitionsGraphQl,
+  findMatchingMetafieldDefinition,
   makeAutocompleteMetafieldKeysWithDefinitions,
+  requireMatchingMetafieldDefinition,
 } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { formatMetafieldDefinitionReferenceValueForSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { formatArticleReferenceValueForSchema } from '../schemas/syncTable/ArticleSchema';
@@ -502,19 +504,6 @@ export const requireResourceMetafieldsSyncTableDefinition = (
   }
   return definition;
 };
-
-export function findMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
-  return metafieldDefinitions.find((f) => f && getMetaFieldFullKey(f) === fullKey);
-}
-function requireMatchingMetafieldDefinition(fullKey: string, metafieldDefinitions: MetafieldDefinitionFragment[]) {
-  const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
-  if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
-  return metafieldDefinition;
-}
-
-export function filterMetafieldDefinitionWithReference(metafieldDefinition: MetafieldDefinitionFragment) {
-  return metafieldDefinition.type.name.indexOf('_reference') !== -1;
-}
 
 /**
  * Determine if a table cell value derived from a metafield ot metaobject field
@@ -1659,24 +1648,6 @@ export async function syncGraphQlResourceMetafields(metafieldKeys: string[], con
 // #endregion
 
 // #region Unused stuff
-/*
-export function parseMetafieldAndAugmentDefinition(
-  metafield: Metafield,
-  metafieldDefinitions: MetafieldDefinitionFragment[]
-): ParsedMetafieldWithAugmentedDefinition {
-  const fullKey = getMetaFieldFullKey(metafield);
-  const matchingSchemaKey = preprendPrefixToMetaFieldKey(fullKey);
-  const parsedValue = maybeParseJson(metafield?.value);
-  const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
-
-  return {
-    ...metafield,
-    value: parsedValue,
-    augmentedDefinition: { ...metafieldDefinition, fullKey, matchingSchemaKey },
-  };
-}
-*/
-
 /*
 export const getResourceMetafieldByNamespaceKey = async (
   resourceId: number,

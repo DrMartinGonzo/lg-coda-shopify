@@ -81,14 +81,3 @@ export const InventoryLevelSyncTableSchema = coda.makeObjectSchema({
   // snippetProperty: '',
   // linkProperty: 'inventory_history_url',
 });
-
-export const inventoryLevelFieldDependencies = [
-  {
-    field: 'inventory_item_id',
-    dependencies: ['unique_id', 'inventory_item', 'inventory_history_url'],
-  },
-  {
-    field: 'location_id',
-    dependencies: ['unique_id', 'inventory_history_url'],
-  },
-];

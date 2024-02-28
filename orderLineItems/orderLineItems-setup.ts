@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
 import { formatOrderLineItemForSchemaFromRestApi } from './orderLineItems-functions';
 import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItemSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters } from '../shared-parameters';
 
 import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
@@ -26,18 +26,10 @@ async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string,
   return augmentedSchema;
 }
 
-const parameters = {
-  orderIds: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'orderIds',
-    description: 'Retrieve only orders specified by a comma-separated list of order IDs.',
-  }),
-};
-
 // #region Sync tables
 export const Sync_OrderLineItems = coda.makeSyncTable({
   name: 'OrderLineItems',
-  description: 'All Shopify OrderLineItems',
+  description: 'Return OrderLineItems from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER_LINE_ITEM,
   schema: OrderLineItemSyncTableSchema,
@@ -49,19 +41,19 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
     name: 'SyncOrderLineItems',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      { ...sharedParameters.orderStatus, name: 'orderStatus' },
+      { ...filters.order.status, name: 'orderStatus' },
 
-      { ...sharedParameters.filterCreatedAtRange, optional: true, name: 'orderCreatedAt' },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true, name: 'orderUpdatedAt' },
-      { ...sharedParameters.filterProcessedAtRange, optional: true, name: 'orderProcessedAt' },
-
-      { ...sharedParameters.filterFinancialStatus, optional: true, name: 'orderFinancialStatus' },
-      { ...sharedParameters.filterFulfillmentStatus, optional: true, name: 'orderFulfillmentStatus' },
-      { ...parameters.orderIds, optional: true },
+      { ...filters.general.createdAtRange, name: 'orderCreatedAt', optional: true },
+      { ...filters.general.updatedAtRange, name: 'orderUpdatedAt', optional: true },
+      { ...filters.general.processedAtRange, name: 'orderProcessedAt', optional: true },
+      { ...filters.order.financialStatus, name: 'orderFinancialStatus', optional: true },
+      { ...filters.order.fulfillmentStatus, name: 'orderFulfillmentStatus', optional: true },
+      { ...filters.order.idArray, optional: true },
       {
-        ...sharedParameters.filterSinceId,
+        ...filters.general.sinceId,
+        name: 'sinceOrderId',
+        description: 'Filter results created after the specified order ID.',
         optional: true,
-        name: 'ordersSinceId',
       },
     ],
     execute: async function (

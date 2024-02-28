@@ -23,7 +23,7 @@ import {
   REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -55,7 +55,7 @@ import {
   CollectionSyncTableRestParams,
   CollectionUpdateRestParams,
 } from '../types/Collection';
-import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/RequestsRest';
@@ -78,21 +78,6 @@ async function getCollectionSchema(context: coda.ExecutionContext, _: string, fo
   return augmentedSchema;
 }
 
-const parameters = {
-  collectionID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'collectionId',
-    description: 'The ID of the collection.',
-  }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('collection'),
-    description:
-      'The suffix of the Liquid template used for the collection. If this property is null, then the collection uses the default template.',
-  }),
-};
-
 // #region Sync tables
 export const Sync_Collects = coda.makeSyncTable({
   name: 'Collects',
@@ -103,13 +88,7 @@ export const Sync_Collects = coda.makeSyncTable({
   formula: {
     name: 'SyncCollects',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [
-      {
-        ...parameters.collectionID,
-        description: 'Retrieve only collects for a certain collection identified by its ID.',
-        optional: true,
-      },
-    ],
+    parameters: [{ ...filters.collection.id, optional: true }],
     execute: async ([collectionId], context: coda.SyncExecutionContext) => {
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
@@ -139,7 +118,7 @@ export const Sync_Collects = coda.makeSyncTable({
 export const Sync_Collections = coda.makeSyncTable({
   name: 'Collections',
   description:
-    'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse.',
+    'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_COLLECTION,
   schema: CollectionSyncTableSchema,
@@ -156,17 +135,17 @@ export const Sync_Collections = coda.makeSyncTable({
     name: 'SyncCollections',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      sharedParameters.optionalSyncMetafields,
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterPublishedAtRange, optional: true },
+      { ...filters.general.syncMetafields, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.general.publishedAtRange, optional: true },
 
-      { ...sharedParameters.filterHandle, optional: true },
-      { ...sharedParameters.filterIds, optional: true },
-      { ...sharedParameters.filterProductId, optional: true },
+      { ...filters.general.handle, optional: true },
+      { ...filters.collection.idArray, optional: true },
+      { ...filters.product.id, name: 'productId', optional: true },
 
-      { ...sharedParameters.filterPublishedStatus, optional: true },
-      { ...sharedParameters.filterTitle, optional: true },
+      { ...filters.general.publishedStatus, optional: true },
+      { ...filters.general.title, optional: true },
     ],
     execute: async function (
       [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title],
@@ -380,16 +359,16 @@ export const Action_CreateCollection = coda.makeFormula({
   description: `Create a new Shopify Collection and return GraphQl GID.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...sharedParameters.inputTitle, description: 'The name of the collection.' },
+    { ...inputs.general.title, description: 'The name of the collection.' },
 
     // optional parameters
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputImageUrl, optional: true },
-    { ...sharedParameters.inputImageAlt, optional: true },
-    { ...sharedParameters.inputPublished, description: 'Whether the collection is visible.', optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Collection metafields to create.' },
+    { ...inputs.collection.bodyHtml, optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.imageUrl, optional: true },
+    { ...inputs.general.imageAlt, optional: true },
+    { ...inputs.general.published, description: 'Whether the collection is visible.', optional: true },
+    { ...inputs.collection.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Collection metafields to create.' },
   ],
 
   isAction: true,
@@ -438,17 +417,17 @@ export const Action_UpdateCollection = coda.makeFormula({
   description: 'Update an existing Shopify collection and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.collectionID,
+    inputs.collection.id,
 
     // optional parameters
-    { ...sharedParameters.inputBodyHtml, optional: true },
-    { ...sharedParameters.inputTitle, description: 'The title of the collection.', optional: true },
-    { ...sharedParameters.inputHandle, optional: true },
-    { ...sharedParameters.inputImageUrl, optional: true },
-    { ...sharedParameters.inputImageAlt, optional: true },
-    { ...sharedParameters.inputPublished, description: 'Whether the collection is visible.', optional: true },
-    { ...parameters.templateSuffix, optional: true },
-    { ...sharedParameters.metafields, optional: true, description: 'Collection metafields to update.' },
+    { ...inputs.collection.bodyHtml, optional: true },
+    { ...inputs.general.title, description: 'The title of the collection.', optional: true },
+    { ...inputs.general.handle, optional: true },
+    { ...inputs.general.imageUrl, optional: true },
+    { ...inputs.general.imageAlt, optional: true },
+    { ...inputs.general.published, description: 'Whether the collection is visible.', optional: true },
+    { ...inputs.collection.templateSuffix, optional: true },
+    { ...inputs.general.metafields, optional: true, description: 'Collection metafields to update.' },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -514,7 +493,7 @@ export const Action_DeleteCollection = coda.makeFormula({
   name: 'DeleteCollection',
   description: 'Delete an existing Shopify Collection and return true on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.collectionID],
+  parameters: [inputs.collection.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([collectionId], context) {
@@ -534,7 +513,7 @@ export const Formula_Collection = coda.makeFormula({
   description: 'Return a single collection from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    parameters.collectionID,
+    inputs.collection.id,
     //! field filter Doesn't seem to work
     // { ...sharedParameters.filterFields, optional: true }
   ],

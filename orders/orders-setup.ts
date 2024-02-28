@@ -17,7 +17,7 @@ import {
   validateOrderParams,
 } from './orders-functions';
 import { OrderSyncTableSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
@@ -44,6 +44,7 @@ import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTab
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+import { OrderSyncTableRestParams } from '../types/Order';
 
 // #endregion
 
@@ -119,54 +120,11 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
   return augmentedSchema;
 }
 
-/**
- * The properties that can be updated when updating an order.
- */
-const standardUpdateProps = [
-  {
-    display: 'Note',
-    key: 'note',
-    type: 'string',
-  },
-  {
-    display: 'Email',
-    key: 'email',
-    type: 'string',
-  },
-  {
-    display: 'Phone',
-    key: 'phone',
-    type: 'string',
-  },
-  {
-    display: 'Buyer accepts marketing',
-    key: 'buyer_accepts_marketing',
-    type: 'boolean',
-  },
-  {
-    display: 'Tags',
-    key: 'tags',
-    type: 'string',
-  },
-];
-
-const parameters = {
-  orderId: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'orderID',
-    description: 'The ID of the order.',
-  }),
-  filterFields: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'fields',
-    description: 'Comma separated string of fields to retrieve.',
-  }),
-};
-
 // #region Sync tables
 export const Sync_Orders = coda.makeSyncTable({
   name: 'Orders',
-  description: 'Return Orders from this shop. You can also fetch metafields by selecting them in advanced settings.',
+  description:
+    'Return Orders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: IDENTITY_ORDER,
   schema: OrderSyncTableSchema,
@@ -178,17 +136,17 @@ export const Sync_Orders = coda.makeSyncTable({
     name: 'SyncOrders',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      sharedParameters.orderStatus,
-      sharedParameters.optionalSyncMetafields,
+      filters.order.status,
+      { ...filters.general.syncMetafields, optional: true },
 
-      { ...sharedParameters.filterCreatedAtRange, optional: true },
-      { ...sharedParameters.filterUpdatedAtRange, optional: true },
-      { ...sharedParameters.filterProcessedAtRange, optional: true },
+      { ...filters.general.createdAtRange, optional: true },
+      { ...filters.general.updatedAtRange, optional: true },
+      { ...filters.general.processedAtRange, optional: true },
 
-      { ...sharedParameters.filterFinancialStatus, optional: true },
-      { ...sharedParameters.filterFulfillmentStatus, optional: true },
-      { ...sharedParameters.filterIds, optional: true },
-      { ...sharedParameters.filterSinceId, optional: true },
+      { ...filters.order.financialStatus, optional: true },
+      { ...filters.order.fulfillmentStatus, optional: true },
+      { ...filters.order.idArray, optional: true },
+      { ...filters.general.sinceId, optional: true },
     ],
     execute: async function (
       [
@@ -255,9 +213,7 @@ export const Sync_Orders = coda.makeSyncTable({
           updated_at_max: updated_at ? updated_at[1] : undefined,
           processed_at_min: processed_at ? processed_at[0] : undefined,
           processed_at_max: processed_at ? processed_at[1] : undefined,
-        });
-
-        // validateOrdersParams(restParams);
+        } as OrderSyncTableRestParams);
 
         let url: string;
         if (prevContinuation?.nextUrl) {
@@ -381,7 +337,7 @@ export const Formula_Order = coda.makeFormula({
   name: 'Order',
   description: 'Get a single order data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.orderId],
+  parameters: [inputs.order.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: OrderSyncTableSchema,
@@ -398,14 +354,14 @@ export const Formula_Orders = coda.makeFormula({
   description: 'Get orders data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    { ...sharedParameters.orderStatus, optional: true },
-    { ...sharedParameters.filterCreatedAtRange, optional: true },
-    { ...sharedParameters.filterFinancialStatus, optional: true },
-    { ...sharedParameters.filterFulfillmentStatus, optional: true },
-    { ...sharedParameters.filterIds, optional: true },
-    { ...sharedParameters.filterProcessedAtRange, optional: true },
-    { ...sharedParameters.filterUpdatedAtRange, optional: true },
-    { ...parameters.filterFields, optional: true },
+    { ...filters.order.status, optional: true },
+    { ...filters.general.createdAtRange, optional: true },
+    { ...filters.order.financialStatus, optional: true },
+    { ...filters.order.fulfillmentStatus, optional: true },
+    { ...filters.order.idArray, optional: true },
+    { ...filters.general.processedAtRange, optional: true },
+    { ...filters.general.updatedAtRange, optional: true },
+    { ...filters.general.fields, optional: true },
   ],
   cacheTtlSecs: 10, // Cache is reduced to 10 seconds intentionnaly
   resultType: coda.ValueType.Array,
@@ -461,7 +417,7 @@ export const Formula_OrderExportFormat = coda.makeFormula({
   name: 'OrderExportFormat',
   description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.orderId],
+  parameters: [inputs.order.id],
   cacheTtlSecs: 10, // small cache because we need fresh results
   resultType: coda.ValueType.String,
   execute: async ([orderID], context) => {

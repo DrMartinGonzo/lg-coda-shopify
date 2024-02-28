@@ -4,7 +4,6 @@ import * as coda from '@codahq/packs-sdk';
 import { fetchShopRest, formatShopForSchemaFromRest } from './shop-functions';
 import { CACHE_DEFAULT, IDENTITY_SHOP, REST_DEFAULT_API_VERSION } from '../constants';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
-import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 
 // #endregion

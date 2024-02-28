@@ -17,7 +17,6 @@ import {
   updateResourceMetafieldsGraphQl,
   DeletedMetafieldsByKeysRest,
   shouldDeleteMetafield,
-  autoCompleteMetafieldWithDefinitionFullKeys,
 } from './metafields-functions';
 
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
@@ -46,7 +45,7 @@ import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_METAFIELD } from '../constants';
 import { getMetafieldDefinitionReferenceSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
-import { sharedParameters } from '../shared-parameters';
+import { filters, inputs } from '../shared-parameters';
 
 // #endregion
 
@@ -102,53 +101,26 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
     augmentedSchema.featuredProperties.push('owner');
   }
 
-  augmentedSchema.properties['definition'] = {
-    ...getMetafieldDefinitionReferenceSchema(resourceMetafieldsSyncTableDefinition),
-    fromKey: 'definition',
-    fixedId: 'definition',
-    description: 'The metafield definition of the metafield, if it exists.',
-  };
-
   if (graphQlResource !== GraphQlResource.Shop) {
+    // Shop doesn't have metafield definitions
+    (augmentedSchema.properties['definition_id'] = {
+      type: coda.ValueType.Number,
+      useThousandsSeparator: false,
+      fixedId: 'definition_id',
+      fromKey: 'definition_id',
+      description: 'The ID of the metafield definition of the metafield, if it exists.',
+    }),
+      (augmentedSchema.properties['definition'] = {
+        ...getMetafieldDefinitionReferenceSchema(resourceMetafieldsSyncTableDefinition),
+        fromKey: 'definition',
+        fixedId: 'definition',
+        description: 'The metafield definition of the metafield, if it exists.',
+      });
     // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
     augmentedSchema.featuredProperties.push('admin_url');
   }
   return augmentedSchema;
 }
-
-const parameters = {
-  inputMetafieldID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'metafieldId',
-    description: 'The ID of the metafield.',
-  }),
-  inputOwnerID: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'ownerId',
-    description: 'The ID of the resource owning the metafield.',
-  }),
-  inputOwnerIdOptional: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'ownerId',
-    description: 'The ID of the resource owning the metafield. Not needed if requesting Shop metafields.',
-    optional: true,
-  }),
-  inputOwnerType: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'ownerType',
-    description: 'The type of the resource owning the metafield.',
-    autocomplete: RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.map((v) => ({
-      display: v.display,
-      value: v.key,
-    })),
-  }),
-  inputValue: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'value',
-    description:
-      'A single metafield value written using one of the `Metafield{…}Value` formulas or a list of metafield values wrapped with the `MetafieldValues` formula. Setting it to an empty string will delete the metafield if it already exists.',
-  }),
-};
 // #endregion
 
 // #region Sync tables
@@ -186,7 +158,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   formula: {
     name: 'SyncMetafields',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [{ ...sharedParameters.filterMetafieldKeys, optional: true }],
+    parameters: [{ ...filters.metafield.metafieldKeys, optional: true }],
     execute: async function ([metafieldKeys], context) {
       const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
       const isRestSync =
@@ -339,12 +311,7 @@ export const Action_SetMetafield = coda.makeFormula({
   description:
     'Set a metafield. If the metafield does not exist, it will be created. If it exists and you input an empty string, it will be deleted. Return the metafield data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    parameters.inputOwnerID,
-    parameters.inputOwnerType,
-    sharedParameters.inputMetafieldKeys,
-    parameters.inputValue,
-  ],
+  parameters: [inputs.metafield.ownerID, inputs.metafield.ownerType, inputs.metafield.fullKey, inputs.metafield.value],
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
@@ -476,7 +443,7 @@ export const Action_DeleteMetafield = coda.makeFormula({
   name: 'DeleteMetafield',
   description: 'delete metafield.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [{ ...parameters.inputMetafieldID, description: 'The ID of the metafield to delete.' }],
+  parameters: [{ ...inputs.metafield.id, description: 'The ID of the metafield to delete.' }],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([metafieldId], context) => {
@@ -491,7 +458,15 @@ export const Formula_Metafield = coda.makeFormula({
   name: 'Metafield',
   description: 'Get a single metafield by its fullkey.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputOwnerType, sharedParameters.inputMetafieldKeys, parameters.inputOwnerIdOptional],
+  parameters: [
+    inputs.metafield.ownerType,
+    inputs.metafield.fullKey,
+    {
+      ...inputs.metafield.ownerID,
+      description: inputs.metafield.ownerID.description + ' Not needed if requesting Shop metafields.',
+      optional: true,
+    },
+  ],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
@@ -534,7 +509,14 @@ export const Formula_Metafields = coda.makeFormula({
   name: 'Metafields',
   description: 'Get all metafields from a specific resource.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [parameters.inputOwnerType, parameters.inputOwnerIdOptional],
+  parameters: [
+    inputs.metafield.ownerType,
+    {
+      ...inputs.metafield.ownerID,
+      description: inputs.metafield.ownerID.description + ' Not needed if requesting Shop metafields.',
+      optional: true,
+    },
+  ],
   cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
   resultType: coda.ValueType.Array,
   items: MetafieldSyncTableSchema,
