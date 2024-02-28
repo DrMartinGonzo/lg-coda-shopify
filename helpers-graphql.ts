@@ -91,16 +91,22 @@ export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: Met
 
 // #region GID functions
 export function idToGraphQlGid(resourceType: string, id: number) {
-  if (id === undefined) return undefined;
+  if (resourceType === undefined || id === undefined) throw new Error('Unable to format GraphQlGid');
   return `gid://shopify/${resourceType}/${id}`;
 }
-export function graphQlGidToId(gid: string) {
-  if (gid === undefined) return undefined;
-  return parseInt(gid.split('/').pop().split('?')[0]);
+export function graphQlGidToId(gid: string): number {
+  if (!gid) throw new Error('Invalid GID');
+  if (!Number.isNaN(parseInt(gid))) return Number(gid);
+
+  const maybeNum = gid.split('/').at(-1)?.split('?').at(0);
+  if (maybeNum) {
+    return Number(maybeNum);
+  }
+  throw new Error(`Invalid GID: ${gid}`);
 }
-export function graphQlGidToResourceName(gid: string) {
-  if (gid === undefined) return undefined;
-  return gid.split('gid://shopify/')[1].split('/')[0] as GraphQlResource;
+export function graphQlGidToResourceName(gid: string): GraphQlResource {
+  if (!gid) throw new Error('Invalid GID');
+  return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResource;
 }
 // #endregion
 
@@ -150,6 +156,13 @@ function calcSyncTableMaxEntriesPerRun(
   lastThrottleStatus: ShopifyGraphQlThrottleStatus
 ) {
   const { lastCost, lastMaxEntriesPerRun } = prevContinuation;
+  if (!lastMaxEntriesPerRun || !lastCost) {
+    const errorContent = JSON.stringify(prevContinuation, undefined, 2);
+    throw new Error(
+      `calcSyncTableMaxEntriesPerRun: No lastMaxEntriesPerRun or lastCost in prevContinuation:\n${errorContent}`
+    );
+  }
+
   const { currentlyAvailable: lastAvailablePoints, maximumAvailable } = lastThrottleStatus;
   const { requestedQueryCost: lastRequestedQueryCost } = lastCost;
 
@@ -349,13 +362,13 @@ export async function makeSyncTableGraphQlRequest(
       context
     );
 
-    let continuation: SyncTableGraphQlContinuation = null;
+    let continuation: SyncTableGraphQlContinuation | null = null;
     const pageInfo = response.body?.data && params.getPageInfo ? params.getPageInfo(response.body.data) : undefined;
     const hasNextRun = retries > 0 || (pageInfo && pageInfo.hasNextPage);
 
     if (hasNextRun) {
       continuation = {
-        ...continuation,
+        ...(continuation ?? {}),
         graphQlLock: 'true',
         retries,
         extraContinuationData: params.extraContinuationData,
@@ -461,12 +474,12 @@ export async function makeAugmentedSyncTableGraphQlRequest(
       context
     );
 
-    let continuation: SyncTableRestAugmentedContinuation = null;
+    let continuation: SyncTableRestAugmentedContinuation | null = null;
     const hasNextRun = retries > 0 || params.nextRestUrl;
 
     if (hasNextRun) {
       continuation = {
-        ...continuation,
+        ...(continuation ?? {}),
         graphQlLock: 'true',
         retries,
         extraContinuationData: params.extraContinuationData,
@@ -529,13 +542,13 @@ export async function makeAugmentedSyncTableGraphQlRequest(
   }
 }
 
-export function getMixedSyncTableRemainingAndToProcessItems(
-  prevContinuation: SyncTableMixedContinuation,
-  restItems: any[],
-  maxEntriesPerRun: number
-) {
-  let toProcess = [];
-  let remaining = [];
+export function getMixedSyncTableRemainingAndToProcessItems<
+  C extends SyncTableMixedContinuation,
+  Item,
+  N extends number
+>(prevContinuation: C, restItems: Item[], maxEntriesPerRun: N) {
+  let toProcess: Item[] = [];
+  let remaining: Item[] = [];
 
   if (prevContinuation?.cursor || prevContinuation?.retries) {
     logAdmin(`🔁 Fetching remaining graphQL results from current batch`);
@@ -543,7 +556,7 @@ export function getMixedSyncTableRemainingAndToProcessItems(
     remaining = prevContinuation?.extraContinuationData?.currentBatch?.remaining;
   } else {
     const stillProcessingRestItems = prevContinuation?.extraContinuationData?.currentBatch?.remaining.length > 0;
-    let items = [];
+    let items: Item[] = [];
     if (stillProcessingRestItems) {
       items = [...prevContinuation.extraContinuationData.currentBatch.remaining];
       logAdmin(`🔁 Fetching next batch of ${items.length} Variants`);
@@ -584,7 +597,7 @@ export async function makeMixedSyncTableGraphQlRequest(
       context
     );
 
-    let continuation: SyncTableMixedContinuation = null;
+    let continuation: SyncTableMixedContinuation | null = null;
     const pageInfo = response.body?.data && params.getPageInfo ? params.getPageInfo(response.body.data) : undefined;
     const hasNextPage = pageInfo && pageInfo.hasNextPage;
     const hasRemainingItems = params.extraContinuationData?.currentBatch?.remaining.length > 0;
@@ -600,7 +613,7 @@ export async function makeMixedSyncTableGraphQlRequest(
 
     if (hasNextRun) {
       continuation = {
-        ...continuation,
+        ...(continuation ?? {}),
         graphQlLock: 'true',
         retries,
         extraContinuationData: {

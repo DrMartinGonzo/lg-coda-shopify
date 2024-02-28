@@ -59,6 +59,7 @@ import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
@@ -67,7 +68,7 @@ async function getProductVariantsSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema: any = ProductVariantSyncTableSchema;
+  let augmentedSchema = ProductVariantSyncTableSchema;
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       ProductVariantSyncTableSchema,
@@ -78,9 +79,9 @@ async function getProductVariantsSchema(
 
   const shopCurrencyCode = await getSchemaCurrencyCode(context);
   // Main props
-  augmentedSchema.properties.price.currencyCode = shopCurrencyCode;
+  augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
 
-  // admin_url should always be the last featured property, regardless of any metafield keys added previously
+  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');
   return augmentedSchema;
 }
@@ -267,8 +268,8 @@ export const Sync_ProductVariants = coda.makeSyncTable({
         }
       }
 
-      let restItems = [];
-      let restContinuation: SyncTableRestContinuation = null;
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof ProductVariantSyncTableSchema>> = [];
+      let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
       // Rest Admin API Sync
@@ -492,7 +493,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
         .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter((m) => m);
+        .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
       }
@@ -560,7 +561,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
       weight_unit: weightUnit,
     };
 
-    const promises = [];
+    const promises: (Promise<any> | undefined)[] = [];
     promises.push(updateProductVariantRest(productVariantId, restParams, context));
     if (metafields && metafields.length) {
       promises.push(

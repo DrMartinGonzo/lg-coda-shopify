@@ -15,6 +15,7 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { sharedParameters } from '../shared-parameters';
 import { parseOptionId } from '../helpers';
 import { InventoryLevelSyncTableRestParams } from '../types/InventoryLevel';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
@@ -54,7 +55,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
 
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
 
-      let restItems = [];
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof InventoryLevelSyncTableSchema>> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       const restParams = cleanQueryParams({

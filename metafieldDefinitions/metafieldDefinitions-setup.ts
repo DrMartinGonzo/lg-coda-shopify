@@ -29,14 +29,6 @@ import { CACHE_DEFAULT, IDENTITY_METAFIELD_DEFINITION } from '../constants';
 // #endregion
 
 // #region Helpers
-async function getMetafieldDefinitionSchema(
-  context: coda.ExecutionContext,
-  _: string,
-  formulaContext: coda.MetadataContext
-) {
-  return MetafieldDefinitionSyncTableSchema;
-}
-
 const parameters = {
   inputMetafieldDefinitionID: coda.makeParameter({
     type: coda.ParameterType.Number,
@@ -71,7 +63,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
     const metafieldDefinitionsUrlPart = restResource.singular;
     return `${context.endpoint}/admin/settings/custom_data/${metafieldDefinitionsUrlPart}/metafields`;
   },
-  getSchema: getMetafieldDefinitionSchema,
+  getSchema: async (context, _, formulaContext) => MetafieldDefinitionSyncTableSchema,
   defaultAddDynamicColumns: false,
   formula: {
     name: 'SyncMetafieldDefinitions',

@@ -15,6 +15,7 @@ import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
+import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 
 // #endregion
 
@@ -58,7 +59,7 @@ export const Sync_Redirects = coda.makeSyncTable({
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       const standardFromKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
-      let restItems = [];
+      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof RedirectSyncTableSchema>> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       const syncedStandardFields = handleFieldDependencies(standardFromKeys, redirectFieldDependencies);

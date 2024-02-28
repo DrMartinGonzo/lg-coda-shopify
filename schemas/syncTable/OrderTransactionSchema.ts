@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { OrderReference } from './OrderSchema';
 import { IDENTITY_ORDER_TRANSACTION, NOT_FOUND } from '../../constants';
 import { OrderTransactionSchema } from '../basic/OrderTransactionSchema';
-import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchemaGraphQl';
+import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchema';
 
 export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   properties: {

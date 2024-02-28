@@ -41,6 +41,8 @@ export function getMetaobjectReferenceSchema(
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
     (v) => v.name === 'metaobject_definition_id'
   )?.value;
+  if (!metaobjectReferenceDefinitionId)
+    throw new Error('MetaobjectDefinitionId not found in fieldDefinition.validations');
 
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,

@@ -44,7 +44,7 @@ export async function handleProductVariantUpdateJob(
   const { updatedFields } = update;
   const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
   let obj = { ...update.previousValue };
-  const subJobs: Promise<any>[] = [];
+  const subJobs: (Promise<any> | undefined)[] = [];
   const productVariantId = update.previousValue.id as number;
 
   if (standardFromKeys.length) {
