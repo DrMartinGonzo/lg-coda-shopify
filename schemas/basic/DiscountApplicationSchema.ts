@@ -7,6 +7,11 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
       description:
         'The method by which the discount application value has been allocated to entitled lines. Valid values:\n- across: The value is spread across all entitled lines.\n- each: The value is applied onto every entitled line.\n- one: The value is applied onto a single line.',
     },
+    amount: {
+      type: coda.ValueType.Number,
+      codaType: coda.ValueHintType.Currency,
+      description: 'The applied amount of the discount.',
+    },
     code: {
       type: coda.ValueType.String,
       description:
@@ -38,7 +43,7 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
         'The discount application type. Valid values:\n- automatic: The discount was applied automatically, such as by a Buy X Get Y automatic discount.\n- discount_code: The discount was applied by a discount code.\n- manual: The discount was manually applied by the merchant (for example, by using an app or creating a draft order).\n- script: The discount was applied by a Shopify Script.',
     },
     value: {
-      type: coda.ValueType.String,
+      type: coda.ValueType.Number,
       description:
         'The value of the discount application as a decimal. This represents the intention of the discount application. For example, if the intent was to apply a 20% discount, then the value will be 20.0. If the intent was to apply a $15 discount, then the value will be 15.0.',
     },
@@ -48,5 +53,5 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
         'The type of the value. Valid values:\n- fixed_amount: A fixed amount discount value in the currency of the order.\n- percentage: A percentage discount value.',
     },
   },
-  displayProperty: 'code',
+  displayProperty: 'value_type',
 });

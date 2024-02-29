@@ -137,6 +137,7 @@ import {
   Formula_MetafieldDefinition,
   Sync_MetafieldDefinitions,
 } from './metafieldDefinitions/metafieldDefinitions-setup';
+import { Action_DeleteDraftOrder, Formula_DraftOrder, Sync_DraftOrders } from './draftOrders/draftOrders-setup';
 
 // #endregion
 
@@ -164,6 +165,7 @@ pack.syncTables.push(Sync_Blogs);
 pack.syncTables.push(Sync_Collects);
 pack.syncTables.push(Sync_Collections);
 pack.syncTables.push(Sync_Customers);
+pack.syncTables.push(Sync_DraftOrders);
 pack.syncTables.push(Sync_InventoryItems);
 pack.syncTables.push(Sync_InventoryLevels);
 pack.syncTables.push(Sync_Files);
@@ -186,6 +188,7 @@ pack.formulas.push(Formula_Article);
 pack.formulas.push(Formula_Blog);
 pack.formulas.push(Formula_Collection);
 pack.formulas.push(Formula_Customer);
+pack.formulas.push(Formula_DraftOrder);
 pack.formulas.push(Formula_File);
 pack.formulas.push(Formula_Location);
 pack.formulas.push(Formula_Metafield);
@@ -222,6 +225,8 @@ pack.formulas.push(Action_DeleteCollection);
 pack.formulas.push(Action_CreateCustomer);
 pack.formulas.push(Action_UpdateCustomer);
 pack.formulas.push(Action_DeleteCustomer);
+
+pack.formulas.push(Action_DeleteDraftOrder);
 
 pack.formulas.push(Action_DeleteFile);
 
