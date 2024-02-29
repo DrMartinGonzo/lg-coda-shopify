@@ -265,7 +265,7 @@ export const Sync_Customers = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateCustomer = coda.makeFormula({
   name: 'CreateCustomer',
-  description: `Create a new Shopify customer and return customer ID.\nCustomer must have a name, phone number or email address.`,
+  description: `Create a new Shopify customer and return its ID.\nCustomer must have a name, phone number or email address.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     // optional parameters

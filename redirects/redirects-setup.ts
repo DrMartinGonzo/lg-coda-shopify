@@ -120,7 +120,7 @@ export const Action_UpdateRedirect = coda.makeFormula({
 
 export const Action_CreateRedirect = coda.makeFormula({
   name: 'CreateRedirect',
-  description: 'Create a new Shopify redirect and return redirect ID.',
+  description: 'Create a new Shopify redirect and return its ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.redirect.path, inputs.redirect.target],
   isAction: true,
