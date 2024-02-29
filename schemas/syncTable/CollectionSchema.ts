@@ -74,7 +74,7 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'image_alt_text',
       description: `Alternative text that describes the image associated with the collection.`,
     },
-    // TODO: maybe thumbnail are never needed ?
+    // TODO: maybe thumbnails are never needed ?
     // thumbnail: {
     //   type: coda.ValueType.String,
     //   codaType: coda.ValueHintType.ImageReference,
