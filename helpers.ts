@@ -112,10 +112,10 @@ export function extractValueAndUnitFromMeasurementString(
   }
 }
 
-export function getThumbnailUrlFromFullUrl(url: string, size = DEFAULT_THUMBNAIL_SIZE) {
+export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize = DEFAULT_THUMBNAIL_SIZE) {
   return coda.withQueryParams(url, {
-    width: size,
-    height: size,
+    width: thumbnailSize,
+    height: thumbnailSize,
     crop: 'center',
   });
 }
@@ -259,4 +259,18 @@ function trimStringWithEllipsis(inputString: string, maxLength: number) {
 
 export function deepCopy<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * Checks if a value is nullish or empty, taking into account all possible value types.
+ * @param {any} value - The value to be checked for nullishness or emptiness.
+ * @returns {boolean} - Returns true if the value is nullish or empty; otherwise, returns false.
+ */
+export function isNullOrEmpty(value: any) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string' && value.trim() === '') return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  if (typeof value === 'object' && Object.keys(value).length === 0) return true;
+
+  return false;
 }

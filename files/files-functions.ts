@@ -1,104 +1,144 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getThumbnailUrlFromFullUrl } from '../helpers';
+import { getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../helpers';
 import { makeGraphQlRequest } from '../helpers-graphql';
 import { deleteFiles, querySingleFile, UpdateFile } from './files-graphql';
 import { FetchRequestOptions } from '../types/Requests';
-import { FileFieldsFragment, FileUpdateMutationVariables, GetSingleFileQueryVariables } from '../types/admin.generated';
-import { FileSyncTableSchema } from '../schemas/syncTable/FileSchema';
+import {
+  FileFields_GenericFile_Fragment,
+  FileFields_MediaImage_Fragment,
+  FileFields_Video_Fragment,
+  FileFieldsFragment,
+  FileUpdateMutationVariables,
+  GetSingleFileQueryVariables,
+} from '../types/admin.generated';
 import { FileUpdateInput } from '../types/admin.types';
 import { CACHE_DEFAULT } from '../constants';
+import { FileRow } from '../types/CodaRows';
 
 // #region Helpers
 export async function handleFileUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof FileSyncTableSchema>,
+  row: {
+    original?: FileRow;
+    updated: FileRow;
+  },
   context: coda.ExecutionContext
 ) {
-  const { updatedFields } = update;
-  const subJobs: (Promise<any> | undefined)[] = [];
-  const fileId = update.previousValue.id as number;
+  let obj = row.original ?? {};
+  console.log('row.original', row.original);
 
-  if (updatedFields.length) {
-    const fileUpdateInput = formatGraphQlFileUpdateInput(update, updatedFields);
-    subJobs.push(updateFileGraphQl(fileUpdateInput, context));
-  } else {
-    subJobs.push(undefined);
-  }
-
-  let obj = { ...update.previousValue };
-
-  const [updateJob] = await Promise.all(subJobs);
-  if (updateJob?.body?.data?.fileUpdate?.files) {
-    const file = updateJob.body.data.fileUpdate.files.find((file) => file.id === fileId);
-    obj = {
-      ...obj,
-      ...formatFileNodeForSchema(file),
-    };
+  const fileUpdateInput = formatGraphQlFileUpdateInput(row.updated);
+  console.log('row.updated', row.updated);
+  if (fileUpdateInput !== undefined) {
+    const updateJob = await updateFileGraphQl(fileUpdateInput, context);
+    if (updateJob?.body?.data?.fileUpdate?.files) {
+      const file = updateJob.body.data.fileUpdate.files.find((file) => file.id === fileUpdateInput.id);
+      obj = {
+        ...obj,
+        ...formatFileNodeForSchema(file),
+      };
+    }
   }
   return obj;
 }
 // #endregion
 
 // #region Formatting functions
-function formatGraphQlFileUpdateInput(update: any, fromKeys: string[]): FileUpdateInput {
+export function formatGraphQlFileUpdateInput(row: FileRow): FileUpdateInput | undefined {
   const ret: FileUpdateInput = {
-    id: update.previousValue.id,
+    id: row.id,
   };
-  if (!fromKeys.length) return ret;
 
-  fromKeys.forEach((fromKey) => {
-    const value = update.newValue[fromKey];
-    let inputKey = fromKey;
-    let inputValue = value !== undefined && value !== '' ? value : null;
-
-    if (fromKey === 'name') {
-      inputKey = 'filename';
+  if (row.name !== undefined) {
+    if (isNullOrEmpty(row.name)) {
+      throw new coda.UserVisibleError("File name can't be empty");
     }
-    // alt is the only value that can be null
-    if (inputKey === 'alt') {
-      inputValue = value;
-    }
+    ret.filename = row.name;
+  }
+  // alt is the only value that can be an empty string
+  if (row.alt !== undefined) {
+    ret.alt = row.alt;
+  }
 
-    ret[inputKey] = inputValue;
-  });
+  console.log('ret', ret);
+  // Means we have nothing to update
+  if (Object.keys(ret).length <= 1) return undefined;
 
   return ret;
 }
 
-export const formatFileNodeForSchema = (file: FileFieldsFragment) => {
-  const obj: any = {
-    ...file,
+function formatFileNodeCommonProps(file: FileFieldsFragment, previewSize?: number): FileRow {
+  const obj: FileRow = {
+    alt: file.alt,
+    id: file.id,
+    createdAt: file.createdAt,
+    name: '', // can be determined later when knowing specific type of file
+    preview: file.thumbnail?.image?.url
+      ? previewSize !== undefined
+        ? getThumbnailUrlFromFullUrl(file.thumbnail.image.url, previewSize)
+        : file.thumbnail.image.url
+      : undefined,
     type: file.__typename,
-    thumbnail: file.thumbnail?.image?.url ? getThumbnailUrlFromFullUrl(file.thumbnail.image.url) : undefined,
+    updatedAt: file.updatedAt,
   };
 
+  return obj;
+}
+function formatGenericFileNodeForSchema(file: FileFields_GenericFile_Fragment, previewSize?: number): FileRow {
+  const obj: FileRow = {
+    ...formatFileNodeCommonProps(file, previewSize),
+
+    fileSize: file.originalFileSize,
+    mimeType: file.mimeType,
+    name: file.url ? file.url.split('/').pop().split('?').shift() : '',
+    url: file.url,
+  };
+
+  return obj;
+}
+function formatMediaImageNodeForSchema(file: FileFields_MediaImage_Fragment, previewSize?: number): FileRow {
+  const obj: FileRow = {
+    ...formatFileNodeCommonProps(file, previewSize),
+
+    fileSize: file.originalSource?.fileSize,
+    height: file.image?.height,
+    mimeType: file.mimeType,
+    name: file.image?.url ? file.image.url.split('/').pop().split('?').shift() : '',
+    url: file.image?.url,
+    width: file.image?.width,
+  };
+
+  return obj;
+}
+function formatVideoNodeForSchema(file: FileFields_Video_Fragment, previewSize?: number): FileRow {
+  const obj: FileRow = {
+    ...formatFileNodeCommonProps(file, previewSize),
+
+    duration: file.duration,
+    fileSize: file.originalSource?.fileSize,
+    height: file.originalSource?.height,
+    mimeType: file.originalSource?.mimeType,
+    name: file.filename,
+    url: file.originalSource?.url,
+    width: file.originalSource?.width,
+  };
+
+  return obj;
+}
+
+export const formatFileNodeForSchema = (file: FileFieldsFragment, previewSize?: number): FileRow => {
   switch (file.__typename) {
     case 'GenericFile':
-      obj.name = file.url.split('/').pop().split('?').shift();
-      break;
-    case 'MediaImage':
-      if (file.image?.url) {
-        obj.name = file.image.url.split('/').pop().split('?').shift();
-      }
-      obj.fileSize = file.originalSource?.fileSize;
-      obj.url = file.image?.url;
-      obj.width = file.image?.width;
-      obj.height = file.image?.height;
-      break;
-    case 'Video':
-      obj.name = file.filename;
-      obj.duration = file.duration;
-      obj.fileSize = file.originalSource?.fileSize;
-      obj.mimeType = file.originalSource?.mimeType;
-      obj.url = file.originalSource?.url;
-      obj.width = file.originalSource?.width;
-      obj.height = file.originalSource?.height;
-      break;
+      return formatGenericFileNodeForSchema(file, previewSize);
 
-    default:
-      break;
+    case 'MediaImage':
+      return formatMediaImageNodeForSchema(file, previewSize);
+
+    case 'Video':
+      return formatVideoNodeForSchema(file, previewSize);
   }
-  return obj;
+
+  return formatFileNodeCommonProps(file, previewSize);
 };
 
 // #endregion

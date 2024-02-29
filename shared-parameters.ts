@@ -2,6 +2,7 @@ import { makeParameter, ParameterType } from '@codahq/packs-sdk';
 
 import {
   countryNameAutocompleteValues,
+  DEFAULT_THUMBNAIL_SIZE,
   OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
   OPTIONS_ORDER_FINANCIAL_STATUS,
@@ -89,6 +90,13 @@ const generalInputs = {
     name: 'tags',
     description:
       'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
+  }),
+  previewSize: makeParameter({
+    type: ParameterType.Number,
+    name: 'previewSize',
+    suggestedValue: DEFAULT_THUMBNAIL_SIZE,
+    description:
+      'The maximum width of the thumbnail. Smaller values can increase display performance of the table if you have lots of entries.',
   }),
   title: makeParameter({
     type: ParameterType.String,

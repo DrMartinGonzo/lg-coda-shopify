@@ -10,6 +10,7 @@ import {
   capitalizeFirstChar,
   extractValueAndUnitFromMeasurementString,
   getUnitMap,
+  isNullOrEmpty,
   maybeParseJson,
   unitToShortName,
 } from '../helpers';
@@ -1173,7 +1174,7 @@ export async function formatMetafieldValueForApi(
   context: coda.ExecutionContext,
   validations?: MetafieldDefinitionFragment['validations']
 ): Promise<string | null> {
-  if (value == null || value === '' || (Array.isArray(value) && !value.length)) {
+  if (isNullOrEmpty(value)) {
     return null;
   }
 
