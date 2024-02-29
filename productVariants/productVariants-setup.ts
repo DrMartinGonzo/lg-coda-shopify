@@ -335,7 +335,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateProductVariant = coda.makeFormula({
   name: 'CreateProductVariant',
-  description: 'Create a new Shopify Product Variant and return Product Variant ID.',
+  description: 'Create a new Shopify Product Variant and return its ID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     { ...inputs.product.id, name: 'productId', description: 'The ID of the parent product.' },

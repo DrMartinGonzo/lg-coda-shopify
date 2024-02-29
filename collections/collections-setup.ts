@@ -356,7 +356,7 @@ export const Sync_Collections = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateCollection = coda.makeFormula({
   name: 'CreateCollection',
-  description: `Create a new Shopify Collection and return GraphQl GID.`,
+  description: `Create a new Shopify Collection and return its ID.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     { ...inputs.general.title, description: 'The name of the collection.' },
