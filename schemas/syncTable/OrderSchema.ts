@@ -443,14 +443,14 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'shipping_address',
       fromKey: 'shipping_address',
       description:
-        'The mailing address to where the order will be shipped. This address is optional and will not be available on orders that do not require shipping',
+        'The mailing address to where the order will be shipped. This address is optional and will not be available on orders that do not require shipping.',
     },
     shipping_lines: {
       type: coda.ValueType.Array,
       items: ShippingLineSchema,
       fixedId: 'shipping_lines',
       fromKey: 'shipping_lines',
-      description: 'An array of objects, each of which details a shipping method used',
+      description: 'An array of objects, each of which details a shipping method used.',
     },
     source_name: {
       type: coda.ValueType.String,

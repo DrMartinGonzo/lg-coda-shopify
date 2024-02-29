@@ -248,10 +248,10 @@ export const Sync_Products = coda.makeSyncTable({
           );
 
         if (augmentedResponse?.body?.data) {
-          const customersData = augmentedResponse.body.data as GetProductsMetafieldsQuery;
+          const productsData = augmentedResponse.body.data as GetProductsMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {
-              const graphQlNodeMatch = customersData.products.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
+              const graphQlNodeMatch = productsData.products.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
 
               // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
               if (!graphQlNodeMatch) return;
@@ -461,7 +461,7 @@ export const Formula_Product = coda.makeFormula({
   schema: ProductSyncTableSchemaRest,
   execute: async ([productId], context) => {
     const response = await fetchSingleProductRest(productId, context);
-    if (response.body.product) {
+    if (response?.body?.product) {
       return formatProductForSchemaFromRestApi(response.body.product, context);
     }
   },
@@ -484,12 +484,12 @@ export const Format_Product: coda.Format = {
     description:
       'Return Products from this shop.',
     identityName: IDENTITY_PRODUCT + '_GRAPHQL',
-    schema: ProductSchemaGraphQl,
+    schema: ProductSyncTableSchemaGraphQl,
     dynamicOptions: {
       getSchema: async function (context, _, { syncMetafields }) {
-        let augmentedSchema: any = ProductSchemaGraphQl;
+        let augmentedSchema: any = ProductSyncTableSchemaGraphQl;
         if (syncMetafields) {
-          augmentedSchema = await augmentSchemaWithMetafields(ProductSchemaGraphQl, MetafieldOwnerType.Product, context);
+          augmentedSchema = await augmentSchemaWithMetafields(ProductSyncTableSchemaGraphQl, MetafieldOwnerType.Product, context);
         }
         // admin_url should always be the last featured property, regardless of any metafield keys added previously
         augmentedSchema.featuredProperties.push('admin_url');

@@ -428,10 +428,12 @@ export const updateOrderRest = (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const restParams = cleanQueryParams(params);
-  // validateOrderParams(params);
-  const payload = { order: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
+  if (Object.keys(restParams).length) {
+    // validateOrderParams(params);
+    const payload = { order: restParams };
+    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders/${orderId}.json`;
+    return makePutRequest({ ...requestOptions, url, payload }, context);
+  }
 };
 
 };

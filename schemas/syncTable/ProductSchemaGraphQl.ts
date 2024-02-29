@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants';
 
-export const ProductSchemaGraphQl = coda.makeObjectSchema({
+export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
   properties: {
     /**
      * ! Deprecated

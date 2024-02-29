@@ -81,7 +81,7 @@ export async function fetchAllMetaObjectDefinitions(
       context as coda.SyncExecutionContext
     );
 
-    if (response.body.data?.metaobjectDefinitions?.nodes) {
+    if (response?.body?.data?.metaobjectDefinitions?.nodes) {
       nodes = nodes.concat(response.body.data.metaobjectDefinitions.nodes);
     }
 

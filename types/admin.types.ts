@@ -12628,7 +12628,7 @@ export enum DiscountStatus {
   Active = 'ACTIVE',
   /** The discount is expired. */
   Expired = 'EXPIRED',
-  /** The discount is scheduled. */
+  /** The discount is scheduled when it has a start date in the future. */
   Scheduled = 'SCHEDULED'
 }
 
