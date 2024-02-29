@@ -18,6 +18,7 @@ import {
 import { queryAllFiles } from './files-graphql';
 import { GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
 import { inputs } from '../shared-parameters';
+import { FileRow } from '../types/CodaRows';
 
 // #endregion
 
@@ -39,8 +40,9 @@ export const Sync_Files = coda.makeSyncTable({
         optional: true,
         autocomplete: OPTIONS_FILE_TYPE,
       }),
+      { ...inputs.general.previewSize, optional: true },
     ],
-    execute: async function ([type], context: coda.SyncExecutionContext) {
+    execute: async function ([type, previewSize], context: coda.SyncExecutionContext) {
       const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
       const defaultMaxEntriesPerRun = 50;
       const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
@@ -72,7 +74,7 @@ export const Sync_Files = coda.makeSyncTable({
           includeFileSize: effectivePropertyKeys.includes('fileSize'),
           includeHeight: effectivePropertyKeys.includes('height'),
           includeMimeType: effectivePropertyKeys.includes('mimeType'),
-          includeThumbnail: effectivePropertyKeys.includes('thumbnail'),
+          includeThumbnail: effectivePropertyKeys.includes('preview'),
           includeUpdatedAt: effectivePropertyKeys.includes('updatedAt'),
           includeUrl: effectivePropertyKeys.includes('url'),
           includeWidth: effectivePropertyKeys.includes('width'),
@@ -91,7 +93,7 @@ export const Sync_Files = coda.makeSyncTable({
       if (response?.body?.data?.files) {
         const data = response.body.data as GetFilesQuery;
         return {
-          result: data.files.nodes.map((file) => formatFileNodeForSchema(file)),
+          result: data.files.nodes.map((file) => formatFileNodeForSchema(file, previewSize)),
           continuation,
         };
       } else {
@@ -103,7 +105,18 @@ export const Sync_Files = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) => handleFileUpdateJob(update, context));
+      const jobs = updates.map((update) => {
+        return handleFileUpdateJob(
+          {
+            original: update.previousValue as FileRow,
+            updated: Object.fromEntries(
+              Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
+            ) as FileRow,
+          },
+          context
+        );
+      });
+
       const completed = await Promise.allSettled(jobs);
       return {
         result: completed.map((job) => {

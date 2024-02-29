@@ -4,7 +4,6 @@ import striptags from 'striptags';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
-import { getThumbnailUrlFromFullUrl } from '../helpers';
 import { FetchRequestOptions } from '../types/Requests';
 import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
@@ -130,7 +129,6 @@ export const formatArticleForSchemaFromRestApi = (article, context: coda.Executi
   }
 
   if (article.image) {
-    obj.thumbnail = getThumbnailUrlFromFullUrl(article.image.src);
     obj.image_alt_text = article.image.alt;
     obj.image_url = article.image.src;
   }
