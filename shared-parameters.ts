@@ -2,6 +2,7 @@ import { makeParameter, ParameterType } from '@codahq/packs-sdk';
 
 import {
   countryNameAutocompleteValues,
+  OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
@@ -217,6 +218,16 @@ const customerInputs = {
     name: 'note',
     description: 'A note about the customer.',
   }),
+};
+// #endregion
+
+// #region DraftOrder Inputs
+const draftOrderInputs = {
+  id: {
+    ...generalInputs.id,
+    name: 'draftOrderId',
+    description: 'The ID of the draft order.',
+  },
 };
 // #endregion
 
@@ -739,8 +750,15 @@ const draftOrderFilters = {
   idArray: {
     ...generalFilters.idArray,
     name: 'draftOrderIds',
-    description: 'Filter results by comma-separated list of DraftOrder IDs.',
+    description: 'Filter results by comma-separated list of draft order IDs.',
   },
+  status: makeParameter({
+    type: ParameterType.String,
+    name: 'status',
+    autocomplete: OPTIONS_DRAFT_ORDER_STATUS,
+    suggestedValue: 'open',
+    description: 'Filter results by draft order status.',
+  }),
 };
 // #endregion
 
@@ -774,28 +792,28 @@ const orderFilters = {
   idArray: {
     ...generalFilters.idArray,
     name: 'orderIds',
-    description: 'Filter orders by comma-separated list of Order IDs.',
+    description: 'Filter results by comma-separated list of Order IDs.',
   },
   financialStatus: makeParameter({
     type: ParameterType.String,
     name: 'financialStatus',
     autocomplete: OPTIONS_ORDER_FINANCIAL_STATUS,
     suggestedValue: 'any',
-    description: 'Filter orders by their financial status.',
+    description: 'Filter results by order financial status.',
   }),
   fulfillmentStatus: makeParameter({
     type: ParameterType.String,
     name: 'fulfillmentStatus',
     autocomplete: OPTIONS_ORDER_FULFILLMENT_STATUS,
     suggestedValue: 'any',
-    description: 'Filter orders by their fulfillment status.',
+    description: 'Filter results by order fulfillment status.',
   }),
   status: makeParameter({
     type: ParameterType.String,
     name: 'status',
     autocomplete: OPTIONS_ORDER_STATUS,
     suggestedValue: 'open',
-    description: 'Filter orders by their status.',
+    description: 'Filter results by order status.',
   }),
 };
 // #endregion
@@ -893,6 +911,7 @@ export const inputs = {
   blog: blogInputs,
   collection: collectionInputs,
   customer: customerInputs,
+  draftOrder: draftOrderInputs,
   file: fileInputs,
   inventoryItem: inventoryItemInputs,
   InventoryLevel: InventoryLevelInputs,

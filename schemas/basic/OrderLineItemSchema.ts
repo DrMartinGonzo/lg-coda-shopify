@@ -23,6 +23,13 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       fixedId: 'attributed_staffs',
       description: 'The staff members attributed to the line item.',
     },
+    // Only exists in draft orders
+    custom: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'custom',
+      fromKey: 'custom',
+      description: 'Whether this is a custom line item or a product variant line item.',
+    },
     fulfillable_quantity: {
       type: coda.ValueType.Number,
       fixedId: 'fulfillable_quantity',
@@ -68,13 +75,13 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       fixedId: 'quantity',
       fromKey: 'quantity',
-      description: 'The number of items that were purchased',
+      description: 'The number of items that were purchased.',
     },
     requires_shipping: {
       type: coda.ValueType.Boolean,
       fixedId: 'requires_shipping',
       fromKey: 'requires_shipping',
-      description: 'Whether the item requires shipping',
+      description: 'Whether the item requires shipping.',
     },
     sku: {
       type: coda.ValueType.String,

@@ -8,6 +8,8 @@ import { countryNames } from './contants--generated';
  */
 export const OPTIONS_ORDER_STATUS = ['any', 'open', 'closed', 'cancelled'];
 
+export const OPTIONS_DRAFT_ORDER_STATUS = ['open', 'completed', 'invoice_sent'];
+
 export const DEFAULT_THUMBNAIL_SIZE = 64;
 
 export const OPTIONS_ORDER_FINANCIAL_STATUS = [
@@ -89,6 +91,7 @@ export const IDENTITY_IMAGE = 'Image';
 export const IDENTITY_METAFIELD = 'Metafield';
 export const IDENTITY_METAFIELD_DEFINITION = 'MetafieldDefinition';
 export const IDENTITY_METAOBJECT = 'Metaobject';
+export const IDENTITY_DRAFT_ORDER = 'DraftOrder';
 export const IDENTITY_ORDER = 'Order';
 export const IDENTITY_ORDER_LINE_ITEM = 'OrderLineItem';
 export const IDENTITY_ORDER_TRANSACTION = 'OrderTransaction';

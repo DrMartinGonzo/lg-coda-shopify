@@ -522,7 +522,7 @@ export const Formula_Collection = coda.makeFormula({
   schema: CollectionSyncTableSchema,
   execute: async function ([collectionId], context) {
     const response = await fetchSingleCollectionRest(collectionId, context);
-    if (response.body.collection) {
+    if (response?.body?.collection) {
       return formatCollectionForSchemaFromRestApi(response.body.collection, context);
     }
   },

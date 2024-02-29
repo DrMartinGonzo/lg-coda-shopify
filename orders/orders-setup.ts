@@ -277,10 +277,10 @@ export const Sync_Orders = coda.makeSyncTable({
           );
 
         if (augmentedResponse?.body?.data) {
-          const customersData = augmentedResponse.body.data as GetOrdersMetafieldsQuery;
+          const ordersData = augmentedResponse.body.data as GetOrdersMetafieldsQuery;
           const augmentedItems = toProcess
             .map((resource) => {
-              const graphQlNodeMatch = customersData.orders.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
+              const graphQlNodeMatch = ordersData.orders.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
 
               // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
               if (!graphQlNodeMatch) return;
@@ -343,7 +343,7 @@ export const Formula_Order = coda.makeFormula({
   schema: OrderSyncTableSchema,
   execute: async function ([orderId], context) {
     const response = await fetchSingleOrderRest(orderId, context);
-    if (response.body?.order) {
+    if (response?.body?.order) {
       return formatOrderForSchemaFromRestApi(response.body.order, context);
     }
   },
@@ -424,7 +424,7 @@ export const Formula_OrderExportFormat = coda.makeFormula({
     const response = await fetchSingleOrderRest(orderID, context, {
       cacheTtlSecs: CACHE_DISABLED, // we need fresh results
     });
-    if (response.body?.order) {
+    if (response?.body?.order) {
       return formatOrderForDocExport(response.body.order);
     }
   },
