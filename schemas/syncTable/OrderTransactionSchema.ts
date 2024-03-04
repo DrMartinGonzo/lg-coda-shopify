@@ -106,4 +106,4 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   featuredProperties: ['id', 'amount'],
 });
 
-export const formatOrderTransactionReferenceValueForSchema = (id: number, label = NOT_FOUND) => ({ id, label });
+export const formatOrderTransactionReference = (id: number, label = NOT_FOUND) => ({ id, label });

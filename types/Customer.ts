@@ -1,6 +1,6 @@
-import { MetafieldRestInput } from './Metafields';
+import type { MetafieldRestInput } from './Metafields';
 
-export interface CustomerSyncRestParams {
+export interface CustomerSyncTableRestParams {
   fields: string;
   limit: number;
   ids?: string;

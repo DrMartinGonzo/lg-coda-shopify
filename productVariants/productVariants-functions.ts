@@ -10,10 +10,11 @@ import {
   updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { idToGraphQlGid } from '../helpers-graphql';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
 import { GraphQlResource } from '../types/RequestsGraphQl';
-import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
-import { FetchRequestOptions } from '../types/Requests';
+import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+
+import type { FetchRequestOptions } from '../types/Requests';
+import type { MetafieldDefinitionFragment } from '../types/admin.generated';
 
 // #region Validate functions
 export function validateProductVariantParams(params: any) {
@@ -102,7 +103,7 @@ export const formatProductVariantForSchemaFromRestApi = (variant, parentProduct,
   let obj: any = {
     ...variant,
     admin_url: `${context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
-    product: formatProductReferenceValueForSchema(variant.product_id, parentProduct?.title),
+    product: formatProductReference(variant.product_id, parentProduct?.title),
     displayTitle: parentProduct?.title ? `${parentProduct.title} - ${variant.title}` : variant.title,
   };
 

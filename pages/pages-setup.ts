@@ -1,47 +1,35 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_DEFAULT,
-  IDENTITY_PAGE,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
-import {
-  fetchSinglePageRest,
-  deletePageRest,
-  createPageRest,
-  validatePageParams,
-  formatPageForSchemaFromRestApi,
-  handlePageUpdateJob,
-  updatePageRest,
-} from './pages-functions';
+import { CACHE_DEFAULT, IDENTITY_PAGE, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import { PageRestFetcher } from './pages-functions';
 
 import { PageSyncTableSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
 import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  parseMetafieldsCodaInput,
   preprendPrefixToMetaFieldKey,
-  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import {
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { SyncTableRestContinuation } from '../types/tableSync';
-import { MetafieldOwnerType, MetafieldDefinition } from '../types/admin.types';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { MetafieldOwnerType } from '../types/admin.types';
+import { handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
-import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { restResources } from '../types/RequestsRest';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+
+import type { Page as PageRest } from '@shopify/shopify-api/rest/admin/2023-10/page';
+import type { PageRow } from '../types/CodaRows';
+import type { PageCreateRestParams } from '../types/Page';
+import type { MetafieldDefinition } from '../types/admin.types';
+import type { SyncTableRestContinuation } from '../types/tableSync';
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -113,7 +101,7 @@ export const Sync_Pages = coda.makeSyncTable({
       }
 
       const syncedStandardFields = handleFieldDependencies(standardFromKeys, pageFieldDependencies);
-      const params = cleanQueryParams({
+      const restParams = cleanQueryParams({
         fields: syncedStandardFields.join(', '),
         created_at_min: created_at ? created_at[0] : undefined,
         created_at_max: created_at ? created_at[1] : undefined,
@@ -130,19 +118,20 @@ export const Sync_Pages = coda.makeSyncTable({
         title,
       });
 
-      validatePageParams(params);
+      const pageFetcher = new PageRestFetcher(context);
+      pageFetcher.validateParams(restParams);
 
       let url =
         prevContinuation?.nextUrl ??
-        coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, params);
+        coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, restParams);
 
       let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest(
+      let { response, continuation } = await makeSyncTableGetRequest<{ pages: PageRest[] }>(
         { url, extraContinuationData: { metafieldDefinitions } },
         context
       );
       if (response?.body?.pages) {
-        restResult = response.body.pages.map((page) => formatPageForSchemaFromRestApi(page, context));
+        restResult = response.body.pages.map((page) => pageFetcher.formatApiToRow(page));
       }
 
       // Add metafields by doing multiple Rest Admin API calls
@@ -172,20 +161,7 @@ export const Sync_Pages = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Page }, context)
-        : [];
-
-      const jobs = updates.map((update) => handlePageUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new PageRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -194,7 +170,7 @@ export const Sync_Pages = coda.makeSyncTable({
 // #region Actions
 export const Action_CreatePage = coda.makeFormula({
   name: 'CreatePage',
-  description: `Create a new Shopify page and return its ID. The page will be visible unless 'published' is set to false.`,
+  description: `Create a new Shopify page and return its ID. The page will be not be published unless 'published' is set to true or a published date is set.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     { ...inputs.general.title, description: 'The title of the page.' },
@@ -209,33 +185,27 @@ export const Action_CreatePage = coda.makeFormula({
     { ...inputs.general.metafields, optional: true, description: 'Page metafields to create.' },
   ],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Number,
   execute: async function (
-    [title, author, bodyHtml, handle, published, publishedAt, templateSuffix, metafields],
+    [title, author, body_html, handle, published, published_at, template_suffix, metafields],
     context
   ) {
-    const restParams: PageCreateRestParams = {
+    const defaultPublishedStatus = false;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    let newRow: Partial<PageRow> = {
       title,
       author,
-      body_html: bodyHtml,
+      body_html,
       handle,
-      published,
-      published_at: publishedAt,
-      template_suffix: templateSuffix,
+      published_at,
+      published: published ?? defaultPublishedStatus,
+      template_suffix,
     };
 
-    if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-      const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter(Boolean);
-      if (metafieldRestInputs.length) {
-        restParams.metafields = metafieldRestInputs;
-      }
-    }
-
-    const response = await createPageRest(restParams, context);
-    return response.body.page.id;
+    const pageFetcher = new PageRestFetcher(context);
+    const restParams = pageFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as PageCreateRestParams;
+    const response = await pageFetcher.create(restParams);
+    return response?.body?.page?.id;
   },
 });
 
@@ -262,57 +232,34 @@ export const Action_UpdatePage = coda.makeFormula({
   // schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
   schema: PageSyncTableSchema,
   execute: async function (
-    [pageId, author, bodyHtml, handle, published, publishedAt, title, templateSuffix, metafields],
+    [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],
     context
   ) {
-    const restParams: PageUpdateRestParams = {
+    let row: PageRow = {
+      id: pageId,
       author,
-      body_html: bodyHtml,
+      body_html,
       handle,
       published,
-      published_at: publishedAt,
+      published_at,
       title,
-      template_suffix: templateSuffix,
+      template_suffix,
     };
-
-    const promises: (Promise<any> | undefined)[] = [];
-    promises.push(updatePageRest(pageId, restParams, context));
-    if (metafields && metafields.length) {
-      promises.push(
-        updateAndFormatResourceMetafieldsRest(
-          {
-            ownerId: pageId,
-            ownerResource: restResources.Page,
-            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
-            schemaWithIdentity: false,
-          },
-          context
-        )
-      );
-    } else {
-      promises.push(undefined);
-    }
-
-    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
-    const obj = {
-      id: pageId,
-      ...(restResponse?.body?.page ? formatPageForSchemaFromRestApi(restResponse.body.page, context) : {}),
-      ...(updatedFormattedMetafields ?? {}),
-    };
-
-    return obj;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    const pageFetcher = new PageRestFetcher(context);
+    return pageFetcher.updateWithMetafields({ original: undefined, updated: row }, metafieldKeyValueSets);
   },
 });
 
 export const Action_DeletePage = coda.makeFormula({
   name: 'DeletePage',
-  description: 'Delete an existing Shopify page and return true on success.',
+  description: 'Delete an existing Shopify page and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.page.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([pageId], context) {
-    await deletePageRest(pageId, context);
+    await new PageRestFetcher(context).delete(pageId);
     return true;
   },
 });
@@ -328,9 +275,10 @@ export const Formula_Page = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   schema: PageSyncTableSchema,
   execute: async ([pageId], context) => {
-    const pageResponse = await fetchSinglePageRest(pageId, context);
+    const pageFetcher = new PageRestFetcher(context);
+    const pageResponse = await pageFetcher.fetch(pageId);
     if (pageResponse.body?.page) {
-      return formatPageForSchemaFromRestApi(pageResponse.body.page, context);
+      return pageFetcher.formatApiToRow(pageResponse.body.page);
     }
   },
 });

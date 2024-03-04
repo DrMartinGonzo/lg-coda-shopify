@@ -1,242 +1,224 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import {
-  CACHE_MAX,
-  COLLECTION_TYPE__CUSTOM,
-  COLLECTION_TYPE__SMART,
-  OPTIONS_PUBLISHED_STATUS,
-  REST_DEFAULT_API_VERSION,
-} from '../constants';
+import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../constants';
 import { isSmartCollection } from './collections-graphql';
-import {
-  CollectionSyncTableSchema,
-  formatCollectionReferenceValueForSchema,
-} from '../schemas/syncTable/CollectionSchema';
-import { FetchRequestOptions } from '../types/Requests';
+import { CollectionSyncTableSchema, formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
+import { formatMetafieldRestInputFromKeyValueSet, hasMetafieldsInUpdates } from '../metafields/metafields-functions';
+import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+import { SimpleRest } from '../Fetchers/SimpleRest';
 
-import {
-  getMetafieldKeyValueSetsFromUpdate,
-  separatePrefixedMetafieldsKeysFromKeys,
-  updateAndFormatResourceMetafieldsRest,
-} from '../metafields/metafields-functions';
-
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
-import { CollectionUpdateRestParams } from '../types/Collection';
+import { RestResourceName } from '../types/RequestsRest';
+import { CollectSyncTableSchema } from '../schemas/syncTable/CollectSchema';
 import { GraphQlResource } from '../types/RequestsGraphQl';
-import { restResources } from '../types/RequestsRest';
-import { formatProductReferenceValueForSchema } from '../schemas/syncTable/ProductSchemaRest';
+import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { MetafieldOwnerType } from '../types/admin.types';
+import { isNullOrEmpty } from '../helpers';
 
-// #region Helpers
-function formatCollectionStandardFieldsRestParams(
-  standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof CollectionSyncTableSchema>['newValue']
-) {
-  const restParams: any = {};
-  standardFromKeys.forEach((fromKey) => {
-    const value = values[fromKey];
+import type { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
+import type { CollectRow, CollectionRow } from '../types/CodaRows';
+import type { FetchRequestOptions } from '../types/Requests';
+import type { IsSmartCollectionQuery } from '../types/admin.generated';
+import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 
-    // Edge cases
-    if (fromKey === 'image_alt_text') {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        alt: value,
-      };
-    } else if (fromKey === 'image_url') {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        src: value,
-      };
-    }
-    // No processing needed
-    else {
-      restParams[fromKey] = value;
-    }
-  });
-  return restParams;
-}
+// #endregion
 
-export async function handleCollectionUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof CollectionSyncTableSchema>,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-
-  const subJobs: (Promise<any> | undefined)[] = [];
-  const collectionId = update.previousValue.id as number;
-  const collectionType = await getCollectionTypeGraphQl(
-    idToGraphQlGid(GraphQlResource.Collection, collectionId),
-    context
-  );
-
-  if (standardFromKeys.length) {
-    const restParams: CollectionUpdateRestParams = formatCollectionStandardFieldsRestParams(
-      standardFromKeys,
-      update.newValue
-    );
-
-    subJobs.push(updateCollectionRest(collectionId, collectionType, restParams, context));
-  } else {
-    subJobs.push(undefined);
-  }
-
-  if (prefixedMetafieldFromKeys.length) {
-    subJobs.push(
-      updateAndFormatResourceMetafieldsRest(
-        {
-          ownerId: collectionId,
-          ownerResource: restResources.Collection,
-          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
-            prefixedMetafieldFromKeys,
-            update.newValue,
-            metafieldDefinitions,
-            context
-          ),
-        },
-        context
-      )
-    );
-  } else {
-    subJobs.push(undefined);
-  }
-
-  let obj = { ...update.previousValue };
-
-  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
-  if (updateJob?.body[collectionType]) {
-    obj = {
-      ...obj,
-      ...formatCollectionForSchemaFromRestApi(updateJob.body[collectionType], context),
+// #region Classes
+export class Collection {
+  /**
+   * Get Collection type via a GraphQL Admin API query
+   * @param collectionGid the GraphQl GID of the collection
+   * @param context Coda Execution Context
+   * @param requestOptions
+   * @returns The collection Type
+   */
+  static getCollectionType = async (
+    collectionGid: string,
+    context: coda.ExecutionContext,
+    requestOptions: FetchRequestOptions = {}
+  ) => {
+    const payload = {
+      query: isSmartCollection,
+      variables: {
+        collectionGid,
+      },
     };
-  }
-  if (metafieldsJob) {
-    obj = {
-      ...obj,
-      ...metafieldsJob,
+    // Cache max if unspecified because the collection type cannot be changed after creation
+    const { response } = await makeGraphQlRequest<IsSmartCollectionQuery>(
+      { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
+      context
+    );
+    // TODO: return 'better' values, rest resources ones or GraphQl ones
+    return response.body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
+  };
+
+  static getFetcher = async (collectionId: number, context: coda.ExecutionContext) => {
+    const collectionType = await Collection.getCollectionType(
+      idToGraphQlGid(GraphQlResource.Collection, collectionId),
+      context
+    );
+    return Collection.getFetcherOfType(collectionType, context);
+  };
+
+  static getFetcherOfType = (collectionType: string, context: coda.ExecutionContext) => {
+    switch (collectionType) {
+      case COLLECTION_TYPE__SMART:
+        return new SmartCollectionRestFetcher(context);
+      case COLLECTION_TYPE__CUSTOM:
+        return new CustomCollectionRestFetcher(context);
+    }
+
+    throw new Error(`Unknown collection type: ${collectionType}.`);
+  };
+
+  /**
+   * Edge case for collections, we don't know the collection type in advance, so
+   * we need a static method
+   */
+  static executeSyncTableUpdate = async (
+    updates: Array<coda.SyncUpdate<any, any, typeof CollectSyncTableSchema>>,
+    context: coda.ExecutionContext
+  ) => {
+    const metafieldDefinitions = hasMetafieldsInUpdates(updates)
+      ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Collection }, context)
+      : [];
+
+    const jobs = updates.map(async (update) => {
+      if (
+        !isNullOrEmpty(update.newValue.image_alt_text) &&
+        (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
+      ) {
+        throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
+      }
+      const collectionFetcher = await Collection.getFetcher(update.previousValue.id, context);
+      return collectionFetcher.handleUpdateJob(update, metafieldDefinitions);
+    });
+
+    const completed = await Promise.allSettled(jobs);
+    return {
+      result: completed.map((job) => {
+        if (job.status === 'fulfilled') return job.value;
+        else return job.reason;
+      }),
     };
-  }
-  return obj;
-}
-// #endregion
-
-// #region Formatting functions
-export function validateCollectionParams(params: any) {
-  const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-  if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
-    throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
-  }
+  };
 }
 
-export const formatCollect = (collect, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...collect,
-  };
-  if (collect.product_id) {
-    obj.product = formatProductReferenceValueForSchema(collect.product_id);
-  }
-  if (collect.collection_id) {
-    obj.collection = formatCollectionReferenceValueForSchema(collect.collection_id);
-  }
-  return obj;
-};
-
-export const formatCollectionForSchemaFromRestApi = (collection, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...collection,
-    admin_url: `${context.endpoint}/admin/collections/${collection.id}`,
-    body: striptags(collection.body_html),
-    published: !!collection.published_at,
+export class CollectionRestFetcherBase<
+  T extends RestResourceName,
+  K extends coda.ObjectSchema<string, string>
+> extends SimpleRest<T, K> {
+  validateParams = (params: any) => {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+      throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
+    }
+    return true;
   };
 
-  if (collection.image) {
-    obj.image_alt_text = collection.image.alt;
-    obj.image_url = collection.image.src;
-  }
-  return obj;
-};
+  formatRowToApi = (
+    row: Partial<CollectionRow>,
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): CollectionUpdateRestParams | CollectionCreateRestParams | undefined => {
+    let restParams: CollectionUpdateRestParams | CollectionCreateRestParams = {};
 
-// #endregion
+    if (row.body_html !== undefined) restParams.body_html = row.body_html;
+    if (row.handle !== undefined) restParams.handle = row.handle;
+    if (row.published !== undefined) restParams.published = row.published;
+    if (row.template_suffix !== undefined) restParams.template_suffix = row.template_suffix;
+    if (row.title !== undefined) restParams.title = row.title;
+    if (row.image_alt_text !== undefined || row.image_url !== undefined) {
+      restParams.image = {};
+      if (row.image_alt_text !== undefined) restParams.image.alt = row.image_alt_text;
+      if (row.image_url !== undefined) restParams.image.src = row.image_url;
+    }
 
-// #region GraphQL Requests
-export const getCollectionTypeGraphQl = async (
-  collectionGid: string,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const payload = {
-    query: isSmartCollection,
-    variables: {
-      collectionGid,
-    },
+    const metafieldRestInputs = metafieldKeyValueSets.length
+      ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
+      : [];
+    if (metafieldRestInputs.length) {
+      restParams = { ...restParams, metafields: metafieldRestInputs } as CollectionCreateRestParams;
+    }
+
+    // Means we have nothing to update/create
+    if (Object.keys(restParams).length === 0) return undefined;
+    return restParams;
   };
 
-  // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest(
-    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
-    context
-  );
-  const { body } = response;
+  formatApiToRow = (collection): CollectionRow => {
+    let obj: CollectionRow = {
+      ...collection,
+      admin_url: `${this.context.endpoint}/admin/collections/${collection.id}`,
+      body: striptags(collection.body_html),
+      published: !!collection.published_at,
+      disjunctive: collection.disjunctive ?? false,
+    };
 
-  return body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
-};
-// #endregion
+    if (collection.image) {
+      obj.image_alt_text = collection.image.alt;
+      obj.image_url = collection.image.src;
+    }
 
-// #region Requests
-export const fetchSingleCollectionRest = async (
-  collectionId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/collections/${collectionId}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
-};
+    return obj;
+  };
+}
 
-export const updateCollectionRest = async (
-  collectionId: number,
-  collectionType: string,
-  params: CollectionUpdateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const restParams = cleanQueryParams(params);
-  if (Object.keys(restParams).length) {
-    validateCollectionParams(params);
-
-    const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
-    const payloadObjKey = collectionType === COLLECTION_TYPE__SMART ? 'smart_collection' : 'custom_collection';
-
-    const payload = { [payloadObjKey]: restParams };
-    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
-    return makePutRequest({ ...requestOptions, url, payload }, context);
+export class CollectionRestFetcher extends CollectionRestFetcherBase<
+  RestResourceName.Collection,
+  typeof CollectionSyncTableSchema
+> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Collection, CollectionSyncTableSchema, context);
   }
-};
+}
 
-export const createCollectionRest = async (
-  params: any,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const collectionType = 'custom_collections';
-  const payload = { custom_collection: params };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${collectionType}.json`;
+export class CustomCollectionRestFetcher extends CollectionRestFetcherBase<
+  RestResourceName.CustomCollection,
+  typeof CollectionSyncTableSchema
+> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.CustomCollection, CollectionSyncTableSchema, context);
+  }
+}
 
-  return makePostRequest({ ...requestOptions, url, payload }, context);
-};
+export class SmartCollectionRestFetcher extends CollectionRestFetcherBase<
+  RestResourceName.SmartCollection,
+  typeof CollectionSyncTableSchema
+> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.SmartCollection, CollectionSyncTableSchema, context);
+  }
+}
 
-export const deleteCollectionRest = async (
-  collectionId: number,
-  collectionType: string,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const subFolder = collectionType === COLLECTION_TYPE__SMART ? 'smart_collections' : 'custom_collections';
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${subFolder}/${collectionId}.json`;
-  return makeDeleteRequest({ ...requestOptions, url }, context);
-};
+export class CollectRestFetcher extends SimpleRest<RestResourceName.Collect, typeof CollectSyncTableSchema> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Collect, CollectSyncTableSchema, context);
+  }
+
+  validateParams = (params: any) => {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+      throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
+    }
+    return true;
+  };
+
+  formatApiToRow = (collect): CollectRow => {
+    let obj: CollectRow = {
+      ...collect,
+    };
+    if (collect.product_id) {
+      obj.product = formatProductReference(collect.product_id);
+    }
+    if (collect.collection_id) {
+      obj.collection = formatCollectionReference(collect.collection_id);
+    }
+
+    return obj;
+  };
+}
 // #endregion
 
 // #region Unused stuff
@@ -342,7 +324,6 @@ export const syncCollectionsGraphQlAdmin = async (
   //   published_status,
   // };
 
-  // TODO: support filters
   const payload = {
     query: QueryCollectionsAdmin,
     variables: {
@@ -363,7 +344,7 @@ export const syncCollectionsGraphQlAdmin = async (
       payload,
       maxEntriesPerRun,
       prevContinuation,
-      getPageInfo: (data: any) => data.collections?.pageInfo,
+      getCollectionInfo: (data: any) => data.collections?.pageInfo,
     },
     context
   );
@@ -380,19 +361,6 @@ export const syncCollectionsGraphQlAdmin = async (
       result: [],
       continuation,
     };
-  }
-};
-*/
-
-/*
-export const fetchCollect = async ([id, fields], context) => {
-  const params = cleanQueryParams({ fields });
-
-  const url = coda.withQueryParams(`${context.endpoint}/admin/api/${API_VERSION}/collects/${id}.json`, params);
-  const response = await restGetRequest({ url, cacheTtlSecs: CACHE_DEFAULT }, context);
-  const { body } = response;
-  if (body.collect) {
-    return body.collect;
   }
 };
 */

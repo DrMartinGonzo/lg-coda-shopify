@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { BlogReference } from './BlogSchema';
-import { FieldDependency } from '../../types/tableSync';
 import { IDENTITY_ARTICLE, NOT_FOUND } from '../../constants';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const ArticleSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -85,6 +86,7 @@ export const ArticleSyncTableSchema = coda.makeObjectSchema({
     image_url: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.ImageReference,
+      mutable: true,
       fixedId: 'image_url',
       description: 'An image associated with the article.',
     },
@@ -178,7 +180,7 @@ export const ArticleSyncTableSchema = coda.makeObjectSchema({
 });
 
 export const ArticleReference = coda.makeReferenceSchemaFromObjectSchema(ArticleSyncTableSchema, IDENTITY_ARTICLE);
-export const formatArticleReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
+export const formatArticleReference = (id: number, title = NOT_FOUND) => ({ id, title });
 
 export const articleFieldDependencies: FieldDependency<typeof ArticleSyncTableSchema.properties>[] = [
   {

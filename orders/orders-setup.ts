@@ -1,21 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_DEFAULT,
-  CACHE_DISABLED,
-  IDENTITY_ORDER,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
-import {
-  fetchSingleOrderRest,
-  formatOrderForDocExport,
-  formatOrderForSchemaFromRestApi,
-  handleOrderUpdateJob,
-  validateOrderParams,
-} from './orders-functions';
+import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_ORDER, REST_DEFAULT_LIMIT } from '../constants';
+import { OrderRestFetcher, formatOrderForDocExport } from './orders-functions';
 import { OrderSyncTableSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
 import { filters, inputs } from '../shared-parameters';
 import {
@@ -26,13 +13,11 @@ import {
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { GetOrdersMetafieldsQuery, GetOrdersMetafieldsQueryVariables } from '../types/admin.generated';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
@@ -40,11 +25,14 @@ import {
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
-import { cleanQueryParams, extractNextUrlPagination, makeGetRequest, makeSyncTableGetRequest } from '../helpers-rest';
+import { cleanQueryParams, extractNextUrlPagination, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
-import { OrderSyncTableRestParams } from '../types/Order';
+
+import type { OrderRow } from '../types/CodaRows';
+import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
+import type { OrderSyncTableRestParams } from '../types/Order';
+import type { GetOrdersMetafieldsQuery, GetOrdersMetafieldsQueryVariables } from '../types/admin.generated';
+import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -192,7 +180,7 @@ export const Sync_Orders = coda.makeSyncTable({
         }
       }
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof OrderSyncTableSchema>> = [];
+      let restItems: Array<OrderRow> = [];
       let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
@@ -215,20 +203,17 @@ export const Sync_Orders = coda.makeSyncTable({
           processed_at_max: processed_at ? processed_at[1] : undefined,
         } as OrderSyncTableRestParams);
 
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`,
-            restParams
-          );
-        }
-        const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+        const orderFetcher = new OrderRestFetcher(context);
+        orderFetcher.validateParams(restParams);
+        const url: string = prevContinuation?.nextUrl
+          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+          : orderFetcher.getFetchAllUrl(restParams);
+
+        const { response, continuation } = await makeSyncTableGetRequest<{ orders: OrderRest[] }>({ url }, context);
         restContinuation = continuation;
 
         if (response?.body?.orders) {
-          restItems = response.body.orders.map((order) => formatOrderForSchemaFromRestApi(order, context));
+          restItems = response.body.orders.map(orderFetcher.formatApiToRow);
         }
 
         if (!shouldSyncMetafields) {
@@ -313,20 +298,7 @@ export const Sync_Orders = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Order }, context)
-        : [];
-
-      const jobs = updates.map((update) => handleOrderUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new OrderRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -342,9 +314,10 @@ export const Formula_Order = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: OrderSyncTableSchema,
   execute: async function ([orderId], context) {
-    const response = await fetchSingleOrderRest(orderId, context);
-    if (response?.body?.order) {
-      return formatOrderForSchemaFromRestApi(response.body.order, context);
+    const orderFetcher = new OrderRestFetcher(context);
+    const response = await orderFetcher.fetch(orderId);
+    if (response.body?.order) {
+      return orderFetcher.formatApiToRow(response.body.order);
     }
   },
 });
@@ -370,41 +343,33 @@ export const Formula_Orders = coda.makeFormula({
     [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
     context
   ) {
-    const params = cleanQueryParams({
+    const restParams = cleanQueryParams({
+      fields,
+      limit: REST_DEFAULT_LIMIT,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      financial_status,
+      fulfillment_status,
+      status,
       created_at_min: created_at ? created_at[0] : undefined,
       created_at_max: created_at ? created_at[1] : undefined,
       updated_at_min: updated_at ? updated_at[0] : undefined,
       updated_at_max: updated_at ? updated_at[1] : undefined,
       processed_at_min: processed_at ? processed_at[0] : undefined,
       processed_at_max: processed_at ? processed_at[1] : undefined,
-      fields,
-      financial_status,
-      fulfillment_status,
-      ids: ids && ids.length ? ids.join(',') : undefined,
-      limit: REST_DEFAULT_LIMIT,
-      status,
-    });
-    validateOrderParams(params);
+    } as OrderSyncTableRestParams);
+    const orderFetcher = new OrderRestFetcher(context);
+    orderFetcher.validateParams(restParams);
 
-    let items = [];
+    let items: OrderRow[] = [];
     let nextUrl: string;
     let run = true;
     while (run) {
-      let url =
-        nextUrl ??
-        coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, params);
-      const response = await makeGetRequest(
-        {
-          url,
-          cacheTtlSecs: CACHE_DISABLED, // cache is disabled intentionnaly (we need fresh results when preparing Shopify orders)
-        },
-        context
-      );
-      const { body } = response;
-      if (body.orders && body.orders.length) {
-        items = items.concat(body.orders.map((order) => formatOrderForSchemaFromRestApi(order, context)));
-      }
+      const response = await orderFetcher.fetchAll(restParams, {
+        url: nextUrl,
+        cacheTtlSecs: CACHE_DISABLED, // cache is disabled intentionnaly (we need fresh results when preparing Shopify orders)
+      });
 
+      items = items.concat(response?.body?.orders ? response.body.orders.map(orderFetcher.formatApiToRow) : []);
       nextUrl = extractNextUrlPagination(response);
       if (!nextUrl) run = false;
     }
@@ -420,8 +385,9 @@ export const Formula_OrderExportFormat = coda.makeFormula({
   parameters: [inputs.order.id],
   cacheTtlSecs: 10, // small cache because we need fresh results
   resultType: coda.ValueType.String,
-  execute: async ([orderID], context) => {
-    const response = await fetchSingleOrderRest(orderID, context, {
+  execute: async ([orderId], context) => {
+    const orderFetcher = new OrderRestFetcher(context);
+    const response = await orderFetcher.fetch(orderId, {
       cacheTtlSecs: CACHE_DISABLED, // we need fresh results
     });
     if (response?.body?.order) {

@@ -1,5 +1,3 @@
-import '../types/admin.generated.d.ts';
-
 // #region Helpers
 export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];

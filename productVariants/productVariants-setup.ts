@@ -26,7 +26,7 @@ import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
+  formatMetafieldRestInputFromKeyValueSet,
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
   updateAndFormatResourceMetafieldsGraphQl,
@@ -49,17 +49,18 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { QueryProductVariantsMetafieldsAdmin, buildProductVariantsSearchQuery } from './productVariants-graphql';
-import {
-  GetProductVariantsMetafieldsQuery,
-  GetProductVariantsMetafieldsQueryVariables,
-} from '../types/admin.generated';
 import { fetchSingleProductRest } from '../products/products-functions';
-import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+
+import type { ProductVariantRow } from '../types/CodaRows';
+import type { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import type {
+  GetProductVariantsMetafieldsQuery,
+  GetProductVariantsMetafieldsQueryVariables,
+} from '../types/admin.generated';
 
 // #endregion
 
@@ -167,7 +168,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
         }
       }
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof ProductVariantSyncTableSchema>> = [];
+      let restItems: Array<ProductVariantRow> = [];
       let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
@@ -394,7 +395,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
     if (metafields && metafields.length) {
       const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
       const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
+        .map(formatMetafieldRestInputFromKeyValueSet)
         .filter(Boolean);
       if (metafieldRestInputs.length) {
         restParams.metafields = metafieldRestInputs;
@@ -496,7 +497,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
 
 export const Action_DeleteProductVariant = coda.makeFormula({
   name: 'DeleteProductVariant',
-  description: 'Delete an existing Shopify product and return true on success.',
+  description: 'Delete an existing Shopify product and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.productVariant.id],
   isAction: true,

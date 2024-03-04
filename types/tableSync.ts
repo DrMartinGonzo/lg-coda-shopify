@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './ShopifyGraphQlErrors';
-import { MetafieldDefinition } from './admin.types';
+import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './ShopifyGraphQl';
+import type { MetafieldDefinition } from './admin.types';
 
 export interface SyncTableRestContinuation extends coda.Continuation {
   nextUrl?: string;

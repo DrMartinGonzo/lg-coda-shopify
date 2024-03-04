@@ -11,12 +11,13 @@ import {
 
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
 import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { SyncTableRestContinuation } from '../types/tableSync';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
 import { inputs, filters } from '../shared-parameters';
+
+import type { RedirectRow } from '../types/CodaRows';
+import type { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
+import type { SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -40,7 +41,7 @@ export const Sync_Redirects = coda.makeSyncTable({
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       const standardFromKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof RedirectSyncTableSchema>> = [];
+      let restItems: Array<RedirectRow> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       const syncedStandardFields = handleFieldDependencies(standardFromKeys, redirectFieldDependencies);
@@ -137,7 +138,7 @@ export const Action_CreateRedirect = coda.makeFormula({
 
 export const Action_DeleteRedirect = coda.makeFormula({
   name: 'DeleteRedirect',
-  description: 'Delete an existing Shopify redirect and return true on success.',
+  description: 'Delete an existing Shopify redirect and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.redirect.id],
   isAction: true,

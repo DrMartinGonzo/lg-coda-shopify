@@ -96,4 +96,4 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
 });
 
 export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSyncTableSchema, IDENTITY_FILE);
-export const formatFileReferenceValueForSchema = (id: string, name = NOT_FOUND) => ({ id, name });
+export const formatFileReference = (id: string, name = NOT_FOUND) => ({ id, name });

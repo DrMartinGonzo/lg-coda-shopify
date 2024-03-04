@@ -1,191 +1,96 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
-import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
+import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
+import { RestResourceName, RestResourcePlural } from '../types/RequestsRest';
+import { formatBlogReference } from '../schemas/syncTable/BlogSchema';
+import { SimpleRest } from '../Fetchers/SimpleRest';
+import { cleanQueryParams, getRestBaseUrl } from '../helpers-rest';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
-import { FetchRequestOptions } from '../types/Requests';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
-import {
-  getMetafieldKeyValueSetsFromUpdate,
-  updateAndFormatResourceMetafieldsRest,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
-import { ArticleCreateRestParams, ArticleUpdateRestParams } from '../types/Article';
-import { restResources } from '../types/RequestsRest';
-import { formatBlogReferenceValueForSchema } from '../schemas/syncTable/BlogSchema';
 
-// #region Helpers
-function formatArticleStandardFieldsRestParams(
-  standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof ArticleSyncTableSchema>['newValue']
-) {
-  const restParams: any = {};
+import type { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
+import type { ArticleRow } from '../types/CodaRows';
+import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 
-  standardFromKeys.forEach((fromKey) => {
-    const value = values[fromKey];
-
-    // Edge cases
-    if (fromKey === 'image_alt_text') {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        alt: value,
-      };
-    } else if (fromKey === 'image_url') {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        src: value,
-      };
-    } else if (fromKey === 'blog') {
-      restParams.blog_id = value.id;
-    }
-    // No processing needed
-    else {
-      restParams[fromKey] = value;
-    }
-  });
-
-  return restParams;
-}
-
-/**
- * Gère un update depuis Coda vers Shopify pour les articles
- * Pas la même stratégie que d'habitude pour cette fonction.
- * On ne peut pas directement update les metafields pour les articles.
- * Il va falloir faire un appel séparé pour chaque metafield
- */
-export async function handleArticleUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof ArticleSyncTableSchema>,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-
-  const subJobs: (Promise<any> | undefined)[] = [];
-  const articleId = update.previousValue.id as number;
-
-  if (standardFromKeys.length) {
-    const restParams: ArticleUpdateRestParams = formatArticleStandardFieldsRestParams(
-      standardFromKeys,
-      update.newValue
-    );
-    subJobs.push(updateArticleRest(articleId, restParams, context));
-  } else {
-    subJobs.push(undefined);
-  }
-
-  if (prefixedMetafieldFromKeys.length) {
-    subJobs.push(
-      updateAndFormatResourceMetafieldsRest(
-        {
-          ownerId: articleId,
-          ownerResource: restResources.Article,
-          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
-            prefixedMetafieldFromKeys,
-            update.newValue,
-            metafieldDefinitions,
-            context
-          ),
-        },
-        context
-      )
-    );
-  } else {
-    subJobs.push(undefined);
-  }
-
-  let obj = { ...update.previousValue };
-
-  const [updateJob, metafieldsJob] = await Promise.all(subJobs);
-  if (updateJob?.body?.article) {
-    obj = {
-      ...obj,
-      ...formatArticleForSchemaFromRestApi(updateJob.body.article, context),
-    };
-  }
-  if (metafieldsJob) {
-    obj = {
-      ...obj,
-      ...metafieldsJob,
-    };
-  }
-  return obj;
-}
 // #endregion
 
-// #region Formatting functions
-export const formatArticleForSchemaFromRestApi = (article, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...article,
-    body: striptags(article.body_html),
-    summary: striptags(article.summary_html),
-    admin_url: `${context.endpoint}/admin/articles/${article.id}`,
-    published: !!article.published_at,
+// #region Class
+export class ArticleRestFetcher extends SimpleRest<RestResourceName.Article, typeof ArticleSyncTableSchema> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Article, ArticleSyncTableSchema, context);
+  }
+
+  getFetchAllFromBlogUrl = (blogId: number, params: ArticleSyncTableRestParams) => {
+    return coda.withQueryParams(
+      coda.joinUrl(getRestBaseUrl(this.context), `${RestResourcePlural.Blog}/${blogId}/${this.plural}.json`),
+      cleanQueryParams(params)
+    );
   };
 
-  if (article.blog_id) {
-    obj.blog = formatBlogReferenceValueForSchema(article.blog_id);
-  }
+  validateParams = (params: any) => {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+      throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
+    }
+    return true;
+  };
 
-  if (article.image) {
-    obj.image_alt_text = article.image.alt;
-    obj.image_url = article.image.src;
-  }
+  formatRowToApi = (
+    row: Partial<ArticleRow>,
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): ArticleUpdateRestParams | ArticleCreateRestParams | undefined => {
+    let restParams: ArticleUpdateRestParams | ArticleCreateRestParams = {};
 
-  return obj;
-};
+    if (row.author !== undefined) restParams.author = row.author;
+    if (row.blog !== undefined) restParams.blog_id = row.blog.id;
+    if (row.blog_id !== undefined) restParams.blog_id = row.blog_id;
+    if (row.body_html !== undefined) restParams.body_html = row.body_html;
+    if (row.handle !== undefined) restParams.handle = row.handle;
+    if (row.image_alt_text !== undefined || row.image_url !== undefined) {
+      restParams.image = {};
+      if (row.image_alt_text !== undefined) restParams.image.alt = row.image_alt_text;
+      if (row.image_url !== undefined) restParams.image.src = row.image_url;
+    }
+    if (row.published !== undefined) restParams.published = row.published;
+    if (row.published_at !== undefined) restParams.published_at = row.published_at;
+    if (row.summary_html !== undefined) restParams.summary_html = row.summary_html;
+    if (row.template_suffix !== undefined) restParams.template_suffix = row.template_suffix;
+    if (row.tags !== undefined) restParams.tags = row.tags;
+    if (row.title !== undefined) restParams.title = row.title;
 
-export function validateArticleParams(params: any) {
-  const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-  if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
-    throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
-  }
+    const metafieldRestInputs = metafieldKeyValueSets.length
+      ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
+      : [];
+    if (metafieldRestInputs.length) {
+      restParams = { ...restParams, metafields: metafieldRestInputs } as ArticleCreateRestParams;
+    }
+
+    // Means we have nothing to update/create
+    if (Object.keys(restParams).length === 0) return undefined;
+    return restParams;
+  };
+
+  formatApiToRow = (article): ArticleRow => {
+    let obj: ArticleRow = {
+      ...article,
+      body: striptags(article.body_html),
+      summary: striptags(article.summary_html),
+      admin_url: `${this.context.endpoint}/admin/articles/${article.id}`,
+      published: !!article.published_at,
+    };
+
+    if (article.blog_id) {
+      obj.blog = formatBlogReference(article.blog_id);
+    }
+
+    if (article.image) {
+      obj.image_alt_text = article.image.alt;
+      obj.image_url = article.image.src;
+    }
+
+    return obj;
+  };
 }
-// #endregion
-
-// #region Rest Requests
-export const fetchSingleArticleRest = (
-  articleId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
-};
-
-export const createArticleRest = (
-  params: ArticleCreateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  validateArticleParams(params);
-  const payload = { article: cleanQueryParams(params) };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles.json`;
-  return makePostRequest({ ...requestOptions, url, payload }, context);
-};
-
-export const updateArticleRest = (
-  articleId: number,
-  params: ArticleUpdateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const restParams = cleanQueryParams(params);
-  if (Object.keys(restParams).length) {
-    // validateBlogParams(params);
-    const payload = { article: restParams };
-    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-    return makePutRequest({ ...requestOptions, url, payload }, context);
-  }
-};
-
-export const deleteArticleRest = async (
-  articleId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles/${articleId}.json`;
-  return makeDeleteRequest({ ...requestOptions, url }, context);
-};
 // #endregion

@@ -140,8 +140,7 @@ export const LocationSyncTableSchema = coda.makeObjectSchema({
   // Card fields.
   subtitleProperties: ['active', 'address1', 'address2', 'city', 'country'],
   linkProperty: 'admin_url',
-
 });
 
 export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSyncTableSchema, IDENTITY_LOCATION);
-export const formatLocationReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatLocationReference = (id: number, name = NOT_FOUND) => ({ id, name });

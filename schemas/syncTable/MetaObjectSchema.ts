@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { IDENTITY_METAOBJECT, NOT_FOUND } from '../../constants';
-import { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
+
+import type { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -59,4 +60,4 @@ export function getMetaobjectReferenceSchema(
     },
   });
 }
-export const formatMetaobjectReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatMetaobjectReference = (id: number, name = NOT_FOUND) => ({ id, name });

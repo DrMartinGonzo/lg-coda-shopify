@@ -1,7 +1,7 @@
-import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../metafields/metafields-constants';
+import type { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../metafields/metafields-constants';
 import type { CurrencyCode, Metafield, MetafieldOwnerType, Scalars } from '../types/admin.types';
-import { GraphQlResource } from './RequestsGraphQl';
-import { MetafieldDefinitionFragment, MetafieldFieldsFragment } from './admin.generated';
+import type { GraphQlResource } from './RequestsGraphQl';
+import type { MetafieldDefinitionFragment, MetafieldFieldsFragment } from './admin.generated';
 
 export interface ShopifyRatingField {
   scale_min: number;

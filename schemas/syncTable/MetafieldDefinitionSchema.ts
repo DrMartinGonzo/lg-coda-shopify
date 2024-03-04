@@ -123,4 +123,4 @@ export function getMetafieldDefinitionReferenceSchema(
   });
 }
 
-export const formatMetafieldDefinitionReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatMetafieldDefinitionReference = (id: number, name = NOT_FOUND) => ({ id, name });

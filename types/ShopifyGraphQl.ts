@@ -15,3 +15,26 @@ export type ShopifyGraphQlRequestExtensions = {
     cost: ShopifyGraphQlRequestCost;
   };
 };
+
+export type ShopifyGraphQlError = {
+  locations: {
+    line: number;
+    column: number;
+  }[];
+  message: string;
+  path?: string[];
+  extensions?: {
+    code: string;
+    typeName: string;
+    fieldName: string;
+    cost?: number;
+    maxCost?: number;
+    documentation?: string;
+  };
+};
+
+export type ShopifyGraphQlUserError = {
+  field: string[];
+  code?: string;
+  message: string;
+};

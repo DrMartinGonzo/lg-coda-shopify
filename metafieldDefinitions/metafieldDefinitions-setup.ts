@@ -3,11 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
-import { SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from '../metafields/metafields-constants';
 import { requireResourceMetafieldsSyncTableDefinition } from '../metafields/metafields-functions';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   idToGraphQlGid,
@@ -15,13 +13,20 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
-import { GetMetafieldDefinitionsQueryVariables, MetafieldDefinitionFragment } from '../types/admin.generated';
 import {
   fetchSingleMetafieldDefinitionGraphQl,
   formatMetafieldDefinitionForSchemaFromGraphQlApi,
 } from './metafieldDefinitions-functions';
 import { CACHE_DEFAULT, IDENTITY_METAFIELD_DEFINITION } from '../constants';
 import { inputs } from '../shared-parameters';
+
+import type {
+  GetMetafieldDefinitionsQuery,
+  GetMetafieldDefinitionsQueryVariables,
+  MetafieldDefinitionFragment,
+} from '../types/admin.generated';
+import type { SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -79,7 +84,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
         } as GetMetafieldDefinitionsQueryVariables,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<GetMetafieldDefinitionsQuery>(
         {
           payload,
           maxEntriesPerRun,

@@ -254,7 +254,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
 });
 
 export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSyncTableSchema, IDENTITY_CUSTOMER);
-export const formatCustomerReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
+export const formatCustomerReference = (id: number, display = NOT_FOUND) => ({ id, display });
 
 export const customerFieldDependencies = [
   {

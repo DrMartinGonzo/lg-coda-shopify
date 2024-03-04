@@ -13,15 +13,18 @@ import {
   querySingleMetaobjectDefinitionByType,
 } from './metaobjectDefinitions-graphql';
 
-import {
+import type {
+  GetMetaobjectDefinitionsQuery,
   GetMetaobjectDefinitionsQueryVariables,
+  GetSingleMetaObjectDefinitionByTypeQuery,
   GetSingleMetaObjectDefinitionByTypeQueryVariables,
+  GetSingleMetaObjectDefinitionQuery,
   GetSingleMetaObjectDefinitionQueryVariables,
   MetaobjectDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
 } from '../types/admin.generated';
-import { FetchRequestOptions } from '../types/Requests';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { FetchRequestOptions } from '../types/Requests';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 // #region Helpers
 function findMatchingMetaobjectFieldDefinition(key: string, fieldDefinitions: MetaobjectFieldDefinitionFragment[]) {
@@ -70,7 +73,7 @@ export async function fetchAllMetaObjectDefinitions(
         includeFieldDefinitions: params.includeFieldDefinitions ?? false,
       } as GetMetaobjectDefinitionsQueryVariables,
     };
-    const { response, continuation } = await makeSyncTableGraphQlRequest(
+    const { response, continuation } = await makeSyncTableGraphQlRequest<GetMetaobjectDefinitionsQuery>(
       {
         payload,
         maxEntriesPerRun,
@@ -113,7 +116,7 @@ export async function fetchSingleMetaObjectDefinition(
       includeFieldDefinitions: params.includeFieldDefinitions ?? false,
     } as GetSingleMetaObjectDefinitionQueryVariables,
   };
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetSingleMetaObjectDefinitionQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -140,7 +143,7 @@ export async function fetchSingleMetaObjectDefinitionByType(
     } as GetSingleMetaObjectDefinitionByTypeQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetSingleMetaObjectDefinitionByTypeQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );

@@ -1,6 +1,7 @@
 import { GraphQlResource } from '../types/RequestsGraphQl';
-import { ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
 import { MetafieldOwnerType } from '../types/admin.types';
+
+import type { ResourceMetafieldsSyncTableDefinition } from '../types/Metafields';
 
 // TODO: switch to enum ?
 export const METAFIELD_TYPES = {

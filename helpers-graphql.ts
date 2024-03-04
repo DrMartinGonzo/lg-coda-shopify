@@ -9,17 +9,21 @@ import {
   wait,
 } from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
-import { ShopifyGraphQlError, ShopifyGraphQlUserError, ShopifyMaxExceededError } from './shopifyErrors';
-import { ShopifyGraphQlThrottleStatus } from './types/ShopifyGraphQlErrors';
-import {
+import { ShopifyMaxExceededError } from './ShopifyErrors';
+import { GraphQlResource } from './types/RequestsGraphQl';
+import { MetafieldOwnerType } from './types/admin.types';
+
+import type {
   SyncTableGraphQlContinuation,
   SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
 } from './types/tableSync';
-import { GraphQlResource } from './types/RequestsGraphQl';
-import { restResources } from './types/RequestsRest';
-import { MetafieldOwnerType } from './types/admin.types';
-import { FetchRequestOptions } from './types/Requests';
+import type { FetchRequestOptions } from './types/Requests';
+import type {
+  ShopifyGraphQlError,
+  ShopifyGraphQlUserError,
+  ShopifyGraphQlThrottleStatus,
+} from './types/ShopifyGraphQl';
 
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
 
@@ -259,7 +263,13 @@ interface GraphQlRequestParams extends Omit<FetchRequestOptions, 'url'> {
   retries?: number;
   storeFront?: boolean;
 }
-export async function makeGraphQlRequest(
+
+export type GraphQlResponse<Data extends any> = {
+  data: Data;
+  errors: any;
+  extensions: any;
+};
+export async function makeGraphQlRequest<Data extends any>(
   params: GraphQlRequestParams,
   context: coda.ExecutionContext | coda.SyncExecutionContext
 ) {
@@ -282,7 +292,7 @@ export async function makeGraphQlRequest(
   }
 
   try {
-    const response = await context.fetcher.fetch(options);
+    const response = (await context.fetcher.fetch(options)) as coda.FetchResponse<GraphQlResponse<Data>>;
     const { body } = response;
     const { errors, extensions } = body;
     const isCachedResponse = isCodaCached(response);
@@ -344,17 +354,20 @@ interface GraphQlSyncTableRequestParams extends Omit<GraphQlRequestParams, 'retr
   extraContinuationData?: any;
   getPageInfo?: CallableFunction;
 }
-export async function makeSyncTableGraphQlRequest(
+export async function makeSyncTableGraphQlRequest<Data extends any>(
   params: GraphQlSyncTableRequestParams,
   context: coda.SyncExecutionContext
-) {
+): Promise<{
+  response: coda.FetchResponse<GraphQlResponse<Data>>;
+  continuation: SyncTableGraphQlContinuation | null;
+}> {
   if (params.prevContinuation?.retries) {
     logAdmin(`🔄 Retrying (count: ${params.prevContinuation.retries}) sync of ${params.maxEntriesPerRun} entries…`);
   }
   logAdmin(`🚀  GraphQL Admin API: Starting sync of ${params.maxEntriesPerRun} entries…`);
 
   try {
-    const { response, retries } = await makeGraphQlRequest(
+    const { response, retries } = await makeGraphQlRequest<Data>(
       {
         payload: params.payload,
         apiVersion: params.apiVersion,

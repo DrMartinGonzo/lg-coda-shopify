@@ -12,10 +12,11 @@ import {
   maybeHasMetaFieldKeys,
   preprendPrefixToMetaFieldKey,
 } from './metafields/metafields-functions';
-import { MetafieldOwnerType } from './types/admin.types';
-import { MetafieldDefinitionFragment } from './types/admin.generated';
 import { maybeParseJson } from './helpers';
 import { fetchMetafieldDefinitionsGraphQl } from './metafieldDefinitions/metafieldDefinitions-functions';
+
+import type { MetafieldDefinitionFragment } from './types/admin.generated';
+import type { MetafieldOwnerType } from './types/admin.types';
 // #endregion
 
 type UpdateCreateProp = {

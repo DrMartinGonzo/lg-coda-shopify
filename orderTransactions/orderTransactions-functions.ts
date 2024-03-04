@@ -2,12 +2,13 @@ import * as coda from '@codahq/packs-sdk';
 import toSentenceCase from 'to-sentence-case';
 
 import { graphQlGidToId } from '../helpers-graphql';
-import { OrderTransactionFieldsFragment } from '../types/admin.generated';
-import { formatOrderReferenceValueForSchema } from '../schemas/syncTable/OrderSchema';
+import { formatOrderReference } from '../schemas/syncTable/OrderSchema';
 import {
   OrderTransactionSyncTableSchema,
-  formatOrderTransactionReferenceValueForSchema,
+  formatOrderTransactionReference,
 } from '../schemas/syncTable/OrderTransactionSchema';
+
+import type { OrderTransactionFieldsFragment } from '../types/admin.generated';
 
 // #region Formatting functions
 export const formatOrderTransactionForSchemaFromGraphQlApi = (
@@ -20,13 +21,13 @@ export const formatOrderTransactionForSchemaFromGraphQlApi = (
     id: graphQlGidToId(orderTransaction.id),
     label: `Order ${parentOrder.name} - ${toSentenceCase(orderTransaction.kind)}`,
     orderId: parentOrderId,
-    order: formatOrderReferenceValueForSchema(parentOrderId, parentOrder.name),
+    order: formatOrderReference(parentOrderId, parentOrder.name),
   };
 
   if (orderTransaction.parentTransaction?.id) {
     const parentTransactionId = graphQlGidToId(orderTransaction.parentTransaction.id);
     obj.parentTransactionId = parentTransactionId;
-    obj.parentTransaction = formatOrderTransactionReferenceValueForSchema(parentTransactionId);
+    obj.parentTransaction = formatOrderTransactionReference(parentTransactionId);
   }
   /**
    * Unused. see comment in {@link OrderTransactionSyncTableSchema}
