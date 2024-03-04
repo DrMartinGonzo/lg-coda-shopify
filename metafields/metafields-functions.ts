@@ -63,7 +63,7 @@ import {
   makeAutocompleteMetafieldKeysWithDefinitions,
   requireMatchingMetafieldDefinition,
 } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 
 import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
 import type {
@@ -1168,7 +1168,7 @@ function formatRatingFieldForApi(
 async function formatMoneyFieldForApi(amount: number, context: coda.ExecutionContext): Promise<ShopifyMoneyField> {
   return {
     amount,
-    currency_code: await getSchemaCurrencyCode(context),
+    currency_code: await new ShopRestFetcher(context).getActiveCurrency(),
   };
 }
 /**

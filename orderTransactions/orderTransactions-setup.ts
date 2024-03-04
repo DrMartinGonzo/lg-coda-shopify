@@ -12,7 +12,7 @@ import {
 } from '../helpers-graphql';
 
 import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 
 import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 import type { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
@@ -26,7 +26,7 @@ async function getOrderTransactionSchema(
 ) {
   let augmentedSchema = OrderTransactionSyncTableSchema;
 
-  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
   // Main props
   augmentedSchema.properties.amount['currencyCode'] = shopCurrencyCode;
   augmentedSchema.properties.totalUnsettled['currencyCode'] = shopCurrencyCode;

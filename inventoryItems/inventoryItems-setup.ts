@@ -12,7 +12,7 @@ import {
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
 import { filters, inputs } from '../shared-parameters';
 import { cleanQueryParams } from '../helpers-rest';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 
 import type { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
 import type { SyncTableGraphQlContinuation } from '../types/tableSync';
@@ -21,7 +21,10 @@ import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema = InventoryItemSyncTableSchema;
-  augmentedSchema.properties.cost['currencyCode'] = await getSchemaCurrencyCode(context);
+
+  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
+
   return augmentedSchema;
 }
 

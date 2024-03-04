@@ -337,4 +337,8 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
 });
 
 export const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, IDENTITY_SHOP);
-export const formatShopReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatShopReference = (id: number, name = NOT_FOUND) => ({ id, name });
+
+export const validShopFields = Object.keys(ShopSyncTableSchema.properties)
+  .map((key) => ShopSyncTableSchema.properties[key].fromKey)
+  .filter(Boolean);

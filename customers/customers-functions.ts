@@ -95,10 +95,7 @@ export class CustomerRestFetcher extends SimpleRest<RestResourceName.Customer, t
   };
 
   updateWithMetafields = async (
-    row: {
-      original?: CustomerRow;
-      updated: CustomerRow;
-    },
+    row: { original?: CustomerRow; updated: CustomerRow },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
   ): Promise<CustomerRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }

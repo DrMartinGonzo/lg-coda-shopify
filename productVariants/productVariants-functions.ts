@@ -1,167 +1,126 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_API_VERSION } from '../constants';
-import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import { cleanQueryParams, makePostRequest } from '../helpers-rest';
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
-import {
-  getMetafieldKeyValueSetsFromUpdate,
-  separatePrefixedMetafieldsKeysFromKeys,
-  updateAndFormatResourceMetafieldsGraphQl,
-} from '../metafields/metafields-functions';
-import { idToGraphQlGid } from '../helpers-graphql';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+import { SimpleRest } from '../Fetchers/SimpleRest';
+import { RestResourceName, RestResourcePlural } from '../types/RequestsRest';
 
+import type { ProductVariantRow } from '../types/CodaRows';
+import type { singleFetchData } from '../Fetchers/SimpleRest';
 import type { FetchRequestOptions } from '../types/Requests';
-import type { MetafieldDefinitionFragment } from '../types/admin.generated';
+import type { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
 
-// #region Validate functions
-export function validateProductVariantParams(params: any) {
-  if (params.status) {
-    const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
-    (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
-      if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
-    });
+// #region Class
+export class ProductVariantRestFetcher extends SimpleRest<
+  RestResourceName.ProductVariant,
+  typeof ProductVariantSyncTableSchema
+> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.ProductVariant, ProductVariantSyncTableSchema, context);
   }
-  if (params.published_status) {
-    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
-      (published_status) => {
-        if (!validPublishedStatuses.includes(published_status))
-          throw new coda.UserVisibleError('Unknown published_status: ' + published_status);
-      }
+
+  // TODO: write validateParams for product variants
+  // validateParams = (params: any) => {
+  //   return true;
+  // };
+
+  // TODO: find a more elegnt way to handle required prduct_id parameter without duplicating the whole create method
+  create = (params: ProductVariantCreateRestParams, requestOptions: FetchRequestOptions = {}) => {
+    this.validateParams(params);
+    const payload = { [this.singular]: cleanQueryParams(params) };
+    const url = coda.joinUrl(
+      this.baseUrl,
+      RestResourcePlural.Product,
+      params.product_id.toString(),
+      `${this.plural}.json`
     );
-  }
-}
-// #endregion
-
-// #region helpers
-export async function handleProductVariantUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof ProductVariantSyncTableSchema>,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-  let obj = { ...update.previousValue };
-  const subJobs: (Promise<any> | undefined)[] = [];
-  const productVariantId = update.previousValue.id as number;
-
-  if (standardFromKeys.length) {
-    const restParams: ProductVariantUpdateRestParams = {};
-    standardFromKeys.forEach((fromKey) => {
-      const value = update.newValue[fromKey];
-      let inputKey = fromKey;
-      restParams[inputKey] = value;
-    });
-
-    subJobs.push(updateProductVariantRest(productVariantId, restParams, context));
-  } else {
-    subJobs.push(undefined);
-  }
-
-  if (prefixedMetafieldFromKeys.length) {
-    subJobs.push(
-      updateAndFormatResourceMetafieldsGraphQl(
-        {
-          ownerGid: idToGraphQlGid(GraphQlResource.ProductVariant, productVariantId),
-          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
-            prefixedMetafieldFromKeys,
-            update.newValue,
-            metafieldDefinitions,
-            context
-          ),
-        },
-        context
-      )
+    return makePostRequest<singleFetchData<RestResourceName.ProductVariant>>(
+      { ...requestOptions, url, payload },
+      this.context
     );
-  } else {
-    subJobs.push(undefined);
-  }
-
-  const [restResponse, metafields] = await Promise.all(subJobs);
-  if (restResponse?.body?.variant) {
-    obj = {
-      ...obj,
-      ...formatProductVariantForSchemaFromRestApi(restResponse.body.variant, {}, context),
-    };
-  }
-  if (metafields) {
-    obj = {
-      ...obj,
-      ...metafields,
-    };
-  }
-
-  return obj;
-}
-// #endregion
-
-// #region Formatting functions
-export const formatProductVariantForSchemaFromRestApi = (variant, parentProduct, context) => {
-  let obj: any = {
-    ...variant,
-    admin_url: `${context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
-    product: formatProductReference(variant.product_id, parentProduct?.title),
-    displayTitle: parentProduct?.title ? `${parentProduct.title} - ${variant.title}` : variant.title,
   };
 
-  if (parentProduct?.status === 'active' && parentProduct?.handle) {
-    obj.storeUrl = `${context.endpoint}/products/${parentProduct.handle}?variant=${variant.id}`;
-  }
-  if (variant.image_id && parentProduct?.images && parentProduct?.images.length > 0) {
-    obj.image = parentProduct.images.find((image) => image.id === variant.image_id)?.src;
-  }
+  formatRowToApi = (
+    row: Partial<ProductVariantRow>,
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): ProductVariantUpdateRestParams | ProductVariantCreateRestParams | undefined => {
+    let restParams: ProductVariantUpdateRestParams | ProductVariantCreateRestParams = {};
+    let restCreateParams: ProductVariantCreateRestParams = {
+      product_id: row.product?.id,
+      option1: row.option1,
+    };
 
-  return obj;
-};
-// #endregion
+    if (row.barcode !== undefined) restParams.barcode = row.barcode;
+    if (row.compare_at_price !== undefined) restParams.compare_at_price = row.compare_at_price;
+    if (row.option1 !== undefined) restParams.option1 = row.option1;
+    if (row.option2 !== undefined) restParams.option2 = row.option2;
+    if (row.option3 !== undefined) restParams.option3 = row.option3;
+    if (row.price !== undefined) restParams.price = row.price;
+    if (row.position !== undefined) restParams.position = row.position;
+    if (row.sku !== undefined) restParams.sku = row.sku;
+    if (row.taxable !== undefined) restParams.taxable = row.taxable;
+    if (row.weight !== undefined) restParams.weight = row.weight;
+    if (row.weight_unit !== undefined) restParams.weight_unit = row.weight_unit;
 
-// #region Rest requests
-export function fetchProductVariantRest(
-  productVariantID: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
+    // Create only paramters
+    const metafieldRestInputs = metafieldKeyValueSets.length
+      ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
+      : [];
+    if (metafieldRestInputs.length) {
+      restCreateParams.metafields = metafieldRestInputs;
+    }
+
+    const mergedParams = { ...restParams, ...restCreateParams };
+
+    // Means we have nothing to update/create
+    if (Object.keys(mergedParams).length === 0) return undefined;
+    return mergedParams;
+  };
+
+  /**
+   * Formatte une row ProductVariant.
+   * On peut formatter de façon plus précise quand on a accès aux données du
+   * produit parent en appliquant ensuite la methode formatRowWithParent.
+   */
+  formatApiToRow = (variant): ProductVariantRow => {
+    let obj: ProductVariantRow = {
+      ...variant,
+      admin_url: `${this.context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
+      product: formatProductReference(variant.product_id),
+      // displayTitle: variant.title,
+    };
+
+    return obj;
+  };
+
+  /**
+   * Formattage plus poussé d'une row ProductVariant wuand on a les données du produit parent.
+   */
+  formatRowWithParent = (row: ProductVariantRow, parentProduct: ProductRest): ProductVariantRow => {
+    let obj: ProductVariantRow = {
+      ...row,
+      product: formatProductReference(parentProduct.id, parentProduct?.title),
+      displayTitle: `${parentProduct.title} - ${row.title}`,
+    };
+
+    if (parentProduct?.status === 'active' && parentProduct?.handle) {
+      obj.storeUrl = `${this.context.endpoint}/${RestResourcePlural.Product}/${parentProduct.handle}?variant=${row.id}`;
+    }
+    if (row.image_id && parentProduct?.images && parentProduct?.images.length > 0) {
+      obj.image = parentProduct.images.find((image) => image.id === row.image_id)?.src;
+    }
+
+    return obj;
+  };
+
+  updateWithMetafields = async (
+    row: { original?: ProductVariantRow; updated: ProductVariantRow },
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): Promise<ProductVariantRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }
 
-export function createProductVariantRest(
-  params: ProductVariantCreateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) {
-  const restParams = cleanQueryParams(params);
-  validateProductVariantParams(restParams);
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${params.product_id}/variants.json`;
-  const payload = { variant: { ...restParams } };
-  return makePostRequest({ ...requestOptions, url, payload }, context);
-}
-
-export const updateProductVariantRest = async (
-  productVariantId: number,
-  params: ProductVariantUpdateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const restParams = cleanQueryParams(params);
-  if (Object.keys(restParams).length) {
-    validateProductVariantParams(restParams);
-
-    const payload = { variant: restParams };
-    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantId}.json`;
-    return makePutRequest({ ...requestOptions, url, payload }, context);
-  }
-};
-
-export function deleteProductVariantRest(
-  productVariantID: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/variants/${productVariantID}.json`;
-  return makeDeleteRequest({ ...requestOptions, url }, context);
-}
 // #endregion
