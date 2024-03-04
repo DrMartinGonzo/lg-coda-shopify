@@ -1,16 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { fetchShopRest, formatShopForSchemaFromRest } from './shop-functions';
-import { CACHE_DEFAULT, IDENTITY_SHOP, REST_DEFAULT_API_VERSION } from '../constants';
+import { ShopRestFetcher } from './shop-functions';
+import { CACHE_DEFAULT, IDENTITY_SHOP } from '../constants';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 
-// #endregion
+import type { ShopSyncRestParams } from '../types/Shop';
+import type { multipleFetchData } from '../Fetchers/SimpleRest';
+import type { RestResourceName } from '../types/RequestsRest';
+import { filters } from '../shared-parameters';
 
-const validShopFields = Object.keys(ShopSyncTableSchema.properties)
-  .map((key) => ShopSyncTableSchema.properties[key].fromKey)
-  .filter(Boolean);
+// #endregion
 
 // #region Sync Table
 export const Sync_Shops = coda.makeSyncTable({
@@ -27,19 +28,21 @@ export const Sync_Shops = coda.makeSyncTable({
       const schema = context.sync.schema ?? ShopSyncTableSchema;
       const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
-      const restParams = cleanQueryParams({
+      const restParams: ShopSyncRestParams = cleanQueryParams({
         fields: effectivePropertyKeys.filter((key) => !['admin_url'].includes(key)).join(','),
       });
+      const shopFetcher = new ShopRestFetcher(context);
 
-      let url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/shop.json`, restParams);
+      let url = shopFetcher.getFetchAllUrl(restParams);
+      let { response, continuation } = await makeSyncTableGetRequest<multipleFetchData<RestResourceName.Shop>>(
+        { url },
+        context
+      );
 
-      let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-      if (response?.body?.shop) {
-        restResult = [formatShopForSchemaFromRest(response.body.shop, context)];
-      }
-
-      return { result: restResult, continuation };
+      return {
+        result: response?.body?.shop ? [shopFetcher.formatApiToRow(response.body.shop)] : [],
+        continuation,
+      };
     },
   },
 });
@@ -55,8 +58,11 @@ export const Formula_Shop = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ShopSyncTableSchema,
   execute: async function ([], context: coda.SyncExecutionContext) {
-    const shop = await fetchShopRest(undefined, context);
-    if (shop) return formatShopForSchemaFromRest(shop, context);
+    const shopFetcher = new ShopRestFetcher(context);
+    const response = await shopFetcher.fetch();
+    if (response?.body?.shop) {
+      return shopFetcher.formatApiToRow(response.body.shop);
+    }
   },
 });
 
@@ -65,22 +71,16 @@ export const Formula_ShopField = coda.makeFormula({
   name: 'ShopField',
   description: 'Get a single shop field.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'field',
-      description: 'shop field to return',
-      autocomplete: validShopFields,
-    }),
-  ],
+  parameters: [filters.shop.shopField],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.String,
   execute: async function ([field], context: coda.SyncExecutionContext) {
-    if (validShopFields.indexOf(field) === -1) {
-      throw new coda.UserVisibleError(`Unknown field '${field}' provided`);
+    const shopFetcher = new ShopRestFetcher(context);
+    shopFetcher.validateParams({ shopField: field });
+    const response = await shopFetcher.fetch();
+    if (response?.body?.shop[field]) {
+      return response.body.shop[field];
     }
-    const shop = await fetchShopRest([field], context);
-    if (shop && shop[field]) return shop[field];
   },
 });
 // #endregion

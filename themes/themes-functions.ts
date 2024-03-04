@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
-import { REST_DEFAULT_API_VERSION } from '../constants';
-import { makeGetRequest } from '../helpers-rest';
+import { getRestBaseUrl, makeGetRequest } from '../helpers-rest';
 
+import type { Theme as ThemeRest } from '@shopify/shopify-api/rest/admin/2023-10/theme';
+import type { Asset as AssetRest } from '@shopify/shopify-api/rest/admin/2023-10/asset';
 import type { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete
@@ -42,8 +43,8 @@ async function getActiveTheme(context: coda.ExecutionContext) {
 
 // #region Rest requests
 function fetchThemesRest(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
+  const url = coda.joinUrl(getRestBaseUrl(context), 'themes.json');
+  return makeGetRequest<{ themes: ThemeRest[] }>({ ...requestOptions, url }, context);
 }
 
 function fetchThemeAssetsRest(
@@ -51,7 +52,7 @@ function fetchThemeAssetsRest(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/themes/${theme_id}/assets.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
+  const url = coda.joinUrl(getRestBaseUrl(context), `themes/${theme_id}/assets.json`);
+  return makeGetRequest<{ assets: AssetRest[] }>({ ...requestOptions, url }, context);
 }
 // #endregion

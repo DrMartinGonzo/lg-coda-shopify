@@ -1,20 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  formatRedirectForSchemaFromRestApi,
-  fetchSingleRedirectRest,
-  deleteRedirect,
-  createRedirectRest,
-  handleRedirectUpdateJob,
-} from './redirects-functions';
+import { RedirectRestFetcher } from './redirects-functions';
 
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
-import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
+import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_LIMIT } from '../constants';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { inputs, filters } from '../shared-parameters';
 
+import type { Redirect as RedirectRest } from '@shopify/shopify-api/rest/admin/2023-10/redirect';
 import type { RedirectRow } from '../types/CodaRows';
 import type { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
 import type { SyncTableRestContinuation } from '../types/tableSync';
@@ -41,9 +36,6 @@ export const Sync_Redirects = coda.makeSyncTable({
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       const standardFromKeys = coda.getEffectivePropertyKeysFromSchema(schema);
 
-      let restItems: Array<RedirectRow> = [];
-      let restContinuation: SyncTableRestContinuation = null;
-
       const syncedStandardFields = handleFieldDependencies(standardFromKeys, redirectFieldDependencies);
       const restParams = cleanQueryParams({
         fields: syncedStandardFields.join(', '),
@@ -51,38 +43,20 @@ export const Sync_Redirects = coda.makeSyncTable({
         path,
         target,
       } as RedirectSyncRestParams);
+      const redirectFetcher = new RedirectRestFetcher(context);
+      redirectFetcher.validateParams(restParams);
 
-      let url: string;
-      if (prevContinuation?.nextUrl) {
-        url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-      } else {
-        url = coda.withQueryParams(
-          `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects.json`,
-          restParams
-        );
-      }
-      const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
-      restContinuation = continuation;
-
-      if (response?.body?.redirects) {
-        restItems = response.body.redirects.map((redirect) => formatRedirectForSchemaFromRestApi(redirect, context));
-      }
+      const url = prevContinuation?.nextUrl ?? redirectFetcher.getFetchAllUrl(restParams);
+      const { response, continuation } = await makeSyncTableGetRequest<{ redirects: RedirectRest[] }>({ url }, context);
 
       return {
-        result: restItems,
-        continuation: restContinuation,
+        result: response?.body?.redirects ? response.body.redirects.map(redirectFetcher.formatApiToRow) : [],
+        continuation,
       };
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) => handleRedirectUpdateJob(update, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new RedirectRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -106,16 +80,12 @@ export const Action_UpdateRedirect = coda.makeFormula({
       throw new coda.UserVisibleError('Either path or target must be provided');
     }
 
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    let update: coda.SyncUpdate<string, string, any>;
-
-    update = {
-      previousValue: { id: redirect_id },
-      newValue: { path, target },
-      updatedFields: ['path', 'target'],
+    let row: RedirectRow = {
+      id: redirect_id,
+      path,
+      target,
     };
-
-    return handleRedirectUpdateJob(update, context);
+    return new RedirectRestFetcher(context).updateWithMetafields({ original: undefined, updated: row });
   },
 });
 
@@ -125,14 +95,17 @@ export const Action_CreateRedirect = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.redirect.path, inputs.redirect.target],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Number,
   execute: async function ([path, target], context) {
-    const params: RedirectCreateRestParams = {
+    let newRow: Partial<RedirectRow> = {
       path,
       target,
     };
-    const response = await createRedirectRest(params, context);
-    return response.body.redirect.id;
+
+    const redirectFetcher = new RedirectRestFetcher(context);
+    const restParams = redirectFetcher.formatRowToApi(newRow) as RedirectCreateRestParams;
+    const response = await redirectFetcher.create(restParams);
+    return response?.body?.redirect?.id;
   },
 });
 
@@ -144,7 +117,7 @@ export const Action_DeleteRedirect = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([redirectId], context) {
-    await deleteRedirect(redirectId, context);
+    await new RedirectRestFetcher(context).delete(redirectId);
     return true;
   },
 });
@@ -160,9 +133,10 @@ export const Formula_Redirect = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: RedirectSyncTableSchema,
   execute: async ([redirect_id], context) => {
-    const redirectResponse = await fetchSingleRedirectRest(redirect_id, context);
+    const redirectFetcher = new RedirectRestFetcher(context);
+    const redirectResponse = await redirectFetcher.fetch(redirect_id);
     if (redirectResponse.body?.redirect) {
-      return formatRedirectForSchemaFromRestApi(redirectResponse.body.redirect, context);
+      return redirectFetcher.formatApiToRow(redirectResponse.body.redirect);
     }
   },
 });

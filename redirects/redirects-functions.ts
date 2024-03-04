@@ -1,104 +1,47 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { REST_DEFAULT_API_VERSION } from '../constants';
-
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
+import { RestResourceName } from '../types/RequestsRest';
+import { SimpleRest } from '../Fetchers/SimpleRest';
 
+import type { RedirectRow } from '../types/CodaRows';
+import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
-import type { FetchRequestOptions } from '../types/Requests';
 
-// #region Helpers
-function formatRedirectStandardFieldsRestParams(
-  standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof RedirectSyncTableSchema>['newValue']
-) {
-  const restParams: any = {};
-  standardFromKeys.forEach((fromKey) => {
-    restParams[fromKey] = values[fromKey];
-  });
-  return restParams;
-}
-
-export async function handleRedirectUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof RedirectSyncTableSchema>,
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-
-  let obj = { ...update.previousValue };
-  const redirectId = update.previousValue.id as number;
-
-  if (updatedFields.length) {
-    const restParams: RedirectUpdateRestParams = formatRedirectStandardFieldsRestParams(updatedFields, update.newValue);
-    const restResponse = await updateRedirectRest(redirectId, restParams, context);
-    if (restResponse?.body?.redirect) {
-      obj = {
-        ...obj,
-        ...formatRedirectForSchemaFromRestApi(restResponse.body.redirect, context),
-      };
-    }
+// #region Class
+export class RedirectRestFetcher extends SimpleRest<RestResourceName.Redirect, typeof RedirectSyncTableSchema> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Redirect, RedirectSyncTableSchema, context);
   }
 
-  return obj;
-}
-// #endregion
-
-// #region Formatting
-export const formatRedirectForSchemaFromRestApi = (redirect, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...redirect,
-    admin_url: `${context.endpoint}/admin/redirects/${redirect.id}`,
+  validateParams = (params: any) => {
+    return true;
   };
-  if (redirect.path) {
-    obj.test_url = `${context.endpoint}${redirect.path}`;
-  }
 
-  return obj;
-};
-// #endregion
+  formatRowToApi = (
+    row: Partial<RedirectRow>,
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): RedirectUpdateRestParams | RedirectCreateRestParams | undefined => {
+    let restParams: RedirectUpdateRestParams | RedirectCreateRestParams = {};
 
-// #region Rest requests
-export const fetchSingleRedirectRest = (
-  redirectId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
-};
+    if (row.path !== undefined) restParams.path = row.path;
+    if (row.target !== undefined) restParams.target = row.target;
 
-export function createRedirectRest(
-  params: RedirectCreateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) {
-  const restParams = cleanQueryParams(params);
-  // validateRedirectsParams(restParams);
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects.json`;
-  const payload = { redirect: restParams };
-  return makePostRequest({ ...requestOptions, url, payload }, context);
+    // Means we have nothing to update/create
+    if (Object.keys(restParams).length === 0) return undefined;
+    return restParams;
+  };
+
+  formatApiToRow = (redirect): RedirectRow => {
+    let obj: RedirectRow = {
+      ...redirect,
+      admin_url: `${this.context.endpoint}/admin/${this.plural}/${redirect.id}`,
+    };
+    if (redirect.path) {
+      obj.test_url = `${this.context.endpoint}${redirect.path}`;
+    }
+
+    return obj;
+  };
 }
-
-const updateRedirectRest = async (
-  redirectId: number,
-  params: RedirectUpdateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const restParams = cleanQueryParams(params);
-  // validateRedirectsParams(params);
-  const payload = { redirect: restParams };
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makePutRequest({ ...requestOptions, url, payload }, context);
-};
-
-export const deleteRedirect = async (
-  redirectId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/redirects/${redirectId}.json`;
-  return makeDeleteRequest({ ...requestOptions, url }, context);
-};
 // #endregion

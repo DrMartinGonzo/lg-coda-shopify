@@ -12,7 +12,7 @@ import {
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -42,7 +42,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
   }
 
-  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
   // Refund order adjustments
   [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
     properties.amount['currencyCode'] = shopCurrencyCode;
