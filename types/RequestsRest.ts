@@ -19,6 +19,7 @@ export enum RestResourceName {
   Page = 'Page',
   Product = 'Product',
   ProductVariant = 'ProductVariant',
+  Redirect = 'Redirect',
   Shop = 'Shop',
 }
 
@@ -38,6 +39,7 @@ export enum RestResourceSingular {
   Page = 'page',
   Product = 'product',
   ProductVariant = 'variant',
+  Redirect = 'redirect',
   Shop = 'shop',
 }
 
@@ -57,6 +59,7 @@ export enum RestResourcePlural {
   Page = 'pages',
   Product = 'products',
   ProductVariant = 'variants',
+  Redirect = 'redirects',
   Shop = 'shops',
 }
 
@@ -155,6 +158,11 @@ export const restResources: Record<RestResourceName, RestResource> = {
     plural: RestResourcePlural.ProductVariant,
     metafieldOwnerType: MetafieldOwnerType.Productvariant,
     supportMetafields: true,
+  },
+  Redirect: {
+    singular: RestResourceSingular.Redirect,
+    plural: RestResourcePlural.Redirect,
+    supportMetafields: false,
   },
   Shop: {
     singular: RestResourceSingular.Shop,

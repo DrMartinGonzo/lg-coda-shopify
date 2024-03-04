@@ -5,7 +5,7 @@ import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_LIMIT } from '../constants';
 import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../shared-parameters';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 import { OrderRestFetcher } from '../orders/orders-functions';
 
 import type { OrderLineItemRow } from '../types/CodaRows';
@@ -17,7 +17,7 @@ import type { SyncTableRestContinuation } from '../types/tableSync';
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema = OrderLineItemSyncTableSchema;
 
-  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
 
   // Main props
   augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;

@@ -30,10 +30,10 @@ import {
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 
+import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
 import type { GetProductsMetafieldsQuery, GetProductsMetafieldsQueryVariables } from '../types/admin.generated';
 import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import type { ProductSyncTableRestParams, ProductCreateRestParams } from '../types/Product';
-import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
 import type { ProductRow } from '../types/CodaRows';
 
 // #endregion

@@ -1,45 +1,56 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { makeGetRequest } from '../helpers-rest';
-import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, REST_DEFAULT_API_VERSION } from '../constants';
+import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES } from '../constants';
+import { SimpleRest } from '../Fetchers/SimpleRest';
+import { RestResourceName } from '../types/RequestsRest';
+import { ShopSyncTableSchema, validShopFields } from '../schemas/syncTable/ShopSchema';
 
-import type { FetchRequestOptions } from '../types/Requests';
+import type { ShopRow } from '../types/CodaRows';
 import type { CurrencyCode } from '../types/admin.types';
 
-export const formatShopForSchemaFromRest = (shop, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...shop,
-    admin_url: `${context.endpoint}/admin`,
+// #endregion
+
+// #region Class
+export class ShopRestFetcher extends SimpleRest<RestResourceName.Shop, typeof ShopSyncTableSchema> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Shop, ShopSyncTableSchema, context);
+  }
+
+  validateParams = (params: any) => {
+    if (params.shopField) {
+      if (validShopFields.indexOf(params.shopField) === -1) {
+        throw new coda.UserVisibleError(`Unknown field '${params.shopField}' provided`);
+      }
+    }
+    return true;
   };
-  return obj;
-};
 
-export const fetchShopRest = async (
-  fields: string[],
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const params = {};
-  if (fields) {
-    params['fields'] = fields.join(',');
-  }
-  const url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/shop.json`, params);
-  const response = await makeGetRequest({ ...requestOptions, url }, context);
-  if (response?.body?.shop) {
-    return response.body.shop;
-  }
-};
+  formatApiToRow = (shop): ShopRow => {
+    let obj: ShopRow = {
+      ...shop,
+      admin_url: `${this.context.endpoint}/admin`,
+    };
+    return obj;
+  };
 
-export async function getSchemaCurrencyCode(context: coda.ExecutionContext): Promise<CurrencyCode> {
-  let currencyCode = 'USD'; // default currency code
-  const shopDetails = await fetchShopRest(['currency'], context, {
-    cacheTtlSecs: CACHE_TEN_MINUTES,
-    forceSyncContextCache: true,
-  });
-  if (shopDetails?.currency && CODA_SUPPORTED_CURRENCIES.includes(shopDetails.currency)) {
-    currencyCode = shopDetails.currency;
-  } else {
-    console.error(`Shop currency ${shopDetails.currency} not supported. Falling back to ${currencyCode}.`);
-  }
-  return currencyCode as CurrencyCode;
+  getActiveCurrency = async () => {
+    let currencyCode = 'USD'; // default currency code
+
+    const response = await this.fetch(undefined, {
+      cacheTtlSecs: CACHE_TEN_MINUTES,
+      forceSyncContextCache: true,
+    });
+
+    if (response?.body?.shop?.currency) {
+      if (CODA_SUPPORTED_CURRENCIES.includes(response.body.shop.currency as any)) {
+        currencyCode = response.body.shop.currency;
+      } else {
+        console.error(`Shop currency ${response.body.shop.currency} not supported. Falling back to ${currencyCode}.`);
+      }
+    }
+
+    return currencyCode as CurrencyCode;
+  };
 }
+// #endregion

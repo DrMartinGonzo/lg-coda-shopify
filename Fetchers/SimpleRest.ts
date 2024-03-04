@@ -35,13 +35,15 @@ import type { Location as LocationRest } from '@shopify/shopify-api/rest/admin/2
 import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
 import type { Page as PageRest } from '@shopify/shopify-api/rest/admin/2023-10/page';
 import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
+import type { Redirect as RedirectRest } from '@shopify/shopify-api/rest/admin/2023-10/redirect';
 import type { SmartCollection as SmartCollectionRest } from '@shopify/shopify-api/rest/admin/2023-10/smart_collection';
 import type { Variant as VariantRest } from '@shopify/shopify-api/rest/admin/2023-10/variant';
 import type { Shop as ShopRest } from '@shopify/shopify-api/rest/admin/2023-10/shop';
 import type * as CodaRows from '../types/CodaRows';
 
 import { restResources } from '../types/RequestsRest';
-import type { RestResource, RestResourceName, RestResourcePlural, RestResourceSingular } from '../types/RequestsRest';
+import { RestResourceName } from '../types/RequestsRest';
+import type { RestResource, RestResourcePlural, RestResourceSingular } from '../types/RequestsRest';
 import type { MetafieldDefinitionFragment } from '../types/admin.generated';
 import type { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
 import type { BlogCreateRestParams, BlogSyncTableRestParams, BlogUpdateRestParams } from '../types/Blog';
@@ -61,6 +63,8 @@ import type { InventoryLevelSyncTableRestParams } from '../types/InventoryLevel'
 import type { OrderSyncTableRestParams, OrderUpdateRestParams } from '../types/Order';
 import type { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
 import type { ProductCreateRestParams, ProductSyncTableRestParams } from '../types/Product';
+import type { RedirectCreateRestParams, RedirectSyncRestParams, RedirectUpdateRestParams } from '../types/Redirect';
+import type { ShopSyncRestParams } from '../types/Shop';
 
 type GetRestResource<T extends RestResourceName> = T extends RestResourceName.Article
   ? ArticleRest
@@ -90,6 +94,8 @@ type GetRestResource<T extends RestResourceName> = T extends RestResourceName.Ar
   ? ProductRest
   : T extends RestResourceName.ProductVariant
   ? VariantRest
+  : T extends RestResourceName.Redirect
+  ? RedirectRest
   : T extends RestResourceName.Shop
   ? ShopRest
   : never;
@@ -124,12 +130,18 @@ type GetSyncTableSchema<T extends RestResourceName> = T extends RestResourceName
   ? CodaRows.ProductRow
   : T extends RestResourceName.ProductVariant
   ? CodaRows.ProductVariantRow
+  : T extends RestResourceName.Redirect
+  ? CodaRows.RedirectRow
   : T extends RestResourceName.Shop
   ? CodaRows.ShopRow
   : never;
 
 export type singleFetchData<T extends RestResourceName> = Record<(typeof RestResourceSingular)[T], GetRestResource<T>>;
-type multipleFetchData<T extends RestResourceName> = Record<(typeof RestResourcePlural)[T], Array<GetRestResource<T>>>;
+export type multipleFetchData<T extends RestResourceName> = Record<
+  // Edge case for Shop
+  (T extends RestResourceName.Shop ? typeof RestResourceSingular : typeof RestResourcePlural)[T],
+  Array<GetRestResource<T>>
+>;
 
 type SyncParams<T extends RestResourceName> = T extends RestResourceName.Article
   ? ArticleSyncTableRestParams
@@ -149,6 +161,10 @@ type SyncParams<T extends RestResourceName> = T extends RestResourceName.Article
   ? OrderSyncTableRestParams
   : T extends RestResourceName.Product
   ? ProductSyncTableRestParams
+  : T extends RestResourceName.Redirect
+  ? RedirectSyncRestParams
+  : T extends RestResourceName.Shop
+  ? ShopSyncRestParams
   : never;
 
 type CreateParams<T extends RestResourceName> = T extends RestResourceName.Article
@@ -163,6 +179,8 @@ type CreateParams<T extends RestResourceName> = T extends RestResourceName.Artic
   ? PageCreateRestParams
   : T extends RestResourceName.Product
   ? ProductCreateRestParams
+  : T extends RestResourceName.Redirect
+  ? RedirectCreateRestParams
   : never;
 
 type UpdateParams<T extends RestResourceName> = T extends RestResourceName.Article
@@ -183,6 +201,8 @@ type UpdateParams<T extends RestResourceName> = T extends RestResourceName.Artic
   ? OrderUpdateRestParams
   : T extends RestResourceName.Page
   ? PageUpdateRestParams
+  : T extends RestResourceName.Redirect
+  ? RedirectUpdateRestParams
   : never;
 
 export class SimpleRest<T extends RestResourceName, K extends coda.ObjectSchema<string, string>> {
@@ -206,15 +226,28 @@ export class SimpleRest<T extends RestResourceName, K extends coda.ObjectSchema<
   }
 
   // #region Urls
-  getResourcesUrl = () => coda.joinUrl(this.baseUrl, `${this.plural}.json`);
-  getSpecificResourceUrl = (id: number) => coda.joinUrl(this.baseUrl, `${this.plural}/${id}.json`);
+  getResourcesUrl = () => {
+    // Edge case for Shop
+    if (this.resourceName === RestResourceName.Shop) {
+      return coda.joinUrl(this.baseUrl, `${this.singular}.json`);
+    }
+    return coda.joinUrl(this.baseUrl, `${this.plural}.json`);
+  };
 
-  getFetchUrl = (id: number): string => this.getSpecificResourceUrl(id);
+  getSingleResourceUrl = (id?: number) => {
+    // Edge case for Shop
+    if (this.resourceName === RestResourceName.Shop) {
+      return coda.joinUrl(this.baseUrl, `${this.singular}.json`);
+    }
+    return coda.joinUrl(this.baseUrl, `${this.plural}/${id}.json`);
+  };
+
+  getFetchUrl = (id?: number): string => this.getSingleResourceUrl(id);
   getFetchAllUrl = (params: SyncParams<T>): string =>
     coda.withQueryParams(this.getResourcesUrl(), cleanQueryParams(params));
   getCreateUrl = (): string => this.getResourcesUrl();
-  getUpdateUrl = (id: number): string => this.getSpecificResourceUrl(id);
-  getDeleteUrl = (id: number): string => this.getSpecificResourceUrl(id);
+  getUpdateUrl = (id: number): string => this.getSingleResourceUrl(id);
+  getDeleteUrl = (id: number): string => this.getSingleResourceUrl(id);
   // #endregion
 
   // #region Validation
@@ -233,7 +266,8 @@ export class SimpleRest<T extends RestResourceName, K extends coda.ObjectSchema<
     return makeGetRequest<multipleFetchData<T>>({ ...requestOptions, url }, this.context);
   };
 
-  fetch = (id: number, requestOptions: FetchRequestOptions = {}) => {
+  // l'id est optionnelle pour certains edge cases, comme Shop
+  fetch = (id?: number, requestOptions: FetchRequestOptions = {}) => {
     const url = this.getFetchUrl(id);
     return makeGetRequest<singleFetchData<T>>({ ...requestOptions, url }, this.context);
   };
@@ -311,10 +345,7 @@ export class SimpleRest<T extends RestResourceName, K extends coda.ObjectSchema<
    * Il va falloir faire un appel séparé pour chaque metafield
    */
   updateWithMetafields = async (
-    row: {
-      original?: GetSyncTableSchema<T>;
-      updated: GetSyncTableSchema<T>;
-    },
+    row: { original?: GetSyncTableSchema<T>; updated: GetSyncTableSchema<T> },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
   ): Promise<GetSyncTableSchema<T>> => {
     const originalRow = row.original ?? {};

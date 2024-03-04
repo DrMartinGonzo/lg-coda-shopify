@@ -13,7 +13,7 @@ import {
   preprendPrefixToMetaFieldKey,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import { getSchemaCurrencyCode } from '../shop/shop-functions';
+import { ShopRestFetcher } from '../shop/shop-functions';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -48,7 +48,8 @@ async function getDraftOrderSchema(context: coda.ExecutionContext, _: string, fo
     );
   }
 
-  const shopCurrencyCode = await getSchemaCurrencyCode(context);
+  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+
   // Line items
   [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
     properties.price['currencyCode'] = shopCurrencyCode;

@@ -19,6 +19,7 @@ import { autoCompleteMetafieldWithDefinitionFullKeys } from './metafields/metafi
 import { autocompleteProductTypes } from './products/products-functions';
 import { makeAutocompleteTemplateSuffixesFor } from './themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
+import { validShopFields } from './schemas/syncTable/ShopSchema';
 
 /**====================================================================================================================
  *    Inputs
@@ -946,6 +947,17 @@ const redirectFilters = {
   },
 };
 // #endregion
+
+// #region Inputs: Shop
+const shopFilters = {
+  shopField: makeParameter({
+    type: ParameterType.String,
+    name: 'field',
+    autocomplete: validShopFields,
+    description: 'The Shop field to return',
+  }),
+};
+// #endregion
 /**====================================================================================================================
  *    Exports
  *===================================================================================================================== */
@@ -985,4 +997,5 @@ export const filters = {
   product: productFilters,
   productVariant: productVariantFilters,
   redirect: redirectFilters,
+  shop: shopFilters,
 };

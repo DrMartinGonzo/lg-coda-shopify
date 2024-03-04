@@ -5,6 +5,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
+import { ShopRestFetcher } from './shop/shop-functions';
+
 import {
   Formula_MetafieldBooleanValue,
   Formula_MetafieldCollectionReferenceValue,
@@ -25,7 +27,6 @@ import {
   Formula_MetafieldNumberIntegerValue,
   Formula_MetafieldNumberDecimalValue,
 } from './helpers-setup';
-
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -142,7 +143,6 @@ import {
   Formula_Redirect,
   Sync_Redirects,
 } from './redirects/redirects-setup';
-import { fetchShopRest } from './shop/shop-functions';
 import { Formula_Shop, Formula_ShopField, Sync_Shops } from './shop/shop-setup';
 import { setupTranslations } from './translations/translations-setup';
 
@@ -159,8 +159,11 @@ pack.setUserAuthentication({
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
-    const shop = await fetchShopRest(['myshopify_domain'], context);
-    if (shop && shop['myshopify_domain']) return shop['myshopify_domain'];
+    const shopFetcher = new ShopRestFetcher(context);
+    const response = await shopFetcher.fetch();
+    if (response?.body?.shop?.myshopify_domain) {
+      return response.body.shop.myshopify_domain;
+    }
   },
 });
 pack.addNetworkDomain('myshopify.com');
