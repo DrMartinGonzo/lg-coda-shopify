@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_INVENTORYITEM } from '../../constants';
-import { FieldDependency } from '../../types/tableSync';
 import { ProductVariantReference } from './ProductVariantSchema';
 import { countryNameAutocompleteValues } from '../../constants';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -123,4 +124,4 @@ export const InventoryItemReference = coda.makeReferenceSchemaFromObjectSchema(
   InventoryItemSyncTableSchema,
   IDENTITY_INVENTORYITEM
 );
-export const formatInventoryItemReferenceValueForSchema = (id: number) => ({ id });
+export const formatInventoryItemReference = (id: number) => ({ id });

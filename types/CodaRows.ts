@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-02-29T14:15:51.036Z
+ * Last generated: 2024-03-02T14:02:16.072Z
  *
  */
 
@@ -22,18 +22,18 @@ export interface ArticleRow extends Record<string, any> {
   };
   body?: string;
   body_html?: string;
-  created_at?: string;
+  created_at?: Date;
   handle?: string;
   image_url?: string;
   image_alt_text?: string;
   published?: boolean;
-  published_at?: string;
+  published_at?: Date;
   summary?: string;
   summary_html?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: string;
+  updated_at?: Date;
   user_id?: number;
 }
 
@@ -45,12 +45,12 @@ export interface BlogRow extends Record<string, any> {
   id: number;
   admin_graphql_api_id?: string;
   commentable?: string;
-  created_at?: string;
+  created_at?: Date;
   handle?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: string;
+  updated_at?: Date;
 }
 
 /**
@@ -63,34 +63,50 @@ export interface CollectRow extends Record<string, any> {
     id: number;
     title: string;
   };
-  created_at?: string;
+  created_at?: Date;
   position?: number;
   product_id?: number;
   product?: {
     id: number;
     title: string;
   };
-  updated_at?: string;
+  updated_at?: Date;
 }
 
 /**
  * Coda Row Interface for Collections Sync Table
  */
 export interface CollectionRow extends Record<string, any> {
+  admin_graphql_api_id?: string;
+  admin_url?: string;
   id: number;
-  collection_id?: number;
-  collection?: {
-    id: number;
-    title: string;
+  body?: string;
+  body_html?: string;
+  handle?: string;
+  image_url?: string;
+  image_alt_text?: string;
+  published?: boolean;
+  published_at?: Date;
+  published_scope?: string;
+  rules?: {
+    column?: string;
+    relation?: string;
+    condition?: string;
+  }[];
+  ruleSet?: {
+    display?: string;
+    rules?: {
+      column?: string;
+      condition?: string;
+      relation?: string;
+    }[];
+    appliedDisjunctively?: boolean;
   };
-  created_at?: string;
-  position?: number;
-  product_id?: number;
-  product?: {
-    id: number;
-    title: string;
-  };
-  updated_at?: string;
+  disjunctive?: boolean;
+  sort_order?: string;
+  template_suffix?: string;
+  title: string;
+  updated_at?: Date;
 }
 
 /**
@@ -129,8 +145,8 @@ export interface DraftOrderRow extends Record<string, any> {
     province_code?: string;
     zip?: string;
   };
-  completed_at?: string;
-  created_at?: string;
+  completed_at?: Date;
+  created_at?: Date;
   currency?: string;
   customer?: {
     id: number;
@@ -139,7 +155,7 @@ export interface DraftOrderRow extends Record<string, any> {
   email?: string;
   admin_graphql_api_id?: string;
   id: number;
-  invoice_sent_at?: string;
+  invoice_sent_at?: Date;
   invoice_url?: string;
   line_items?: {
     id: number;
@@ -215,9 +231,9 @@ export interface DraftOrderRow extends Record<string, any> {
     payment_schedules?: {
       amount?: number;
       currency?: string;
-      issued_at?: string;
-      due_at?: string;
-      completed_at?: string;
+      issued_at?: Date;
+      due_at?: Date;
+      completed_at?: Date;
       expected_payment_method?: string;
     }[];
   };
@@ -270,7 +286,7 @@ export interface DraftOrderRow extends Record<string, any> {
   taxes_included?: boolean;
   total_price?: number;
   total_tax?: number;
-  updated_at?: string;
+  updated_at?: Date;
 }
 
 /**
@@ -302,7 +318,7 @@ export interface CustomerRow extends Record<string, any> {
     id: number;
     default?: boolean;
   }[];
-  created_at?: string;
+  created_at?: Date;
   default_address?: {
     display?: string;
     address1?: string;
@@ -340,7 +356,7 @@ export interface CustomerRow extends Record<string, any> {
   tax_exempt?: boolean;
   tax_exemptions?: string[];
   total_spent?: number;
-  updated_at?: string;
+  updated_at?: Date;
   verified_email?: boolean;
 }
 
@@ -351,8 +367,8 @@ export interface FileRow extends Record<string, any> {
   name: string;
   id: string;
   alt?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
   preview?: string;
   mimeType?: string;
   fileSize?: number;
@@ -374,8 +390,8 @@ export interface InventoryItemRow extends Record<string, any> {
   country_code_of_origin?: string;
   harmonized_system_code?: string;
   province_code_of_origin?: string;
-  updated_at?: string;
-  created_at?: string;
+  updated_at?: Date;
+  created_at?: Date;
   tracked?: boolean;
   requires_shipping?: boolean;
   sku?: string;
@@ -402,7 +418,7 @@ export interface InventoryLevelRow extends Record<string, any> {
     name: string;
   };
   id: string;
-  updated_at?: string;
+  updated_at?: Date;
   inventory_history_url?: string;
 }
 
@@ -449,8 +465,8 @@ export interface MetafieldRow extends Record<string, any> {
   owner_type: string;
   rawValue?: string;
   type: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Date;
+  updated_at?: Date;
   editCollectionReference?: {
     id: number;
     title: string;
@@ -524,7 +540,7 @@ export interface MetaobjectRow extends Record<string, any> {
   id: number;
   admin_graphql_api_id?: string;
   handle: string;
-  updatedAt?: string;
+  updatedAt?: Date;
   admin_url?: string;
 }
 
@@ -557,17 +573,17 @@ export interface OrderRow extends Record<string, any> {
   };
   buyer_accepts_marketing?: boolean;
   cancel_reason?: string;
-  cancelled_at?: string;
+  cancelled_at?: Date;
   browser_ip?: string;
   browser_user_agent?: string;
   browser_accept_language?: string;
-  closed_at?: string;
+  closed_at?: Date;
   company?: {
     id?: number;
     location_id?: number;
   };
   confirmation_number?: string;
-  created_at?: string;
+  created_at?: Date;
   currency?: string;
   current_total_additional_fees?: number;
   current_total_discounts?: number;
@@ -602,7 +618,7 @@ export interface OrderRow extends Record<string, any> {
   financial_status?: string;
   fulfillments?: {
     admin_graphql_api_id?: string;
-    created_at?: string;
+    created_at?: Date;
     id?: number;
     line_items?: {
       id: number;
@@ -682,7 +698,7 @@ export interface OrderRow extends Record<string, any> {
     tracking_number?: string;
     tracking_urls?: string[];
     tracking_url?: string;
-    updated_at?: string;
+    updated_at?: Date;
   }[];
   fulfillment_status?: string;
   landing_site?: string;
@@ -761,9 +777,9 @@ export interface OrderRow extends Record<string, any> {
     payment_schedules?: {
       amount?: number;
       currency?: string;
-      issued_at?: string;
-      due_at?: string;
-      completed_at?: string;
+      issued_at?: Date;
+      due_at?: Date;
+      completed_at?: Date;
       expected_payment_method?: string;
     }[];
   };
@@ -771,11 +787,11 @@ export interface OrderRow extends Record<string, any> {
   phone?: string;
   po_number?: string;
   presentment_currency?: string;
-  processed_at?: string;
+  processed_at?: Date;
   referring_site?: string;
   refunds?: {
     id?: number;
-    created_at?: string;
+    created_at?: Date;
     duties?: {
       id?: number;
       tax_lines?: {
@@ -797,7 +813,7 @@ export interface OrderRow extends Record<string, any> {
       amount?: number;
       tax_amount?: number;
     }[];
-    processed_at?: string;
+    processed_at?: Date;
     refund_duties?: {
       duty_id?: number;
       refund_type?: string;
@@ -816,13 +832,13 @@ export interface OrderRow extends Record<string, any> {
       label: string;
       amount?: number;
       currency?: string;
-      createdAt?: string;
+      createdAt?: Date;
       errorCode?: string;
       gateway?: string;
       kind?: string;
       parentTransactionId?: number;
       paymentId?: string;
-      processedAt?: string;
+      processedAt?: Date;
       status?: string;
       test?: boolean;
       totalUnsettled?: number;
@@ -885,7 +901,7 @@ export interface OrderRow extends Record<string, any> {
   total_tax?: number;
   total_tip_received?: number;
   total_weight?: number;
-  updated_at?: string;
+  updated_at?: Date;
   user_id?: number;
   order_status_url?: string;
   confirmed?: boolean;
@@ -967,19 +983,19 @@ export interface OrderTransactionRow extends Record<string, any> {
   label: string;
   amount?: number;
   currency?: string;
-  createdAt?: string;
+  createdAt?: Date;
   errorCode?: string;
   gateway?: string;
   kind?: string;
   parentTransactionId?: number;
   paymentId?: string;
-  processedAt?: string;
+  processedAt?: Date;
   status?: string;
   test?: boolean;
   totalUnsettled?: number;
   accountNumber?: string;
   authorizationCode?: string;
-  authorizationExpiresAt?: string;
+  authorizationExpiresAt?: Date;
   order?: {
     id: number;
     name: string;
@@ -1021,10 +1037,10 @@ export interface PageRow extends Record<string, any> {
   author?: string;
   title: string;
   template_suffix?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Date;
+  updated_at?: Date;
   published?: boolean;
-  published_at?: string;
+  published_at?: Date;
 }
 
 /**
@@ -1037,19 +1053,19 @@ export interface ProductRow extends Record<string, any> {
   admin_graphql_api_id?: string;
   body?: string;
   body_html?: string;
-  created_at?: string;
+  created_at?: Date;
   handle?: string;
   images?: string[];
   featuredImage?: string;
   options?: string;
   product_type?: string;
-  published_at?: string;
+  published_at?: Date;
   published_scope?: string;
   status?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: string;
+  updated_at?: Date;
   vendor?: string;
 }
 
@@ -1062,7 +1078,7 @@ export interface ProductVariantRow extends Record<string, any> {
   admin_graphql_api_id?: string;
   barcode?: string;
   compare_at_price?: number;
-  created_at?: string;
+  created_at?: Date;
   grams?: number;
   id: number;
   image?: string;
@@ -1084,7 +1100,7 @@ export interface ProductVariantRow extends Record<string, any> {
   tax_code?: string;
   title: string;
   displayTitle?: string;
-  updated_at?: string;
+  updated_at?: Date;
   weight?: number;
   weight_unit?: string;
 }
@@ -1113,7 +1129,7 @@ export interface ShopRow extends Record<string, any> {
   country_code?: string;
   country_name?: string;
   county_taxes?: boolean;
-  created_at?: string;
+  created_at?: Date;
   customer_email?: string;
   currency?: string;
   domain?: string;
@@ -1147,7 +1163,7 @@ export interface ShopRow extends Record<string, any> {
   taxes_included?: boolean;
   timezone?: string;
   transactional_sms_disabled?: boolean;
-  updated_at?: string;
+  updated_at?: Date;
   weight_unit?: string;
   zip?: string;
   marketing_sms_consent_enabled_at_checkout?: boolean;

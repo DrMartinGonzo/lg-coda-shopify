@@ -4,17 +4,18 @@ import * as coda from '@codahq/packs-sdk';
 import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
 import { IDENTITY_INVENTORYITEM } from '../constants';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './inventoryItems-graphql';
-import { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
 import { filters, inputs } from '../shared-parameters';
 import { cleanQueryParams } from '../helpers-rest';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
+
+import type { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -75,7 +76,7 @@ export const Sync_InventoryItems = coda.makeSyncTable({
         } as GetInventoryItemsQueryVariables,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<GetInventoryItemsQuery>(
         {
           payload,
           maxEntriesPerRun,

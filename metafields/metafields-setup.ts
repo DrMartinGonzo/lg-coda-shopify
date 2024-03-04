@@ -25,27 +25,28 @@ import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 import { CodaMetafieldKeyValueSet, parseAndValidateMetafieldValueFormulaInput } from '../helpers-setup';
 
 import { createHash } from 'node:crypto';
-import { MetafieldFragmentWithDefinition, SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
-import { ProductReference } from '../schemas/syncTable/ProductSchemaRest';
-import { CollectionReference } from '../schemas/syncTable/CollectionSchema';
+import { ArticleReference } from '../schemas/syncTable/ArticleSchema';
 import { BlogReference } from '../schemas/syncTable/BlogSchema';
+import { CollectionReference } from '../schemas/syncTable/CollectionSchema';
 import { CustomerReference } from '../schemas/syncTable/CustomerSchema';
 import { LocationReference } from '../schemas/syncTable/LocationSchema';
 import { OrderReference } from '../schemas/syncTable/OrderSchema';
 import { PageReference } from '../schemas/syncTable/PageSchema';
+import { ProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
-import { ArticleReference } from '../schemas/syncTable/ArticleSchema';
 
-import { MetafieldsSetInput } from '../types/admin.types';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
 import { GraphQlResource } from '../types/RequestsGraphQl';
-import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
-import { getObjectSchemaEffectiveKeys } from '../helpers';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import { retrieveObjectSchemaEffectiveKeys } from '../helpers';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_METAFIELD } from '../constants';
 import { getMetafieldDefinitionReferenceSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { filters, inputs } from '../shared-parameters';
+
+import type { Metafield as MetafieldRest } from '@shopify/shopify-api/rest/admin/2023-10/metafield';
+import type { MetafieldDefinitionFragment } from '../types/admin.generated';
+import type { MetafieldsSetInput } from '../types/admin.types';
+import type { MetafieldFragmentWithDefinition, SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
 
 // #endregion
 
@@ -316,7 +317,7 @@ export const Action_SetMetafield = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
   execute: async ([ownerId, graphQlOwnerType, fullKey, value], context) => {
-    const schemaEffectiveKeys = getObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
+    const schemaEffectiveKeys = retrieveObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
     const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(
       graphQlOwnerType as SupportedGraphQlResourceWithMetafields
     );
@@ -390,7 +391,7 @@ export const Action_SetMetafield = coda.makeFormula({
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = response.body.data.metafieldsSet.metafields[0];
         return formatMetafieldForSchemaFromGraphQlApi(
-          metafield,
+          metafield as MetafieldFragmentWithDefinition,
           singleMetafieldResponse.ownerNodeGid,
           singleMetafieldResponse.parentOwnerNodeGid,
           resourceMetafieldsSyncTableDefinition,
@@ -415,7 +416,7 @@ export const Action_SetMetafield = coda.makeFormula({
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = response.body.data.metafieldsSet.metafields[0];
         return formatMetafieldForSchemaFromGraphQlApi(
-          metafield,
+          metafield as MetafieldFragmentWithDefinition,
           ownerGid,
           undefined,
           resourceMetafieldsSyncTableDefinition,

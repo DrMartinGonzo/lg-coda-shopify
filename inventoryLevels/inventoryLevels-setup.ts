@@ -1,21 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  adjustInventoryLevelRest,
-  formatInventoryLevelForSchemaFromRestApi,
-  handleInventoryLevelUpdateJob,
-  setInventoryLevelRest,
-} from './inventoryLevels-functions';
+import { InventoryLevelRestFetcher } from './inventoryLevels-functions';
 
 import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLevelSchema';
-import { IDENTITY_INVENTORYLEVEL, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { SyncTableRestContinuation } from '../types/tableSync';
+import { IDENTITY_INVENTORYLEVEL, REST_DEFAULT_LIMIT } from '../constants';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { filters, inputs } from '../shared-parameters';
 import { parseOptionId } from '../helpers';
-import { InventoryLevelSyncTableRestParams } from '../types/InventoryLevel';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+
+import type { InventoryLevel as InventoryLevelRest } from '@shopify/shopify-api/rest/admin/2023-10/inventory_level';
+import type { InventoryLevelRow } from '../types/CodaRows';
+import type { InventoryLevelSetRestParams, InventoryLevelSyncTableRestParams } from '../types/InventoryLevel';
+import type { SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -34,11 +31,12 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
       if (!location_ids || !location_ids.length) {
         throw new coda.UserVisibleError('At least one location is required.');
       }
-      const parsedLocationIds = location_ids.map(parseOptionId);
 
+      const inventoryLevelFetcher = new InventoryLevelRestFetcher(context);
+      const parsedLocationIds = location_ids.map(parseOptionId);
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof InventoryLevelSyncTableSchema>> = [];
+      let restItems: Array<InventoryLevelRow> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       const restParams = cleanQueryParams({
@@ -47,22 +45,17 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
         updated_at_min,
       } as InventoryLevelSyncTableRestParams);
 
-      let url: string;
-      if (prevContinuation?.nextUrl) {
-        url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-      } else {
-        url = coda.withQueryParams(
-          `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/inventory_levels.json`,
-          restParams
-        );
-      }
-      const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+      const url: string = prevContinuation?.nextUrl
+        ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+        : inventoryLevelFetcher.getFetchAllUrl(restParams);
+      const { response, continuation } = await makeSyncTableGetRequest<{ inventory_levels: InventoryLevelRest[] }>(
+        { url },
+        context
+      );
       restContinuation = continuation;
 
       if (response?.body?.inventory_levels) {
-        restItems = response.body.inventory_levels.map((redirect) =>
-          formatInventoryLevelForSchemaFromRestApi(redirect, context)
-        );
+        restItems = response.body.inventory_levels.map(inventoryLevelFetcher.formatApiToRow);
       }
 
       return {
@@ -72,12 +65,28 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) => handleInventoryLevelUpdateJob(update, context));
+      const inventoryLevelFetcher = new InventoryLevelRestFetcher(context);
+
+      const jobs = updates.map((update) => {
+        const inventoryLevelUniqueId = update.previousValue.id as string;
+        const inventoryItemId = parseInt(inventoryLevelUniqueId.split(',')[0], 10);
+        const locationId = parseInt(inventoryLevelUniqueId.split(',')[1], 10);
+        const restParams: InventoryLevelSetRestParams = {
+          inventory_item_id: inventoryItemId,
+          location_id: locationId,
+          available: update.newValue.available,
+        };
+        return inventoryLevelFetcher.set(restParams);
+      });
+
       const completed = await Promise.allSettled(jobs);
       return {
         result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
+          if (job.status === 'fulfilled' && job.value?.body?.inventory_level) {
+            return inventoryLevelFetcher.formatApiToRow(job.value.body.inventory_level);
+          } else if (job.status === 'rejected') {
+            return job.reason;
+          }
         }),
       };
     },
@@ -104,16 +113,14 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
   schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available], context) {
-    const response = await setInventoryLevelRest(
-      {
-        available,
-        inventory_item_id,
-        location_id: parseOptionId(location_id),
-      },
-      context
-    );
+    const inventoryLevelFetcher = new InventoryLevelRestFetcher(context);
+    const response = await inventoryLevelFetcher.set({
+      available,
+      inventory_item_id,
+      location_id: parseOptionId(location_id),
+    });
     if (response?.body?.inventory_level) {
-      return formatInventoryLevelForSchemaFromRestApi(response.body.inventory_level, context);
+      return inventoryLevelFetcher.formatApiToRow(response.body.inventory_level);
     }
   },
 });
@@ -137,16 +144,14 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
   // schema: coda.withIdentity(InventoryLevelSchema, IDENTITY_INVENTORYLEVEL),
   schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available_adjustment], context) {
-    const response = await adjustInventoryLevelRest(
-      {
-        available_adjustment,
-        inventory_item_id,
-        location_id: parseOptionId(location_id),
-      },
-      context
-    );
+    const inventoryLevelFetcher = new InventoryLevelRestFetcher(context);
+    const response = await inventoryLevelFetcher.adjust({
+      available_adjustment,
+      inventory_item_id,
+      location_id: parseOptionId(location_id),
+    });
     if (response?.body?.inventory_level) {
-      return formatInventoryLevelForSchemaFromRestApi(response.body.inventory_level, context);
+      return inventoryLevelFetcher.formatApiToRow(response.body.inventory_level);
     }
   },
 });

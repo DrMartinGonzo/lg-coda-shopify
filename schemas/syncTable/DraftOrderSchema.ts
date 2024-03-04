@@ -2,16 +2,16 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_DRAFT_ORDER, NOT_FOUND } from '../../constants';
 import { CustomerReference } from './CustomerSchema';
-import { FieldDependency } from '../../types/tableSync';
 import { NameValueSchema } from '../basic/NameValueSchema';
 import { TaxLineSchema } from '../basic/TaxLineSchema';
 import { OrderLineItemSchema } from '../basic/OrderLineItemSchema';
 import { AddressSchema } from '../basic/AddressSchema';
-import { CompanySchema } from '../basic/CompanySchema';
 import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { OrderReference } from './OrderSchema';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -293,4 +293,4 @@ export const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(
   DraftOrderSyncTableSchema,
   IDENTITY_DRAFT_ORDER
 );
-export const formatDraftOrderReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatDraftOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });

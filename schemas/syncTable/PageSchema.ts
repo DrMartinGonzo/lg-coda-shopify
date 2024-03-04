@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { IDENTITY_PAGE, NOT_FOUND } from '../../constants';
-import { FieldDependency } from '../../types/tableSync';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const PageSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -137,4 +138,4 @@ export const pageFieldDependencies: FieldDependency<typeof PageSyncTableSchema.p
 ];
 
 export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSyncTableSchema, IDENTITY_PAGE);
-export const formatPageReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
+export const formatPageReference = (id: number, title = NOT_FOUND) => ({ id, title });

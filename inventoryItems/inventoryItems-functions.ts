@@ -1,17 +1,18 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { FetchRequestOptions } from '../types/Requests';
-import {
+import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
+import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
+import { UpdateInventoryItem } from './inventoryItems-graphql';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+
+import type {
   InventoryItemFieldsFragment,
   InventoryItemUpdateMutation,
   InventoryItemUpdateMutationVariables,
 } from '../types/admin.generated';
-import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
-import { InventoryItemUpdateInput } from '../types/admin.types';
-import { UpdateInventoryItem } from './inventoryItems-graphql';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { formatProductVariantReferenceValueForSchema } from '../schemas/syncTable/ProductVariantSchema';
+import type { InventoryItemUpdateInput } from '../types/admin.types';
+import type { FetchRequestOptions } from '../types/Requests';
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(
@@ -97,7 +98,7 @@ export const formatInventoryItemNodeForSchema = (inventoryItem: InventoryItemFie
 
   if (inventoryItem.variant?.id) {
     const variantId = graphQlGidToId(inventoryItem.variant?.id);
-    obj.variant = formatProductVariantReferenceValueForSchema(variantId);
+    obj.variant = formatProductVariantReference(variantId);
     obj.variant_id = variantId;
   }
 
@@ -120,7 +121,7 @@ async function updateInventoryItemGraphQl(
     } as InventoryItemUpdateMutationVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<InventoryItemUpdateMutation>(
     {
       ...requestOptions,
       payload,

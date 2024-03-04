@@ -5,8 +5,6 @@ import { IDENTITY_ORDER_TRANSACTION } from '../constants';
 import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
 import { OrderTransactionSyncTableSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { filters } from '../shared-parameters';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
-import { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
@@ -15,6 +13,9 @@ import {
 
 import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
+
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
 
 // #endregion
 
@@ -111,7 +112,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
         } as GetOrderTransactionsQueryVariables,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<GetOrderTransactionsQuery>(
         {
           payload,
           maxEntriesPerRun,

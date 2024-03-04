@@ -5,6 +5,26 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
+import {
+  Formula_MetafieldBooleanValue,
+  Formula_MetafieldCollectionReferenceValue,
+  Formula_MetafieldColorValue,
+  Formula_MetafieldDateTimeValue,
+  Formula_MetafieldDateValue,
+  Formula_MetafieldKeyValueSet,
+  Formula_MetafieldMetaobjectReferenceValue,
+  Formula_MetafieldMixedReferenceValue,
+  Formula_MetafieldPageReferenceValue,
+  Formula_MetafieldProductReferenceValue,
+  Formula_MetafieldSingleLineTextValue,
+  Formula_MetafieldVariantReferenceValue,
+  Formula_MetafieldWeightValue,
+  Formula_ProductStatus,
+  Formula_ProductType,
+  Formula_MetafieldValues,
+  Formula_MetafieldNumberIntegerValue,
+  Formula_MetafieldNumberDecimalValue,
+} from './helpers-setup';
 
 import {
   Action_CreateArticle,
@@ -39,12 +59,29 @@ import {
   Formula_Customer,
   Sync_Customers,
 } from './customers/customers-setup';
+import {
+  Action_CompleteDraftOrder,
+  Action_DeleteDraftOrder,
+  Action_SendDraftOrderInvoice,
+  Action_UpdateDraftOrder,
+  Formula_DraftOrder,
+  Sync_DraftOrders,
+} from './draftOrders/draftOrders-setup';
 import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './files/files-setup';
+import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
   Sync_InventoryLevels,
 } from './inventoryLevels/inventoryLevels-setup';
+import {
+  Action_ActivateLocation,
+  Action_DeactivateLocation,
+  Action_UpdateLocation,
+  Format_Location,
+  Formula_Location,
+  Sync_Locations,
+} from './locations/locations-setup';
 import {
   Action_DeleteMetafield,
   Action_SALUT,
@@ -53,6 +90,11 @@ import {
   Formula_Metafields,
   Sync_Metafields,
 } from './metafields/metafields-setup';
+import {
+  Format_MetafieldDefinition,
+  Formula_MetafieldDefinition,
+  Sync_MetafieldDefinitions,
+} from './metafieldDefinitions/metafieldDefinitions-setup';
 import {
   Action_CreateMetaObject,
   Action_DeleteMetaObject,
@@ -84,25 +126,6 @@ import {
   Formula_ProductVariant,
   Sync_ProductVariants,
 } from './productVariants/productVariants-setup';
-import { Formula_Shop, Formula_ShopField, Sync_Shops } from './shop/shop-setup';
-import { setupTranslations } from './translations/translations-setup';
-import {
-  Action_ActivateLocation,
-  Action_DeactivateLocation,
-  Action_UpdateLocation,
-  Format_Location,
-  Formula_Location,
-  Sync_Locations,
-} from './locations/locations-setup';
-import {
-  Action_CreateRedirect,
-  Action_DeleteRedirect,
-  Action_UpdateRedirect,
-  Format_Redirect,
-  Formula_Redirect,
-  Sync_Redirects,
-} from './redirects/redirects-setup';
-import { fetchShopRest } from './shop/shop-functions';
 import {
   Action_CreateProduct,
   Action_DeleteProduct,
@@ -112,32 +135,16 @@ import {
   Sync_Products,
 } from './products/products-setup';
 import {
-  Formula_MetafieldBooleanValue,
-  Formula_MetafieldCollectionReferenceValue,
-  Formula_MetafieldColorValue,
-  Formula_MetafieldDateTimeValue,
-  Formula_MetafieldDateValue,
-  Formula_MetafieldKeyValueSet,
-  Formula_MetafieldMetaobjectReferenceValue,
-  Formula_MetafieldMixedReferenceValue,
-  Formula_MetafieldPageReferenceValue,
-  Formula_MetafieldProductReferenceValue,
-  Formula_MetafieldSingleLineTextValue,
-  Formula_MetafieldVariantReferenceValue,
-  Formula_MetafieldWeightValue,
-  Formula_ProductStatus,
-  Formula_ProductType,
-  Formula_MetafieldValues,
-  Formula_MetafieldNumberIntegerValue,
-  Formula_MetafieldNumberDecimalValue,
-} from './helpers-setup';
-import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
-import {
-  Format_MetafieldDefinition,
-  Formula_MetafieldDefinition,
-  Sync_MetafieldDefinitions,
-} from './metafieldDefinitions/metafieldDefinitions-setup';
-import { Action_DeleteDraftOrder, Formula_DraftOrder, Sync_DraftOrders } from './draftOrders/draftOrders-setup';
+  Action_CreateRedirect,
+  Action_DeleteRedirect,
+  Action_UpdateRedirect,
+  Format_Redirect,
+  Formula_Redirect,
+  Sync_Redirects,
+} from './redirects/redirects-setup';
+import { fetchShopRest } from './shop/shop-functions';
+import { Formula_Shop, Formula_ShopField, Sync_Shops } from './shop/shop-setup';
+import { setupTranslations } from './translations/translations-setup';
 
 // #endregion
 
@@ -226,6 +233,9 @@ pack.formulas.push(Action_CreateCustomer);
 pack.formulas.push(Action_UpdateCustomer);
 pack.formulas.push(Action_DeleteCustomer);
 
+pack.formulas.push(Action_CompleteDraftOrder);
+pack.formulas.push(Action_SendDraftOrderInvoice);
+pack.formulas.push(Action_UpdateDraftOrder);
 pack.formulas.push(Action_DeleteDraftOrder);
 
 pack.formulas.push(Action_DeleteFile);

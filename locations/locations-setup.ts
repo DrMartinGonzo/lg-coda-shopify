@@ -18,7 +18,6 @@ import {
   augmentSchemaWithMetafields,
   updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -31,11 +30,14 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { QueryLocations } from './locations-graphql';
-import { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
-import { CountryCode, MetafieldOwnerType } from '../types/admin.types';
-import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { MetafieldOwnerType } from '../types/admin.types';
+
+import type { CountryCode } from '../types/admin.types';
+import type { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQl';
 
 // #endregion
 
@@ -103,7 +105,7 @@ export const Sync_Locations = coda.makeSyncTable({
         } as GetLocationsQueryVariables,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<GetLocationsQuery>(
         {
           payload,
           maxEntriesPerRun,

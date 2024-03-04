@@ -1,5 +1,3 @@
-import '../types/admin.generated.d.ts';
-
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 export const MAX_OPTIONS_PER_PRODUCT = 3;

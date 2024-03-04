@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ProductReference } from './ProductSchemaRest';
-import { FieldDependency } from '../../types/tableSync';
 import { CollectionReference } from './CollectionSchema';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const CollectSyncTableSchema = coda.makeObjectSchema({
   properties: {

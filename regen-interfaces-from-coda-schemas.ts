@@ -31,6 +31,7 @@ import { ProductVariantSyncTableSchema } from './schemas/syncTable/ProductVarian
 import { ArticleSyncTableSchema } from './schemas/syncTable/ArticleSchema';
 import { BlogSyncTableSchema } from './schemas/syncTable/BlogSchema';
 import { CollectSyncTableSchema } from './schemas/syncTable/CollectSchema';
+import { CollectionSyncTableSchema } from './schemas/syncTable/CollectionSchema';
 import { CustomerSyncTableSchema } from './schemas/syncTable/CustomerSchema';
 import { LocationSyncTableSchema } from './schemas/syncTable/LocationSchema';
 import { MetafieldSyncTableSchema } from './schemas/syncTable/MetafieldSchema';
@@ -44,6 +45,7 @@ import { InventoryItemSyncTableSchema } from './schemas/syncTable/InventoryItemS
 import { InventoryLevelSyncTableSchema } from './schemas/syncTable/InventoryLevelSchema';
 import { RedirectSyncTableSchema } from './schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from './schemas/syncTable/ShopSchema';
+import { getObjectSchemaEffectiveKey } from './helpers';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -67,9 +69,13 @@ function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false)
           case coda.ValueHintType.Time:
             ret = 'Date';
             break;
+          default:
+            ret = 'string';
+            break;
         }
+      } else {
+        ret = 'string';
       }
-      ret = 'string';
       break;
 
     case coda.ValueType.Object:
@@ -87,8 +93,10 @@ function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false)
 }
 
 const indentSpace = '  ';
-function formatProperty(key: string, property, indent = 1, wrapArray = false) {
-  let currentIndentation = indent;
+const indent = (indentation: number) => indentSpace.repeat(indentation);
+
+function formatProperty(key: string, property, indentation = 1, wrapArray = false) {
+  let curtIndent = indentation;
   const effectiveKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
   const type = property.type;
   const codaType = property['codaType'];
@@ -96,35 +104,35 @@ function formatProperty(key: string, property, indent = 1, wrapArray = false) {
 
   if (type === coda.ValueType.Object) {
     // Objects
-    currentIndentation += 1;
+    curtIndent += 1;
     const effectiveKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
     const codaType = property['codaType'];
     const required = property.required ?? false;
     const objectLines = [];
 
-    objectLines.push(`${indentSpace.repeat(currentIndentation - 1)}${effectiveKey}${required ? '' : '?'}: {`);
+    objectLines.push(`${indent(curtIndent - 1)}${effectiveKey}${required ? '' : '?'}: {`);
 
     if (codaType && codaType === coda.ValueHintType.Reference) {
       const { displayProperty, idProperty } = property;
-      objectLines.push(formatProperty(idProperty, property.properties[idProperty], currentIndentation));
+      objectLines.push(formatProperty(idProperty, property.properties[idProperty], curtIndent));
       if (displayProperty !== idProperty) {
-        objectLines.push(formatProperty(displayProperty, property.properties[displayProperty], currentIndentation));
+        objectLines.push(formatProperty(displayProperty, property.properties[displayProperty], curtIndent));
       }
     } else {
       Object.keys(property.properties).forEach((key) => {
-        objectLines.push(formatProperty(key, property.properties[key], currentIndentation));
+        objectLines.push(formatProperty(key, property.properties[key], curtIndent));
       });
     }
-    objectLines.push(`${indentSpace.repeat(currentIndentation - 1)}}${wrapArray ? '[]' : ''};`);
+    objectLines.push(`${indent(curtIndent - 1)}}${wrapArray ? '[]' : ''};`);
     return objectLines.join('\n');
   }
   // Arrays
   else if (type === coda.ValueType.Array) {
-    return formatProperty(key, property.items, currentIndentation, true);
+    return formatProperty(key, property.items, curtIndent, true);
   }
   // Everything else
   else {
-    return `${indentSpace.repeat(currentIndentation)}${effectiveKey}${required ? '' : '?'}: ${codaTypeToTypeScript(
+    return `${indent(curtIndent)}${effectiveKey}${required ? '' : '?'}: ${codaTypeToTypeScript(
       type,
       codaType,
       wrapArray
@@ -133,17 +141,21 @@ function formatProperty(key: string, property, indent = 1, wrapArray = false) {
 }
 
 function generateCodaRowInterface(schema: ReturnType<typeof coda.makeObjectSchema>, identity: string) {
+  // const idEffectivePropertyKey = getObjectSchemaEffectiveKey(schema, schema.idProperty);
+  const interfaceName = `${identity}Row`;
   const lines = [];
   lines.push(`/**
  * Coda Row Interface for ${identity}s Sync Table
  */`);
-  lines.push(`export interface ${identity}Row extends Record<string, any> {`);
-
+  lines.push(`export interface ${interfaceName} extends Record<string, any> {`);
   Object.keys(schema.properties).forEach((key) => {
     lines.push(formatProperty(key, schema.properties[key], 1));
   });
-
   lines.push(`}`);
+
+  // lines.push(`export type ${interfaceName}NoId = {`);
+  // lines.push(`  [K in keyof ${interfaceName} as Exclude<K, '${idEffectivePropertyKey}'>]: ${interfaceName}[K];`);
+  // lines.push(`};`);
   return lines.join('\n');
 }
 
@@ -151,7 +163,7 @@ const definitions = [
   [ArticleSyncTableSchema, IDENTITY_ARTICLE],
   [BlogSyncTableSchema, IDENTITY_BLOG],
   [CollectSyncTableSchema, IDENTITY_COLLECT],
-  [CollectSyncTableSchema, IDENTITY_COLLECTION],
+  [CollectionSyncTableSchema, IDENTITY_COLLECTION],
   [DraftOrderSyncTableSchema, IDENTITY_DRAFT_ORDER],
   [CustomerSyncTableSchema, IDENTITY_CUSTOMER],
   [FileSyncTableSchema, IDENTITY_FILE],

@@ -1,10 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 import { DEFAULT_THUMBNAIL_SIZE } from './constants';
 import { IS_ADMIN_RELEASE } from './pack-config.json';
-import { ShopifyGraphQlError } from './shopifyErrors';
-import { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQlErrors';
-import { LengthUnit, WeightUnit } from './types/admin.types';
-import { FieldDependency } from './types/tableSync';
+
+import type { LengthUnit, WeightUnit } from './types/admin.types';
+import type { FieldDependency } from './types/tableSync';
+import type { ShopifyGraphQlError } from './types/ShopifyGraphQl';
+import type { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQl';
 
 /**
  * Taken from Coda sdk
@@ -133,15 +134,27 @@ export async function wait(ms: number) {
 }
 
 /**
- * Get object schema keys or fromKeys if present
+ * Retrieve all object schema keys or fromKeys if present
  */
-export function getObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.makeObjectSchema>>(objectSchema: T) {
+export function retrieveObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.makeObjectSchema>>(objectSchema: T) {
   const properties = objectSchema.properties;
-  return Object.keys(properties).map((key) => {
+  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(objectSchema, key));
+}
+
+/**
+ * Get a single object schema keys or fromKey if present
+ */
+export function getObjectSchemaEffectiveKey<T extends ReturnType<typeof coda.makeObjectSchema>>(
+  objectSchema: T,
+  key: string
+) {
+  const properties = objectSchema.properties;
+  if (properties.hasOwnProperty(key)) {
     const property = properties[key];
     const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
-    return propKey as string;
-  });
+    return propKey;
+  }
+  throw new Error(`Schema doesn't have ${key} property`);
 }
 
 const getShopifyAccessToken = (context: coda.ExecutionContext) => '{{token-' + context.invocationToken + '}}';

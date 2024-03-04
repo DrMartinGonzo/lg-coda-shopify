@@ -3,7 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import { ProductReference } from './ProductSchemaRest';
 import { IDENTITY_PRODUCT_VARIANT, NOT_FOUND } from '../../constants';
 import { getUnitMap } from '../../helpers';
-import { FieldDependency } from '../../types/tableSync';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -243,4 +244,4 @@ export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(
   ProductVariantSyncTableSchema,
   IDENTITY_PRODUCT_VARIANT
 );
-export const formatProductVariantReferenceValueForSchema = (id: number, title = NOT_FOUND) => ({ id, title });
+export const formatProductVariantReference = (id: number, title = NOT_FOUND) => ({ id, title });

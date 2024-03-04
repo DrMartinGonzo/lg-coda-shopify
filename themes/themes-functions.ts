@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { REST_DEFAULT_API_VERSION } from '../constants';
 import { makeGetRequest } from '../helpers-rest';
-import { FetchRequestOptions } from '../types/Requests';
+
+import type { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete
 export function makeAutocompleteTemplateSuffixesFor(kind: string) {

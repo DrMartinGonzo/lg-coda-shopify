@@ -2,7 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IDENTITY_ORDER, NOT_FOUND } from '../../constants';
 import { CustomerReference } from './CustomerSchema';
-import { FieldDependency } from '../../types/tableSync';
 import { NameValueSchema } from '../basic/NameValueSchema';
 import { TaxLineSchema } from '../basic/TaxLineSchema';
 import { FulfillmentSchema } from '../basic/FulfillmentSchema';
@@ -14,6 +13,8 @@ import { DiscountCodeSchema } from '../basic/DiscountCodeSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
+
+import type { FieldDependency } from '../../types/tableSync';
 
 export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -706,4 +707,4 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSyncTableSchema
   },
 ];
 export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, IDENTITY_ORDER);
-export const formatOrderReferenceValueForSchema = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });

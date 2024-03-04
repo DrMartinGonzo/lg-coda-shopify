@@ -2,10 +2,11 @@ import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
 import { REST_DEFAULT_API_VERSION } from '../constants';
-import { FetchRequestOptions } from '../types/Requests';
 
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
-import { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
+
+import type { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
+import type { FetchRequestOptions } from '../types/Requests';
 
 // #region Helpers
 function formatRedirectStandardFieldsRestParams(

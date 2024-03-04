@@ -1,12 +1,18 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
-import { SyncTableRestContinuation } from './types/tableSync';
-import { RestResource, restResources } from './types/RequestsRest';
+import { restResources } from './types/RequestsRest';
 import { GraphQlResource } from './types/RequestsGraphQl';
-import { CACHE_DEFAULT } from './constants';
-import { FetchRequestOptions } from './types/Requests';
+import { CACHE_DEFAULT, REST_DEFAULT_API_VERSION } from './constants';
+
+import type { FetchRequestOptions } from './types/Requests';
+import type { SyncTableRestContinuation } from './types/tableSync';
+import type { RestResource } from './types/RequestsRest';
 
 // TODO: better error handling
+
+export function getRestBaseUrl(context: coda.ExecutionContext): string {
+  return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}`;
+}
 
 export const cleanQueryParams = <T>(params: T) => {
   Object.keys(params).forEach((key) => {
@@ -64,17 +70,20 @@ export function getRestResourceFromGraphQlResourceType(resourceType: GraphQlReso
   throw new Error(`No Rest Admin Api match for GraphQl type of: \`${resourceType}\``);
 }
 
-export async function makeSyncTableGetRequest(
+export async function makeSyncTableGetRequest<Data extends any>(
   params: {
     url: string;
     extraContinuationData?: any;
   },
   context: coda.SyncExecutionContext
-) {
+): Promise<{
+  response: coda.FetchResponse<Data>;
+  continuation: SyncTableRestContinuation | null;
+}> {
   logAdmin(`🚀  Rest Admin API: Starting sync…`);
 
   let continuation: SyncTableRestContinuation | null = null;
-  const response = await makeGetRequest({ url: params.url }, context);
+  const response = await makeGetRequest<Data>({ url: params.url }, context);
 
   // Check if we have paginated results
   const nextUrl = extractNextUrlPagination(response);
@@ -94,7 +103,7 @@ export async function makeSyncTableGetRequest(
 interface GetRequestParams extends FetchRequestOptions {
   url: string;
 }
-export async function makeGetRequest(params: GetRequestParams, context: coda.ExecutionContext) {
+export async function makeGetRequest<Data extends any>(params: GetRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'GET',
     url: params.url,
@@ -106,7 +115,7 @@ export async function makeGetRequest(params: GetRequestParams, context: coda.Exe
   } else {
     options.cacheTtlSecs = params.cacheTtlSecs ?? CACHE_DEFAULT;
   }
-  let response: coda.FetchResponse<any>;
+  let response: coda.FetchResponse<Data>;
   try {
     response = await context.fetcher.fetch(options);
     return response;
@@ -118,16 +127,16 @@ export async function makeGetRequest(params: GetRequestParams, context: coda.Exe
 
 interface PutRequestParams extends Omit<FetchRequestOptions, 'cacheTtlSecs' | 'forceSyncContextCache'> {
   url: string;
-  payload: any;
+  payload?: any;
 }
-export async function makePutRequest(params: PutRequestParams, context: coda.ExecutionContext) {
+export async function makePutRequest<Data extends any>(params: PutRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'PUT',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
-  let response: coda.FetchResponse<any>;
+  let response: coda.FetchResponse<Data>;
   try {
     response = await context.fetcher.fetch(options);
     return response;
@@ -137,14 +146,14 @@ export async function makePutRequest(params: PutRequestParams, context: coda.Exe
 }
 
 interface PostRequestParams extends PutRequestParams {}
-export async function makePostRequest(params: PostRequestParams, context: coda.ExecutionContext) {
+export async function makePostRequest<Data extends any>(params: PostRequestParams, context: coda.ExecutionContext) {
   const options: coda.FetchRequest = {
     method: 'POST',
     url: params.url,
     headers: getShopifyRequestHeaders(context),
     body: JSON.stringify(params.payload),
   };
-  let response: coda.FetchResponse<any>;
+  let response: coda.FetchResponse<Data>;
   try {
     response = await context.fetcher.fetch(options);
     return response;
@@ -162,7 +171,7 @@ export async function makeDeleteRequest(params: DeleteRequestParams, context: co
     url: params.url,
     headers: getShopifyRequestHeaders(context),
   };
-  let response: coda.FetchResponse<any>;
+  let response: coda.FetchResponse<{}>;
   try {
     response = await context.fetcher.fetch(options);
     return response;

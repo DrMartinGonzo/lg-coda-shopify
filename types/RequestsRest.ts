@@ -1,14 +1,19 @@
+import { MetafieldOwnerType } from './admin.types';
+
 /**
  * Types of Rest Admin API resources that we support.
  */
-enum RestResourceName {
+export enum RestResourceName {
   Article = 'Article',
   Blog = 'Blog',
   Collection = 'Collection',
+  Collect = 'Collect',
   CustomCollection = 'CustomCollection',
+  SmartCollection = 'SmartCollection',
   Customer = 'Customer',
   DraftOrder = 'DraftOrder',
   InventoryItem = 'InventoryItem',
+  InventoryLevel = 'InventoryLevel',
   Location = 'Location',
   Order = 'Order',
   Page = 'Page',
@@ -16,77 +21,145 @@ enum RestResourceName {
   ProductVariant = 'ProductVariant',
   Shop = 'Shop',
 }
-type RestResourceNameTypes = typeof RestResourceName;
+
+export enum RestResourceSingular {
+  Article = 'article',
+  Blog = 'blog',
+  Collection = 'collection',
+  Collect = 'collect',
+  CustomCollection = 'custom_collection',
+  SmartCollection = 'smart_collection',
+  Customer = 'customer',
+  DraftOrder = 'draft_order',
+  InventoryItem = 'inventory_item',
+  InventoryLevel = 'inventory_level',
+  Location = 'location',
+  Order = 'order',
+  Page = 'page',
+  Product = 'product',
+  ProductVariant = 'variant',
+  Shop = 'shop',
+}
+
+export enum RestResourcePlural {
+  Article = 'articles',
+  Blog = 'blogs',
+  Collection = 'collections',
+  Collect = 'collects',
+  CustomCollection = 'custom_collections',
+  SmartCollection = 'smart_collections',
+  Customer = 'customers',
+  DraftOrder = 'draft_orders',
+  InventoryItem = 'inventory_items',
+  InventoryLevel = 'inventory_levels',
+  Location = 'locations',
+  Order = 'orders',
+  Page = 'pages',
+  Product = 'products',
+  ProductVariant = 'variants',
+  Shop = 'shops',
+}
 
 export type RestResource = {
-  singular: string;
-  plural: string;
+  singular: RestResourceSingular;
+  plural: RestResourcePlural;
+  metafieldOwnerType?: MetafieldOwnerType;
   supportMetafields: boolean;
 };
-export const restResources: { [key in RestResourceNameTypes[keyof RestResourceNameTypes]]: RestResource } = {
+
+export const restResources: Record<RestResourceName, RestResource> = {
   Article: {
-    singular: 'article',
-    plural: 'articles',
-    supportMetafields: true,
-  },
-  Collection: {
-    singular: 'collection',
-    plural: 'collections',
-    supportMetafields: true,
-  },
-  CustomCollection: {
-    singular: 'custom_collection',
-    plural: 'custom_collections',
+    singular: RestResourceSingular.Article,
+    plural: RestResourcePlural.Article,
+    metafieldOwnerType: MetafieldOwnerType.Article,
     supportMetafields: true,
   },
   Blog: {
-    singular: 'blog',
-    plural: 'blogs',
+    singular: RestResourceSingular.Blog,
+    plural: RestResourcePlural.Blog,
+    metafieldOwnerType: MetafieldOwnerType.Blog,
     supportMetafields: true,
   },
+  Collection: {
+    singular: RestResourceSingular.Collection,
+    plural: RestResourcePlural.Collection,
+    metafieldOwnerType: MetafieldOwnerType.Collection,
+    supportMetafields: true,
+  },
+  Collect: {
+    singular: RestResourceSingular.Collect,
+    plural: RestResourcePlural.Collect,
+    metafieldOwnerType: MetafieldOwnerType.Collection,
+    supportMetafields: true,
+  },
+  CustomCollection: {
+    singular: RestResourceSingular.CustomCollection,
+    plural: RestResourcePlural.CustomCollection,
+    metafieldOwnerType: MetafieldOwnerType.Collection,
+    supportMetafields: true,
+  },
+  SmartCollection: {
+    singular: RestResourceSingular.SmartCollection,
+    plural: RestResourcePlural.SmartCollection,
+    // TODO: check
+    supportMetafields: false,
+  },
   Customer: {
-    singular: 'customer',
-    plural: 'customers',
+    singular: RestResourceSingular.Customer,
+    plural: RestResourcePlural.Customer,
+    metafieldOwnerType: MetafieldOwnerType.Customer,
     supportMetafields: true,
   },
   DraftOrder: {
-    singular: 'draft_order',
-    plural: 'draft_orders',
+    singular: RestResourceSingular.DraftOrder,
+    plural: RestResourcePlural.DraftOrder,
+    metafieldOwnerType: MetafieldOwnerType.Draftorder,
     supportMetafields: true,
   },
   InventoryItem: {
-    singular: 'inventory_item',
-    plural: 'inventory_items',
+    singular: RestResourceSingular.InventoryItem,
+    plural: RestResourcePlural.InventoryItem,
+    supportMetafields: false,
+  },
+  InventoryLevel: {
+    singular: RestResourceSingular.InventoryLevel,
+    plural: RestResourcePlural.InventoryLevel,
     supportMetafields: false,
   },
   Location: {
-    singular: 'location',
-    plural: 'locations',
+    singular: RestResourceSingular.Location,
+    plural: RestResourcePlural.Location,
+    metafieldOwnerType: MetafieldOwnerType.Location,
     supportMetafields: true,
   },
   Order: {
-    singular: 'order',
-    plural: 'orders',
+    singular: RestResourceSingular.Order,
+    plural: RestResourcePlural.Order,
+    metafieldOwnerType: MetafieldOwnerType.Order,
     supportMetafields: true,
   },
   Page: {
-    singular: 'page',
-    plural: 'pages',
+    singular: RestResourceSingular.Page,
+    plural: RestResourcePlural.Page,
+    metafieldOwnerType: MetafieldOwnerType.Page,
     supportMetafields: true,
   },
   Product: {
-    singular: 'product',
-    plural: 'products',
+    singular: RestResourceSingular.Product,
+    plural: RestResourcePlural.Product,
+    metafieldOwnerType: MetafieldOwnerType.Product,
     supportMetafields: true,
   },
   ProductVariant: {
-    singular: 'variant',
-    plural: 'variants',
+    singular: RestResourceSingular.ProductVariant,
+    plural: RestResourcePlural.ProductVariant,
+    metafieldOwnerType: MetafieldOwnerType.Productvariant,
     supportMetafields: true,
   },
   Shop: {
-    singular: 'shop',
-    plural: 'shops',
+    singular: RestResourceSingular.Shop,
+    plural: RestResourcePlural.Shop,
+    metafieldOwnerType: MetafieldOwnerType.Shop,
     supportMetafields: true,
   },
 } as const;
