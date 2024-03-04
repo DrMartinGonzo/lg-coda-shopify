@@ -9,16 +9,17 @@ import {
   fetchSingleFileGraphQl,
 } from './files-functions';
 import { CACHE_DEFAULT, IDENTITY_FILE, OPTIONS_FILE_TYPE } from '../constants';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { queryAllFiles } from './files-graphql';
-import { GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
 import { inputs } from '../shared-parameters';
-import { FileRow } from '../types/CodaRows';
+
+import type { FileRow } from '../types/CodaRows';
+import type { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -81,7 +82,7 @@ export const Sync_Files = coda.makeSyncTable({
         } as GetFilesQueryVariables,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<GetFilesQuery>(
         {
           payload,
           maxEntriesPerRun,
@@ -108,7 +109,7 @@ export const Sync_Files = coda.makeSyncTable({
       const jobs = updates.map((update) => {
         return handleFileUpdateJob(
           {
-            original: update.previousValue as FileRow,
+            original: update.previousValue as unknown as FileRow,
             updated: Object.fromEntries(
               Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
             ) as FileRow,
@@ -132,7 +133,7 @@ export const Sync_Files = coda.makeSyncTable({
 // #region Actions
 export const Action_DeleteFile = coda.makeFormula({
   name: 'DeleteFile',
-  description: 'Delete an existing Shopify File and return true on success.',
+  description: 'Delete an existing Shopify File and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [{ ...inputs.file.gid, description: 'The GraphQl GID of the file to delete.' }],
   isAction: true,
@@ -156,7 +157,7 @@ export const Formula_File = coda.makeFormula({
   execute: async function ([fileGid], context) {
     const response = await fetchSingleFileGraphQl(fileGid, context);
     if (response?.body?.data?.node) {
-      return formatFileNodeForSchema(response.body.data.node);
+      return formatFileNodeForSchema(response.body.data.node as FileFieldsFragment);
     }
   },
 });

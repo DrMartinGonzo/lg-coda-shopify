@@ -4,16 +4,19 @@ import * as coda from '@codahq/packs-sdk';
 import { CACHE_DEFAULT } from '../constants';
 import { getGraphQlResourceFromMetafieldOwnerType, graphQlGidToId, makeGraphQlRequest } from '../helpers-graphql';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../types/admin.types';
-import {
-  GetMetafieldDefinitionsQueryVariables,
-  GetSingleMetafieldDefinitionQueryVariables,
-  MetafieldDefinitionFragment,
-} from '../types/admin.generated';
 import { METAFIELD_TYPES } from '../metafields/metafields-constants';
 import { getMetaFieldFullKey } from '../metafields/metafields-functions';
 import { QuerySingleMetafieldDefinition, queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
-import { FetchRequestOptions } from '../types/Requests';
+
+import type {
+  GetMetafieldDefinitionsQuery,
+  GetMetafieldDefinitionsQueryVariables,
+  GetSingleMetafieldDefinitionQuery,
+  GetSingleMetafieldDefinitionQueryVariables,
+  MetafieldDefinitionFragment,
+} from '../types/admin.generated';
+import type { FetchRequestOptions } from '../types/Requests';
 
 // #endregion
 
@@ -151,7 +154,7 @@ export async function fetchMetafieldDefinitionsGraphQl(
     });
   }
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetMetafieldDefinitionsQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -173,7 +176,7 @@ export async function fetchSingleMetafieldDefinitionGraphQl(
     } as GetSingleMetafieldDefinitionQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetSingleMetafieldDefinitionQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );

@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 
 import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
@@ -10,19 +11,23 @@ import {
 } from './metaobjects-graphql';
 import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-functions';
 
+import { GraphQlResource } from '../types/RequestsGraphQl';
+import {
+  fetchAllMetaObjectDefinitions,
+  fetchSingleMetaObjectDefinitionByType,
+} from '../metaobjectDefinitions/metaobjectDefinitions-functions';
+
+import type { MetaobjectFragment } from '../types/Metaobject';
 import type {
   MetaobjectCreateInput,
   MetaobjectFieldInput,
   MetaobjectStatus,
   MetaobjectUpdateInput,
 } from '../types/admin.types';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { FetchRequestOptions } from '../types/Requests';
-import { MetaobjectFragment } from '../types/Metaobject';
-import {
-  fetchAllMetaObjectDefinitions,
-  fetchSingleMetaObjectDefinitionByType,
-} from '../metaobjectDefinitions/metaobjectDefinitions-functions';
+import type { FetchRequestOptions } from '../types/Requests';
+import type { CreateMetaobjectMutation, DeleteMetaobjectMutation } from '../types/admin.generated';
+
+// #endregion
 
 // #region Autocomplete functions
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
@@ -165,7 +170,7 @@ async function fetchSingleMetaObjectGraphQl(
       includeFieldDefinitions: params.includeFieldDefinitions ?? false,
     },
   };
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<{ metaobject: MetaobjectFragment }>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -195,7 +200,7 @@ export const updateMetaObjectGraphQl = async (
       includeFieldDefinitions: false,
     },
   };
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<{ metaobjectUpdate: { metaobject: MetaobjectFragment } }>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectUpdate.userErrors },
     context
   );
@@ -213,7 +218,7 @@ export const createMetaObjectGraphQl = async (
       metaobject: metaobjectCreateInput,
     },
   };
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<CreateMetaobjectMutation>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectCreate.userErrors },
     context
   );
@@ -232,7 +237,7 @@ export const deleteMetaObjectGraphQl = async (
     },
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<DeleteMetaobjectMutation>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectDelete.userErrors },
     context
   );

@@ -1,22 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_DEFAULT,
-  IDENTITY_ARTICLE,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
-import {
-  deleteArticleRest,
-  formatArticleForSchemaFromRestApi,
-  validateArticleParams,
-  handleArticleUpdateJob,
-  fetchSingleArticleRest,
-  createArticleRest,
-  updateArticleRest,
-} from './articles-functions';
+import { CACHE_DEFAULT, IDENTITY_ARTICLE, REST_DEFAULT_LIMIT } from '../constants';
+import { ArticleRestFetcher } from './articles-functions';
 
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
@@ -24,24 +10,24 @@ import { filters, inputs } from '../shared-parameters';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  parseMetafieldsCodaInput,
   preprendPrefixToMetaFieldKey,
-  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, parseOptionId, wrapGetSchemaForCli } from '../helpers';
+import { handleFieldDependencies, parseOptionId, wrapGetSchemaForCli } from '../helpers';
 import { SyncTableRestContinuation } from '../types/tableSync';
 import {
   fetchMetafieldsRest,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import { restResources } from '../types/RequestsRest';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+
+import type { ArticleCreateRestParams, ArticleSyncTableRestParams } from '../types/Article';
+import type { ArticleRow } from '../types/CodaRows';
+import type { Article as ArticleRest } from '@shopify/shopify-api/rest/admin/2023-10/article';
 
 // #endregion
 
@@ -119,7 +105,9 @@ export const Sync_Articles = coda.makeSyncTable({
         published_at_min: publishedAt ? publishedAt[0] : undefined,
         published_at_max: publishedAt ? publishedAt[1] : undefined,
       });
-      validateArticleParams(restParams);
+
+      const articleFetcher = new ArticleRestFetcher(context);
+      articleFetcher.validateParams(restParams);
 
       let url: string;
       let blogIdsLeft = prevContinuation?.extraContinuationData?.blogIdsLeft ?? [];
@@ -136,20 +124,14 @@ export const Sync_Articles = coda.makeSyncTable({
         // User has specified the blogs he wants to sync articles from
         if (blogIdsLeft.length) {
           const currentBlogId: number = blogIdsLeft.shift();
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/blogs/${currentBlogId}/articles.json`,
-            restParams
-          );
+          url = articleFetcher.getFetchAllFromBlogUrl(currentBlogId, restParams);
         } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/articles.json`,
-            restParams
-          );
+          url = articleFetcher.getFetchAllUrl(restParams);
         }
       }
 
       let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest(
+      let { response, continuation } = await makeSyncTableGetRequest<{ articles: ArticleRest[] }>(
         {
           url,
           extraContinuationData: { blogIdsLeft },
@@ -157,7 +139,7 @@ export const Sync_Articles = coda.makeSyncTable({
         context
       );
       if (response?.body?.articles) {
-        restResult = response.body.articles.map((article) => formatArticleForSchemaFromRestApi(article, context));
+        restResult = response.body.articles.map((article) => articleFetcher.formatApiToRow(article));
       }
 
       // Add metafields by doing multiple Rest Admin API calls
@@ -197,20 +179,7 @@ export const Sync_Articles = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Article }, context)
-        : [];
-
-      const jobs = updates.map((update) => handleArticleUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new ArticleRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -233,71 +202,52 @@ export const Action_CreateArticle = coda.makeFormula({
     { ...inputs.general.imageUrl, optional: true },
     { ...inputs.general.imageAlt, optional: true },
     { ...inputs.general.published, description: 'Whether the article is visible.', optional: true },
-    {
-      ...inputs.general.publishedAt,
-      description: 'The date and time when the article was published.',
-      optional: true,
-    },
+    { ...inputs.general.publishedAt, description: 'The date and time when the article was published.', optional: true },
     { ...inputs.general.tagsArray, optional: true },
     { ...inputs.article.templateSuffix, optional: true },
     { ...inputs.general.metafields, optional: true, description: 'Article metafields to create.' },
   ],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Number,
   execute: async (
     [
       blog,
       title,
       author,
-      bodyHtml,
+      body_html,
       summary_html,
       handle,
-      imageUrl,
-      imageAlt,
+      image_url,
+      image_alt_text,
       published,
-      publishedAt,
+      published_at,
       tags,
-      templateSuffix,
+      template_suffix,
       metafields,
     ],
     context
   ) => {
-    const restParams: ArticleCreateRestParams = {
-      blog_id: parseOptionId(blog),
-      title,
+    const defaultPublishedStatus = false;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    let newRow: Partial<ArticleRow> = {
       author,
-      body_html: bodyHtml,
-      summary_html,
+      blog_id: parseOptionId(blog),
+      body_html,
       handle,
-      published_at: publishedAt,
+      image_alt_text,
+      image_url,
+      published_at,
+      published: published ?? defaultPublishedStatus,
+      summary_html,
       tags: tags ? tags.join(',') : undefined,
-      template_suffix: templateSuffix,
-      // default to unpublished for article creation
-      published: published !== undefined ? published : false,
+      template_suffix,
+      title,
     };
 
-    if (imageUrl) {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        src: imageUrl,
-      };
-      if (imageAlt) {
-        restParams.image.alt = imageAlt;
-      }
-    }
-
-    if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-      const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter(Boolean);
-      if (metafieldRestInputs.length) {
-        restParams.metafields = metafieldRestInputs;
-      }
-    }
-
-    const response = await createArticleRest(restParams, context);
-    return response.body.article.id;
+    const articleFetcher = new ArticleRestFetcher(context);
+    const restParams = articleFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ArticleCreateRestParams;
+    const response = await articleFetcher.create(restParams);
+    return response?.body?.article?.id;
   },
 });
 
@@ -317,11 +267,7 @@ export const Action_UpdateArticle = coda.makeFormula({
     { ...inputs.general.imageUrl, optional: true },
     { ...inputs.general.imageAlt, optional: true },
     { ...inputs.general.published, description: 'Whether the article is visible.', optional: true },
-    {
-      ...inputs.general.publishedAt,
-      description: 'The date and time when the article was published.',
-      optional: true,
-    },
+    { ...inputs.general.publishedAt, description: 'The date and time when the article was published.', optional: true },
     { ...inputs.general.tagsArray, optional: true },
     { ...inputs.article.templateSuffix, optional: true },
     { ...inputs.general.title, description: 'The title of the article.', optional: true },
@@ -351,7 +297,8 @@ export const Action_UpdateArticle = coda.makeFormula({
     ],
     context
   ) {
-    const restParams: ArticleUpdateRestParams = {
+    let row: ArticleRow = {
+      id: articleId,
       author,
       blog_id: blog ? parseOptionId(blog) : undefined,
       body_html: bodyHtml,
@@ -362,52 +309,24 @@ export const Action_UpdateArticle = coda.makeFormula({
       template_suffix: templateSuffix,
       title,
       published,
+      image_alt_text: imageAlt,
+      image_url: imageUrl,
     };
-    if (imageUrl) {
-      restParams.image = { ...(restParams.image ?? {}), src: imageUrl };
-    }
-    if (imageAlt) {
-      restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
-    }
-
-    const promises: (Promise<any> | undefined)[] = [];
-    promises.push(updateArticleRest(articleId, restParams, context));
-    if (metafields && metafields.length) {
-      promises.push(
-        updateAndFormatResourceMetafieldsRest(
-          {
-            ownerId: articleId,
-            ownerResource: restResources.Article,
-            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
-            schemaWithIdentity: false,
-          },
-          context
-        )
-      );
-    } else {
-      promises.push(undefined);
-    }
-
-    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
-    const obj = {
-      id: articleId,
-      ...(restResponse?.body?.article ? formatArticleForSchemaFromRestApi(restResponse.body.article, context) : {}),
-      ...(updatedFormattedMetafields ?? {}),
-    };
-
-    return obj;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    const articleFetcher = new ArticleRestFetcher(context);
+    return articleFetcher.updateWithMetafields({ original: undefined, updated: row }, metafieldKeyValueSets);
   },
 });
 
 export const Action_DeleteArticle = coda.makeFormula({
   name: 'DeleteArticle',
-  description: 'Delete an existing Shopify article and return true on success.',
+  description: 'Delete an existing Shopify article and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.article.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([articleId], context) => {
-    await deleteArticleRest(articleId, context);
+    await new ArticleRestFetcher(context).delete(articleId);
     return true;
   },
 });
@@ -423,9 +342,10 @@ export const Formula_Article = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ArticleSyncTableSchema,
   execute: async ([articleId], context) => {
-    const articleResponse = await fetchSingleArticleRest(articleId, context);
-    if (articleResponse.body?.article) {
-      return formatArticleForSchemaFromRestApi(articleResponse.body.article, context);
+    const articleFetcher = new ArticleRestFetcher(context);
+    const response = await articleFetcher.fetch(articleId);
+    if (response.body?.article) {
+      return articleFetcher.formatApiToRow(response.body.article);
     }
   },
 });

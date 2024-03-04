@@ -4,13 +4,14 @@ import toPascalCase from 'to-pascal-case';
 
 import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from './constants';
 import { METAFIELD_TYPES } from './metafields/metafields-constants';
-import { MetafieldTypeValue } from './types/Metafields';
 import { arrayUnique, getUnitMap } from './helpers';
 import { autocompleteProductTypes } from './products/products-functions';
 import { GraphQlResource } from './types/RequestsGraphQl';
 import { idToGraphQlGid } from './helpers-graphql';
-import { shouldDeleteMetafield } from './metafields/metafields-functions';
+import { formatMetafieldRestInputFromKeyValueSet, shouldDeleteMetafield } from './metafields/metafields-functions';
 import { inputs } from './shared-parameters';
+
+import type { MetafieldRestInput, MetafieldTypeValue } from './types/Metafields';
 
 // #endregion
 

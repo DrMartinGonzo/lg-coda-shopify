@@ -21,7 +21,7 @@ import {
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 
 import type { ProductInput } from '../types/admin.types';
-import type { MetafieldDefinitionFragment } from '../types/admin.generated';
+import type { MetafieldDefinitionFragment, QueryProductTypesQuery } from '../types/admin.generated';
 import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResource } from '../types/RequestsGraphQl';
 import { queryProductTypes } from './products-graphql';
@@ -181,7 +181,7 @@ export function fetchSingleProductRest(
   requestOptions: FetchRequestOptions = {}
 ) {
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productID}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
+  return makeGetRequest<{ product: ProductRest }>({ ...requestOptions, url }, context);
 }
 
 export function createProductRest(
@@ -193,7 +193,7 @@ export function createProductRest(
   validateProductParams(restParams, true);
   const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`;
   const payload = { product: { ...restParams } };
-  return makePostRequest({ ...requestOptions, url, payload }, context);
+  return makePostRequest<{ product: ProductRest }>({ ...requestOptions, url, payload }, context);
 }
 
 export const updateProductRest = async (
@@ -207,7 +207,7 @@ export const updateProductRest = async (
     validateProductParams(restParams, true);
     const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products/${productId}.json`;
     const payload = { product: restParams };
-    return makePutRequest({ ...requestOptions, url, payload }, context);
+    return makePutRequest<{ product: ProductRest }>({ ...requestOptions, url, payload }, context);
   }
 };
 
@@ -227,7 +227,7 @@ export async function fetchProductTypesGraphQl(
   requestOptions: FetchRequestOptions = {}
 ): Promise<string[]> {
   const payload = { query: queryProductTypes };
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<QueryProductTypesQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );

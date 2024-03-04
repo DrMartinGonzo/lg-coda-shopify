@@ -12,8 +12,23 @@ import {
   getMetafieldKeyValueSetsFromUpdate,
   updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
+import { formatOptionNameId } from '../helpers';
 import {
+  ActivateLocation,
+  DeactivateLocation,
+  QueryLocations,
+  QuerySingleLocation,
+  UpdateLocation,
+} from './locations-graphql';
+import { GraphQlResource } from '../types/RequestsGraphQl';
+
+import type { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQl';
+import type { FetchRequestOptions } from '../types/Requests';
+import type { CountryCode, LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
+import type {
+  GetLocationsQuery,
   GetLocationsQueryVariables,
+  GetSingleLocationQuery,
   GetSingleLocationQueryVariables,
   LocationActivateMutation,
   LocationActivateMutationVariables,
@@ -24,18 +39,6 @@ import {
   LocationFragment,
   MetafieldDefinitionFragment,
 } from '../types/admin.generated';
-import { formatOptionNameId } from '../helpers';
-import { CountryCode, LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
-import {
-  ActivateLocation,
-  DeactivateLocation,
-  QueryLocations,
-  QuerySingleLocation,
-  UpdateLocation,
-} from './locations-graphql';
-import { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQlErrors';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { FetchRequestOptions } from '../types/Requests';
 
 // #region Autocomplete functions
 export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
@@ -233,7 +236,7 @@ export const fetchLocationsGraphQl = async (
     variables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetLocationsQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -255,7 +258,7 @@ export const fetchSingleLocationGraphQl = async (
     } as GetSingleLocationQueryVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<GetSingleLocationQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -279,7 +282,7 @@ export async function updateLocationGraphQl(
     } as LocationEditMutationVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<LocationEditMutation>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.locationEdit.userErrors },
     context
   );
@@ -298,7 +301,7 @@ export async function activateLocationGraphQl(
     } as LocationActivateMutationVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<LocationActivateMutation>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.locationActivate.locationActivateUserErrors },
     context
   );
@@ -319,7 +322,7 @@ export async function deactivateLocationGraphQl(
     } as LocationDeactivateMutationVariables,
   };
 
-  const { response } = await makeGraphQlRequest(
+  const { response } = await makeGraphQlRequest<LocationDeactivateMutation>(
     {
       ...requestOptions,
       payload,

@@ -35,6 +35,32 @@ const generalInputs = {
     name: 'bodyHtml',
     description: 'The text of the body of the item, complete with HTML markup.',
   }),
+  emailBcc: makeParameter({
+    type: ParameterType.StringArray,
+    name: 'bcc',
+    description:
+      'The list of email addresses to include in the `bcc` field of the email. Emails must be associated with staff accounts on the shop.',
+  }),
+  emailFrom: makeParameter({
+    type: ParameterType.String,
+    name: 'from',
+    description: 'The email address that will populate the `from` field of the email.',
+  }),
+  emailMessage: makeParameter({
+    type: ParameterType.String,
+    name: 'message',
+    description: 'The custom message displayed in the email.',
+  }),
+  emailSubject: makeParameter({
+    type: ParameterType.String,
+    name: 'subject',
+    description: 'The email subject.',
+  }),
+  emailTo: makeParameter({
+    type: ParameterType.String,
+    name: 'to',
+    description: 'The email address that will populate the `to` field of the email.',
+  }),
   handle: makeParameter({
     type: ParameterType.String,
     name: 'handle',
@@ -75,6 +101,13 @@ const generalInputs = {
     name: 'phone',
     description: 'The phone number (E.164 format).',
   }),
+  previewSize: makeParameter({
+    type: ParameterType.Number,
+    name: 'previewSize',
+    suggestedValue: DEFAULT_THUMBNAIL_SIZE,
+    description:
+      'The maximum width of the thumbnail. Smaller values can increase display performance of the table if you have lots of entries.',
+  }),
   published: makeParameter({
     type: ParameterType.Boolean,
     name: 'published',
@@ -90,13 +123,6 @@ const generalInputs = {
     name: 'tags',
     description:
       'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
-  }),
-  previewSize: makeParameter({
-    type: ParameterType.Number,
-    name: 'previewSize',
-    suggestedValue: DEFAULT_THUMBNAIL_SIZE,
-    description:
-      'The maximum width of the thumbnail. Smaller values can increase display performance of the table if you have lots of entries.',
   }),
   title: makeParameter({
     type: ParameterType.String,
@@ -236,6 +262,17 @@ const draftOrderInputs = {
     name: 'draftOrderId',
     description: 'The ID of the draft order.',
   },
+  paymentGatewayId: makeParameter({
+    type: ParameterType.Number,
+    name: 'paymentGatewayId',
+    description: 'The payment gateway ID.',
+  }),
+  paymentPending: makeParameter({
+    type: ParameterType.Boolean,
+    name: 'paymentPending',
+    description:
+      '`true`: The resulting order will be unpaid and can be captured later.\n`false`: The resulting order will be marked as paid through either the default or specified gateway.',
+  }),
 };
 // #endregion
 

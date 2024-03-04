@@ -1,15 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { formatOrderLineItemForSchemaFromRestApi } from './orderLineItems-functions';
+import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_LIMIT } from '../constants';
 import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../shared-parameters';
-
-import { SyncTableRestContinuation } from '../types/tableSync';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { getSchemaCurrencyCode } from '../shop/shop-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+import { OrderRestFetcher } from '../orders/orders-functions';
+
+import type { OrderLineItemRow } from '../types/CodaRows';
+import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
+import type { SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -71,7 +72,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
     ) {
       const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
       let restLimit = REST_DEFAULT_LIMIT;
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof OrderLineItemSyncTableSchema>> = [];
+      let restItems: Array<OrderLineItemRow> = [];
       let restContinuation: SyncTableRestContinuation = null;
 
       // Rest Admin API Sync
@@ -91,20 +92,18 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
         processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
       });
 
-      let url: string;
-      if (prevContinuation?.nextUrl) {
-        url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-      } else {
-        url = coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/orders.json`, restParams);
-      }
-      const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+      const orderFetcher = new OrderRestFetcher(context);
+      orderFetcher.validateParams(restParams);
+      const url: string = prevContinuation?.nextUrl
+        ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+        : orderFetcher.getFetchAllUrl(restParams);
+
+      const { response, continuation } = await makeSyncTableGetRequest<{ orders: OrderRest[] }>({ url }, context);
       restContinuation = continuation;
 
       if (response?.body?.orders) {
         restItems = response.body.orders
-          .map((order) =>
-            order.line_items.map((line_item) => formatOrderLineItemForSchemaFromRestApi(line_item, order, context))
-          )
+          .map((order) => order.line_items.map((line_item) => orderFetcher.formatLineItemToRow(line_item, order)))
           .flat();
       }
 

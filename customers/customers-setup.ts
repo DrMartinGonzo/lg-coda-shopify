@@ -1,39 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  deleteCustomer,
-  createCustomerRest,
-  formatCustomerForSchemaFromRestApi,
-  handleCustomerUpdateJob,
-  fetchSingleCustomerRest,
-  updateCustomerRest,
-} from './customers-functions';
+import { CustomerRestFetcher, formatCustomerDisplayValue } from './customers-functions';
 
-import {
-  CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
-  CONSENT_STATE__SUBSCRIBED,
-  CONSENT_STATE__UNSUBSCRIBED,
-  CustomerSyncTableSchema,
-  customerFieldDependencies,
-} from '../schemas/syncTable/CustomerSchema';
+import { CustomerSyncTableSchema, customerFieldDependencies } from '../schemas/syncTable/CustomerSchema';
 import { filters, inputs } from '../shared-parameters';
-import {
-  CACHE_DEFAULT,
-  IDENTITY_CUSTOMER,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
+import { CACHE_DEFAULT, IDENTITY_CUSTOMER, REST_DEFAULT_LIMIT } from '../constants';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  parseMetafieldsCodaInput,
   preprendPrefixToMetaFieldKey,
-  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -43,19 +22,18 @@ import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
-  idToGraphQlGid,
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { QueryCustomersMetafieldsAdmin, buildCustomersSearchQuery } from './customers-graphql';
 import { GetCustomersMetafieldsQuery, GetCustomersMetafieldsQueryVariables } from '../types/admin.generated';
-import { CustomerCreateRestParams, CustomerSyncRestParams, CustomerUpdateRestParams } from '../types/Customer';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+
+import type { Customer as CustomerRest } from '@shopify/shopify-api/rest/admin/2023-10/customer';
+import type { CustomerRow } from '../types/CodaRows';
+import type { CustomerCreateRestParams, CustomerSyncTableRestParams } from '../types/Customer';
+import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -128,7 +106,7 @@ export const Sync_Customers = coda.makeSyncTable({
         }
       }
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof CustomerSyncTableSchema>> = [];
+      let restItems: Array<CustomerRow> = [];
       let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
@@ -143,22 +121,22 @@ export const Sync_Customers = coda.makeSyncTable({
           created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
-        } as CustomerSyncRestParams);
+        } as CustomerSyncTableRestParams);
 
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`,
-            restParams
-          );
-        }
-        const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+        const customerFetcher = new CustomerRestFetcher(context);
+        customerFetcher.validateParams(restParams);
+
+        const url = prevContinuation?.nextUrl
+          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+          : customerFetcher.getFetchAllUrl(restParams);
+        const { response, continuation } = await makeSyncTableGetRequest<{ customers: CustomerRest[] }>(
+          { url },
+          context
+        );
         restContinuation = continuation;
 
         if (response?.body?.customers) {
-          restItems = response.body.customers.map((customer) => formatCustomerForSchemaFromRestApi(customer, context));
+          restItems = response.body.customers.map(customerFetcher.formatApiToRow);
         }
 
         if (!shouldSyncMetafields) {
@@ -243,20 +221,7 @@ export const Sync_Customers = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Customer }, context)
-        : [];
-
-      const jobs = updates.map((update) => handleCustomerUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new CustomerRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -287,51 +252,34 @@ export const Action_CreateCustomer = coda.makeFormula({
     { ...inputs.general.tagsArray, optional: true },
     { ...inputs.customer.acceptsEmailMarketing, optional: true },
     { ...inputs.customer.acceptsSmsMarketing, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Customer metafields to create.' },
+    { ...inputs.general.metafields, description: 'Customer metafields to create.', optional: true },
   ],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Number,
   execute: async function (
-    [firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
+    [first_name, last_name, email, phone, note, tags, accepts_email_marketing, accepts_sms_marketing, metafields],
     context
   ) {
-    if (!firstName && !lastName && !email && !phone) {
+    if (!first_name && !last_name && !email && !phone) {
       throw new coda.UserVisibleError('Customer must have a name, phone number or email address.');
     }
 
-    const restParams: CustomerCreateRestParams = {
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    let newRow: Partial<CustomerRow> = {
       email,
-      first_name: firstName,
-      last_name: lastName,
+      first_name,
+      last_name,
       phone,
       note,
       tags: tags ? tags.join(',') : undefined,
+      accepts_email_marketing,
+      accepts_sms_marketing,
     };
-    if (acceptsEmailMarketing !== undefined) {
-      restParams.email_marketing_consent = {
-        state: acceptsEmailMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
-    }
-    if (acceptsSmsMarketing !== undefined) {
-      restParams.sms_marketing_consent = {
-        state: acceptsSmsMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
-    }
 
-    if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-      const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter(Boolean);
-      if (metafieldRestInputs.length) {
-        restParams.metafields = metafieldRestInputs;
-      }
-    }
-
-    const response = await createCustomerRest(restParams, context);
-    return response.body.customer.id;
+    const customerFetcher = new CustomerRestFetcher(context);
+    const restParams = customerFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as CustomerCreateRestParams;
+    const response = await customerFetcher.create(restParams);
+    return response?.body?.customer?.id;
   },
 });
 
@@ -368,67 +316,49 @@ export const Action_UpdateCustomer = coda.makeFormula({
   // schema: coda.withIdentity(CustomerSchema, IDENTITY_CUSTOMER),
   schema: CustomerSyncTableSchema,
   execute: async function (
-    [customerId, firstName, lastName, email, phone, note, tags, acceptsEmailMarketing, acceptsSmsMarketing, metafields],
+    [
+      customerId,
+      first_name,
+      last_name,
+      email,
+      phone,
+      note,
+      tags,
+      accepts_email_marketing,
+      accepts_sms_marketing,
+      metafields,
+    ],
     context
   ) {
-    const restParams: CustomerUpdateRestParams = {
+    let row: CustomerRow = {
+      id: customerId,
+      accepts_email_marketing,
+      accepts_sms_marketing,
+      display: formatCustomerDisplayValue({ id: customerId, first_name, last_name, email }),
       email,
-      first_name: firstName,
-      last_name: lastName,
+      first_name,
+      last_name,
+      note,
       phone,
       tags: tags ? tags.join(',') : undefined,
-      note,
     };
-    if (acceptsEmailMarketing !== undefined) {
-      restParams.email_marketing_consent = {
-        state: acceptsEmailMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
-    }
-    if (acceptsSmsMarketing !== undefined) {
-      restParams.sms_marketing_consent = {
-        state: acceptsSmsMarketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
-    }
-
-    const promises: (Promise<any> | undefined)[] = [];
-    promises.push(updateCustomerRest(customerId, restParams, context));
-    if (metafields && metafields.length) {
-      promises.push(
-        updateAndFormatResourceMetafieldsGraphQl(
-          {
-            ownerGid: idToGraphQlGid(GraphQlResource.Customer, customerId),
-            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
-            schemaWithIdentity: false,
-          },
-          context
-        )
-      );
-    } else {
-      promises.push(undefined);
-    }
-
-    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
-    const obj = {
-      id: customerId,
-      ...(restResponse?.body?.customer ? formatCustomerForSchemaFromRestApi(restResponse.body.customer, context) : {}),
-      ...(updatedFormattedMetafields ?? {}),
-    };
-
-    return obj;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    return new CustomerRestFetcher(context).updateWithMetafields(
+      { original: undefined, updated: row },
+      metafieldKeyValueSets
+    );
   },
 });
 
 export const Action_DeleteCustomer = coda.makeFormula({
   name: 'DeleteCustomer',
-  description: 'Delete an existing Shopify customer and return true on success.',
+  description: 'Delete an existing Shopify customer and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.customer.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([customerId], context) {
-    await deleteCustomer(customerId, context);
+    await new CustomerRestFetcher(context).delete(customerId);
     return true;
   },
 });
@@ -443,10 +373,11 @@ export const Formula_Customer = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: CustomerSyncTableSchema,
-  execute: async ([customer_id], context) => {
-    const customerResponse = await fetchSingleCustomerRest(customer_id, context);
-    if (customerResponse.body?.customer) {
-      return formatCustomerForSchemaFromRestApi(customerResponse.body.customer, context);
+  execute: async ([customerId], context) => {
+    const customerFetcher = new CustomerRestFetcher(context);
+    const response = await customerFetcher.fetch(customerId);
+    if (response.body?.customer) {
+      return customerFetcher.formatApiToRow(response.body.customer);
     }
   },
 });

@@ -1,26 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  CACHE_DEFAULT,
-  DEFAULT_PRODUCT_OPTION_NAME,
-  DEFAULT_PRODUCT_STATUS_REST,
-  IDENTITY_PRODUCT,
-  METAFIELD_PREFIX_KEY,
-  OPTIONS_PRODUCT_STATUS_REST,
-  REST_DEFAULT_API_VERSION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
-import {
-  fetchSingleProductRest,
-  formatProductForSchemaFromRestApi,
-  validateProductParams,
-  createProductRest,
-  fetchProductTypesGraphQl,
-  deleteProductRest,
-  handleProductUpdateJob,
-  updateProductRest,
-} from './products-functions';
+import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, IDENTITY_PRODUCT, REST_DEFAULT_LIMIT } from '../constants';
+import { fetchProductTypesGraphQl, ProductRestFetcher } from './products-functions';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
 import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
 import { filters, inputs } from '../shared-parameters';
@@ -30,34 +12,29 @@ import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
-  idToGraphQlGid,
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
+import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  parseMetafieldsCodaInput,
   preprendPrefixToMetaFieldKey,
-  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-
-// Import types
-import { GetProductsMetafieldsQuery, GetProductsMetafieldsQueryVariables } from '../types/admin.generated';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
-import { ProductSyncTableRestParams, ProductCreateRestParams, ProductUpdateRestParams } from '../types/Product';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { getTemplateSuffixesFor, makeAutocompleteTemplateSuffixesFor } from '../themes/themes-functions';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+
+import type { GetProductsMetafieldsQuery, GetProductsMetafieldsQueryVariables } from '../types/admin.generated';
+import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import type { ProductSyncTableRestParams, ProductCreateRestParams } from '../types/Product';
+import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
+import type { ProductRow } from '../types/CodaRows';
 
 // #endregion
 
@@ -161,7 +138,7 @@ export const Sync_Products = coda.makeSyncTable({
         }
       }
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof ProductSyncTableSchemaRest>> = [];
+      let restItems: Array<ProductRow> = [];
       let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
@@ -184,22 +161,18 @@ export const Sync_Products = coda.makeSyncTable({
           published_at_min: published_at ? published_at[0] : undefined,
           published_at_max: published_at ? published_at[1] : undefined,
         });
-        validateProductParams(restParams, true);
+        const productFetcher = new ProductRestFetcher(context);
+        productFetcher.validateParams(restParams);
 
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/products.json`,
-            restParams
-          );
-        }
-        const { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+        const url = prevContinuation?.nextUrl
+          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+          : productFetcher.getFetchAllUrl(restParams);
+
+        const { response, continuation } = await makeSyncTableGetRequest<{ products: ProductRest[] }>({ url }, context);
         restContinuation = continuation;
 
         if (response?.body?.products) {
-          restItems = response.body.products.map((product) => formatProductForSchemaFromRestApi(product, context));
+          restItems = response.body.products.map(productFetcher.formatApiToRow);
         }
 
         if (!shouldSyncMetafields) {
@@ -284,20 +257,7 @@ export const Sync_Products = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Product }, context)
-        : [];
-
-      const jobs = updates.map((update) => handleProductUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return new ProductRestFetcher(context).executeSyncTableUpdate(updates);
     },
   },
 });
@@ -329,7 +289,8 @@ export const Action_CreateProduct = coda.makeFormula({
     [title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, options, imageUrls, metafields],
     context
   ) {
-    const restParams: ProductCreateRestParams = {
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    let newRow: Partial<ProductRow> = {
       title,
       body_html: bodyHtml,
       handle,
@@ -337,39 +298,19 @@ export const Action_CreateProduct = coda.makeFormula({
       tags: tags ? tags.join(',') : undefined,
       template_suffix: templateSuffix,
       vendor,
-      status,
-      options: options ? options.map((option) => ({ name: option, values: [DEFAULT_PRODUCT_OPTION_NAME] })) : undefined,
-      images: imageUrls ? imageUrls.map((url) => ({ src: url })) : undefined,
+      status: status ?? DEFAULT_PRODUCT_STATUS_REST,
+      options: options.join(','),
+      images: imageUrls,
     };
-    // We need to add a default variant to the product if some options are defined
-    if (restParams.options && Array.isArray(restParams.options) && restParams.options.length) {
-      restParams.variants = [
-        {
-          option1: DEFAULT_PRODUCT_OPTION_NAME,
-          option2: DEFAULT_PRODUCT_OPTION_NAME,
-          option3: DEFAULT_PRODUCT_OPTION_NAME,
-        },
-      ];
-    }
-    if (!restParams.status) {
-      restParams.status = DEFAULT_PRODUCT_STATUS_REST;
-    }
 
-    if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-      const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter(Boolean);
-      if (metafieldRestInputs.length) {
-        restParams.metafields = metafieldRestInputs;
-      }
-    }
-
-    const response = await createProductRest(restParams, context);
-    return response.body.product.id;
+    const productFetcher = new ProductRestFetcher(context);
+    const restParams = productFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ProductCreateRestParams;
+    const response = await productFetcher.create(restParams);
+    return response?.body?.product?.id;
   },
 });
 
+// TODO: update image urls ?
 export const Action_UpdateProduct = coda.makeFormula({
   name: 'UpdateProduct',
   description: 'Update an existing Shopify product and return the updated data.',
@@ -394,57 +335,37 @@ export const Action_UpdateProduct = coda.makeFormula({
   // schema: coda.withIdentity(ProductSchemaRest, IDENTITY_PRODUCT),
   schema: ProductSyncTableSchemaRest,
   execute: async function (
-    [productId, title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, metafields],
+    [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
     context
   ) {
-    const restParams: ProductUpdateRestParams = {
-      body_html: bodyHtml,
+    let row: ProductRow = {
+      id: productId,
+      body_html,
       handle,
-      product_type: productType,
+      product_type,
       tags: tags ? tags.join(',') : undefined,
-      template_suffix: templateSuffix,
+      template_suffix,
       title,
       vendor,
       status,
     };
-
-    const promises: (Promise<any> | undefined)[] = [];
-    promises.push(updateProductRest(productId, restParams, context));
-    if (metafields && metafields.length) {
-      promises.push(
-        updateAndFormatResourceMetafieldsGraphQl(
-          {
-            ownerGid: idToGraphQlGid(GraphQlResource.Product, productId),
-            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
-            schemaWithIdentity: false,
-          },
-          context
-        )
-      );
-    } else {
-      promises.push(undefined);
-    }
-
-    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
-    const obj = {
-      id: productId,
-      ...(restResponse?.body?.product ? formatProductForSchemaFromRestApi(restResponse.body.product, context) : {}),
-      ...(updatedFormattedMetafields ?? {}),
-    };
-
-    return obj;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    return new ProductRestFetcher(context).updateWithMetafields(
+      { original: undefined, updated: row },
+      metafieldKeyValueSets
+    );
   },
 });
 
 export const Action_DeleteProduct = coda.makeFormula({
   name: 'DeleteProduct',
-  description: 'Delete an existing Shopify product and return true on success.',
+  description: 'Delete an existing Shopify product and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.product.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([productId], context) {
-    await deleteProductRest(productId, context);
+    await new ProductRestFetcher(context).delete(productId);
     return true;
   },
 });
@@ -460,9 +381,10 @@ export const Formula_Product = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ProductSyncTableSchemaRest,
   execute: async ([productId], context) => {
-    const response = await fetchSingleProductRest(productId, context);
+    const productFetcher = new ProductRestFetcher(context);
+    const response = await productFetcher.fetch(productId);
     if (response?.body?.product) {
-      return formatProductForSchemaFromRestApi(response.body.product, context);
+      return productFetcher.formatApiToRow(response.body.product);
     }
   },
 });

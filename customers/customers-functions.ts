@@ -1,8 +1,5 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
-
-import { cleanQueryParams, makeDeleteRequest, makeGetRequest, makePostRequest, makePutRequest } from '../helpers-rest';
-import { REST_DEFAULT_API_VERSION } from '../constants';
-import { FetchRequestOptions } from '../types/Requests';
 
 import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
@@ -10,213 +7,114 @@ import {
   CONSENT_STATE__UNSUBSCRIBED,
   CustomerSyncTableSchema,
 } from '../schemas/syncTable/CustomerSchema';
-import { idToGraphQlGid } from '../helpers-graphql';
-import {
-  separatePrefixedMetafieldsKeysFromKeys,
-  getMetafieldKeyValueSetsFromUpdate,
-  updateAndFormatResourceMetafieldsGraphQl,
-} from '../metafields/metafields-functions';
-import { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
-import { MetafieldDefinitionFragment } from '../types/admin.generated';
+import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { SimpleRest } from '../Fetchers/SimpleRest';
+import { RestResourceName } from '../types/RequestsRest';
 
-// #region Helpers
-/*
-export function customerCodaParamsToRest(params: CustomerCreateRestParams & CustomerUpdateRestParams) {
-  if (params.accepts_email_marketing !== undefined) {
-    params.email_marketing_consent = {
-      state:
-        params.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-      opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-    };
-  }
-  if (params.accepts_sms_marketing !== undefined) {
-    params.sms_marketing_consent = {
-      state:
-        params.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-      opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-    };
+import type { Customer as CustomerRest } from '@shopify/shopify-api/rest/admin/2023-10/customer';
+import type { CustomerRow } from '../types/CodaRows';
+import type { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
+import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
+
+// #endregion
+
+// #region Class
+export class CustomerRestFetcher extends SimpleRest<RestResourceName.Customer, typeof CustomerSyncTableSchema> {
+  constructor(context: coda.ExecutionContext) {
+    super(RestResourceName.Customer, CustomerSyncTableSchema, context);
   }
 
-  return params;
-}
-*/
+  formatRowToApi = (
+    row: Partial<CustomerRow>,
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): CustomerUpdateRestParams | CustomerCreateRestParams | undefined => {
+    let restParams: CustomerUpdateRestParams | CustomerCreateRestParams = {};
 
-function formatCustomerStandardFieldsRestParams(
-  standardFromKeys: string[],
-  values: coda.SyncUpdate<string, string, typeof CustomerSyncTableSchema>['newValue']
-) {
-  const restParams: any = {};
-  standardFromKeys.forEach((fromKey) => {
-    const value = values[fromKey];
+    if (row.first_name !== undefined) restParams.first_name = row.first_name;
+    if (row.last_name !== undefined) restParams.last_name = row.last_name;
+    if (row.email !== undefined) restParams.email = row.email;
+    if (row.phone !== undefined) restParams.phone = row.phone;
+    if (row.note !== undefined) restParams.note = row.note;
+    if (row.tags !== undefined) restParams.tags = row.tags;
 
-    // Edge cases
-    if (fromKey === 'accepts_email_marketing') {
+    if (row.accepts_email_marketing !== undefined)
       restParams.email_marketing_consent = {
-        state: value === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        state:
+          row.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
-    } else if (fromKey === 'accepts_sms_marketing') {
+    if (row.accepts_sms_marketing !== undefined)
       restParams.sms_marketing_consent = {
-        state: value === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
+        state: row.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
+
+    const metafieldRestInputs = metafieldKeyValueSets.length
+      ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
+      : [];
+    if (metafieldRestInputs.length) {
+      restParams = { ...restParams, metafields: metafieldRestInputs } as CustomerCreateRestParams;
     }
-    // No processing needed
-    else {
-      restParams[fromKey] = value;
+
+    // Means we have nothing to update/create
+    if (Object.keys(restParams).length === 0) return undefined;
+    return restParams;
+  };
+
+  formatApiToRow = (customer): CustomerRow => {
+    let obj: CustomerRow = {
+      ...customer,
+      admin_url: `${this.context.endpoint}/admin/customers/${customer.id}`,
+      display: formatCustomerDisplayValue(customer),
+      // Disabled for now, prefer to use simple checkboxes
+      // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
+      // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
+    };
+
+    if (customer.default_address) {
+      obj.default_address = {
+        display: formatAddressDisplayName(customer.default_address),
+        ...customer.default_address,
+      };
     }
-  });
+    if (customer.addresses) {
+      obj.addresses = customer.addresses.map((address) => ({
+        display: formatAddressDisplayName(address),
+        ...address,
+      }));
+    }
+    if (customer.email_marketing_consent) {
+      obj.accepts_email_marketing = customer.email_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+    }
+    if (customer.sms_marketing_consent) {
+      obj.accepts_sms_marketing = customer.sms_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+    }
 
-  return restParams;
-}
+    return obj;
+  };
 
-export async function handleCustomerUpdateJob(
-  update: coda.SyncUpdate<string, string, typeof CustomerSyncTableSchema>,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
-  context: coda.ExecutionContext
-) {
-  const { updatedFields } = update;
-  const { prefixedMetafieldFromKeys, standardFromKeys } = separatePrefixedMetafieldsKeysFromKeys(updatedFields);
-
-  const subJobs: (Promise<any> | undefined)[] = [];
-  const customerId = update.previousValue.id as number;
-
-  if (standardFromKeys.length) {
-    const restParams: CustomerUpdateRestParams = formatCustomerStandardFieldsRestParams(
-      standardFromKeys,
-      update.newValue
-    );
-    subJobs.push(updateCustomerRest(customerId, restParams, context));
-  } else {
-    subJobs.push(undefined);
-  }
-
-  if (prefixedMetafieldFromKeys.length) {
-    subJobs.push(
-      updateAndFormatResourceMetafieldsGraphQl(
-        {
-          ownerGid: idToGraphQlGid(GraphQlResource.Customer, customerId),
-          metafieldKeyValueSets: await getMetafieldKeyValueSetsFromUpdate(
-            prefixedMetafieldFromKeys,
-            update.newValue,
-            metafieldDefinitions,
-            context
-          ),
-        },
-        context
-      )
-    );
-  } else {
-    subJobs.push(undefined);
-  }
-
-  let obj = { ...update.previousValue };
-
-  const [restResponse, metafields] = await Promise.all(subJobs);
-  if (restResponse?.body?.customer) {
-    obj = {
-      ...obj,
-      ...formatCustomerForSchemaFromRestApi(restResponse.body.customer, context),
-    };
-  }
-  if (metafields) {
-    obj = {
-      ...obj,
-      ...metafields,
-    };
-  }
-
-  return obj;
+  updateWithMetafields = async (
+    row: {
+      original?: CustomerRow;
+      updated: CustomerRow;
+    },
+    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+  ): Promise<CustomerRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }
 // #endregion
 
 // #region Formatting
-export const formatCustomerForSchemaFromRestApi = (customer, context: coda.ExecutionContext) => {
-  let obj: any = {
-    ...customer,
-    admin_url: `${context.endpoint}/admin/customers/${customer.id}`,
-    // Disabled for now, prefer to use simple checkboxes
-    // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
-    // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
-  };
-
+export function formatCustomerDisplayValue(
+  customer: Pick<CustomerRest, 'id' | 'first_name' | 'last_name' | 'email'>
+): string {
   if (customer.first_name || customer.last_name) {
-    obj.display = [customer.first_name, customer.last_name].filter((p) => p && p !== '').join(' ');
+    return [customer.first_name, customer.last_name].filter((p) => p && p !== '').join(' ');
   } else if (customer.email) {
-    obj.display = customer.email;
-  } else {
-    obj.display = customer.id;
+    return customer.email;
   }
-  if (customer.default_address) {
-    obj.default_address = {
-      display: formatAddressDisplayName(customer.default_address),
-      ...customer.default_address,
-    };
-  }
-  if (customer.addresses) {
-    obj.addresses = customer.addresses.map((address) => ({
-      display: formatAddressDisplayName(address),
-      ...address,
-    }));
-  }
-  if (customer.email_marketing_consent) {
-    obj.accepts_email_marketing = customer.email_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
-  }
-  if (customer.sms_marketing_consent) {
-    obj.accepts_sms_marketing = customer.sms_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
-  }
-
-  return obj;
-};
-// #endregion
-
-// #region Rest requests
-export const fetchSingleCustomerRest = (
-  customerId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makeGetRequest({ ...requestOptions, url }, context);
-};
-
-export function createCustomerRest(
-  params: CustomerCreateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) {
-  const restParams = cleanQueryParams(params);
-  // validateCustomerParams(restParams);
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers.json`;
-  const payload = { customer: restParams };
-  return makePostRequest({ ...requestOptions, url, payload }, context);
+  return customer.id.toString();
 }
-
-export const updateCustomerRest = async (
-  customerId: number,
-  params: CustomerUpdateRestParams,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const restParams = cleanQueryParams(params);
-  if (Object.keys(restParams).length) {
-    // validateCustomerParams(params);
-    const payload = { customer: restParams };
-    const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-    return makePutRequest({ ...requestOptions, url, payload }, context);
-  }
-};
-
-export const deleteCustomer = async (
-  customerId: number,
-  context: coda.ExecutionContext,
-  requestOptions: FetchRequestOptions = {}
-) => {
-  const url = `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/customers/${customerId}.json`;
-  return makeDeleteRequest({ ...requestOptions, url }, context);
-};
 // #endregion
 
 // #region Unused stuff

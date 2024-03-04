@@ -2,8 +2,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { makeGetRequest } from '../helpers-rest';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, REST_DEFAULT_API_VERSION } from '../constants';
-import { FetchRequestOptions } from '../types/Requests';
-import { CurrencyCode } from '../types/admin.types';
+
+import type { FetchRequestOptions } from '../types/Requests';
+import type { CurrencyCode } from '../types/admin.types';
 
 export const formatShopForSchemaFromRest = (shop, context: coda.ExecutionContext) => {
   let obj: any = {

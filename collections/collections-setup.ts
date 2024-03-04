@@ -4,23 +4,18 @@ import * as coda from '@codahq/packs-sdk';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../schemas/syncTable/CollectSchema';
 import { CollectionSyncTableSchema, collectionFieldDependencies } from '../schemas/syncTable/CollectionSchema';
 import {
-  getCollectionTypeGraphQl,
-  deleteCollectionRest,
-  createCollectionRest,
-  formatCollectionForSchemaFromRestApi,
-  fetchSingleCollectionRest,
-  validateCollectionParams,
-  handleCollectionUpdateJob,
-  formatCollect,
-  updateCollectionRest,
+  CollectionRestFetcher,
+  CustomCollectionRestFetcher,
+  CollectRestFetcher,
+  Collection,
 } from './collections-functions';
 
 import {
   CACHE_DEFAULT,
+  COLLECTION_TYPE__CUSTOM,
+  COLLECTION_TYPE__SMART,
   IDENTITY_COLLECT,
   IDENTITY_COLLECTION,
-  METAFIELD_PREFIX_KEY,
-  REST_DEFAULT_API_VERSION,
   REST_DEFAULT_LIMIT,
 } from '../constants';
 import { filters, inputs } from '../shared-parameters';
@@ -28,7 +23,6 @@ import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   getMixedSyncTableRemainingAndToProcessItems,
   graphQlGidToId,
-  idToGraphQlGid,
   makeMixedSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
@@ -36,31 +30,25 @@ import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import {
   augmentSchemaWithMetafields,
   formatMetaFieldValueForSchema,
-  formatMetafieldRestInputFromMetafieldKeyValueSet,
   getMetaFieldFullKey,
+  parseMetafieldsCodaInput,
   preprendPrefixToMetaFieldKey,
-  updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
-import { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
 import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
-import {
-  CollectionCreateRestParams,
-  CollectionSyncTableRestParams,
-  CollectionUpdateRestParams,
-} from '../types/Collection';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { restResources } from '../types/RequestsRest';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { ObjectSchemaDefinitionType } from '@codahq/packs-sdk/dist/schema';
+
+import { MetafieldOwnerType } from '../types/admin.types';
+import type { Collect as CollectRest } from '@shopify/shopify-api/rest/admin/2023-10/collect';
+import type { CollectionCreateRestParams, CollectionSyncTableRestParams } from '../types/Collection';
+import type { CollectRow, CollectionRow } from '../types/CodaRows';
+import type { CollectSyncTableRestParams } from '../types/Collect';
+import type { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
+import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -94,23 +82,22 @@ export const Sync_Collects = coda.makeSyncTable({
       const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
       const syncedFields = handleFieldDependencies(effectivePropertyKeys, collectFieldDependencies);
 
-      const params = cleanQueryParams({
+      const restParams = cleanQueryParams({
         fields: syncedFields.join(', '),
         limit: REST_DEFAULT_LIMIT,
         collection_id: collectionId,
-      });
+      } as CollectSyncTableRestParams);
 
-      let url =
-        prevContinuation?.nextUrl ??
-        coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/collects.json`, params);
+      const collectFetcher = new CollectRestFetcher(context);
+      let url = prevContinuation?.nextUrl ?? collectFetcher.getFetchAllUrl(restParams);
 
-      let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest({ url }, context);
+      let restItems: Array<CollectRow> = [];
+      let { response, continuation } = await makeSyncTableGetRequest<{ collects: CollectRest[] }>({ url }, context);
       if (response?.body?.collects) {
-        restResult = response.body.collects.map((collect) => formatCollect(collect, context));
+        restItems = response.body.collects.map(collectFetcher.formatApiToRow);
       }
 
-      return { result: restResult, continuation };
+      return { result: restItems, continuation };
     },
   },
 });
@@ -182,11 +169,11 @@ export const Sync_Collections = coda.makeSyncTable({
         }
       }
 
-      let restItems: Array<ObjectSchemaDefinitionType<any, any, typeof CollectionSyncTableSchema>> = [];
+      let restItems: Array<CollectionRow> = [];
       let restContinuation: SyncTableRestContinuation | null = null;
       const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
 
-      let restType = prevContinuation?.extraContinuationData?.restType ?? 'custom_collections';
+      let restType = prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
 
       // Rest Admin API Sync
       if (!skipNextRestSync) {
@@ -207,41 +194,30 @@ export const Sync_Collections = coda.makeSyncTable({
           published_at_max: published_at ? published_at[1] : undefined,
         } as CollectionSyncTableRestParams);
 
-        validateCollectionParams(restParams);
+        const collectionFetcher = Collection.getFetcherOfType(restType, context);
+        collectionFetcher.validateParams(restParams);
 
-        let url: string;
-        if (prevContinuation?.nextUrl) {
-          url = coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit });
-        } else {
-          url = coda.withQueryParams(
-            `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restType}.json`,
-            restParams
-          );
-        }
+        const url: string = prevContinuation?.nextUrl
+          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
+          : collectionFetcher.getFetchAllUrl(restParams);
+
         const { response, continuation } = await makeSyncTableGetRequest(
-          {
-            url,
-            extraContinuationData: { restType },
-          },
+          { url, extraContinuationData: { restType } },
           context
         );
         restContinuation = continuation;
 
-        if (response?.body[restType]) {
-          restItems = response.body[restType].map((collection) =>
-            formatCollectionForSchemaFromRestApi(collection, context)
-          );
+        if (response?.body[collectionFetcher.plural]) {
+          restItems = response.body[collectionFetcher.plural].map(collectionFetcher.formatApiToRow);
         }
 
         // finished syncing custom collections, we will sync smart collections in the next run
-        if (restType === 'custom_collections' && !restContinuation?.nextUrl) {
-          restType = 'smart_collections';
+        if (collectionFetcher instanceof CustomCollectionRestFetcher && !restContinuation?.nextUrl) {
+          restType = COLLECTION_TYPE__SMART;
+          const nextCollectionFetcher = Collection.getFetcherOfType(restType, context);
           restContinuation = {
             ...restContinuation,
-            nextUrl: coda.withQueryParams(
-              `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${restType}.json`,
-              restParams
-            ),
+            nextUrl: nextCollectionFetcher.getFetchAllUrl(restParams),
             extraContinuationData: {
               ...restContinuation?.extraContinuationData,
               restType,
@@ -334,20 +310,7 @@ export const Sync_Collections = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-      const hasUpdatedMetaFields = allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
-      const metafieldDefinitions = hasUpdatedMetaFields
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Collection }, context)
-        : [];
-
-      const jobs = updates.map((update) => handleCollectionUpdateJob(update, metafieldDefinitions, context));
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return Collection.executeSyncTableUpdate(updates, context);
     },
   },
 });
@@ -356,7 +319,7 @@ export const Sync_Collections = coda.makeSyncTable({
 // #region Actions
 export const Action_CreateCollection = coda.makeFormula({
   name: 'CreateCollection',
-  description: `Create a new Shopify Collection and return its ID.`,
+  description: `Create a new Shopify Collection and return its ID. The collection will be unpublished by default.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
     { ...inputs.general.title, description: 'The name of the collection.' },
@@ -372,43 +335,28 @@ export const Action_CreateCollection = coda.makeFormula({
   ],
 
   isAction: true,
-  resultType: coda.ValueType.String,
-  // TODO: support creating smart collections
-  // Collections are unpublished by default
+  resultType: coda.ValueType.Number,
   execute: async function (
-    [title, bodyHtml, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
+    [title, body_html, handle, image_url, image_alt_text, published, template_suffix, metafields],
     context
   ) {
-    const restParams: CollectionCreateRestParams = {
+    const defaultPublishedStatus = false;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    let newRow: Partial<CollectionRow> = {
       title,
-      body_html: bodyHtml,
+      body_html,
       handle,
-      published,
-      template_suffix: templateSuffix,
+      published: published ?? defaultPublishedStatus,
+      template_suffix,
+      image_url,
+      image_alt_text,
     };
 
-    if (imageUrl) {
-      restParams.image = {
-        ...(restParams.image ?? {}),
-        src: imageUrl,
-      };
-      if (imageAlt) {
-        restParams.image.alt = imageAlt;
-      }
-    }
-
-    if (metafields && metafields.length) {
-      const parsedMetafieldKeyValueSets: CodaMetafieldKeyValueSet[] = metafields.map((m) => JSON.parse(m));
-      const metafieldRestInputs = parsedMetafieldKeyValueSets
-        .map(formatMetafieldRestInputFromMetafieldKeyValueSet)
-        .filter(Boolean);
-      if (metafieldRestInputs.length) {
-        restParams.metafields = metafieldRestInputs;
-      }
-    }
-
-    const response = await createCollectionRest(restParams, context);
-    return response.body.custom_collection.id;
+    // TODO: support creating smart collections
+    const collectionFetcher = new CustomCollectionRestFetcher(context);
+    const restParams = collectionFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as CollectionCreateRestParams;
+    const response = await collectionFetcher.create(restParams);
+    return response?.body?.custom_collection.id;
   },
 });
 
@@ -438,70 +386,32 @@ export const Action_UpdateCollection = coda.makeFormula({
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
   ) => {
-    const restParams: CollectionUpdateRestParams = {
+    let row: CollectionRow = {
+      id: collectionId,
       body_html: bodyHtml,
       handle,
       published,
       template_suffix: templateSuffix,
       title,
+      image_alt_text: imageAlt,
+      image_url: imageUrl,
     };
-    if (imageUrl) {
-      restParams.image = { ...(restParams.image ?? {}), src: imageUrl };
-    }
-    if (imageAlt) {
-      restParams.image = { ...(restParams.image ?? {}), alt: imageAlt };
-    }
-
-    const collectionType = await getCollectionTypeGraphQl(
-      idToGraphQlGid(GraphQlResource.Collection, collectionId),
-      context
-    );
-
-    const promises: (Promise<any> | undefined)[] = [];
-    promises.push(updateCollectionRest(collectionId, collectionType, restParams, context));
-    if (metafields && metafields.length) {
-      // TODO: Je pense qu'on peut le faire avec GraphQL
-      promises.push(
-        updateAndFormatResourceMetafieldsRest(
-          {
-            ownerId: collectionId,
-            ownerResource: restResources.Collection,
-            metafieldKeyValueSets: metafields.map((s) => JSON.parse(s)),
-            schemaWithIdentity: false,
-          },
-          context
-        )
-      );
-    } else {
-      promises.push(undefined);
-    }
-
-    const [restResponse, updatedFormattedMetafields] = await Promise.all(promises);
-    const obj = {
-      id: collectionId,
-      ...(restResponse?.body[collectionType]
-        ? formatCollectionForSchemaFromRestApi(restResponse.body[collectionType], context)
-        : {}),
-      ...(updatedFormattedMetafields ?? {}),
-    };
-
-    return obj;
+    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
+    const collectionFetcher = await Collection.getFetcher(collectionId, context);
+    return collectionFetcher.updateWithMetafields({ original: undefined, updated: row }, metafieldKeyValueSets);
   },
 });
 
 export const Action_DeleteCollection = coda.makeFormula({
   name: 'DeleteCollection',
-  description: 'Delete an existing Shopify Collection and return true on success.',
+  description: 'Delete an existing Shopify Collection and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.collection.id],
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([collectionId], context) {
-    const collectionType = await getCollectionTypeGraphQl(
-      idToGraphQlGid(GraphQlResource.Collection, collectionId),
-      context
-    );
-    await deleteCollectionRest(collectionId, collectionType, context);
+    const collectionFetcher = await Collection.getFetcher(collectionId, context);
+    await collectionFetcher.delete(collectionId);
     return true;
   },
 });
@@ -521,9 +431,10 @@ export const Formula_Collection = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: CollectionSyncTableSchema,
   execute: async function ([collectionId], context) {
-    const response = await fetchSingleCollectionRest(collectionId, context);
-    if (response?.body?.collection) {
-      return formatCollectionForSchemaFromRestApi(response.body.collection, context);
+    const collectionFetcher = new CollectionRestFetcher(context);
+    const collectionResponse = await collectionFetcher.fetch(collectionId);
+    if (collectionResponse?.body?.collection) {
+      return collectionFetcher.formatApiToRow(collectionResponse.body.collection);
     }
   },
 });

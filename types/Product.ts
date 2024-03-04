@@ -1,4 +1,4 @@
-import { MetafieldRestInput } from './Metafields';
+import type { MetafieldRestInput } from './Metafields';
 
 export interface ProductSyncTableRestParams {
   fields?: string;

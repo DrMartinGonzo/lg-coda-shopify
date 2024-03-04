@@ -3,7 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 
 import { IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
-import { AllMetafieldTypeValue } from '../types/Metafields';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
@@ -15,8 +14,7 @@ import {
   createMetaObjectGraphQl,
   formatMetaobjectForSchemaFromGraphQlApi,
 } from './metaobjects-functions';
-import { capitalizeFirstChar, compareByDisplayKey, getObjectSchemaEffectiveKeys, isString } from '../helpers';
-import { MetaobjectFieldInput } from '../types/admin.types';
+import { capitalizeFirstChar, compareByDisplayKey, retrieveObjectSchemaEffectiveKeys, isString } from '../helpers';
 import { formatMetafieldValueForApi, mapMetaFieldToSchemaProperty } from '../metafields/metafields-functions';
 import { MetaObjectSyncTableBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
 import {
@@ -25,7 +23,6 @@ import {
   makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
-import { SyncTableGraphQlContinuation } from '../types/tableSync';
 import { buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
 import { inputs } from '../shared-parameters';
 import { GraphQlResource } from '../types/RequestsGraphQl';
@@ -34,6 +31,11 @@ import {
   fetchSingleMetaObjectDefinition,
   requireMatchingMetaobjectFieldDefinition,
 } from '../metaobjectDefinitions/metaobjectDefinitions-functions';
+
+import type { MetaobjectFragment } from '../types/Metaobject';
+import type { MetaobjectFieldInput } from '../types/admin.types';
+import type { AllMetafieldTypeValue } from '../types/Metafields';
+import type { SyncTableGraphQlContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -133,7 +135,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
         (await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context));
 
       // Separate constant fields keys from the custom ones
-      const constantKeys = getObjectSchemaEffectiveKeys(MetaObjectSyncTableBaseSchema).concat('status');
+      const constantKeys = retrieveObjectSchemaEffectiveKeys(MetaObjectSyncTableBaseSchema).concat('status');
       const optionalFieldsKeys = effectivePropertyKeys.filter((key) => !constantKeys.includes(key));
 
       const payload = {
@@ -148,7 +150,15 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
         },
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<{
+        metaobjects: {
+          nodes: MetaobjectFragment[];
+          pageInfo: {
+            endCursor: string;
+            hasNextPage: boolean;
+          };
+        };
+      }>(
         {
           payload,
           maxEntriesPerRun,
