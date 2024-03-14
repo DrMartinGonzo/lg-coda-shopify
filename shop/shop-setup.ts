@@ -1,15 +1,11 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ShopRestFetcher } from './shop-functions';
-import { CACHE_DEFAULT, IDENTITY_SHOP } from '../constants';
+import { ShopRestFetcher, ShopSyncTable } from './shop-functions';
+import { CACHE_DEFAULT } from '../constants';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-
-import type { ShopSyncRestParams } from '../types/Shop';
-import type { multipleFetchData } from '../Fetchers/SimpleRest';
-import type { RestResourceName } from '../types/RequestsRest';
 import { filters } from '../shared-parameters';
+import { Identity } from '../constants';
 
 // #endregion
 
@@ -18,31 +14,16 @@ export const Sync_Shops = coda.makeSyncTable({
   name: 'Shops',
   description: 'Return Shop from specified account.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_SHOP,
+  identityName: Identity.Shop,
   schema: ShopSyncTableSchema,
   formula: {
     name: 'SyncShops',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
-    execute: async function ([], context: coda.SyncExecutionContext) {
+    execute: async function (params, context: coda.SyncExecutionContext) {
       const schema = context.sync.schema ?? ShopSyncTableSchema;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-
-      const restParams: ShopSyncRestParams = cleanQueryParams({
-        fields: effectivePropertyKeys.filter((key) => !['admin_url'].includes(key)).join(','),
-      });
-      const shopFetcher = new ShopRestFetcher(context);
-
-      let url = shopFetcher.getFetchAllUrl(restParams);
-      let { response, continuation } = await makeSyncTableGetRequest<multipleFetchData<RestResourceName.Shop>>(
-        { url },
-        context
-      );
-
-      return {
-        result: response?.body?.shop ? [shopFetcher.formatApiToRow(response.body.shop)] : [],
-        continuation,
-      };
+      const shopSyncTable = new ShopSyncTable(new ShopRestFetcher(context), params);
+      return shopSyncTable.executeSync(schema);
     },
   },
 });

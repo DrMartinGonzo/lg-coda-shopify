@@ -1,54 +1,28 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CollectSyncTableSchema, collectFieldDependencies } from '../schemas/syncTable/CollectSchema';
-import { CollectionSyncTableSchema, collectionFieldDependencies } from '../schemas/syncTable/CollectionSchema';
+import { CollectSyncTableSchema } from '../schemas/syncTable/CollectSchema';
+import { CollectionSyncTableSchema } from '../schemas/syncTable/CollectionSchema';
 import {
   CollectionRestFetcher,
   CustomCollectionRestFetcher,
   CollectRestFetcher,
   Collection,
+  CollectSyncTable,
 } from './collections-functions';
 
-import {
-  CACHE_DEFAULT,
-  COLLECTION_TYPE__CUSTOM,
-  COLLECTION_TYPE__SMART,
-  IDENTITY_COLLECT,
-  IDENTITY_COLLECTION,
-  REST_DEFAULT_LIMIT,
-} from '../constants';
-import { filters, inputs } from '../shared-parameters';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
-import { QueryCollectionsMetafieldsAdmin, buildCollectionsSearchQuery } from './collections-graphql';
+import { CACHE_DEFAULT, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../constants';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-
 import { MetafieldOwnerType } from '../types/admin.types';
-import type { Collect as CollectRest } from '@shopify/shopify-api/rest/admin/2023-10/collect';
-import type { CollectionCreateRestParams, CollectionSyncTableRestParams } from '../types/Collection';
-import type { CollectRow, CollectionRow } from '../types/CodaRows';
-import type { CollectSyncTableRestParams } from '../types/Collect';
-import type { GetCollectionsMetafieldsQuery, GetCollectionsMetafieldsQueryVariables } from '../types/admin.generated';
-import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import { Identity } from '../constants';
+import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
+
+import type { Collection as CollectionType } from '../typesNew/Resources/Collection';
+import type { SyncTableMixedContinuation } from '../types/SyncTable';
 
 // #endregion
 
@@ -71,33 +45,15 @@ export const Sync_Collects = coda.makeSyncTable({
   name: 'Collects',
   description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_COLLECT,
+  identityName: Identity.Collect,
   schema: CollectSyncTableSchema,
   formula: {
     name: 'SyncCollects',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [{ ...filters.collection.id, optional: true }],
-    execute: async ([collectionId], context: coda.SyncExecutionContext) => {
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-      const syncedFields = handleFieldDependencies(effectivePropertyKeys, collectFieldDependencies);
-
-      const restParams = cleanQueryParams({
-        fields: syncedFields.join(', '),
-        limit: REST_DEFAULT_LIMIT,
-        collection_id: collectionId,
-      } as CollectSyncTableRestParams);
-
-      const collectFetcher = new CollectRestFetcher(context);
-      let url = prevContinuation?.nextUrl ?? collectFetcher.getFetchAllUrl(restParams);
-
-      let restItems: Array<CollectRow> = [];
-      let { response, continuation } = await makeSyncTableGetRequest<{ collects: CollectRest[] }>({ url }, context);
-      if (response?.body?.collects) {
-        restItems = response.body.collects.map(collectFetcher.formatApiToRow);
-      }
-
-      return { result: restItems, continuation };
+    execute: async (params, context: coda.SyncExecutionContext) => {
+      const collectSyncTable = new CollectSyncTable(new CollectRestFetcher(context), params);
+      return collectSyncTable.executeSync(CollectSyncTableSchema);
     },
   },
 });
@@ -107,7 +63,7 @@ export const Sync_Collections = coda.makeSyncTable({
   description:
     'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_COLLECTION,
+  identityName: Identity.Collection,
   schema: CollectionSyncTableSchema,
   dynamicOptions: {
     getSchema: getCollectionSchema,
@@ -134,186 +90,48 @@ export const Sync_Collections = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (
-      [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title],
-      context: coda.SyncExecutionContext
-    ) {
+    execute: async function (params, context: coda.SyncExecutionContext) {
+      const [syncMetafields] = params;
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema =
         context.sync.schema ?? (await wrapGetSchemaForCli(getCollectionSchema, context, { syncMetafields }));
       const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let restLimit = REST_DEFAULT_LIMIT;
-      let maxEntriesPerRun = restLimit;
-      let shouldDeferBy = 0;
-
-      if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
-        const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
-          prevContinuation,
-          context
-        );
-        maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-        restLimit = maxEntriesPerRun;
-        shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-        if (shouldDeferBy > 0) {
-          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-        }
-      }
-
-      let restItems: Array<CollectionRow> = [];
-      let restContinuation: SyncTableRestContinuation | null = null;
-      const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
       let restType = prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
 
-      // Rest Admin API Sync
-      if (!skipNextRestSync) {
-        const syncedStandardFields = handleFieldDependencies(standardFromKeys, collectionFieldDependencies);
-        const restParams = cleanQueryParams({
-          fields: syncedStandardFields.join(', '),
-          limit: restLimit,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          handle,
-          product_id,
-          title,
-          published_status,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          published_at_min: published_at ? published_at[0] : undefined,
-          published_at_max: published_at ? published_at[1] : undefined,
-        } as CollectionSyncTableRestParams);
-
-        const collectionFetcher = Collection.getFetcherOfType(restType, context);
-        collectionFetcher.validateParams(restParams);
-
-        const url: string = prevContinuation?.nextUrl
-          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-          : collectionFetcher.getFetchAllUrl(restParams);
-
-        const { response, continuation } = await makeSyncTableGetRequest(
-          { url, extraContinuationData: { restType } },
-          context
-        );
-        restContinuation = continuation;
-
-        if (response?.body[collectionFetcher.plural]) {
-          restItems = response.body[collectionFetcher.plural].map(collectionFetcher.formatApiToRow);
-        }
-
-        // finished syncing custom collections, we will sync smart collections in the next run
-        if (collectionFetcher instanceof CustomCollectionRestFetcher && !restContinuation?.nextUrl) {
-          restType = COLLECTION_TYPE__SMART;
-          const nextCollectionFetcher = Collection.getFetcherOfType(restType, context);
-          restContinuation = {
-            ...restContinuation,
-            nextUrl: nextCollectionFetcher.getFetchAllUrl(restParams),
-            extraContinuationData: {
-              ...restContinuation?.extraContinuationData,
-              restType,
-            },
-          };
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restItems,
-            continuation: restContinuation,
-          };
-        }
-      }
-
-      // GraphQL Admin API metafields augmented Sync
-      if (shouldSyncMetafields) {
-        const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-          prevContinuation,
-          restItems,
-          maxEntriesPerRun
-        );
-        const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
-        const graphQlPayload = {
-          query: QueryCollectionsMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            cursor: prevContinuation?.cursor,
-            searchQuery: buildCollectionsSearchQuery({ ids: uniqueIdsToFetch }),
-          } as GetCollectionsMetafieldsQueryVariables,
-        };
-
-        let { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeMixedSyncTableGraphQlRequest(
-            {
-              payload: graphQlPayload,
-              maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-              nextRestUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                restType,
-                currentBatch: {
-                  remaining: remaining,
-                  processing: toProcess,
-                },
-              },
-              getPageInfo: (data: GetCollectionsMetafieldsQuery) => data.collections?.pageInfo,
-            },
-            context
-          );
-
-        if (augmentedResponse?.body?.data) {
-          const collectionsData = augmentedResponse.body.data as GetCollectionsMetafieldsQuery;
-          const augmentedItems = toProcess
-            .map((resource) => {
-              const graphQlNodeMatch = collectionsData.collections.nodes.find(
-                (c) => graphQlGidToId(c.id) === resource.id
-              );
-
-              // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-              if (!graphQlNodeMatch) return;
-
-              if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
-                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-                });
-              }
-              return resource;
-            })
-            .filter((p) => p); // filter out undefined items
-
-          return {
-            result: augmentedItems,
-            continuation: augmentedContinuation,
-          };
-        }
-
-        return {
-          result: [],
-          continuation: augmentedContinuation,
-        };
-      }
-
-      return {
-        result: [],
-      };
+      const collectionSyncTable = Collection.getSyncTableOfType(restType, params, context);
+      return collectionSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return Collection.executeSyncTableUpdate(updates, context);
+      const collectionGIds = updates.map((update) =>
+        idToGraphQlGid(GraphQlResourceName.Collection, update.previousValue.id)
+      );
+      const collectionTypes = await Collection.getCollectionTypes(collectionGIds, context);
+
+      const customCollectionsUpdates = collectionTypes
+        .filter((c) => c.type === COLLECTION_TYPE__CUSTOM)
+        .map((c) => updates.find((update) => update.previousValue.id === graphQlGidToId(c.id)));
+      const smartCollectionsUpdates = collectionTypes
+        .filter((c) => c.type === COLLECTION_TYPE__SMART)
+        .map((c) => updates.find((update) => update.previousValue.id === graphQlGidToId(c.id)));
+
+      const jobs: Array<Promise<{ result: any }>> = [];
+      if (customCollectionsUpdates.length) {
+        const customCollectionSyncTable = Collection.getSyncTableOfType(COLLECTION_TYPE__CUSTOM, params, context);
+        jobs.push(customCollectionSyncTable.executeUpdate(customCollectionsUpdates));
+      }
+      if (smartCollectionsUpdates.length) {
+        const customCollectionSyncTable = Collection.getSyncTableOfType(COLLECTION_TYPE__SMART, params, context);
+        jobs.push(customCollectionSyncTable.executeUpdate(smartCollectionsUpdates));
+      }
+
+      return {
+        result: (await Promise.all(jobs)).map((j) => j.result).flat(),
+      };
     },
   },
 });
+
 // #endregion
 
 // #region Actions
@@ -331,7 +149,11 @@ export const Action_CreateCollection = coda.makeFormula({
     { ...inputs.general.imageAlt, optional: true },
     { ...inputs.general.published, description: 'Whether the collection is visible.', optional: true },
     { ...inputs.collection.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Collection metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Collection'),
+    },
   ],
 
   isAction: true,
@@ -342,7 +164,7 @@ export const Action_CreateCollection = coda.makeFormula({
   ) {
     const defaultPublishedStatus = false;
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<CollectionRow> = {
+    let newRow: Partial<CollectionType.Row> = {
       title,
       body_html,
       handle,
@@ -354,7 +176,7 @@ export const Action_CreateCollection = coda.makeFormula({
 
     // TODO: support creating smart collections
     const collectionFetcher = new CustomCollectionRestFetcher(context);
-    const restParams = collectionFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as CollectionCreateRestParams;
+    const restParams = collectionFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as CollectionType.Params.Create;
     const response = await collectionFetcher.create(restParams);
     return response?.body?.custom_collection.id;
   },
@@ -375,18 +197,22 @@ export const Action_UpdateCollection = coda.makeFormula({
     { ...inputs.general.imageAlt, optional: true },
     { ...inputs.general.published, description: 'Whether the collection is visible.', optional: true },
     { ...inputs.collection.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Collection metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Collection'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(CollectionSchema, IDENTITY_COLLECTION),
+  // schema: coda.withIdentity(CollectionSchema, Identity.Collection),
   schema: CollectionSyncTableSchema,
   execute: async (
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
   ) => {
-    let row: CollectionRow = {
+    let row: CollectionType.Row = {
       id: collectionId,
       body_html: bodyHtml,
       handle,

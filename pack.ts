@@ -7,26 +7,34 @@ import * as coda from '@codahq/packs-sdk';
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 import { ShopRestFetcher } from './shop/shop-functions';
 
+import { Formula_ProductStatus, Formula_ProductType } from './helpers-setup';
 import {
-  Formula_MetafieldBooleanValue,
-  Formula_MetafieldCollectionReferenceValue,
-  Formula_MetafieldColorValue,
-  Formula_MetafieldDateTimeValue,
-  Formula_MetafieldDateValue,
-  Formula_MetafieldKeyValueSet,
-  Formula_MetafieldMetaobjectReferenceValue,
-  Formula_MetafieldMixedReferenceValue,
-  Formula_MetafieldPageReferenceValue,
-  Formula_MetafieldProductReferenceValue,
-  Formula_MetafieldSingleLineTextValue,
-  Formula_MetafieldVariantReferenceValue,
-  Formula_MetafieldWeightValue,
-  Formula_ProductStatus,
-  Formula_ProductType,
-  Formula_MetafieldValues,
-  Formula_MetafieldNumberIntegerValue,
-  Formula_MetafieldNumberDecimalValue,
-} from './helpers-setup';
+  Formula_MetaBoolean,
+  Formula_MetaCollectionReference,
+  Formula_MetaColor,
+  Formula_MetaDateTime,
+  Formula_MetaDate,
+  // Formula_MetafieldKeyValueSet,
+  Formula_MetaMetaobjectReference,
+  Formula_MetaMixedReference,
+  Formula_MetaPageReference,
+  Formula_MetaProductReference,
+  Formula_MetaSingleLineText,
+  Formula_MetaVariantReference,
+  Formula_MetaWeight,
+  Formula_MetaNumberInteger,
+  Formula_MetaNumberDecimal,
+  Formula_FormatListMetafield,
+  Formula_FormatMetafield,
+  Formula_MetafieldKey,
+  Formula_MetaUrl,
+  Formula_MetaVolume,
+  Formula_MetaMoney,
+  Formula_MetaJson,
+  Formula_MetaMultiLineText,
+  Formula_MetaDimension,
+  Formula_MetaRating,
+} from './metafields/metafields-setup';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -299,24 +307,32 @@ setupTranslations(pack);
 
 // #region Helper formulas
 // Metafields Helpers
-pack.formulas.push(Formula_MetafieldKeyValueSet);
-pack.formulas.push(Formula_MetafieldValues);
+pack.formulas.push(Formula_FormatMetafield);
+pack.formulas.push(Formula_FormatListMetafield);
+pack.formulas.push(Formula_MetafieldKey);
 
-pack.formulas.push(Formula_MetafieldBooleanValue);
-pack.formulas.push(Formula_MetafieldCollectionReferenceValue);
-pack.formulas.push(Formula_MetafieldColorValue);
-pack.formulas.push(Formula_MetafieldDateTimeValue);
-pack.formulas.push(Formula_MetafieldDateValue);
-pack.formulas.push(Formula_MetafieldNumberDecimalValue);
-pack.formulas.push(Formula_MetafieldNumberIntegerValue);
+pack.formulas.push(Formula_MetaBoolean);
+pack.formulas.push(Formula_MetaCollectionReference);
+pack.formulas.push(Formula_MetaColor);
+pack.formulas.push(Formula_MetaDateTime);
+pack.formulas.push(Formula_MetaDate);
+pack.formulas.push(Formula_MetaDimension);
+pack.formulas.push(Formula_MetaJson);
+pack.formulas.push(Formula_MetaMoney);
+pack.formulas.push(Formula_MetaMultiLineText);
+pack.formulas.push(Formula_MetaNumberDecimal);
+pack.formulas.push(Formula_MetaNumberInteger);
+pack.formulas.push(Formula_MetaUrl);
+pack.formulas.push(Formula_MetaVolume);
+pack.formulas.push(Formula_MetaRating);
 
-pack.formulas.push(Formula_MetafieldMetaobjectReferenceValue);
-pack.formulas.push(Formula_MetafieldMixedReferenceValue);
-pack.formulas.push(Formula_MetafieldPageReferenceValue);
-pack.formulas.push(Formula_MetafieldProductReferenceValue);
-pack.formulas.push(Formula_MetafieldSingleLineTextValue);
-pack.formulas.push(Formula_MetafieldVariantReferenceValue);
-pack.formulas.push(Formula_MetafieldWeightValue);
+pack.formulas.push(Formula_MetaMetaobjectReference);
+pack.formulas.push(Formula_MetaMixedReference);
+pack.formulas.push(Formula_MetaPageReference);
+pack.formulas.push(Formula_MetaProductReference);
+pack.formulas.push(Formula_MetaSingleLineText);
+pack.formulas.push(Formula_MetaVariantReference);
+pack.formulas.push(Formula_MetaWeight);
 
 // Misc Helpers
 pack.formulas.push(Formula_ProductStatus);

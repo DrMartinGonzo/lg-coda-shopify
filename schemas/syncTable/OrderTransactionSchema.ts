@@ -1,9 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderReference } from './OrderSchema';
-import { IDENTITY_ORDER_TRANSACTION, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { OrderTransactionSchema } from '../basic/OrderTransactionSchema';
 import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchema';
+import { Identity } from '../../constants';
 
 export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -42,7 +43,7 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
       useThousandsSeparator: false,
       description: 'The associated order ID.',
     },
-    parentTransaction: coda.makeReferenceSchemaFromObjectSchema(OrderTransactionSchema, IDENTITY_ORDER_TRANSACTION),
+    parentTransaction: coda.makeReferenceSchemaFromObjectSchema(OrderTransactionSchema, Identity.OrderTransaction),
     paymentDetails: {
       ...PaymentDetailsSchema,
       fromKey: 'paymentDetails',

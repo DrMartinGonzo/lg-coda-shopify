@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { CustomerReference } from './CustomerSchema';
 import { NameValueSchema } from '../basic/NameValueSchema';
 import { TaxLineSchema } from '../basic/TaxLineSchema';
@@ -13,8 +13,9 @@ import { DiscountCodeSchema } from '../basic/DiscountCodeSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
+import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/tableSync';
+import type { FieldDependency } from '../../types/SyncTable';
 
 export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -350,12 +351,14 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       fixedId: 'number',
       fromKey: 'number',
+      useThousandsSeparator: false,
       description: "The order's position in the shop's count of orders. Numbers are sequential and start at 1.",
     },
     order_number: {
       type: coda.ValueType.Number,
       fixedId: 'order_number',
       fromKey: 'order_number',
+      useThousandsSeparator: false,
       description:
         "The order's position in the shop's count of orders starting at 1001. Order numbers are sequential and start at 1001.",
     },
@@ -706,5 +709,5 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSyncTableSchema
     dependencies: ['admin_url'],
   },
 ];
-export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, IDENTITY_ORDER);
+export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, Identity.Order);
 export const formatOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });

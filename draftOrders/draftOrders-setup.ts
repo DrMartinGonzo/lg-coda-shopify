@@ -1,40 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, IDENTITY_DRAFT_ORDER, REST_DEFAULT_LIMIT } from '../constants';
-import { DraftOrderRestFetcher } from './draftOrders-functions';
-import { orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
-import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { CACHE_DEFAULT } from '../constants';
+import { DraftOrderRestFetcher, DraftOrderSyncTable } from './draftOrders-functions';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { GetDraftOrdersMetafieldsQuery, GetDraftOrdersMetafieldsQueryVariables } from '../types/admin.generated';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { QueryDraftOrdersMetafieldsAdmin, buildDraftOrdersSearchQuery } from './draftOrders-graphql';
 import { DraftOrderSyncTableSchema } from '../schemas/syncTable/DraftOrderSchema';
+import { Identity } from '../constants';
 
-import type { DraftOrder as DraftOrderRest } from '@shopify/shopify-api/rest/admin/2023-10/draft_order';
-import type { DraftOrderRow } from '../types/CodaRows';
-import type { DraftOrderSyncTableRestParams } from '../types/DraftOrder';
-import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
+import type { DraftOrderRow } from '../typesNew/CodaRows';
 
 // #endregion
 
@@ -82,7 +59,7 @@ export const Sync_DraftOrders = coda.makeSyncTable({
   description:
     'Return DraftOrders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_DRAFT_ORDER,
+  identityName: Identity.DraftOrder,
   schema: DraftOrderSyncTableSchema,
   dynamicOptions: {
     getSchema: getDraftOrderSchema,
@@ -92,162 +69,24 @@ export const Sync_DraftOrders = coda.makeSyncTable({
     name: 'SyncDraftOrders',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [
-      { ...filters.draftOrder.status, optional: true },
       { ...filters.general.syncMetafields, optional: true },
+      { ...filters.draftOrder.status, optional: true },
       { ...filters.general.updatedAtRange, optional: true },
       { ...filters.draftOrder.idArray, optional: true },
       { ...filters.general.sinceId, optional: true },
     ],
-    execute: async function ([status, syncMetafields, updated_at, ids, since_id], context) {
+    execute: async function (params, context) {
+      const [syncMetafields] = params;
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema =
         context.sync.schema ?? (await wrapGetSchemaForCli(getDraftOrderSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let restLimit = REST_DEFAULT_LIMIT;
-      let maxEntriesPerRun = restLimit;
-      let shouldDeferBy = 0;
-
-      if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
-        const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
-          prevContinuation,
-          context
-        );
-        maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-        restLimit = maxEntriesPerRun;
-        shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-        if (shouldDeferBy > 0) {
-          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-        }
-      }
-
-      let restItems: Array<DraftOrderRow> = [];
-      let restContinuation: SyncTableRestContinuation | null = null;
-      const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
-      // Rest Admin API Sync
-      if (!skipNextRestSync) {
-        const syncedStandardFields = handleFieldDependencies(standardFromKeys, orderFieldDependencies);
-        const restParams: DraftOrderSyncTableRestParams = cleanQueryParams({
-          fields: syncedStandardFields.join(', '),
-          limit: restLimit,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          status,
-          since_id,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-        });
-        const draftOrderFetcher = new DraftOrderRestFetcher(context);
-        draftOrderFetcher.validateParams(restParams);
-
-        const url: string = prevContinuation?.nextUrl
-          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-          : draftOrderFetcher.getFetchAllUrl(restParams);
-
-        const { response, continuation } = await makeSyncTableGetRequest<{ draft_orders: DraftOrderRest }>(
-          { url },
-          context
-        );
-        restContinuation = continuation;
-
-        if (response?.body?.draft_orders) {
-          restItems = response.body.draft_orders.map(draftOrderFetcher.formatApiToRow);
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restItems,
-            continuation: restContinuation,
-          };
-        }
-      }
-
-      // GraphQL Admin API metafields augmented Sync
-      if (shouldSyncMetafields) {
-        const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-          prevContinuation,
-          restItems,
-          maxEntriesPerRun
-        );
-        const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
-        const graphQlPayload = {
-          query: QueryDraftOrdersMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            cursor: prevContinuation?.cursor,
-            searchQuery: buildDraftOrdersSearchQuery({ ids: uniqueIdsToFetch }),
-          } as GetDraftOrdersMetafieldsQueryVariables,
-        };
-
-        let { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeMixedSyncTableGraphQlRequest(
-            {
-              payload: graphQlPayload,
-              maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-              nextRestUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                currentBatch: {
-                  remaining: remaining,
-                  processing: toProcess,
-                },
-              },
-              getPageInfo: (data: GetDraftOrdersMetafieldsQuery) => data.draftOrders?.pageInfo,
-            },
-            context
-          );
-
-        if (augmentedResponse?.body?.data) {
-          const draftOrdersData = augmentedResponse.body.data as GetDraftOrdersMetafieldsQuery;
-          const augmentedItems = toProcess
-            .map((resource) => {
-              const graphQlNodeMatch = draftOrdersData.draftOrders.nodes.find(
-                (c) => graphQlGidToId(c.id) === resource.id
-              );
-
-              // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-              if (!graphQlNodeMatch) return;
-
-              if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
-                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-                });
-              }
-              return resource;
-            })
-            .filter((p) => p); // filter out undefined items
-
-          return {
-            result: augmentedItems,
-            continuation: augmentedContinuation,
-          };
-        }
-
-        return {
-          result: [],
-          continuation: augmentedContinuation,
-        };
-      }
-
-      return {
-        result: [],
-      };
+      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), params);
+      return draftOrderSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new DraftOrderRestFetcher(context).executeSyncTableUpdate(updates);
+      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), params);
+      return draftOrderSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -281,12 +120,16 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
       optional: true,
     },
     { ...inputs.general.tagsArray, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'DraftOrder metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'DraftOrder'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
+  // schema: coda.withIdentity(ArticleSchema, Identity.Article),
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId, email, note, tags, metafields], context) {
     let row: DraftOrderRow = {

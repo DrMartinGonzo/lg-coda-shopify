@@ -1,17 +1,53 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
-import { RestResourceName } from '../types/RequestsRest';
-import { SimpleRest } from '../Fetchers/SimpleRest';
+import { redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { cleanQueryParams } from '../helpers-rest';
+import { handleFieldDependencies } from '../helpers';
 
-import type { RedirectRow } from '../types/CodaRows';
+import type { RedirectRow } from '../typesNew/CodaRows';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import type { RedirectCreateRestParams, RedirectUpdateRestParams } from '../types/Redirect';
+import type {
+  RedirectCreateRestParams,
+  RedirectSyncTableRestParams,
+  RedirectUpdateRestParams,
+} from '../types/Redirect';
+import type { Sync_Redirects } from './redirects-setup';
+import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { SyncTableType } from '../types/SyncTable';
+import { redirectResource } from '../allResources';
 
 // #region Class
-export class RedirectRestFetcher extends SimpleRest<RestResourceName.Redirect, typeof RedirectSyncTableSchema> {
+export type RedirectSyncTableType = SyncTableType<
+  typeof redirectResource,
+  RedirectRow,
+  RedirectSyncTableRestParams,
+  RedirectCreateRestParams,
+  RedirectUpdateRestParams
+>;
+
+export class RedirectSyncTable extends SyncTableRestNew<RedirectSyncTableType> {
+  constructor(fetcher: RedirectRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(redirectResource, fetcher, params);
+  }
+
+  setSyncParams() {
+    const [path, target] = this.codaParams as SyncTableParamValues<typeof Sync_Redirects>;
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, redirectFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      path,
+      target,
+    });
+  }
+}
+
+export class RedirectRestFetcher extends SimpleRestNew<RedirectSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Redirect, RedirectSyncTableSchema, context);
+    super(redirectResource, context);
   }
 
   validateParams = (params: any) => {

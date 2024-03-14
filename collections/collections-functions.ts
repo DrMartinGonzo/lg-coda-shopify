@@ -3,29 +3,75 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../constants';
-import { isSmartCollection } from './collections-graphql';
-import { CollectionSyncTableSchema, formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
-import { formatMetafieldRestInputFromKeyValueSet, hasMetafieldsInUpdates } from '../metafields/metafields-functions';
+import {
+  CACHE_MAX,
+  COLLECTION_TYPE__CUSTOM,
+  COLLECTION_TYPE__SMART,
+  OPTIONS_PUBLISHED_STATUS,
+  REST_DEFAULT_LIMIT,
+} from '../constants';
+import { getCollectionType, getCollectionTypes } from './collections-graphql';
+import {
+  CollectionSyncTableSchema,
+  collectionFieldDependencies,
+  formatCollectionReference,
+} from '../schemas/syncTable/CollectionSchema';
+import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
-import { SimpleRest } from '../Fetchers/SimpleRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
 
-import { RestResourceName } from '../types/RequestsRest';
-import { CollectSyncTableSchema } from '../schemas/syncTable/CollectSchema';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
-import { isNullOrEmpty } from '../helpers';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { handleFieldDependencies, isNullOrEmpty } from '../helpers';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { cleanQueryParams } from '../helpers-rest';
 
-import type { CollectionCreateRestParams, CollectionUpdateRestParams } from '../types/Collection';
-import type { CollectRow, CollectionRow } from '../types/CodaRows';
-import type { FetchRequestOptions } from '../types/Requests';
-import type { IsSmartCollectionQuery } from '../types/admin.generated';
+import type { Collection as CollectionType } from '../typesNew/Resources/Collection';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-
-// #endregion
+import type { MultipleFetchResponse, SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { CollectRow } from '../typesNew/CodaRows';
+import type { FetchRequestOptions } from '../types/Requests';
+import type {
+  GetCollectionTypeQuery,
+  GetCollectionTypeQueryVariables,
+  GetCollectionTypesQuery,
+  GetCollectionTypesQueryVariables,
+} from '../types/admin.generated';
+import type { Sync_Collections, Sync_Collects } from './collections-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import type { CollectSyncTableRestParams } from '../types/Collect';
+import { collectResource } from '../allResources';
+import { smartCollectionResource } from '../allResources';
+import { customCollectionResource } from '../allResources';
+import { collectionResource } from '../allResources';
 
 // #region Classes
+export type CollectionSyncTableType = SyncTableType<
+  typeof collectionResource,
+  CollectionType.Row,
+  CollectionType.Params.Sync,
+  CollectionType.Params.Create,
+  CollectionType.Params.Update
+>;
+
+export type CustomCollectionSyncTableType = SyncTableType<
+  typeof customCollectionResource,
+  CollectionType.Row,
+  CollectionType.Params.Sync,
+  CollectionType.Params.Create,
+  CollectionType.Params.Update
+>;
+
+export type SmartCollectionSyncTableType = SyncTableType<
+  typeof smartCollectionResource,
+  CollectionType.Row,
+  CollectionType.Params.Sync,
+  // TODO: create not supported for smart collections for the moment
+  never,
+  CollectionType.Params.Update
+>;
+
+export type CollectSyncTableType = SyncTableType<typeof collectResource, CollectRow, CollectSyncTableRestParams>;
+
 export class Collection {
   /**
    * Get Collection type via a GraphQL Admin API query
@@ -40,13 +86,13 @@ export class Collection {
     requestOptions: FetchRequestOptions = {}
   ) => {
     const payload = {
-      query: isSmartCollection,
+      query: getCollectionType,
       variables: {
         collectionGid,
-      },
+      } as GetCollectionTypeQueryVariables,
     };
     // Cache max if unspecified because the collection type cannot be changed after creation
-    const { response } = await makeGraphQlRequest<IsSmartCollectionQuery>(
+    const { response } = await makeGraphQlRequest<GetCollectionTypeQuery>(
       { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
       context
     );
@@ -54,9 +100,45 @@ export class Collection {
     return response.body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
   };
 
+  /**
+   * Get Collection types via a GraphQL Admin API query
+   * @param collectionGids the GraphQl GID of the collection
+   * @param context Coda Execution Context
+   * @param requestOptions
+   * @returns Collection ids with their type
+   */
+  static getCollectionTypes = async (
+    collectionGids: string[],
+    context: coda.ExecutionContext,
+    requestOptions: FetchRequestOptions = {}
+  ) => {
+    const payload = {
+      query: getCollectionTypes,
+      variables: {
+        ids: collectionGids,
+      } as GetCollectionTypesQueryVariables,
+    };
+    // Cache max if unspecified because the collection type cannot be changed after creation
+    const { response } = await makeGraphQlRequest<GetCollectionTypesQuery>(
+      { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
+      context
+    );
+    // TODO: return 'better' values, rest resources ones or GraphQl ones
+    return response?.body?.data?.nodes
+      .map((node) => {
+        if (node.__typename === 'Collection') {
+          return {
+            id: node.id,
+            type: node.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM,
+          };
+        }
+      })
+      .filter(Boolean);
+  };
+
   static getFetcher = async (collectionId: number, context: coda.ExecutionContext) => {
     const collectionType = await Collection.getCollectionType(
-      idToGraphQlGid(GraphQlResource.Collection, collectionId),
+      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
       context
     );
     return Collection.getFetcherOfType(collectionType, context);
@@ -73,56 +155,57 @@ export class Collection {
     throw new Error(`Unknown collection type: ${collectionType}.`);
   };
 
-  /**
-   * Edge case for collections, we don't know the collection type in advance, so
-   * we need a static method
-   */
-  static executeSyncTableUpdate = async (
-    updates: Array<coda.SyncUpdate<any, any, typeof CollectSyncTableSchema>>,
+  static getSyncTableOfType = (
+    collectionType: string,
+    params: coda.ParamValues<coda.ParamDefs>,
     context: coda.ExecutionContext
   ) => {
-    const metafieldDefinitions = hasMetafieldsInUpdates(updates)
-      ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Collection }, context)
-      : [];
+    switch (collectionType) {
+      case COLLECTION_TYPE__SMART:
+        return new CollectionSyncTableBase(
+          smartCollectionResource,
+          Collection.getFetcherOfType(collectionType, context) as SmartCollectionRestFetcher,
+          params
+        );
+      case COLLECTION_TYPE__CUSTOM:
+        return new CustomCollectionSyncTable(
+          Collection.getFetcherOfType(collectionType, context) as CustomCollectionRestFetcher,
+          params
+        );
+    }
 
-    const jobs = updates.map(async (update) => {
-      if (
-        !isNullOrEmpty(update.newValue.image_alt_text) &&
-        (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
-      ) {
-        throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
-      }
-      const collectionFetcher = await Collection.getFetcher(update.previousValue.id, context);
-      return collectionFetcher.handleUpdateJob(update, metafieldDefinitions);
-    });
-
-    const completed = await Promise.allSettled(jobs);
-    return {
-      result: completed.map((job) => {
-        if (job.status === 'fulfilled') return job.value;
-        else return job.reason;
-      }),
-    };
+    throw new Error(`Unknown collection type: ${collectionType}.`);
   };
 }
 
-export class CollectionRestFetcherBase<
-  T extends RestResourceName,
-  K extends coda.ObjectSchema<string, string>
-> extends SimpleRest<T, K> {
-  validateParams = (params: any) => {
+export abstract class CollectionRestFetcherBase<
+  T extends CollectionSyncTableType | CustomCollectionSyncTableType | SmartCollectionSyncTableType
+> extends SimpleRestNew<T> {
+  validateParams = (
+    params: CollectionType.Params.Sync | CollectionType.Params.Create | CollectionType.Params.Update
+  ) => {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+    if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
       throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
     }
     return true;
   };
 
+  validateUpdateJob(update: coda.SyncUpdate<any, any, typeof CollectionSyncTableSchema>) {
+    if (
+      !isNullOrEmpty(update.newValue.image_alt_text) &&
+      (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
+    ) {
+      throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
+    }
+    return true;
+  }
+
   formatRowToApi = (
-    row: Partial<CollectionRow>,
+    row: Partial<CollectionType.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): CollectionUpdateRestParams | CollectionCreateRestParams | undefined => {
-    let restParams: CollectionUpdateRestParams | CollectionCreateRestParams = {};
+  ): CollectionType.Params.Update | CollectionType.Params.Create | undefined => {
+    let restParams: CollectionType.Params.Update | CollectionType.Params.Create = {};
 
     if (row.body_html !== undefined) restParams.body_html = row.body_html;
     if (row.handle !== undefined) restParams.handle = row.handle;
@@ -139,7 +222,7 @@ export class CollectionRestFetcherBase<
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
       : [];
     if (metafieldRestInputs.length) {
-      restParams = { ...restParams, metafields: metafieldRestInputs } as CollectionCreateRestParams;
+      restParams = { ...restParams, metafields: metafieldRestInputs } as CollectionType.Params.Create;
     }
 
     // Means we have nothing to update/create
@@ -147,8 +230,8 @@ export class CollectionRestFetcherBase<
     return restParams;
   };
 
-  formatApiToRow = (collection): CollectionRow => {
-    let obj: CollectionRow = {
+  formatApiToRow = (collection) => {
+    let obj: CollectionType.Row = {
       ...collection,
       admin_url: `${this.context.endpoint}/admin/collections/${collection.id}`,
       body: striptags(collection.body_html),
@@ -164,37 +247,86 @@ export class CollectionRestFetcherBase<
     return obj;
   };
 }
+class CollectionSyncTableBase<
+  T extends CustomCollectionSyncTableType | SmartCollectionSyncTableType
+> extends SyncTableRestNew<T> {
+  // constructor(fetcher: SimpleRestNew<T>, params: coda.ParamValues<coda.ParamDefs>) {
+  //   super(collectionResource, fetcher, params);
+  // }
 
-export class CollectionRestFetcher extends CollectionRestFetcherBase<
-  RestResourceName.Collection,
-  typeof CollectionSyncTableSchema
-> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Collection, CollectionSyncTableSchema, context);
+  setSyncParams() {
+    const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
+      this.codaParams as SyncTableParamValues<typeof Sync_Collections>;
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, collectionFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      handle,
+      product_id,
+      title,
+      published_status,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      published_at_min: published_at ? published_at[0] : undefined,
+      published_at_max: published_at ? published_at[1] : undefined,
+    });
   }
 }
 
-export class CustomCollectionRestFetcher extends CollectionRestFetcherBase<
-  RestResourceName.CustomCollection,
-  typeof CollectionSyncTableSchema
-> {
+export class CollectionRestFetcher extends CollectionRestFetcherBase<CollectionSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.CustomCollection, CollectionSyncTableSchema, context);
+    super(collectionResource, context);
   }
 }
 
-export class SmartCollectionRestFetcher extends CollectionRestFetcherBase<
-  RestResourceName.SmartCollection,
-  typeof CollectionSyncTableSchema
-> {
+export class CustomCollectionRestFetcher extends CollectionRestFetcherBase<CustomCollectionSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.SmartCollection, CollectionSyncTableSchema, context);
+    super(customCollectionResource, context);
+  }
+}
+class CustomCollectionSyncTable extends CollectionSyncTableBase<CustomCollectionSyncTableType> {
+  constructor(fetcher: CustomCollectionRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(customCollectionResource, fetcher, params);
+  }
+
+  afterSync(response: MultipleFetchResponse<CustomCollectionSyncTableType>) {
+    let { restItems, continuation: superContinuation } = super.afterSync(response);
+
+    /**
+     * If we have no more items to sync, we need to sync smart collections
+     */
+    if (!superContinuation?.nextUrl) {
+      const restType = COLLECTION_TYPE__SMART;
+      const nextCollectionSyncTable = Collection.getSyncTableOfType(restType, this.codaParams, this.fetcher.context);
+      nextCollectionSyncTable.setSyncUrl();
+      this.extraContinuationData = {
+        ...superContinuation?.extraContinuationData,
+        restType,
+      };
+
+      superContinuation = {
+        ...superContinuation,
+        nextUrl: nextCollectionSyncTable.syncUrl,
+        extraContinuationData: this.extraContinuationData,
+      };
+    }
+
+    return { restItems, continuation: superContinuation };
   }
 }
 
-export class CollectRestFetcher extends SimpleRest<RestResourceName.Collect, typeof CollectSyncTableSchema> {
+export class SmartCollectionRestFetcher extends CollectionRestFetcherBase<SmartCollectionSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Collect, CollectSyncTableSchema, context);
+    super(smartCollectionResource, context);
+  }
+}
+
+export class CollectRestFetcher extends SimpleRestNew<CollectSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(collectResource, context);
   }
 
   validateParams = (params: any) => {
@@ -219,6 +351,23 @@ export class CollectRestFetcher extends SimpleRest<RestResourceName.Collect, typ
     return obj;
   };
 }
+export class CollectSyncTable extends SyncTableRestNew<CollectSyncTableType> {
+  constructor(fetcher: CollectRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(collectResource, fetcher, params);
+  }
+  setSyncParams() {
+    const [collectionId] = this.codaParams as SyncTableParamValues<typeof Sync_Collects>;
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, collectionFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: REST_DEFAULT_LIMIT,
+      collection_id: collectionId,
+    });
+
+    return this.syncParams;
+  }
+}
+
 // #endregion
 
 // #region Unused stuff

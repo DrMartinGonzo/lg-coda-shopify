@@ -80,34 +80,12 @@ const METAFIELDS_RESOURCE_TYPES = [
 
 export const NOT_FOUND = 'NOT_FOUND';
 
-export const IDENTITY_ARTICLE = 'Article';
-export const IDENTITY_BLOG = 'Blog';
-export const IDENTITY_COLLECT = 'Collect';
-export const IDENTITY_COLLECTION = 'Collection';
-export const IDENTITY_CUSTOMER = 'Customer';
-export const IDENTITY_DRAFT_ORDER = 'DraftOrder';
-export const IDENTITY_LOCATION = 'Location';
-export const IDENTITY_FILE = 'File';
-export const IDENTITY_IMAGE = 'Image';
-export const IDENTITY_INVENTORYITEM = 'InventoryItem';
-export const IDENTITY_INVENTORYLEVEL = 'InventoryLevel';
-export const IDENTITY_METAFIELD = 'Metafield';
-export const IDENTITY_METAFIELD_DEFINITION = 'MetafieldDefinition';
-export const IDENTITY_METAOBJECT = 'Metaobject';
-export const IDENTITY_ORDER = 'Order';
-export const IDENTITY_ORDER_LINE_ITEM = 'OrderLineItem';
-export const IDENTITY_ORDER_TRANSACTION = 'OrderTransaction';
-export const IDENTITY_PAGE = 'Page';
-export const IDENTITY_PRODUCT = 'Product';
-export const IDENTITY_PRODUCT_VARIANT = 'ProductVariant';
-export const IDENTITY_REDIRECT = 'Redirect';
-export const IDENTITY_SHOP = 'Shop';
-
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 
 export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
+export const GRAPHQL_NODES_LIMIT = 250;
 
 // Don't put this at 1000 (theoretical max) because we can have multiple syncs happening at the same time in different documents
 export const GRAPHQL_BUDGET__MAX = 900;
@@ -148,3 +126,29 @@ export const countryNameAutocompleteValues = Object.keys(countryNames).map((key)
   display: countryNames[key],
   value: key,
 }));
+
+export enum Identity {
+  Article = 'Article',
+  Blog = 'Blog',
+  Collection = 'Collection',
+  CustomCollection = 'CustomCollection',
+  SmartCollection = 'SmartCollection',
+  Collect = 'Collect',
+  Customer = 'Customer',
+  DraftOrder = 'DraftOrder',
+  File = 'File',
+  InventoryItem = 'InventoryItem',
+  InventoryLevel = 'InventoryLevel',
+  Location = 'Location',
+  Metafield = 'Metafield',
+  MetafieldDefinition = 'MetafieldDefinition',
+  Metaobject = 'Metaobject',
+  Order = 'Order',
+  OrderLineItem = 'OrderLineItem',
+  OrderTransaction = 'OrderTransaction',
+  Page = 'Page',
+  Product = 'Product',
+  ProductVariant = 'ProductVariant',
+  Redirect = 'Redirect',
+  Shop = 'Shop',
+}

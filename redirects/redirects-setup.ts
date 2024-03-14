@@ -1,18 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { RedirectRestFetcher } from './redirects-functions';
+import { RedirectRestFetcher, RedirectSyncTable } from './redirects-functions';
 
-import { RedirectSyncTableSchema, redirectFieldDependencies } from '../schemas/syncTable/RedirectSchema';
-import { CACHE_DEFAULT, IDENTITY_REDIRECT, REST_DEFAULT_LIMIT } from '../constants';
-import { handleFieldDependencies } from '../helpers';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
+import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
+import { CACHE_DEFAULT } from '../constants';
 import { inputs, filters } from '../shared-parameters';
+import { Identity } from '../constants';
 
-import type { Redirect as RedirectRest } from '@shopify/shopify-api/rest/admin/2023-10/redirect';
-import type { RedirectRow } from '../types/CodaRows';
-import type { RedirectCreateRestParams, RedirectSyncRestParams } from '../types/Redirect';
-import type { SyncTableRestContinuation } from '../types/tableSync';
+import type { RedirectRow } from '../typesNew/CodaRows';
+import type { RedirectCreateRestParams } from '../types/Redirect';
 
 // #endregion
 
@@ -21,7 +18,7 @@ export const Sync_Redirects = coda.makeSyncTable({
   name: 'Redirects',
   description: 'Return Redirects from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_REDIRECT,
+  identityName: Identity.Redirect,
   schema: RedirectSyncTableSchema,
   formula: {
     name: 'SyncRedirects',
@@ -30,33 +27,14 @@ export const Sync_Redirects = coda.makeSyncTable({
       { ...filters.redirect.path, optional: true },
       { ...filters.redirect.target, optional: true },
     ],
-    execute: async function ([path, target], context: coda.SyncExecutionContext) {
-      // If executing from CLI, schema is undefined, we have to retrieve it first
-      const schema = RedirectSyncTableSchema;
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      const standardFromKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-
-      const syncedStandardFields = handleFieldDependencies(standardFromKeys, redirectFieldDependencies);
-      const restParams = cleanQueryParams({
-        fields: syncedStandardFields.join(', '),
-        limit: REST_DEFAULT_LIMIT,
-        path,
-        target,
-      } as RedirectSyncRestParams);
-      const redirectFetcher = new RedirectRestFetcher(context);
-      redirectFetcher.validateParams(restParams);
-
-      const url = prevContinuation?.nextUrl ?? redirectFetcher.getFetchAllUrl(restParams);
-      const { response, continuation } = await makeSyncTableGetRequest<{ redirects: RedirectRest[] }>({ url }, context);
-
-      return {
-        result: response?.body?.redirects ? response.body.redirects.map(redirectFetcher.formatApiToRow) : [],
-        continuation,
-      };
+    execute: async function (params, context: coda.SyncExecutionContext) {
+      const redirectSyncTable = new RedirectSyncTable(new RedirectRestFetcher(context), params);
+      return redirectSyncTable.executeSync(RedirectSyncTableSchema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new RedirectRestFetcher(context).executeSyncTableUpdate(updates);
+      const redirectSyncTable = new RedirectSyncTable(new RedirectRestFetcher(context), params);
+      return redirectSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -74,7 +52,7 @@ export const Action_UpdateRedirect = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(RedirectSyncTableSchema, IDENTITY_REDIRECT),
+  schema: coda.withIdentity(RedirectSyncTableSchema, Identity.Redirect),
   execute: async function ([redirect_id, path, target], context) {
     if (path === undefined && target === undefined) {
       throw new coda.UserVisibleError('Either path or target must be provided');

@@ -11,7 +11,7 @@ import {
 } from './metaobjects-graphql';
 import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-functions';
 
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 import {
   fetchAllMetaObjectDefinitions,
   fetchSingleMetaObjectDefinitionByType,
@@ -40,7 +40,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
   }
   const response = await fetchSingleMetaObjectGraphQl(
     {
-      gid: idToGraphQlGid(GraphQlResource.Metaobject, args.metaobjectId),
+      gid: idToGraphQlGid(GraphQlResourceName.Metaobject, args.metaobjectId),
       includeFieldDefinitions: true,
     },
     context

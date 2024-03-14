@@ -5,29 +5,63 @@ import { NOT_FOUND, OPTIONS_DRAFT_ORDER_STATUS } from '../constants';
 
 import { formatCustomerDisplayValue } from '../customers/customers-functions';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { RestResourceName } from '../types/RequestsRest';
-import { DraftOrderSyncTableSchema } from '../schemas/syncTable/DraftOrderSchema';
+import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../schemas/syncTable/DraftOrderSchema';
 import { formatOrderReference } from '../schemas/syncTable/OrderSchema';
 import { formatCustomerReference } from '../schemas/syncTable/CustomerSchema';
-import { SimpleRest } from '../Fetchers/SimpleRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
 import { cleanQueryParams, makePostRequest, makePutRequest } from '../helpers-rest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { handleFieldDependencies } from '../helpers';
 
+import type { SingleFetchData, SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type {
   DraftOrderCompleteRestParams,
   DraftOrderSendInvoiceRestParams,
+  DraftOrderSyncTableRestParams,
   DraftOrderUpdateRestParams,
 } from '../types/DraftOrder';
-import type { DraftOrderRow } from '../types/CodaRows';
+import type { DraftOrderRow } from '../typesNew/CodaRows';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { FetchRequestOptions } from '../types/Requests';
-import type { singleFetchData } from '../Fetchers/SimpleRest';
-
-// #endregion
+import type { Sync_DraftOrders } from './draftOrders-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import { draftOrderResource } from '../allResources';
 
 // #region Class
-export class DraftOrderRestFetcher extends SimpleRest<RestResourceName.DraftOrder, typeof DraftOrderSyncTableSchema> {
+export type DraftOrderSyncTableType = SyncTableType<
+  typeof draftOrderResource,
+  DraftOrderRow,
+  DraftOrderSyncTableRestParams,
+  never,
+  DraftOrderUpdateRestParams
+>;
+
+export class DraftOrderSyncTable extends SyncTableRestNew<DraftOrderSyncTableType> {
+  constructor(fetcher: DraftOrderRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(draftOrderResource, fetcher, params);
+  }
+
+  setSyncParams() {
+    const [syncMetafields, status, updated_at, ids, since_id] = this.codaParams as SyncTableParamValues<
+      typeof Sync_DraftOrders
+    >;
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, draftOrderFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      status,
+      since_id,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+    });
+  }
+}
+
+export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.DraftOrder, DraftOrderSyncTableSchema, context);
+    super(draftOrderResource, context);
   }
 
   validateParams = (params: any) => {
@@ -40,6 +74,16 @@ export class DraftOrderRestFetcher extends SimpleRest<RestResourceName.DraftOrde
     return true;
   };
 
+  validateUpdateJob(update: coda.SyncUpdate<any, any, typeof DraftOrderSyncTableSchema>) {
+    if (
+      update.previousValue.status === 'completed' &&
+      [update.newValue.email, update.newValue.note].some((v) => v !== undefined)
+    ) {
+      throw new coda.UserVisibleError("Can't update email or note on a completed draft order.");
+    }
+    return true;
+  }
+
   formatRowToApi = (
     row: Partial<DraftOrderRow>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
@@ -49,13 +93,6 @@ export class DraftOrderRestFetcher extends SimpleRest<RestResourceName.DraftOrde
     if (row.email !== undefined) restParams.email = row.email;
     if (row.note !== undefined) restParams.note = row.note;
     if (row.tags !== undefined) restParams.tags = row.tags;
-
-    // const metafieldRestInputs = metafieldKeyValueSets.length
-    //   ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
-    //   : [];
-    // if (metafieldRestInputs.length) {
-    //   restParams = { ...restParams, metafields: metafieldRestInputs };
-    // }
 
     // Means we have nothing to update/create
     if (Object.keys(restParams).length === 0) return undefined;
@@ -101,7 +138,7 @@ export class DraftOrderRestFetcher extends SimpleRest<RestResourceName.DraftOrde
       coda.joinUrl(this.baseUrl, `${this.plural}/${draftOrderId}/complete.json`),
       restParams
     );
-    return makePutRequest<singleFetchData<RestResourceName.DraftOrder>>({ ...requestOptions, url }, this.context);
+    return makePutRequest<SingleFetchData<DraftOrderSyncTableType>>({ ...requestOptions, url }, this.context);
   };
 
   sendInvoice = async (

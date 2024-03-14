@@ -1,34 +1,126 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams, makePostRequest } from '../helpers-rest';
-import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { RestResourceName, RestResourcePlural } from '../types/RequestsRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { RestResourcePlural } from '../types/RequestsRest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { productVariantFieldDependencies } from '../schemas/syncTable/ProductVariantSchema';
+import { arrayUnique, handleFieldDependencies } from '../helpers';
+import { ProductRestFetcher, ProductSyncTableType } from '../products/products-functions';
 
-import type { ProductVariantRow } from '../types/CodaRows';
-import type { singleFetchData } from '../Fetchers/SimpleRest';
+import type * as Rest from '../types/RestResources';
+import type {
+  GetSyncParams,
+  MultipleFetchResponse,
+  SingleFetchData,
+  SyncTableParamValues,
+} from '../Fetchers/SyncTableRest';
+import type { ProductVariantRow } from '../typesNew/CodaRows';
 import type { FetchRequestOptions } from '../types/Requests';
 import type { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
+import type { Sync_ProductVariants } from './productVariants-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import type { ProductSyncTableRestParams } from '../types/Product';
+import { productVariantResource } from '../allResources';
 
 // #region Class
-export class ProductVariantRestFetcher extends SimpleRest<
-  RestResourceName.ProductVariant,
-  typeof ProductVariantSyncTableSchema
-> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.ProductVariant, ProductVariantSyncTableSchema, context);
+export type ProductVariantSyncTableType = SyncTableType<
+  typeof productVariantResource,
+  ProductVariantRow,
+  ProductSyncTableRestParams,
+  ProductVariantCreateRestParams,
+  ProductVariantUpdateRestParams
+>;
+
+export class ProductVariantSyncTable extends SyncTableRestNew<ProductVariantSyncTableType> {
+  constructor(fetcher: ProductRestFetcher | ProductVariantRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    // TODO: fix fetcher type error
+    super(productVariantResource, fetcher as any, params);
   }
+
+  setSyncParams() {
+    const [
+      product_type,
+      syncMetafields,
+      created_at,
+      updated_at,
+      published_at,
+      status,
+      published_status,
+      vendor,
+      handles,
+      ids,
+    ] = this.codaParams as SyncTableParamValues<typeof Sync_ProductVariants>;
+
+    const requiredProductFields = ['id', 'variants'];
+    const possibleProductFields = ['id', 'title', 'status', 'images', 'handle', 'variants'];
+
+    // Handle product variant field dependencies and only keep the ones that are actual product fields
+    const syncedStandardFields = arrayUnique(
+      handleFieldDependencies(this.effectiveStandardFromKeys, productVariantFieldDependencies)
+        .concat(requiredProductFields)
+        .filter((fromKey) => possibleProductFields.includes(fromKey))
+    );
+
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      handle: handles && handles.length ? handles.join(',') : undefined,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      product_type,
+      published_status,
+      status: status && status.length ? status.join(',') : undefined,
+      vendor,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      published_at_min: published_at ? published_at[0] : undefined,
+      published_at_max: published_at ? published_at[1] : undefined,
+    });
+  }
+
+  // TODO: more elegant way when a resource depends on a parent resource
+  handleSyncTableResponse = (response): ProductVariantRow[] => {
+    let parentProductResponse = response as MultipleFetchResponse<ProductSyncTableType>;
+    if (parentProductResponse?.body?.products) {
+      const products = parentProductResponse.body.products as unknown as Rest.Product[];
+      return products
+        .map((product) =>
+          product.variants.map((variant) => {
+            if (this.fetcher instanceof ProductVariantRestFetcher) {
+              const variantRow = this.fetcher.formatApiToRow(variant);
+              return this.fetcher.formatRowWithParent(variantRow, product);
+            }
+          })
+        )
+        .flat();
+    }
+    return [] as ProductVariantRow[];
+  };
+}
+
+export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(productVariantResource, context);
+  }
+
+  // Edge case: we fetch product variants data from products endpoint
+  getFetchAllUrl = (params?: GetSyncParams<ProductVariantSyncTableType>): string =>
+    coda.withQueryParams(
+      new ProductRestFetcher(this.context).getResourcesUrl(),
+      params ? cleanQueryParams(params) : {}
+    );
 
   // TODO: write validateParams for product variants
   // validateParams = (params: any) => {
   //   return true;
   // };
 
-  // TODO: find a more elegnt way to handle required prduct_id parameter without duplicating the whole create method
+  // TODO: find a more elegant way to handle required product_id parameter without duplicating the whole create method
   create = (params: ProductVariantCreateRestParams, requestOptions: FetchRequestOptions = {}) => {
     this.validateParams(params);
     const payload = { [this.singular]: cleanQueryParams(params) };
@@ -38,7 +130,7 @@ export class ProductVariantRestFetcher extends SimpleRest<
       params.product_id.toString(),
       `${this.plural}.json`
     );
-    return makePostRequest<singleFetchData<RestResourceName.ProductVariant>>(
+    return makePostRequest<SingleFetchData<ProductVariantSyncTableType>>(
       { ...requestOptions, url, payload },
       this.context
     );
@@ -98,9 +190,9 @@ export class ProductVariantRestFetcher extends SimpleRest<
   };
 
   /**
-   * Formattage plus poussé d'une row ProductVariant wuand on a les données du produit parent.
+   * Formattage plus poussé d'une row ProductVariant quand on a les données du produit parent.
    */
-  formatRowWithParent = (row: ProductVariantRow, parentProduct: ProductRest): ProductVariantRow => {
+  formatRowWithParent = (row: ProductVariantRow, parentProduct): ProductVariantRow => {
     let obj: ProductVariantRow = {
       ...row,
       product: formatProductReference(parentProduct.id, parentProduct?.title),

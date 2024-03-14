@@ -6,23 +6,66 @@ import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { RestResourceName } from '../types/RequestsRest';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { PageSyncTableSchema } from '../schemas/syncTable/PageSchema';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { pageFieldDependencies } from '../schemas/syncTable/PageSchema';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { handleFieldDependencies } from '../helpers';
+import { cleanQueryParams } from '../helpers-rest';
 
-import type { PageRow } from '../types/CodaRows';
-import type { PageCreateRestParams, PageUpdateRestParams } from '../types/Page';
+import type { PageRow } from '../typesNew/CodaRows';
+import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { PageCreateRestParams, PageSyncTableRestParams, PageUpdateRestParams } from '../types/Page';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import type { Sync_Pages } from './pages-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import { pageResource } from '../allResources';
 
-// #endregion
+// #region Classes
+export type PageSyncTableType = SyncTableType<
+  typeof pageResource,
+  PageRow,
+  PageSyncTableRestParams,
+  PageCreateRestParams,
+  PageUpdateRestParams
+>;
 
-export class PageRestFetcher extends SimpleRest<RestResourceName.Page, typeof PageSyncTableSchema> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Page, PageSyncTableSchema, context);
+export class PageSyncTable<T extends RestResourceName.Page> extends SyncTableRestNew<PageSyncTableType> {
+  constructor(fetcher: PageRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(pageResource, fetcher, params);
   }
 
-  validateParams = (params: any) => {
+  setSyncParams() {
+    const [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title] = this
+      .codaParams as SyncTableParamValues<typeof Sync_Pages>;
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, pageFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      published_at_min: published_at ? published_at[0] : undefined,
+      published_at_max: published_at ? published_at[1] : undefined,
+      handle,
+      // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
+      // TODO: calculate best possible value based on effectiveMetafieldKeys.length
+      limit: this.restLimit,
+      published_status,
+      since_id,
+      title,
+    });
+  }
+}
+// #endregion
+export class PageRestFetcher extends SimpleRestNew<PageSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(pageResource, context);
+  }
+
+  validateParams = (params: PageUpdateRestParams | PageCreateRestParams | PageSyncTableRestParams) => {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+    if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
       throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
     }
     return true;

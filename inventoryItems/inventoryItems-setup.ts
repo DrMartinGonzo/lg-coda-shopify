@@ -3,7 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 
 import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
-import { IDENTITY_INVENTORYITEM } from '../constants';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
@@ -13,9 +12,10 @@ import { QueryAllInventoryItems, buildInventoryItemsSearchQuery } from './invent
 import { filters, inputs } from '../shared-parameters';
 import { cleanQueryParams } from '../helpers-rest';
 import { ShopRestFetcher } from '../shop/shop-functions';
+import { Identity } from '../constants';
 
 import type { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion
 
@@ -33,7 +33,7 @@ export const Sync_InventoryItems = coda.makeSyncTable({
   name: 'InventoryItems',
   description: 'Return Inventory Items from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_INVENTORYITEM,
+  identityName: Identity.InventoryItem,
   schema: InventoryItemSyncTableSchema,
   dynamicOptions: {
     getSchema: getInventoryItemSchema,
@@ -145,7 +145,7 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(InventoryItemSchema, IDENTITY_INVENTORYITEM),
+  // schema: coda.withIdentity(InventoryItemSchema, Identity.InventoryItem),
   schema: InventoryItemSyncTableSchema,
   execute: async function (
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],

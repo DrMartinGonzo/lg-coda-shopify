@@ -7,27 +7,76 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OPTIONS_ORDER_FINANCIAL_STATUS, OPTIONS_ORDER_FULFILLMENT_STATUS, OPTIONS_ORDER_STATUS } from '../constants';
-import { convertTTCtoHT } from '../helpers';
+import { convertTTCtoHT, handleFieldDependencies } from '../helpers';
 
 import { formatCustomerDisplayValue } from '../customers/customers-functions';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { updateAndFormatResourceMetafieldsRest } from '../metafields/metafields-functions';
-import { RestResourceName, restResources } from '../types/RequestsRest';
 import { formatCustomerReference } from '../schemas/syncTable/CustomerSchema';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { OrderSyncTableSchema, formatOrderReference } from '../schemas/syncTable/OrderSchema';
-import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
+import { cleanQueryParams } from '../helpers-rest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 
-import type { OrderLineItemRow, OrderRow } from '../types/CodaRows';
-import type { OrderUpdateRestParams } from '../types/Order';
+import type { OrderRow } from '../typesNew/CodaRows';
+import type { OrderSyncTableRestParams, OrderUpdateRestParams } from '../types/Order';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-
-// #endregion
+import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { Sync_Orders } from './orders-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import { OrderLineItemSyncTableType } from '../orderLineItems/orderLineItems-functions';
+import { orderResource } from '../allResources';
 
 // #region Class
-export class OrderRestFetcher extends SimpleRest<RestResourceName.Order, typeof OrderSyncTableSchema> {
+export type OrderSyncTableType = SyncTableType<
+  typeof orderResource,
+  OrderRow,
+  OrderSyncTableRestParams,
+  never,
+  OrderUpdateRestParams
+>;
+
+export class OrderSyncTable<
+  T extends OrderSyncTableType | OrderLineItemSyncTableType = OrderSyncTableType
+> extends SyncTableRestNew<T> {
+  constructor(fetcher: OrderRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(orderResource, fetcher, params);
+  }
+
+  setSyncParams() {
+    const [
+      status = 'any',
+      syncMetafields,
+      created_at,
+      updated_at,
+      processed_at,
+      financial_status,
+      fulfillment_status,
+      ids,
+      since_id,
+    ] = this.codaParams as SyncTableParamValues<typeof Sync_Orders>;
+    console.log('this.effectiveStandardFromKeys', this.effectiveStandardFromKeys);
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, orderFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      financial_status,
+      fulfillment_status,
+      status,
+      since_id,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      processed_at_min: processed_at ? processed_at[0] : undefined,
+      processed_at_max: processed_at ? processed_at[1] : undefined,
+    });
+  }
+}
+
+export class OrderRestFetcher extends SimpleRestNew<OrderSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Order, OrderSyncTableSchema, context);
+    super(orderResource, context);
   }
 
   validateParams = (params: any) => {
@@ -69,7 +118,7 @@ export class OrderRestFetcher extends SimpleRest<RestResourceName.Order, typeof 
     if (row.note !== undefined) restParams.note = row.note;
     if (row.tags !== undefined) restParams.tags = row.tags;
 
-    // TODO
+    // TODO if we implement Order Create
     /*
     const metafieldRestInputs = metafieldKeyValueSets.length
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
@@ -160,18 +209,6 @@ export class OrderRestFetcher extends SimpleRest<RestResourceName.Order, typeof 
 
     return obj;
   };
-
-  // Used on orderLineItems-setup
-  formatLineItemToRow = (orderLineItem, parentOrder): OrderLineItemRow => {
-    let obj: OrderLineItemRow = {
-      ...orderLineItem,
-      order_id: parentOrder.id,
-      order: formatOrderReference(parentOrder.id, parentOrder.name),
-      variant: formatProductVariantReference(orderLineItem.variant_id, orderLineItem.variant_title),
-    };
-
-    return obj;
-  };
 }
 
 // #endregion
@@ -198,44 +235,6 @@ function getRefundQuantity(item, refunds) {
   }
 
   return quantity;
-}
-
-/**
- * On peut créer des metafields directement en un call mais apparemment ça ne
- * fonctionne que pour les créations, pas les updates, du coup on applique la
- * même stratégie que pour handleArticleUpdateJob, CAD il va falloir faire un
- * appel séparé pour chaque metafield
- */
-export async function handleOrderUpdateJob(
-  row: {
-    original?: OrderRow;
-    updated: OrderRow;
-  },
-  metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = [],
-  context: coda.ExecutionContext
-): Promise<OrderRow> {
-  const orderFetcher = new OrderRestFetcher(context);
-  const originalRow = row.original ?? {};
-  const updatedRow = row.updated;
-  const restParams = orderFetcher.formatRowToApi(updatedRow);
-  const updateOrderPromise = restParams ? orderFetcher.update(updatedRow.id, restParams) : undefined;
-
-  const updateMetafieldsPromise = metafieldKeyValueSets.length
-    ? updateAndFormatResourceMetafieldsRest(
-        { ownerId: updatedRow.id, ownerResource: restResources.Order, metafieldKeyValueSets },
-        context
-      )
-    : undefined;
-
-  const [res, formattedMetafields] = await Promise.all([updateOrderPromise, updateMetafieldsPromise]);
-
-  const updatedOrder = res?.body?.order ? orderFetcher.formatApiToRow(res.body.order) : {};
-  return {
-    ...originalRow,
-    id: updatedRow.id,
-    ...updatedOrder,
-    ...(formattedMetafields ?? {}),
-  } as OrderRow;
 }
 // #endregion
 

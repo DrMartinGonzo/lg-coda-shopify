@@ -5,24 +5,62 @@ import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
   CONSENT_STATE__SUBSCRIBED,
   CONSENT_STATE__UNSUBSCRIBED,
-  CustomerSyncTableSchema,
+  customerFieldDependencies,
 } from '../schemas/syncTable/CustomerSchema';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatAddressDisplayName } from '../addresses/addresses-functions';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { RestResourceName } from '../types/RequestsRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { handleFieldDependencies } from '../helpers';
+import { SyncTableRestNew, SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import { cleanQueryParams } from '../helpers-rest';
 
-import type { Customer as CustomerRest } from '@shopify/shopify-api/rest/admin/2023-10/customer';
-import type { CustomerRow } from '../types/CodaRows';
-import type { CustomerCreateRestParams, CustomerUpdateRestParams } from '../types/Customer';
+import type * as Rest from '../types/RestResources';
+import type { CustomerRow } from '../typesNew/CodaRows';
+import type {
+  CustomerCreateRestParams,
+  CustomerSyncTableRestParams,
+  CustomerUpdateRestParams,
+} from '../types/Customer';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-
-// #endregion
+import type { Sync_Customers } from './customers-setup';
+import type { SyncTableType } from '../types/SyncTable';
+import { customerResource } from '../allResources';
 
 // #region Class
-export class CustomerRestFetcher extends SimpleRest<RestResourceName.Customer, typeof CustomerSyncTableSchema> {
+export type CustomerSyncTableType = SyncTableType<
+  typeof customerResource,
+  CustomerRow,
+  CustomerSyncTableRestParams,
+  CustomerCreateRestParams,
+  CustomerUpdateRestParams
+>;
+
+export class CustomerSyncTable extends SyncTableRestNew<CustomerSyncTableType> {
+  constructor(fetcher: SimpleRestNew<CustomerSyncTableType>, params: coda.ParamValues<coda.ParamDefs>) {
+    super(customerResource, fetcher, params);
+  }
+
+  setSyncParams() {
+    const [syncMetafields, created_at, updated_at, ids] = this.codaParams as SyncTableParamValues<
+      typeof Sync_Customers
+    >;
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, customerFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+    });
+  }
+}
+
+export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Customer, CustomerSyncTableSchema, context);
+    super(customerResource, context);
   }
 
   formatRowToApi = (
@@ -103,7 +141,7 @@ export class CustomerRestFetcher extends SimpleRest<RestResourceName.Customer, t
 
 // #region Formatting
 export function formatCustomerDisplayValue(
-  customer: Pick<CustomerRest, 'id' | 'first_name' | 'last_name' | 'email'>
+  customer: Pick<Rest.Customer, 'id' | 'first_name' | 'last_name' | 'email'>
 ): string {
   if (customer.first_name || customer.last_name) {
     return [customer.first_name, customer.last_name].filter((p) => p && p !== '').join(' ');

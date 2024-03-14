@@ -1,35 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, IDENTITY_PAGE, REST_DEFAULT_API_VERSION, REST_DEFAULT_LIMIT } from '../constants';
-import { PageRestFetcher } from './pages-functions';
+import { CACHE_DEFAULT } from '../constants';
+import { PageRestFetcher, PageSyncTable } from './pages-functions';
 
-import { PageSyncTableSchema, pageFieldDependencies } from '../schemas/syncTable/PageSchema';
-import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import {
-  fetchMetafieldsRest,
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
+import { PageSyncTableSchema } from '../schemas/syncTable/PageSchema';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
+import { wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { restResources } from '../types/RequestsRest';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
+import { Identity } from '../constants';
 
-import type { Page as PageRest } from '@shopify/shopify-api/rest/admin/2023-10/page';
-import type { PageRow } from '../types/CodaRows';
+import type { PageRow } from '../typesNew/CodaRows';
 import type { PageCreateRestParams } from '../types/Page';
-import type { MetafieldDefinition } from '../types/admin.types';
-import type { SyncTableRestContinuation } from '../types/tableSync';
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -49,7 +33,7 @@ export const Sync_Pages = coda.makeSyncTable({
   description:
     "Return Pages from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for pages, we have to do a separate Rest call for each page to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_PAGE,
+  identityName: Identity.Page,
   schema: PageSyncTableSchema,
   dynamicOptions: {
     getSchema: getPageSchema,
@@ -78,90 +62,16 @@ export const Sync_Pages = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (
-      [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title],
-      context
-    ) {
-      // If executing from CLI, schema is undefined, we have to retrieve it first
+    execute: async function (params, context) {
+      const [syncMetafields] = params;
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getPageSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let metafieldDefinitions: MetafieldDefinition[] = [];
-
-      if (shouldSyncMetafields) {
-        metafieldDefinitions =
-          prevContinuation?.extraContinuationData?.metafieldDefinitions ??
-          (await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Page }, context));
-      }
-
-      const syncedStandardFields = handleFieldDependencies(standardFromKeys, pageFieldDependencies);
-      const restParams = cleanQueryParams({
-        fields: syncedStandardFields.join(', '),
-        created_at_min: created_at ? created_at[0] : undefined,
-        created_at_max: created_at ? created_at[1] : undefined,
-        updated_at_min: updated_at ? updated_at[0] : undefined,
-        updated_at_max: updated_at ? updated_at[1] : undefined,
-        published_at_min: published_at ? published_at[0] : undefined,
-        published_at_max: published_at ? published_at[1] : undefined,
-        handle,
-        // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
-        // TODO: calculate best possible value based on effectiveMetafieldKeys.length
-        limit: shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-        published_status,
-        since_id,
-        title,
-      });
-
-      const pageFetcher = new PageRestFetcher(context);
-      pageFetcher.validateParams(restParams);
-
-      let url =
-        prevContinuation?.nextUrl ??
-        coda.withQueryParams(`${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/pages.json`, restParams);
-
-      let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest<{ pages: PageRest[] }>(
-        { url, extraContinuationData: { metafieldDefinitions } },
-        context
-      );
-      if (response?.body?.pages) {
-        restResult = response.body.pages.map((page) => pageFetcher.formatApiToRow(page));
-      }
-
-      // Add metafields by doing multiple Rest Admin API calls
-      if (shouldSyncMetafields) {
-        restResult = await Promise.all(
-          restResult.map(async (resource) => {
-            let obj = { ...resource };
-
-            const response = await fetchMetafieldsRest(resource.id, restResources.Page, {}, context);
-
-            // Only keep metafields that are in the schema
-            const metafields = response.body.metafields.filter((m) =>
-              effectiveMetafieldKeys.includes(getMetaFieldFullKey(m))
-            );
-            if (metafields.length) {
-              metafields.forEach((metafield) => {
-                const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-              });
-            }
-            return obj;
-          })
-        );
-      }
-
-      return { result: restResult, continuation };
+      const pageSyncTable = new PageSyncTable(new PageRestFetcher(context), params);
+      return pageSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new PageRestFetcher(context).executeSyncTableUpdate(updates);
+      const pageSyncTable = new PageSyncTable(new PageRestFetcher(context), params);
+      return pageSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -182,7 +92,11 @@ export const Action_CreatePage = coda.makeFormula({
     { ...inputs.general.published, optional: true },
     { ...inputs.general.publishedAt, optional: true },
     { ...inputs.page.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Page metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Page'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -224,12 +138,16 @@ export const Action_UpdatePage = coda.makeFormula({
     { ...inputs.general.publishedAt, optional: true },
     { ...inputs.general.title, description: 'The title of the page.', optional: true },
     { ...inputs.page.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Page metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Page'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(PageSchema, IDENTITY_PAGE),
+  // schema: coda.withIdentity(PageSchema, Identity.Page),
   schema: PageSyncTableSchema,
   execute: async function (
     [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],

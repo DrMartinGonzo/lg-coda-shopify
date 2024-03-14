@@ -3,7 +3,7 @@ import { DEFAULT_THUMBNAIL_SIZE } from './constants';
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 
 import type { LengthUnit, WeightUnit } from './types/admin.types';
-import type { FieldDependency } from './types/tableSync';
+import type { FieldDependency } from './types/SyncTable';
 import type { ShopifyGraphQlError } from './types/ShopifyGraphQl';
 import type { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQl';
 

@@ -5,11 +5,11 @@ import { CACHE_DEFAULT } from '../constants';
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import {
-  separatePrefixedMetafieldsKeysFromKeys,
-  preprendPrefixToMetaFieldKey,
-  getMetaFieldFullKey,
   formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
   getMetafieldKeyValueSetsFromUpdate,
+  preprendPrefixToMetaFieldKey,
+  separatePrefixedMetafieldsKeysFromKeys,
   updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { formatOptionNameId } from '../helpers';
@@ -20,11 +20,11 @@ import {
   QuerySingleLocation,
   UpdateLocation,
 } from './locations-graphql';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 
-import type { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQl';
+import type { GraphQlResponse } from '../helpers-graphql';
 import type { FetchRequestOptions } from '../types/Requests';
-import type { CountryCode, LocationEditAddressInput, LocationEditInput } from '../types/admin.types';
+import { type CountryCode, type LocationEditAddressInput, type LocationEditInput } from '../types/admin.types';
 import type {
   GetLocationsQuery,
   GetLocationsQueryVariables,
@@ -39,6 +39,12 @@ import type {
   LocationFragment,
   MetafieldDefinitionFragment,
 } from '../types/admin.generated';
+import type { SyncTableType } from '../types/SyncTable';
+import type { LocationRow } from '../typesNew/CodaRows';
+import { locationResource } from '../allResources';
+
+// TODO: finir ça une fois qu'on aura une classe pour GraphQL
+export type LocationSyncTableType = SyncTableType<typeof locationResource, LocationRow, never, never, never>;
 
 // #region Autocomplete functions
 export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
@@ -122,7 +128,7 @@ export async function handleLocationUpdateJob(
 
   const subJobs: (Promise<any> | undefined)[] = [];
   const locationId = update.previousValue.id as number;
-  const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
+  const locationGid = idToGraphQlGid(GraphQlResourceName.Location, locationId);
 
   if (standardFromKeys.length) {
     const locationEditInput = formatGraphQlLocationEditInput({
@@ -163,7 +169,8 @@ export async function handleLocationUpdateJob(
   let obj = { ...update.previousValue };
 
   const [graphQlResponse, metafields] = (await Promise.all(subJobs)) as [
-    coda.FetchResponse<{ data: LocationEditMutation; extensions: ShopifyGraphQlRequestExtensions }>,
+    // TODO: better typing
+    coda.FetchResponse<GraphQlResponse<LocationEditMutation>>,
     { [key: string]: any }
   ];
   if (graphQlResponse?.body?.data?.locationEdit?.location) {
@@ -270,7 +277,7 @@ export async function updateLocationGraphQl(
   locationEditInput: LocationEditInput,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<coda.FetchResponse<{ data: LocationEditMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
+) {
   const payload = {
     query: UpdateLocation,
     variables: {
@@ -293,7 +300,7 @@ export async function activateLocationGraphQl(
   locationGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<coda.FetchResponse<{ data: LocationActivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
+) {
   const payload = {
     query: ActivateLocation,
     variables: {
@@ -313,7 +320,7 @@ export async function deactivateLocationGraphQl(
   destinationLocationGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<coda.FetchResponse<{ data: LocationDeactivateMutation; extensions: ShopifyGraphQlRequestExtensions }>> {
+) {
   const payload = {
     query: DeactivateLocation,
     variables: {

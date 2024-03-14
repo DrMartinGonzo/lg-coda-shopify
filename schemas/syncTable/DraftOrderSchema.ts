@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_DRAFT_ORDER, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { CustomerReference } from './CustomerSchema';
 import { NameValueSchema } from '../basic/NameValueSchema';
 import { TaxLineSchema } from '../basic/TaxLineSchema';
@@ -10,8 +10,9 @@ import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { OrderReference } from './OrderSchema';
+import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/tableSync';
+import type { FieldDependency } from '../../types/SyncTable';
 
 export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -256,33 +257,9 @@ export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 export const draftOrderFieldDependencies: FieldDependency<typeof DraftOrderSyncTableSchema.properties>[] = [
-  //   {
-  //   field: 'handle',
-  //   dependencies: ['storeUrl'],
-  // },
   {
-    field: 'client_details',
-    dependencies: ['browser_user_agent', 'browser_accept_language'],
-  },
-  {
-    field: 'current_total_duties_set',
-    dependencies: ['current_total_duties'],
-  },
-  {
-    field: 'current_total_additional_fees_set',
-    dependencies: ['current_total_additional_fees'],
-  },
-  {
-    field: 'original_total_additional_fees_set',
-    dependencies: ['original_total_additional_fees'],
-  },
-  {
-    field: 'original_total_duties_set',
-    dependencies: ['original_total_duties'],
-  },
-  {
-    field: 'total_shipping_price_set',
-    dependencies: ['total_shipping_price'],
+    field: 'order',
+    dependencies: ['order_id'],
   },
   {
     field: 'id',
@@ -291,6 +268,6 @@ export const draftOrderFieldDependencies: FieldDependency<typeof DraftOrderSyncT
 ];
 export const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(
   DraftOrderSyncTableSchema,
-  IDENTITY_DRAFT_ORDER
+  Identity.DraftOrder
 );
 export const formatDraftOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });

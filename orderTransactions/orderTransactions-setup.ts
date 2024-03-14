@@ -1,7 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER_TRANSACTION } from '../constants';
 import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
 import { OrderTransactionSyncTableSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { filters } from '../shared-parameters';
@@ -13,8 +12,9 @@ import {
 
 import { QueryOrderTransactions, buildOrderTransactionsSearchQuery } from './orderTransactions-graphql';
 import { ShopRestFetcher } from '../shop/shop-functions';
+import { Identity } from '../constants';
 
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 import type { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
 
 // #endregion
@@ -39,7 +39,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
   name: 'OrderTransactions',
   description: 'Return Order Transactions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_ORDER_TRANSACTION,
+  identityName: Identity.OrderTransaction,
   schema: OrderTransactionSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderTransactionSchema,

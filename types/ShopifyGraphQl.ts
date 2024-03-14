@@ -10,12 +10,6 @@ export type ShopifyGraphQlRequestCost = {
   throttleStatus: ShopifyGraphQlThrottleStatus;
 };
 
-export type ShopifyGraphQlRequestExtensions = {
-  extensions: {
-    cost: ShopifyGraphQlRequestCost;
-  };
-};
-
 export type ShopifyGraphQlError = {
   locations: {
     line: number;

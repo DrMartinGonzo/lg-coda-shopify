@@ -1,26 +1,31 @@
+import { Identity } from '../constants';
 import { MetafieldOwnerType } from './admin.types';
+
+export interface BaseSyncTableRestParams {
+  limit?: number;
+}
 
 /**
  * Types of Rest Admin API resources that we support.
  */
 export enum RestResourceName {
-  Article = 'Article',
-  Blog = 'Blog',
-  Collection = 'Collection',
-  Collect = 'Collect',
+  Article = Identity.Article,
+  Blog = Identity.Blog,
+  Collection = Identity.Collection,
+  Collect = Identity.Collect,
   CustomCollection = 'CustomCollection',
   SmartCollection = 'SmartCollection',
-  Customer = 'Customer',
-  DraftOrder = 'DraftOrder',
-  InventoryItem = 'InventoryItem',
-  InventoryLevel = 'InventoryLevel',
-  Location = 'Location',
-  Order = 'Order',
-  Page = 'Page',
-  Product = 'Product',
-  ProductVariant = 'ProductVariant',
-  Redirect = 'Redirect',
-  Shop = 'Shop',
+  Customer = Identity.Customer,
+  DraftOrder = Identity.DraftOrder,
+  InventoryItem = Identity.InventoryItem,
+  InventoryLevel = Identity.InventoryLevel,
+  Location = Identity.Location,
+  Order = Identity.Order,
+  Page = Identity.Page,
+  Product = Identity.Product,
+  ProductVariant = Identity.ProductVariant,
+  Redirect = Identity.Redirect,
+  Shop = Identity.Shop,
 }
 
 export enum RestResourceSingular {
@@ -66,8 +71,7 @@ export enum RestResourcePlural {
 export type RestResource = {
   singular: RestResourceSingular;
   plural: RestResourcePlural;
-  metafieldOwnerType?: MetafieldOwnerType;
-  supportMetafields: boolean;
+  metafieldOwnerType: MetafieldOwnerType;
 };
 
 export const restResources: Record<RestResourceName, RestResource> = {
@@ -75,99 +79,85 @@ export const restResources: Record<RestResourceName, RestResource> = {
     singular: RestResourceSingular.Article,
     plural: RestResourcePlural.Article,
     metafieldOwnerType: MetafieldOwnerType.Article,
-    supportMetafields: true,
   },
   Blog: {
     singular: RestResourceSingular.Blog,
     plural: RestResourcePlural.Blog,
     metafieldOwnerType: MetafieldOwnerType.Blog,
-    supportMetafields: true,
   },
   Collection: {
     singular: RestResourceSingular.Collection,
     plural: RestResourcePlural.Collection,
     metafieldOwnerType: MetafieldOwnerType.Collection,
-    supportMetafields: true,
   },
   Collect: {
     singular: RestResourceSingular.Collect,
     plural: RestResourcePlural.Collect,
     metafieldOwnerType: MetafieldOwnerType.Collection,
-    supportMetafields: true,
   },
   CustomCollection: {
     singular: RestResourceSingular.CustomCollection,
     plural: RestResourcePlural.CustomCollection,
     metafieldOwnerType: MetafieldOwnerType.Collection,
-    supportMetafields: true,
   },
   SmartCollection: {
     singular: RestResourceSingular.SmartCollection,
     plural: RestResourcePlural.SmartCollection,
-    // TODO: check
-    supportMetafields: false,
+    metafieldOwnerType: MetafieldOwnerType.Collection,
   },
   Customer: {
     singular: RestResourceSingular.Customer,
     plural: RestResourcePlural.Customer,
     metafieldOwnerType: MetafieldOwnerType.Customer,
-    supportMetafields: true,
   },
   DraftOrder: {
     singular: RestResourceSingular.DraftOrder,
     plural: RestResourcePlural.DraftOrder,
     metafieldOwnerType: MetafieldOwnerType.Draftorder,
-    supportMetafields: true,
   },
   InventoryItem: {
     singular: RestResourceSingular.InventoryItem,
     plural: RestResourcePlural.InventoryItem,
-    supportMetafields: false,
+    metafieldOwnerType: undefined,
   },
   InventoryLevel: {
     singular: RestResourceSingular.InventoryLevel,
     plural: RestResourcePlural.InventoryLevel,
-    supportMetafields: false,
+    metafieldOwnerType: undefined,
   },
   Location: {
     singular: RestResourceSingular.Location,
     plural: RestResourcePlural.Location,
     metafieldOwnerType: MetafieldOwnerType.Location,
-    supportMetafields: true,
   },
   Order: {
     singular: RestResourceSingular.Order,
     plural: RestResourcePlural.Order,
     metafieldOwnerType: MetafieldOwnerType.Order,
-    supportMetafields: true,
   },
   Page: {
     singular: RestResourceSingular.Page,
     plural: RestResourcePlural.Page,
     metafieldOwnerType: MetafieldOwnerType.Page,
-    supportMetafields: true,
   },
   Product: {
     singular: RestResourceSingular.Product,
     plural: RestResourcePlural.Product,
     metafieldOwnerType: MetafieldOwnerType.Product,
-    supportMetafields: true,
   },
   ProductVariant: {
     singular: RestResourceSingular.ProductVariant,
     plural: RestResourcePlural.ProductVariant,
     metafieldOwnerType: MetafieldOwnerType.Productvariant,
-    supportMetafields: true,
   },
   Redirect: {
     singular: RestResourceSingular.Redirect,
     plural: RestResourcePlural.Redirect,
-    supportMetafields: false,
+    metafieldOwnerType: undefined,
   },
   Shop: {
     singular: RestResourceSingular.Shop,
     plural: RestResourcePlural.Shop,
     metafieldOwnerType: MetafieldOwnerType.Shop,
-    supportMetafields: true,
   },
 } as const;
