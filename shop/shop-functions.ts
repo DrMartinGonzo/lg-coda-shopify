@@ -2,19 +2,42 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES } from '../constants';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { RestResourceName } from '../types/RequestsRest';
-import { ShopSyncTableSchema, validShopFields } from '../schemas/syncTable/ShopSchema';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { validShopFields } from '../schemas/syncTable/ShopSchema';
+import { cleanQueryParams } from '../helpers-rest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 
-import type { ShopRow } from '../types/CodaRows';
 import type { CurrencyCode } from '../types/admin.types';
-
-// #endregion
+import type { ShopRow } from '../typesNew/CodaRows';
+import type { ShopSyncTableRestParams } from '../types/Shop';
+import type { SyncTableType } from '../types/SyncTable';
+import { shopVariantResource } from '../allResources';
 
 // #region Class
-export class ShopRestFetcher extends SimpleRest<RestResourceName.Shop, typeof ShopSyncTableSchema> {
+export type ShopSyncTableType = SyncTableType<
+  typeof shopVariantResource,
+  ShopRow,
+  ShopSyncTableRestParams,
+  never,
+  never
+>;
+
+export class ShopSyncTable extends SyncTableRestNew<ShopSyncTableType> {
+  constructor(fetcher: ShopRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(shopVariantResource, fetcher, params);
+  }
+
+  setSyncParams() {
+    // const [syncMetafields] = this.codaParams as SyncTableParamValues<typeof Sync_Shops>;
+    this.syncParams = cleanQueryParams({
+      fields: this.effectiveStandardFromKeys.filter((key) => !['admin_url'].includes(key)).join(','),
+    });
+  }
+}
+
+export class ShopRestFetcher extends SimpleRestNew<ShopSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Shop, ShopSyncTableSchema, context);
+    super(shopVariantResource, context, true);
   }
 
   validateParams = (params: any) => {

@@ -20,6 +20,11 @@ import { autocompleteProductTypes } from './products/products-functions';
 import { makeAutocompleteTemplateSuffixesFor } from './themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
 import { validShopFields } from './schemas/syncTable/ShopSchema';
+import { CurrencyCode } from './types/admin.types';
+
+export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
+  return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
+}
 
 /**====================================================================================================================
  *    Inputs
@@ -86,6 +91,12 @@ const generalInputs = {
     type: ParameterType.String,
     name: 'imageAlt',
     description: 'Alternative text that describes the image.',
+  }),
+  metafieldValue: makeParameter({
+    type: ParameterType.String,
+    name: 'value',
+    description:
+      'Use `FormatMetafield` formula for a single metafield value or `FormatListMetafield` formula for a list of metafield values.',
   }),
   metafields: makeParameter({
     type: ParameterType.StringArray,
@@ -387,11 +398,18 @@ const locationInputs = {
 
 // #region Metafield Inputs
 const metafieldInputs = {
-  fullKey: makeParameter({
+  fullKeyAutocomplete: makeParameter({
     type: ParameterType.String,
     name: 'fullKey',
     description:
       'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key". If ownerType is completed and valid, you will get autocomplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter a metafield key that doesn\'t have a definition.',
+    autocomplete: autoCompleteMetafieldWithDefinitionFullKeys,
+  }),
+  fullKey: makeParameter({
+    type: ParameterType.String,
+    name: 'fullKey',
+    description:
+      'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key".',
     autocomplete: autoCompleteMetafieldWithDefinitionFullKeys,
   }),
   id: {
@@ -417,13 +435,19 @@ const metafieldInputs = {
     type: ParameterType.String,
     name: 'value',
     description:
-      'A single metafield value written using one of the `Metafield{…}Value` formulas or a list of metafield values wrapped with the `MetafieldValues` formula. Setting it to an empty string will delete the metafield if it already exists.',
+      'A metafield value formatted with one of the `Meta{…}` helper formulas. Setting it to an empty string will delete the metafield if it already exists.',
   }),
 
   boolean: makeParameter({
     type: ParameterType.Boolean,
     name: 'value',
     description: 'A boolean value.',
+  }),
+  currencyCode: makeParameter({
+    type: ParameterType.String,
+    name: 'currencyCode',
+    description: 'The three-letter currency code supported by Shopify.',
+    autocomplete: Object.values(CurrencyCode),
   }),
   number: makeParameter({
     type: ParameterType.Number,
@@ -440,10 +464,32 @@ const metafieldInputs = {
     name: 'id',
     description: 'The ID of the referenced resource.',
   }),
+  scaleMin: makeParameter({
+    type: ParameterType.Number,
+    name: 'scaleMin',
+    description: 'The minimum value of the rating scale.',
+  }),
+  scaleMax: makeParameter({
+    type: ParameterType.Number,
+    name: 'scaleMax',
+    description: 'The maximum value of the rating scale.',
+  }),
   date: makeParameter({
     type: ParameterType.Date,
     name: 'date',
     description: 'A date value.',
+  }),
+  dimensionUnitGraphQl: makeParameter({
+    type: ParameterType.String,
+    name: 'unit',
+    description: 'The dimension unit supported by Shopify.',
+    autocomplete: Object.keys(getUnitMap('dimension')),
+  }),
+  volumeUnitGraphQl: makeParameter({
+    type: ParameterType.String,
+    name: 'unit',
+    description: 'The volume unit supported by Shopify.',
+    autocomplete: Object.keys(getUnitMap('volume')),
   }),
   weightUnitGraphQl: makeParameter({
     type: ParameterType.String,

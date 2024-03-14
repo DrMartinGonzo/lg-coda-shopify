@@ -38,12 +38,479 @@ export type GetCollectionsQuery = { collections: { nodes: Array<(
         )> } }
     )>, pageInfo: Pick<AdminTypes.PageInfo, 'hasNextPage' | 'endCursor'> } };
 
-export type IsSmartCollectionQueryVariables = AdminTypes.Exact<{
+export type GetCollectionTypeQueryVariables = AdminTypes.Exact<{
   collectionGid: AdminTypes.Scalars['ID']['input'];
 }>;
 
 
-export type IsSmartCollectionQuery = { collection?: AdminTypes.Maybe<{ isSmartCollection?: AdminTypes.Maybe<Pick<AdminTypes.CollectionRuleSet, 'appliedDisjunctively'>> }> };
+export type GetCollectionTypeQuery = { collection?: AdminTypes.Maybe<{ isSmartCollection?: AdminTypes.Maybe<Pick<AdminTypes.CollectionRuleSet, 'appliedDisjunctively'>> }> };
+
+export type GetCollectionTypesQueryVariables = AdminTypes.Exact<{
+  ids: Array<AdminTypes.Scalars['ID']['input']> | AdminTypes.Scalars['ID']['input'];
+}>;
+
+
+export type GetCollectionTypesQuery = { nodes: Array<AdminTypes.Maybe<(
+    { __typename: 'AbandonedCheckout' }
+    & Pick<AdminTypes.AbandonedCheckout, 'id'>
+  ) | (
+    { __typename: 'Abandonment' }
+    & Pick<AdminTypes.Abandonment, 'id'>
+  ) | (
+    { __typename: 'AddAllProductsOperation' }
+    & Pick<AdminTypes.AddAllProductsOperation, 'id'>
+  ) | (
+    { __typename: 'AdditionalFee' }
+    & Pick<AdminTypes.AdditionalFee, 'id'>
+  ) | (
+    { __typename: 'App' }
+    & Pick<AdminTypes.App, 'id'>
+  ) | (
+    { __typename: 'AppCatalog' }
+    & Pick<AdminTypes.AppCatalog, 'id'>
+  ) | (
+    { __typename: 'AppCredit' }
+    & Pick<AdminTypes.AppCredit, 'id'>
+  ) | (
+    { __typename: 'AppInstallation' }
+    & Pick<AdminTypes.AppInstallation, 'id'>
+  ) | (
+    { __typename: 'AppPurchaseOneTime' }
+    & Pick<AdminTypes.AppPurchaseOneTime, 'id'>
+  ) | (
+    { __typename: 'AppRevenueAttributionRecord' }
+    & Pick<AdminTypes.AppRevenueAttributionRecord, 'id'>
+  ) | (
+    { __typename: 'AppSubscription' }
+    & Pick<AdminTypes.AppSubscription, 'id'>
+  ) | (
+    { __typename: 'AppUsageRecord' }
+    & Pick<AdminTypes.AppUsageRecord, 'id'>
+  ) | (
+    { __typename: 'BasicEvent' }
+    & Pick<AdminTypes.BasicEvent, 'id'>
+  ) | (
+    { __typename: 'BulkOperation' }
+    & Pick<AdminTypes.BulkOperation, 'id'>
+  ) | (
+    { __typename: 'CalculatedOrder' }
+    & Pick<AdminTypes.CalculatedOrder, 'id'>
+  ) | (
+    { __typename: 'CartTransform' }
+    & Pick<AdminTypes.CartTransform, 'id'>
+  ) | (
+    { __typename: 'CatalogCsvOperation' }
+    & Pick<AdminTypes.CatalogCsvOperation, 'id'>
+  ) | (
+    { __typename: 'Channel' }
+    & Pick<AdminTypes.Channel, 'id'>
+  ) | (
+    { __typename: 'ChannelDefinition' }
+    & Pick<AdminTypes.ChannelDefinition, 'id'>
+  ) | (
+    { __typename: 'ChannelInformation' }
+    & Pick<AdminTypes.ChannelInformation, 'id'>
+  ) | (
+    { __typename: 'CheckoutProfile' }
+    & Pick<AdminTypes.CheckoutProfile, 'id'>
+  ) | (
+    { __typename: 'Collection' }
+    & Pick<AdminTypes.Collection, 'id'>
+    & { isSmartCollection?: AdminTypes.Maybe<Pick<AdminTypes.CollectionRuleSet, 'appliedDisjunctively'>> }
+  ) | (
+    { __typename: 'CommentEvent' }
+    & Pick<AdminTypes.CommentEvent, 'id'>
+  ) | (
+    { __typename: 'Company' }
+    & Pick<AdminTypes.Company, 'id'>
+  ) | (
+    { __typename: 'CompanyAddress' }
+    & Pick<AdminTypes.CompanyAddress, 'id'>
+  ) | (
+    { __typename: 'CompanyContact' }
+    & Pick<AdminTypes.CompanyContact, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRole' }
+    & Pick<AdminTypes.CompanyContactRole, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRoleAssignment' }
+    & Pick<AdminTypes.CompanyContactRoleAssignment, 'id'>
+  ) | (
+    { __typename: 'CompanyLocation' }
+    & Pick<AdminTypes.CompanyLocation, 'id'>
+  ) | (
+    { __typename: 'CompanyLocationCatalog' }
+    & Pick<AdminTypes.CompanyLocationCatalog, 'id'>
+  ) | (
+    { __typename: 'Customer' }
+    & Pick<AdminTypes.Customer, 'id'>
+  ) | (
+    { __typename: 'CustomerPaymentMethod' }
+    & Pick<AdminTypes.CustomerPaymentMethod, 'id'>
+  ) | (
+    { __typename: 'CustomerSegmentMembersQuery' }
+    & Pick<AdminTypes.CustomerSegmentMembersQuery, 'id'>
+  ) | (
+    { __typename: 'CustomerVisit' }
+    & Pick<AdminTypes.CustomerVisit, 'id'>
+  ) | (
+    { __typename: 'DeliveryCarrierService' }
+    & Pick<AdminTypes.DeliveryCarrierService, 'id'>
+  ) | (
+    { __typename: 'DeliveryCondition' }
+    & Pick<AdminTypes.DeliveryCondition, 'id'>
+  ) | (
+    { __typename: 'DeliveryCountry' }
+    & Pick<AdminTypes.DeliveryCountry, 'id'>
+  ) | (
+    { __typename: 'DeliveryCustomization' }
+    & Pick<AdminTypes.DeliveryCustomization, 'id'>
+  ) | (
+    { __typename: 'DeliveryLocationGroup' }
+    & Pick<AdminTypes.DeliveryLocationGroup, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethod' }
+    & Pick<AdminTypes.DeliveryMethod, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethodDefinition' }
+    & Pick<AdminTypes.DeliveryMethodDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryParticipant' }
+    & Pick<AdminTypes.DeliveryParticipant, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfile' }
+    & Pick<AdminTypes.DeliveryProfile, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfileItem' }
+    & Pick<AdminTypes.DeliveryProfileItem, 'id'>
+  ) | (
+    { __typename: 'DeliveryProvince' }
+    & Pick<AdminTypes.DeliveryProvince, 'id'>
+  ) | (
+    { __typename: 'DeliveryRateDefinition' }
+    & Pick<AdminTypes.DeliveryRateDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryZone' }
+    & Pick<AdminTypes.DeliveryZone, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticBxgy' }
+    & Pick<AdminTypes.DiscountAutomaticBxgy, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticNode' }
+    & Pick<AdminTypes.DiscountAutomaticNode, 'id'>
+  ) | (
+    { __typename: 'DiscountCodeNode' }
+    & Pick<AdminTypes.DiscountCodeNode, 'id'>
+  ) | (
+    { __typename: 'DiscountNode' }
+    & Pick<AdminTypes.DiscountNode, 'id'>
+  ) | (
+    { __typename: 'DiscountRedeemCodeBulkCreation' }
+    & Pick<AdminTypes.DiscountRedeemCodeBulkCreation, 'id'>
+  ) | (
+    { __typename: 'Domain' }
+    & Pick<AdminTypes.Domain, 'id'>
+  ) | (
+    { __typename: 'DraftOrder' }
+    & Pick<AdminTypes.DraftOrder, 'id'>
+  ) | (
+    { __typename: 'DraftOrderLineItem' }
+    & Pick<AdminTypes.DraftOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'DraftOrderTag' }
+    & Pick<AdminTypes.DraftOrderTag, 'id'>
+  ) | (
+    { __typename: 'Duty' }
+    & Pick<AdminTypes.Duty, 'id'>
+  ) | (
+    { __typename: 'ExchangeV2' }
+    & Pick<AdminTypes.ExchangeV2, 'id'>
+  ) | (
+    { __typename: 'ExternalVideo' }
+    & Pick<AdminTypes.ExternalVideo, 'id'>
+  ) | (
+    { __typename: 'Fulfillment' }
+    & Pick<AdminTypes.Fulfillment, 'id'>
+  ) | (
+    { __typename: 'FulfillmentConstraintRule' }
+    & Pick<AdminTypes.FulfillmentConstraintRule, 'id'>
+  ) | (
+    { __typename: 'FulfillmentEvent' }
+    & Pick<AdminTypes.FulfillmentEvent, 'id'>
+  ) | (
+    { __typename: 'FulfillmentLineItem' }
+    & Pick<AdminTypes.FulfillmentLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrder' }
+    & Pick<AdminTypes.FulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderDestination' }
+    & Pick<AdminTypes.FulfillmentOrderDestination, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderLineItem' }
+    & Pick<AdminTypes.FulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderMerchantRequest' }
+    & Pick<AdminTypes.FulfillmentOrderMerchantRequest, 'id'>
+  ) | (
+    { __typename: 'GenericFile' }
+    & Pick<AdminTypes.GenericFile, 'id'>
+  ) | (
+    { __typename: 'GiftCard' }
+    & Pick<AdminTypes.GiftCard, 'id'>
+  ) | (
+    { __typename: 'InventoryAdjustmentGroup' }
+    & Pick<AdminTypes.InventoryAdjustmentGroup, 'id'>
+  ) | (
+    { __typename: 'InventoryItem' }
+    & Pick<AdminTypes.InventoryItem, 'id'>
+  ) | (
+    { __typename: 'InventoryLevel' }
+    & Pick<AdminTypes.InventoryLevel, 'id'>
+  ) | (
+    { __typename: 'LineItem' }
+    & Pick<AdminTypes.LineItem, 'id'>
+  ) | (
+    { __typename: 'LineItemMutable' }
+    & Pick<AdminTypes.LineItemMutable, 'id'>
+  ) | (
+    { __typename: 'Location' }
+    & Pick<AdminTypes.Location, 'id'>
+  ) | (
+    { __typename: 'MailingAddress' }
+    & Pick<AdminTypes.MailingAddress, 'id'>
+  ) | (
+    { __typename: 'Market' }
+    & Pick<AdminTypes.Market, 'id'>
+  ) | (
+    { __typename: 'MarketCatalog' }
+    & Pick<AdminTypes.MarketCatalog, 'id'>
+  ) | (
+    { __typename: 'MarketRegionCountry' }
+    & Pick<AdminTypes.MarketRegionCountry, 'id'>
+  ) | (
+    { __typename: 'MarketWebPresence' }
+    & Pick<AdminTypes.MarketWebPresence, 'id'>
+  ) | (
+    { __typename: 'MarketingActivity' }
+    & Pick<AdminTypes.MarketingActivity, 'id'>
+  ) | (
+    { __typename: 'MarketingEvent' }
+    & Pick<AdminTypes.MarketingEvent, 'id'>
+  ) | (
+    { __typename: 'MediaImage' }
+    & Pick<AdminTypes.MediaImage, 'id'>
+  ) | (
+    { __typename: 'Metafield' }
+    & Pick<AdminTypes.Metafield, 'id'>
+  ) | (
+    { __typename: 'MetafieldDefinition' }
+    & Pick<AdminTypes.MetafieldDefinition, 'id'>
+  ) | (
+    { __typename: 'MetafieldStorefrontVisibility' }
+    & Pick<AdminTypes.MetafieldStorefrontVisibility, 'id'>
+  ) | (
+    { __typename: 'Metaobject' }
+    & Pick<AdminTypes.Metaobject, 'id'>
+  ) | (
+    { __typename: 'MetaobjectDefinition' }
+    & Pick<AdminTypes.MetaobjectDefinition, 'id'>
+  ) | (
+    { __typename: 'Model3d' }
+    & Pick<AdminTypes.Model3d, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreArticle' }
+    & Pick<AdminTypes.OnlineStoreArticle, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreBlog' }
+    & Pick<AdminTypes.OnlineStoreBlog, 'id'>
+  ) | (
+    { __typename: 'OnlineStorePage' }
+    & Pick<AdminTypes.OnlineStorePage, 'id'>
+  ) | (
+    { __typename: 'Order' }
+    & Pick<AdminTypes.Order, 'id'>
+  ) | (
+    { __typename: 'OrderDisputeSummary' }
+    & Pick<AdminTypes.OrderDisputeSummary, 'id'>
+  ) | (
+    { __typename: 'OrderTransaction' }
+    & Pick<AdminTypes.OrderTransaction, 'id'>
+  ) | (
+    { __typename: 'PaymentCustomization' }
+    & Pick<AdminTypes.PaymentCustomization, 'id'>
+  ) | (
+    { __typename: 'PaymentMandate' }
+    & Pick<AdminTypes.PaymentMandate, 'id'>
+  ) | (
+    { __typename: 'PaymentSchedule' }
+    & Pick<AdminTypes.PaymentSchedule, 'id'>
+  ) | (
+    { __typename: 'PaymentTerms' }
+    & Pick<AdminTypes.PaymentTerms, 'id'>
+  ) | (
+    { __typename: 'PaymentTermsTemplate' }
+    & Pick<AdminTypes.PaymentTermsTemplate, 'id'>
+  ) | (
+    { __typename: 'PriceList' }
+    & Pick<AdminTypes.PriceList, 'id'>
+  ) | (
+    { __typename: 'PriceRule' }
+    & Pick<AdminTypes.PriceRule, 'id'>
+  ) | (
+    { __typename: 'PriceRuleDiscountCode' }
+    & Pick<AdminTypes.PriceRuleDiscountCode, 'id'>
+  ) | (
+    { __typename: 'PrivateMetafield' }
+    & Pick<AdminTypes.PrivateMetafield, 'id'>
+  ) | (
+    { __typename: 'Product' }
+    & Pick<AdminTypes.Product, 'id'>
+  ) | (
+    { __typename: 'ProductFeed' }
+    & Pick<AdminTypes.ProductFeed, 'id'>
+  ) | (
+    { __typename: 'ProductOption' }
+    & Pick<AdminTypes.ProductOption, 'id'>
+  ) | (
+    { __typename: 'ProductTaxonomyNode' }
+    & Pick<AdminTypes.ProductTaxonomyNode, 'id'>
+  ) | (
+    { __typename: 'ProductVariant' }
+    & Pick<AdminTypes.ProductVariant, 'id'>
+  ) | (
+    { __typename: 'ProductVariantComponent' }
+    & Pick<AdminTypes.ProductVariantComponent, 'id'>
+  ) | (
+    { __typename: 'Publication' }
+    & Pick<AdminTypes.Publication, 'id'>
+  ) | (
+    { __typename: 'PublicationResourceOperation' }
+    & Pick<AdminTypes.PublicationResourceOperation, 'id'>
+  ) | (
+    { __typename: 'QuantityPriceBreak' }
+    & Pick<AdminTypes.QuantityPriceBreak, 'id'>
+  ) | (
+    { __typename: 'Refund' }
+    & Pick<AdminTypes.Refund, 'id'>
+  ) | (
+    { __typename: 'Return' }
+    & Pick<AdminTypes.Return, 'id'>
+  ) | (
+    { __typename: 'ReturnLineItem' }
+    & Pick<AdminTypes.ReturnLineItem, 'id'>
+  ) | (
+    { __typename: 'ReturnableFulfillment' }
+    & Pick<AdminTypes.ReturnableFulfillment, 'id'>
+  ) | (
+    { __typename: 'ReverseDelivery' }
+    & Pick<AdminTypes.ReverseDelivery, 'id'>
+  ) | (
+    { __typename: 'ReverseDeliveryLineItem' }
+    & Pick<AdminTypes.ReverseDeliveryLineItem, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrder' }
+    & Pick<AdminTypes.ReverseFulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderDisposition' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderDisposition, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderLineItem' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'SaleAdditionalFee' }
+    & Pick<AdminTypes.SaleAdditionalFee, 'id'>
+  ) | (
+    { __typename: 'SavedSearch' }
+    & Pick<AdminTypes.SavedSearch, 'id'>
+  ) | (
+    { __typename: 'ScriptTag' }
+    & Pick<AdminTypes.ScriptTag, 'id'>
+  ) | (
+    { __typename: 'Segment' }
+    & Pick<AdminTypes.Segment, 'id'>
+  ) | (
+    { __typename: 'SellingPlan' }
+    & Pick<AdminTypes.SellingPlan, 'id'>
+  ) | (
+    { __typename: 'SellingPlanGroup' }
+    & Pick<AdminTypes.SellingPlanGroup, 'id'>
+  ) | (
+    { __typename: 'ServerPixel' }
+    & Pick<AdminTypes.ServerPixel, 'id'>
+  ) | (
+    { __typename: 'Shop' }
+    & Pick<AdminTypes.Shop, 'id'>
+  ) | (
+    { __typename: 'ShopAddress' }
+    & Pick<AdminTypes.ShopAddress, 'id'>
+  ) | (
+    { __typename: 'ShopPolicy' }
+    & Pick<AdminTypes.ShopPolicy, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsBankAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsBankAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDispute' }
+    & Pick<AdminTypes.ShopifyPaymentsDispute, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeEvidence' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeEvidence, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFileUpload' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFileUpload, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFulfillment' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFulfillment, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsPayout' }
+    & Pick<AdminTypes.ShopifyPaymentsPayout, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsVerification' }
+    & Pick<AdminTypes.ShopifyPaymentsVerification, 'id'>
+  ) | (
+    { __typename: 'StaffMember' }
+    & Pick<AdminTypes.StaffMember, 'id'>
+  ) | (
+    { __typename: 'StandardMetafieldDefinitionTemplate' }
+    & Pick<AdminTypes.StandardMetafieldDefinitionTemplate, 'id'>
+  ) | (
+    { __typename: 'StorefrontAccessToken' }
+    & Pick<AdminTypes.StorefrontAccessToken, 'id'>
+  ) | (
+    { __typename: 'SubscriptionBillingAttempt' }
+    & Pick<AdminTypes.SubscriptionBillingAttempt, 'id'>
+  ) | (
+    { __typename: 'SubscriptionContract' }
+    & Pick<AdminTypes.SubscriptionContract, 'id'>
+  ) | (
+    { __typename: 'SubscriptionDraft' }
+    & Pick<AdminTypes.SubscriptionDraft, 'id'>
+  ) | (
+    { __typename: 'TenderTransaction' }
+    & Pick<AdminTypes.TenderTransaction, 'id'>
+  ) | (
+    { __typename: 'TransactionFee' }
+    & Pick<AdminTypes.TransactionFee, 'id'>
+  ) | (
+    { __typename: 'UrlRedirect' }
+    & Pick<AdminTypes.UrlRedirect, 'id'>
+  ) | (
+    { __typename: 'UrlRedirectImport' }
+    & Pick<AdminTypes.UrlRedirectImport, 'id'>
+  ) | (
+    { __typename: 'Video' }
+    & Pick<AdminTypes.Video, 'id'>
+  ) | (
+    { __typename: 'WebPixel' }
+    & Pick<AdminTypes.WebPixel, 'id'>
+  ) | (
+    { __typename: 'WebhookSubscription' }
+    & Pick<AdminTypes.WebhookSubscription, 'id'>
+  )>> };
 
 export type GetCollectionsMetafieldsQueryVariables = AdminTypes.Exact<{
   maxEntriesPerRun: AdminTypes.Scalars['Int']['input'];
@@ -395,6 +862,1174 @@ export type MetafieldFieldsFragment = (
   & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
 );
 
+export type GetSingleMetafieldQueryVariables = AdminTypes.Exact<{
+  gid: AdminTypes.Scalars['ID']['input'];
+}>;
+
+
+export type GetSingleMetafieldQuery = { node?: AdminTypes.Maybe<(
+    { __typename: 'Metafield' }
+    & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+    & { owner: (
+      { __typename: 'AppInstallation' }
+      & Pick<AdminTypes.AppInstallation, 'id'>
+    ) | (
+      { __typename: 'CartTransform' }
+      & Pick<AdminTypes.CartTransform, 'id'>
+    ) | (
+      { __typename: 'Collection' }
+      & Pick<AdminTypes.Collection, 'id'>
+    ) | (
+      { __typename: 'Company' }
+      & Pick<AdminTypes.Company, 'id'>
+    ) | (
+      { __typename: 'CompanyLocation' }
+      & Pick<AdminTypes.CompanyLocation, 'id'>
+    ) | (
+      { __typename: 'Customer' }
+      & Pick<AdminTypes.Customer, 'id'>
+    ) | { __typename: 'CustomerSegmentMember' | 'Image' } | (
+      { __typename: 'DeliveryCustomization' }
+      & Pick<AdminTypes.DeliveryCustomization, 'id'>
+    ) | (
+      { __typename: 'DiscountAutomaticNode' }
+      & Pick<AdminTypes.DiscountAutomaticNode, 'id'>
+    ) | (
+      { __typename: 'DiscountCodeNode' }
+      & Pick<AdminTypes.DiscountCodeNode, 'id'>
+    ) | (
+      { __typename: 'DiscountNode' }
+      & Pick<AdminTypes.DiscountNode, 'id'>
+    ) | (
+      { __typename: 'DraftOrder' }
+      & Pick<AdminTypes.DraftOrder, 'id'>
+    ) | (
+      { __typename: 'FulfillmentConstraintRule' }
+      & Pick<AdminTypes.FulfillmentConstraintRule, 'id'>
+    ) | (
+      { __typename: 'Location' }
+      & Pick<AdminTypes.Location, 'id'>
+    ) | (
+      { __typename: 'Market' }
+      & Pick<AdminTypes.Market, 'id'>
+    ) | (
+      { __typename: 'MediaImage' }
+      & Pick<AdminTypes.MediaImage, 'id'>
+    ) | (
+      { __typename: 'Order' }
+      & Pick<AdminTypes.Order, 'id'>
+    ) | (
+      { __typename: 'PaymentCustomization' }
+      & Pick<AdminTypes.PaymentCustomization, 'id'>
+    ) | (
+      { __typename: 'Product' }
+      & Pick<AdminTypes.Product, 'id'>
+    ) | (
+      { __typename: 'ProductVariant' }
+      & Pick<AdminTypes.ProductVariant, 'id'>
+      & { owner: Pick<AdminTypes.Product, 'id'> }
+    ) | (
+      { __typename: 'Shop' }
+      & Pick<AdminTypes.Shop, 'id'>
+    ), definition?: AdminTypes.Maybe<Pick<AdminTypes.MetafieldDefinition, 'id'>> }
+  )> };
+
+export type GetNodesMetafieldsQueryVariables = AdminTypes.Exact<{
+  ids: Array<AdminTypes.Scalars['ID']['input']> | AdminTypes.Scalars['ID']['input'];
+  metafieldKeys?: AdminTypes.InputMaybe<Array<AdminTypes.Scalars['String']['input']> | AdminTypes.Scalars['String']['input']>;
+  countMetafields?: AdminTypes.InputMaybe<AdminTypes.Scalars['Int']['input']>;
+}>;
+
+
+export type GetNodesMetafieldsQuery = { nodes: Array<AdminTypes.Maybe<(
+    { __typename: 'AbandonedCheckout' }
+    & Pick<AdminTypes.AbandonedCheckout, 'id'>
+  ) | (
+    { __typename: 'Abandonment' }
+    & Pick<AdminTypes.Abandonment, 'id'>
+  ) | (
+    { __typename: 'AddAllProductsOperation' }
+    & Pick<AdminTypes.AddAllProductsOperation, 'id'>
+  ) | (
+    { __typename: 'AdditionalFee' }
+    & Pick<AdminTypes.AdditionalFee, 'id'>
+  ) | (
+    { __typename: 'App' }
+    & Pick<AdminTypes.App, 'id'>
+  ) | (
+    { __typename: 'AppCatalog' }
+    & Pick<AdminTypes.AppCatalog, 'id'>
+  ) | (
+    { __typename: 'AppCredit' }
+    & Pick<AdminTypes.AppCredit, 'id'>
+  ) | (
+    { __typename: 'AppInstallation' }
+    & Pick<AdminTypes.AppInstallation, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'AppPurchaseOneTime' }
+    & Pick<AdminTypes.AppPurchaseOneTime, 'id'>
+  ) | (
+    { __typename: 'AppRevenueAttributionRecord' }
+    & Pick<AdminTypes.AppRevenueAttributionRecord, 'id'>
+  ) | (
+    { __typename: 'AppSubscription' }
+    & Pick<AdminTypes.AppSubscription, 'id'>
+  ) | (
+    { __typename: 'AppUsageRecord' }
+    & Pick<AdminTypes.AppUsageRecord, 'id'>
+  ) | (
+    { __typename: 'BasicEvent' }
+    & Pick<AdminTypes.BasicEvent, 'id'>
+  ) | (
+    { __typename: 'BulkOperation' }
+    & Pick<AdminTypes.BulkOperation, 'id'>
+  ) | (
+    { __typename: 'CalculatedOrder' }
+    & Pick<AdminTypes.CalculatedOrder, 'id'>
+  ) | (
+    { __typename: 'CartTransform' }
+    & Pick<AdminTypes.CartTransform, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CatalogCsvOperation' }
+    & Pick<AdminTypes.CatalogCsvOperation, 'id'>
+  ) | (
+    { __typename: 'Channel' }
+    & Pick<AdminTypes.Channel, 'id'>
+  ) | (
+    { __typename: 'ChannelDefinition' }
+    & Pick<AdminTypes.ChannelDefinition, 'id'>
+  ) | (
+    { __typename: 'ChannelInformation' }
+    & Pick<AdminTypes.ChannelInformation, 'id'>
+  ) | (
+    { __typename: 'CheckoutProfile' }
+    & Pick<AdminTypes.CheckoutProfile, 'id'>
+  ) | (
+    { __typename: 'Collection' }
+    & Pick<AdminTypes.Collection, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CommentEvent' }
+    & Pick<AdminTypes.CommentEvent, 'id'>
+  ) | (
+    { __typename: 'Company' }
+    & Pick<AdminTypes.Company, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CompanyAddress' }
+    & Pick<AdminTypes.CompanyAddress, 'id'>
+  ) | (
+    { __typename: 'CompanyContact' }
+    & Pick<AdminTypes.CompanyContact, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRole' }
+    & Pick<AdminTypes.CompanyContactRole, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRoleAssignment' }
+    & Pick<AdminTypes.CompanyContactRoleAssignment, 'id'>
+  ) | (
+    { __typename: 'CompanyLocation' }
+    & Pick<AdminTypes.CompanyLocation, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CompanyLocationCatalog' }
+    & Pick<AdminTypes.CompanyLocationCatalog, 'id'>
+  ) | (
+    { __typename: 'Customer' }
+    & Pick<AdminTypes.Customer, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CustomerPaymentMethod' }
+    & Pick<AdminTypes.CustomerPaymentMethod, 'id'>
+  ) | (
+    { __typename: 'CustomerSegmentMembersQuery' }
+    & Pick<AdminTypes.CustomerSegmentMembersQuery, 'id'>
+  ) | (
+    { __typename: 'CustomerVisit' }
+    & Pick<AdminTypes.CustomerVisit, 'id'>
+  ) | (
+    { __typename: 'DeliveryCarrierService' }
+    & Pick<AdminTypes.DeliveryCarrierService, 'id'>
+  ) | (
+    { __typename: 'DeliveryCondition' }
+    & Pick<AdminTypes.DeliveryCondition, 'id'>
+  ) | (
+    { __typename: 'DeliveryCountry' }
+    & Pick<AdminTypes.DeliveryCountry, 'id'>
+  ) | (
+    { __typename: 'DeliveryCustomization' }
+    & Pick<AdminTypes.DeliveryCustomization, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DeliveryLocationGroup' }
+    & Pick<AdminTypes.DeliveryLocationGroup, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethod' }
+    & Pick<AdminTypes.DeliveryMethod, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethodDefinition' }
+    & Pick<AdminTypes.DeliveryMethodDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryParticipant' }
+    & Pick<AdminTypes.DeliveryParticipant, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfile' }
+    & Pick<AdminTypes.DeliveryProfile, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfileItem' }
+    & Pick<AdminTypes.DeliveryProfileItem, 'id'>
+  ) | (
+    { __typename: 'DeliveryProvince' }
+    & Pick<AdminTypes.DeliveryProvince, 'id'>
+  ) | (
+    { __typename: 'DeliveryRateDefinition' }
+    & Pick<AdminTypes.DeliveryRateDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryZone' }
+    & Pick<AdminTypes.DeliveryZone, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticBxgy' }
+    & Pick<AdminTypes.DiscountAutomaticBxgy, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticNode' }
+    & Pick<AdminTypes.DiscountAutomaticNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountCodeNode' }
+    & Pick<AdminTypes.DiscountCodeNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountNode' }
+    & Pick<AdminTypes.DiscountNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountRedeemCodeBulkCreation' }
+    & Pick<AdminTypes.DiscountRedeemCodeBulkCreation, 'id'>
+  ) | (
+    { __typename: 'Domain' }
+    & Pick<AdminTypes.Domain, 'id'>
+  ) | (
+    { __typename: 'DraftOrder' }
+    & Pick<AdminTypes.DraftOrder, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DraftOrderLineItem' }
+    & Pick<AdminTypes.DraftOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'DraftOrderTag' }
+    & Pick<AdminTypes.DraftOrderTag, 'id'>
+  ) | (
+    { __typename: 'Duty' }
+    & Pick<AdminTypes.Duty, 'id'>
+  ) | (
+    { __typename: 'ExchangeV2' }
+    & Pick<AdminTypes.ExchangeV2, 'id'>
+  ) | (
+    { __typename: 'ExternalVideo' }
+    & Pick<AdminTypes.ExternalVideo, 'id'>
+  ) | (
+    { __typename: 'Fulfillment' }
+    & Pick<AdminTypes.Fulfillment, 'id'>
+  ) | (
+    { __typename: 'FulfillmentConstraintRule' }
+    & Pick<AdminTypes.FulfillmentConstraintRule, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'FulfillmentEvent' }
+    & Pick<AdminTypes.FulfillmentEvent, 'id'>
+  ) | (
+    { __typename: 'FulfillmentLineItem' }
+    & Pick<AdminTypes.FulfillmentLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrder' }
+    & Pick<AdminTypes.FulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderDestination' }
+    & Pick<AdminTypes.FulfillmentOrderDestination, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderLineItem' }
+    & Pick<AdminTypes.FulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderMerchantRequest' }
+    & Pick<AdminTypes.FulfillmentOrderMerchantRequest, 'id'>
+  ) | (
+    { __typename: 'GenericFile' }
+    & Pick<AdminTypes.GenericFile, 'id'>
+  ) | (
+    { __typename: 'GiftCard' }
+    & Pick<AdminTypes.GiftCard, 'id'>
+  ) | (
+    { __typename: 'InventoryAdjustmentGroup' }
+    & Pick<AdminTypes.InventoryAdjustmentGroup, 'id'>
+  ) | (
+    { __typename: 'InventoryItem' }
+    & Pick<AdminTypes.InventoryItem, 'id'>
+  ) | (
+    { __typename: 'InventoryLevel' }
+    & Pick<AdminTypes.InventoryLevel, 'id'>
+  ) | (
+    { __typename: 'LineItem' }
+    & Pick<AdminTypes.LineItem, 'id'>
+  ) | (
+    { __typename: 'LineItemMutable' }
+    & Pick<AdminTypes.LineItemMutable, 'id'>
+  ) | (
+    { __typename: 'Location' }
+    & Pick<AdminTypes.Location, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'MailingAddress' }
+    & Pick<AdminTypes.MailingAddress, 'id'>
+  ) | (
+    { __typename: 'Market' }
+    & Pick<AdminTypes.Market, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'MarketCatalog' }
+    & Pick<AdminTypes.MarketCatalog, 'id'>
+  ) | (
+    { __typename: 'MarketRegionCountry' }
+    & Pick<AdminTypes.MarketRegionCountry, 'id'>
+  ) | (
+    { __typename: 'MarketWebPresence' }
+    & Pick<AdminTypes.MarketWebPresence, 'id'>
+  ) | (
+    { __typename: 'MarketingActivity' }
+    & Pick<AdminTypes.MarketingActivity, 'id'>
+  ) | (
+    { __typename: 'MarketingEvent' }
+    & Pick<AdminTypes.MarketingEvent, 'id'>
+  ) | (
+    { __typename: 'MediaImage' }
+    & Pick<AdminTypes.MediaImage, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'Metafield' }
+    & Pick<AdminTypes.Metafield, 'id'>
+  ) | (
+    { __typename: 'MetafieldDefinition' }
+    & Pick<AdminTypes.MetafieldDefinition, 'id'>
+  ) | (
+    { __typename: 'MetafieldStorefrontVisibility' }
+    & Pick<AdminTypes.MetafieldStorefrontVisibility, 'id'>
+  ) | (
+    { __typename: 'Metaobject' }
+    & Pick<AdminTypes.Metaobject, 'id'>
+  ) | (
+    { __typename: 'MetaobjectDefinition' }
+    & Pick<AdminTypes.MetaobjectDefinition, 'id'>
+  ) | (
+    { __typename: 'Model3d' }
+    & Pick<AdminTypes.Model3d, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreArticle' }
+    & Pick<AdminTypes.OnlineStoreArticle, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreBlog' }
+    & Pick<AdminTypes.OnlineStoreBlog, 'id'>
+  ) | (
+    { __typename: 'OnlineStorePage' }
+    & Pick<AdminTypes.OnlineStorePage, 'id'>
+  ) | (
+    { __typename: 'Order' }
+    & Pick<AdminTypes.Order, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'OrderDisputeSummary' }
+    & Pick<AdminTypes.OrderDisputeSummary, 'id'>
+  ) | (
+    { __typename: 'OrderTransaction' }
+    & Pick<AdminTypes.OrderTransaction, 'id'>
+  ) | (
+    { __typename: 'PaymentCustomization' }
+    & Pick<AdminTypes.PaymentCustomization, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'PaymentMandate' }
+    & Pick<AdminTypes.PaymentMandate, 'id'>
+  ) | (
+    { __typename: 'PaymentSchedule' }
+    & Pick<AdminTypes.PaymentSchedule, 'id'>
+  ) | (
+    { __typename: 'PaymentTerms' }
+    & Pick<AdminTypes.PaymentTerms, 'id'>
+  ) | (
+    { __typename: 'PaymentTermsTemplate' }
+    & Pick<AdminTypes.PaymentTermsTemplate, 'id'>
+  ) | (
+    { __typename: 'PriceList' }
+    & Pick<AdminTypes.PriceList, 'id'>
+  ) | (
+    { __typename: 'PriceRule' }
+    & Pick<AdminTypes.PriceRule, 'id'>
+  ) | (
+    { __typename: 'PriceRuleDiscountCode' }
+    & Pick<AdminTypes.PriceRuleDiscountCode, 'id'>
+  ) | (
+    { __typename: 'PrivateMetafield' }
+    & Pick<AdminTypes.PrivateMetafield, 'id'>
+  ) | (
+    { __typename: 'Product' }
+    & Pick<AdminTypes.Product, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ProductFeed' }
+    & Pick<AdminTypes.ProductFeed, 'id'>
+  ) | (
+    { __typename: 'ProductOption' }
+    & Pick<AdminTypes.ProductOption, 'id'>
+  ) | (
+    { __typename: 'ProductTaxonomyNode' }
+    & Pick<AdminTypes.ProductTaxonomyNode, 'id'>
+  ) | (
+    { __typename: 'ProductVariant' }
+    & Pick<AdminTypes.ProductVariant, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ProductVariantComponent' }
+    & Pick<AdminTypes.ProductVariantComponent, 'id'>
+  ) | (
+    { __typename: 'Publication' }
+    & Pick<AdminTypes.Publication, 'id'>
+  ) | (
+    { __typename: 'PublicationResourceOperation' }
+    & Pick<AdminTypes.PublicationResourceOperation, 'id'>
+  ) | (
+    { __typename: 'QuantityPriceBreak' }
+    & Pick<AdminTypes.QuantityPriceBreak, 'id'>
+  ) | (
+    { __typename: 'Refund' }
+    & Pick<AdminTypes.Refund, 'id'>
+  ) | (
+    { __typename: 'Return' }
+    & Pick<AdminTypes.Return, 'id'>
+  ) | (
+    { __typename: 'ReturnLineItem' }
+    & Pick<AdminTypes.ReturnLineItem, 'id'>
+  ) | (
+    { __typename: 'ReturnableFulfillment' }
+    & Pick<AdminTypes.ReturnableFulfillment, 'id'>
+  ) | (
+    { __typename: 'ReverseDelivery' }
+    & Pick<AdminTypes.ReverseDelivery, 'id'>
+  ) | (
+    { __typename: 'ReverseDeliveryLineItem' }
+    & Pick<AdminTypes.ReverseDeliveryLineItem, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrder' }
+    & Pick<AdminTypes.ReverseFulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderDisposition' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderDisposition, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderLineItem' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'SaleAdditionalFee' }
+    & Pick<AdminTypes.SaleAdditionalFee, 'id'>
+  ) | (
+    { __typename: 'SavedSearch' }
+    & Pick<AdminTypes.SavedSearch, 'id'>
+  ) | (
+    { __typename: 'ScriptTag' }
+    & Pick<AdminTypes.ScriptTag, 'id'>
+  ) | (
+    { __typename: 'Segment' }
+    & Pick<AdminTypes.Segment, 'id'>
+  ) | (
+    { __typename: 'SellingPlan' }
+    & Pick<AdminTypes.SellingPlan, 'id'>
+  ) | (
+    { __typename: 'SellingPlanGroup' }
+    & Pick<AdminTypes.SellingPlanGroup, 'id'>
+  ) | (
+    { __typename: 'ServerPixel' }
+    & Pick<AdminTypes.ServerPixel, 'id'>
+  ) | (
+    { __typename: 'Shop' }
+    & Pick<AdminTypes.Shop, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ShopAddress' }
+    & Pick<AdminTypes.ShopAddress, 'id'>
+  ) | (
+    { __typename: 'ShopPolicy' }
+    & Pick<AdminTypes.ShopPolicy, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsBankAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsBankAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDispute' }
+    & Pick<AdminTypes.ShopifyPaymentsDispute, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeEvidence' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeEvidence, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFileUpload' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFileUpload, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFulfillment' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFulfillment, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsPayout' }
+    & Pick<AdminTypes.ShopifyPaymentsPayout, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsVerification' }
+    & Pick<AdminTypes.ShopifyPaymentsVerification, 'id'>
+  ) | (
+    { __typename: 'StaffMember' }
+    & Pick<AdminTypes.StaffMember, 'id'>
+  ) | (
+    { __typename: 'StandardMetafieldDefinitionTemplate' }
+    & Pick<AdminTypes.StandardMetafieldDefinitionTemplate, 'id'>
+  ) | (
+    { __typename: 'StorefrontAccessToken' }
+    & Pick<AdminTypes.StorefrontAccessToken, 'id'>
+  ) | (
+    { __typename: 'SubscriptionBillingAttempt' }
+    & Pick<AdminTypes.SubscriptionBillingAttempt, 'id'>
+  ) | (
+    { __typename: 'SubscriptionContract' }
+    & Pick<AdminTypes.SubscriptionContract, 'id'>
+  ) | (
+    { __typename: 'SubscriptionDraft' }
+    & Pick<AdminTypes.SubscriptionDraft, 'id'>
+  ) | (
+    { __typename: 'TenderTransaction' }
+    & Pick<AdminTypes.TenderTransaction, 'id'>
+  ) | (
+    { __typename: 'TransactionFee' }
+    & Pick<AdminTypes.TransactionFee, 'id'>
+  ) | (
+    { __typename: 'UrlRedirect' }
+    & Pick<AdminTypes.UrlRedirect, 'id'>
+  ) | (
+    { __typename: 'UrlRedirectImport' }
+    & Pick<AdminTypes.UrlRedirectImport, 'id'>
+  ) | (
+    { __typename: 'Video' }
+    & Pick<AdminTypes.Video, 'id'>
+  ) | (
+    { __typename: 'WebPixel' }
+    & Pick<AdminTypes.WebPixel, 'id'>
+  ) | (
+    { __typename: 'WebhookSubscription' }
+    & Pick<AdminTypes.WebhookSubscription, 'id'>
+  )>> };
+
+export type GetNodeMetafieldsQueryVariables = AdminTypes.Exact<{
+  id: AdminTypes.Scalars['ID']['input'];
+  metafieldKeys?: AdminTypes.InputMaybe<Array<AdminTypes.Scalars['String']['input']> | AdminTypes.Scalars['String']['input']>;
+  countMetafields?: AdminTypes.InputMaybe<AdminTypes.Scalars['Int']['input']>;
+}>;
+
+
+export type GetNodeMetafieldsQuery = { node?: AdminTypes.Maybe<(
+    { __typename: 'AbandonedCheckout' }
+    & Pick<AdminTypes.AbandonedCheckout, 'id'>
+  ) | (
+    { __typename: 'Abandonment' }
+    & Pick<AdminTypes.Abandonment, 'id'>
+  ) | (
+    { __typename: 'AddAllProductsOperation' }
+    & Pick<AdminTypes.AddAllProductsOperation, 'id'>
+  ) | (
+    { __typename: 'AdditionalFee' }
+    & Pick<AdminTypes.AdditionalFee, 'id'>
+  ) | (
+    { __typename: 'App' }
+    & Pick<AdminTypes.App, 'id'>
+  ) | (
+    { __typename: 'AppCatalog' }
+    & Pick<AdminTypes.AppCatalog, 'id'>
+  ) | (
+    { __typename: 'AppCredit' }
+    & Pick<AdminTypes.AppCredit, 'id'>
+  ) | (
+    { __typename: 'AppInstallation' }
+    & Pick<AdminTypes.AppInstallation, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'AppPurchaseOneTime' }
+    & Pick<AdminTypes.AppPurchaseOneTime, 'id'>
+  ) | (
+    { __typename: 'AppRevenueAttributionRecord' }
+    & Pick<AdminTypes.AppRevenueAttributionRecord, 'id'>
+  ) | (
+    { __typename: 'AppSubscription' }
+    & Pick<AdminTypes.AppSubscription, 'id'>
+  ) | (
+    { __typename: 'AppUsageRecord' }
+    & Pick<AdminTypes.AppUsageRecord, 'id'>
+  ) | (
+    { __typename: 'BasicEvent' }
+    & Pick<AdminTypes.BasicEvent, 'id'>
+  ) | (
+    { __typename: 'BulkOperation' }
+    & Pick<AdminTypes.BulkOperation, 'id'>
+  ) | (
+    { __typename: 'CalculatedOrder' }
+    & Pick<AdminTypes.CalculatedOrder, 'id'>
+  ) | (
+    { __typename: 'CartTransform' }
+    & Pick<AdminTypes.CartTransform, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CatalogCsvOperation' }
+    & Pick<AdminTypes.CatalogCsvOperation, 'id'>
+  ) | (
+    { __typename: 'Channel' }
+    & Pick<AdminTypes.Channel, 'id'>
+  ) | (
+    { __typename: 'ChannelDefinition' }
+    & Pick<AdminTypes.ChannelDefinition, 'id'>
+  ) | (
+    { __typename: 'ChannelInformation' }
+    & Pick<AdminTypes.ChannelInformation, 'id'>
+  ) | (
+    { __typename: 'CheckoutProfile' }
+    & Pick<AdminTypes.CheckoutProfile, 'id'>
+  ) | (
+    { __typename: 'Collection' }
+    & Pick<AdminTypes.Collection, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CommentEvent' }
+    & Pick<AdminTypes.CommentEvent, 'id'>
+  ) | (
+    { __typename: 'Company' }
+    & Pick<AdminTypes.Company, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CompanyAddress' }
+    & Pick<AdminTypes.CompanyAddress, 'id'>
+  ) | (
+    { __typename: 'CompanyContact' }
+    & Pick<AdminTypes.CompanyContact, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRole' }
+    & Pick<AdminTypes.CompanyContactRole, 'id'>
+  ) | (
+    { __typename: 'CompanyContactRoleAssignment' }
+    & Pick<AdminTypes.CompanyContactRoleAssignment, 'id'>
+  ) | (
+    { __typename: 'CompanyLocation' }
+    & Pick<AdminTypes.CompanyLocation, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CompanyLocationCatalog' }
+    & Pick<AdminTypes.CompanyLocationCatalog, 'id'>
+  ) | (
+    { __typename: 'Customer' }
+    & Pick<AdminTypes.Customer, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'CustomerPaymentMethod' }
+    & Pick<AdminTypes.CustomerPaymentMethod, 'id'>
+  ) | (
+    { __typename: 'CustomerSegmentMembersQuery' }
+    & Pick<AdminTypes.CustomerSegmentMembersQuery, 'id'>
+  ) | (
+    { __typename: 'CustomerVisit' }
+    & Pick<AdminTypes.CustomerVisit, 'id'>
+  ) | (
+    { __typename: 'DeliveryCarrierService' }
+    & Pick<AdminTypes.DeliveryCarrierService, 'id'>
+  ) | (
+    { __typename: 'DeliveryCondition' }
+    & Pick<AdminTypes.DeliveryCondition, 'id'>
+  ) | (
+    { __typename: 'DeliveryCountry' }
+    & Pick<AdminTypes.DeliveryCountry, 'id'>
+  ) | (
+    { __typename: 'DeliveryCustomization' }
+    & Pick<AdminTypes.DeliveryCustomization, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DeliveryLocationGroup' }
+    & Pick<AdminTypes.DeliveryLocationGroup, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethod' }
+    & Pick<AdminTypes.DeliveryMethod, 'id'>
+  ) | (
+    { __typename: 'DeliveryMethodDefinition' }
+    & Pick<AdminTypes.DeliveryMethodDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryParticipant' }
+    & Pick<AdminTypes.DeliveryParticipant, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfile' }
+    & Pick<AdminTypes.DeliveryProfile, 'id'>
+  ) | (
+    { __typename: 'DeliveryProfileItem' }
+    & Pick<AdminTypes.DeliveryProfileItem, 'id'>
+  ) | (
+    { __typename: 'DeliveryProvince' }
+    & Pick<AdminTypes.DeliveryProvince, 'id'>
+  ) | (
+    { __typename: 'DeliveryRateDefinition' }
+    & Pick<AdminTypes.DeliveryRateDefinition, 'id'>
+  ) | (
+    { __typename: 'DeliveryZone' }
+    & Pick<AdminTypes.DeliveryZone, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticBxgy' }
+    & Pick<AdminTypes.DiscountAutomaticBxgy, 'id'>
+  ) | (
+    { __typename: 'DiscountAutomaticNode' }
+    & Pick<AdminTypes.DiscountAutomaticNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountCodeNode' }
+    & Pick<AdminTypes.DiscountCodeNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountNode' }
+    & Pick<AdminTypes.DiscountNode, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DiscountRedeemCodeBulkCreation' }
+    & Pick<AdminTypes.DiscountRedeemCodeBulkCreation, 'id'>
+  ) | (
+    { __typename: 'Domain' }
+    & Pick<AdminTypes.Domain, 'id'>
+  ) | (
+    { __typename: 'DraftOrder' }
+    & Pick<AdminTypes.DraftOrder, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'DraftOrderLineItem' }
+    & Pick<AdminTypes.DraftOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'DraftOrderTag' }
+    & Pick<AdminTypes.DraftOrderTag, 'id'>
+  ) | (
+    { __typename: 'Duty' }
+    & Pick<AdminTypes.Duty, 'id'>
+  ) | (
+    { __typename: 'ExchangeV2' }
+    & Pick<AdminTypes.ExchangeV2, 'id'>
+  ) | (
+    { __typename: 'ExternalVideo' }
+    & Pick<AdminTypes.ExternalVideo, 'id'>
+  ) | (
+    { __typename: 'Fulfillment' }
+    & Pick<AdminTypes.Fulfillment, 'id'>
+  ) | (
+    { __typename: 'FulfillmentConstraintRule' }
+    & Pick<AdminTypes.FulfillmentConstraintRule, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'FulfillmentEvent' }
+    & Pick<AdminTypes.FulfillmentEvent, 'id'>
+  ) | (
+    { __typename: 'FulfillmentLineItem' }
+    & Pick<AdminTypes.FulfillmentLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrder' }
+    & Pick<AdminTypes.FulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderDestination' }
+    & Pick<AdminTypes.FulfillmentOrderDestination, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderLineItem' }
+    & Pick<AdminTypes.FulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'FulfillmentOrderMerchantRequest' }
+    & Pick<AdminTypes.FulfillmentOrderMerchantRequest, 'id'>
+  ) | (
+    { __typename: 'GenericFile' }
+    & Pick<AdminTypes.GenericFile, 'id'>
+  ) | (
+    { __typename: 'GiftCard' }
+    & Pick<AdminTypes.GiftCard, 'id'>
+  ) | (
+    { __typename: 'InventoryAdjustmentGroup' }
+    & Pick<AdminTypes.InventoryAdjustmentGroup, 'id'>
+  ) | (
+    { __typename: 'InventoryItem' }
+    & Pick<AdminTypes.InventoryItem, 'id'>
+  ) | (
+    { __typename: 'InventoryLevel' }
+    & Pick<AdminTypes.InventoryLevel, 'id'>
+  ) | (
+    { __typename: 'LineItem' }
+    & Pick<AdminTypes.LineItem, 'id'>
+  ) | (
+    { __typename: 'LineItemMutable' }
+    & Pick<AdminTypes.LineItemMutable, 'id'>
+  ) | (
+    { __typename: 'Location' }
+    & Pick<AdminTypes.Location, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'MailingAddress' }
+    & Pick<AdminTypes.MailingAddress, 'id'>
+  ) | (
+    { __typename: 'Market' }
+    & Pick<AdminTypes.Market, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'MarketCatalog' }
+    & Pick<AdminTypes.MarketCatalog, 'id'>
+  ) | (
+    { __typename: 'MarketRegionCountry' }
+    & Pick<AdminTypes.MarketRegionCountry, 'id'>
+  ) | (
+    { __typename: 'MarketWebPresence' }
+    & Pick<AdminTypes.MarketWebPresence, 'id'>
+  ) | (
+    { __typename: 'MarketingActivity' }
+    & Pick<AdminTypes.MarketingActivity, 'id'>
+  ) | (
+    { __typename: 'MarketingEvent' }
+    & Pick<AdminTypes.MarketingEvent, 'id'>
+  ) | (
+    { __typename: 'MediaImage' }
+    & Pick<AdminTypes.MediaImage, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'Metafield' }
+    & Pick<AdminTypes.Metafield, 'id'>
+  ) | (
+    { __typename: 'MetafieldDefinition' }
+    & Pick<AdminTypes.MetafieldDefinition, 'id'>
+  ) | (
+    { __typename: 'MetafieldStorefrontVisibility' }
+    & Pick<AdminTypes.MetafieldStorefrontVisibility, 'id'>
+  ) | (
+    { __typename: 'Metaobject' }
+    & Pick<AdminTypes.Metaobject, 'id'>
+  ) | (
+    { __typename: 'MetaobjectDefinition' }
+    & Pick<AdminTypes.MetaobjectDefinition, 'id'>
+  ) | (
+    { __typename: 'Model3d' }
+    & Pick<AdminTypes.Model3d, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreArticle' }
+    & Pick<AdminTypes.OnlineStoreArticle, 'id'>
+  ) | (
+    { __typename: 'OnlineStoreBlog' }
+    & Pick<AdminTypes.OnlineStoreBlog, 'id'>
+  ) | (
+    { __typename: 'OnlineStorePage' }
+    & Pick<AdminTypes.OnlineStorePage, 'id'>
+  ) | (
+    { __typename: 'Order' }
+    & Pick<AdminTypes.Order, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'OrderDisputeSummary' }
+    & Pick<AdminTypes.OrderDisputeSummary, 'id'>
+  ) | (
+    { __typename: 'OrderTransaction' }
+    & Pick<AdminTypes.OrderTransaction, 'id'>
+  ) | (
+    { __typename: 'PaymentCustomization' }
+    & Pick<AdminTypes.PaymentCustomization, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'PaymentMandate' }
+    & Pick<AdminTypes.PaymentMandate, 'id'>
+  ) | (
+    { __typename: 'PaymentSchedule' }
+    & Pick<AdminTypes.PaymentSchedule, 'id'>
+  ) | (
+    { __typename: 'PaymentTerms' }
+    & Pick<AdminTypes.PaymentTerms, 'id'>
+  ) | (
+    { __typename: 'PaymentTermsTemplate' }
+    & Pick<AdminTypes.PaymentTermsTemplate, 'id'>
+  ) | (
+    { __typename: 'PriceList' }
+    & Pick<AdminTypes.PriceList, 'id'>
+  ) | (
+    { __typename: 'PriceRule' }
+    & Pick<AdminTypes.PriceRule, 'id'>
+  ) | (
+    { __typename: 'PriceRuleDiscountCode' }
+    & Pick<AdminTypes.PriceRuleDiscountCode, 'id'>
+  ) | (
+    { __typename: 'PrivateMetafield' }
+    & Pick<AdminTypes.PrivateMetafield, 'id'>
+  ) | (
+    { __typename: 'Product' }
+    & Pick<AdminTypes.Product, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ProductFeed' }
+    & Pick<AdminTypes.ProductFeed, 'id'>
+  ) | (
+    { __typename: 'ProductOption' }
+    & Pick<AdminTypes.ProductOption, 'id'>
+  ) | (
+    { __typename: 'ProductTaxonomyNode' }
+    & Pick<AdminTypes.ProductTaxonomyNode, 'id'>
+  ) | (
+    { __typename: 'ProductVariant' }
+    & Pick<AdminTypes.ProductVariant, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ProductVariantComponent' }
+    & Pick<AdminTypes.ProductVariantComponent, 'id'>
+  ) | (
+    { __typename: 'Publication' }
+    & Pick<AdminTypes.Publication, 'id'>
+  ) | (
+    { __typename: 'PublicationResourceOperation' }
+    & Pick<AdminTypes.PublicationResourceOperation, 'id'>
+  ) | (
+    { __typename: 'QuantityPriceBreak' }
+    & Pick<AdminTypes.QuantityPriceBreak, 'id'>
+  ) | (
+    { __typename: 'Refund' }
+    & Pick<AdminTypes.Refund, 'id'>
+  ) | (
+    { __typename: 'Return' }
+    & Pick<AdminTypes.Return, 'id'>
+  ) | (
+    { __typename: 'ReturnLineItem' }
+    & Pick<AdminTypes.ReturnLineItem, 'id'>
+  ) | (
+    { __typename: 'ReturnableFulfillment' }
+    & Pick<AdminTypes.ReturnableFulfillment, 'id'>
+  ) | (
+    { __typename: 'ReverseDelivery' }
+    & Pick<AdminTypes.ReverseDelivery, 'id'>
+  ) | (
+    { __typename: 'ReverseDeliveryLineItem' }
+    & Pick<AdminTypes.ReverseDeliveryLineItem, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrder' }
+    & Pick<AdminTypes.ReverseFulfillmentOrder, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderDisposition' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderDisposition, 'id'>
+  ) | (
+    { __typename: 'ReverseFulfillmentOrderLineItem' }
+    & Pick<AdminTypes.ReverseFulfillmentOrderLineItem, 'id'>
+  ) | (
+    { __typename: 'SaleAdditionalFee' }
+    & Pick<AdminTypes.SaleAdditionalFee, 'id'>
+  ) | (
+    { __typename: 'SavedSearch' }
+    & Pick<AdminTypes.SavedSearch, 'id'>
+  ) | (
+    { __typename: 'ScriptTag' }
+    & Pick<AdminTypes.ScriptTag, 'id'>
+  ) | (
+    { __typename: 'Segment' }
+    & Pick<AdminTypes.Segment, 'id'>
+  ) | (
+    { __typename: 'SellingPlan' }
+    & Pick<AdminTypes.SellingPlan, 'id'>
+  ) | (
+    { __typename: 'SellingPlanGroup' }
+    & Pick<AdminTypes.SellingPlanGroup, 'id'>
+  ) | (
+    { __typename: 'ServerPixel' }
+    & Pick<AdminTypes.ServerPixel, 'id'>
+  ) | (
+    { __typename: 'Shop' }
+    & Pick<AdminTypes.Shop, 'id'>
+    & { metafields: { nodes: Array<(
+        { __typename: 'Metafield' }
+        & Pick<AdminTypes.Metafield, 'id' | 'namespace' | 'key' | 'type' | 'value' | 'ownerType' | 'createdAt' | 'updatedAt'>
+      )> } }
+  ) | (
+    { __typename: 'ShopAddress' }
+    & Pick<AdminTypes.ShopAddress, 'id'>
+  ) | (
+    { __typename: 'ShopPolicy' }
+    & Pick<AdminTypes.ShopPolicy, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsBankAccount' }
+    & Pick<AdminTypes.ShopifyPaymentsBankAccount, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDispute' }
+    & Pick<AdminTypes.ShopifyPaymentsDispute, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeEvidence' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeEvidence, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFileUpload' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFileUpload, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsDisputeFulfillment' }
+    & Pick<AdminTypes.ShopifyPaymentsDisputeFulfillment, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsPayout' }
+    & Pick<AdminTypes.ShopifyPaymentsPayout, 'id'>
+  ) | (
+    { __typename: 'ShopifyPaymentsVerification' }
+    & Pick<AdminTypes.ShopifyPaymentsVerification, 'id'>
+  ) | (
+    { __typename: 'StaffMember' }
+    & Pick<AdminTypes.StaffMember, 'id'>
+  ) | (
+    { __typename: 'StandardMetafieldDefinitionTemplate' }
+    & Pick<AdminTypes.StandardMetafieldDefinitionTemplate, 'id'>
+  ) | (
+    { __typename: 'StorefrontAccessToken' }
+    & Pick<AdminTypes.StorefrontAccessToken, 'id'>
+  ) | (
+    { __typename: 'SubscriptionBillingAttempt' }
+    & Pick<AdminTypes.SubscriptionBillingAttempt, 'id'>
+  ) | (
+    { __typename: 'SubscriptionContract' }
+    & Pick<AdminTypes.SubscriptionContract, 'id'>
+  ) | (
+    { __typename: 'SubscriptionDraft' }
+    & Pick<AdminTypes.SubscriptionDraft, 'id'>
+  ) | (
+    { __typename: 'TenderTransaction' }
+    & Pick<AdminTypes.TenderTransaction, 'id'>
+  ) | (
+    { __typename: 'TransactionFee' }
+    & Pick<AdminTypes.TransactionFee, 'id'>
+  ) | (
+    { __typename: 'UrlRedirect' }
+    & Pick<AdminTypes.UrlRedirect, 'id'>
+  ) | (
+    { __typename: 'UrlRedirectImport' }
+    & Pick<AdminTypes.UrlRedirectImport, 'id'>
+  ) | (
+    { __typename: 'Video' }
+    & Pick<AdminTypes.Video, 'id'>
+  ) | (
+    { __typename: 'WebPixel' }
+    & Pick<AdminTypes.WebPixel, 'id'>
+  ) | (
+    { __typename: 'WebhookSubscription' }
+    & Pick<AdminTypes.WebhookSubscription, 'id'>
+  )> };
+
 export type GetShopMetafieldsQueryVariables = AdminTypes.Exact<{
   metafieldKeys?: AdminTypes.InputMaybe<Array<AdminTypes.Scalars['String']['input']> | AdminTypes.Scalars['String']['input']>;
   countMetafields: AdminTypes.Scalars['Int']['input'];
@@ -667,7 +2302,8 @@ export type GetOnlineStorePublicationQuery = { appByHandle?: AdminTypes.Maybe<(
 
 interface GeneratedQueryTypes {
   "\n  \n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  fragment CollectionFields on Collection {\n    handle\n    id\n    descriptionHtml\n    updatedAt\n    templateSuffix\n    title\n    # availableForSale\n    # publishedOnPublication(publicationId: \"gid://shopify/Publication/42911268979\")\n    # seo {\n    #   description\n    #   title\n    # }\n    # trackingParameters\n    # media(first: 10) {\n    #   nodes {\n    #     mediaContentType\n    #   }\n    # }\n\n    # Optional fields and connections\n    image @include(if: $includeImage) {\n      url\n    }\n    sortOrder @include(if: $includeSortOrder)\n    ruleSet @include(if: $includeRuleSet) {\n      appliedDisjunctively\n      rules {\n        column\n        condition\n        relation\n      }\n    }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n  }\n\n\n  query GetCollections(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n    $includeImage: Boolean!\n    $includeMetafields: Boolean!\n    $includeSortOrder: Boolean!\n    $includeRuleSet: Boolean!\n  ) {\n    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...CollectionFields\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCollectionsQuery, variables: GetCollectionsQueryVariables},
-  "\n  query IsSmartCollection($collectionGid: ID!) {\n    collection(id: $collectionGid) {\n      # will be null for non smart collections\n      isSmartCollection: ruleSet {\n        appliedDisjunctively\n      }\n    }\n  }\n": {return: IsSmartCollectionQuery, variables: IsSmartCollectionQueryVariables},
+  "\n  query GetCollectionType($collectionGid: ID!) {\n    collection(id: $collectionGid) {\n      # will be null for non smart collections\n      isSmartCollection: ruleSet {\n        appliedDisjunctively\n      }\n    }\n  }\n": {return: GetCollectionTypeQuery, variables: GetCollectionTypeQueryVariables},
+  "\n  query GetCollectionTypes($ids: [ID!]!) {\n    nodes(ids: $ids) {\n      id\n      __typename\n      ... on Collection {\n        isSmartCollection: ruleSet {\n          appliedDisjunctively\n        }\n      }\n    }\n  }\n": {return: GetCollectionTypesQuery, variables: GetCollectionTypesQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query getCollectionsMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCollectionsMetafieldsQuery, variables: GetCollectionsMetafieldsQueryVariables},
   "\n  \n  \n  fragment CustomerAddressFields on MailingAddress {\n    address1\n    address2\n    city\n    company\n    coordinatesValidated\n    country\n    countryCodeV2\n    firstName\n    formattedArea\n    id\n    lastName\n    latitude\n    longitude\n    name\n    phone\n    province\n    provinceCode\n    timeZone\n    zip\n    formatted(withName: true, withCompany: true)\n  }\n\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  fragment CustomerFields on Customer {\n    id\n    createdAt\n    displayName\n    email\n    firstName\n    lastName\n    lifetimeDuration\n    locale\n    multipassIdentifier\n    note\n    numberOfOrders\n    phone\n    productSubscriberStatus\n    state\n    tags\n    taxExempt\n    taxExemptions\n    unsubscribeUrl\n    updatedAt\n    validEmailAddress\n    verifiedEmail\n    addresses(first: 3) {\n      ...CustomerAddressFields\n    }\n    defaultAddress {\n      ...CustomerAddressFields\n    }\n    amountSpent {\n      amount\n      currencyCode\n    }\n    canDelete\n    # events(first: 2) {\n    #   nodes {\n    #     ... on CommentEvent {\n    #       id\n    #       message\n    #     }\n    #   }\n    # }\n    emailMarketingConsent {\n      consentUpdatedAt\n      marketingOptInLevel\n      marketingState\n    }\n    smsMarketingConsent {\n      consentCollectedFrom\n      consentUpdatedAt\n      marketingOptInLevel\n      marketingState\n    }\n    statistics {\n      predictedSpendTier\n    }\n\n    # Optional fields and connections\n    # options(first: $maxOptions) @include(if: $includeOptions) {\n    #   name\n    # }\n    # featuredImage @include(if: $includeFeaturedImage) {\n    #   url\n    # }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n  }\n\n\n  query getCustomersWithMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n    $includeMetafields: Boolean!\n  ) {\n    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {\n      nodes {\n        ...CustomerFields\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCustomersWithMetafieldsQuery, variables: GetCustomersWithMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query getCustomersMetafields(\n    $maxEntriesPerRun: Int!\n    $cursor: String\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $searchQuery: String\n  ) {\n    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {\n      nodes {\n        id\n\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n      pageInfo {\n        hasNextPage\n        endCursor\n      }\n    }\n  }\n": {return: GetCustomersMetafieldsQuery, variables: GetCustomersMetafieldsQueryVariables},
@@ -680,6 +2316,9 @@ interface GeneratedQueryTypes {
   "\n  \n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  fragment Location on Location {\n    id\n    name\n    isActive\n    fulfillsOnlineOrders\n    hasActiveInventory\n    shipsInventory\n    address {\n      address1\n      address2\n      city\n      country\n      countryCode\n      phone\n      zip\n      province\n      provinceCode\n    }\n    fulfillmentService @include(if: $includeFulfillmentService) {\n      handle\n      serviceName\n    }\n    localPickupSettingsV2 @include(if: $includeLocalPickupSettings) {\n      instructions\n      pickupTime\n    }\n    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {\n      nodes {\n        ...MetafieldFields\n      }\n    }\n  }\n\n\n  query GetSingleLocation(\n    $id: ID!\n    $metafieldKeys: [String!]\n    $countMetafields: Int\n    $includeMetafields: Boolean!\n    $includeFulfillmentService: Boolean!\n    $includeLocalPickupSettings: Boolean!\n  ) {\n    location(id: $id) {\n      ...Location\n    }\n  }\n": {return: GetSingleLocationQuery, variables: GetSingleLocationQueryVariables},
   "\n  \n  fragment MetafieldDefinition on MetafieldDefinition {\n    key\n    id\n    namespace\n    name\n    description\n    metafieldsCount\n    ownerType\n    pinnedPosition\n    type {\n      name\n    }\n    validations {\n      name\n      type\n      value\n    }\n    validationStatus\n    visibleToStorefrontApi\n  }\n\n\n  query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {\n    metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {\n      nodes {\n        ...MetafieldDefinition\n      }\n    }\n  }\n": {return: GetMetafieldDefinitionsQuery, variables: GetMetafieldDefinitionsQueryVariables},
   "\n  \n  fragment MetafieldDefinition on MetafieldDefinition {\n    key\n    id\n    namespace\n    name\n    description\n    metafieldsCount\n    ownerType\n    pinnedPosition\n    type {\n      name\n    }\n    validations {\n      name\n      type\n      value\n    }\n    validationStatus\n    visibleToStorefrontApi\n  }\n\n\n  query GetSingleMetafieldDefinition($id: ID!) {\n    metafieldDefinition(id: $id) {\n      ...MetafieldDefinition\n    }\n  }\n": {return: GetSingleMetafieldDefinitionQuery, variables: GetSingleMetafieldDefinitionQueryVariables},
+  "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query GetSingleMetafield($gid: ID!) {\n    node(id: $gid) {\n      ... on Metafield {\n        ...MetafieldFields\n        owner {\n          __typename\n          ... on Node {\n            id\n          }\n          ... on Product {\n            id\n          }\n          ... on Collection {\n            id\n          }\n          ... on Customer {\n            id\n          }\n          ... on DraftOrder {\n            id\n          }\n          ... on Location {\n            id\n          }\n          ... on Order {\n            id\n          }\n          ... on ProductVariant {\n            id\n            owner: product {\n              id\n            }\n          }\n          ... on Shop {\n            id\n          }\n        }\n        definition {\n          id\n        }\n      }\n    }\n  }\n": {return: GetSingleMetafieldQuery, variables: GetSingleMetafieldQueryVariables},
+  "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query GetNodesMetafields($ids: [ID!]!, $metafieldKeys: [String!], $countMetafields: Int) {\n    nodes(ids: $ids) {\n      id\n      __typename\n      ... on HasMetafields {\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n    }\n  }\n": {return: GetNodesMetafieldsQuery, variables: GetNodesMetafieldsQueryVariables},
+  "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query GetNodeMetafields($id: ID!, $metafieldKeys: [String!], $countMetafields: Int) {\n    node(id: $id) {\n      id\n      __typename\n      ... on HasMetafields {\n        metafields(keys: $metafieldKeys, first: $countMetafields) {\n          nodes {\n            ...MetafieldFields\n          }\n        }\n      }\n    }\n  }\n": {return: GetNodeMetafieldsQuery, variables: GetNodeMetafieldsQueryVariables},
   "\n  \n  fragment MetafieldFields on Metafield {\n    id\n    namespace\n    key\n    type\n    value\n    ownerType\n    createdAt\n    updatedAt\n    __typename\n  }\n\n\n  query GetShopMetafields($metafieldKeys: [String!], $countMetafields: Int!) {\n    shop {\n      id\n      metafields(keys: $metafieldKeys, first: $countMetafields) {\n        nodes {\n          ...MetafieldFields\n          definition {\n            id\n          }\n        }\n      }\n    }\n  }\n": {return: GetShopMetafieldsQuery, variables: GetShopMetafieldsQueryVariables},
   "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetSingleMetaObjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {\n    metaobjectDefinition(id: $id) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetSingleMetaObjectDefinitionQuery, variables: GetSingleMetaObjectDefinitionQueryVariables},
   "\n  \n  \n  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {\n    key\n    description\n    name\n    required\n    type {\n      category\n      name\n      supportedValidations {\n        name\n        type\n      }\n      supportsDefinitionMigrations\n    }\n    validations {\n      name\n      type\n      value\n    }\n  }\n\n\n  fragment MetaobjectDefinition on MetaobjectDefinition {\n    id\n    name\n    displayNameKey\n    type\n    capabilities @include(if: $includeCapabilities) {\n      publishable {\n        enabled\n      }\n    }\n    fieldDefinitions @include(if: $includeFieldDefinitions) {\n      ...MetaobjectFieldDefinition\n    }\n  }\n\n\n  query GetSingleMetaObjectDefinitionByType(\n    $type: String!\n    $includeCapabilities: Boolean!\n    $includeFieldDefinitions: Boolean!\n  ) {\n    metaobjectDefinitionByType(type: $type) {\n      ...MetaobjectDefinition\n    }\n  }\n": {return: GetSingleMetaObjectDefinitionByTypeQuery, variables: GetSingleMetaObjectDefinitionByTypeQueryVariables},

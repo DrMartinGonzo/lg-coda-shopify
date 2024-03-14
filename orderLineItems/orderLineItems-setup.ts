@@ -1,16 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER_LINE_ITEM, REST_DEFAULT_LIMIT } from '../constants';
 import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../shared-parameters';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
 import { ShopRestFetcher } from '../shop/shop-functions';
 import { OrderRestFetcher } from '../orders/orders-functions';
+import { OrderLineItemSyncTable } from './orderLineItems-functions';
+import { formatOrderReference } from '../schemas/syncTable/OrderSchema';
+import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+import { Identity } from '../constants';
 
-import type { OrderLineItemRow } from '../types/CodaRows';
-import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
-import type { SyncTableRestContinuation } from '../types/tableSync';
+import type { OrderRow } from '../typesNew/CodaRows';
 
 // #endregion
 
@@ -32,7 +32,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
   name: 'OrderLineItems',
   description: 'Return OrderLineItems from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_ORDER_LINE_ITEM,
+  identityName: Identity.OrderLineItem,
   schema: OrderLineItemSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderLineItemSchema,
@@ -57,59 +57,23 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
         optional: true,
       },
     ],
-    execute: async function (
-      [
-        orderStatus = 'any',
-        orderCreatedAt,
-        orderUpdatedAt,
-        orderProcessedAt,
-        orderFinancialStatus,
-        orderFulfillmentStatus,
-        orderIds,
-        ordersSinceId,
-      ],
-      context
-    ) {
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      let restLimit = REST_DEFAULT_LIMIT;
-      let restItems: Array<OrderLineItemRow> = [];
-      let restContinuation: SyncTableRestContinuation = null;
-
-      // Rest Admin API Sync
-      const restParams = cleanQueryParams({
-        fields: ['id', 'name', 'line_items'].join(', '),
-        limit: restLimit,
-        ids: orderIds && orderIds.length ? orderIds.join(',') : undefined,
-        financial_status: orderFinancialStatus,
-        fulfillment_status: orderFulfillmentStatus,
-        status: orderStatus,
-        since_id: ordersSinceId,
-        created_at_min: orderCreatedAt ? orderCreatedAt[0] : undefined,
-        created_at_max: orderCreatedAt ? orderCreatedAt[1] : undefined,
-        updated_at_min: orderUpdatedAt ? orderUpdatedAt[0] : undefined,
-        updated_at_max: orderUpdatedAt ? orderUpdatedAt[1] : undefined,
-        processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
-        processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
-      });
-
+    execute: async function (params, context) {
       const orderFetcher = new OrderRestFetcher(context);
-      orderFetcher.validateParams(restParams);
-      const url: string = prevContinuation?.nextUrl
-        ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-        : orderFetcher.getFetchAllUrl(restParams);
-
-      const { response, continuation } = await makeSyncTableGetRequest<{ orders: OrderRest[] }>({ url }, context);
-      restContinuation = continuation;
-
-      if (response?.body?.orders) {
-        restItems = response.body.orders
-          .map((order) => order.line_items.map((line_item) => orderFetcher.formatLineItemToRow(line_item, order)))
-          .flat();
-      }
+      const orderLineItemSyncTable = new OrderLineItemSyncTable(orderFetcher, params);
+      const { result, continuation } = await orderLineItemSyncTable.executeSync(OrderLineItemSyncTableSchema);
 
       return {
-        result: restItems,
-        continuation: restContinuation,
+        result: result
+          .map((order: OrderRow) =>
+            order.line_items.map((orderLineItem) => ({
+              ...orderLineItem,
+              order_id: order.id,
+              order: formatOrderReference(order.id, order.name),
+              variant: formatProductVariantReference(orderLineItem.variant_id, orderLineItem.variant_title),
+            }))
+          )
+          .flat(),
+        continuation,
       };
     },
   },

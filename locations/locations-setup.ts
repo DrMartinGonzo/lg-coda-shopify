@@ -11,16 +11,14 @@ import {
   formatGraphQlLocationEditInput,
 } from './locations-functions';
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
-import { filters, inputs } from '../shared-parameters';
-import { CACHE_DEFAULT, IDENTITY_LOCATION, METAFIELD_PREFIX_KEY } from '../constants';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { CACHE_DEFAULT, METAFIELD_PREFIX_KEY } from '../constants';
 
 import {
   augmentSchemaWithMetafields,
-  updateAndFormatResourceMetafieldsGraphQl,
-} from '../metafields/metafields-functions';
-import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
+  updateAndFormatResourceMetafieldsGraphQl,
 } from '../metafields/metafields-functions';
 import { arrayUnique, wrapGetSchemaForCli } from '../helpers';
 import {
@@ -30,14 +28,14 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { QueryLocations } from './locations-graphql';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
 
 import type { CountryCode } from '../types/admin.types';
 import type { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
-import type { ShopifyGraphQlRequestExtensions } from '../types/ShopifyGraphQl';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
+import { Identity } from '../constants';
 
 // #endregion
 
@@ -57,7 +55,7 @@ export const Sync_Locations = coda.makeSyncTable({
   description:
     'Return Locations from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_LOCATION,
+  identityName: Identity.Location,
   schema: LocationSyncTableSchema,
   dynamicOptions: {
     getSchema: getLocationSchema,
@@ -166,18 +164,22 @@ export const Action_UpdateLocation = coda.makeFormula({
     { ...inputs.general.phone, optional: true },
     { ...inputs.location.provinceCode, optional: true },
     { ...inputs.location.zip, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Location metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Location'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+  // schema: coda.withIdentity(LocationSchema, Identity.Location),
   schema: LocationSyncTableSchema,
   execute: async function (
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
   ) {
-    const locationGid = idToGraphQlGid(GraphQlResource.Location, locationId);
+    const locationGid = idToGraphQlGid(GraphQlResourceName.Location, locationId);
     const locationEditInput = formatGraphQlLocationEditInput({
       name,
       address1,
@@ -227,10 +229,10 @@ export const Action_ActivateLocation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+  // schema: coda.withIdentity(LocationSchema, Identity.Location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID], context) {
-    const response = await activateLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, locationID), context);
+    const response = await activateLocationGraphQl(idToGraphQlGid(GraphQlResourceName.Location, locationID), context);
     const location = response?.body?.data?.locationActivate?.location;
     return {
       id: locationID,
@@ -252,12 +254,12 @@ export const Action_DeactivateLocation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, IDENTITY_LOCATION),
+  // schema: coda.withIdentity(LocationSchema, Identity.Location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID, destinationLocationID], context) {
     const response = await deactivateLocationGraphQl(
-      idToGraphQlGid(GraphQlResource.Location, locationID),
-      destinationLocationID ? idToGraphQlGid(GraphQlResource.Location, destinationLocationID) : undefined,
+      idToGraphQlGid(GraphQlResourceName.Location, locationID),
+      destinationLocationID ? idToGraphQlGid(GraphQlResourceName.Location, destinationLocationID) : undefined,
       context
     );
     const location = response?.body?.data?.locationDeactivate?.location;
@@ -280,11 +282,10 @@ export const Formula_Location = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: LocationSyncTableSchema,
   execute: async ([location_id], context) => {
-    const locationResponse: coda.FetchResponse<{
-      data: GetSingleLocationQuery;
-      extensions: ShopifyGraphQlRequestExtensions;
-    }> = await fetchSingleLocationGraphQl(idToGraphQlGid(GraphQlResource.Location, location_id), context);
-
+    const locationResponse = await fetchSingleLocationGraphQl(
+      idToGraphQlGid(GraphQlResourceName.Location, location_id),
+      context
+    );
     if (locationResponse.body?.data?.location) {
       return formatLocationForSchemaFromGraphQlApi(locationResponse.body.data.location, context);
     }

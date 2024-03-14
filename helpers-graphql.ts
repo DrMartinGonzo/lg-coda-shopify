@@ -10,19 +10,20 @@ import {
 } from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import { ShopifyMaxExceededError } from './ShopifyErrors';
-import { GraphQlResource } from './types/RequestsGraphQl';
+import { GraphQlResourceName } from './types/RequestsGraphQl';
 import { MetafieldOwnerType } from './types/admin.types';
 
 import type {
   SyncTableGraphQlContinuation,
   SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
-} from './types/tableSync';
+} from './types/SyncTable';
 import type { FetchRequestOptions } from './types/Requests';
 import type {
   ShopifyGraphQlError,
   ShopifyGraphQlUserError,
   ShopifyGraphQlThrottleStatus,
+  ShopifyGraphQlRequestCost,
 } from './types/ShopifyGraphQl';
 
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
@@ -66,38 +67,47 @@ function getGraphQlResourceFromRestResourceSingularType(restResourceSingular: st
 }
 */
 
-export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: MetafieldOwnerType): GraphQlResource {
+export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: MetafieldOwnerType): GraphQlResourceName {
   switch (metafieldOwnerType) {
     case MetafieldOwnerType.Article:
-      return GraphQlResource.Article;
+      return GraphQlResourceName.OnlineStoreArticle;
     case MetafieldOwnerType.Blog:
-      return GraphQlResource.Blog;
+      return GraphQlResourceName.OnlineStoreBlog;
     case MetafieldOwnerType.Collection:
-      return GraphQlResource.Collection;
+      return GraphQlResourceName.Collection;
     case MetafieldOwnerType.Customer:
-      return GraphQlResource.Customer;
+      return GraphQlResourceName.Customer;
     case MetafieldOwnerType.Draftorder:
-      return GraphQlResource.DraftOrder;
+      return GraphQlResourceName.DraftOrder;
     case MetafieldOwnerType.Location:
-      return GraphQlResource.Location;
+      return GraphQlResourceName.Location;
     case MetafieldOwnerType.Order:
-      return GraphQlResource.Order;
+      return GraphQlResourceName.Order;
     case MetafieldOwnerType.Page:
-      return GraphQlResource.Page;
+      return GraphQlResourceName.OnlineStorePage;
     case MetafieldOwnerType.Product:
-      return GraphQlResource.Product;
+      return GraphQlResourceName.Product;
     case MetafieldOwnerType.Shop:
-      return GraphQlResource.Shop;
+      return GraphQlResourceName.Shop;
     case MetafieldOwnerType.Productvariant:
-      return GraphQlResource.ProductVariant;
+      return GraphQlResourceName.ProductVariant;
   }
 
   throw new Error(`No GraphQL Admin Api match for Metafield Owner type of: \`${metafieldOwnerType}\``);
 }
 
 // #region GID functions
-export function idToGraphQlGid(resourceType: string, id: number) {
-  if (resourceType === undefined || id === undefined) throw new Error('Unable to format GraphQlGid');
+function isGraphQlGid(gid: string) {
+  if (gid.startsWith('gid://shopify/')) return true;
+  return false;
+}
+export function idToGraphQlGid(resourceType: string, id: number | string) {
+  if (typeof id === 'string' && isGraphQlGid(id)) {
+    return id as string;
+  }
+  if (resourceType === undefined || id === undefined || typeof id !== 'number') {
+    throw new Error('Unable to format GraphQlGid');
+  }
   return `gid://shopify/${resourceType}/${id}`;
 }
 export function graphQlGidToId(gid: string): number {
@@ -110,9 +120,9 @@ export function graphQlGidToId(gid: string): number {
   }
   throw new Error(`Invalid GID: ${gid}`);
 }
-export function graphQlGidToResourceName(gid: string): GraphQlResource {
+export function graphQlGidToResourceName(gid: string): GraphQlResourceName {
   if (!gid) throw new Error('Invalid GID');
-  return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResource;
+  return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
 }
 // #endregion
 
@@ -151,13 +161,13 @@ function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
 // #endregion
 
 // #region GraphQl auto throttling
-async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
+export async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
   const { response } = await makeGraphQlRequest({ payload: { query: queryCheckThrottleStatus } }, context);
   const { extensions } = response.body;
   return extensions.cost.throttleStatus;
 }
 
-function calcSyncTableMaxEntriesPerRun(
+function calcSyncTableMaxEntriesPerRunOld(
   prevContinuation: SyncTableGraphQlContinuation,
   lastThrottleStatus: ShopifyGraphQlThrottleStatus
 ) {
@@ -224,7 +234,7 @@ export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
     if (prevContinuation?.reducedMaxEntriesPerRun) {
       maxEntriesPerRun = prevContinuation.reducedMaxEntriesPerRun;
     } else if (prevContinuation?.lastCost) {
-      maxEntriesPerRun = calcSyncTableMaxEntriesPerRun(prevContinuation, throttleStatus);
+      maxEntriesPerRun = calcSyncTableMaxEntriesPerRunOld(prevContinuation, throttleStatus);
     } else {
       maxEntriesPerRun = defaultMaxEntriesPerRun;
     }
@@ -267,7 +277,9 @@ interface GraphQlRequestParams extends Omit<FetchRequestOptions, 'url'> {
 export type GraphQlResponse<Data extends any> = {
   data: Data;
   errors: any;
-  extensions: any;
+  extensions: {
+    cost: ShopifyGraphQlRequestCost;
+  };
 };
 export async function makeGraphQlRequest<Data extends any>(
   params: GraphQlRequestParams,
@@ -574,10 +586,10 @@ export function getMixedSyncTableRemainingAndToProcessItems<
     let items: Item[] = [];
     if (stillProcessingRestItems) {
       items = [...prevContinuation.extraContinuationData.currentBatch.remaining];
-      logAdmin(`🔁 Fetching next batch of ${items.length} Variants`);
+      logAdmin(`🔁 Fetching next batch of ${items.length} items`);
     } else {
       items = [...restItems];
-      logAdmin(`🟢 Found ${items.length} Variants to augment with metafields`);
+      logAdmin(`🟢 Found ${items.length} items to augment with metafields`);
     }
 
     toProcess = items.splice(0, maxEntriesPerRun);
@@ -590,11 +602,11 @@ interface GraphQlMixedSyncTableRequestParams extends Omit<GraphQlSyncTableReques
   prevContinuation: SyncTableMixedContinuation;
   nextRestUrl?: string;
 }
-export async function makeMixedSyncTableGraphQlRequest(
+export async function makeMixedSyncTableGraphQlRequest<Data extends any>(
   params: GraphQlMixedSyncTableRequestParams,
   context: coda.SyncExecutionContext
 ): Promise<{
-  response: coda.FetchResponse<any>;
+  response: coda.FetchResponse<GraphQlResponse<Data>>;
   continuation: SyncTableMixedContinuation | null;
 }> {
   if (params.prevContinuation?.retries) {
@@ -603,7 +615,7 @@ export async function makeMixedSyncTableGraphQlRequest(
   logAdmin(`🚀  GraphQL Admin API: Starting sync of ${params.maxEntriesPerRun} entries…`);
 
   try {
-    const { response, retries } = await makeGraphQlRequest(
+    const { response, retries } = await makeGraphQlRequest<Data>(
       {
         payload: params.payload,
         apiVersion: params.apiVersion,

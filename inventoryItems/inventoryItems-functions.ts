@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 
 import type {
@@ -27,7 +27,7 @@ export async function handleInventoryItemUpdateJob(
     const inventoryItemUpdateInput = formatGraphQlInventoryItemUpdateInput(update, updatedFields);
     subJobs.push(
       updateInventoryItemGraphQl(
-        idToGraphQlGid(GraphQlResource.InventoryItem, inventoryItemId),
+        idToGraphQlGid(GraphQlResourceName.InventoryItem, inventoryItemId),
         inventoryItemUpdateInput,
         context
       )

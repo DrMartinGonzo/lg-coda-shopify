@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_CUSTOMER, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
+import { Identity } from '../../constants';
 
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
 const CONSENT_STATE__NOT_SUBSCRIBED = { display: 'Not subscribed', value: 'not_subscribed' };
@@ -253,7 +254,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSyncTableSchema, IDENTITY_CUSTOMER);
+export const CustomerReference = coda.makeReferenceSchemaFromObjectSchema(CustomerSyncTableSchema, Identity.Customer);
 export const formatCustomerReference = (id: number, display = NOT_FOUND) => ({ id, display });
 
 export const customerFieldDependencies = [

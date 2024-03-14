@@ -1,38 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, CACHE_DISABLED, IDENTITY_ORDER, REST_DEFAULT_LIMIT } from '../constants';
-import { OrderRestFetcher, formatOrderForDocExport } from './orders-functions';
-import { OrderSyncTableSchema, orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
+import { CACHE_DEFAULT, CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../constants';
+import { OrderRestFetcher, OrderSyncTable, formatOrderForDocExport } from './orders-functions';
+import { OrderSyncTableSchema } from '../schemas/syncTable/OrderSchema';
 import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { cleanQueryParams, extractNextUrlPagination, makeSyncTableGetRequest } from '../helpers-rest';
-import { QueryOrdersMetafieldsAdmin, buildOrdersSearchQuery } from './orders-graphql';
+import { cleanQueryParams, extractNextUrlPagination } from '../helpers-rest';
+import { Identity } from '../constants';
 
-import type { OrderRow } from '../types/CodaRows';
-import type { Order as OrderRest } from '@shopify/shopify-api/rest/admin/2023-10/order';
+import type { OrderRow } from '../typesNew/CodaRows';
 import type { OrderSyncTableRestParams } from '../types/Order';
-import type { GetOrdersMetafieldsQuery, GetOrdersMetafieldsQueryVariables } from '../types/admin.generated';
-import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
 
 // #endregion
 
@@ -114,7 +95,7 @@ export const Sync_Orders = coda.makeSyncTable({
   description:
     'Return Orders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_ORDER,
+  identityName: Identity.Order,
   schema: OrderSyncTableSchema,
   dynamicOptions: {
     getSchema: getOrderSchema,
@@ -136,169 +117,17 @@ export const Sync_Orders = coda.makeSyncTable({
       { ...filters.order.idArray, optional: true },
       { ...filters.general.sinceId, optional: true },
     ],
-    execute: async function (
-      [
-        status = 'any',
-        syncMetafields,
-        created_at,
-        updated_at,
-        processed_at,
-        financial_status,
-        fulfillment_status,
-        ids,
-        since_id,
-      ],
-      context
-    ) {
+    execute: async function (params, context) {
+      const [status, syncMetafields] = params;
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getOrderSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let restLimit = REST_DEFAULT_LIMIT;
-      let maxEntriesPerRun = restLimit;
-      let shouldDeferBy = 0;
-
-      if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
-        const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
-          prevContinuation,
-          context
-        );
-        maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-        restLimit = maxEntriesPerRun;
-        shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-        if (shouldDeferBy > 0) {
-          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-        }
-      }
-
-      let restItems: Array<OrderRow> = [];
-      let restContinuation: SyncTableRestContinuation | null = null;
-      const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
-      // Rest Admin API Sync
-      if (!skipNextRestSync) {
-        const syncedStandardFields = handleFieldDependencies(standardFromKeys, orderFieldDependencies);
-        const restParams = cleanQueryParams({
-          fields: syncedStandardFields.join(', '),
-          limit: restLimit,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          financial_status,
-          fulfillment_status,
-          status,
-          since_id,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          processed_at_min: processed_at ? processed_at[0] : undefined,
-          processed_at_max: processed_at ? processed_at[1] : undefined,
-        } as OrderSyncTableRestParams);
-
-        const orderFetcher = new OrderRestFetcher(context);
-        orderFetcher.validateParams(restParams);
-        const url: string = prevContinuation?.nextUrl
-          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-          : orderFetcher.getFetchAllUrl(restParams);
-
-        const { response, continuation } = await makeSyncTableGetRequest<{ orders: OrderRest[] }>({ url }, context);
-        restContinuation = continuation;
-
-        if (response?.body?.orders) {
-          restItems = response.body.orders.map(orderFetcher.formatApiToRow);
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restItems,
-            continuation: restContinuation,
-          };
-        }
-      }
-
-      // GraphQL Admin API metafields augmented Sync
-      if (shouldSyncMetafields) {
-        const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-          prevContinuation,
-          restItems,
-          maxEntriesPerRun
-        );
-        const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
-        const graphQlPayload = {
-          query: QueryOrdersMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            cursor: prevContinuation?.cursor,
-            searchQuery: buildOrdersSearchQuery({ ids: uniqueIdsToFetch }),
-          } as GetOrdersMetafieldsQueryVariables,
-        };
-
-        let { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeMixedSyncTableGraphQlRequest(
-            {
-              payload: graphQlPayload,
-              maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-              nextRestUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                currentBatch: {
-                  remaining: remaining,
-                  processing: toProcess,
-                },
-              },
-              getPageInfo: (data: GetOrdersMetafieldsQuery) => data.orders?.pageInfo,
-            },
-            context
-          );
-
-        if (augmentedResponse?.body?.data) {
-          const ordersData = augmentedResponse.body.data as GetOrdersMetafieldsQuery;
-          const augmentedItems = toProcess
-            .map((resource) => {
-              const graphQlNodeMatch = ordersData.orders.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
-
-              // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-              if (!graphQlNodeMatch) return;
-
-              if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
-                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-                });
-              }
-              return resource;
-            })
-            .filter((p) => p); // filter out undefined items
-
-          return {
-            result: augmentedItems,
-            continuation: augmentedContinuation,
-          };
-        }
-
-        return {
-          result: [],
-          continuation: augmentedContinuation,
-        };
-      }
-
-      return {
-        result: [],
-      };
+      const orderSyncTable = new OrderSyncTable(new OrderRestFetcher(context), params);
+      return orderSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new OrderRestFetcher(context).executeSyncTableUpdate(updates);
+      const orderSyncTable = new OrderSyncTable(new OrderRestFetcher(context), params);
+      return orderSyncTable.executeUpdate(updates);
     },
   },
 });

@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_FILE, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
+import { Identity } from '../../constants';
 
 export const FileSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -95,5 +96,5 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'url',
 });
 
-export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSyncTableSchema, IDENTITY_FILE);
+export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSyncTableSchema, Identity.File);
 export const formatFileReference = (id: string, name = NOT_FOUND) => ({ id, name });

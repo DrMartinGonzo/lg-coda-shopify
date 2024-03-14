@@ -1,11 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
 import { restResources } from './types/RequestsRest';
-import { GraphQlResource } from './types/RequestsGraphQl';
+import { GraphQlResourceName } from './types/RequestsGraphQl';
 import { CACHE_DEFAULT, REST_DEFAULT_API_VERSION } from './constants';
 
 import type { FetchRequestOptions } from './types/Requests';
-import type { SyncTableRestContinuation } from './types/tableSync';
+import type { SyncTableRestContinuation } from './types/SyncTable';
 import type { RestResource } from './types/RequestsRest';
 
 // TODO: better error handling
@@ -41,29 +41,29 @@ export const extractNextUrlPagination = (response) => {
   return nextUrl;
 };
 
-export function getRestResourceFromGraphQlResourceType(resourceType: GraphQlResource): RestResource {
+export function getRestResourceFromGraphQlResourceType(resourceType: GraphQlResourceName): RestResource {
   switch (resourceType) {
-    case GraphQlResource.Article:
+    case GraphQlResourceName.OnlineStoreArticle:
       return restResources.Article;
-    case GraphQlResource.Blog:
+    case GraphQlResourceName.OnlineStoreBlog:
       return restResources.Blog;
-    case GraphQlResource.Collection:
+    case GraphQlResourceName.Collection:
       return restResources.Collection;
-    case GraphQlResource.Customer:
+    case GraphQlResourceName.Customer:
       return restResources.Customer;
-    case GraphQlResource.DraftOrder:
+    case GraphQlResourceName.DraftOrder:
       return restResources.DraftOrder;
-    case GraphQlResource.Location:
+    case GraphQlResourceName.Location:
       return restResources.Location;
-    case GraphQlResource.Order:
+    case GraphQlResourceName.Order:
       return restResources.Order;
-    case GraphQlResource.Page:
+    case GraphQlResourceName.OnlineStorePage:
       return restResources.Page;
-    case GraphQlResource.Product:
+    case GraphQlResourceName.Product:
       return restResources.Product;
-    case GraphQlResource.Shop:
+    case GraphQlResourceName.Shop:
       return restResources.Shop;
-    case GraphQlResource.ProductVariant:
+    case GraphQlResourceName.ProductVariant:
       return restResources.ProductVariant;
   }
 
@@ -100,7 +100,7 @@ export async function makeSyncTableGetRequest<Data extends any>(
   };
 }
 
-interface GetRequestParams extends FetchRequestOptions {
+export interface GetRequestParams extends FetchRequestOptions {
   url: string;
 }
 export async function makeGetRequest<Data extends any>(params: GetRequestParams, context: coda.ExecutionContext) {

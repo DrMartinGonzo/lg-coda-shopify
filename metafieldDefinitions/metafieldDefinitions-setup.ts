@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from '../metafields/metafields-constants';
 import { requireResourceMetafieldsSyncTableDefinition } from '../metafields/metafields-functions';
 import {
@@ -17,8 +17,9 @@ import {
   fetchSingleMetafieldDefinitionGraphQl,
   formatMetafieldDefinitionForSchemaFromGraphQlApi,
 } from './metafieldDefinitions-functions';
-import { CACHE_DEFAULT, IDENTITY_METAFIELD_DEFINITION } from '../constants';
+import { CACHE_DEFAULT } from '../constants';
 import { inputs } from '../shared-parameters';
+import { Identity } from '../constants';
 
 import type {
   GetMetafieldDefinitionsQuery,
@@ -26,7 +27,7 @@ import type {
   MetafieldDefinitionFragment,
 } from '../types/admin.generated';
 import type { SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion
 
@@ -35,7 +36,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   name: 'MetafieldDefinitions',
   description: 'Return Metafield Definitions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_METAFIELD_DEFINITION,
+  identityName: Identity.MetafieldDefinition,
   listDynamicUrls: async function (context, docUrl: String) {
     return RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.filter((v) => v.supportMetafieldDefinitions).map((v) => ({
       display: v.display,
@@ -125,7 +126,7 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([metafieldDefinitionID], context) {
     const metafieldDefinitionNode = await fetchSingleMetafieldDefinitionGraphQl(
-      idToGraphQlGid(GraphQlResource.MetafieldDefinition, metafieldDefinitionID),
+      idToGraphQlGid(GraphQlResourceName.MetafieldDefinition, metafieldDefinitionID),
       context
     );
 

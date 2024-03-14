@@ -12708,6 +12708,10 @@ export enum DisputeEvidenceUpdateUserErrorCode {
 /** The possible statuses of a dispute. */
 export enum DisputeStatus {
   Accepted = 'ACCEPTED',
+  /**
+   * Status previously used by Stripe to indicate that a dispute led to a refund.
+   * @deprecated CHARGE_REFUNDED is no longer supported.
+   */
   ChargeRefunded = 'CHARGE_REFUNDED',
   Lost = 'LOST',
   NeedsResponse = 'NEEDS_RESPONSE',
@@ -26848,7 +26852,6 @@ export type MutationFulfillmentOrderSubmitFulfillmentRequestArgs = {
   id: Scalars['ID']['input'];
   message?: InputMaybe<Scalars['String']['input']>;
   notifyCustomer?: InputMaybe<Scalars['Boolean']['input']>;
-  shippingMethod?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -34222,7 +34225,12 @@ export type ProductVariant = HasMetafieldDefinitions & HasMetafields & HasPublis
    *
    */
   fulfillmentService?: Maybe<FulfillmentService>;
-  /** Whether changes to the fulfillment service for the product variant are allowed. */
+  /**
+   * Whether changes to the fulfillment service for the product variant are allowed.
+   * @deprecated The [relationship between a product variant and a fulfillment service was changed in the `2022-07` API version](/changelog/fulfillment-service-sku-sharing). A [ProductVariant](/api/admin-graphql/latest/objects/ProductVariant) can be stocked by multiple fulfillment services.
+   * As a result, the fulfillment_service is no longer directly editable on a ProductVariant and this field is no longer applicable.
+   *
+   */
   fulfillmentServiceEditable: EditableProperty;
   /**
    * The Harmonized System Code (or HS Tariff Code) for the variant.
@@ -34337,11 +34345,15 @@ export type ProductVariant = HasMetafieldDefinitions & HasMetafields & HasPublis
    *
    */
   updatedAt: Scalars['DateTime']['output'];
-  /** The weight of the product variant in the unit system specified with weight_unit. */
+  /**
+   * The weight of the product variant in the unit system specified with weight_unit.
+   * @deprecated Use InventoryItem.measurement.weight instead
+   */
   weight?: Maybe<Scalars['Float']['output']>;
   /**
    * The unit of measurement that applies to the product variant's weight. If you don't specify a value for weight_unit, then the shop's default unit of measurement is applied. Valid values: `g`, `kg`, `oz`, `lb`.
    *
+   * @deprecated Use InventoryItem.measurement.weight instead
    */
   weightUnit: WeightUnit;
 };
@@ -34620,8 +34632,6 @@ export type ProductVariantInput = {
   barcode?: InputMaybe<Scalars['String']['input']>;
   /** The compare-at price of the variant. */
   compareAtPrice?: InputMaybe<Scalars['Money']['input']>;
-  /** The Harmonized System code (or HS Tariff code) for the variant. */
-  harmonizedSystemCode?: InputMaybe<Scalars['String']['input']>;
   /** Specifies the product variant to update or create a new variant if absent. */
   id?: InputMaybe<Scalars['ID']['input']>;
   /** The inventory item associated with the variant. Used for unit cost. */
@@ -34654,18 +34664,12 @@ export type ProductVariantInput = {
    *
    */
   requiresComponents?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Whether the variant requires shipping. */
-  requiresShipping?: InputMaybe<Scalars['Boolean']['input']>;
   /** The SKU for the variant. Case-sensitive string. */
   sku?: InputMaybe<Scalars['String']['input']>;
   /** The tax code associated with the variant. */
   taxCode?: InputMaybe<Scalars['String']['input']>;
   /** Whether the variant is taxable. */
   taxable?: InputMaybe<Scalars['Boolean']['input']>;
-  /** The weight of the variant. */
-  weight?: InputMaybe<Scalars['Float']['input']>;
-  /** The unit of weight that's used to measure the variant. */
-  weightUnit?: InputMaybe<WeightUnit>;
 };
 
 /** The valid values for the method of inventory tracking for a product variant. */
@@ -34972,8 +34976,6 @@ export type ProductVariantsBulkInput = {
   barcode?: InputMaybe<Scalars['String']['input']>;
   /** The compare-at price of the variant. */
   compareAtPrice?: InputMaybe<Scalars['Money']['input']>;
-  /** The Harmonized System code (or HS Tariff code) for the variant. */
-  harmonizedSystemCode?: InputMaybe<Scalars['String']['input']>;
   /** Specifies the product variant to update or delete. */
   id?: InputMaybe<Scalars['ID']['input']>;
   /** The inventory item associated with the variant, used for unit cost. */
@@ -34997,18 +34999,12 @@ export type ProductVariantsBulkInput = {
   options?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The price of the variant. */
   price?: InputMaybe<Scalars['Money']['input']>;
-  /** Whether the variant requires shipping. */
-  requiresShipping?: InputMaybe<Scalars['Boolean']['input']>;
   /** The SKU for the variant. */
   sku?: InputMaybe<Scalars['String']['input']>;
   /** The tax code associated with the variant. */
   taxCode?: InputMaybe<Scalars['String']['input']>;
   /** Whether the variant is taxable. */
   taxable?: InputMaybe<Scalars['Boolean']['input']>;
-  /** The weight of the variant. */
-  weight?: InputMaybe<Scalars['Float']['input']>;
-  /** The unit of weight that's used to measure the variant. */
-  weightUnit?: InputMaybe<WeightUnit>;
 };
 
 /** Return type for `productVariantsBulkReorder` mutation. */

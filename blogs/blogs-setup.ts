@@ -1,33 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, IDENTITY_BLOG, REST_DEFAULT_LIMIT } from '../constants';
-
-import { BlogSyncTableSchema, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
-import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import { handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import { SyncTableRestContinuation } from '../types/tableSync';
-import {
-  fetchMetafieldsRest,
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
+import { CACHE_DEFAULT } from '../constants';
+import { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { restResources } from '../types/RequestsRest';
-import { BlogRestFetcher } from './blogs-functions';
+import { BlogRestFetcher, BlogSyncTable } from './blogs-functions';
+import { Identity } from '../constants';
 
-import type { Blog as BlogRest } from '@shopify/shopify-api/rest/admin/2023-10/blog';
-import type { BlogCreateRestParams, BlogSyncTableRestParams } from '../types/Blog';
-import type { BlogRow } from '../types/CodaRows';
+import type { Blog } from '../typesNew/Resources/Blog';
 
 // #endregion
 
@@ -47,7 +31,7 @@ export const Sync_Blogs = coda.makeSyncTable({
   description:
     "Return Blogs from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_BLOG,
+  identityName: Identity.Blog,
   schema: BlogSyncTableSchema,
   dynamicOptions: {
     getSchema: getBlogSchema,
@@ -69,58 +53,16 @@ export const Sync_Blogs = coda.makeSyncTable({
         optional: true,
       },
     ],
-    execute: async function ([syncMetafields], context) {
+    execute: async function (params, context) {
+      const [syncMetafields] = params;
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getBlogSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      const syncedStandardFields = handleFieldDependencies(standardFromKeys, blogFieldDependencies);
-      const restParams: BlogSyncTableRestParams = cleanQueryParams({
-        fields: syncedStandardFields.join(', '),
-        limit: shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-      });
-
-      const blogFetcher = new BlogRestFetcher(context);
-      blogFetcher.validateParams(restParams);
-      let url = prevContinuation?.nextUrl ?? blogFetcher.getFetchAllUrl(restParams);
-
-      let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest<{ blogs: BlogRest[] }>({ url }, context);
-      if (response?.body?.blogs) {
-        restResult = response.body.blogs.map((blog) => blogFetcher.formatApiToRow(blog));
-      }
-
-      // Add metafields by doing multiple Rest Admin API calls
-      if (shouldSyncMetafields) {
-        restResult = await Promise.all(
-          restResult.map(async (resource) => {
-            const response = await fetchMetafieldsRest(resource.id, restResources.Blog, {}, context);
-
-            // Only keep metafields that have a definition are in the schema
-            const metafields = response.body.metafields.filter((m) =>
-              effectiveMetafieldKeys.includes(getMetaFieldFullKey(m))
-            );
-            if (metafields.length) {
-              metafields.forEach((metafield) => {
-                const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-              });
-            }
-            return resource;
-          })
-        );
-      }
-
-      return { result: restResult, continuation };
+      const blogSyncTable = new BlogSyncTable(new BlogRestFetcher(context), params);
+      return blogSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new BlogRestFetcher(context).executeSyncTableUpdate(updates);
+      const blogSyncTable = new BlogSyncTable(new BlogRestFetcher(context), params);
+      return blogSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -138,15 +80,19 @@ export const Action_UpdateBlog = coda.makeFormula({
     { ...inputs.general.handle, optional: true },
     { ...inputs.blog.commentable, optional: true },
     { ...inputs.blog.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Blog metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Blog'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(BlogSchema, IDENTITY_BLOG),
+  // schema: coda.withIdentity(BlogSchema, Identity.Blog),
   schema: BlogSyncTableSchema,
   execute: async function ([blogId, title, handle, commentable, templateSuffix, metafields], context) {
-    let row: BlogRow = {
+    let row: Blog.Row = {
       id: blogId,
       title,
       handle,
@@ -172,13 +118,17 @@ export const Action_CreateBlog = coda.makeFormula({
     { ...inputs.general.handle, optional: true },
     { ...inputs.blog.commentable, optional: true },
     { ...inputs.blog.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Blog metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Blog'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([title, handle, commentable, templateSuffix, metafields], context) {
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<BlogRow> = {
+    let newRow: Partial<Blog.Row> = {
       title,
       commentable,
       handle,
@@ -186,7 +136,7 @@ export const Action_CreateBlog = coda.makeFormula({
     };
 
     const blogFetcher = new BlogRestFetcher(context);
-    const restParams = blogFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as BlogCreateRestParams;
+    const restParams = blogFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Blog.Params.Create;
     const response = await blogFetcher.create(restParams);
     return response?.body?.blog?.id;
   },

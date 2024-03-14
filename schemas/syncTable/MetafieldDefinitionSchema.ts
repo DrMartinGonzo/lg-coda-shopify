@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { CODA_PACK_ID } from '../../pack-config.json';
-import { IDENTITY_METAFIELD_DEFINITION, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { ValidationSchema } from '../basic/ValidationSchema';
-import { ResourceMetafieldsSyncTableDefinition } from '../../types/Metafields';
+import { ResourceMetafieldsSyncTableDefinition } from '../../metafields/metafields-constants';
+import { Identity } from '../../constants';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -117,7 +118,7 @@ export function getMetafieldDefinitionReferenceSchema(
     idProperty: 'id',
     identity: {
       packId: CODA_PACK_ID,
-      name: IDENTITY_METAFIELD_DEFINITION,
+      name: Identity.MetafieldDefinition,
       dynamicUrl: resourceMetafieldsSyncTableDefinition.key,
     },
   });

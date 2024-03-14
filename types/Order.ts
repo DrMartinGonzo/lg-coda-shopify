@@ -1,6 +1,7 @@
-export interface OrderSyncTableRestParams {
+import type { BaseSyncTableRestParams } from './RequestsRest';
+
+export interface OrderSyncTableRestParams extends BaseSyncTableRestParams {
   fields?: string;
-  limit: number;
   handle?: string;
   ids?: string;
   financial_status?: string;

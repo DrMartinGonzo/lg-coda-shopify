@@ -1,40 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, IDENTITY_PRODUCT, REST_DEFAULT_LIMIT } from '../constants';
-import { fetchProductTypesGraphQl, ProductRestFetcher } from './products-functions';
-import { ProductSyncTableSchemaRest, productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
-import { QueryProductsMetafieldsAdmin, buildProductsSearchQuery } from './products-graphql';
-import { filters, inputs } from '../shared-parameters';
+import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST } from '../constants';
+import { fetchProductTypesGraphQl, ProductRestFetcher, ProductSyncTable } from './products-functions';
+import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
 
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
+import { Identity } from '../constants';
 
-import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
-import type { GetProductsMetafieldsQuery, GetProductsMetafieldsQueryVariables } from '../types/admin.generated';
-import type { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
-import type { ProductSyncTableRestParams, ProductCreateRestParams } from '../types/Product';
-import type { ProductRow } from '../types/CodaRows';
+import type { ProductCreateRestParams } from '../types/Product';
+import type { ProductRow } from '../typesNew/CodaRows';
 
 // #endregion
 
@@ -59,7 +38,7 @@ export const Sync_Products = coda.makeSyncTable({
   description:
     'Return Products from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_PRODUCT,
+  identityName: Identity.Product,
   schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
     getSchema: getProductSchema,
@@ -93,171 +72,17 @@ export const Sync_Products = coda.makeSyncTable({
      * Sync products using Rest Admin API, optionally augmenting the sync with
      * metafields from GraphQL Admin API
      */
-    execute: async function (
-      [
-        product_type,
-        syncMetafields,
-        created_at,
-        updated_at,
-        published_at,
-        status,
-        published_status,
-        vendor,
-        handles,
-        ids,
-      ],
-      context
-    ) {
+    execute: async function (params, context) {
+      const [product_type, syncMetafields] = params;
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getProductSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let restLimit = REST_DEFAULT_LIMIT;
-      let maxEntriesPerRun = restLimit;
-      let shouldDeferBy = 0;
-
-      if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
-        const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
-          prevContinuation,
-          context
-        );
-        maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-        restLimit = maxEntriesPerRun;
-        shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-        if (shouldDeferBy > 0) {
-          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-        }
-      }
-
-      let restItems: Array<ProductRow> = [];
-      let restContinuation: SyncTableRestContinuation | null = null;
-      const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
-      // Rest Admin API Sync
-      if (!skipNextRestSync) {
-        const syncedStandardFields = handleFieldDependencies(standardFromKeys, productFieldDependencies);
-        const restParams: ProductSyncTableRestParams = cleanQueryParams({
-          fields: syncedStandardFields.join(', '),
-          limit: restLimit,
-          handle: handles && handles.length ? handles.join(',') : undefined,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          product_type,
-          published_status,
-          status: status && status.length ? status.join(',') : undefined,
-          vendor,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          published_at_min: published_at ? published_at[0] : undefined,
-          published_at_max: published_at ? published_at[1] : undefined,
-        });
-        const productFetcher = new ProductRestFetcher(context);
-        productFetcher.validateParams(restParams);
-
-        const url = prevContinuation?.nextUrl
-          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-          : productFetcher.getFetchAllUrl(restParams);
-
-        const { response, continuation } = await makeSyncTableGetRequest<{ products: ProductRest[] }>({ url }, context);
-        restContinuation = continuation;
-
-        if (response?.body?.products) {
-          restItems = response.body.products.map(productFetcher.formatApiToRow);
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restItems,
-            continuation: restContinuation,
-          };
-        }
-      }
-
-      // GraphQL Admin API metafields augmented Sync
-      if (shouldSyncMetafields) {
-        const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-          prevContinuation,
-          restItems,
-          maxEntriesPerRun
-        );
-        const uniqueIdsToFetch = arrayUnique(toProcess.map((c) => c.id)).sort();
-        const graphQlPayload = {
-          query: QueryProductsMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            cursor: prevContinuation?.cursor,
-            searchQuery: buildProductsSearchQuery({ ids: uniqueIdsToFetch }),
-          } as GetProductsMetafieldsQueryVariables,
-        };
-
-        let { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeMixedSyncTableGraphQlRequest(
-            {
-              payload: graphQlPayload,
-              maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-              nextRestUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                currentBatch: {
-                  remaining: remaining,
-                  processing: toProcess,
-                },
-              },
-              getPageInfo: (data: GetProductsMetafieldsQuery) => data.products?.pageInfo,
-            },
-            context
-          );
-
-        if (augmentedResponse?.body?.data) {
-          const productsData = augmentedResponse.body.data as GetProductsMetafieldsQuery;
-          const augmentedItems = toProcess
-            .map((resource) => {
-              const graphQlNodeMatch = productsData.products.nodes.find((c) => graphQlGidToId(c.id) === resource.id);
-
-              // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-              if (!graphQlNodeMatch) return;
-
-              if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
-                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-                });
-              }
-              return resource;
-            })
-            .filter((p) => p); // filter out undefined items
-
-          return {
-            result: augmentedItems,
-            continuation: augmentedContinuation,
-          };
-        }
-
-        return {
-          result: [],
-          continuation: augmentedContinuation,
-        };
-      }
-
-      return {
-        result: [],
-      };
+      const productSyncTable = new ProductSyncTable(new ProductRestFetcher(context), params);
+      return productSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new ProductRestFetcher(context).executeSyncTableUpdate(updates);
+      const productSyncTable = new ProductSyncTable(new ProductRestFetcher(context), params);
+      return productSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -281,7 +106,11 @@ export const Action_CreateProduct = coda.makeFormula({
     { ...inputs.product.templateSuffix, optional: true },
     { ...inputs.product.options, optional: true },
     { ...inputs.product.imageUrls, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Product metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Product'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -327,12 +156,16 @@ export const Action_UpdateProduct = coda.makeFormula({
     { ...inputs.product.status, optional: true },
     { ...inputs.product.handle, optional: true },
     { ...inputs.product.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Product metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Product'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ProductSchemaRest, IDENTITY_PRODUCT),
+  // schema: coda.withIdentity(ProductSchemaRest, Identity.Product),
   schema: ProductSyncTableSchemaRest,
   execute: async function (
     [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
@@ -405,7 +238,7 @@ export const Format_Product: coda.Format = {
     name: 'ProductsGraphQL',
     description:
       'Return Products from this shop.',
-    identityName: IDENTITY_PRODUCT + '_GRAPHQL',
+    identityName: Identity.Product + '_GRAPHQL',
     schema: ProductSyncTableSchemaGraphQl,
     dynamicOptions: {
       getSchema: async function (context, _, { syncMetafields }) {

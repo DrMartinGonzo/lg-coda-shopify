@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { BlogReference } from './BlogSchema';
-import { IDENTITY_ARTICLE, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
+import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/tableSync';
+import type { FieldDependency } from '../../types/SyncTable';
 
 export const ArticleSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -179,7 +180,7 @@ export const ArticleSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const ArticleReference = coda.makeReferenceSchemaFromObjectSchema(ArticleSyncTableSchema, IDENTITY_ARTICLE);
+export const ArticleReference = coda.makeReferenceSchemaFromObjectSchema(ArticleSyncTableSchema, Identity.Article);
 export const formatArticleReference = (id: number, title = NOT_FOUND) => ({ id, title });
 
 export const articleFieldDependencies: FieldDependency<typeof ArticleSyncTableSchema.properties>[] = [

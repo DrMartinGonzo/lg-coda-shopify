@@ -1,9 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_ORDER_LINE_ITEM } from '../../constants';
 import { ProductVariantReference } from './ProductVariantSchema';
 import { OrderReference } from './OrderSchema';
 import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
+import { Identity } from '../../constants';
 
 export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -50,5 +50,5 @@ export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
 
 export const OrderLineItemReference = coda.makeReferenceSchemaFromObjectSchema(
   OrderLineItemSyncTableSchema,
-  IDENTITY_ORDER_LINE_ITEM
+  Identity.OrderLineItem
 );

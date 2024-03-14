@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 
-import { IDENTITY_METAOBJECT, OPTIONS_METAOBJECT_STATUS } from '../constants';
+import { OPTIONS_METAOBJECT_STATUS } from '../constants';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
@@ -25,17 +25,18 @@ import {
 } from '../helpers-graphql';
 import { buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
 import { inputs } from '../shared-parameters';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 import {
   fetchAllMetaObjectDefinitions,
   fetchSingleMetaObjectDefinition,
   requireMatchingMetaobjectFieldDefinition,
 } from '../metaobjectDefinitions/metaobjectDefinitions-functions';
+import { Identity } from '../constants';
 
 import type { MetaobjectFragment } from '../types/Metaobject';
 import type { MetaobjectFieldInput } from '../types/admin.types';
-import type { AllMetafieldTypeValue } from '../types/Metafields';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { AllMetafieldTypeValue } from '../metafields/metafields-constants';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion
 
@@ -89,7 +90,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
   name: 'Metaobjects',
   description: 'All Metaobjects.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_METAOBJECT,
+  identityName: Identity.Metaobject,
   defaultAddDynamicColumns: false,
   listDynamicUrls: async function (context) {
     const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
@@ -195,7 +196,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
 
         const handle = update.newValue['handle'];
         const status = update.newValue['status'];
-        const metaobjectGid = idToGraphQlGid(GraphQlResource.Metaobject, update.previousValue.id as number);
+        const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, update.previousValue.id as number);
         const metaobjectFieldFromKeys = updatedFields.filter((key) => key !== 'handle' && key !== 'status');
 
         const fields = await Promise.all(
@@ -327,7 +328,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(MetaObjectBaseSchema, IDENTITY_METAOBJECT),
+  // schema: coda.withIdentity(MetaObjectBaseSchema, Identity.Metaobject),
   schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
     const fields: MetaobjectFieldInput[] = [];
@@ -344,7 +345,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
     const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
     const response = await updateMetaObjectGraphQl(
       {
-        gid: idToGraphQlGid(GraphQlResource.Metaobject, metaobjectId),
+        gid: idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId),
         updateInput: metaobjectUpdateInput,
       },
       context
@@ -364,7 +365,10 @@ export const Action_DeleteMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.String,
   execute: async function ([metaobjectId], context) {
-    const response = await deleteMetaObjectGraphQl(idToGraphQlGid(GraphQlResource.Metaobject, metaobjectId), context);
+    const response = await deleteMetaObjectGraphQl(
+      idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId),
+      context
+    );
     return response.body.data.metaobjectDelete.deletedId;
   },
 });

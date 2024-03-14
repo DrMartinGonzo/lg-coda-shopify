@@ -1,8 +1,8 @@
 import type { MetafieldRestInput } from './Metafields';
+import type { BaseSyncTableRestParams } from './RequestsRest';
 
-export interface ProductSyncTableRestParams {
+export interface ProductSyncTableRestParams extends BaseSyncTableRestParams {
   fields?: string;
-  limit?: number;
   published_status?: string;
   status?: string;
   handle?: string;

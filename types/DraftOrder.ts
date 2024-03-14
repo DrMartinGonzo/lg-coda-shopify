@@ -1,7 +1,8 @@
-export interface DraftOrderSyncTableRestParams {
+import type { BaseSyncTableRestParams } from './RequestsRest';
+
+export interface DraftOrderSyncTableRestParams extends BaseSyncTableRestParams {
   fields?: string;
   ids?: string;
-  limit: number;
   since_id?: number;
   status?: string;
   updated_at_min?: Date;

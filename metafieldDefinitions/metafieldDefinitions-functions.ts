@@ -36,7 +36,10 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
 
 export function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
+    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+      { ownerType, includeFakeExtraDefinitions: true },
+      context
+    );
     const keys = metafieldDefinitions.map(getMetaFieldFullKey);
     return coda.simpleAutocomplete(search, keys);
   };
