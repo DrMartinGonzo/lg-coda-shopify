@@ -24,7 +24,7 @@ import type {
   MetaobjectFieldDefinitionFragment,
 } from '../types/admin.generated';
 import type { FetchRequestOptions } from '../types/Requests';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #region Helpers
 function findMatchingMetaobjectFieldDefinition(key: string, fieldDefinitions: MetaobjectFieldDefinitionFragment[]) {

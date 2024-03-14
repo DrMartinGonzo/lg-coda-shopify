@@ -5,42 +5,92 @@ import striptags from 'striptags';
 import {
   CACHE_DEFAULT,
   DEFAULT_PRODUCT_OPTION_NAME,
-  OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PRODUCT_STATUS_REST,
   OPTIONS_PUBLISHED_STATUS,
 } from '../constants';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { makeGraphQlRequest } from '../helpers-graphql';
 import { queryProductTypes } from './products-graphql';
-import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
-import { RestResourceName } from '../types/RequestsRest';
-import { SimpleRest } from '../Fetchers/SimpleRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest';
+import { handleFieldDependencies } from '../helpers';
+import { cleanQueryParams } from '../helpers-rest';
 
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { FetchRequestOptions } from '../types/Requests';
-import type { ProductRow } from '../types/CodaRows';
-import type { ProductUpdateRestParams, ProductCreateRestParams } from '../types/Product';
+import type { ProductRow } from '../typesNew/CodaRows';
+import type { ProductUpdateRestParams, ProductCreateRestParams, ProductSyncTableRestParams } from '../types/Product';
 import type { QueryProductTypesQuery } from '../types/admin.generated';
-
-// #endregion
+import type { Sync_Products } from './products-setup';
+import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { SyncTableType } from '../types/SyncTable';
+import { productResource } from '../allResources';
 
 // #region Class
-export class ProductRestFetcher extends SimpleRest<RestResourceName.Product, typeof ProductSyncTableSchemaRest> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Product, ProductSyncTableSchemaRest, context);
+export type ProductSyncTableType = SyncTableType<
+  typeof productResource,
+  ProductRow,
+  ProductSyncTableRestParams,
+  ProductCreateRestParams,
+  ProductUpdateRestParams
+>;
+
+export class ProductSyncTable extends SyncTableRestNew<ProductSyncTableType> {
+  constructor(fetcher: ProductRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(productResource, fetcher, params);
   }
 
-  validateParams = (params: any) => {
+  setSyncParams() {
+    const [
+      product_type,
+      syncMetafields,
+      created_at,
+      updated_at,
+      published_at,
+      status,
+      published_status,
+      vendor,
+      handles,
+      ids,
+    ] = this.codaParams as SyncTableParamValues<typeof Sync_Products>;
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, productFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+      handle: handles && handles.length ? handles.join(',') : undefined,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      product_type,
+      published_status,
+      status: status && status.length ? status.join(',') : undefined,
+      vendor,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      published_at_min: published_at ? published_at[0] : undefined,
+      published_at_max: published_at ? published_at[1] : undefined,
+    });
+  }
+}
+
+export class ProductRestFetcher extends SimpleRestNew<ProductSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(productResource, context);
+  }
+
+  validateParams = (params: ProductSyncTableRestParams | ProductCreateRestParams | ProductUpdateRestParams) => {
     if (params.status) {
       const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
       (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
         if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
       });
     }
-    if (params.title !== undefined && params.title === '') {
+    if ('title' in params && params.title === '') {
       throw new coda.UserVisibleError("Product title can't be blank");
     }
-    if (params.published_status) {
+    if ('published_status' in params) {
       const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
       (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
         (published_status) => {
@@ -134,31 +184,6 @@ export class ProductRestFetcher extends SimpleRest<RestResourceName.Product, typ
 export async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
   const productTypes = await fetchProductTypesGraphQl(context);
   return coda.simpleAutocomplete(search, productTypes);
-}
-// #endregion
-
-// #region helpers
-export function validateProductParams(params: any, isRest = false) {
-  if (params.status) {
-    const validStatuses = (isRest ? OPTIONS_PRODUCT_STATUS_REST : OPTIONS_PRODUCT_STATUS_GRAPHQL).map(
-      (status) => status.value
-    );
-    (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
-      if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
-    });
-  }
-  if (params.title !== undefined && params.title === '') {
-    throw new coda.UserVisibleError("Product title can't be blank");
-  }
-  if (params.published_status) {
-    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
-      (published_status) => {
-        if (!validPublishedStatuses.includes(published_status))
-          throw new coda.UserVisibleError('Unknown published_status: ' + published_status);
-      }
-    );
-  }
 }
 // #endregion
 

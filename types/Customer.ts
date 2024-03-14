@@ -1,8 +1,8 @@
 import type { MetafieldRestInput } from './Metafields';
+import type { BaseSyncTableRestParams } from './RequestsRest';
 
-export interface CustomerSyncTableRestParams {
+export interface CustomerSyncTableRestParams extends BaseSyncTableRestParams {
   fields: string;
-  limit: number;
   ids?: string;
   created_at_min?: Date;
   created_at_max?: Date;

@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_LOCATION, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
 import { countryNameAutocompleteValues } from '../../constants';
 import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
+import { Identity } from '../../constants';
 
 export const LocationSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -142,5 +143,5 @@ export const LocationSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSyncTableSchema, IDENTITY_LOCATION);
+export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSyncTableSchema, Identity.Location);
 export const formatLocationReference = (id: number, name = NOT_FOUND) => ({ id, name });

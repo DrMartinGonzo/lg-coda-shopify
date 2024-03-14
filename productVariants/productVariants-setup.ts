@@ -1,50 +1,21 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, IDENTITY_PRODUCT_VARIANT, REST_DEFAULT_LIMIT } from '../constants';
-import { ProductVariantRestFetcher } from './productVariants-functions';
+import { CACHE_DEFAULT } from '../constants';
+import { ProductVariantRestFetcher, ProductVariantSyncTable } from './productVariants-functions';
 import { ProductRestFetcher } from '../products/products-functions';
 
-import {
-  ProductVariantSyncTableSchema,
-  productVariantFieldDependencies,
-} from '../schemas/syncTable/ProductVariantSchema';
-import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/tableSync';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
-import { arrayUnique, handleFieldDependencies, wrapGetSchemaForCli } from '../helpers';
+import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  getMixedSyncTableRemainingAndToProcessItems,
-  graphQlGidToId,
-  makeMixedSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../helpers-graphql';
-import { QueryProductVariantsMetafieldsAdmin, buildProductVariantsSearchQuery } from './productVariants-graphql';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+import { Identity } from '../constants';
 
-import type { Product as ProductRest } from '@shopify/shopify-api/rest/admin/2023-10/product';
-import type { ProductVariantRow } from '../types/CodaRows';
+import type { ProductVariantRow } from '../typesNew/CodaRows';
 import type { ProductVariantCreateRestParams } from '../types/ProductVariant';
-import type {
-  GetProductVariantsMetafieldsQuery,
-  GetProductVariantsMetafieldsQueryVariables,
-} from '../types/admin.generated';
-import type { ProductSyncTableRestParams } from '../types/Product';
 
 // #endregion
 
@@ -77,7 +48,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   description:
     'Return ProductVariants from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_PRODUCT_VARIANT,
+  identityName: Identity.ProductVariant,
   schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
     getSchema: getProductVariantsSchema,
@@ -105,204 +76,37 @@ export const Sync_ProductVariants = coda.makeSyncTable({
       { ...filters.product.idArray, name: 'productIds', optional: true },
     ],
     execute: async function (
-      [
-        product_type,
-        syncMetafields,
-        created_at,
-        updated_at,
-        published_at,
-        status,
-        published_status,
-        vendor,
-        handles,
-        ids,
-      ],
+      // [
+      //   product_type,
+      //   syncMetafields,
+      //   created_at,
+      //   updated_at,
+      //   published_at,
+      //   status,
+      //   published_status,
+      //   vendor,
+      //   handles,
+      //   ids,
+      // ],
+      params,
       context
     ) {
+      const [product_type, syncMetafields] = params;
       // If executing from CLI, schema is undefined, we have to retrieve it first
       const schema =
         context.sync.schema ?? (await wrapGetSchemaForCli(getProductVariantsSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      let restLimit = REST_DEFAULT_LIMIT;
-      let maxEntriesPerRun = restLimit;
-      let shouldDeferBy = 0;
-
-      if (shouldSyncMetafields) {
-        // TODO: calc this
-        const defaultMaxEntriesPerRun = 200;
-        // const defaultMaxEntriesPerRun = 40;
-        const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
-          prevContinuation,
-          context
-        );
-        maxEntriesPerRun = syncTableMaxEntriesAndDeferWait.maxEntriesPerRun;
-        // maxEntriesPerRun = 40;
-        restLimit = maxEntriesPerRun;
-        shouldDeferBy = syncTableMaxEntriesAndDeferWait.shouldDeferBy;
-        if (shouldDeferBy > 0) {
-          return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-        }
-      }
-
-      let restItems: Array<ProductVariantRow> = [];
-      let restContinuation: SyncTableRestContinuation | null = null;
-      const skipNextRestSync = prevContinuation?.extraContinuationData?.skipNextRestSync ?? false;
-
-      // Rest Admin API Sync
-      if (!skipNextRestSync) {
-        const requiredProductFields = ['id', 'variants'];
-        const possibleProductFields = ['id', 'title', 'status', 'images', 'handle', 'variants'];
-
-        // Handle product variant field dependencies and only keep the ones that are actual product fields
-        const syncedProductFields = arrayUnique(
-          handleFieldDependencies(standardFromKeys, productVariantFieldDependencies)
-            .concat(requiredProductFields)
-            .filter((fromKey) => possibleProductFields.includes(fromKey))
-        );
-
-        const restParams: ProductSyncTableRestParams = cleanQueryParams({
-          fields: syncedProductFields.join(', '),
-          limit: restLimit,
-          handle: handles && handles.length ? handles.join(',') : undefined,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          product_type,
-          published_status,
-          status: status && status.length ? status.join(',') : undefined,
-          vendor,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          published_at_min: published_at ? published_at[0] : undefined,
-          published_at_max: published_at ? published_at[1] : undefined,
-        });
-        const productFetcher = new ProductRestFetcher(context);
-        const variantFetcher = new ProductVariantRestFetcher(context);
-        productFetcher.validateParams(restParams);
-
-        const url = prevContinuation?.nextUrl
-          ? coda.withQueryParams(prevContinuation.nextUrl, { limit: restParams.limit })
-          : productFetcher.getFetchAllUrl(restParams);
-
-        const { response, continuation } = await makeSyncTableGetRequest<{ products: ProductRest[] }>({ url }, context);
-        restContinuation = continuation;
-
-        if (response?.body?.products) {
-          restItems = response.body.products
-            .map((product) =>
-              product.variants.map((variant) => {
-                const variantRow = variantFetcher.formatApiToRow(variant);
-                return variantFetcher.formatRowWithParent(variantRow, product);
-              })
-            )
-            .flat();
-        }
-
-        if (!shouldSyncMetafields) {
-          return {
-            result: restItems,
-            continuation: restContinuation,
-          };
-        }
-      }
-
-      // GraphQL Admin API metafields augmented Sync
-      if (shouldSyncMetafields) {
-        const { toProcess, remaining } = getMixedSyncTableRemainingAndToProcessItems(
-          prevContinuation,
-          restItems,
-          maxEntriesPerRun
-        );
-        const uniqueIdsToFetch = arrayUnique(toProcess.map((p) => p.product.id)).sort();
-        const graphQlPayload = {
-          query: QueryProductVariantsMetafieldsAdmin,
-          variables: {
-            maxEntriesPerRun,
-            metafieldKeys: effectiveMetafieldKeys,
-            countMetafields: effectiveMetafieldKeys.length,
-            cursor: prevContinuation?.cursor,
-            searchQuery: buildProductVariantsSearchQuery({ product_ids: uniqueIdsToFetch }),
-          } as GetProductVariantsMetafieldsQueryVariables,
-        };
-
-        let { response: augmentedResponse, continuation: augmentedContinuation } =
-          await makeMixedSyncTableGraphQlRequest(
-            {
-              payload: graphQlPayload,
-              maxEntriesPerRun,
-              prevContinuation: prevContinuation as unknown as SyncTableMixedContinuation,
-              nextRestUrl: restContinuation?.nextUrl,
-              extraContinuationData: {
-                currentBatch: {
-                  remaining: remaining,
-                  processing: toProcess,
-                },
-              },
-              getPageInfo: (data: GetProductVariantsMetafieldsQuery) => data.productVariants?.pageInfo,
-            },
-            context
-          );
-
-        if (augmentedResponse?.body?.data) {
-          const variantsData = augmentedResponse.body.data as GetProductVariantsMetafieldsQuery;
-          const augmentedItems = toProcess
-            .map((resource) => {
-              const graphQlNodeMatch = variantsData.productVariants.nodes.find(
-                (p) => graphQlGidToId(p.id) === resource.id
-              );
-              // if (variant.product.id === 7094974251123) {
-              //   console.log('augmentedContinuation', augmentedContinuation);
-              // }
-
-              // return undefined;
-
-              // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
-              if (!graphQlNodeMatch) return;
-
-              if (graphQlNodeMatch?.metafields?.nodes?.length) {
-                graphQlNodeMatch.metafields.nodes.forEach((metafield) => {
-                  const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                  resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-                });
-              }
-              return resource;
-            })
-            .filter((p) => p); // filter out undefined items
-
-          // console.log('🟠🟠🟠 augmentedItems.length', augmentedItems.length);
-
-          return {
-            result: augmentedItems,
-            continuation: augmentedContinuation,
-          };
-        }
-
-        return {
-          result: [],
-          continuation: augmentedContinuation,
-        };
-      }
-
-      return {
-        result: [],
-      };
+      const productVariantSyncTable = new ProductVariantSyncTable(new ProductVariantRestFetcher(context), params);
+      return productVariantSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
+      const productVariantSyncTable = new ProductVariantSyncTable(new ProductVariantRestFetcher(context), params);
       /**
-       * Pour l'isntant pas besoin d'utiliser formatRowWithParent,
+       * Pour l'instant pas besoin d'utiliser formatRowWithParent,
        * les propriétés qui dépendent du produit parent ne vont pas bouger.
        // TODO: à réévaluer si jamais on update l'image utilisée par la variante
        */
-      return new ProductVariantRestFetcher(context).executeSyncTableUpdate(updates);
+      return productVariantSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -330,7 +134,11 @@ export const Action_CreateProductVariant = coda.makeFormula({
     { ...inputs.productVariant.taxable, optional: true },
     { ...inputs.productVariant.weight, optional: true },
     { ...inputs.productVariant.weightUnit, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Product Variant metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Product Variant'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -393,12 +201,16 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     { ...inputs.productVariant.taxable, optional: true },
     { ...inputs.productVariant.weight, optional: true },
     { ...inputs.productVariant.weightUnit, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Product Variant metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Product Variant'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ProductVariantSchema, IDENTITY_PRODUCT_VARIANT),
+  // schema: coda.withIdentity(ProductVariantSchema, Identity.ProductVariant),
   schema: ProductVariantSyncTableSchema,
   execute: async function (
     [
@@ -506,7 +318,7 @@ export const Format_ProductVariant: coda.Format = {
   pack.addSyncTable({
     name: 'ProductVariantsGraphQL',
     description: 'Return ProductVariants from this shop.',
-    identityName: IDENTITY_PRODUCT_VARIANT + '_GRAPHQL',
+    identityName: Identity.ProductVariant + '_GRAPHQL',
     schema: ProductVariantSchema,
     dynamicOptions: {
       getSchema: getProductVariantsSchema,

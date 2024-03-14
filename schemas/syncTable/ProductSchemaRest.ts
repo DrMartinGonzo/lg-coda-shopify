@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { IDENTITY_PRODUCT, NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
+import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
+import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/tableSync';
+import type { FieldDependency } from '../../types/SyncTable';
 
 export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
   properties: {
@@ -199,5 +200,5 @@ export const productFieldDependencies: FieldDependency<typeof ProductSyncTableSc
     dependencies: ['storeUrl'],
   },
 ];
-export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSyncTableSchemaRest, IDENTITY_PRODUCT);
+export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(ProductSyncTableSchemaRest, Identity.Product);
 export const formatProductReference = (id: number, title = NOT_FOUND) => ({ id, title });

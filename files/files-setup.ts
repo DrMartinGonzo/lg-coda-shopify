@@ -8,7 +8,7 @@ import {
   formatFileNodeForSchema,
   fetchSingleFileGraphQl,
 } from './files-functions';
-import { CACHE_DEFAULT, IDENTITY_FILE, OPTIONS_FILE_TYPE } from '../constants';
+import { CACHE_DEFAULT, OPTIONS_FILE_TYPE } from '../constants';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
@@ -16,10 +16,11 @@ import {
 } from '../helpers-graphql';
 import { queryAllFiles } from './files-graphql';
 import { inputs } from '../shared-parameters';
+import { Identity } from '../constants';
 
-import type { FileRow } from '../types/CodaRows';
+import type { FileRow } from '../typesNew/CodaRows';
 import type { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
-import type { SyncTableGraphQlContinuation } from '../types/tableSync';
+import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion
 
@@ -28,7 +29,7 @@ export const Sync_Files = coda.makeSyncTable({
   name: 'Files',
   description: 'Return Files from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_FILE,
+  identityName: Identity.File,
   schema: FileSyncTableSchema,
   formula: {
     name: 'SyncFiles',

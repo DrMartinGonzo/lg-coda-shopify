@@ -1,42 +1,61 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../constants';
-import { idToGraphQlGid } from '../helpers-graphql';
-import {
-  formatMetafieldRestInputFromKeyValueSet,
-  updateAndFormatResourceMetafieldsRest,
-} from '../metafields/metafields-functions';
-import { formatOptionNameId } from '../helpers';
-import { GraphQlResource } from '../types/RequestsGraphQl';
-import { RestResourceName, restResources } from '../types/RequestsRest';
+import { REST_DEFAULT_LIMIT } from '../constants';
+import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
+import { formatOptionNameId, handleFieldDependencies } from '../helpers';
+import { COMMENTABLE_OPTIONS, blogFieldDependencies } from '../schemas/syncTable/BlogSchema';
+import { cleanQueryParams } from '../helpers-rest';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
+
+import type { Blog } from '../typesNew/Resources/Blog';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import { SimpleRest } from '../Fetchers/SimpleRest';
-import { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
+import type { SyncTableType } from '../types/SyncTable';
+import { blogResource } from '../allResources';
 
-import type { BlogRow } from '../types/CodaRows';
-import type { BlogCreateRestParams, BlogUpdateRestParams } from '../types/Blog';
-
+export type BlogSyncTableType = SyncTableType<
+  typeof blogResource,
+  Blog.Row,
+  Blog.Params.Sync,
+  Blog.Params.Create,
+  Blog.Params.Update
+>;
 // #endregion
 
-export class BlogRestFetcher extends SimpleRest<RestResourceName.Blog, typeof BlogSyncTableSchema> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Blog, BlogSyncTableSchema, context);
+// #region Class
+export class BlogSyncTable extends SyncTableRestNew<BlogSyncTableType> {
+  constructor(fetcher: BlogRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(blogResource, fetcher, params);
   }
 
-  validateParams = (params: any) => {
-    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
-      throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
+  setSyncParams() {
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, blogFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.restLimit,
+    });
+  }
+}
+
+export class BlogRestFetcher extends SimpleRestNew<BlogSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(blogResource, context);
+  }
+
+  validateParams = (params: Blog.Params.Sync | Blog.Params.Create | Blog.Params.Update) => {
+    const validCommentableOptions = COMMENTABLE_OPTIONS.map((option) => option.value);
+    if ('commentable' in params && !validCommentableOptions.includes(params.commentable)) {
+      throw new coda.UserVisibleError('Unknown commentable option: ' + params.commentable);
     }
     return true;
   };
 
   formatRowToApi = (
-    row: Partial<BlogRow>,
+    row: Partial<Blog.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): BlogUpdateRestParams | BlogCreateRestParams | undefined => {
-    let restParams: BlogUpdateRestParams | BlogCreateRestParams = {};
+  ): Blog.Params.Update | Blog.Params.Create | undefined => {
+    let restParams: Blog.Params.Update | Blog.Params.Create = {};
 
     if (row.title !== undefined) restParams.title = row.title;
     if (row.handle !== undefined) restParams.handle = row.handle;
@@ -47,7 +66,7 @@ export class BlogRestFetcher extends SimpleRest<RestResourceName.Blog, typeof Bl
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
       : [];
     if (metafieldRestInputs.length) {
-      restParams = { ...restParams, metafields: metafieldRestInputs } as BlogCreateRestParams;
+      restParams = { ...restParams, metafields: metafieldRestInputs } as Blog.Params.Create;
     }
 
     // Means we have nothing to update/create
@@ -55,54 +74,14 @@ export class BlogRestFetcher extends SimpleRest<RestResourceName.Blog, typeof Bl
     return restParams;
   };
 
-  formatApiToRow = (blog): BlogRow => {
-    let obj: BlogRow = {
+  formatApiToRow = (blog): Blog.Row => {
+    let obj: Blog.Row = {
       ...blog,
       admin_url: `${this.context.endpoint}/admin/blogs/${blog.id}`,
-      graphql_gid: idToGraphQlGid(GraphQlResource.Blog, blog.id),
     };
 
     return obj;
   };
-}
-
-// #region Helpers
-/**
- * On peut créer des metafields directement en un call mais apparemment ça ne
- * fonctionne que pour les créations, pas les updates, du coup on applique la
- * même stratégie que pour handleArticleUpdateJob, CAD il va falloir faire un
- * appel séparé pour chaque metafield
- */
-export async function handleBlogUpdateJob(
-  row: {
-    original?: BlogRow;
-    updated: BlogRow;
-  },
-  metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = [],
-  context: coda.ExecutionContext
-): Promise<BlogRow> {
-  const blogFetcher = new BlogRestFetcher(context);
-  const originalRow = row.original ?? {};
-  const updatedRow = row.updated;
-  const restParams = blogFetcher.formatRowToApi(updatedRow);
-  const updateBlogPromise = restParams ? blogFetcher.update(updatedRow.id, restParams) : undefined;
-
-  const updateMetafieldsPromise = metafieldKeyValueSets.length
-    ? updateAndFormatResourceMetafieldsRest(
-        { ownerId: updatedRow.id, ownerResource: restResources.Blog, metafieldKeyValueSets },
-        context
-      )
-    : undefined;
-
-  const [res, formattedMetafields] = await Promise.all([updateBlogPromise, updateMetafieldsPromise]);
-
-  const updatedBlog = res?.body?.blog ? blogFetcher.formatApiToRow(res.body.blog) : {};
-  return {
-    ...originalRow,
-    id: updatedRow.id,
-    ...updatedBlog,
-    ...(formattedMetafields ?? {}),
-  } as BlogRow;
 }
 // #endregion
 

@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
-import { IDENTITY_BLOG, NOT_FOUND } from '../../constants';
+import { NOT_FOUND } from '../../constants';
+import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/tableSync';
+import type { FieldDependency } from '../../types/SyncTable';
 
 export const COMMENTABLE_OPTIONS = [
   { display: 'No', value: 'no' },
@@ -100,7 +101,7 @@ export const BlogSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSyncTableSchema, IDENTITY_BLOG);
+export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSyncTableSchema, Identity.Blog);
 export const formatBlogReference = (id: number, title = NOT_FOUND) => ({ id, title });
 export const blogFieldDependencies: FieldDependency<typeof BlogSyncTableSchema.properties>[] = [
   {

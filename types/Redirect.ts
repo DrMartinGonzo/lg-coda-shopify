@@ -1,6 +1,7 @@
-export interface RedirectSyncRestParams {
+import type { BaseSyncTableRestParams } from './RequestsRest';
+
+export interface RedirectSyncTableRestParams extends BaseSyncTableRestParams {
   fields: string;
-  limit: number;
   path?: string;
   target?: string;
 }

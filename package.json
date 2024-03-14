@@ -16,6 +16,7 @@
     "validate:admin": "yarn set_release:admin && coda validate pack.ts",
     "validate:user": "yarn set_release:user && coda validate pack.ts",
     "unused-exports": "npx ts-unused-exports ./tsconfig.json",
+    "type-check": "tsc --noEmit",
     "test-metafield-update": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=OnlineStoreArticle \"lg_custom.audio\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",

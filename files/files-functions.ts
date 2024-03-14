@@ -6,9 +6,9 @@ import { makeGraphQlRequest } from '../helpers-graphql';
 import { deleteFiles, querySingleFile, UpdateFile } from './files-graphql';
 import { FileUpdateInput } from '../types/admin.types';
 import { SimpleGraphQl } from '../Fetchers/SimpleGraphQl';
-import { GraphQlResource } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../types/RequestsGraphQl';
 
-import type { FileRow } from '../types/CodaRows';
+import type { FileRow } from '../typesNew/CodaRows';
 import type { FetchRequestOptions } from '../types/Requests';
 import type {
   FileDeleteMutation,

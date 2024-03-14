@@ -1,5 +1,6 @@
-export interface CollectSyncTableRestParams {
+import type { BaseSyncTableRestParams } from './RequestsRest';
+
+export interface CollectSyncTableRestParams extends BaseSyncTableRestParams {
   fields?: string;
-  limit?: number;
   collection_id?: number;
 }

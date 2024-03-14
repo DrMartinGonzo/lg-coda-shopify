@@ -1,9 +1,7 @@
 /**
  * Types of GraphQL Admin API resources that we support.
  */
-export enum GraphQlResource {
-  Article = 'OnlineStoreArticle',
-  Blog = 'OnlineStoreBlog',
+export enum GraphQlResourceName {
   Collection = 'Collection',
   Customer = 'Customer',
   DraftOrder = 'DraftOrder',
@@ -19,7 +17,6 @@ export enum GraphQlResource {
   OnlineStorePage = 'OnlineStorePage',
   Order = 'Order',
   OrderTransaction = 'OrderTransaction',
-  Page = 'OnlineStorePage',
   Product = 'Product',
   ProductVariant = 'ProductVariant',
   Shop = 'Shop',

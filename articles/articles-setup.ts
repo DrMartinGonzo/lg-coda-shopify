@@ -1,33 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, IDENTITY_ARTICLE, REST_DEFAULT_LIMIT } from '../constants';
-import { ArticleRestFetcher } from './articles-functions';
-
-import { ArticleSyncTableSchema, articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
-import { cleanQueryParams, makeSyncTableGetRequest } from '../helpers-rest';
-import { filters, inputs } from '../shared-parameters';
-import {
-  augmentSchemaWithMetafields,
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
-  parseMetafieldsCodaInput,
-  preprendPrefixToMetaFieldKey,
-} from '../metafields/metafields-functions';
-import { handleFieldDependencies, parseOptionId, wrapGetSchemaForCli } from '../helpers';
-import { SyncTableRestContinuation } from '../types/tableSync';
-import {
-  fetchMetafieldsRest,
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
+import { CACHE_DEFAULT } from '../constants';
+import { ArticleRestFetcher, ArticleSyncTable } from './articles-functions';
+import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
+import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseOptionId, wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { restResources } from '../types/RequestsRest';
+import { Identity } from '../constants';
 
-import type { ArticleCreateRestParams, ArticleSyncTableRestParams } from '../types/Article';
-import type { ArticleRow } from '../types/CodaRows';
-import type { Article as ArticleRest } from '@shopify/shopify-api/rest/admin/2023-10/article';
+import type { Article } from '../typesNew/Resources/Article';
 
 // #endregion
 
@@ -47,7 +31,7 @@ export const Sync_Articles = coda.makeSyncTable({
   description:
     "Return Articles from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each article to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: IDENTITY_ARTICLE,
+  identityName: Identity.Article,
   schema: ArticleSyncTableSchema,
   dynamicOptions: {
     getSchema: getArticleSchema,
@@ -77,109 +61,16 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.tagLOL, optional: true },
     ],
-    execute: async function (
-      [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag],
-      context
-    ) {
+    execute: async function (params, context) {
+      const [syncMetafields] = params;
       const schema = context.sync.schema ?? (await wrapGetSchemaForCli(getArticleSchema, context, { syncMetafields }));
-      const prevContinuation = context.sync.continuation as SyncTableRestContinuation;
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
-      const { prefixedMetafieldFromKeys: effectivePrefixedMetafieldPropertyKeys, standardFromKeys } =
-        separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
-
-      const effectiveMetafieldKeys = effectivePrefixedMetafieldPropertyKeys.map(removePrefixFromMetaFieldKey);
-      const shouldSyncMetafields = !!effectiveMetafieldKeys.length;
-
-      const syncedStandardFields = handleFieldDependencies(standardFromKeys, articleFieldDependencies);
-      const restParams: ArticleSyncTableRestParams = cleanQueryParams({
-        fields: syncedStandardFields.join(', '),
-        limit: shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-        author,
-        tag,
-        handle,
-        published_status: publishedStatus,
-        created_at_min: createdAt ? createdAt[0] : undefined,
-        created_at_max: createdAt ? createdAt[1] : undefined,
-        updated_at_min: updatedAt ? updatedAt[0] : undefined,
-        updated_at_max: updatedAt ? updatedAt[1] : undefined,
-        published_at_min: publishedAt ? publishedAt[0] : undefined,
-        published_at_max: publishedAt ? publishedAt[1] : undefined,
-      });
-
-      const articleFetcher = new ArticleRestFetcher(context);
-      articleFetcher.validateParams(restParams);
-
-      let url: string;
-      let blogIdsLeft = prevContinuation?.extraContinuationData?.blogIdsLeft ?? [];
-
-      // Should trigger only on first run when user has specified the blogs he
-      // wants to sync articles from
-      if (!blogIdsLeft.length && restrictToBlogIds && restrictToBlogIds.length) {
-        blogIdsLeft = restrictToBlogIds.map(parseOptionId);
-      }
-
-      if (prevContinuation?.nextUrl) {
-        url = prevContinuation.nextUrl;
-      } else {
-        // User has specified the blogs he wants to sync articles from
-        if (blogIdsLeft.length) {
-          const currentBlogId: number = blogIdsLeft.shift();
-          url = articleFetcher.getFetchAllFromBlogUrl(currentBlogId, restParams);
-        } else {
-          url = articleFetcher.getFetchAllUrl(restParams);
-        }
-      }
-
-      let restResult = [];
-      let { response, continuation } = await makeSyncTableGetRequest<{ articles: ArticleRest[] }>(
-        {
-          url,
-          extraContinuationData: { blogIdsLeft },
-        },
-        context
-      );
-      if (response?.body?.articles) {
-        restResult = response.body.articles.map((article) => articleFetcher.formatApiToRow(article));
-      }
-
-      // Add metafields by doing multiple Rest Admin API calls
-      if (shouldSyncMetafields) {
-        restResult = await Promise.all(
-          restResult.map(async (resource) => {
-            const response = await fetchMetafieldsRest(resource.id, restResources.Article, {}, context);
-
-            // Only keep metafields that have a definition and in the schema
-            const metafields = response.body.metafields.filter((m) =>
-              effectiveMetafieldKeys.includes(getMetaFieldFullKey(m))
-            );
-            if (metafields.length) {
-              metafields.forEach((metafield) => {
-                const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-                resource[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-              });
-            }
-            return resource;
-          })
-        );
-      }
-
-      // If we still have blogs left to fetch articles from, we create a
-      // continuation object to force the next sync
-      if (blogIdsLeft.length && !continuation?.nextUrl) {
-        // @ts-ignore
-        continuation = {
-          ...continuation,
-          extraContinuationData: {
-            blogIdsLeft,
-          },
-        };
-      }
-
-      return { result: restResult, continuation };
+      const articleSyncTable = new ArticleSyncTable(new ArticleRestFetcher(context), params);
+      return articleSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      return new ArticleRestFetcher(context).executeSyncTableUpdate(updates);
+      const articleSyncTable = new ArticleSyncTable(new ArticleRestFetcher(context), params);
+      return articleSyncTable.executeUpdate(updates);
     },
   },
 });
@@ -205,7 +96,11 @@ export const Action_CreateArticle = coda.makeFormula({
     { ...inputs.general.publishedAt, description: 'The date and time when the article was published.', optional: true },
     { ...inputs.general.tagsArray, optional: true },
     { ...inputs.article.templateSuffix, optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Article metafields to create.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('create', 'Article'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -229,7 +124,7 @@ export const Action_CreateArticle = coda.makeFormula({
   ) => {
     const defaultPublishedStatus = false;
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<ArticleRow> = {
+    let newRow: Partial<Article.Row> = {
       author,
       blog_id: parseOptionId(blog),
       body_html,
@@ -245,7 +140,7 @@ export const Action_CreateArticle = coda.makeFormula({
     };
 
     const articleFetcher = new ArticleRestFetcher(context);
-    const restParams = articleFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ArticleCreateRestParams;
+    const restParams = articleFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Article.Params.Create;
     const response = await articleFetcher.create(restParams);
     return response?.body?.article?.id;
   },
@@ -271,12 +166,16 @@ export const Action_UpdateArticle = coda.makeFormula({
     { ...inputs.general.tagsArray, optional: true },
     { ...inputs.article.templateSuffix, optional: true },
     { ...inputs.general.title, description: 'The title of the article.', optional: true },
-    { ...inputs.general.metafields, optional: true, description: 'Article metafields to update.' },
+    {
+      ...inputs.general.metafields,
+      optional: true,
+      description: createOrUpdateMetafieldDescription('update', 'Article'),
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ArticleSchema, IDENTITY_ARTICLE),
+  // schema: coda.withIdentity(ArticleSchema, Identity.Article),
   schema: ArticleSyncTableSchema,
   execute: async function (
     [
@@ -297,7 +196,7 @@ export const Action_UpdateArticle = coda.makeFormula({
     ],
     context
   ) {
-    let row: ArticleRow = {
+    let row: Article.Row = {
       id: articleId,
       author,
       blog_id: blog ? parseOptionId(blog) : undefined,

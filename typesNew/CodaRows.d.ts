@@ -3,14 +3,18 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-03-02T14:02:16.072Z
+ * Last generated: 2024-03-14T12:18:32.684Z
  *
  */
+
+export interface BaseRow extends Record<string, any> {
+  id: number | string;
+}
 
 /**
  * Coda Row Interface for Articles Sync Table
  */
-export interface ArticleRow extends Record<string, any> {
+export interface ArticleRow extends BaseRow {
   id: number;
   admin_graphql_api_id?: string;
   admin_url?: string;
@@ -40,7 +44,7 @@ export interface ArticleRow extends Record<string, any> {
 /**
  * Coda Row Interface for Blogs Sync Table
  */
-export interface BlogRow extends Record<string, any> {
+export interface BlogRow extends BaseRow {
   admin_url?: string;
   id: number;
   admin_graphql_api_id?: string;
@@ -56,7 +60,7 @@ export interface BlogRow extends Record<string, any> {
 /**
  * Coda Row Interface for Collects Sync Table
  */
-export interface CollectRow extends Record<string, any> {
+export interface CollectRow extends BaseRow {
   id: number;
   collection_id?: number;
   collection?: {
@@ -76,7 +80,7 @@ export interface CollectRow extends Record<string, any> {
 /**
  * Coda Row Interface for Collections Sync Table
  */
-export interface CollectionRow extends Record<string, any> {
+export interface CollectionRow extends BaseRow {
   admin_graphql_api_id?: string;
   admin_url?: string;
   id: number;
@@ -112,7 +116,7 @@ export interface CollectionRow extends Record<string, any> {
 /**
  * Coda Row Interface for DraftOrders Sync Table
  */
-export interface DraftOrderRow extends Record<string, any> {
+export interface DraftOrderRow extends BaseRow {
   admin_url?: string;
   applied_discount?: {
     allocation_method?: string;
@@ -292,7 +296,7 @@ export interface DraftOrderRow extends Record<string, any> {
 /**
  * Coda Row Interface for Customers Sync Table
  */
-export interface CustomerRow extends Record<string, any> {
+export interface CustomerRow extends BaseRow {
   admin_url?: string;
   admin_graphql_api_id?: string;
   id: number;
@@ -363,7 +367,7 @@ export interface CustomerRow extends Record<string, any> {
 /**
  * Coda Row Interface for Files Sync Table
  */
-export interface FileRow extends Record<string, any> {
+export interface FileRow extends BaseRow {
   name: string;
   id: string;
   alt?: string;
@@ -382,7 +386,7 @@ export interface FileRow extends Record<string, any> {
 /**
  * Coda Row Interface for InventoryItems Sync Table
  */
-export interface InventoryItemRow extends Record<string, any> {
+export interface InventoryItemRow extends BaseRow {
   admin_graphql_api_id?: string;
   id: number;
   inventory_history_url?: string;
@@ -405,7 +409,7 @@ export interface InventoryItemRow extends Record<string, any> {
 /**
  * Coda Row Interface for InventoryLevels Sync Table
  */
-export interface InventoryLevelRow extends Record<string, any> {
+export interface InventoryLevelRow extends BaseRow {
   admin_graphql_api_id?: string;
   available?: number;
   inventory_item_id?: number;
@@ -425,7 +429,7 @@ export interface InventoryLevelRow extends Record<string, any> {
 /**
  * Coda Row Interface for Locations Sync Table
  */
-export interface LocationRow extends Record<string, any> {
+export interface LocationRow extends BaseRow {
   id: number;
   active?: boolean;
   address1?: string;
@@ -454,7 +458,7 @@ export interface LocationRow extends Record<string, any> {
 /**
  * Coda Row Interface for Metafields Sync Table
  */
-export interface MetafieldRow extends Record<string, any> {
+export interface MetafieldRow extends BaseRow {
   admin_graphql_api_id?: string;
   id: number;
   label: string;
@@ -512,7 +516,7 @@ export interface MetafieldRow extends Record<string, any> {
 /**
  * Coda Row Interface for MetafieldDefinitions Sync Table
  */
-export interface MetafieldDefinitionRow extends Record<string, any> {
+export interface MetafieldDefinitionRow extends BaseRow {
   admin_url?: string;
   id: number;
   admin_graphql_api_id?: string;
@@ -536,7 +540,7 @@ export interface MetafieldDefinitionRow extends Record<string, any> {
 /**
  * Coda Row Interface for Metaobjects Sync Table
  */
-export interface MetaobjectRow extends Record<string, any> {
+export interface MetaobjectRow extends BaseRow {
   id: number;
   admin_graphql_api_id?: string;
   handle: string;
@@ -547,7 +551,7 @@ export interface MetaobjectRow extends Record<string, any> {
 /**
  * Coda Row Interface for Orders Sync Table
  */
-export interface OrderRow extends Record<string, any> {
+export interface OrderRow extends BaseRow {
   admin_url?: string;
   admin_graphql_api_id?: string;
   id: number;
@@ -910,7 +914,7 @@ export interface OrderRow extends Record<string, any> {
 /**
  * Coda Row Interface for OrderLineItems Sync Table
  */
-export interface OrderLineItemRow extends Record<string, any> {
+export interface OrderLineItemRow extends BaseRow {
   id: number;
   attributed_staffs?: {
     id?: string;
@@ -978,7 +982,7 @@ export interface OrderLineItemRow extends Record<string, any> {
 /**
  * Coda Row Interface for OrderTransactions Sync Table
  */
-export interface OrderTransactionRow extends Record<string, any> {
+export interface OrderTransactionRow extends BaseRow {
   id: number;
   label: string;
   amount?: number;
@@ -1026,7 +1030,7 @@ export interface OrderTransactionRow extends Record<string, any> {
 /**
  * Coda Row Interface for Pages Sync Table
  */
-export interface PageRow extends Record<string, any> {
+export interface PageRow extends BaseRow {
   admin_url?: string;
   shop_url?: string;
   admin_graphql_api_id?: string;
@@ -1046,7 +1050,7 @@ export interface PageRow extends Record<string, any> {
 /**
  * Coda Row Interface for Products Sync Table
  */
-export interface ProductRow extends Record<string, any> {
+export interface ProductRow extends BaseRow {
   admin_url?: string;
   storeUrl?: string;
   id: number;
@@ -1072,7 +1076,7 @@ export interface ProductRow extends Record<string, any> {
 /**
  * Coda Row Interface for ProductVariants Sync Table
  */
-export interface ProductVariantRow extends Record<string, any> {
+export interface ProductVariantRow extends BaseRow {
   admin_url?: string;
   storeUrl?: string;
   admin_graphql_api_id?: string;
@@ -1108,7 +1112,7 @@ export interface ProductVariantRow extends Record<string, any> {
 /**
  * Coda Row Interface for Redirects Sync Table
  */
-export interface RedirectRow extends Record<string, any> {
+export interface RedirectRow extends BaseRow {
   admin_url?: string;
   test_url?: string;
   id: number;
@@ -1119,7 +1123,7 @@ export interface RedirectRow extends Record<string, any> {
 /**
  * Coda Row Interface for Shops Sync Table
  */
-export interface ShopRow extends Record<string, any> {
+export interface ShopRow extends BaseRow {
   id: number;
   name: string;
   address1?: string;

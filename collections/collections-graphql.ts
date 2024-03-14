@@ -83,12 +83,26 @@ export const QueryCollectionsAdmin = /* GraphQL */ `
   }
 `;
 
-export const isSmartCollection = /* GraphQL */ `
-  query IsSmartCollection($collectionGid: ID!) {
+export const getCollectionType = /* GraphQL */ `
+  query GetCollectionType($collectionGid: ID!) {
     collection(id: $collectionGid) {
       # will be null for non smart collections
       isSmartCollection: ruleSet {
         appliedDisjunctively
+      }
+    }
+  }
+`;
+
+export const getCollectionTypes = /* GraphQL */ `
+  query GetCollectionTypes($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      id
+      __typename
+      ... on Collection {
+        isSmartCollection: ruleSet {
+          appliedDisjunctively
+        }
       }
     }
   }

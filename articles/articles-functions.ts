@@ -2,36 +2,117 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { OPTIONS_PUBLISHED_STATUS } from '../constants';
+import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../constants';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
-import { RestResourceName, RestResourcePlural } from '../types/RequestsRest';
+import { RestResourcePlural } from '../types/RequestsRest';
 import { formatBlogReference } from '../schemas/syncTable/BlogSchema';
-import { SimpleRest } from '../Fetchers/SimpleRest';
 import { cleanQueryParams, getRestBaseUrl } from '../helpers-rest';
-import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
+import { articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
+import { handleFieldDependencies, parseOptionId } from '../helpers';
+import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
+import { SimpleRestNew } from '../Fetchers/SimpleRest';
 
-import type { ArticleCreateRestParams, ArticleSyncTableRestParams, ArticleUpdateRestParams } from '../types/Article';
-import type { ArticleRow } from '../types/CodaRows';
+import type { Article } from '../typesNew/Resources/Article';
+import type { ArticleRow } from '../typesNew/CodaRows';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import type { Sync_Articles } from './articles-setup';
+import type { MultipleFetchResponse, SyncTableParamValues } from '../Fetchers/SyncTableRest';
+import type { SyncTableType } from '../types/SyncTable';
+import { articleResource } from '../allResources';
 
-// #endregion
+export type ArticleSyncTableType = SyncTableType<
+  typeof articleResource,
+  Article.Row,
+  Article.Params.Sync,
+  Article.Params.Create,
+  Article.Params.Update
+>;
 
-// #region Class
-export class ArticleRestFetcher extends SimpleRest<RestResourceName.Article, typeof ArticleSyncTableSchema> {
-  constructor(context: coda.ExecutionContext) {
-    super(RestResourceName.Article, ArticleSyncTableSchema, context);
+export class ArticleSyncTable extends SyncTableRestNew<ArticleSyncTableType> {
+  blogIdsLeft: number[];
+  currentBlogId: number;
+
+  constructor(fetcher: ArticleRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
+    super(articleResource, fetcher, params);
   }
 
-  getFetchAllFromBlogUrl = (blogId: number, params: ArticleSyncTableRestParams) => {
+  setSyncParams() {
+    const [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag] =
+      this.codaParams as SyncTableParamValues<typeof Sync_Articles>;
+
+    this.blogIdsLeft = this.prevContinuation?.extraContinuationData?.blogIdsLeft ?? [];
+    // Should trigger only on first run when user has specified the blogs he
+    // wants to sync articles from
+    if (!this.blogIdsLeft.length && restrictToBlogIds && restrictToBlogIds.length) {
+      this.blogIdsLeft = restrictToBlogIds.map(parseOptionId);
+    }
+    if (this.blogIdsLeft.length) {
+      this.currentBlogId = this.blogIdsLeft.shift();
+    }
+
+    const syncedStandardFields = handleFieldDependencies(this.effectiveStandardFromKeys, articleFieldDependencies);
+    this.syncParams = cleanQueryParams({
+      fields: syncedStandardFields.join(', '),
+      limit: this.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
+      author,
+      tag,
+      handle,
+      published_status: publishedStatus,
+      created_at_min: createdAt ? createdAt[0] : undefined,
+      created_at_max: createdAt ? createdAt[1] : undefined,
+      updated_at_min: updatedAt ? updatedAt[0] : undefined,
+      updated_at_max: updatedAt ? updatedAt[1] : undefined,
+      published_at_min: publishedAt ? publishedAt[0] : undefined,
+      published_at_max: publishedAt ? publishedAt[1] : undefined,
+    });
+  }
+
+  setSyncUrl() {
+    super.setSyncUrl();
+
+    // User has specified the blogs he wants to sync articles from
+    if (this.currentBlogId !== undefined) {
+      this.syncUrl = coda.withQueryParams(
+        coda.joinUrl(
+          getRestBaseUrl(this.fetcher.context),
+          `${RestResourcePlural.Blog}/${this.currentBlogId}/${this.fetcher.plural}.json`
+        ),
+        this.syncParams
+      );
+    }
+  }
+
+  afterSync(response: MultipleFetchResponse<ArticleSyncTableType>) {
+    this.extraContinuationData = { blogIdsLeft: this.blogIdsLeft };
+    let { restItems, continuation } = super.afterSync(response);
+    // If we still have blogs left to fetch articles from, we create a
+    // continuation object to force the next sync
+    if (this.blogIdsLeft && this.blogIdsLeft.length && !continuation?.nextUrl) {
+      // @ts-ignore
+      continuation = {
+        ...(continuation ?? {}),
+        extraContinuationData: this.extraContinuationData,
+      };
+    }
+    return { restItems, continuation };
+  }
+}
+
+export class ArticleRestFetcher extends SimpleRestNew<ArticleSyncTableType> {
+  constructor(context: coda.ExecutionContext) {
+    super(articleResource, context);
+  }
+
+  getFetchAllFromBlogUrl = (blogId: number, params: Article.Params.Sync) => {
     return coda.withQueryParams(
       coda.joinUrl(getRestBaseUrl(this.context), `${RestResourcePlural.Blog}/${blogId}/${this.plural}.json`),
       cleanQueryParams(params)
     );
   };
 
-  validateParams = (params: any) => {
+  validateParams = (params: Article.Params.Sync | Article.Params.Create | Article.Params.Update) => {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if (params.published_status && !validPublishedStatuses.includes(params.published_status)) {
+    if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
       throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
     }
     return true;
@@ -40,8 +121,8 @@ export class ArticleRestFetcher extends SimpleRest<RestResourceName.Article, typ
   formatRowToApi = (
     row: Partial<ArticleRow>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): ArticleUpdateRestParams | ArticleCreateRestParams | undefined => {
-    let restParams: ArticleUpdateRestParams | ArticleCreateRestParams = {};
+  ): Article.Params.Update | Article.Params.Create | undefined => {
+    let restParams: Article.Params.Update | Article.Params.Create = {};
 
     if (row.author !== undefined) restParams.author = row.author;
     if (row.blog !== undefined) restParams.blog_id = row.blog.id;
@@ -64,7 +145,7 @@ export class ArticleRestFetcher extends SimpleRest<RestResourceName.Article, typ
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
       : [];
     if (metafieldRestInputs.length) {
-      restParams = { ...restParams, metafields: metafieldRestInputs } as ArticleCreateRestParams;
+      restParams = { ...restParams, metafields: metafieldRestInputs } as Article.Params.Create;
     }
 
     // Means we have nothing to update/create
@@ -72,7 +153,7 @@ export class ArticleRestFetcher extends SimpleRest<RestResourceName.Article, typ
     return restParams;
   };
 
-  formatApiToRow = (article): ArticleRow => {
+  formatApiToRow = (article) => {
     let obj: ArticleRow = {
       ...article,
       body: striptags(article.body_html),
