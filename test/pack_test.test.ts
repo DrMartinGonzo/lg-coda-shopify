@@ -1,15 +1,14 @@
 import * as coda from '@codahq/packs-sdk';
+import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { pack } from '../pack';
 
-import { MockExecutionContext } from '@codahq/packs-sdk/dist/development';
+import { MockExecutionContext, executeSyncFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { newJsonFetchResponse } from '@codahq/packs-sdk/dist/development';
 import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 
 import { expect, test, describe } from 'vitest';
-import { Product } from '../types/Resources/Product';
-import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
-import { Customer } from '../types/Resources/Customer';
+import { expectedRows } from './expectedRows';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({
@@ -18,40 +17,11 @@ import { Customer } from '../types/Resources/Customer';
 
 describe('Product', () => {
   test('Fetch', async () => {
-    const productId = 8406091333888;
-    const result = await executeFormulaFromPackDef(pack, 'Product', [productId], undefined, undefined, {
+    const expected = expectedRows.product;
+    const result = await executeFormulaFromPackDef(pack, 'Product', [expected.id], undefined, undefined, {
       useRealFetcher: true,
       manifestPath: require.resolve('../pack.ts'),
     });
-
-    const expected: Product.Row = {
-      admin_graphql_api_id: `gid://shopify/Product/${productId}`,
-      admin_url: `https://coda-pack-test.myshopify.com/admin/products/${productId}`,
-      body_html:
-        'The adidas BP Classic Cap features a pre-curved brim to keep your face shaded, while a hook-and-loop adjustable closure provides a comfortable fit. With a 3-Stripes design and reflective accents. The perfect piece to top off any outfit.',
-      created_at: '2024-02-20T13:22:14-05:00' as unknown as Date,
-      featuredImage:
-        'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/8072c8b5718306d4be25aac21836ce16.jpg?v=1708453334',
-      handle: 'vitest-product',
-      id: productId,
-      images: [
-        'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/8072c8b5718306d4be25aac21836ce16.jpg?v=1708453334',
-        'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/32b3863554f4686d825d9da18a24cfc6.jpg?v=1709216059',
-        'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/044f848776141f1024eae6c610a28d12.jpg?v=1708453334',
-      ],
-      options: 'Size, Color',
-      product_type: 'ACCESSORIES',
-      published_at: '2024-03-14T08:44:36-04:00' as unknown as Date,
-      published_scope: 'global',
-      status: 'active',
-      storeUrl: `https://coda-pack-test.myshopify.com/products/vitest-product`,
-      tags: 'adidas, backpack, egnition-sample-data',
-      template_suffix: null,
-      title: 'Vitest Product',
-      updatedAt: '2024-03-14T08:44:38-04:00',
-      vendor: 'ADIDAS',
-      // updated_at
-    };
 
     expect(result.AdminUrl).toBe(expected.admin_url);
     expect(result.BodyHtml).toBe(expected.body_html);
@@ -69,89 +39,72 @@ describe('Product', () => {
     expect(result.StoreUrl).toBe(expected.storeUrl);
     expect(result.Tags).toBe(expected.tags);
     expect(result.TemplateSuffix).toBe(expected.template_suffix);
-    expect(result.Title).toBe('Vitest Product');
-    expect(result.Vendor).toBe('ADIDAS');
+    expect(result.Title).toBe(expected.title);
+    expect(result.Vendor).toBe(expected.vendor);
     // no need
     // expect(result.UpdatedAt).toBe('2024-03-14T08:44:38-04:00');
   });
 
-  // TODO
-  test.todo('Sync');
+  test('Sync with Metafields', async () => {
+    const expected = [expectedRows.product];
+    const result = await executeSyncFormulaFromPackDef(
+      pack,
+      'Products',
+      [
+        undefined, // productType
+        true, // syncMetafields
+        undefined, // createdAtRange
+        undefined, // updatedAtRange
+        undefined, // publishedAtRange
+        undefined, // statusArray
+        undefined, // publishedStatus
+        undefined, // vendor
+        undefined, // handleArray
+        [expected[0].id], // idArray
+      ],
+      undefined,
+      undefined,
+      {
+        useRealFetcher: true,
+        manifestPath: require.resolve('../pack.ts'),
+      }
+    );
+
+    expect(result[0].admin_url).toBe(expected[0].admin_url);
+    expect(result[0].body_html).toBe(expected[0].body_html);
+    expect(result[0].created_at).toBe(expected[0].created_at);
+    expect(result[0].featuredImage).toBe(expected[0].featuredImage);
+    expect(result[0].admin_graphql_api_id).toBe(expected[0].admin_graphql_api_id);
+    expect(result[0].handle).toBe(expected[0].handle);
+    expect(result[0].id).toBe(expected[0].id);
+    expect(result[0].images).toStrictEqual(expected[0].images);
+    expect(result[0].options).toBe(expected[0].options);
+    expect(result[0].product_type).toBe(expected[0].product_type);
+    expect(result[0].published_at).toBe(expected[0].published_at);
+    expect(result[0].published_scope).toBe(expected[0].published_scope);
+    expect(result[0].status).toBe(expected[0].status);
+    expect(result[0].storeUrl).toBe(expected[0].storeUrl);
+    expect(result[0].tags).toBe(expected[0].tags);
+    expect(result[0].template_suffix).toBe(expected[0].template_suffix);
+    expect(result[0].title).toBe(expected[0].title);
+    expect(result[0].vendor).toBe(expected[0].vendor);
+
+    expect(result[0]['lgs_meta__custom.boolean']).toBe(expected[0]['lgs_meta__custom.boolean']);
+    expect(result[0]['lgs_meta__custom.date_time']).toBe(expected[0]['lgs_meta__custom.date_time']);
+    expect(result[0]['lgs_meta__global.description_tag']).toBe(expected[0]['lgs_meta__global.description_tag']);
+    expect(result[0]['lgs_meta__global.title_tag']).toBe(expected[0]['lgs_meta__global.title_tag']);
+    // no need
+    // expect(result.UpdatedAt).toBe('2024-03-14T08:44:38-04:00');
+  });
 });
 
 describe('Customer', () => {
   test('Fetch', async () => {
-    const customerId = 7199674794240;
-    const result = await executeFormulaFromPackDef(pack, 'Customer', [customerId], undefined, undefined, {
+    const expected = expectedRows.customer;
+    const result = await executeFormulaFromPackDef(pack, 'Customer', [expected.id], undefined, undefined, {
       useRealFetcher: true,
       manifestPath: require.resolve('../pack.ts'),
     });
-
-    const expected: Customer.Row = {
-      accepts_email_marketing: false,
-      accepts_sms_marketing: false,
-      addresses: [
-        {
-          address1: 'Ap #147-5705 Nonummy Street',
-          address2: null,
-          city: 'Maubeuge',
-          company: null,
-          country_code: 'ER',
-          country_name: 'Eritrea',
-          country: 'Eritrea',
-          default: true,
-          display: 'Edward Hahn, Ap #147-5705 Nonummy Street, Maubeuge, Eritrea',
-          first_name: 'Edward',
-          id: 8711929757952,
-          last_name: 'Hahn',
-          name: 'Edward Hahn',
-          phone: '+2911122150',
-          province_code: null,
-          province: null,
-          zip: '7759',
-        },
-      ],
-      admin_graphql_api_id: `gid://shopify/Customer/${customerId}`,
-      admin_url: 'https://coda-pack-test.myshopify.com/admin/customers/7199674794240',
-      created_at: '2024-02-20T13:23:32-05:00' as unknown as Date,
-      default_address: {
-        address1: 'Ap #147-5705 Nonummy Street',
-        address2: null,
-        city: 'Maubeuge',
-        company: null,
-        country_code: 'ER',
-        country_name: 'Eritrea',
-        country: 'Eritrea',
-        default: true,
-        display: 'Edward Hahn, Ap #147-5705 Nonummy Street, Maubeuge, Eritrea',
-        first_name: 'Edward',
-        id: 8711929757952,
-        last_name: 'Hahn',
-        name: 'Edward Hahn',
-        phone: '+2911122150',
-        province_code: null,
-        province: null,
-        zip: '7759',
-      },
-      display: 'Vitest Customer',
-      email: 'egnition_sample_29@egnition.com',
-      first_name: 'Vitest',
-      id: customerId,
-      last_name: 'Customer',
-      last_order_id: null,
-      last_order_name: null,
-      multipass_identifier: null,
-      note: null,
-      orders_count: 0,
-      phone: '+2911126279',
-      state: 'disabled',
-      tags: 'egnition-sample-data, referral',
-      tax_exempt: false,
-      tax_exemptions: [],
-      total_spent: 0,
-      verified_email: true,
-      // updated_at
-    };
 
     // TODO: write a generic function for this
     const defaultAddress = {};
