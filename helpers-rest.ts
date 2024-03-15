@@ -1,9 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
-import { GraphQlResourceName } from './typesNew/ShopifyGraphQlResourceTypes';
+import { GraphQlResourceName } from './types/ShopifyGraphQlResourceTypes';
 import { CACHE_DEFAULT, REST_DEFAULT_API_VERSION } from './constants';
 
-import type { FetchRequestOptions } from './typesNew/Fetcher';
+import type { FetchRequestOptions } from './types/Fetcher';
 import type { SyncTableRestContinuation } from './types/SyncTable';
 
 // TODO: better error handling

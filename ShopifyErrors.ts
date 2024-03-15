@@ -1,4 +1,4 @@
-import { ShopifyGraphQlError, ShopifyGraphQlRequestCost } from './typesNew/Fetcher';
+import { ShopifyGraphQlError, ShopifyGraphQlRequestCost } from './types/Fetcher';
 
 export class ShopifyRetryableErrors extends Error {
   originalError: ShopifyGraphQlError;

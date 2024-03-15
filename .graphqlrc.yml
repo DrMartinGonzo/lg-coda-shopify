@@ -1,3 +1,6 @@
 # .graphqlrc.yml
-schema: "./types/admin.schema.json"
+schema:
+  - "./types/generated/admin.schema.json"
+  # - "./node_modules/@shopify/hydrogen-react/storefront.schema.json"
+# documents: "./**/*-storefront.ts"
 documents: "./**/*-graphql.ts"
