@@ -3,9 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
 import {
-  DeletedMetafieldsByKeysRest,
   deleteMetafieldRest,
-  fetchMetafieldsGraphQl,
+  fetchMetafieldsGraphQlByKey,
   fetchSingleMetafieldGraphQlByKey,
   formatMetafieldForSchemaFromGraphQlApi,
   formatMetafieldValueForApi,
@@ -13,19 +12,16 @@ import {
   normalizeRestMetafieldResponseToGraphQLResponse,
   parseAndValidateFormatMetafieldFormulaOutput,
   parseAndValidateMetaValueFormulaOutput,
-  requireResourceMetafieldsSyncTableDefinition,
   setMetafieldsGraphQl,
-  shouldDeleteMetafield,
-  splitMetaFieldFullKey,
   syncGraphQlResourceMetafields,
   syncRestResourceMetafields,
   updateResourceMetafieldsGraphQl,
   updateResourceMetafieldsRest,
 } from './metafields-functions';
+import { splitMetaFieldFullKey, shouldDeleteMetafield } from './metafields-helpers';
 
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../schemas/syncTable/MetafieldSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
-import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
 import { CodaMetafieldKeyValueSet, CodaMetafieldValue } from '../helpers-setup';
 
 import { createHash } from 'node:crypto';
@@ -39,8 +35,8 @@ import { PageReference } from '../schemas/syncTable/PageSchema';
 import { ProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 
-import { METAFIELD_TYPES, RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields-constants';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { METAFIELD_TYPES } from './metafields-constants';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import { arrayUnique, retrieveObjectSchemaEffectiveKeys } from '../helpers';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { CACHE_DEFAULT, CACHE_DISABLED } from '../constants';
@@ -48,17 +44,21 @@ import { getMetafieldDefinitionReferenceSchema } from '../schemas/syncTable/Meta
 import { filters, inputs } from '../shared-parameters';
 import { Identity } from '../constants';
 
-import type * as Rest from '../types/RestResources';
-import type { MetafieldDefinitionFragment } from '../types/admin.generated';
-import type { CurrencyCode, MetafieldsSetInput } from '../types/admin.types';
-import type { MetafieldFragmentWithDefinition, SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
+import type { DeletedMetafieldsByKeysRest } from './metafields-functions';
+import type { RestResources } from '../typesNew/ShopifyRestResourceTypes';
+import type { MetafieldDefinitionFragment } from '../typesNew/generated/admin.generated';
+import { CurrencyCode, MetafieldOwnerType, MetafieldsSetInput } from '../typesNew/generated/admin.types';
+import type { MetafieldFragmentWithDefinition } from '../typesNew/Resources/Metafield';
 import type { MetafieldTypeValue } from './metafields-constants';
-import { getResourceDefinitionFromGraphQlName } from '../allResources';
+import {
+  getResourceDefinitionsWithMetaFieldSyncTable,
+  requireResourceDefinitionWithMetaFieldOwnerType,
+} from '../allResources';
 
 // #endregion
 
 // #region Helpers
-export function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) {
+function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) {
   return coda.makeFormula({
     name: `Meta${toPascalCase(type)}`,
     description: `Helper function to build a \`${type}\` metafield value.`,
@@ -99,37 +99,37 @@ export function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldType
 
 async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema = MetafieldSyncTableSchema;
-  const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
+  const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+  const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
 
   // Augment schema with a relation to the owner of the metafield
-  const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
   let ownerReference: coda.GenericObjectSchema & coda.ObjectSchemaProperty;
-  switch (resourceMetafieldsSyncTableDefinition.key) {
-    case GraphQlResourceName.OnlineStoreArticle:
+  switch (ownerResource.metafieldOwnerType) {
+    case MetafieldOwnerType.Article:
       ownerReference = ArticleReference;
       break;
-    case GraphQlResourceName.OnlineStoreBlog:
+    case MetafieldOwnerType.Blog:
       ownerReference = BlogReference;
       break;
-    case GraphQlResourceName.Collection:
+    case MetafieldOwnerType.Collection:
       ownerReference = CollectionReference;
       break;
-    case GraphQlResourceName.Customer:
+    case MetafieldOwnerType.Customer:
       ownerReference = CustomerReference;
       break;
-    case GraphQlResourceName.Location:
+    case MetafieldOwnerType.Location:
       ownerReference = LocationReference;
       break;
-    case GraphQlResourceName.Order:
+    case MetafieldOwnerType.Order:
       ownerReference = OrderReference;
       break;
-    case GraphQlResourceName.OnlineStorePage:
+    case MetafieldOwnerType.Page:
       ownerReference = PageReference;
       break;
-    case GraphQlResourceName.Product:
+    case MetafieldOwnerType.Product:
       ownerReference = ProductReference;
       break;
-    case GraphQlResourceName.ProductVariant:
+    case MetafieldOwnerType.Productvariant:
       ownerReference = ProductVariantReference;
       break;
 
@@ -148,7 +148,7 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
     augmentedSchema.featuredProperties.push('owner');
   }
 
-  if (graphQlResource !== GraphQlResourceName.Shop) {
+  if (ownerResource.metafieldOwnerType !== MetafieldOwnerType.Shop) {
     // Shop doesn't have metafield definitions
     (augmentedSchema.properties['definition_id'] = {
       type: coda.ValueType.Number,
@@ -158,7 +158,7 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
       description: 'The ID of the metafield definition of the metafield, if it exists.',
     }),
       (augmentedSchema.properties['definition'] = {
-        ...getMetafieldDefinitionReferenceSchema(resourceMetafieldsSyncTableDefinition),
+        ...getMetafieldDefinitionReferenceSchema(ownerResource),
         fromKey: 'definition',
         fixedId: 'definition',
         description: 'The metafield definition of the metafield, if it exists.',
@@ -177,28 +177,27 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Metafield,
   listDynamicUrls: async function (context, docUrl: String) {
-    return RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.map((v) => ({
+    return getResourceDefinitionsWithMetaFieldSyncTable().map((v) => ({
       display: v.display,
-      value: v.key,
+      value: v.metafieldOwnerType,
       hasChildren: false,
     }));
   },
   getName: async function (context) {
-    const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    return `Metafields_${resourceMetafieldsSyncTableDefinition.display}`;
+    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+    return `${ownerResource.display} Metafields`;
   },
   /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {
-    const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
+    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+
     // edge case: Shop doesn't have a dedicated page for metafield definitions
-    if (graphQlResource === GraphQlResourceName.Shop) {
+    if (ownerResource.metafieldOwnerType === MetafieldOwnerType.Shop) {
       return `${context.endpoint}/admin`;
     }
-
-    const restResource = getRestResourceFromGraphQlResourceType(graphQlResource);
-    const metafieldDefinitionsUrlPart = restResource.singular;
-    return `${context.endpoint}/admin/settings/custom_data/${metafieldDefinitionsUrlPart}/metafields`;
+    return `${context.endpoint}/admin/settings/custom_data/${ownerResource.rest.singular}/metafields`;
   },
   getSchema: getMetafieldSchema,
   defaultAddDynamicColumns: false,
@@ -207,11 +206,9 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [{ ...filters.metafield.metafieldKeys, optional: true }],
     execute: async function ([metafieldKeys], context) {
-      const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-      const isRestSync =
-        graphQlResource === GraphQlResourceName.OnlineStoreArticle ||
-        graphQlResource === GraphQlResourceName.OnlineStorePage ||
-        graphQlResource === GraphQlResourceName.OnlineStoreBlog;
+      const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+      const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+      const isRestSync = !ownerResource.useGraphQlForMetafields;
       const filteredMetafieldKeys = Array.isArray(metafieldKeys)
         ? metafieldKeys.filter((key) => key !== undefined && key !== '')
         : [];
@@ -223,20 +220,15 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-      const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-      const ownerResourceDefinition = getResourceDefinitionFromGraphQlName(resourceMetafieldsSyncTableDefinition.key);
-      const isRestUpdate = [
-        GraphQlResourceName.OnlineStoreArticle,
-        GraphQlResourceName.OnlineStorePage,
-        GraphQlResourceName.OnlineStoreBlog,
-      ].includes(graphQlResource);
+      const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+      const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+      const isRestUpdate = !ownerResource.useGraphQlForMetafields;
 
       // MetafieldDefinitionFragment is included in each GraphQL mutation response, not in Rest
       let metafieldDefinitions: MetafieldDefinitionFragment[];
       if (isRestUpdate) {
         metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-          { ownerType: resourceMetafieldsSyncTableDefinition.metafieldOwnerType },
+          { ownerType: ownerResource.metafieldOwnerType },
           context
         );
       }
@@ -272,7 +264,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
         }
 
         let deletedMetafields: DeletedMetafieldsByKeysRest[];
-        let updatedMetafields: Rest.Metafield[] | MetafieldFragmentWithDefinition[];
+        let updatedMetafields: RestResources['Metafield'][] | MetafieldFragmentWithDefinition[];
         const fullKey = update.previousValue.label as string;
         const metafieldKeyValueSet: CodaMetafieldKeyValueSet = {
           key: fullKey,
@@ -283,12 +275,12 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
         if (isRestUpdate) {
           ({ deletedMetafields, updatedMetafields } = await updateResourceMetafieldsRest(
             owner_id,
-            ownerResourceDefinition,
+            ownerResource,
             [metafieldKeyValueSet],
             context
           ));
         } else {
-          const ownerGid = idToGraphQlGid(resourceMetafieldsSyncTableDefinition.key, owner_id);
+          const ownerGid = idToGraphQlGid(ownerResource.graphQl.name, owner_id);
           ({ deletedMetafields, updatedMetafields } = await updateResourceMetafieldsGraphQl(
             ownerGid,
             [metafieldKeyValueSet],
@@ -303,30 +295,24 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
 
           if (isGraphQlMetafields) {
             const updatedMetafield = updatedMetafields[0] as MetafieldFragmentWithDefinition;
-            const ownerGid = idToGraphQlGid(resourceMetafieldsSyncTableDefinition.key, owner_id);
+            const ownerGid = idToGraphQlGid(ownerResource.graphQl.name, owner_id);
             return {
               ...update.previousValue,
-              ...formatMetafieldForSchemaFromGraphQlApi(
-                updatedMetafield,
-                ownerGid,
-                undefined,
-                ownerResourceDefinition,
-                context
-              ),
+              ...formatMetafieldForSchemaFromGraphQlApi(updatedMetafield, ownerGid, undefined, ownerResource, context),
             };
           } else {
-            const updatedMetafield = updatedMetafields[0] as Rest.Metafield;
+            const updatedMetafield = updatedMetafields[0] as RestResources['Metafield'];
             return {
               ...update.previousValue,
               ...formatMetafieldForSchemaFromGraphQlApi(
                 normalizeRestMetafieldResponseToGraphQLResponse(
                   updatedMetafield,
-                  resourceMetafieldsSyncTableDefinition.metafieldOwnerType,
+                  ownerResource.metafieldOwnerType,
                   metafieldDefinitions
                 ),
-                idToGraphQlGid(graphQlResource, updatedMetafield.owner_id),
+                idToGraphQlGid(ownerResource.graphQl.name, updatedMetafield.owner_id),
                 undefined,
-                ownerResourceDefinition,
+                ownerResource,
                 context
               ),
             };
@@ -364,24 +350,18 @@ export const Action_SetMetafield = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
-  execute: async (
-    [graphQlResource, ownerId, metafield]: [SupportedGraphQlResourceWithMetafields, number, string],
-    context
-  ) => {
+  execute: async ([ownerType, ownerId, metafield]: [MetafieldOwnerType, number, string], context) => {
     const metafieldKeyValueSet = parseAndValidateFormatMetafieldFormulaOutput(metafield);
     const { key: fullKey, value } = metafieldKeyValueSet;
 
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(ownerType);
     const schemaEffectiveKeys = retrieveObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    const ownerResourceDefinition = getResourceDefinitionFromGraphQlName(resourceMetafieldsSyncTableDefinition.key);
-    const ownerGid = idToGraphQlGid(graphQlResource, ownerId);
+    const ownerGid = idToGraphQlGid(ownerType, ownerId);
 
     // Check if the metafield already exists.
-    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey(
-      { fullKey, graphQlResource, ownerGid },
-      context,
-      { cacheTtlSecs: CACHE_DISABLED }
-    );
+    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey({ fullKey, ownerGid }, context, {
+      cacheTtlSecs: CACHE_DISABLED,
+    });
 
     let action: string;
     if (shouldDeleteMetafield(value) && singleMetafieldResponse) {
@@ -404,7 +384,7 @@ export const Action_SetMetafield = coda.makeFormula({
         id: metafieldId,
         label: fullKey,
         owner_id: ownerId,
-        owner_type: resourceMetafieldsSyncTableDefinition.key,
+        owner_type: ownerResource.graphQl.name,
         type: singleMetafieldResponse.metafieldNode.type,
       };
       // add all other missing properties and set them to undefined
@@ -437,7 +417,7 @@ export const Action_SetMetafield = coda.makeFormula({
           metafield,
           singleMetafieldResponse.ownerNodeGid,
           singleMetafieldResponse.parentOwnerNodeGid,
-          ownerResourceDefinition,
+          ownerResource,
           context
         );
       }
@@ -457,7 +437,7 @@ export const Action_SetMetafield = coda.makeFormula({
         ];
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = response.body.data.metafieldsSet.metafields[0] as MetafieldFragmentWithDefinition;
-        return formatMetafieldForSchemaFromGraphQlApi(metafield, ownerGid, undefined, ownerResourceDefinition, context);
+        return formatMetafieldForSchemaFromGraphQlApi(metafield, ownerGid, undefined, ownerResource, context);
       }
     }
 
@@ -515,29 +495,20 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
-  execute: async ([graphQlOwnerType, ownerId, fullKey, list, values], context) => {
+  execute: async ([ownerType, ownerId, fullKey, list, values], context) => {
     let isList = !!list;
     const parsedValues: CodaMetafieldValue[] =
       values && values.length ? values.map((v: string) => parseAndValidateMetaValueFormulaOutput(v)) : [];
     const filteredValues = parsedValues.map((v) => (shouldDeleteMetafield(v.value) ? null : v.value)).filter(Boolean);
 
     const schemaEffectiveKeys = retrieveObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(
-      graphQlOwnerType as SupportedGraphQlResourceWithMetafields
-    );
-    const ownerResourceDefinition = getResourceDefinitionFromGraphQlName(resourceMetafieldsSyncTableDefinition.key);
-    const ownerGid = idToGraphQlGid(graphQlOwnerType, ownerId);
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(ownerType as MetafieldOwnerType);
+    const ownerGid = idToGraphQlGid(ownerType, ownerId);
 
     // Check if the metafield already exists.
-    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey(
-      {
-        fullKey,
-        graphQlResource: graphQlOwnerType as SupportedGraphQlResourceWithMetafields,
-        ownerGid,
-      },
-      context,
-      { cacheTtlSecs: CACHE_DISABLED }
-    );
+    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey({ fullKey, ownerGid }, context, {
+      cacheTtlSecs: CACHE_DISABLED,
+    });
 
     let action: string;
     if (!filteredValues.length && singleMetafieldResponse) {
@@ -560,7 +531,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
         id: metafieldId,
         label: fullKey,
         owner_id: ownerId,
-        owner_type: resourceMetafieldsSyncTableDefinition.key,
+        owner_type: ownerResource.graphQl.name,
         type: singleMetafieldResponse.metafieldNode.type,
       };
       // add all other missing properties and set them to undefined
@@ -614,7 +585,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
           metafield as MetafieldFragmentWithDefinition,
           singleMetafieldResponse.ownerNodeGid,
           singleMetafieldResponse.parentOwnerNodeGid,
-          ownerResourceDefinition,
+          ownerResource,
           context
         );
       }
@@ -639,7 +610,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
           metafield as MetafieldFragmentWithDefinition,
           ownerGid,
           undefined,
-          ownerResourceDefinition,
+          ownerResource,
           context
         );
       }
@@ -692,34 +663,26 @@ export const Formula_Metafield = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
   execute: async function ([ownerType, fullKey, ownerId], context) {
-    const graphQlResource = ownerType as SupportedGraphQlResourceWithMetafields;
-    const isShopQuery = graphQlResource === GraphQlResourceName.Shop;
+    const metafieldOwnerType = ownerType as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+    const isShopQuery = metafieldOwnerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && ownerId === undefined) {
       throw new coda.UserVisibleError(
         `The ownerID parameter is required when requesting metafields from resources other than Shop.`
       );
     }
+    const ownerGid = isShopQuery ? undefined : idToGraphQlGid(ownerResource.graphQl.name, ownerId);
+    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey({ fullKey, ownerGid }, context, {
+      cacheTtlSecs: CACHE_DISABLED,
+    });
 
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    const ownerResourceDefinition = getResourceDefinitionFromGraphQlName(resourceMetafieldsSyncTableDefinition.key);
-    const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey(
-      {
-        graphQlResource,
-        fullKey,
-        ownerGid: ownerId ? idToGraphQlGid(graphQlResource, ownerId) : undefined,
-      },
-      context,
-      {
-        cacheTtlSecs: CACHE_DISABLED,
-      }
-    );
     if (singleMetafieldResponse) {
       const { metafieldNode, ownerNodeGid, parentOwnerNodeGid } = singleMetafieldResponse;
       return formatMetafieldForSchemaFromGraphQlApi(
         metafieldNode,
         ownerNodeGid,
         parentOwnerNodeGid,
-        ownerResourceDefinition,
+        ownerResource,
         context,
         false
       );
@@ -743,36 +706,26 @@ export const Formula_Metafields = coda.makeFormula({
   resultType: coda.ValueType.Array,
   items: MetafieldSyncTableSchema,
   execute: async function ([ownerType, ownerId], context) {
-    const graphQlResource = ownerType as SupportedGraphQlResourceWithMetafields;
-    const isShopQuery = graphQlResource === GraphQlResourceName.Shop;
+    const metafieldOwnerType = ownerType as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+    const isShopQuery = metafieldOwnerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && ownerId === undefined) {
       throw new coda.UserVisibleError(
         `The ownerID parameter is required when requesting metafields from resources other than Shop.`
       );
     }
 
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    const ownerResourceDefinition = getResourceDefinitionFromGraphQlName(resourceMetafieldsSyncTableDefinition.key);
-    const { metafieldNodes, ownerNodeGid, parentOwnerNodeGid } = await fetchMetafieldsGraphQl(
-      {
-        graphQlResource,
-        ownerGid: ownerId ? idToGraphQlGid(graphQlResource, ownerId) : undefined,
-      },
+    const ownerGid = isShopQuery ? undefined : idToGraphQlGid(ownerResource.graphQl.name, ownerId);
+    const cacheTtlSecs = CACHE_DISABLED; // Cache is disabled intentionally
+    const { metafieldNodes, ownerNodeGid, parentOwnerNodeGid } = await fetchMetafieldsGraphQlByKey(
+      { ownerGid },
       context,
-      {
-        cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
-      }
+      { cacheTtlSecs }
     );
 
     if (metafieldNodes) {
       return metafieldNodes.map((metafieldNode: MetafieldFragmentWithDefinition) =>
-        formatMetafieldForSchemaFromGraphQlApi(
-          metafieldNode,
-          ownerNodeGid,
-          parentOwnerNodeGid,
-          ownerResourceDefinition,
-          context
-        )
+        formatMetafieldForSchemaFromGraphQlApi(metafieldNode, ownerNodeGid, parentOwnerNodeGid, ownerResource, context)
       );
     }
   },

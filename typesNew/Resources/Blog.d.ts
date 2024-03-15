@@ -1,6 +1,6 @@
 import type { BlogRow } from '../CodaRows';
-import type { MetafieldRestInput } from '../../types/Metafields';
-import type { BaseSyncTableRestParams } from '../../types/RequestsRest';
+import type { Metafield } from './Metafield';
+import type { BaseSyncTableRestParams } from '../allResources';
 
 export declare namespace Blog {
   type Row = BlogRow;
@@ -22,20 +22,20 @@ export declare namespace Blog {
       // published_at_max?: Date | string;
     }
 
-    interface Update {
-      title?: string;
-      handle?: string;
-      commentable?: string;
-      template_suffix?: string;
-      metafields?: MetafieldRestInput[];
-    }
-
     interface Create {
       title: string;
       handle?: string;
       commentable?: string;
       template_suffix?: string;
-      metafields?: MetafieldRestInput[];
+      metafields?: Metafield.Params.RestInput[];
+    }
+
+    interface Update {
+      title?: string;
+      handle?: string;
+      commentable?: string;
+      template_suffix?: string;
+      metafields?: Metafield.Params.RestInput[];
     }
   }
 }

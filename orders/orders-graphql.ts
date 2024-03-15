@@ -11,30 +11,30 @@ export function buildOrdersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Queries
-export const QueryOrdersMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+// export const QueryOrdersMetafieldsAdmin = /* GraphQL */ `
+//   ${MetafieldFieldsFragment}
 
-  query getOrdersMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
+//   query getOrdersMetafields(
+//     $maxEntriesPerRun: Int!
+//     $cursor: String
+//     $metafieldKeys: [String!]
+//     $countMetafields: Int
+//     $searchQuery: String
+//   ) {
+//     orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//       nodes {
+//         id
+//         metafields(keys: $metafieldKeys, first: $countMetafields) {
+//           nodes {
+//             ...MetafieldFields
+//           }
+//         }
+//       }
+//       pageInfo {
+//         hasNextPage
+//         endCursor
+//       }
+//     }
+//   }
+// `;
 // #endregion

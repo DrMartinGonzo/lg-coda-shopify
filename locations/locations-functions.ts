@@ -4,14 +4,13 @@ import { CACHE_DEFAULT } from '../constants';
 
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
+import { formatMetaFieldValueForSchema, getMetafieldKeyValueSetsFromUpdate } from '../metafields/metafields-functions';
 import {
-  formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
-  getMetafieldKeyValueSetsFromUpdate,
   preprendPrefixToMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-  updateAndFormatResourceMetafieldsGraphQl,
-} from '../metafields/metafields-functions';
+} from '../metafields/metafields-helpers';
+import { updateAndFormatResourceMetafieldsGraphQl } from '../metafields/metafields-functions';
 import { formatOptionNameId } from '../helpers';
 import {
   ActivateLocation,
@@ -20,11 +19,15 @@ import {
   QuerySingleLocation,
   UpdateLocation,
 } from './locations-graphql';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 
 import type { GraphQlResponse } from '../helpers-graphql';
-import type { FetchRequestOptions } from '../types/Requests';
-import { type CountryCode, type LocationEditAddressInput, type LocationEditInput } from '../types/admin.types';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
+import {
+  type CountryCode,
+  type LocationEditAddressInput,
+  type LocationEditInput,
+} from '../typesNew/generated/admin.types';
 import type {
   GetLocationsQuery,
   GetLocationsQueryVariables,
@@ -38,7 +41,7 @@ import type {
   LocationEditMutationVariables,
   LocationFragment,
   MetafieldDefinitionFragment,
-} from '../types/admin.generated';
+} from '../typesNew/generated/admin.generated';
 import type { SyncTableType } from '../types/SyncTable';
 import type { LocationRow } from '../typesNew/CodaRows';
 import { locationResource } from '../allResources';

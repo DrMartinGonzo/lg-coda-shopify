@@ -4,7 +4,7 @@ import striptags from 'striptags';
 
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../constants';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
-import { RestResourcePlural } from '../types/RequestsRest';
+import { RestResourcePlural } from '../typesNew/ShopifyRestResourceTypes';
 import { formatBlogReference } from '../schemas/syncTable/BlogSchema';
 import { cleanQueryParams, getRestBaseUrl } from '../helpers-rest';
 import { articleFieldDependencies } from '../schemas/syncTable/ArticleSchema';
@@ -13,7 +13,6 @@ import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { SimpleRestNew } from '../Fetchers/SimpleRest';
 
 import type { Article } from '../typesNew/Resources/Article';
-import type { ArticleRow } from '../typesNew/CodaRows';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { Sync_Articles } from './articles-setup';
 import type { MultipleFetchResponse, SyncTableParamValues } from '../Fetchers/SyncTableRest';
@@ -119,7 +118,7 @@ export class ArticleRestFetcher extends SimpleRestNew<ArticleSyncTableType> {
   };
 
   formatRowToApi = (
-    row: Partial<ArticleRow>,
+    row: Partial<Article.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
   ): Article.Params.Update | Article.Params.Create | undefined => {
     let restParams: Article.Params.Update | Article.Params.Create = {};
@@ -154,7 +153,7 @@ export class ArticleRestFetcher extends SimpleRestNew<ArticleSyncTableType> {
   };
 
   formatApiToRow = (article) => {
-    let obj: ArticleRow = {
+    let obj: Article.Row = {
       ...article,
       body: striptags(article.body_html),
       summary: striptags(article.summary_html),

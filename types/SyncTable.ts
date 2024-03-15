@@ -1,21 +1,22 @@
 import * as coda from '@codahq/packs-sdk';
-import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './ShopifyGraphQl';
-import type { MetafieldDefinition } from './admin.types';
+import type { MetafieldDefinition } from '../typesNew/generated/admin.types';
+import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../typesNew/Fetcher';
 
+import type { ResourceTypeUnion } from '../typesNew/allResources';
 import type { Article } from '../typesNew/Resources/Article';
 import type { Blog } from '../typesNew/Resources/Blog';
+import type { Collect } from '../typesNew/Resources/Collect';
 import type { Collection } from '../typesNew/Resources/Collection';
+import type { Customer } from '../typesNew/Resources/Customer';
+import type { DraftOrder } from '../typesNew/Resources/DraftOrder';
+import type { InventoryLevel } from '../typesNew/Resources/InventoryLevel';
+import type { Order } from '../typesNew/Resources/Order';
+import type { Page } from '../typesNew/Resources/Page';
+import type { Product } from '../typesNew/Resources/Product';
+import type { ProductVariant } from '../typesNew/Resources/ProductVariant';
+import type { Redirect } from '../typesNew/Resources/Redirect';
+import type { Shop } from '../typesNew/Resources/Shop';
 
-import type { DraftOrderSyncTableRestParams, DraftOrderUpdateRestParams } from './DraftOrder';
-import type { InventoryLevelSyncTableRestParams } from './InventoryLevel';
-import type { OrderSyncTableRestParams, OrderUpdateRestParams } from './Order';
-import type { PageCreateRestParams, PageSyncTableRestParams, PageUpdateRestParams } from './Page';
-import type { ProductCreateRestParams, ProductSyncTableRestParams, ProductUpdateRestParams } from './Product';
-import type { RedirectCreateRestParams, RedirectSyncTableRestParams, RedirectUpdateRestParams } from './Redirect';
-
-import type { CollectSyncTableRestParams } from './Collect';
-import type { CustomerCreateRestParams, CustomerSyncTableRestParams, CustomerUpdateRestParams } from './Customer';
-import type { ShopSyncTableRestParams } from './Shop';
 import type { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import type { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
 import type { CollectionSyncTableSchema } from '../schemas/syncTable/CollectionSchema';
@@ -29,29 +30,27 @@ import type { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSch
 import type { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import type { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import type { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
+
 import type { ArticleSyncTableType } from '../articles/articles-functions';
 import type { BlogSyncTableType } from '../blogs/blogs-functions';
 import type { BaseRow } from '../typesNew/CodaRows';
-
 import type {
   CollectSyncTableType,
   CollectionSyncTableType,
   CustomCollectionSyncTableType,
   SmartCollectionSyncTableType,
 } from '../collections/collections-functions';
-import { CustomerSyncTableType } from '../customers/customers-functions';
-import { DraftOrderSyncTableType } from '../draftOrders/draftOrders-functions';
-import { InventoryLevelSyncTableType } from '../inventoryLevels/inventoryLevels-functions';
-import { OrderSyncTableType } from '../orders/orders-functions';
-import { OrderLineItemSyncTableType } from '../orderLineItems/orderLineItems-functions';
-import { PageSyncTableType } from '../pages/pages-functions';
-import { RedirectSyncTableType } from '../redirects/redirects-functions';
-import { ProductSyncTableType } from '../products/products-functions';
-import { ProductVariantSyncTableType } from '../productVariants/productVariants-functions';
-import { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from './ProductVariant';
-import { ShopSyncTableType } from '../shop/shop-functions';
-import { LocationSyncTableType } from '../locations/locations-functions';
-import type { ResourceTypeUnion } from '../typesNew/allResources';
+import type { CustomerSyncTableType } from '../customers/customers-functions';
+import type { DraftOrderSyncTableType } from '../draftOrders/draftOrders-functions';
+import type { InventoryLevelSyncTableType } from '../inventoryLevels/inventoryLevels-functions';
+import type { OrderSyncTableType } from '../orders/orders-functions';
+import type { OrderLineItemSyncTableType } from '../orderLineItems/orderLineItems-functions';
+import type { PageSyncTableType } from '../pages/pages-functions';
+import type { RedirectSyncTableType } from '../redirects/redirects-functions';
+import type { ProductSyncTableType } from '../products/products-functions';
+import type { ProductVariantSyncTableType } from '../productVariants/productVariants-functions';
+import type { ShopSyncTableType } from '../shop/shop-functions';
+import type { LocationSyncTableType } from '../locations/locations-functions';
 
 // #region Types
 export type SyncTableType<
@@ -95,39 +94,39 @@ export type SyncTableTypeUnion =
 export type RestSyncParamsUnion =
   | Article.Params.Sync
   | Blog.Params.Sync
+  | Collect.Params.Sync
   | Collection.Params.Sync
-  | CollectSyncTableRestParams
-  | CustomerSyncTableRestParams
-  | DraftOrderSyncTableRestParams
-  | InventoryLevelSyncTableRestParams
-  | OrderSyncTableRestParams
-  | PageSyncTableRestParams
-  | ProductSyncTableRestParams
-  | ProductSyncTableRestParams
-  | RedirectSyncTableRestParams
-  | ShopSyncTableRestParams;
+  | Customer.Params.Sync
+  | DraftOrder.Params.Sync
+  | InventoryLevel.Params.Sync
+  | Order.Params.Sync
+  | Page.Params.Sync
+  | Product.Params.Sync
+  | ProductVariant.Params.Sync
+  | Redirect.Params.Sync
+  | Shop.Params.Sync;
 
 export type RestCreateParamsUnion =
   | Article.Params.Create
   | Blog.Params.Create
   | Collection.Params.Create
-  | CustomerCreateRestParams
-  | PageCreateRestParams
-  | ProductCreateRestParams
-  | ProductVariantCreateRestParams
-  | RedirectCreateRestParams;
+  | Customer.Params.Create
+  | Page.Params.Create
+  | Product.Params.Create
+  | ProductVariant.Params.Create
+  | Redirect.Params.Create;
 
 export type RestUpdateParamsUnion =
   | Article.Params.Update
   | Blog.Params.Update
   | Collection.Params.Update
-  | CustomerUpdateRestParams
-  | DraftOrderUpdateRestParams
-  | OrderUpdateRestParams
-  | PageUpdateRestParams
-  | ProductUpdateRestParams
-  | ProductVariantUpdateRestParams
-  | RedirectUpdateRestParams;
+  | Customer.Params.Update
+  | DraftOrder.Params.Update
+  | Order.Params.Update
+  | Page.Params.Update
+  | Product.Params.Update
+  | ProductVariant.Params.Update
+  | Redirect.Params.Update;
 
 export type SyncTableSchemaUnion =
   | typeof ArticleSyncTableSchema

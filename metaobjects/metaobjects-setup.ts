@@ -15,7 +15,8 @@ import {
   formatMetaobjectForSchemaFromGraphQlApi,
 } from './metaobjects-functions';
 import { capitalizeFirstChar, compareByDisplayKey, retrieveObjectSchemaEffectiveKeys, isString } from '../helpers';
-import { formatMetafieldValueForApi, mapMetaFieldToSchemaProperty } from '../metafields/metafields-functions';
+import { formatMetafieldValueForApi } from '../metafields/metafields-functions';
+import { mapMetaFieldToSchemaProperty } from '../schemas/schema-functions';
 import { MetaObjectSyncTableBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -25,7 +26,7 @@ import {
 } from '../helpers-graphql';
 import { buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
 import { inputs } from '../shared-parameters';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import {
   fetchAllMetaObjectDefinitions,
   fetchSingleMetaObjectDefinition,
@@ -33,8 +34,8 @@ import {
 } from '../metaobjectDefinitions/metaobjectDefinitions-functions';
 import { Identity } from '../constants';
 
-import type { MetaobjectFragment } from '../types/Metaobject';
-import type { MetaobjectFieldInput } from '../types/admin.types';
+import type { MetaobjectFragment } from '../typesNew/Resources/Metaobject';
+import type { MetaobjectFieldInput } from '../typesNew/generated/admin.types';
 import type { AllMetafieldTypeValue } from '../metafields/metafields-constants';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 

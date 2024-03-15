@@ -13,26 +13,21 @@ import { SimpleRestNew } from '../Fetchers/SimpleRest';
 import { handleFieldDependencies } from '../helpers';
 import { SyncTableRestNew, SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import { cleanQueryParams } from '../helpers-rest';
+import { customerResource } from '../allResources';
 
-import type * as Rest from '../types/RestResources';
-import type { CustomerRow } from '../typesNew/CodaRows';
-import type {
-  CustomerCreateRestParams,
-  CustomerSyncTableRestParams,
-  CustomerUpdateRestParams,
-} from '../types/Customer';
+import type { Customer } from '../typesNew/Resources/Customer';
+import type { RestResources } from '../typesNew/ShopifyRestResourceTypes';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { Sync_Customers } from './customers-setup';
 import type { SyncTableType } from '../types/SyncTable';
-import { customerResource } from '../allResources';
 
 // #region Class
 export type CustomerSyncTableType = SyncTableType<
   typeof customerResource,
-  CustomerRow,
-  CustomerSyncTableRestParams,
-  CustomerCreateRestParams,
-  CustomerUpdateRestParams
+  Customer.Row,
+  Customer.Params.Sync,
+  Customer.Params.Create,
+  Customer.Params.Update
 >;
 
 export class CustomerSyncTable extends SyncTableRestNew<CustomerSyncTableType> {
@@ -64,10 +59,10 @@ export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
   }
 
   formatRowToApi = (
-    row: Partial<CustomerRow>,
+    row: Partial<Customer.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): CustomerUpdateRestParams | CustomerCreateRestParams | undefined => {
-    let restParams: CustomerUpdateRestParams | CustomerCreateRestParams = {};
+  ): Customer.Params.Update | Customer.Params.Create | undefined => {
+    let restParams: Customer.Params.Update | Customer.Params.Create = {};
 
     if (row.first_name !== undefined) restParams.first_name = row.first_name;
     if (row.last_name !== undefined) restParams.last_name = row.last_name;
@@ -92,7 +87,7 @@ export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
       : [];
     if (metafieldRestInputs.length) {
-      restParams = { ...restParams, metafields: metafieldRestInputs } as CustomerCreateRestParams;
+      restParams = { ...restParams, metafields: metafieldRestInputs } as Customer.Params.Create;
     }
 
     // Means we have nothing to update/create
@@ -100,8 +95,8 @@ export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
     return restParams;
   };
 
-  formatApiToRow = (customer): CustomerRow => {
-    let obj: CustomerRow = {
+  formatApiToRow = (customer): Customer.Row => {
+    let obj: Customer.Row = {
       ...customer,
       admin_url: `${this.context.endpoint}/admin/customers/${customer.id}`,
       display: formatCustomerDisplayValue(customer),
@@ -133,15 +128,15 @@ export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
   };
 
   updateWithMetafields = async (
-    row: { original?: CustomerRow; updated: CustomerRow },
+    row: { original?: Customer.Row; updated: Customer.Row },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): Promise<CustomerRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
+  ): Promise<Customer.Row> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }
 // #endregion
 
 // #region Formatting
 export function formatCustomerDisplayValue(
-  customer: Pick<Rest.Customer, 'id' | 'first_name' | 'last_name' | 'email'>
+  customer: Pick<RestResources['Customer'], 'id' | 'first_name' | 'last_name' | 'email'>
 ): string {
   if (customer.first_name || customer.last_name) {
     return [customer.first_name, customer.last_name].filter((p) => p && p !== '').join(' ');

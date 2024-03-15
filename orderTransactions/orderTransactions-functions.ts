@@ -8,7 +8,7 @@ import {
   formatOrderTransactionReference,
 } from '../schemas/syncTable/OrderTransactionSchema';
 
-import type { OrderTransactionFieldsFragment } from '../types/admin.generated';
+import type { OrderTransactionFieldsFragment } from '../typesNew/generated/admin.generated';
 
 // #region Formatting functions
 export const formatOrderTransactionForSchemaFromGraphQlApi = (

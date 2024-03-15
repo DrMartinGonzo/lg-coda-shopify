@@ -2,10 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
-import { getRestResourceFromGraphQlResourceType } from '../helpers-rest';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
-import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from '../metafields/metafields-constants';
-import { requireResourceMetafieldsSyncTableDefinition } from '../metafields/metafields-functions';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   idToGraphQlGid,
@@ -25,9 +22,13 @@ import type {
   GetMetafieldDefinitionsQuery,
   GetMetafieldDefinitionsQueryVariables,
   MetafieldDefinitionFragment,
-} from '../types/admin.generated';
-import type { SupportedGraphQlResourceWithMetafields } from '../types/Metafields';
+} from '../typesNew/generated/admin.generated';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
+import {
+  getResourceDefinitionsWithMetaFieldDefinitionSyncTable,
+  requireResourceDefinitionWithMetaFieldOwnerType,
+} from '../allResources';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 
 // #endregion
 
@@ -38,22 +39,22 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.MetafieldDefinition,
   listDynamicUrls: async function (context, docUrl: String) {
-    return RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.filter((v) => v.supportMetafieldDefinitions).map((v) => ({
+    return getResourceDefinitionsWithMetaFieldDefinitionSyncTable().map((v) => ({
       display: v.display,
-      value: v.key,
+      value: v.metafieldOwnerType,
       hasChildren: false,
     }));
   },
   getName: async function (context) {
-    const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-    const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
-    return `MetafieldDefinitions_${resourceMetafieldsSyncTableDefinition.display}`;
+    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+    return `${ownerResource.display} MetafieldDefinitions`;
   },
   /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {
-    const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
-    const restResource = getRestResourceFromGraphQlResourceType(graphQlResource);
-    const metafieldDefinitionsUrlPart = restResource.singular;
+    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+    const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
+    const metafieldDefinitionsUrlPart = ownerResource.rest.singular;
     return `${context.endpoint}/admin/settings/custom_data/${metafieldDefinitionsUrlPart}/metafields`;
   },
   getSchema: async (context, _, formulaContext) => MetafieldDefinitionSyncTableSchema,
@@ -63,7 +64,6 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
     execute: async function ([], context) {
-      const graphQlResource = context.sync.dynamicUrl as SupportedGraphQlResourceWithMetafields;
       const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
       const defaultMaxEntriesPerRun = 200;
       const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
@@ -75,11 +75,12 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
         return skipGraphQlSyncTableRun(prevContinuation as unknown as SyncTableGraphQlContinuation, shouldDeferBy);
       }
 
-      const resourceMetafieldsSyncTableDefinition = requireResourceMetafieldsSyncTableDefinition(graphQlResource);
+      const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+      const ownerResource = requireResourceDefinitionWithMetaFieldOwnerType(metafieldOwnerType);
       const payload = {
         query: queryMetafieldDefinitions,
         variables: {
-          ownerType: resourceMetafieldsSyncTableDefinition.metafieldOwnerType,
+          ownerType: ownerResource.metafieldOwnerType,
           maxEntriesPerRun,
           cursor: prevContinuation?.cursor ?? null,
         } as GetMetafieldDefinitionsQueryVariables,

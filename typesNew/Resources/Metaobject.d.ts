@@ -1,5 +1,5 @@
-import type { MetaobjectDefinitionFragment } from './admin.generated';
-import type * as AdminTypes from './admin.types';
+import type * as AdminTypes from '../../typesNew/generated/admin.types';
+import type { MetaobjectDefinitionFragment } from '../../typesNew/generated/admin.generated';
 
 export type MetaobjectFragment = {
   /** A globally-unique ID. */

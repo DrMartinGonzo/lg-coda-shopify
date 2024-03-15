@@ -7,15 +7,15 @@ import { ProductRestFetcher } from '../products/products-functions';
 
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { Identity } from '../constants';
 
-import type { ProductVariantRow } from '../typesNew/CodaRows';
-import type { ProductVariantCreateRestParams } from '../types/ProductVariant';
+import type { ProductVariant } from '../typesNew/Resources/ProductVariant';
 
 // #endregion
 
@@ -161,7 +161,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
     context
   ) {
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<ProductVariantRow> = {
+    let newRow: Partial<ProductVariant.Row> = {
       product: formatProductReference(product_id),
       barcode,
       compare_at_price,
@@ -177,7 +177,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
     };
 
     const productFetcher = new ProductVariantRestFetcher(context);
-    const restParams = productFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ProductVariantCreateRestParams;
+    const restParams = productFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ProductVariant.Params.Create;
     const response = await productFetcher.create(restParams);
     return response?.body?.variant?.id;
   },
@@ -230,7 +230,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    let row: ProductVariantRow = {
+    let row: ProductVariant.Row = {
       id: productVariantId,
       barcode,
       compare_at_price,

@@ -1,7 +1,7 @@
 // #region Imports
-import { MetafieldOwnerType } from './types/admin.types';
-import { RestResourceName, RestResourceSingular, RestResourcePlural } from './types/RequestsRest';
-import { GraphQlResourceName } from './types/RequestsGraphQl';
+import { MetafieldOwnerType } from './typesNew/generated/admin.types';
+import { RestResourceSingular, RestResourcePlural } from './typesNew/ShopifyRestResourceTypes';
+import { GraphQlResourceName } from './typesNew/ShopifyGraphQlResourceTypes';
 
 import { ArticleSyncTableSchema } from './schemas/syncTable/ArticleSchema';
 import { BlogSyncTableSchema } from './schemas/syncTable/BlogSchema';
@@ -19,58 +19,76 @@ import { ProductVariantSyncTableSchema } from './schemas/syncTable/ProductVarian
 import { RedirectSyncTableSchema } from './schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from './schemas/syncTable/ShopSchema';
 
-import type { ResourceTypeUnion, ResourceTypeGraphQlUnion } from './typesNew/allResources';
+import type {
+  ResourceTypeUnion,
+  ResourceTypeGraphQlUnion,
+  HasMetafieldSyncTableResourceTypeUnion,
+  SupportMetafieldDefinitionsResourceTypeUnion,
+} from './typesNew/allResources';
 
 // #endregion
 
+// #region Definitions
 export const articleResource = {
+  display: 'Article',
   graphQl: {
     name: GraphQlResourceName.OnlineStoreArticle,
   },
   rest: {
-    name: RestResourceName.Article,
+    // name: RestResourceName.Article,
     singular: RestResourceSingular.Article,
     plural: RestResourcePlural.Article,
   },
   metafieldOwnerType: MetafieldOwnerType.Article,
-  schema: ArticleSyncTableSchema,
   useGraphQlForMetafields: false,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: ArticleSyncTableSchema,
 } as const;
 
 export const blogResource = {
+  display: 'Blog',
   graphQl: {
     name: GraphQlResourceName.OnlineStoreBlog,
   },
   rest: {
-    name: RestResourceName.Blog,
+    // name: RestResourceName.Blog,
     singular: RestResourceSingular.Blog,
     plural: RestResourcePlural.Blog,
   },
   metafieldOwnerType: MetafieldOwnerType.Blog,
-  schema: BlogSyncTableSchema,
   useGraphQlForMetafields: false,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: BlogSyncTableSchema,
 } as const;
 
 export const collectionResource = {
+  display: 'Collection',
   graphQl: {
     name: GraphQlResourceName.Collection,
+    singular: 'collection',
+    plural: 'collections',
   },
   rest: {
-    name: RestResourceName.Collection,
+    // name: RestResourceName.Collection,
     singular: RestResourceSingular.Collection,
     plural: RestResourcePlural.Collection,
   },
   metafieldOwnerType: MetafieldOwnerType.Collection,
-  schema: CollectionSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: CollectionSyncTableSchema,
 } as const;
 
 export const collectResource = {
+  display: 'Collect',
   graphQl: {
     name: GraphQlResourceName.Collection,
   },
   rest: {
-    name: RestResourceName.Collect,
+    // name: RestResourceName.Collect,
     singular: RestResourceSingular.Collect,
     plural: RestResourcePlural.Collect,
   },
@@ -79,53 +97,68 @@ export const collectResource = {
 
 export const smartCollectionResource = {
   ...collectionResource,
+  display: 'Smart Collection',
   rest: {
-    name: RestResourceName.SmartCollection,
+    // name: RestResourceName.SmartCollection,
     singular: RestResourceSingular.SmartCollection,
     plural: RestResourcePlural.SmartCollection,
   },
+  hasMetafieldSyncTable: false,
 } as const;
 
 export const customCollectionResource = {
   ...collectionResource,
+  display: 'Custom Collection',
   rest: {
-    name: RestResourceName.CustomCollection,
+    // name: RestResourceName.CustomCollection,
     singular: RestResourceSingular.CustomCollection,
     plural: RestResourcePlural.CustomCollection,
   },
+  hasMetafieldSyncTable: false,
 } as const;
 
 export const customerResource = {
+  display: 'Customer',
   graphQl: {
     name: GraphQlResourceName.Customer,
+    singular: 'customer',
+    plural: 'customers',
   },
   rest: {
-    name: RestResourceName.Customer,
+    // name: RestResourceName.Customer,
     singular: RestResourceSingular.Customer,
     plural: RestResourcePlural.Customer,
   },
   metafieldOwnerType: MetafieldOwnerType.Customer,
-  schema: CustomerSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: CustomerSyncTableSchema,
 } as const;
 
 export const draftOrderResource = {
+  display: 'Draft Order',
   graphQl: {
     name: GraphQlResourceName.DraftOrder,
+    singular: 'draftOrder',
+    plural: 'draftOrders',
   },
   rest: {
-    name: RestResourceName.DraftOrder,
+    // name: RestResourceName.DraftOrder,
     singular: RestResourceSingular.DraftOrder,
     plural: RestResourcePlural.DraftOrder,
   },
   metafieldOwnerType: MetafieldOwnerType.Draftorder,
-  schema: DraftOrderSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: DraftOrderSyncTableSchema,
 } as const;
 
 export const inventoryLevelResource = {
+  display: 'Inventory Level',
   rest: {
-    name: RestResourceName.InventoryLevel,
+    // name: RestResourceName.InventoryLevel,
     singular: RestResourceSingular.InventoryLevel,
     plural: RestResourcePlural.InventoryLevel,
   },
@@ -133,39 +166,50 @@ export const inventoryLevelResource = {
 } as const;
 
 export const locationResource = {
+  display: 'Location',
   graphQl: {
     name: GraphQlResourceName.Location,
+    singular: 'location',
+    plural: 'locations',
   },
   rest: {
-    name: RestResourceName.Location,
+    // name: RestResourceName.Location,
     singular: RestResourceSingular.Location,
     plural: RestResourcePlural.Location,
   },
   metafieldOwnerType: MetafieldOwnerType.Location,
-  schema: LocationSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: LocationSyncTableSchema,
 } as const;
 
 export const orderResource = {
+  display: 'Order',
   graphQl: {
     name: GraphQlResourceName.Order,
+    singular: 'order',
+    plural: 'orders',
   },
   rest: {
-    name: RestResourceName.Order,
+    // name: RestResourceName.Order,
     singular: RestResourceSingular.Order,
     plural: RestResourcePlural.Order,
   },
   metafieldOwnerType: MetafieldOwnerType.Order,
-  schema: OrderSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: OrderSyncTableSchema,
 } as const;
 
 export const orderLineItemResource = {
+  display: 'Order Line Item',
   graphQl: {
     name: GraphQlResourceName.Order,
   },
   rest: {
-    name: RestResourceName.Order,
+    // name: RestResourceName.Order,
     singular: RestResourceSingular.Order,
     plural: RestResourcePlural.Order,
   },
@@ -173,69 +217,90 @@ export const orderLineItemResource = {
 } as const;
 
 export const pageResource = {
+  display: 'Page',
   graphQl: {
     name: GraphQlResourceName.OnlineStorePage,
   },
   rest: {
-    name: RestResourceName.Page,
+    // name: RestResourceName.Page,
     singular: RestResourceSingular.Page,
     plural: RestResourcePlural.Page,
   },
   metafieldOwnerType: MetafieldOwnerType.Page,
-  schema: PageSyncTableSchema,
   useGraphQlForMetafields: false,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: PageSyncTableSchema,
 } as const;
 
 export const productResource = {
+  display: 'Product',
   graphQl: {
     name: GraphQlResourceName.Product,
+    singular: 'product',
+    plural: 'products',
   },
   rest: {
-    name: RestResourceName.Product,
+    // name: RestResourceName.Product,
     singular: RestResourceSingular.Product,
     plural: RestResourcePlural.Product,
   },
   metafieldOwnerType: MetafieldOwnerType.Product,
-  schema: ProductSyncTableSchemaRest,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: ProductSyncTableSchemaRest,
 } as const;
 
 export const productVariantResource = {
+  display: 'Product Variant',
   graphQl: {
     name: GraphQlResourceName.ProductVariant,
+    singular: 'productVariant',
+    plural: 'productVariants',
   },
   rest: {
-    name: RestResourceName.ProductVariant,
+    // name: RestResourceName.ProductVariant,
     singular: RestResourceSingular.ProductVariant,
     plural: RestResourcePlural.ProductVariant,
   },
   metafieldOwnerType: MetafieldOwnerType.Productvariant,
-  schema: ProductVariantSyncTableSchema,
   useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: true,
+  schema: ProductVariantSyncTableSchema,
 } as const;
 
 export const redirectResource = {
+  display: 'Redirect',
   rest: {
-    name: RestResourceName.Redirect,
+    // name: RestResourceName.Redirect,
     singular: RestResourceSingular.Redirect,
     plural: RestResourcePlural.Redirect,
   },
   schema: RedirectSyncTableSchema,
 } as const;
 
-export const shopVariantResource = {
+export const shopResource = {
+  display: 'Shop',
   graphQl: {
     name: GraphQlResourceName.Shop,
+    singular: 'shop',
+    plural: 'shop',
   },
   rest: {
-    name: RestResourceName.Shop,
+    // name: RestResourceName.Shop,
     singular: RestResourceSingular.Shop,
     plural: RestResourcePlural.Shop,
   },
   metafieldOwnerType: MetafieldOwnerType.Shop,
+  // TODO: check this is correct
+  useGraphQlForMetafields: true,
+  hasMetafieldSyncTable: true,
+  supportMetafieldDefinitions: false,
   schema: ShopSyncTableSchema,
-  useGraphQlForMetafields: false,
 } as const;
+// #endregion
 
 const allResources: ResourceTypeUnion[] = [
   articleResource,
@@ -254,10 +319,39 @@ const allResources: ResourceTypeUnion[] = [
   productResource,
   productVariantResource,
   redirectResource,
-  shopVariantResource,
+  shopResource,
 ];
-export function getResourceDefinitionFromGraphQlName(graphQlName: GraphQlResourceName): ResourceTypeGraphQlUnion {
+
+// #region Helpers
+export const getResourceDefinitionsWithMetaFieldSyncTable = (): HasMetafieldSyncTableResourceTypeUnion[] =>
+  allResources.filter(
+    (resource) =>
+      'metafieldOwnerType' in resource && 'hasMetafieldSyncTable' in resource && resource.hasMetafieldSyncTable === true
+  ) as HasMetafieldSyncTableResourceTypeUnion[];
+
+export const getResourceDefinitionsWithMetaFieldDefinitionSyncTable =
+  (): SupportMetafieldDefinitionsResourceTypeUnion[] =>
+    allResources.filter(
+      (resource) =>
+        'metafieldOwnerType' in resource &&
+        'supportMetafieldDefinitions' in resource &&
+        resource.supportMetafieldDefinitions === true
+    ) as SupportMetafieldDefinitionsResourceTypeUnion[];
+
+export function getResourceDefinitionByGraphQlName(graphQlName: GraphQlResourceName): ResourceTypeGraphQlUnion {
   return allResources.find(
     (resource) => 'graphQl' in resource && resource.graphQl.name === graphQlName
   ) as ResourceTypeGraphQlUnion;
 }
+export function requireResourceDefinitionWithMetaFieldOwnerType(
+  metafieldOwnerType: MetafieldOwnerType
+): HasMetafieldSyncTableResourceTypeUnion {
+  const definition = allResources.find(
+    (resource) => 'metafieldOwnerType' in resource && resource.metafieldOwnerType === metafieldOwnerType
+  ) as HasMetafieldSyncTableResourceTypeUnion;
+  if (!definition) {
+    throw new Error('Unknown MetafieldOwnerType: ' + MetafieldOwnerType);
+  }
+  return definition;
+}
+// #endregion

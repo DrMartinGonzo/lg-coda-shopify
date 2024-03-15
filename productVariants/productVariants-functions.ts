@@ -4,35 +4,33 @@ import { cleanQueryParams, makePostRequest } from '../helpers-rest';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { SimpleRestNew } from '../Fetchers/SimpleRest';
-import { RestResourcePlural } from '../types/RequestsRest';
+import { RestResourcePlural } from '../typesNew/ShopifyRestResourceTypes';
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { productVariantFieldDependencies } from '../schemas/syncTable/ProductVariantSchema';
 import { arrayUnique, handleFieldDependencies } from '../helpers';
 import { ProductRestFetcher, ProductSyncTableType } from '../products/products-functions';
 
-import type * as Rest from '../types/RestResources';
+import type { ProductVariant } from '../typesNew/Resources/ProductVariant';
+import type { RestResources } from '../typesNew/ShopifyRestResourceTypes';
 import type {
   GetSyncParams,
   MultipleFetchResponse,
   SingleFetchData,
   SyncTableParamValues,
 } from '../Fetchers/SyncTableRest';
-import type { ProductVariantRow } from '../typesNew/CodaRows';
-import type { FetchRequestOptions } from '../types/Requests';
-import type { ProductVariantCreateRestParams, ProductVariantUpdateRestParams } from '../types/ProductVariant';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { Sync_ProductVariants } from './productVariants-setup';
 import type { SyncTableType } from '../types/SyncTable';
-import type { ProductSyncTableRestParams } from '../types/Product';
 import { productVariantResource } from '../allResources';
 
 // #region Class
 export type ProductVariantSyncTableType = SyncTableType<
   typeof productVariantResource,
-  ProductVariantRow,
-  ProductSyncTableRestParams,
-  ProductVariantCreateRestParams,
-  ProductVariantUpdateRestParams
+  ProductVariant.Row,
+  ProductVariant.Params.Sync,
+  ProductVariant.Params.Create,
+  ProductVariant.Params.Update
 >;
 
 export class ProductVariantSyncTable extends SyncTableRestNew<ProductVariantSyncTableType> {
@@ -84,10 +82,10 @@ export class ProductVariantSyncTable extends SyncTableRestNew<ProductVariantSync
   }
 
   // TODO: more elegant way when a resource depends on a parent resource
-  handleSyncTableResponse = (response): ProductVariantRow[] => {
+  handleSyncTableResponse = (response): ProductVariant.Row[] => {
     let parentProductResponse = response as MultipleFetchResponse<ProductSyncTableType>;
     if (parentProductResponse?.body?.products) {
-      const products = parentProductResponse.body.products as unknown as Rest.Product[];
+      const products = parentProductResponse.body.products as unknown as RestResources['Product'][];
       return products
         .map((product) =>
           product.variants.map((variant) => {
@@ -99,7 +97,7 @@ export class ProductVariantSyncTable extends SyncTableRestNew<ProductVariantSync
         )
         .flat();
     }
-    return [] as ProductVariantRow[];
+    return [] as ProductVariant.Row[];
   };
 }
 
@@ -121,7 +119,7 @@ export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncT
   // };
 
   // TODO: find a more elegant way to handle required product_id parameter without duplicating the whole create method
-  create = (params: ProductVariantCreateRestParams, requestOptions: FetchRequestOptions = {}) => {
+  create = (params: ProductVariant.Params.Create, requestOptions: FetchRequestOptions = {}) => {
     this.validateParams(params);
     const payload = { [this.singular]: cleanQueryParams(params) };
     const url = coda.joinUrl(
@@ -137,11 +135,11 @@ export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncT
   };
 
   formatRowToApi = (
-    row: Partial<ProductVariantRow>,
+    row: Partial<ProductVariant.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): ProductVariantUpdateRestParams | ProductVariantCreateRestParams | undefined => {
-    let restParams: ProductVariantUpdateRestParams | ProductVariantCreateRestParams = {};
-    let restCreateParams: ProductVariantCreateRestParams = {
+  ): ProductVariant.Params.Update | ProductVariant.Params.Create | undefined => {
+    let restParams: ProductVariant.Params.Update | ProductVariant.Params.Create = {};
+    let restCreateParams: ProductVariant.Params.Create = {
       product_id: row.product?.id,
       option1: row.option1,
     };
@@ -178,8 +176,8 @@ export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncT
    * On peut formatter de façon plus précise quand on a accès aux données du
    * produit parent en appliquant ensuite la methode formatRowWithParent.
    */
-  formatApiToRow = (variant): ProductVariantRow => {
-    let obj: ProductVariantRow = {
+  formatApiToRow = (variant): ProductVariant.Row => {
+    let obj: ProductVariant.Row = {
       ...variant,
       admin_url: `${this.context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
       product: formatProductReference(variant.product_id),
@@ -192,8 +190,8 @@ export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncT
   /**
    * Formattage plus poussé d'une row ProductVariant quand on a les données du produit parent.
    */
-  formatRowWithParent = (row: ProductVariantRow, parentProduct): ProductVariantRow => {
-    let obj: ProductVariantRow = {
+  formatRowWithParent = (row: ProductVariant.Row, parentProduct): ProductVariant.Row => {
+    let obj: ProductVariant.Row = {
       ...row,
       product: formatProductReference(parentProduct.id, parentProduct?.title),
       displayTitle: `${parentProduct.title} - ${row.title}`,
@@ -210,9 +208,9 @@ export class ProductVariantRestFetcher extends SimpleRestNew<ProductVariantSyncT
   };
 
   updateWithMetafields = async (
-    row: { original?: ProductVariantRow; updated: ProductVariantRow },
+    row: { original?: ProductVariant.Row; updated: ProductVariant.Row },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): Promise<ProductVariantRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
+  ): Promise<ProductVariant.Row> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }
 
 // #endregion

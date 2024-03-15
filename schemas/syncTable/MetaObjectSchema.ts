@@ -3,7 +3,10 @@ import { CODA_PACK_ID } from '../../pack-config.json';
 import { NOT_FOUND } from '../../constants';
 import { Identity } from '../../constants';
 
-import type { MetafieldDefinitionFragment, MetaobjectFieldDefinitionFragment } from '../../types/admin.generated';
+import type {
+  MetafieldDefinitionFragment,
+  MetaobjectFieldDefinitionFragment,
+} from '../../typesNew/generated/admin.generated';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {

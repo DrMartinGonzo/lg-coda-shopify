@@ -1,4 +1,4 @@
-import { makeParameter, ParameterType } from '@codahq/packs-sdk';
+import * as coda from '@codahq/packs-sdk';
 
 import {
   countryNameAutocompleteValues,
@@ -14,13 +14,13 @@ import {
 import { getUnitMap, weightUnitsMap } from './helpers';
 import { autocompleteBlogParameterWithName } from './blogs/blogs-functions';
 import { autocompleteLocationsWithName } from './locations/locations-functions';
-import { RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS } from './metafields/metafields-constants';
 import { autoCompleteMetafieldWithDefinitionFullKeys } from './metafields/metafields-functions';
 import { autocompleteProductTypes } from './products/products-functions';
 import { makeAutocompleteTemplateSuffixesFor } from './themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
 import { validShopFields } from './schemas/syncTable/ShopSchema';
-import { CurrencyCode } from './types/admin.types';
+import { CurrencyCode } from './typesNew/generated/admin.types';
+import { getResourceDefinitionsWithMetaFieldSyncTable } from './allResources';
 
 export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
@@ -31,118 +31,118 @@ export function createOrUpdateMetafieldDescription(actionName: 'update' | 'creat
  *===================================================================================================================== */
 // #region General Inputs
 const generalInputs = {
-  author: makeParameter({
-    type: ParameterType.String,
+  author: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'author',
     description: 'The name of the author.',
   }),
-  bodyHtml: makeParameter({
-    type: ParameterType.String,
+  bodyHtml: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'bodyHtml',
     description: 'The text of the body of the item, complete with HTML markup.',
   }),
-  emailBcc: makeParameter({
-    type: ParameterType.StringArray,
+  emailBcc: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'bcc',
     description:
       'The list of email addresses to include in the `bcc` field of the email. Emails must be associated with staff accounts on the shop.',
   }),
-  emailFrom: makeParameter({
-    type: ParameterType.String,
+  emailFrom: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'from',
     description: 'The email address that will populate the `from` field of the email.',
   }),
-  emailMessage: makeParameter({
-    type: ParameterType.String,
+  emailMessage: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'message',
     description: 'The custom message displayed in the email.',
   }),
-  emailSubject: makeParameter({
-    type: ParameterType.String,
+  emailSubject: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'subject',
     description: 'The email subject.',
   }),
-  emailTo: makeParameter({
-    type: ParameterType.String,
+  emailTo: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'to',
     description: 'The email address that will populate the `to` field of the email.',
   }),
-  handle: makeParameter({
-    type: ParameterType.String,
+  handle: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'handle',
     description: "A human-friendly unique string for the item. Automatically generated from the item's title if blank.",
   }),
-  id: makeParameter({
-    type: ParameterType.Number,
+  id: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'id',
     description: 'The ID of the item.',
   }),
-  imageUrl: makeParameter({
-    type: ParameterType.String,
+  imageUrl: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'imageUrl',
     description: 'Source URL that specifies the location of the image.',
   }),
-  imageUrlArray: makeParameter({
-    type: ParameterType.StringArray,
+  imageUrlArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'imageUrls',
     description: 'A comma-separated list of image urls for the item. ',
   }),
-  imageAlt: makeParameter({
-    type: ParameterType.String,
+  imageAlt: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'imageAlt',
     description: 'Alternative text that describes the image.',
   }),
-  metafieldValue: makeParameter({
-    type: ParameterType.String,
+  metafieldValue: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'value',
     description:
       'Use `FormatMetafield` formula for a single metafield value or `FormatListMetafield` formula for a list of metafield values.',
   }),
-  metafields: makeParameter({
-    type: ParameterType.StringArray,
+  metafields: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'metafields',
     description: 'Metafields to update.',
   }),
-  name: makeParameter({
-    type: ParameterType.String,
+  name: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'name',
     description: 'The name.',
   }),
-  phone: makeParameter({
-    type: ParameterType.String,
+  phone: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'phone',
     description: 'The phone number (E.164 format).',
   }),
-  previewSize: makeParameter({
-    type: ParameterType.Number,
+  previewSize: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'previewSize',
     suggestedValue: DEFAULT_THUMBNAIL_SIZE,
     description:
       'The maximum width of the thumbnail. Smaller values can increase display performance of the table if you have lots of entries.',
   }),
-  published: makeParameter({
-    type: ParameterType.Boolean,
+  published: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'published',
     description: 'Whether the item is visible.',
   }),
-  publishedAt: makeParameter({
-    type: ParameterType.Date,
+  publishedAt: coda.makeParameter({
+    type: coda.ParameterType.Date,
     name: 'publishedAt',
     description: 'When the item was published.',
   }),
-  tagsArray: makeParameter({
-    type: ParameterType.StringArray,
+  tagsArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'tags',
     description:
       'A comma-separated list of tags. Tags are additional short descriptors formatted as a string of comma-separated values.',
   }),
-  title: makeParameter({
-    type: ParameterType.String,
+  title: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'title',
     description: 'The title of the item.',
   }),
-  varArgsPropValue: makeParameter({
-    type: ParameterType.String,
+  varArgsPropValue: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'value',
     description: 'The property value.',
   }),
@@ -160,14 +160,14 @@ const articleInputs = {
     name: 'articleId',
     description: 'The ID of the article.',
   },
-  summaryHtml: makeParameter({
-    type: ParameterType.String,
+  summaryHtml: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'summaryHtml',
     description:
       'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
   }),
-  templateSuffix: makeParameter({
-    type: ParameterType.String,
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'templateSuffix',
     autocomplete: makeAutocompleteTemplateSuffixesFor('article'),
     description:
@@ -178,8 +178,8 @@ const articleInputs = {
 
 // #region Blog Inputs
 const blogInputs = {
-  commentable: makeParameter({
-    type: ParameterType.String,
+  commentable: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'commentable',
     description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
     autocomplete: COMMENTABLE_OPTIONS,
@@ -189,14 +189,14 @@ const blogInputs = {
     name: 'blogId',
     description: 'The ID of the blog.',
   },
-  idOptionName: makeParameter({
-    type: ParameterType.String,
+  idOptionName: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'blogId',
     description: 'The ID of the blog.',
     autocomplete: autocompleteBlogParameterWithName,
   }),
-  templateSuffix: makeParameter({
-    type: ParameterType.String,
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'templateSuffix',
     autocomplete: makeAutocompleteTemplateSuffixesFor('blog'),
     description:
@@ -216,8 +216,8 @@ const collectionInputs = {
     name: 'collectionId',
     description: 'The ID of the collection.',
   },
-  templateSuffix: makeParameter({
-    type: ParameterType.String,
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'templateSuffix',
     autocomplete: makeAutocompleteTemplateSuffixesFor('collection'),
     description:
@@ -228,18 +228,18 @@ const collectionInputs = {
 
 // #region Customer Inputs
 const customerInputs = {
-  acceptsEmailMarketing: makeParameter({
-    type: ParameterType.Boolean,
+  acceptsEmailMarketing: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'acceptsEmailMarketing',
     description: 'Wether the customer consents to receiving marketing material by email.',
   }),
-  acceptsSmsMarketing: makeParameter({
-    type: ParameterType.Boolean,
+  acceptsSmsMarketing: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'acceptsSmsMarketing',
     description: 'Wether the customer consents to receiving marketing material by SMS.',
   }),
-  email: makeParameter({
-    type: ParameterType.String,
+  email: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'email',
     description:
       'The unique email address of the customer. Attempting to assign the same email address to multiple customers returns an error.',
@@ -249,18 +249,18 @@ const customerInputs = {
     name: 'customerId',
     description: 'The ID of the customer.',
   },
-  firstName: makeParameter({
-    type: ParameterType.String,
+  firstName: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'firstName',
     description: "The customer's first name.",
   }),
-  lastName: makeParameter({
-    type: ParameterType.String,
+  lastName: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'lastName',
     description: "The customer's last name.",
   }),
-  note: makeParameter({
-    type: ParameterType.String,
+  note: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'note',
     description: 'A note about the customer.',
   }),
@@ -274,13 +274,13 @@ const draftOrderInputs = {
     name: 'draftOrderId',
     description: 'The ID of the draft order.',
   },
-  paymentGatewayId: makeParameter({
-    type: ParameterType.Number,
+  paymentGatewayId: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'paymentGatewayId',
     description: 'The payment gateway ID.',
   }),
-  paymentPending: makeParameter({
-    type: ParameterType.Boolean,
+  paymentPending: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'paymentPending',
     description:
       '`true`: The resulting order will be unpaid and can be captured later.\n`false`: The resulting order will be marked as paid through either the default or specified gateway.',
@@ -290,8 +290,8 @@ const draftOrderInputs = {
 
 // #region File Inputs
 const fileInputs = {
-  gid: makeParameter({
-    type: ParameterType.String,
+  gid: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'fileGid',
     description: 'The GraphQl GID of the file.',
   }),
@@ -300,8 +300,8 @@ const fileInputs = {
 
 // #region InventoryItem Inputs
 const inventoryItemInputs = {
-  cost: makeParameter({
-    type: ParameterType.Number,
+  cost: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'cost',
     description: "Unit cost associated with the inventory item, the currency is the shop's default currency.",
   }),
@@ -310,13 +310,13 @@ const inventoryItemInputs = {
     name: 'inventoryItemId',
     description: 'The ID of the Inventory Item.',
   },
-  harmonizedSystemCode: makeParameter({
-    type: ParameterType.String,
+  harmonizedSystemCode: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'harmonizedSystemCode',
     description: 'The harmonized system code of the inventory item. This must be a number between 6 and 13 digits.',
   }),
-  tracked: makeParameter({
-    type: ParameterType.Boolean,
+  tracked: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'tracked',
     description: "Whether the inventory item is tracked. The value must be true to adjust the item's inventory levels.",
   }),
@@ -325,13 +325,13 @@ const inventoryItemInputs = {
 
 // #region InventoryLevel Inputs
 const InventoryLevelInputs = {
-  available: makeParameter({
-    type: ParameterType.Number,
+  available: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'available',
     description: 'Sets the available inventory quantity.',
   }),
-  availableAdjustment: makeParameter({
-    type: ParameterType.Number,
+  availableAdjustment: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'availableAdjustment',
     description:
       'The amount to adjust the available inventory quantity. Send negative values to subtract from the current available quantity.',
@@ -341,29 +341,29 @@ const InventoryLevelInputs = {
 
 // #region Location Inputs
 const locationInputs = {
-  address1: makeParameter({
-    type: ParameterType.String,
+  address1: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'address1',
     description: 'The street address.',
   }),
-  address2: makeParameter({
-    type: ParameterType.String,
+  address2: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'address2',
     description: 'The optional second line of the street address.',
   }),
-  city: makeParameter({
-    type: ParameterType.String,
+  city: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'city',
     description: 'The city.',
   }),
-  countryCode: makeParameter({
-    type: ParameterType.String,
+  countryCode: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'countryCode',
     autocomplete: countryNameAutocompleteValues,
     description: 'The two-letter code (ISO 3166-1 alpha-2 format) corresponding to the country.',
   }),
-  deactivateDestinationId: makeParameter({
-    type: ParameterType.Number,
+  deactivateDestinationId: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'destinationLocationId',
     description:
       'The ID of a destination location to which inventory, pending orders and moving transfers will be moved from the location to deactivate.',
@@ -373,8 +373,8 @@ const locationInputs = {
     name: 'locationId',
     description: 'The ID of the location.',
   },
-  idOptionName: makeParameter({
-    type: ParameterType.String,
+  idOptionName: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'locationId',
     description: 'The ID of the location.',
     autocomplete: autocompleteLocationsWithName,
@@ -383,13 +383,13 @@ const locationInputs = {
     ...generalInputs.name,
     description: 'The name of the location.',
   },
-  provinceCode: makeParameter({
-    type: ParameterType.String,
+  provinceCode: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'provinceCode',
     description: 'The province, state, or district code (ISO 3166-2 alpha-2 format).',
   }),
-  zip: makeParameter({
-    type: ParameterType.String,
+  zip: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'zip',
     description: 'The zip or postal code.',
   }),
@@ -398,15 +398,15 @@ const locationInputs = {
 
 // #region Metafield Inputs
 const metafieldInputs = {
-  fullKeyAutocomplete: makeParameter({
-    type: ParameterType.String,
+  fullKeyAutocomplete: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'fullKey',
     description:
       'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key". If ownerType is completed and valid, you will get autocomplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter a metafield key that doesn\'t have a definition.',
     autocomplete: autoCompleteMetafieldWithDefinitionFullKeys,
   }),
-  fullKey: makeParameter({
-    type: ParameterType.String,
+  fullKey: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'fullKey',
     description:
       'The full key of the metafield. That is, the key prefixed with the namespace and separated by a dot. e.g. "namespace.key".',
@@ -422,77 +422,83 @@ const metafieldInputs = {
     name: 'ownerId',
     description: 'The ID of the resource owning the metafield.',
   },
-  ownerType: makeParameter({
-    type: ParameterType.String,
+  ownerType: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'ownerType',
     description: 'The type of the resource owning the metafield.',
-    autocomplete: RESOURCE_METAFIELDS_SYNC_TABLE_DEFINITIONS.map((v) => ({
-      display: v.display,
-      value: v.key,
-    })),
+    autocomplete: async function (
+      context: coda.ExecutionContext,
+      search: string,
+      formulaContext: coda.MetadataContext
+    ) {
+      return getResourceDefinitionsWithMetaFieldSyncTable().map((v) => ({
+        display: v.display,
+        value: v.metafieldOwnerType,
+      }));
+    },
   }),
-  value: makeParameter({
-    type: ParameterType.String,
+  value: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'value',
     description:
       'A metafield value formatted with one of the `Meta{…}` helper formulas. Setting it to an empty string will delete the metafield if it already exists.',
   }),
 
-  boolean: makeParameter({
-    type: ParameterType.Boolean,
+  boolean: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'value',
     description: 'A boolean value.',
   }),
-  currencyCode: makeParameter({
-    type: ParameterType.String,
+  currencyCode: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'currencyCode',
     description: 'The three-letter currency code supported by Shopify.',
     autocomplete: Object.values(CurrencyCode),
   }),
-  number: makeParameter({
-    type: ParameterType.Number,
+  number: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'value',
     description: 'A number value.',
   }),
-  string: makeParameter({
-    type: ParameterType.String,
+  string: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'text',
     description: 'A string value.',
   }),
-  referenceId: makeParameter({
-    type: ParameterType.Number,
+  referenceId: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'id',
     description: 'The ID of the referenced resource.',
   }),
-  scaleMin: makeParameter({
-    type: ParameterType.Number,
+  scaleMin: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'scaleMin',
     description: 'The minimum value of the rating scale.',
   }),
-  scaleMax: makeParameter({
-    type: ParameterType.Number,
+  scaleMax: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'scaleMax',
     description: 'The maximum value of the rating scale.',
   }),
-  date: makeParameter({
-    type: ParameterType.Date,
+  date: coda.makeParameter({
+    type: coda.ParameterType.Date,
     name: 'date',
     description: 'A date value.',
   }),
-  dimensionUnitGraphQl: makeParameter({
-    type: ParameterType.String,
+  dimensionUnitGraphQl: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'unit',
     description: 'The dimension unit supported by Shopify.',
     autocomplete: Object.keys(getUnitMap('dimension')),
   }),
-  volumeUnitGraphQl: makeParameter({
-    type: ParameterType.String,
+  volumeUnitGraphQl: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'unit',
     description: 'The volume unit supported by Shopify.',
     autocomplete: Object.keys(getUnitMap('volume')),
   }),
-  weightUnitGraphQl: makeParameter({
-    type: ParameterType.String,
+  weightUnitGraphQl: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'unit',
     description: 'The weight unit supported by Shopify.',
     autocomplete: Object.keys(getUnitMap('weight')),
@@ -521,8 +527,8 @@ const metafieldObjectInputs = {
     name: 'metaobjectId',
     description: 'The ID of the metaobject.',
   },
-  status: makeParameter({
-    type: ParameterType.String,
+  status: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'status',
     autocomplete: OPTIONS_METAOBJECT_STATUS,
     description: 'The status of the metaobject.',
@@ -551,8 +557,8 @@ const pageInputs = {
     name: 'pageId',
     description: 'The ID of the page.',
   },
-  templateSuffix: makeParameter({
-    type: ParameterType.String,
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'templateSuffix',
     autocomplete: makeAutocompleteTemplateSuffixesFor('page'),
     description:
@@ -581,20 +587,20 @@ const productInputs = {
     ...generalInputs.imageUrlArray,
     description: 'A comma-separated list of image urls for the product. ',
   },
-  options: makeParameter({
-    type: ParameterType.StringArray,
+  options: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'options',
     description:
       'A comma-separated list of up to 3 options for how this product can vary. Options are things like "Size" or "Color".',
   }),
-  status: makeParameter({
-    type: ParameterType.String,
+  status: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'status',
     autocomplete: OPTIONS_PRODUCT_STATUS_REST,
     description: 'The status of the product.',
   }),
-  templateSuffix: makeParameter({
-    type: ParameterType.String,
+  templateSuffix: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'templateSuffix',
     autocomplete: makeAutocompleteTemplateSuffixesFor('product'),
     description:
@@ -604,8 +610,8 @@ const productInputs = {
     ...generalInputs.title,
     description: 'The name of the product.',
   },
-  vendor: makeParameter({
-    type: ParameterType.String,
+  vendor: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'vendor',
     description: 'The product vendor.',
   }),
@@ -614,13 +620,13 @@ const productInputs = {
 
 // #region ProductVariant Inputs
 const productVariantInputs = {
-  barcode: makeParameter({
-    type: ParameterType.String,
+  barcode: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'barcode',
     description: 'The barcode, UPC, or ISBN number for the product variant',
   }),
-  compareAtPrice: makeParameter({
-    type: ParameterType.Number,
+  compareAtPrice: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'compareAtPrice',
     description: 'The original price of the item before an adjustment or a sale.',
   }),
@@ -629,49 +635,49 @@ const productVariantInputs = {
     name: 'productVariantId',
     description: 'The ID of the product variant.',
   },
-  option1: makeParameter({
-    type: ParameterType.String,
+  option1: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'option1',
     description: 'Option 1 of 3 of the product variant.',
   }),
-  option2: makeParameter({
-    type: ParameterType.String,
+  option2: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'option2',
     description: 'Option 2 of 3 of the product variant.',
   }),
-  option3: makeParameter({
-    type: ParameterType.String,
+  option3: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'option3',
     description: 'Option 3 of 3 of the product variant.',
   }),
-  price: makeParameter({
-    type: ParameterType.Number,
+  price: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'price',
     description: 'The product variant price.',
   }),
-  position: makeParameter({
-    type: ParameterType.Number,
+  position: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'position',
     description: 'The order of the product variant in the list of product variants.',
   }),
-  sku: makeParameter({
-    type: ParameterType.String,
+  sku: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'sku',
     description: 'The product variant sku.',
   }),
-  taxable: makeParameter({
-    type: ParameterType.Boolean,
+  taxable: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'taxable',
     description: 'Whether a tax is charged when the product variant is sold.',
   }),
-  weight: makeParameter({
-    type: ParameterType.Number,
+  weight: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'weight',
     description:
       "The weight of the product variant in the unit system specified with weightUnit. If you don't specify a value for weightUnit, then the shop's default unit of measurement is applied",
   }),
-  weightUnit: makeParameter({
-    type: ParameterType.String,
+  weightUnit: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'weightUnit',
     autocomplete: Object.values(weightUnitsMap),
     description:
@@ -687,14 +693,14 @@ const redirectInputs = {
     name: 'redirectId',
     description: 'The ID of the redirect.',
   },
-  path: makeParameter({
-    type: ParameterType.String,
+  path: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'path',
     description:
       'The old path to be redirected. When the user visits this path, they will be redirected to the target. (maximum: 1024 characters).',
   }),
-  target: makeParameter({
-    type: ParameterType.String,
+  target: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'target',
     description:
       "The target location where the user will be redirected. When the user visits the old path specified by the path property, they will be redirected to this location. This property can be set to any path on the shop's site, or to an external URL. (maximum: 255 characters)",
@@ -707,84 +713,84 @@ const redirectInputs = {
  *===================================================================================================================== */
 // #region General Filters
 const generalFilters = {
-  createdAtRange: makeParameter({
-    type: ParameterType.DateArray,
+  createdAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
     name: 'createdAt',
     description: 'Filter results created in the given date range.',
   }),
-  fields: makeParameter({
-    type: ParameterType.String,
+  fields: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'fields',
     description: 'Comma-separated list of fields to retrieve. Retrieve all fields if blank.',
   }),
-  handle: makeParameter({
-    type: ParameterType.String,
+  handle: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'handle',
     description: 'Filter results by handle.',
   }),
-  handleArray: makeParameter({
-    type: ParameterType.StringArray,
+  handleArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'handles',
     description: 'Filter results by comma separated list of handles.',
   }),
-  id: makeParameter({
-    type: ParameterType.Number,
+  id: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'id',
     description: 'Filter results by a single ID.',
   }),
-  idArray: makeParameter({
-    type: ParameterType.StringArray,
+  idArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'ids',
     description: 'Filter results by comma-separated list of IDs.',
   }),
-  publishedAtRange: makeParameter({
-    type: ParameterType.DateArray,
+  publishedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
     name: 'publishedAt',
     description: 'Filter results published in the given date range.',
   }),
-  processedAtRange: makeParameter({
-    type: ParameterType.DateArray,
+  processedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
     name: 'processedAt',
     description: 'Filter results processed in the given date range.',
   }),
-  publishedStatus: makeParameter({
-    type: ParameterType.String,
+  publishedStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'publishedStatus',
     description: 'Filter results by their published status.',
     autocomplete: OPTIONS_PUBLISHED_STATUS,
   }),
-  sinceId: makeParameter({
-    type: ParameterType.Number,
+  sinceId: coda.makeParameter({
+    type: coda.ParameterType.Number,
     name: 'sinceId',
     description: 'Filter results created after the specified ID.',
   }),
-  syncMetafields: makeParameter({
-    type: ParameterType.Boolean,
+  syncMetafields: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
     name: 'syncMetafields',
     description: 'Also retrieve metafields\n(only for metafields with a definition, can slow down the sync)',
   }),
-  tagLOL: makeParameter({
-    type: ParameterType.String,
+  tagLOL: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'tags',
     description: 'Filter items with a specific tag.',
   }),
-  tagsArray: makeParameter({
-    type: ParameterType.StringArray,
+  tagsArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'tags',
     description: 'Filter items by a comma-separated list of tags.',
   }),
-  title: makeParameter({
-    type: ParameterType.String,
+  title: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'title',
     description: 'Filter results by specified title.',
   }),
-  updatedAtRange: makeParameter({
-    type: ParameterType.DateArray,
+  updatedAtRange: coda.makeParameter({
+    type: coda.ParameterType.DateArray,
     name: 'updatedAt',
     description: 'Filter results updated in the given date range.',
   }),
-  updatedAtMin: makeParameter({
-    type: ParameterType.Date,
+  updatedAtMin: coda.makeParameter({
+    type: coda.ParameterType.Date,
     name: 'updatedAtMin',
     description: 'Filter results last updated after this date.',
   }),
@@ -793,8 +799,8 @@ const generalFilters = {
 
 // #region Article Filters
 const articleFilters = {
-  author: makeParameter({
-    type: ParameterType.String,
+  author: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'author',
     description: 'Filter results by specified author.',
   }),
@@ -803,8 +809,8 @@ const articleFilters = {
 
 // #region Blog Filters
 const blogFilters = {
-  idOptionNameArray: makeParameter({
-    type: ParameterType.StringArray,
+  idOptionNameArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'blogIds',
     description: 'Filter results by comma-separated list of Blog IDs.',
     autocomplete: autocompleteBlogParameterWithName,
@@ -844,8 +850,8 @@ const draftOrderFilters = {
     name: 'draftOrderIds',
     description: 'Filter results by comma-separated list of draft order IDs.',
   },
-  status: makeParameter({
-    type: ParameterType.String,
+  status: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'status',
     autocomplete: OPTIONS_DRAFT_ORDER_STATUS,
     suggestedValue: 'open',
@@ -856,10 +862,10 @@ const draftOrderFilters = {
 
 // #region Location Filters
 const locationFilters = {
-  idOptionNameArray: makeParameter({
+  idOptionNameArray: coda.makeParameter({
     // BUG: Should be NumberArray but it doesn't seem to work…
     // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
-    type: ParameterType.StringArray,
+    type: coda.ParameterType.StringArray,
     name: 'locationIds',
     description: 'Filter results by comma-separated list of Location IDs.',
     autocomplete: autocompleteLocationsWithName,
@@ -869,8 +875,8 @@ const locationFilters = {
 
 // #region Metafield Filters
 const metafieldFilters = {
-  metafieldKeys: makeParameter({
-    type: ParameterType.StringArray,
+  metafieldKeys: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'metafieldKeys',
     description:
       "Filter results by Metafield keys. In the format of <namespace.key>, separated by commas. For example: `coda.title, coda.content`. You will get autocomplete suggestions, but only for metafields having a definition. Use `Show formula` button to enter metafield keys that doesn't have a definition.",
@@ -886,22 +892,22 @@ const orderFilters = {
     name: 'orderIds',
     description: 'Filter results by comma-separated list of Order IDs.',
   },
-  financialStatus: makeParameter({
-    type: ParameterType.String,
+  financialStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'financialStatus',
     autocomplete: OPTIONS_ORDER_FINANCIAL_STATUS,
     suggestedValue: 'any',
     description: 'Filter results by order financial status.',
   }),
-  fulfillmentStatus: makeParameter({
-    type: ParameterType.String,
+  fulfillmentStatus: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'fulfillmentStatus',
     autocomplete: OPTIONS_ORDER_FULFILLMENT_STATUS,
     suggestedValue: 'any',
     description: 'Filter results by order fulfillment status.',
   }),
-  status: makeParameter({
-    type: ParameterType.String,
+  status: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'status',
     autocomplete: OPTIONS_ORDER_STATUS,
     suggestedValue: 'open',
@@ -926,14 +932,14 @@ const productFilters = {
     name: 'productIds',
     description: 'Filter results by a comma-separated list of product IDs.',
   },
-  productType: makeParameter({
-    type: ParameterType.String,
+  productType: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'productType',
     autocomplete: autocompleteProductTypes,
     description: 'Filter results by product type.',
   }),
-  productTypesArray: makeParameter({
-    type: ParameterType.StringArray,
+  productTypesArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'productTypes',
     description: 'Filter results by product types.',
     autocomplete: autocompleteProductTypes,
@@ -958,8 +964,8 @@ const productFilters = {
     ...productInputs.status,
     description: 'Filter results by the status of the product.',
   },
-  statusArray: makeParameter({
-    type: ParameterType.StringArray,
+  statusArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'status',
     autocomplete: OPTIONS_PRODUCT_STATUS_REST,
     description: 'Filter results by the status of the product.',
@@ -973,8 +979,8 @@ const productFilters = {
 
 // #region ProductVariant Filters
 const productVariantFilters = {
-  skuArray: makeParameter({
-    type: ParameterType.StringArray,
+  skuArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
     name: 'skus',
     description: 'Filter results by skus.',
   }),
@@ -996,8 +1002,8 @@ const redirectFilters = {
 
 // #region Inputs: Shop
 const shopFilters = {
-  shopField: makeParameter({
-    type: ParameterType.String,
+  shopField: coda.makeParameter({
+    type: coda.ParameterType.String,
     name: 'field',
     autocomplete: validShopFields,
     description: 'The Shop field to return',

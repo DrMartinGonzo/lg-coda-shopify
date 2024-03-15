@@ -25,14 +25,14 @@ export default {
           // Enables support for `#graphql` tags, as well as `/* GraphQL */`
           pluckConfig,
           generates: {
-            './types/admin.schema.json': {
+            './typesNew/generated/admin.schema.json': {
               plugins: ['introspection'],
               config: { minify: false },
             },
-            './types/admin.types.ts': {
+            './typesNew/generated/admin.types.ts': {
               plugins: ['typescript'],
             },
-            './types/admin.generated.d.ts': {
+            './typesNew/generated/admin.generated.d.ts': {
               presetConfig: {
                 apiType: ApiType.Admin,
               },

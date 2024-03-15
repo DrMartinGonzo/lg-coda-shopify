@@ -6,13 +6,13 @@ import { CustomerRestFetcher, CustomerSyncTable, formatCustomerDisplayValue } fr
 import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
 import { CACHE_DEFAULT } from '../constants';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { wrapGetSchemaForCli } from '../helpers';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { Identity } from '../constants';
 
-import type { CustomerRow } from '../typesNew/CodaRows';
-import type { CustomerCreateRestParams } from '../types/Customer';
+import type { Customer } from '../typesNew/Resources/Customer';
 
 // #endregion
 
@@ -113,7 +113,7 @@ export const Action_CreateCustomer = coda.makeFormula({
     }
 
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<CustomerRow> = {
+    let newRow: Partial<Customer.Row> = {
       email,
       first_name,
       last_name,
@@ -125,7 +125,7 @@ export const Action_CreateCustomer = coda.makeFormula({
     };
 
     const customerFetcher = new CustomerRestFetcher(context);
-    const restParams = customerFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as CustomerCreateRestParams;
+    const restParams = customerFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Customer.Params.Create;
     const response = await customerFetcher.create(restParams);
     return response?.body?.customer?.id;
   },
@@ -182,7 +182,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
     ],
     context
   ) {
-    let row: CustomerRow = {
+    let row: Customer.Row = {
       id: customerId,
       accepts_email_marketing,
       accepts_sms_marketing,

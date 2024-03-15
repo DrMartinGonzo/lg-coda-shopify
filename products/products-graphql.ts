@@ -123,32 +123,32 @@ export const QueryProductsAdmin = /* GraphQL */ `
   }
 `;
 
-export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+// export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
+//   ${MetafieldFieldsFragment}
 
-  query getProductsMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
+//   query getProductsMetafields(
+//     $maxEntriesPerRun: Int!
+//     $cursor: String
+//     $metafieldKeys: [String!]
+//     $countMetafields: Int
+//     $searchQuery: String
+//   ) {
+//     products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//       nodes {
+//         id
+//         metafields(keys: $metafieldKeys, first: $countMetafields) {
+//           nodes {
+//             ...MetafieldFields
+//           }
+//         }
+//       }
+//       pageInfo {
+//         hasNextPage
+//         endCursor
+//       }
+//     }
+//   }
+// `;
 // #endregion
 
 // #region Mutations

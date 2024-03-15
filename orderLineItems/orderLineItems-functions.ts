@@ -3,19 +3,18 @@ import * as coda from '@codahq/packs-sdk';
 
 import { cleanQueryParams } from '../helpers-rest';
 import { OrderSyncTable } from '../orders/orders-functions';
+import { orderLineItemResource } from '../allResources';
 
+import type { OrderLineItem } from '../typesNew/Resources/OrderLineItem';
 import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type { Sync_OrderLineItems } from './orderLineItems-setup';
-import { SyncTableType } from '../types/SyncTable';
-import { OrderLineItemRow } from '../typesNew/CodaRows';
-import { OrderSyncTableRestParams } from '../types/Order';
-import { orderLineItemResource } from '../allResources';
+import type { SyncTableType } from '../types/SyncTable';
 
 // #region Class
 export type OrderLineItemSyncTableType = SyncTableType<
   typeof orderLineItemResource,
-  OrderLineItemRow,
-  OrderSyncTableRestParams,
+  OrderLineItem.Row,
+  OrderLineItem.Params.Sync,
   never,
   never
 >;
