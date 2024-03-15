@@ -12,15 +12,15 @@ import {
   OPTIONS_PUBLISHED_STATUS,
 } from './constants';
 import { getUnitMap, weightUnitsMap } from './helpers';
-import { autocompleteBlogParameterWithName } from './blogs/blogs-functions';
-import { autocompleteLocationsWithName } from './locations/locations-functions';
-import { autoCompleteMetafieldWithDefinitionFullKeys } from './metafields/metafields-functions';
-import { autocompleteProductTypes } from './products/products-functions';
-import { makeAutocompleteTemplateSuffixesFor } from './themes/themes-functions';
+import { autocompleteBlogParameterWithName } from './resources/blogs/blogs-functions';
+import { autocompleteLocationsWithName } from './resources/locations/locations-functions';
+import { autoCompleteMetafieldWithDefinitionFullKeys } from './resources/metafields/metafields-functions';
+import { autocompleteProductTypes } from './resources/products/products-functions';
+import { makeAutocompleteTemplateSuffixesFor } from './resources/themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
 import { validShopFields } from './schemas/syncTable/ShopSchema';
-import { CurrencyCode } from './typesNew/generated/admin.types';
-import { getResourceDefinitionsWithMetaFieldSyncTable } from './allResources';
+import { CurrencyCode } from './types/generated/admin.types';
+import { getResourceDefinitionsWithMetaFieldSyncTable } from './resources/allResources';
 
 export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;

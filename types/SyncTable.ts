@@ -1,21 +1,21 @@
 import * as coda from '@codahq/packs-sdk';
-import type { MetafieldDefinition } from '../typesNew/generated/admin.types';
-import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../typesNew/Fetcher';
+import type { MetafieldDefinition } from './generated/admin.types';
+import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './Fetcher';
 
-import type { ResourceTypeUnion } from '../typesNew/allResources';
-import type { Article } from '../typesNew/Resources/Article';
-import type { Blog } from '../typesNew/Resources/Blog';
-import type { Collect } from '../typesNew/Resources/Collect';
-import type { Collection } from '../typesNew/Resources/Collection';
-import type { Customer } from '../typesNew/Resources/Customer';
-import type { DraftOrder } from '../typesNew/Resources/DraftOrder';
-import type { InventoryLevel } from '../typesNew/Resources/InventoryLevel';
-import type { Order } from '../typesNew/Resources/Order';
-import type { Page } from '../typesNew/Resources/Page';
-import type { Product } from '../typesNew/Resources/Product';
-import type { ProductVariant } from '../typesNew/Resources/ProductVariant';
-import type { Redirect } from '../typesNew/Resources/Redirect';
-import type { Shop } from '../typesNew/Resources/Shop';
+import type { ResourceTypeUnion } from './allResources';
+import type { Article } from './Resources/Article';
+import type { Blog } from './Resources/Blog';
+import type { Collect } from './Resources/Collect';
+import type { Collection } from './Resources/Collection';
+import type { Customer } from './Resources/Customer';
+import type { DraftOrder } from './Resources/DraftOrder';
+import type { InventoryLevel } from './Resources/InventoryLevel';
+import type { Order } from './Resources/Order';
+import type { Page } from './Resources/Page';
+import type { Product } from './Resources/Product';
+import type { ProductVariant } from './Resources/ProductVariant';
+import type { Redirect } from './Resources/Redirect';
+import type { Shop } from './Resources/Shop';
 
 import type { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import type { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
@@ -31,26 +31,26 @@ import type { ProductVariantSyncTableSchema } from '../schemas/syncTable/Product
 import type { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import type { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 
-import type { ArticleSyncTableType } from '../articles/articles-functions';
-import type { BlogSyncTableType } from '../blogs/blogs-functions';
-import type { BaseRow } from '../typesNew/CodaRows';
+import type { ArticleSyncTableType } from '../resources/articles/articles-functions';
+import type { BlogSyncTableType } from '../resources/blogs/blogs-functions';
+import type { BaseRow } from './CodaRows';
 import type {
   CollectSyncTableType,
   CollectionSyncTableType,
   CustomCollectionSyncTableType,
   SmartCollectionSyncTableType,
-} from '../collections/collections-functions';
-import type { CustomerSyncTableType } from '../customers/customers-functions';
-import type { DraftOrderSyncTableType } from '../draftOrders/draftOrders-functions';
-import type { InventoryLevelSyncTableType } from '../inventoryLevels/inventoryLevels-functions';
-import type { OrderSyncTableType } from '../orders/orders-functions';
-import type { OrderLineItemSyncTableType } from '../orderLineItems/orderLineItems-functions';
-import type { PageSyncTableType } from '../pages/pages-functions';
-import type { RedirectSyncTableType } from '../redirects/redirects-functions';
-import type { ProductSyncTableType } from '../products/products-functions';
-import type { ProductVariantSyncTableType } from '../productVariants/productVariants-functions';
-import type { ShopSyncTableType } from '../shop/shop-functions';
-import type { LocationSyncTableType } from '../locations/locations-functions';
+} from '../resources/collections/collections-functions';
+import type { CustomerSyncTableType } from '../resources/customers/customers-functions';
+import type { DraftOrderSyncTableType } from '../resources/draftOrders/draftOrders-functions';
+import type { InventoryLevelSyncTableType } from '../resources/inventoryLevels/inventoryLevels-functions';
+import type { OrderSyncTableType } from '../resources/orders/orders-functions';
+import type { OrderLineItemSyncTableType } from '../resources/orderLineItems/orderLineItems-functions';
+import type { PageSyncTableType } from '../resources/pages/pages-functions';
+import type { RedirectSyncTableType } from '../resources/redirects/redirects-functions';
+import type { ProductSyncTableType } from '../resources/products/products-functions';
+import type { ProductVariantSyncTableType } from '../resources/productVariants/productVariants-functions';
+import type { ShopSyncTableType } from '../resources/shop/shop-functions';
+import type { LocationSyncTableType } from '../resources/locations/locations-functions';
 
 // #region Types
 export type SyncTableType<
@@ -188,4 +188,30 @@ export interface FieldDependency<T extends coda.ObjectSchemaProperties> {
   field: keyof T | string;
   dependencies: (keyof T)[] | string[];
 }
+// #endregion
+
+// #region Helpers
+/**
+ * Helper function to correctly type the resource.
+ */
+/*
+export function makeResourceDefinition<
+  SyncParamsT extends RestSyncParamsUnion,
+  T extends {
+    metafieldOwnerType?: MetafieldOwnerType;
+    useGraphQlForMetafields?: boolean;
+    graphQl: { name: GraphQlResourceName };
+    rest: {
+      name: RestResourceName;
+      singular: RestResourceSingular;
+      plural: RestResourcePlural;
+    };
+    schema: SyncTableSchemaUnion;
+    row: BaseRow;
+  }
+>(params: T) {
+  let p: SyncParamsT;
+  return params;
+}
+*/
 // #endregion

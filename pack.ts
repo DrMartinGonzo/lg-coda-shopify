@@ -5,7 +5,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
-import { ShopRestFetcher } from './shop/shop-functions';
+import { ShopRestFetcher } from './resources/shop/shop-functions';
 
 import { Formula_ProductStatus, Formula_ProductType } from './helpers-setup';
 import {
@@ -34,7 +34,7 @@ import {
   Formula_MetaMultiLineText,
   Formula_MetaDimension,
   Formula_MetaRating,
-} from './metafields/metafields-setup';
+} from './resources/metafields/metafields-setup';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -42,7 +42,7 @@ import {
   Format_Article,
   Formula_Article,
   Sync_Articles,
-} from './articles/articles-setup';
+} from './resources/articles/articles-setup';
 import {
   Action_CreateBlog,
   Action_DeleteBlog,
@@ -50,7 +50,7 @@ import {
   Format_Blog,
   Formula_Blog,
   Sync_Blogs,
-} from './blogs/blogs-setup';
+} from './resources/blogs/blogs-setup';
 import {
   Action_CreateCollection,
   Action_DeleteCollection,
@@ -59,7 +59,7 @@ import {
   Formula_Collection,
   Sync_Collections,
   Sync_Collects,
-} from './collections/collections-setup';
+} from './resources/collections/collections-setup';
 import {
   Action_CreateCustomer,
   Action_DeleteCustomer,
@@ -67,7 +67,7 @@ import {
   Format_Customer,
   Formula_Customer,
   Sync_Customers,
-} from './customers/customers-setup';
+} from './resources/customers/customers-setup';
 import {
   Action_CompleteDraftOrder,
   Action_DeleteDraftOrder,
@@ -76,14 +76,14 @@ import {
   Format_DraftOrder,
   Formula_DraftOrder,
   Sync_DraftOrders,
-} from './draftOrders/draftOrders-setup';
-import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './files/files-setup';
-import { Action_UpdateInventoryItem, Sync_InventoryItems } from './inventoryItems/inventoryItems-setup';
+} from './resources/draftOrders/draftOrders-setup';
+import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './resources/files/files-setup';
+import { Action_UpdateInventoryItem, Sync_InventoryItems } from './resources/inventoryItems/inventoryItems-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
   Sync_InventoryLevels,
-} from './inventoryLevels/inventoryLevels-setup';
+} from './resources/inventoryLevels/inventoryLevels-setup';
 import {
   Action_ActivateLocation,
   Action_DeactivateLocation,
@@ -91,35 +91,36 @@ import {
   Format_Location,
   Formula_Location,
   Sync_Locations,
-} from './locations/locations-setup';
+} from './resources/locations/locations-setup';
 import {
   Action_DeleteMetafield,
   Action_SALUT,
   Action_SetMetafield,
+  Action_SetMetafieldAltVersion,
   Formula_Metafield,
   Formula_Metafields,
   Sync_Metafields,
-} from './metafields/metafields-setup';
+} from './resources/metafields/metafields-setup';
 import {
   Format_MetafieldDefinition,
   Formula_MetafieldDefinition,
   Sync_MetafieldDefinitions,
-} from './metafieldDefinitions/metafieldDefinitions-setup';
+} from './resources/metafieldDefinitions/metafieldDefinitions-setup';
 import {
   Action_CreateMetaObject,
   Action_DeleteMetaObject,
   Action_UpdateMetaObject,
   Sync_Metaobjects,
-} from './metaobjects/metaobjects-setup';
+} from './resources/metaobjects/metaobjects-setup';
 import {
   Format_Order,
   Formula_Order,
   Formula_OrderExportFormat,
   Formula_Orders,
   Sync_Orders,
-} from './orders/orders-setup';
-import { Sync_OrderLineItems } from './orderLineItems/orderLineItems-setup';
-import { Sync_OrderTransactions } from './orderTransactions/orderTransactions-setup';
+} from './resources/orders/orders-setup';
+import { Sync_OrderLineItems } from './resources/orderLineItems/orderLineItems-setup';
+import { Sync_OrderTransactions } from './resources/orderTransactions/orderTransactions-setup';
 import {
   Action_CreatePage,
   Action_DeletePage,
@@ -127,7 +128,7 @@ import {
   Format_Page,
   Formula_Page,
   Sync_Pages,
-} from './pages/pages-setup';
+} from './resources/pages/pages-setup';
 import {
   Action_CreateProductVariant,
   Action_DeleteProductVariant,
@@ -135,7 +136,7 @@ import {
   Format_ProductVariant,
   Formula_ProductVariant,
   Sync_ProductVariants,
-} from './productVariants/productVariants-setup';
+} from './resources/productVariants/productVariants-setup';
 import {
   Action_CreateProduct,
   Action_DeleteProduct,
@@ -143,7 +144,7 @@ import {
   Format_Product,
   Formula_Product,
   Sync_Products,
-} from './products/products-setup';
+} from './resources/products/products-setup';
 import {
   Action_CreateRedirect,
   Action_DeleteRedirect,
@@ -151,9 +152,9 @@ import {
   Format_Redirect,
   Formula_Redirect,
   Sync_Redirects,
-} from './redirects/redirects-setup';
-import { Formula_Shop, Formula_ShopField, Sync_Shops } from './shop/shop-setup';
-import { setupTranslations } from './translations/translations-setup';
+} from './resources/redirects/redirects-setup';
+import { Formula_Shop, Formula_ShopField, Sync_Shops } from './resources/shop/shop-setup';
+import { setupTranslations } from './resources/translations/translations-setup';
 
 // #endregion
 
@@ -316,24 +317,23 @@ pack.formulas.push(Formula_MetafieldKey);
 pack.formulas.push(Formula_MetaBoolean);
 pack.formulas.push(Formula_MetaCollectionReference);
 pack.formulas.push(Formula_MetaColor);
-pack.formulas.push(Formula_MetaDateTime);
 pack.formulas.push(Formula_MetaDate);
+pack.formulas.push(Formula_MetaDateTime);
 pack.formulas.push(Formula_MetaDimension);
 pack.formulas.push(Formula_MetaJson);
+pack.formulas.push(Formula_MetaMetaobjectReference);
+pack.formulas.push(Formula_MetaMixedReference);
 pack.formulas.push(Formula_MetaMoney);
 pack.formulas.push(Formula_MetaMultiLineText);
 pack.formulas.push(Formula_MetaNumberDecimal);
 pack.formulas.push(Formula_MetaNumberInteger);
-pack.formulas.push(Formula_MetaUrl);
-pack.formulas.push(Formula_MetaVolume);
-pack.formulas.push(Formula_MetaRating);
-
-pack.formulas.push(Formula_MetaMetaobjectReference);
-pack.formulas.push(Formula_MetaMixedReference);
 pack.formulas.push(Formula_MetaPageReference);
 pack.formulas.push(Formula_MetaProductReference);
+pack.formulas.push(Formula_MetaRating);
 pack.formulas.push(Formula_MetaSingleLineText);
+pack.formulas.push(Formula_MetaUrl);
 pack.formulas.push(Formula_MetaVariantReference);
+pack.formulas.push(Formula_MetaVolume);
 pack.formulas.push(Formula_MetaWeight);
 
 // Misc Helpers

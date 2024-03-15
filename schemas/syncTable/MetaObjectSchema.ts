@@ -6,7 +6,7 @@ import { Identity } from '../../constants';
 import type {
   MetafieldDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
-} from '../../typesNew/generated/admin.generated';
+} from '../../types/generated/admin.generated';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {

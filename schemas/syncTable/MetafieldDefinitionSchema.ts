@@ -3,7 +3,7 @@ import { CODA_PACK_ID } from '../../pack-config.json';
 import { NOT_FOUND } from '../../constants';
 import { ValidationSchema } from '../basic/ValidationSchema';
 import { Identity } from '../../constants';
-import type { HasMetafieldSyncTableResourceTypeUnion } from '../../typesNew/allResources';
+import type { HasMetafieldSyncTableResourceTypeUnion } from '../../types/allResources';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {

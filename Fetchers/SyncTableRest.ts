@@ -13,26 +13,28 @@ import {
   makeGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
+import { fetchMetafieldsRest, formatMetaFieldValueForSchema } from '../resources/metafields/metafields-functions';
 import {
-  fetchMetafieldsRest,
-  formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
-  hasMetafieldsInUpdates,
   preprendPrefixToMetaFieldKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-} from '../metafields/metafields-functions';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { QueryNodesMetafields } from '../metafields/metafields-graphql';
+} from '../resources/metafields/metafields-helpers';
+import { hasMetafieldsInUpdates } from '../resources/metafields/metafields-helpers';
+import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
+import { queryNodesMetafieldsByKey, querySingleNodeMetafieldsByKey } from '../resources/metafields/metafields-graphql';
 import { ShopifyMaxExceededError } from '../ShopifyErrors';
 
-import type { GetNodesMetafieldsQuery, GetNodesMetafieldsQueryVariables } from '../types/admin.generated';
-import type { GraphQlResourceName } from '../types/RequestsGraphQl';
-import type { Node, HasMetafields, MetafieldOwnerType } from '../types/admin.types';
-import type { ShopifyGraphQlRequestCost } from '../types/ShopifyGraphQl';
+import type {
+  GetNodesMetafieldsByKeyQuery,
+  GetNodesMetafieldsByKeyQueryVariables,
+} from '../types/generated/admin.generated';
+import type { GraphQlResourceName } from '../types/ShopifyGraphQlResourceTypes';
+import type { Node, HasMetafields, MetafieldOwnerType } from '../types/generated/admin.types';
 import type { SimpleRestNew } from './SimpleRest';
-import type { ResourceTypeUnion } from '../typesNew/allResources';
+import type { ResourceTypeUnion } from '../types/allResources';
 import type { SyncTableTypeUnion } from '../types/SyncTable';
+import { ShopifyGraphQlRequestCost } from '../types/Fetcher';
 
 // #endregion
 
@@ -61,7 +63,7 @@ export type GetSyncParams<T extends SyncTableTypeUnion> = T['rest']['params']['s
 export type GetUpdateParams<T extends SyncTableTypeUnion> = T['rest']['params']['update'];
 export type GetCreateParams<T extends SyncTableTypeUnion> = T['rest']['params']['create'];
 
-export interface SyncLolRest extends coda.Continuation {
+interface SyncLolRest extends coda.Continuation {
   nextUrl?: string;
   scheduledNextRestUrl?: string;
   skipNextRestSync: string;
@@ -74,7 +76,7 @@ type currentBatchType<CodaRowT = any> = {
   processing: CodaRowT[];
   remaining: CodaRowT[];
 };
-export interface SyncTableMixedNewContinuationNew<CodaRowT = any> extends SyncLolRest {
+interface SyncTableMixedNewContinuationNew<CodaRowT = any> extends SyncLolRest {
   retries: number;
   cursor?: string;
   graphQlLock: string;
@@ -168,7 +170,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
 
   // #region Sync
   async makeSyncRequest(params: GetRequestParams): Promise<MultipleFetchResponse<SyncT>> {
-    logAdmin(`🚀  Rest Admin API: Starting ${this.resource.rest.name} sync…`);
+    logAdmin(`🚀  Rest Admin API: Starting ${this.resource.display} sync…`);
     return makeGetRequest<SyncT['rest']['multipleFetchResponse']>({ url: params.url }, this.fetcher.context);
   }
 
@@ -228,7 +230,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   }
 
   private buildGraphQlMetafieldsContinuation(
-    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsQuery>>,
+    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsByKeyQuery>>,
     retries: number,
     currentBatch: currentBatchType
   ) {
@@ -271,7 +273,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   }
 
   private async makeGraphQlMetafieldsRequest(): Promise<{
-    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsQuery>>;
+    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsByKeyQuery>>;
     continuation: SyncTableMixedNewContinuationNew | null;
   }> {
     const count = Math.min(this.items.length, this.restLimit);
@@ -285,18 +287,18 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     // TODO: implement cost adjustment
     // Mais le coût semble négligeable en utilisant une query par node
     const payload = {
-      query: QueryNodesMetafields,
+      query: queryNodesMetafieldsByKey,
       variables: {
         metafieldKeys: this.effectiveMetafieldKeys,
         countMetafields: this.effectiveMetafieldKeys.length,
         ids: arrayUnique(currentBatch.processing.map((c) => c.id))
           .sort()
           .map((id) => this.convertRestIdToGid(id)),
-      } as GetNodesMetafieldsQueryVariables,
+      } as GetNodesMetafieldsByKeyQueryVariables,
     };
 
     try {
-      let { response, retries } = await makeGraphQlRequest<GetNodesMetafieldsQuery>(
+      let { response, retries } = await makeGraphQlRequest<GetNodesMetafieldsByKeyQuery>(
         { payload, retries: this.prevContinuation?.retries ?? 0 },
         this.fetcher.context
       );

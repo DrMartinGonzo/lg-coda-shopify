@@ -10,7 +10,7 @@ import {
 } from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import { ShopifyMaxExceededError } from './ShopifyErrors';
-import { GraphQlResourceName } from './typesNew/ShopifyGraphQlResourceTypes';
+import { GraphQlResourceName } from './types/ShopifyGraphQlResourceTypes';
 
 import type {
   SyncTableGraphQlContinuation,
@@ -23,7 +23,7 @@ import type {
   ShopifyGraphQlRequestCost,
   ShopifyGraphQlThrottleStatus,
   ShopifyGraphQlUserError,
-} from './typesNew/Fetcher';
+} from './types/Fetcher';
 
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
 
