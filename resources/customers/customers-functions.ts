@@ -100,6 +100,7 @@ export class CustomerRestFetcher extends SimpleRestNew<CustomerSyncTableType> {
       ...customer,
       admin_url: `${this.context.endpoint}/admin/customers/${customer.id}`,
       display: formatCustomerDisplayValue(customer),
+      total_spent: parseFloat(customer.total_spent),
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
       // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
