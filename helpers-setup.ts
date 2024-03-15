@@ -3,9 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from './constants';
 import { getUnitMap } from './helpers';
-import { autocompleteProductTypes } from './products/products-functions';
+import { autocompleteProductTypes } from './resources/products/products-functions';
 
-import type { MetafieldTypeValue } from './metafields/metafields-constants';
+import type { MetafieldTypeValue } from './resources/metafields/metafields-constants';
 
 // #endregion
 

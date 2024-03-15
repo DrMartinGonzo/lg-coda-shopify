@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { METAFIELD_TYPES } from '../../metafields/metafields-constants';
+import { METAFIELD_TYPES } from '../../resources/metafields/metafields-constants';
 import { ProductReference } from './ProductSchemaRest';
 import { CollectionReference } from './CollectionSchema';
 import { PageReference } from './PageSchema';

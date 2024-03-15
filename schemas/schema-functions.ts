@@ -2,10 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 
 import { capitalizeFirstChar, getUnitMap } from '../helpers';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { getMetaFieldFullKey } from '../metafields/metafields-helpers';
+import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
+import { getMetaFieldFullKey } from '../resources/metafields/metafields-helpers';
 
-import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../metafields/metafields-constants';
+import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../resources/metafields/metafields-constants';
 import { METAFIELD_PREFIX_KEY } from '../constants';
 import { CollectionReference } from '../schemas/syncTable/CollectionSchema';
 import { FileReference } from '../schemas/syncTable/FileSchema';
@@ -17,8 +17,8 @@ import { ProductVariantReference } from '../schemas/syncTable/ProductVariantSche
 import type {
   MetafieldDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
-} from '../typesNew/generated/admin.generated';
-import type { MetafieldDefinition, MetafieldOwnerType } from '../typesNew/generated/admin.types';
+} from '../types/generated/admin.generated';
+import type { MetafieldDefinition, MetafieldOwnerType } from '../types/generated/admin.types';
 
 export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSchemaDefinition<string, string>>(
   baseSchema: SchemaT,

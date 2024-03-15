@@ -11,15 +11,15 @@ import {
   makePutRequest,
 } from '../helpers-rest';
 import { idToGraphQlGid } from '../helpers-graphql';
-import { getMetafieldKeyValueSetsFromUpdate } from '../metafields/metafields-functions';
-import { separatePrefixedMetafieldsKeysFromKeys } from '../metafields/metafields-helpers';
+import { getMetafieldKeyValueSetsFromUpdate } from '../resources/metafields/metafields-functions';
+import { separatePrefixedMetafieldsKeysFromKeys } from '../resources/metafields/metafields-helpers';
 import {
   updateAndFormatResourceMetafieldsGraphQl,
   updateAndFormatResourceMetafieldsRest,
-} from '../metafields/metafields-functions';
+} from '../resources/metafields/metafields-functions';
 
-import type { FetchRequestOptions } from '../typesNew/Fetcher';
-import type { MetafieldDefinitionFragment } from '../typesNew/generated/admin.generated';
+import type { FetchRequestOptions } from '../types/Fetcher';
+import type { MetafieldDefinitionFragment } from '../types/generated/admin.generated';
 import type {
   GetCodaRow,
   GetCreateParams,
@@ -35,7 +35,7 @@ import type {
   RestUpdateParamsUnion,
   SyncTableTypeUnion,
 } from '../types/SyncTable';
-import type { ResourceTypeUnion } from '../typesNew/allResources';
+import type { ResourceTypeUnion } from '../types/allResources';
 
 export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
   readonly resource: ResourceTypeUnion;

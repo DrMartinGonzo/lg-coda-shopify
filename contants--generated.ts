@@ -2,7 +2,7 @@
  * This file is auto generated from a GraphQl introspection query
  */
 
-import { CountryCode } from './typesNew/generated/admin.types';
+import { CountryCode } from './types/generated/admin.types';
 
 /**
  * Les noms complets des pays présent dans l'enum CountryCode présente dans ./admin.types.d.ts
