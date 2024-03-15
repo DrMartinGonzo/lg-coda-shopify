@@ -13,16 +13,10 @@ import { cleanQueryParams, makePostRequest, makePutRequest } from '../helpers-re
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { handleFieldDependencies } from '../helpers';
 
+import type { DraftOrder } from '../typesNew/Resources/DraftOrder';
 import type { SingleFetchData, SyncTableParamValues } from '../Fetchers/SyncTableRest';
-import type {
-  DraftOrderCompleteRestParams,
-  DraftOrderSendInvoiceRestParams,
-  DraftOrderSyncTableRestParams,
-  DraftOrderUpdateRestParams,
-} from '../types/DraftOrder';
-import type { DraftOrderRow } from '../typesNew/CodaRows';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import type { FetchRequestOptions } from '../types/Requests';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 import type { Sync_DraftOrders } from './draftOrders-setup';
 import type { SyncTableType } from '../types/SyncTable';
 import { draftOrderResource } from '../allResources';
@@ -30,10 +24,10 @@ import { draftOrderResource } from '../allResources';
 // #region Class
 export type DraftOrderSyncTableType = SyncTableType<
   typeof draftOrderResource,
-  DraftOrderRow,
-  DraftOrderSyncTableRestParams,
+  DraftOrder.Row,
+  DraftOrder.Params.Sync,
   never,
-  DraftOrderUpdateRestParams
+  DraftOrder.Params.Update
 >;
 
 export class DraftOrderSyncTable extends SyncTableRestNew<DraftOrderSyncTableType> {
@@ -85,10 +79,10 @@ export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType
   }
 
   formatRowToApi = (
-    row: Partial<DraftOrderRow>,
+    row: Partial<DraftOrder.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): DraftOrderUpdateRestParams | undefined => {
-    let restParams: DraftOrderUpdateRestParams = {};
+  ): DraftOrder.Params.Update | undefined => {
+    let restParams: DraftOrder.Params.Update = {};
 
     if (row.email !== undefined) restParams.email = row.email;
     if (row.note !== undefined) restParams.note = row.note;
@@ -99,8 +93,8 @@ export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType
     return restParams;
   };
 
-  formatApiToRow = (draftOrder): DraftOrderRow => {
-    let obj: DraftOrderRow = {
+  formatApiToRow = (draftOrder): DraftOrder.Row => {
+    let obj: DraftOrder.Row = {
       ...draftOrder,
       admin_url: `${this.context.endpoint}/admin/draft_orders/${draftOrder.id}`,
     };
@@ -129,7 +123,7 @@ export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType
 
   complete = async (
     draftOrderId: number,
-    params: DraftOrderCompleteRestParams,
+    params: DraftOrder.Params.Complete,
     requestOptions: FetchRequestOptions = {}
   ) => {
     const restParams = cleanQueryParams(params);
@@ -143,7 +137,7 @@ export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType
 
   sendInvoice = async (
     draftOrderId: number,
-    params: DraftOrderSendInvoiceRestParams,
+    params: DraftOrder.Params.SendInvoice,
     requestOptions: FetchRequestOptions = {}
   ) => {
     const restParams = cleanQueryParams(params);
@@ -152,7 +146,7 @@ export class DraftOrderRestFetcher extends SimpleRestNew<DraftOrderSyncTableType
     const payload = { draft_order_invoice: restParams };
     const url = coda.joinUrl(this.baseUrl, `${this.plural}/${draftOrderId}/send_invoice.json`);
     return makePostRequest<{
-      draft_order_invoice: DraftOrderSendInvoiceRestParams;
+      draft_order_invoice: DraftOrder.Params.SendInvoice;
     }>({ ...requestOptions, url, payload }, this.context);
   };
 }

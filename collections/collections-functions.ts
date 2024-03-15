@@ -20,25 +20,25 @@ import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafield
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { SimpleRestNew } from '../Fetchers/SimpleRest';
 
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import { handleFieldDependencies, isNullOrEmpty } from '../helpers';
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { cleanQueryParams } from '../helpers-rest';
 
 import type { Collection as CollectionType } from '../typesNew/Resources/Collection';
+import type { Collect } from '../typesNew/Resources/Collect';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { MultipleFetchResponse, SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type { CollectRow } from '../typesNew/CodaRows';
-import type { FetchRequestOptions } from '../types/Requests';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 import type {
   GetCollectionTypeQuery,
   GetCollectionTypeQueryVariables,
   GetCollectionTypesQuery,
   GetCollectionTypesQueryVariables,
-} from '../types/admin.generated';
+} from '../typesNew/generated/admin.generated';
 import type { Sync_Collections, Sync_Collects } from './collections-setup';
 import type { SyncTableType } from '../types/SyncTable';
-import type { CollectSyncTableRestParams } from '../types/Collect';
 import { collectResource } from '../allResources';
 import { smartCollectionResource } from '../allResources';
 import { customCollectionResource } from '../allResources';
@@ -70,7 +70,7 @@ export type SmartCollectionSyncTableType = SyncTableType<
   CollectionType.Params.Update
 >;
 
-export type CollectSyncTableType = SyncTableType<typeof collectResource, CollectRow, CollectSyncTableRestParams>;
+export type CollectSyncTableType = SyncTableType<typeof collectResource, CollectRow, Collect.Params.Sync>;
 
 export class Collection {
   /**
@@ -178,7 +178,7 @@ export class Collection {
   };
 }
 
-export abstract class CollectionRestFetcherBase<
+abstract class CollectionRestFetcherBase<
   T extends CollectionSyncTableType | CustomCollectionSyncTableType | SmartCollectionSyncTableType
 > extends SimpleRestNew<T> {
   validateParams = (
@@ -318,7 +318,7 @@ class CustomCollectionSyncTable extends CollectionSyncTableBase<CustomCollection
   }
 }
 
-export class SmartCollectionRestFetcher extends CollectionRestFetcherBase<SmartCollectionSyncTableType> {
+class SmartCollectionRestFetcher extends CollectionRestFetcherBase<SmartCollectionSyncTableType> {
   constructor(context: coda.ExecutionContext) {
     super(smartCollectionResource, context);
   }

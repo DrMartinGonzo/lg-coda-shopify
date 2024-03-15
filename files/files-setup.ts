@@ -19,7 +19,7 @@ import { inputs } from '../shared-parameters';
 import { Identity } from '../constants';
 
 import type { FileRow } from '../typesNew/CodaRows';
-import type { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../types/admin.generated';
+import type { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../typesNew/generated/admin.generated';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion

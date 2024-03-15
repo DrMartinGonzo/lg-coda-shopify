@@ -5,10 +5,11 @@ import { CACHE_DEFAULT } from '../constants';
 import { ArticleRestFetcher, ArticleSyncTable } from './articles-functions';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { parseOptionId, wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { Identity } from '../constants';
 
 import type { Article } from '../typesNew/Resources/Article';

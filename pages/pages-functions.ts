@@ -5,16 +5,14 @@ import striptags from 'striptags';
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
-import { RestResourceName } from '../types/RequestsRest';
 import { SimpleRestNew } from '../Fetchers/SimpleRest';
 import { pageFieldDependencies } from '../schemas/syncTable/PageSchema';
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams } from '../helpers-rest';
 
-import type { PageRow } from '../typesNew/CodaRows';
+import type { Page } from '../typesNew/Resources/Page';
 import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
-import type { PageCreateRestParams, PageSyncTableRestParams, PageUpdateRestParams } from '../types/Page';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { Sync_Pages } from './pages-setup';
 import type { SyncTableType } from '../types/SyncTable';
@@ -23,13 +21,13 @@ import { pageResource } from '../allResources';
 // #region Classes
 export type PageSyncTableType = SyncTableType<
   typeof pageResource,
-  PageRow,
-  PageSyncTableRestParams,
-  PageCreateRestParams,
-  PageUpdateRestParams
+  Page.Row,
+  Page.Params.Sync,
+  Page.Params.Create,
+  Page.Params.Update
 >;
 
-export class PageSyncTable<T extends RestResourceName.Page> extends SyncTableRestNew<PageSyncTableType> {
+export class PageSyncTable extends SyncTableRestNew<PageSyncTableType> {
   constructor(fetcher: PageRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
     super(pageResource, fetcher, params);
   }
@@ -63,7 +61,7 @@ export class PageRestFetcher extends SimpleRestNew<PageSyncTableType> {
     super(pageResource, context);
   }
 
-  validateParams = (params: PageUpdateRestParams | PageCreateRestParams | PageSyncTableRestParams) => {
+  validateParams = (params: Page.Params.Update | Page.Params.Create | Page.Params.Sync) => {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
     if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
       throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
@@ -72,10 +70,10 @@ export class PageRestFetcher extends SimpleRestNew<PageSyncTableType> {
   };
 
   formatRowToApi = (
-    row: Partial<PageRow>,
+    row: Partial<Page.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): PageUpdateRestParams | PageCreateRestParams | undefined => {
-    let restParams: PageUpdateRestParams | PageCreateRestParams = {};
+  ): Page.Params.Update | Page.Params.Create | undefined => {
+    let restParams: Page.Params.Update | Page.Params.Create = {};
 
     if (row.author !== undefined) restParams.author = row.author;
     if (row.body_html !== undefined) restParams.body_html = row.body_html;
@@ -89,7 +87,7 @@ export class PageRestFetcher extends SimpleRestNew<PageSyncTableType> {
       ? metafieldKeyValueSets.map(formatMetafieldRestInputFromKeyValueSet).filter(Boolean)
       : [];
     if (metafieldRestInputs.length) {
-      restParams = { ...restParams, metafields: metafieldRestInputs } as PageCreateRestParams;
+      restParams = { ...restParams, metafields: metafieldRestInputs } as Page.Params.Create;
     }
 
     // Means we have nothing to update/create
@@ -97,8 +95,8 @@ export class PageRestFetcher extends SimpleRestNew<PageSyncTableType> {
     return restParams;
   };
 
-  formatApiToRow = (page): PageRow => {
-    let obj: PageRow = {
+  formatApiToRow = (page): Page.Row => {
+    let obj: Page.Row = {
       ...page,
       admin_url: `${this.context.endpoint}/admin/pages/${page.id}`,
       body: striptags(page.body_html),

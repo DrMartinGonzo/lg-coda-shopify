@@ -2,8 +2,8 @@ import * as coda from '@codahq/packs-sdk';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { NOT_FOUND } from '../../constants';
 import { ValidationSchema } from '../basic/ValidationSchema';
-import { ResourceMetafieldsSyncTableDefinition } from '../../metafields/metafields-constants';
 import { Identity } from '../../constants';
+import type { HasMetafieldSyncTableResourceTypeUnion } from '../../typesNew/allResources';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -105,9 +105,7 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export function getMetafieldDefinitionReferenceSchema(
-  resourceMetafieldsSyncTableDefinition: ResourceMetafieldsSyncTableDefinition
-) {
+export function getMetafieldDefinitionReferenceSchema(ownerResource: HasMetafieldSyncTableResourceTypeUnion) {
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,
     properties: {
@@ -119,7 +117,7 @@ export function getMetafieldDefinitionReferenceSchema(
     identity: {
       packId: CODA_PACK_ID,
       name: Identity.MetafieldDefinition,
-      dynamicUrl: resourceMetafieldsSyncTableDefinition.key,
+      dynamicUrl: ownerResource.metafieldOwnerType,
     },
   });
 }

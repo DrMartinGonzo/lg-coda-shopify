@@ -108,6 +108,7 @@ export const getCollectionTypes = /* GraphQL */ `
   }
 `;
 
+/*
 export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
   ${MetafieldFieldsFragment}
 
@@ -135,6 +136,7 @@ export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
     }
   }
 `;
+/*
 // #endregion
 
 // #region Mutations

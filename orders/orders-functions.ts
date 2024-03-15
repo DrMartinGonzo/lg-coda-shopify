@@ -17,8 +17,7 @@ import { orderFieldDependencies } from '../schemas/syncTable/OrderSchema';
 import { cleanQueryParams } from '../helpers-rest';
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 
-import type { OrderRow } from '../typesNew/CodaRows';
-import type { OrderSyncTableRestParams, OrderUpdateRestParams } from '../types/Order';
+import type { Order } from '../typesNew/Resources/Order';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type { Sync_Orders } from './orders-setup';
@@ -29,10 +28,10 @@ import { orderResource } from '../allResources';
 // #region Class
 export type OrderSyncTableType = SyncTableType<
   typeof orderResource,
-  OrderRow,
-  OrderSyncTableRestParams,
+  Order.Row,
+  Order.Params.Sync,
   never,
-  OrderUpdateRestParams
+  Order.Params.Update
 >;
 
 export class OrderSyncTable<
@@ -108,10 +107,10 @@ export class OrderRestFetcher extends SimpleRestNew<OrderSyncTableType> {
   };
 
   formatRowToApi = (
-    row: Partial<OrderRow>,
+    row: Partial<Order.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): OrderUpdateRestParams | undefined => {
-    let restParams: OrderUpdateRestParams = {};
+  ): Order.Params.Update | undefined => {
+    let restParams: Order.Params.Update = {};
 
     if (row.buyer_accepts_marketing !== undefined) restParams.buyer_accepts_marketing = row.buyer_accepts_marketing;
     if (row.email !== undefined) restParams.email = row.email;
@@ -133,8 +132,8 @@ export class OrderRestFetcher extends SimpleRestNew<OrderSyncTableType> {
     return restParams;
   };
 
-  formatApiToRow = (order): OrderRow => {
-    let obj: OrderRow = {
+  formatApiToRow = (order): Order.Row => {
+    let obj: Order.Row = {
       ...order,
       admin_url: `${this.context.endpoint}/admin/orders/${order.id}`,
     };

@@ -15,7 +15,10 @@ import { ShopRestFetcher } from '../shop/shop-functions';
 import { Identity } from '../constants';
 
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
-import type { GetOrderTransactionsQuery, GetOrderTransactionsQueryVariables } from '../types/admin.generated';
+import type {
+  GetOrderTransactionsQuery,
+  GetOrderTransactionsQueryVariables,
+} from '../typesNew/generated/admin.generated';
 
 // #endregion
 

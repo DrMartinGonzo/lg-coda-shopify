@@ -10,16 +10,16 @@ import {
   makePostRequest,
   makePutRequest,
 } from '../helpers-rest';
-import { getGraphQlResourceFromMetafieldOwnerType, idToGraphQlGid } from '../helpers-graphql';
+import { idToGraphQlGid } from '../helpers-graphql';
+import { getMetafieldKeyValueSetsFromUpdate } from '../metafields/metafields-functions';
+import { separatePrefixedMetafieldsKeysFromKeys } from '../metafields/metafields-helpers';
 import {
-  getMetafieldKeyValueSetsFromUpdate,
-  separatePrefixedMetafieldsKeysFromKeys,
   updateAndFormatResourceMetafieldsGraphQl,
   updateAndFormatResourceMetafieldsRest,
 } from '../metafields/metafields-functions';
 
-import type { FetchRequestOptions } from '../types/Requests';
-import type { MetafieldDefinitionFragment } from '../types/admin.generated';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
+import type { MetafieldDefinitionFragment } from '../typesNew/generated/admin.generated';
 import type {
   GetCodaRow,
   GetCreateParams,
@@ -223,8 +223,7 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
     const updateMetafieldsPromise = metafieldKeyValueSets.length
       ? updateAndFormatResourceMetafieldsGraphQl(
           {
-            // TODO: fonction pas terrible pour recup le nom du GraphQL bidule
-            ownerGid: idToGraphQlGid(getGraphQlResourceFromMetafieldOwnerType(this.resource.metafieldOwnerType), rowId),
+            ownerGid: idToGraphQlGid(this.resource.graphQl.name, rowId),
             metafieldKeyValueSets,
           },
           this.context

@@ -2,10 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_DEFAULT } from '../constants';
-import { getGraphQlResourceFromMetafieldOwnerType, graphQlGidToId, makeGraphQlRequest } from '../helpers-graphql';
-import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../types/admin.types';
+import { graphQlGidToId, makeGraphQlRequest } from '../helpers-graphql';
+import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { METAFIELD_TYPES } from '../metafields/metafields-constants';
-import { getMetaFieldFullKey } from '../metafields/metafields-functions';
+import { getMetaFieldFullKey } from '../metafields/metafields-helpers';
 import { QuerySingleMetafieldDefinition, queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 
@@ -15,8 +15,8 @@ import type {
   GetSingleMetafieldDefinitionQuery,
   GetSingleMetafieldDefinitionQueryVariables,
   MetafieldDefinitionFragment,
-} from '../types/admin.generated';
-import type { FetchRequestOptions } from '../types/Requests';
+} from '../typesNew/generated/admin.generated';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 
 // #endregion
 
@@ -34,16 +34,6 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
   };
 }
 
-export function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
-  return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-      { ownerType, includeFakeExtraDefinitions: true },
-      context
-    );
-    const keys = metafieldDefinitions.map(getMetaFieldFullKey);
-    return coda.simpleAutocomplete(search, keys);
-  };
-}
 // #endregion
 
 // #region Helpers
@@ -68,8 +58,6 @@ export function formatMetafieldDefinitionForSchemaFromGraphQlApi(
   metafieldDefinitionNode: MetafieldDefinitionFragment,
   context: coda.ExecutionContext
 ) {
-  const graphQlResourceType = getGraphQlResourceFromMetafieldOwnerType(metafieldDefinitionNode.ownerType);
-
   const definitionId = graphQlGidToId(metafieldDefinitionNode.id);
   let obj: coda.SchemaType<typeof MetafieldDefinitionSyncTableSchema> = {
     ...metafieldDefinitionNode,
@@ -78,7 +66,7 @@ export function formatMetafieldDefinitionForSchemaFromGraphQlApi(
     admin_url: `${
       context.endpoint
     }/admin/settings/custom_data/${metafieldDefinitionNode.ownerType.toLowerCase()}/metafields/${definitionId}`,
-    ownerType: graphQlResourceType,
+    ownerType: metafieldDefinitionNode.ownerType,
     type: metafieldDefinitionNode.type?.name,
   };
 

@@ -1,6 +1,6 @@
 import type { CollectionRow } from '../CodaRows';
-import type { MetafieldRestInput } from '../../types/Metafields';
-import type { BaseSyncTableRestParams } from '../../types/RequestsRest';
+import type { Metafield } from './Metafield';
+import type { BaseSyncTableRestParams } from '../allResources';
 
 export declare namespace Collection {
   type Row = CollectionRow;
@@ -21,19 +21,6 @@ export declare namespace Collection {
       published_at_max?: Date;
     }
 
-    interface Update {
-      title?: string;
-      body_html?: string;
-      handle?: string;
-      image?: {
-        alt?: string;
-        src?: string;
-      };
-      published?: boolean;
-      template_suffix?: string;
-      metafields?: MetafieldRestInput[];
-    }
-
     interface Create {
       title: string;
       body_html?: string;
@@ -44,7 +31,20 @@ export declare namespace Collection {
       };
       published?: boolean;
       template_suffix?: string;
-      metafields?: MetafieldRestInput[];
+      metafields?: Metafield.Params.RestInput[];
+    }
+
+    interface Update {
+      title?: string;
+      body_html?: string;
+      handle?: string;
+      image?: {
+        alt?: string;
+        src?: string;
+      };
+      published?: boolean;
+      template_suffix?: string;
+      metafields?: Metafield.Params.RestInput[];
     }
   }
 }

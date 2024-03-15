@@ -3,16 +3,16 @@ import * as coda from '@codahq/packs-sdk';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../helpers-graphql';
 import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { UpdateInventoryItem } from './inventoryItems-graphql';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 
 import type {
   InventoryItemFieldsFragment,
   InventoryItemUpdateMutation,
   InventoryItemUpdateMutationVariables,
-} from '../types/admin.generated';
-import type { InventoryItemUpdateInput } from '../types/admin.types';
-import type { FetchRequestOptions } from '../types/Requests';
+} from '../typesNew/generated/admin.generated';
+import type { InventoryItemUpdateInput } from '../typesNew/generated/admin.types';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(

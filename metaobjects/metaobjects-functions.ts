@@ -9,23 +9,24 @@ import {
   buildUpdateMetaObjectMutation,
   buildQuerySingleMetaObjectWithFields,
 } from './metaobjects-graphql';
-import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-functions';
+import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
+import { shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-helpers';
 
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import {
   fetchAllMetaObjectDefinitions,
   fetchSingleMetaObjectDefinitionByType,
 } from '../metaobjectDefinitions/metaobjectDefinitions-functions';
 
-import type { MetaobjectFragment } from '../types/Metaobject';
+import type { MetaobjectFragment } from '../typesNew/Resources/Metaobject';
 import type {
   MetaobjectCreateInput,
   MetaobjectFieldInput,
   MetaobjectStatus,
   MetaobjectUpdateInput,
-} from '../types/admin.types';
-import type { FetchRequestOptions } from '../types/Requests';
-import type { CreateMetaobjectMutation, DeleteMetaobjectMutation } from '../types/admin.generated';
+} from '../typesNew/generated/admin.types';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
+import type { CreateMetaobjectMutation, DeleteMetaobjectMutation } from '../typesNew/generated/admin.generated';
 
 // #endregion
 

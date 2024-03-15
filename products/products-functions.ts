@@ -17,11 +17,10 @@ import { productFieldDependencies } from '../schemas/syncTable/ProductSchemaRest
 import { handleFieldDependencies } from '../helpers';
 import { cleanQueryParams } from '../helpers-rest';
 
+import type { Product } from '../typesNew/Resources/Product';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import type { FetchRequestOptions } from '../types/Requests';
-import type { ProductRow } from '../typesNew/CodaRows';
-import type { ProductUpdateRestParams, ProductCreateRestParams, ProductSyncTableRestParams } from '../types/Product';
-import type { QueryProductTypesQuery } from '../types/admin.generated';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
+import type { QueryProductTypesQuery } from '../typesNew/generated/admin.generated';
 import type { Sync_Products } from './products-setup';
 import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type { SyncTableType } from '../types/SyncTable';
@@ -30,10 +29,10 @@ import { productResource } from '../allResources';
 // #region Class
 export type ProductSyncTableType = SyncTableType<
   typeof productResource,
-  ProductRow,
-  ProductSyncTableRestParams,
-  ProductCreateRestParams,
-  ProductUpdateRestParams
+  Product.Row,
+  Product.Params.Sync,
+  Product.Params.Create,
+  Product.Params.Update
 >;
 
 export class ProductSyncTable extends SyncTableRestNew<ProductSyncTableType> {
@@ -80,7 +79,7 @@ export class ProductRestFetcher extends SimpleRestNew<ProductSyncTableType> {
     super(productResource, context);
   }
 
-  validateParams = (params: ProductSyncTableRestParams | ProductCreateRestParams | ProductUpdateRestParams) => {
+  validateParams = (params: Product.Params.Sync | Product.Params.Create | Product.Params.Update) => {
     if (params.status) {
       const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
       (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
@@ -103,11 +102,11 @@ export class ProductRestFetcher extends SimpleRestNew<ProductSyncTableType> {
   };
 
   formatRowToApi = (
-    row: Partial<ProductRow>,
+    row: Partial<Product.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): ProductUpdateRestParams | ProductCreateRestParams | undefined => {
-    let restParams: ProductUpdateRestParams | ProductCreateRestParams = {};
-    let restCreateParams: ProductCreateRestParams = {};
+  ): Product.Params.Update | Product.Params.Create | undefined => {
+    let restParams: Product.Params.Update | Product.Params.Create = {};
+    let restCreateParams: Product.Params.Create = {};
 
     if (row.body_html !== undefined) restParams.body_html = row.body_html;
     if (row.handle !== undefined) restParams.handle = row.handle;
@@ -153,8 +152,8 @@ export class ProductRestFetcher extends SimpleRestNew<ProductSyncTableType> {
     return mergedParams;
   };
 
-  formatApiToRow = (product): ProductRow => {
-    let obj: ProductRow = {
+  formatApiToRow = (product): Product.Row => {
+    let obj: Product.Row = {
       ...product,
       admin_url: `${this.context.endpoint}/admin/products/${product.id}`,
       body: striptags(product.body_html),
@@ -174,9 +173,9 @@ export class ProductRestFetcher extends SimpleRestNew<ProductSyncTableType> {
   };
 
   updateWithMetafields = async (
-    row: { original?: ProductRow; updated: ProductRow },
+    row: { original?: Product.Row; updated: Product.Row },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): Promise<ProductRow> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
+  ): Promise<Product.Row> => this._updateWithMetafieldsGraphQl(row, metafieldKeyValueSets);
 }
 // #endregion
 

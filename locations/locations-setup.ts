@@ -14,12 +14,9 @@ import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
 import { CACHE_DEFAULT, METAFIELD_PREFIX_KEY } from '../constants';
 
-import {
-  augmentSchemaWithMetafields,
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-  updateAndFormatResourceMetafieldsGraphQl,
-} from '../metafields/metafields-functions';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../metafields/metafields-helpers';
+import { updateAndFormatResourceMetafieldsGraphQl } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { arrayUnique, wrapGetSchemaForCli } from '../helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
@@ -28,12 +25,16 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { QueryLocations } from './locations-graphql';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 
-import type { CountryCode } from '../types/admin.types';
-import type { GetLocationsQuery, GetLocationsQueryVariables, GetSingleLocationQuery } from '../types/admin.generated';
+import type { CountryCode } from '../typesNew/generated/admin.types';
+import type {
+  GetLocationsQuery,
+  GetLocationsQueryVariables,
+  GetSingleLocationQuery,
+} from '../typesNew/generated/admin.generated';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 import { Identity } from '../constants';
 

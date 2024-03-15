@@ -136,33 +136,33 @@ export const QueryCustomersAdmin = /* GraphQL */ `
   }
 `;
 
-export const QueryCustomersMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+// export const QueryCustomersMetafieldsAdmin = /* GraphQL */ `
+//   ${MetafieldFieldsFragment}
 
-  query getCustomersMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
+//   query getCustomersMetafields(
+//     $maxEntriesPerRun: Int!
+//     $cursor: String
+//     $metafieldKeys: [String!]
+//     $countMetafields: Int
+//     $searchQuery: String
+//   ) {
+//     customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//       nodes {
+//         id
 
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
+//         metafields(keys: $metafieldKeys, first: $countMetafields) {
+//           nodes {
+//             ...MetafieldFields
+//           }
+//         }
+//       }
+//       pageInfo {
+//         hasNextPage
+//         endCursor
+//       }
+//     }
+//   }
+// `;
 // #endregion
 
 // #region Mutations
