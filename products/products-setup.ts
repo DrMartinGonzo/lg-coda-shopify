@@ -7,13 +7,13 @@ import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRe
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
 
 import { wrapGetSchemaForCli } from '../helpers';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { Identity } from '../constants';
 
-import type { ProductCreateRestParams } from '../types/Product';
-import type { ProductRow } from '../typesNew/CodaRows';
+import type { Product } from '../typesNew/Resources/Product';
 
 // #endregion
 
@@ -119,7 +119,7 @@ export const Action_CreateProduct = coda.makeFormula({
     context
   ) {
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<ProductRow> = {
+    let newRow: Partial<Product.Row> = {
       title,
       body_html: bodyHtml,
       handle,
@@ -133,7 +133,7 @@ export const Action_CreateProduct = coda.makeFormula({
     };
 
     const productFetcher = new ProductRestFetcher(context);
-    const restParams = productFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as ProductCreateRestParams;
+    const restParams = productFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Product.Params.Create;
     const response = await productFetcher.create(restParams);
     return response?.body?.product?.id;
   },
@@ -171,7 +171,7 @@ export const Action_UpdateProduct = coda.makeFormula({
     [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
     context
   ) {
-    let row: ProductRow = {
+    let row: Product.Row = {
       id: productId,
       body_html,
       handle,

@@ -18,24 +18,64 @@ import type { Variant } from '@shopify/shopify-api/rest/admin/2023-10/variant';
 import type { Shop } from '@shopify/shopify-api/rest/admin/2023-10/shop';
 import type { Theme } from '@shopify/shopify-api/rest/admin/2023-10/theme';
 
-export type {
-  Article,
-  Asset,
-  Blog,
-  Collection,
-  CustomCollection,
-  Customer,
-  DraftOrder,
-  InventoryItem,
-  InventoryLevel,
-  Location,
-  Metafield,
-  Order,
-  Page,
-  Product,
-  Redirect,
-  SmartCollection,
-  Variant,
-  Shop,
-  Theme,
+export type RestResources = {
+  Article: Article;
+  Asset: Asset;
+  Blog: Blog;
+  Collection: Collection;
+  CustomCollection: CustomCollection;
+  Customer: Customer;
+  DraftOrder: DraftOrder;
+  InventoryItem: InventoryItem;
+  InventoryLevel: InventoryLevel;
+  Location: Location;
+  Metafield: Metafield;
+  Order: Order;
+  Page: Page;
+  Product: Product;
+  Redirect: Redirect;
+  SmartCollection: SmartCollection;
+  Variant: Variant;
+  Shop: Shop;
+  Theme: Theme;
 };
+
+export enum RestResourceSingular {
+  Article = 'article',
+  Blog = 'blog',
+  Collection = 'collection',
+  Collect = 'collect',
+  CustomCollection = 'custom_collection',
+  SmartCollection = 'smart_collection',
+  Customer = 'customer',
+  DraftOrder = 'draft_order',
+  InventoryItem = 'inventory_item',
+  InventoryLevel = 'inventory_level',
+  Location = 'location',
+  Order = 'order',
+  Page = 'page',
+  Product = 'product',
+  ProductVariant = 'variant',
+  Redirect = 'redirect',
+  Shop = 'shop',
+}
+
+export enum RestResourcePlural {
+  Article = 'articles',
+  Blog = 'blogs',
+  Collection = 'collections',
+  Collect = 'collects',
+  CustomCollection = 'custom_collections',
+  SmartCollection = 'smart_collections',
+  Customer = 'customers',
+  DraftOrder = 'draft_orders',
+  InventoryItem = 'inventory_items',
+  InventoryLevel = 'inventory_levels',
+  Location = 'locations',
+  Order = 'orders',
+  Page = 'pages',
+  Product = 'products',
+  ProductVariant = 'variants',
+  Redirect = 'redirects',
+  Shop = 'shops',
+}

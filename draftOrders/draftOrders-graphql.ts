@@ -1,5 +1,3 @@
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-
 // #region Helpers
 export function buildDraftOrdersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
@@ -11,30 +9,31 @@ export function buildDraftOrdersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Queries
-export const QueryDraftOrdersMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+// export const QueryDraftOrdersMetafieldsAdmin = /* GraphQL */ `
+//   ${MetafieldFieldsFragment}
 
-  query getDraftOrdersMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    draftOrders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
+//   query getDraftOrdersMetafields(
+//     $maxEntriesPerRun: Int!
+//     $cursor: String
+//     $metafieldKeys: [String!]
+//     $countMetafields: Int
+//     $searchQuery: String
+//   ) {
+//     draftOrders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//       nodes {
+//         id
+//         metafields(keys: $metafieldKeys, first: $countMetafields) {
+//           nodes {
+//             ...MetafieldFields
+//           }
+//         }
+//       }
+//       pageInfo {
+//         hasNextPage
+//         endCursor
+//       }
+//     }
+//   }
+// `;
+
 // #endregion

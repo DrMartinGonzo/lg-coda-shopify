@@ -2,10 +2,8 @@ import * as coda from '@codahq/packs-sdk';
 import { DEFAULT_THUMBNAIL_SIZE } from './constants';
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 
-import type { LengthUnit, WeightUnit } from './types/admin.types';
+import type { LengthUnit, WeightUnit } from './typesNew/generated/admin.types';
 import type { FieldDependency } from './types/SyncTable';
-import type { ShopifyGraphQlError } from './types/ShopifyGraphQl';
-import type { ShopifyGraphQlRequestCost } from './types/ShopifyGraphQl';
 
 /**
  * Taken from Coda sdk
@@ -190,7 +188,6 @@ export function handleFieldDependencies(effectivePropertyKeys: string[], fieldDe
 
   return arrayUnique(effectivePropertyKeys);
 }
-}
 
 /**
  * Try to parse a json string, if it fails return the original value
@@ -287,3 +284,68 @@ export function isNullOrEmpty(value: any) {
 
   return false;
 }
+
+// #region @shopify/hydrogen-react
+export function flattenConnection(connection) {
+  if (!connection) {
+    const noConnectionErr = `flattenConnection(): needs a 'connection' to flatten, but received '${
+      connection ?? ''
+    }' instead.`;
+    {
+      console.error(noConnectionErr + ` Returning an empty array`);
+      return [];
+    }
+  }
+  if ('nodes' in connection) {
+    return connection.nodes;
+  }
+  if ('edges' in connection && Array.isArray(connection.edges)) {
+    return connection.edges.map((edge) => {
+      if (!(edge == null ? void 0 : edge.node)) {
+        throw new Error('flattenConnection(): Connection edges must contain nodes');
+      }
+      return edge.node;
+    });
+  }
+  return [];
+}
+
+type ShopifyGid = Pick<URL, 'search' | 'searchParams' | 'hash'> & {
+  id: string;
+  resource: string | null;
+  resourceId: string | null;
+};
+/**
+ * Taken from @shopify/hydrogen-react
+ // TODO: Need to find a way to replace URLSearchParams with another parser as URLSearchParams does not work with Coda
+ *  maybe https://www.npmjs.com/package/url-parse ?
+ */
+function parseGid(gid: string | undefined): ShopifyGid {
+  const defaultReturn = {
+    id: '',
+    resource: null,
+    resourceId: null,
+    search: '',
+    searchParams: new URLSearchParams(),
+    hash: '',
+  };
+  if (typeof gid !== 'string') {
+    return defaultReturn;
+  }
+  try {
+    const { search, searchParams, pathname, hash } = new URL(gid);
+    const pathnameParts = pathname.split('/');
+    const lastPathnamePart = pathnameParts[pathnameParts.length - 1];
+    const resourcePart = pathnameParts[pathnameParts.length - 2];
+    if (!lastPathnamePart || !resourcePart) {
+      return defaultReturn;
+    }
+    const id = `${lastPathnamePart}${search}${hash}` || '';
+    const resourceId = lastPathnamePart || null;
+    const resource = resourcePart ?? null;
+    return { id, resource, resourceId, search, searchParams, hash };
+  } catch {
+    return defaultReturn;
+  }
+}
+// #endregion

@@ -8,8 +8,7 @@ import { CACHE_DEFAULT } from '../constants';
 import { inputs, filters } from '../shared-parameters';
 import { Identity } from '../constants';
 
-import type { RedirectRow } from '../typesNew/CodaRows';
-import type { RedirectCreateRestParams } from '../types/Redirect';
+import type { Redirect } from '../typesNew/Resources/Redirect';
 
 // #endregion
 
@@ -58,7 +57,7 @@ export const Action_UpdateRedirect = coda.makeFormula({
       throw new coda.UserVisibleError('Either path or target must be provided');
     }
 
-    let row: RedirectRow = {
+    let row: Redirect.Row = {
       id: redirect_id,
       path,
       target,
@@ -75,13 +74,13 @@ export const Action_CreateRedirect = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([path, target], context) {
-    let newRow: Partial<RedirectRow> = {
+    let newRow: Partial<Redirect.Row> = {
       path,
       target,
     };
 
     const redirectFetcher = new RedirectRestFetcher(context);
-    const restParams = redirectFetcher.formatRowToApi(newRow) as RedirectCreateRestParams;
+    const restParams = redirectFetcher.formatRowToApi(newRow) as Redirect.Params.Create;
     const response = await redirectFetcher.create(restParams);
     return response?.body?.redirect?.id;
   },

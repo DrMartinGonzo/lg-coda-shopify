@@ -14,7 +14,7 @@ import { cleanQueryParams } from '../helpers-rest';
 import { ShopRestFetcher } from '../shop/shop-functions';
 import { Identity } from '../constants';
 
-import type { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../types/admin.generated';
+import type { GetInventoryItemsQuery, GetInventoryItemsQueryVariables } from '../typesNew/generated/admin.generated';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #endregion

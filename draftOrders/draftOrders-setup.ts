@@ -4,10 +4,11 @@ import * as coda from '@codahq/packs-sdk';
 import { CACHE_DEFAULT } from '../constants';
 import { DraftOrderRestFetcher, DraftOrderSyncTable } from './draftOrders-functions';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { DraftOrderSyncTableSchema } from '../schemas/syncTable/DraftOrderSchema';
 import { Identity } from '../constants';
 

@@ -6,13 +6,8 @@ import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 import { cleanQueryParams } from '../helpers-rest';
 import { handleFieldDependencies } from '../helpers';
 
-import type { RedirectRow } from '../typesNew/CodaRows';
+import type { Redirect } from '../typesNew/Resources/Redirect';
 import type { CodaMetafieldKeyValueSet } from '../helpers-setup';
-import type {
-  RedirectCreateRestParams,
-  RedirectSyncTableRestParams,
-  RedirectUpdateRestParams,
-} from '../types/Redirect';
 import type { Sync_Redirects } from './redirects-setup';
 import type { SyncTableParamValues } from '../Fetchers/SyncTableRest';
 import type { SyncTableType } from '../types/SyncTable';
@@ -21,10 +16,10 @@ import { redirectResource } from '../allResources';
 // #region Class
 export type RedirectSyncTableType = SyncTableType<
   typeof redirectResource,
-  RedirectRow,
-  RedirectSyncTableRestParams,
-  RedirectCreateRestParams,
-  RedirectUpdateRestParams
+  Redirect.Row,
+  Redirect.Params.Sync,
+  Redirect.Params.Create,
+  Redirect.Params.Update
 >;
 
 export class RedirectSyncTable extends SyncTableRestNew<RedirectSyncTableType> {
@@ -55,10 +50,10 @@ export class RedirectRestFetcher extends SimpleRestNew<RedirectSyncTableType> {
   };
 
   formatRowToApi = (
-    row: Partial<RedirectRow>,
+    row: Partial<Redirect.Row>,
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): RedirectUpdateRestParams | RedirectCreateRestParams | undefined => {
-    let restParams: RedirectUpdateRestParams | RedirectCreateRestParams = {};
+  ): Redirect.Params.Update | Redirect.Params.Create | undefined => {
+    let restParams: Redirect.Params.Update | Redirect.Params.Create = {};
 
     if (row.path !== undefined) restParams.path = row.path;
     if (row.target !== undefined) restParams.target = row.target;
@@ -68,8 +63,8 @@ export class RedirectRestFetcher extends SimpleRestNew<RedirectSyncTableType> {
     return restParams;
   };
 
-  formatApiToRow = (redirect): RedirectRow => {
-    let obj: RedirectRow = {
+  formatApiToRow = (redirect): Redirect.Row => {
+    let obj: Redirect.Row = {
       ...redirect,
       admin_url: `${this.context.endpoint}/admin/${this.plural}/${redirect.id}`,
     };

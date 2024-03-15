@@ -10,21 +10,20 @@ import {
 } from './helpers';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
 import { ShopifyMaxExceededError } from './ShopifyErrors';
-import { GraphQlResourceName } from './types/RequestsGraphQl';
-import { MetafieldOwnerType } from './types/admin.types';
+import { GraphQlResourceName } from './typesNew/ShopifyGraphQlResourceTypes';
 
 import type {
   SyncTableGraphQlContinuation,
   SyncTableMixedContinuation,
   SyncTableRestAugmentedContinuation,
 } from './types/SyncTable';
-import type { FetchRequestOptions } from './types/Requests';
 import type {
+  FetchRequestOptions,
   ShopifyGraphQlError,
-  ShopifyGraphQlUserError,
-  ShopifyGraphQlThrottleStatus,
   ShopifyGraphQlRequestCost,
-} from './types/ShopifyGraphQl';
+  ShopifyGraphQlThrottleStatus,
+  ShopifyGraphQlUserError,
+} from './typesNew/Fetcher';
 
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
 
@@ -35,66 +34,6 @@ const queryCheckThrottleStatus = /* GraphQL */ `
     }
   }
 `;
-
-/*
-function getGraphQlResourceFromRestResourceSingularType(restResourceSingular: string): GraphQlResource {
-  switch (restResourceSingular) {
-    case restResources.Article.singular:
-      return GraphQlResource.Article;
-    case restResources.Blog.singular:
-      return GraphQlResource.Blog;
-    case restResources.Collection.singular:
-      return GraphQlResource.Collection;
-    case restResources.Customer.singular:
-      return GraphQlResource.Customer;
-    case restResources.DraftOrder.singular:
-      return GraphQlResource.DraftOrder;
-    case restResources.Location.singular:
-      return GraphQlResource.Location;
-    case restResources.Order.singular:
-      return GraphQlResource.Order;
-    case restResources.Page.singular:
-      return GraphQlResource.Page;
-    case restResources.Product.singular:
-      return GraphQlResource.Product;
-    case restResources.Shop.singular:
-      return GraphQlResource.Shop;
-    case restResources.ProductVariant.singular:
-      return GraphQlResource.ProductVariant;
-  }
-
-  throw new Error(`No GraphQL Admin Api match for Rest type of: \`${restResourceSingular}\``);
-}
-*/
-
-export function getGraphQlResourceFromMetafieldOwnerType(metafieldOwnerType: MetafieldOwnerType): GraphQlResourceName {
-  switch (metafieldOwnerType) {
-    case MetafieldOwnerType.Article:
-      return GraphQlResourceName.OnlineStoreArticle;
-    case MetafieldOwnerType.Blog:
-      return GraphQlResourceName.OnlineStoreBlog;
-    case MetafieldOwnerType.Collection:
-      return GraphQlResourceName.Collection;
-    case MetafieldOwnerType.Customer:
-      return GraphQlResourceName.Customer;
-    case MetafieldOwnerType.Draftorder:
-      return GraphQlResourceName.DraftOrder;
-    case MetafieldOwnerType.Location:
-      return GraphQlResourceName.Location;
-    case MetafieldOwnerType.Order:
-      return GraphQlResourceName.Order;
-    case MetafieldOwnerType.Page:
-      return GraphQlResourceName.OnlineStorePage;
-    case MetafieldOwnerType.Product:
-      return GraphQlResourceName.Product;
-    case MetafieldOwnerType.Shop:
-      return GraphQlResourceName.Shop;
-    case MetafieldOwnerType.Productvariant:
-      return GraphQlResourceName.ProductVariant;
-  }
-
-  throw new Error(`No GraphQL Admin Api match for Metafield Owner type of: \`${metafieldOwnerType}\``);
-}
 
 // #region GID functions
 function isGraphQlGid(gid: string) {
@@ -478,6 +417,7 @@ interface GraphQlAugmentedSyncTableRequestParams
  * @param context
  * @returns
  */
+/*
 export async function makeAugmentedSyncTableGraphQlRequest(
   params: GraphQlAugmentedSyncTableRequestParams,
   context: coda.SyncExecutionContext
@@ -568,6 +508,7 @@ export async function makeAugmentedSyncTableGraphQlRequest(
     }
   }
 }
+*/
 
 export function getMixedSyncTableRemainingAndToProcessItems<
   C extends SyncTableMixedContinuation,
@@ -598,6 +539,7 @@ export function getMixedSyncTableRemainingAndToProcessItems<
   return { toProcess, remaining };
 }
 
+/*
 interface GraphQlMixedSyncTableRequestParams extends Omit<GraphQlSyncTableRequestParams, 'getUserErrors'> {
   prevContinuation: SyncTableMixedContinuation;
   nextRestUrl?: string;
@@ -723,6 +665,7 @@ export async function makeMixedSyncTableGraphQlRequest<Data extends any>(
     }
   }
 }
+*/
 // #endregion
 
 /*

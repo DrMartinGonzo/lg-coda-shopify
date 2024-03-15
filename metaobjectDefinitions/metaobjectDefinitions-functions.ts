@@ -22,8 +22,8 @@ import type {
   GetSingleMetaObjectDefinitionQueryVariables,
   MetaobjectDefinitionFragment,
   MetaobjectFieldDefinitionFragment,
-} from '../types/admin.generated';
-import type { FetchRequestOptions } from '../types/Requests';
+} from '../typesNew/generated/admin.generated';
+import type { FetchRequestOptions } from '../typesNew/Fetcher';
 import type { SyncTableGraphQlContinuation } from '../types/SyncTable';
 
 // #region Helpers

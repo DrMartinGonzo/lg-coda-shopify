@@ -13,13 +13,14 @@ import {
 
 import { CACHE_DEFAULT, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../constants';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { Identity } from '../constants';
 import { graphQlGidToId, idToGraphQlGid } from '../helpers-graphql';
-import { GraphQlResourceName } from '../types/RequestsGraphQl';
+import { GraphQlResourceName } from '../typesNew/ShopifyGraphQlResourceTypes';
 
 import type { Collection as CollectionType } from '../typesNew/Resources/Collection';
 import type { SyncTableMixedContinuation } from '../types/SyncTable';

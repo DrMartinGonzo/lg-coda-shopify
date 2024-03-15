@@ -7,24 +7,17 @@ import { validShopFields } from '../schemas/syncTable/ShopSchema';
 import { cleanQueryParams } from '../helpers-rest';
 import { SyncTableRestNew } from '../Fetchers/SyncTableRest';
 
-import type { CurrencyCode } from '../types/admin.types';
-import type { ShopRow } from '../typesNew/CodaRows';
-import type { ShopSyncTableRestParams } from '../types/Shop';
+import type { Shop } from '../typesNew/Resources/Shop';
+import type { CurrencyCode } from '../typesNew/generated/admin.types';
 import type { SyncTableType } from '../types/SyncTable';
-import { shopVariantResource } from '../allResources';
+import { shopResource } from '../allResources';
 
 // #region Class
-export type ShopSyncTableType = SyncTableType<
-  typeof shopVariantResource,
-  ShopRow,
-  ShopSyncTableRestParams,
-  never,
-  never
->;
+export type ShopSyncTableType = SyncTableType<typeof shopResource, Shop.Row, Shop.Params.Sync, never, never>;
 
 export class ShopSyncTable extends SyncTableRestNew<ShopSyncTableType> {
   constructor(fetcher: ShopRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
-    super(shopVariantResource, fetcher, params);
+    super(shopResource, fetcher, params);
   }
 
   setSyncParams() {
@@ -37,7 +30,7 @@ export class ShopSyncTable extends SyncTableRestNew<ShopSyncTableType> {
 
 export class ShopRestFetcher extends SimpleRestNew<ShopSyncTableType> {
   constructor(context: coda.ExecutionContext) {
-    super(shopVariantResource, context, true);
+    super(shopResource, context, true);
   }
 
   validateParams = (params: any) => {
@@ -49,8 +42,8 @@ export class ShopRestFetcher extends SimpleRestNew<ShopSyncTableType> {
     return true;
   };
 
-  formatApiToRow = (shop): ShopRow => {
-    let obj: ShopRow = {
+  formatApiToRow = (shop): Shop.Row => {
+    let obj: Shop.Row = {
       ...shop,
       admin_url: `${this.context.endpoint}/admin`,
     };

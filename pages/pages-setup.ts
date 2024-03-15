@@ -6,14 +6,15 @@ import { PageRestFetcher, PageSyncTable } from './pages-functions';
 
 import { PageSyncTableSchema } from '../schemas/syncTable/PageSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields, parseMetafieldsCodaInput } from '../metafields/metafields-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { wrapGetSchemaForCli } from '../helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { Identity } from '../constants';
 
-import type { PageRow } from '../typesNew/CodaRows';
-import type { PageCreateRestParams } from '../types/Page';
+import type { Page } from '../typesNew/Resources/Page';
+
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
@@ -106,7 +107,7 @@ export const Action_CreatePage = coda.makeFormula({
   ) {
     const defaultPublishedStatus = false;
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<PageRow> = {
+    let newRow: Partial<Page.Row> = {
       title,
       author,
       body_html,
@@ -117,7 +118,7 @@ export const Action_CreatePage = coda.makeFormula({
     };
 
     const pageFetcher = new PageRestFetcher(context);
-    const restParams = pageFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as PageCreateRestParams;
+    const restParams = pageFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Page.Params.Create;
     const response = await pageFetcher.create(restParams);
     return response?.body?.page?.id;
   },
@@ -153,7 +154,7 @@ export const Action_UpdatePage = coda.makeFormula({
     [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],
     context
   ) {
-    let row: PageRow = {
+    let row: Page.Row = {
       id: pageId,
       author,
       body_html,

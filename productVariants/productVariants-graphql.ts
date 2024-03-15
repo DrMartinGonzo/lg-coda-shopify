@@ -16,31 +16,31 @@ export function buildProductVariantsSearchQuery(filters: { [key: string]: any })
 // #endregion
 
 // #region Queries
-export const QueryProductVariantsMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+// export const QueryProductVariantsMetafieldsAdmin = /* GraphQL */ `
+//   ${MetafieldFieldsFragment}
 
-  query getProductVariantsMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    productVariants(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
+//   query getProductVariantsMetafields(
+//     $maxEntriesPerRun: Int!
+//     $cursor: String
+//     $metafieldKeys: [String!]
+//     $countMetafields: Int
+//     $searchQuery: String
+//   ) {
+//     productVariants(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//       nodes {
+//         id
 
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
+//         metafields(keys: $metafieldKeys, first: $countMetafields) {
+//           nodes {
+//             ...MetafieldFields
+//           }
+//         }
+//       }
+//       pageInfo {
+//         hasNextPage
+//         endCursor
+//       }
+//     }
+//   }
+// `;
 // #endregion

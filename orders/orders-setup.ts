@@ -5,15 +5,14 @@ import { CACHE_DEFAULT, CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../constants'
 import { OrderRestFetcher, OrderSyncTable, formatOrderForDocExport } from './orders-functions';
 import { OrderSyncTableSchema } from '../schemas/syncTable/OrderSchema';
 import { filters, inputs } from '../shared-parameters';
-import { augmentSchemaWithMetafields } from '../metafields/metafields-functions';
+import { augmentSchemaWithMetafields } from '../schemas/schema-functions';
 import { wrapGetSchemaForCli } from '../helpers';
 import { ShopRestFetcher } from '../shop/shop-functions';
-import { MetafieldOwnerType } from '../types/admin.types';
+import { MetafieldOwnerType } from '../typesNew/generated/admin.types';
 import { cleanQueryParams, extractNextUrlPagination } from '../helpers-rest';
 import { Identity } from '../constants';
 
-import type { OrderRow } from '../typesNew/CodaRows';
-import type { OrderSyncTableRestParams } from '../types/Order';
+import type { Order } from '../typesNew/Resources/Order';
 
 // #endregion
 
@@ -185,11 +184,11 @@ export const Formula_Orders = coda.makeFormula({
       updated_at_max: updated_at ? updated_at[1] : undefined,
       processed_at_min: processed_at ? processed_at[0] : undefined,
       processed_at_max: processed_at ? processed_at[1] : undefined,
-    } as OrderSyncTableRestParams);
+    } as Order.Params.Sync);
     const orderFetcher = new OrderRestFetcher(context);
     orderFetcher.validateParams(restParams);
 
-    let items: OrderRow[] = [];
+    let items: Order.Row[] = [];
     let nextUrl: string;
     let run = true;
     while (run) {

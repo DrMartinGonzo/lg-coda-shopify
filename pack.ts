@@ -73,6 +73,7 @@ import {
   Action_DeleteDraftOrder,
   Action_SendDraftOrderInvoice,
   Action_UpdateDraftOrder,
+  Format_DraftOrder,
   Formula_DraftOrder,
   Sync_DraftOrders,
 } from './draftOrders/draftOrders-setup';
@@ -293,6 +294,7 @@ pack.formats.push(Format_Article);
 pack.formats.push(Format_Blog);
 pack.formats.push(Format_Collection);
 pack.formats.push(Format_Customer);
+pack.formats.push(Format_DraftOrder);
 pack.formats.push(Format_File);
 pack.formats.push(Format_Location);
 pack.formats.push(Format_MetafieldDefinition);
