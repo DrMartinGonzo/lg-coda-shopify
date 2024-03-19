@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import { readFragment, VariablesOf } from './types/graphql';
 
 import {
   countryNameAutocompleteValues,
@@ -10,21 +11,97 @@ import {
   OPTIONS_ORDER_STATUS,
   OPTIONS_PRODUCT_STATUS_REST,
   OPTIONS_PUBLISHED_STATUS,
+  REST_DEFAULT_LIMIT,
 } from './constants';
-import { getUnitMap, weightUnitsMap } from './helpers';
-import { autocompleteBlogParameterWithName } from './resources/blogs/blogs-functions';
-import { autocompleteLocationsWithName } from './resources/locations/locations-functions';
-import { autoCompleteMetafieldWithDefinitionFullKeys } from './resources/metafields/metafields-functions';
-import { autocompleteProductTypes } from './resources/products/products-functions';
-import { makeAutocompleteTemplateSuffixesFor } from './resources/themes/themes-functions';
+import { graphQlGidToId } from './helpers-graphql';
+import { BlogRestFetcher } from './resources/blogs/BlogRestFetcher';
+import { fetchLocationsGraphQl } from './resources/locations/locations-functions';
+import { LocationFragment, QueryLocations } from './resources/locations/locations-graphql';
+import { fetchMetafieldDefinitionsGraphQl } from './resources/metafieldDefinitions/metafieldDefinitions-functions';
+import { getMetaFieldFullKey } from './resources/metafields/metafields-helpers';
+import { fetchProductTypesGraphQl } from './resources/products/products-functions';
+import { getResourcesWithMetaFieldsSyncTable } from './resources/resources';
+import { getTemplateSuffixesFor } from './resources/themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
 import { validShopFields } from './schemas/syncTable/ShopSchema';
-import { CurrencyCode } from './types/generated/admin.types';
-import { getResourceDefinitionsWithMetaFieldSyncTable } from './resources/allResources';
+import { CurrencyCode, MetafieldOwnerType } from './types/admin.types';
+import { formatOptionNameId, getUnitMap, weightUnitsMap } from './utils/helpers';
 
 export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
 }
+
+// #region Autocomplete
+async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
+  const params = {
+    limit: REST_DEFAULT_LIMIT,
+    fields: ['id', 'title'].join(','),
+  };
+  const blogFetcher = new BlogRestFetcher(context);
+  const response = await blogFetcher.fetchAll(params);
+  return coda.autocompleteSearchObjects(search, response.body.blogs, 'title', 'id');
+}
+
+async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
+  const params = {
+    limit: REST_DEFAULT_LIMIT,
+    fields: ['id', 'title'].join(','),
+  };
+  const blogFetcher = new BlogRestFetcher(context);
+  const response = await blogFetcher.fetchAll(params);
+  return response.body.blogs.map((blog) => formatOptionNameId(blog.title, blog.id));
+}
+
+async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string): Promise<Array<string>> {
+  const variables = {
+    maxEntriesPerRun: 250,
+    includeMetafields: false,
+    includeLocalPickupSettings: false,
+    includeFulfillmentService: false,
+  } as VariablesOf<typeof QueryLocations>;
+  const response = await fetchLocationsGraphQl(variables, context);
+
+  if (response?.body?.data?.locations?.nodes) {
+    const locations = readFragment(LocationFragment, response.body.data.locations.nodes);
+    return locations.map((location) => formatOptionNameId(location.name, graphQlGidToId(location.id)));
+  }
+  return [];
+}
+
+function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
+      { ownerType, includeFakeExtraDefinitions: true },
+      context
+    );
+    const keys = metafieldDefinitions.map(getMetaFieldFullKey);
+    return coda.simpleAutocomplete(search, keys);
+  };
+}
+async function autoCompleteMetafieldWithDefinitionFullKeys(
+  context: coda.ExecutionContext,
+  search: string,
+  formulaContext: coda.MetadataContext
+) {
+  // can be the dynamic url of a metafields sync table or formulaContext.ownerType
+  const metafieldOwnerType = (context.sync?.dynamicUrl as MetafieldOwnerType) || formulaContext.ownerType;
+  if (metafieldOwnerType === undefined) {
+    return [];
+  }
+  return makeAutocompleteMetafieldKeysWithDefinitions(metafieldOwnerType)(context, search, {});
+}
+
+async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
+  const productTypes = await fetchProductTypesGraphQl(context);
+  return coda.simpleAutocomplete(search, productTypes);
+}
+
+function makeAutocompleteTemplateSuffixesFor(kind: string) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    return getTemplateSuffixesFor(kind, context);
+  };
+}
+// #endregion
 
 /**====================================================================================================================
  *    Inputs
@@ -431,9 +508,9 @@ const metafieldInputs = {
       search: string,
       formulaContext: coda.MetadataContext
     ) {
-      return getResourceDefinitionsWithMetaFieldSyncTable().map((v) => ({
+      return getResourcesWithMetaFieldsSyncTable().map((v) => ({
         display: v.display,
-        value: v.metafieldOwnerType,
+        value: v.metafields.ownerType,
       }));
     },
   }),

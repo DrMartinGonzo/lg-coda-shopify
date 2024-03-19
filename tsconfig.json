@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "skipLibCheck": true,
+    // "strict": true,
+    // "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
     // "esModuleInterop": true,
     "resolveJsonModule": true,
@@ -7,6 +10,19 @@
       "ES2022"
     ],
     "target": "ES2020",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "https://shopify.dev/admin-graphql-direct-proxy/2023-10",
+        // TODO: move it outside of workspace for avoid vs code slowdowns
+        "tadaOutputLocation": "./types/graphql-env.d.ts",
+        "shouldCheckForColocatedFragments": false,
+        "trackFieldUsage": false,
+      }
+    ]
   },
+  "exclude": [
+    "node_modules",
+  ]
 }

@@ -64,33 +64,12 @@ export const OPTIONS_FILE_TYPE = [
 
 export const DEFAULT_PRODUCT_OPTION_NAME = 'Coda Default';
 
-const METAFIELDS_RESOURCE_TYPES = [
-  'article',
-  'blog',
-  'collection',
-  'customer',
-  'draft_order',
-  'order',
-  'page',
-  'product_image',
-  'product',
-  'shop',
-  'variant',
-];
-
-export const NOT_FOUND = 'NOT_FOUND';
-
 export const COLLECTION_TYPE__SMART = 'smart_collection';
 export const COLLECTION_TYPE__CUSTOM = 'custom_collection';
 
-export const REST_DEFAULT_API_VERSION = '2023-10';
 export const REST_DEFAULT_LIMIT = 250;
 export const GRAPHQL_NODES_LIMIT = 250;
 
-// Don't put this at 1000 (theoretical max) because we can have multiple syncs happening at the same time in different documents
-export const GRAPHQL_BUDGET__MAX = 900;
-export const GRAPHQL_RETRIES__MAX = 5;
-export const GRAPHQL_DEFAULT_API_VERSION = '2023-10';
 
 export const CACHE_DISABLED = 0;
 export const CACHE_DEFAULT = 60 * 5; // 5 minute, Coda default as of 23/02/2024
@@ -99,8 +78,7 @@ export const CACHE_DAY = 60 * 60 * 24; // 1 day
 export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
 
 const PACK_PREFIX_KEY = 'lgs_';
-export const METAFIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
-export const METAOBJECT_CUSTOM_FIELD_PREFIX_KEY = METAFIELD_PREFIX_KEY;
+export const CUSTOM_FIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
 export const CODA_SUPPORTED_CURRENCIES = [
   'BRL',
   'CHF',
@@ -152,3 +130,8 @@ export enum Identity {
   Redirect = 'Redirect',
   Shop = 'Shop',
 }
+
+// #region Error Messages
+export const METAFIELDS_REQUIRED = 'Resource with metafieldOwnerType required';
+export const INVALID_GID = 'Invalid GID provided';
+// #endregion

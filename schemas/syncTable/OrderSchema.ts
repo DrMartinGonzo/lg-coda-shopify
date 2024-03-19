@@ -15,7 +15,7 @@ import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {

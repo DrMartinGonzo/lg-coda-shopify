@@ -1,5 +1,5 @@
 // #region Helpers
-export function buildDraftOrdersSearchQuery(filters: { [key: string]: any }) {
+function buildDraftOrdersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');

@@ -4,7 +4,7 @@ import { CollectionRuleSetSchema } from '../basic/CollectionRuleSetSchema';
 import { SmartCollectionRuleSchema } from '../basic/SmartCollectionRuleSchema';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const CollectionSyncTableSchema = coda.makeObjectSchema({
   properties: {

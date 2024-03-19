@@ -1,5 +1,5 @@
-import * as coda from '@codahq/packs-sdk';
 import toSentenceCase from 'to-sentence-case';
+import { ResultOf } from '../../types/graphql';
 
 import { graphQlGidToId } from '../../helpers-graphql';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
@@ -7,12 +7,11 @@ import {
   OrderTransactionSyncTableSchema,
   formatOrderTransactionReference,
 } from '../../schemas/syncTable/OrderTransactionSchema';
-
-import type { OrderTransactionFieldsFragment } from '../../types/generated/admin.generated';
+import { OrderTransactionFieldsFragment } from './orderTransactions-graphql';
 
 // #region Formatting functions
 export const formatOrderTransactionForSchemaFromGraphQlApi = (
-  orderTransaction: OrderTransactionFieldsFragment,
+  orderTransaction: ResultOf<typeof OrderTransactionFieldsFragment>,
   parentOrder: { id: string; name: string }
 ) => {
   const parentOrderId = graphQlGidToId(parentOrder.id);

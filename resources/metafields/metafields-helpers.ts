@@ -1,11 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { arrayUnique } from '../../helpers';
-import { METAFIELD_PREFIX_KEY, REST_DEFAULT_API_VERSION } from '../../constants';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import { REST_DEFAULT_API_VERSION } from '../../config/config';
+import { arrayUnique } from '../../utils/helpers';
+import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { ResourceWithMetafields } from '../Resource.types';
 import { METAFIELD_TYPES_RAW_REFERENCE } from './metafields-constants';
-import { RestResourcePlural, RestResourceSingular } from '../../types/ShopifyRestResourceTypes';
-
-import type { ResourceTypeUnion } from '../../types/allResources';
 
 // #region Helpers
 /**
@@ -15,12 +15,12 @@ export function hasMetafieldsInUpdates(
   updates: Array<coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>>
 ) {
   const allUpdatedFields = arrayUnique(updates.map((update) => update.updatedFields).flat());
-  return allUpdatedFields.some((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
+  return allUpdatedFields.some((fromKey) => fromKey.startsWith(CUSTOM_FIELD_PREFIX_KEY));
 }
+
 /**
  * Metafields should be deleted if their string value is empty of contains an empty JSON.stringified array
  */
-
 export function shouldDeleteMetafield(string: string) {
   return string === null || string === undefined || string === '' || string === '[]';
 }
@@ -28,13 +28,13 @@ export function shouldDeleteMetafield(string: string) {
 export function getResourceMetafieldsRestApiUrl(
   context: coda.ExecutionContext,
   ownerId: number,
-  ownerResource: ResourceTypeUnion
+  ownerResource: ResourceWithMetafields<any>
 ) {
   return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${ownerResource.rest.plural}/${ownerId}/metafields.json`;
 }
 export function getResourceMetafieldsAdminUrl(
   context: coda.ExecutionContext,
-  restResource: ResourceTypeUnion,
+  restResource: ResourceWithMetafields<any>,
   hasMetafieldDefinition: boolean,
   ownerId: number,
   parentOwnerId?: number
@@ -84,7 +84,6 @@ export function getResourceMetafieldsAdminUrl(
  * @param schemaWithIdentity wether the data will be consumed by an action wich result use a `coda.withIdentity` schema.
  * @returns `true` if the value should be updated
  */
-
 export function shouldUpdateSyncTableMetafieldValue(fieldType: string, schemaWithIdentity = false): boolean {
   const isReference = fieldType.indexOf('_reference') !== -1;
   const shouldUpdateReference =
@@ -101,11 +100,11 @@ export function shouldUpdateSyncTableMetafieldValue(fieldType: string, schemaWit
  */
 const hasMetafieldFullKey = (metafield: { namespace: string; key: string }) =>
   metafield.key.indexOf(metafield.namespace) === 0;
+
 /**
  * A naive way to check if any of the keys might be a metafield key
  */
-
-export function maybeHasMetaFieldKeys(keys: string[]) {
+function maybeHasMetaFieldKeys(keys: string[]) {
   return keys.some((key) => key.indexOf('.') !== -1);
 }
 
@@ -125,29 +124,29 @@ export const splitMetaFieldFullKey = (fullKey: string) => {
     metaNamespace: fullKey.substring(0, lastDotIndex),
   };
 };
+
 /**
  * Prepend a custom prefix to the metafield key
  * This allows us to detect if a coda column key is a metafield column to handle updates
  */
-
 export function preprendPrefixToMetaFieldKey(fullKey: string) {
-  return METAFIELD_PREFIX_KEY + fullKey;
+  return CUSTOM_FIELD_PREFIX_KEY + fullKey;
 }
+
 /**
  * Remove our custom prefix from the metafield key
  */
-
 export function removePrefixFromMetaFieldKey(fromKey: string) {
-  return fromKey.replace(METAFIELD_PREFIX_KEY, '');
+  return fromKey.replace(CUSTOM_FIELD_PREFIX_KEY, '');
 }
+
 /**
  * Differentiate between the metafields columns and the standard columns from
  * the effective columns keys that we can get when coda does an update or
  * perform a sync table request.
  */
-
 export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
-  const prefixedMetafieldFromKeys = fromKeys.filter((fromKey) => fromKey.startsWith(METAFIELD_PREFIX_KEY));
+  const prefixedMetafieldFromKeys = fromKeys.filter((fromKey) => fromKey.startsWith(CUSTOM_FIELD_PREFIX_KEY));
   const standardFromKeys = fromKeys.filter((fromKey) => prefixedMetafieldFromKeys.indexOf(fromKey) === -1);
 
   return { prefixedMetafieldFromKeys, standardFromKeys };

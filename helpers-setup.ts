@@ -2,10 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from './constants';
-import { getUnitMap } from './helpers';
-import { autocompleteProductTypes } from './resources/products/products-functions';
+import { getUnitMap } from './utils/helpers';
 
 import type { MetafieldTypeValue } from './resources/metafields/metafields-constants';
+import { filters } from './shared-parameters';
 
 // #endregion
 
@@ -53,12 +53,10 @@ export const Formula_ProductType = coda.makeFormula({
   description: 'Helper function to help choose an existing Shopify product type.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'productType',
+    {
+      ...filters.product.productType,
       description: 'The name of a product type. Autocomplete is available but you can enter any value.',
-      autocomplete: autocompleteProductTypes,
-    }),
+    },
   ],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.String,

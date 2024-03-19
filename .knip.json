@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "pack.ts",
+    "test/pack_test.test.ts",
+    "regen-constants-from-admin-types.ts",
+    "regen-interfaces-from-coda-schemas.ts"
+  ],
+  "project": ["**/*.{js,ts}"],
+  "ignore": ["types/generated/**"]
+}

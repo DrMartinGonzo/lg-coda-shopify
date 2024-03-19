@@ -1,5 +1,7 @@
+import { graphql } from '../../types/graphql';
+
 // #region Fragments
-export const MetafieldDefinitionFragment = /* GraphQL */ `
+export const MetafieldDefinitionFragment = graphql(`
   fragment MetafieldDefinition on MetafieldDefinition {
     key
     id
@@ -20,31 +22,33 @@ export const MetafieldDefinitionFragment = /* GraphQL */ `
     validationStatus
     visibleToStorefrontApi
   }
-`;
+`);
 // #endregion
 
 // #region Queries
-export const queryMetafieldDefinitions = /* GraphQL */ `
-  ${MetafieldDefinitionFragment}
+export const queryMetafieldDefinitions = graphql(
+  `
+    query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {
+      metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {
+        nodes {
+          ...MetafieldDefinition
+        }
+      }
+    }
+  `,
+  [MetafieldDefinitionFragment]
+);
 
-  query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {
-    metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {
-      nodes {
+export const QuerySingleMetafieldDefinition = graphql(
+  `
+    query GetSingleMetafieldDefinition($id: ID!) {
+      metafieldDefinition(id: $id) {
         ...MetafieldDefinition
       }
     }
-  }
-`;
-
-export const QuerySingleMetafieldDefinition = /* GraphQL */ `
-  ${MetafieldDefinitionFragment}
-
-  query GetSingleMetafieldDefinition($id: ID!) {
-    metafieldDefinition(id: $id) {
-      ...MetafieldDefinition
-    }
-  }
-`;
+  `,
+  [MetafieldDefinitionFragment]
+);
 // #endregion
 
 // #region Mutations

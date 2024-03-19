@@ -1,18 +1,14 @@
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf } from '../../types/graphql';
 
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
-import { UpdateInventoryItem } from './inventoryItems-graphql';
-import { GraphQlResourceName } from '../../types/ShopifyGraphQlResourceTypes';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
-
-import type {
-  InventoryItemFieldsFragment,
-  InventoryItemUpdateMutation,
-  InventoryItemUpdateMutationVariables,
-} from '../../types/generated/admin.generated';
-import type { InventoryItemUpdateInput } from '../../types/generated/admin.types';
-import type { FetchRequestOptions } from '../../types/Fetcher';
+import { InventoryItemUpdateInput } from '../../types/admin.types';
+import { InventoryItemFieldsFragment, UpdateInventoryItem } from './inventoryItems-graphql';
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(
@@ -79,7 +75,7 @@ function formatGraphQlInventoryItemUpdateInput(update: any, fromKeys: string[]):
   return ret;
 }
 
-export const formatInventoryItemNodeForSchema = (inventoryItem: InventoryItemFieldsFragment) => {
+export const formatInventoryItemNodeForSchema = (inventoryItem: ResultOf<typeof InventoryItemFieldsFragment>) => {
   const obj: any = {
     ...inventoryItem,
     admin_graphql_api_id: inventoryItem.id,
@@ -114,18 +110,18 @@ async function updateInventoryItemGraphQl(
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: UpdateInventoryItem,
+    query: printGql(UpdateInventoryItem),
     variables: {
       id: inventoryItemGid,
       input: inventoryItemUpdateInput,
-    } as InventoryItemUpdateMutationVariables,
+    } as VariablesOf<typeof UpdateInventoryItem>,
   };
 
-  const { response } = await makeGraphQlRequest<InventoryItemUpdateMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof UpdateInventoryItem>>(
     {
       ...requestOptions,
       payload,
-      getUserErrors: (body: { data: InventoryItemUpdateMutation }) => body.data.inventoryItemUpdate.userErrors,
+      getUserErrors: (body: { data: ResultOf<typeof UpdateInventoryItem> }) => body.data.inventoryItemUpdate.userErrors,
     },
     context
   );
