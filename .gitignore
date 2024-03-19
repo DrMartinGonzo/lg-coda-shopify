@@ -14,3 +14,7 @@ pack-config.json
 
 # Vitest
 coverage
+
+# Generated types
+types/admin.types.ts
+types/graphql-env.d.ts
