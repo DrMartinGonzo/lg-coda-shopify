@@ -2,7 +2,7 @@ import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
-export function buildLocationsSearchQuery(filters: { [key: string]: any }) {
+function buildLocationsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');

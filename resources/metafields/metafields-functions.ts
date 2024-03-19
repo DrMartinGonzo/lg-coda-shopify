@@ -464,7 +464,7 @@ function formatRatingFieldForApi(
  * ! Cette fonction fait chier, globalement c'est elle qui oblige à passer le paramètre `context` de fonctions en fonctions.
    // TODO: voir si on peut améliorer ça
  */
-export async function formatMoneyFieldForApi(
+async function formatMoneyFieldForApi(
   amount: number,
   context: coda.ExecutionContext,
   currencyCode?: CurrencyCode

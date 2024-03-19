@@ -257,7 +257,7 @@ export async function fetchSingleMetaObjectDefinition(
   }
 }
 
-export async function fetchSingleMetaObjectDefinitionByType(
+async function fetchSingleMetaObjectDefinitionByType(
   type: string,
   includeCapabilities = true,
   includeFieldDefinitions = true,

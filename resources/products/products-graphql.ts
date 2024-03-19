@@ -2,7 +2,7 @@ import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
-export function buildProductsSearchQuery(filters: { [key: string]: any }) {
+function buildProductsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
   if (filters.search) searchItems.push(filters.search);
 
@@ -33,7 +33,7 @@ export function buildProductsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-export const ProductFieldsFragment = graphql(
+const ProductFieldsFragment = graphql(
   `
     fragment ProductFields on Product {
       id
@@ -99,7 +99,7 @@ export const queryProductTypes = graphql(
   `
 );
 
-export const QueryProductsAdmin = graphql(
+const QueryProductsAdmin = graphql(
   `
     query getProductsWithMetafields(
       $maxEntriesPerRun: Int!

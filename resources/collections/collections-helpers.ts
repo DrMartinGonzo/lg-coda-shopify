@@ -20,7 +20,7 @@ import { smartCollectionResource } from './smart_collection/smartCollectionResou
  * @param requestOptions
  * @returns The collection Type
  */
-export async function getCollectionType(
+async function getCollectionType(
   collectionGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
@@ -81,7 +81,7 @@ export async function getCollectionFetcher(collectionId: number, context: coda.E
   return getCollectionFetcherOfType(collectionType, context);
 }
 
-export function getCollectionFetcherOfType(collectionType: string, context: coda.ExecutionContext) {
+function getCollectionFetcherOfType(collectionType: string, context: coda.ExecutionContext) {
   switch (collectionType) {
     case COLLECTION_TYPE__SMART:
       return new SmartCollectionRestFetcher(context);

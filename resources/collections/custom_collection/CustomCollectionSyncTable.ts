@@ -2,7 +2,8 @@ import * as coda from '@codahq/packs-sdk';
 import { MultipleFetchResponse } from '../../../Fetchers/SyncTableRest';
 import { COLLECTION_TYPE__SMART } from '../../../constants';
 import { CollectionSyncTableBase } from '../CollectionSyncTableBase';
-import { getCollectionSyncTableOfType } from '../collections-helpers';
+import { SmartCollectionRestFetcher } from '../smart_collection/SmartCollectionRestFetcher';
+import { smartCollectionResource } from '../smart_collection/smartCollectionResource';
 import { CustomCollectionRestFetcher } from './CustomCollectionRestFetcher';
 import { customCollectionResource } from './customCollectionResource';
 
@@ -18,12 +19,16 @@ export class CustomCollectionSyncTable extends CollectionSyncTableBase<typeof cu
      * If we have no more items to sync, we need to sync smart collections
      */
     if (!superContinuation?.nextUrl) {
-      const restType = COLLECTION_TYPE__SMART;
-      const nextCollectionSyncTable = getCollectionSyncTableOfType(restType, this.codaParams, this.fetcher.context);
+      const nextCollectionSyncTable = new CollectionSyncTableBase(
+        smartCollectionResource,
+        new SmartCollectionRestFetcher(this.fetcher.context),
+        this.codaParams
+      );
       nextCollectionSyncTable.setSyncUrl();
+
       this.extraContinuationData = {
         ...superContinuation?.extraContinuationData,
-        restType,
+        restType: COLLECTION_TYPE__SMART,
       };
 
       superContinuation = {

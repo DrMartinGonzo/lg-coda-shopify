@@ -109,8 +109,6 @@ export enum Identity {
   Article = 'Article',
   Blog = 'Blog',
   Collection = 'Collection',
-  CustomCollection = 'CustomCollection',
-  SmartCollection = 'SmartCollection',
   Collect = 'Collect',
   Customer = 'Customer',
   DraftOrder = 'DraftOrder',

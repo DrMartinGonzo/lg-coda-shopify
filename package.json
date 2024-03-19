@@ -47,7 +47,6 @@
     "gas-coda-export-bills": "github:DrMartinGonzo/gas-coda-export-bills.git#^0.2.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
-    "json-schema": "^0.4.0",
     "knip": "^5.1.1",
     "ts-node": "^10.9",
     "typescript": "^5.4.2",

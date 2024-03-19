@@ -54,9 +54,9 @@ export const getResourcesWithMetaFieldDefinitions = (): ResourceWithMetafieldDef
     (resource) => 'metafields' in resource && resource.metafields.supportsDefinitions === true
   ) as ResourceWithMetafieldDefinitionsNew<any>[];
 
-export function getSingleResourceByGraphQlName(graphQlName: GraphQlResourceName): Resource<any> {
-  return resources.find((resource) => resource.graphQl.name === graphQlName) as Resource<any>;
-}
+// export function getSingleResourceByGraphQlName(graphQlName: GraphQlResourceName): Resource<any> {
+//   return resources.find((resource) => resource.graphQl.name === graphQlName) as Resource<any>;
+// }
 
 export function requireResourceWithDefinedMetaFieldsByGraphQlName(
   graphQlName: GraphQlResourceName

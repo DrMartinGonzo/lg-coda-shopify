@@ -47,7 +47,7 @@ export async function handleFileUpdateJob(
 // #endregion
 
 // #region Formatting functions
-export function formatGraphQlFileUpdateInput(row: FileRow): VariablesOf<typeof UpdateFile>['files'][0] | undefined {
+function formatGraphQlFileUpdateInput(row: FileRow): VariablesOf<typeof UpdateFile>['files'][0] | undefined {
   const ret: VariablesOf<typeof UpdateFile>['files'][0] = {
     id: row.id,
   };

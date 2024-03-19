@@ -2,7 +2,7 @@ import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
-export function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
+function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');
@@ -59,7 +59,7 @@ const CollectionFieldsFragmentAdmin = graphql(
 // #endregion
 
 // #region Queries
-export const queryCollectionsAdmin = graphql(
+const queryCollectionsAdmin = graphql(
   `
     query GetCollections(
       $maxEntriesPerRun: Int!
