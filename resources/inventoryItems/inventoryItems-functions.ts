@@ -1,6 +1,6 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf } from '../../types/graphql';
+import { ResultOf, VariablesOf } from '../../utils/graphql';
 
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';

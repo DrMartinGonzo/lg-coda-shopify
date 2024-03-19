@@ -1,6 +1,6 @@
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { CurrencyCode } from '../../types/admin.types';
-import { ResultOf } from '../../types/graphql';
+import { ResultOf } from '../../utils/graphql';
 import { ResourceSyncRestParams } from '../Resource.types';
 import { MetafieldFieldsFragment, MetafieldFieldsFragmentWithDefinition } from './metafields-graphql';
 

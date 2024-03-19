@@ -1,4 +1,4 @@
-import { graphql } from '../../types/graphql';
+import { graphql } from '../../utils/graphql';
 
 // #region Queries
 export const queryOnlineStorePublication = graphql(

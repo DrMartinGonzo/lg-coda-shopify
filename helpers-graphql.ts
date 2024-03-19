@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, graphql } from './types/graphql';
+import { ResultOf, graphql } from './utils/graphql';
 import { print as printGql } from '@0no-co/graphql.web';
 
 import {

@@ -1,6 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../types/graphql';
+import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/graphql';
 import { print as printGql } from '@0no-co/graphql.web';
 
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';

@@ -1,7 +1,7 @@
 // #region Imports
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
+import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 
 import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
 import { Identity } from '../../constants';

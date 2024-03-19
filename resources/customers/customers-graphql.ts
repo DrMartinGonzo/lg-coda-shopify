@@ -1,4 +1,4 @@
-import { graphql } from '../../types/graphql';
+import { graphql } from '../../utils/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers

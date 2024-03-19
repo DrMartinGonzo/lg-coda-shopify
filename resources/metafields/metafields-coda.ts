@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { createHash } from 'node:crypto';
 import toPascalCase from 'to-pascal-case';
-import { ResultOf, readFragment } from '../../types/graphql';
+import { ResultOf, readFragment } from '../../utils/graphql';
 
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResources } from '../../Fetchers/ShopifyRestResource.types';

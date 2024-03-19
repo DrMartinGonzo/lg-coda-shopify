@@ -15,7 +15,7 @@ import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-helpers';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { inputs } from '../../shared-parameters';
 import { MetaobjectFieldInput } from '../../types/admin.types';
-import { readFragment, readFragmentArray } from '../../types/graphql';
+import { readFragment, readFragmentArray } from '../../utils/graphql';
 import {
   capitalizeFirstChar,
   compareByDisplayKey,

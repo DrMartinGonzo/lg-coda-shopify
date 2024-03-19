@@ -1,5 +1,5 @@
 import type * as AdminTypes from '../../types/admin.types';
-import { ResultOf } from '../../types/graphql';
+import { ResultOf } from '../../utils/graphql';
 import { MetaobjectDefinitionFragment } from './metaobjects-graphql';
 
 export type MetaobjectWithFields = Omit<AdminTypes.Metaobject, 'definition'> & {

@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
-import { ResultOf } from '../types/graphql';
+import { ResultOf } from '../utils/graphql';
 
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';

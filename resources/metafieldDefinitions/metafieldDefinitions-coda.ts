@@ -1,6 +1,6 @@
 // #region Imports
 import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
+import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 import * as coda from '@codahq/packs-sdk';
 
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';

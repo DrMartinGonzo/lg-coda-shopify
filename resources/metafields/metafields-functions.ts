@@ -2,7 +2,7 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
-import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../types/graphql';
+import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/graphql';
 
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';

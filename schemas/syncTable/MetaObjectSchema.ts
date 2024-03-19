@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../types/graphql';
+import { ResultOf } from '../../utils/graphql';
 
 import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';

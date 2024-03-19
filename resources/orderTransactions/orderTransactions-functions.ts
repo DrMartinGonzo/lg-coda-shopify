@@ -1,5 +1,5 @@
 import toSentenceCase from 'to-sentence-case';
-import { ResultOf } from '../../types/graphql';
+import { ResultOf } from '../../utils/graphql';
 
 import { graphQlGidToId } from '../../helpers-graphql';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';

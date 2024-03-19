@@ -1,5 +1,5 @@
 import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, graphql } from '../../types/graphql';
+import { ResultOf, graphql } from '../../utils/graphql';
 import { capitalizeFirstChar } from '../../utils/helpers';
 
 // #region Fragments

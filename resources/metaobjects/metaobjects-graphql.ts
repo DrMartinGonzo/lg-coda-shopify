@@ -1,6 +1,6 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
-import { graphql } from '../../types/graphql';
+import { graphql } from '../../utils/graphql';
 
 // #region Fragments
 export const MetaobjectFieldDefinitionFragment = graphql(`

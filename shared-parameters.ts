@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { readFragment, VariablesOf } from './types/graphql';
+import { readFragment, VariablesOf } from './utils/graphql';
 
 import {
   countryNameAutocompleteValues,

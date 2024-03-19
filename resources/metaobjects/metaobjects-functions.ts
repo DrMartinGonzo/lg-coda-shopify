@@ -1,7 +1,7 @@
 // #region Imports
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
+import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/graphql';
 
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
@@ -21,7 +21,6 @@ import {
   MetaobjectStatus,
   MetaobjectUpdateInput,
 } from '../../types/admin.types';
-import { Writeable } from '../../types/misc';
 import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
 import { shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-helpers';
 import { MetaobjectWithFields } from './Metaobject.types';
@@ -71,8 +70,8 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
   const metaObjectDefinition = await fetchSingleMetaObjectDefinitionByType(args.type, false, true, context);
-  const fieldDefinitions = readFragment(MetaobjectFieldDefinitionFragment, metaObjectDefinition.fieldDefinitions);
-  return coda.autocompleteSearchObjects(search, fieldDefinitions as Writeable<typeof fieldDefinitions>, 'name', 'key');
+  const fieldDefinitions = readFragmentArray(MetaobjectFieldDefinitionFragment, metaObjectDefinition.fieldDefinitions);
+  return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 export async function autocompleteMetaobjectType(context: coda.ExecutionContext, search: string, args: any) {
   const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);

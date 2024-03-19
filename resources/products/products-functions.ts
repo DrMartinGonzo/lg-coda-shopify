@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../types/graphql';
+import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/graphql';
 
 import { CACHE_DEFAULT } from '../../constants';
 import { makeGraphQlRequest } from '../../helpers-graphql';

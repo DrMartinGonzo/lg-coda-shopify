@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../types/graphql';
+import { ResultOf } from '../utils/graphql';
 
 import { METAFIELDS_REQUIRED } from '../constants';
 import { getObjectSchemaEffectiveKey } from '../utils/helpers';
