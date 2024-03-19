@@ -1,70 +1,36 @@
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
 
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { CACHE_DEFAULT } from '../../constants';
-
+import { GraphQlResponse, graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
-import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
-import { formatMetaFieldValueForSchema, getMetafieldKeyValueSetsFromUpdate } from '../metafields/metafields-functions';
+import { CountryCode } from '../../types/admin.types';
+import { MetafieldDefinitionFragment } from '../metafieldDefinitions/metafieldDefinitions-graphql';
+import {
+  formatMetaFieldValueForSchema,
+  getMetafieldKeyValueSetsFromUpdate,
+  updateAndFormatResourceMetafieldsGraphQl,
+} from '../metafields/metafields-functions';
+import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 import {
   getMetaFieldFullKey,
   preprendPrefixToMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../metafields/metafields-helpers';
-import { updateAndFormatResourceMetafieldsGraphQl } from '../metafields/metafields-functions';
-import { formatOptionNameId } from '../../helpers';
 import {
   ActivateLocation,
   DeactivateLocation,
+  LocationFragment,
   QueryLocations,
   QuerySingleLocation,
   UpdateLocation,
 } from './locations-graphql';
-import { GraphQlResourceName } from '../../types/ShopifyGraphQlResourceTypes';
-
-import type { GraphQlResponse } from '../../helpers-graphql';
-import type { FetchRequestOptions } from '../../types/Fetcher';
-import {
-  type CountryCode,
-  type LocationEditAddressInput,
-  type LocationEditInput,
-} from '../../types/generated/admin.types';
-import type {
-  GetLocationsQuery,
-  GetLocationsQueryVariables,
-  GetSingleLocationQuery,
-  GetSingleLocationQueryVariables,
-  LocationActivateMutation,
-  LocationActivateMutationVariables,
-  LocationDeactivateMutation,
-  LocationDeactivateMutationVariables,
-  LocationEditMutation,
-  LocationEditMutationVariables,
-  LocationFragment,
-  MetafieldDefinitionFragment,
-} from '../../types/generated/admin.generated';
-import type { SyncTableType } from '../../types/SyncTable';
-import type { LocationRow } from '../../types/CodaRows';
-import { locationResource } from '../allResources';
 
 // TODO: finir ça une fois qu'on aura une classe pour GraphQL
-export type LocationSyncTableType = SyncTableType<typeof locationResource, LocationRow, never, never, never>;
-
-// #region Autocomplete functions
-export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
-  const variables = {
-    maxEntriesPerRun: 250,
-    includeMetafields: false,
-    includeLocalPickupSettings: false,
-    includeFulfillmentService: false,
-  } as GetLocationsQueryVariables;
-  const response = await fetchLocationsGraphQl(variables, context);
-
-  return response.body.data.locations.nodes.map((location: LocationFragment) =>
-    formatOptionNameId(location.name, graphQlGidToId(location.id))
-  );
-}
-
-// #endregion
+// export type LocationSyncTableType = SyncTableType<typeof locationResource, LocationRow, never, never, never>;
 
 // #region Helpers
 function formatGraphQlLocationEditAddressInput(parts: {
@@ -75,8 +41,8 @@ function formatGraphQlLocationEditAddressInput(parts: {
   phone?: string;
   provinceCode?: string;
   zip?: string;
-}): LocationEditAddressInput {
-  const ret: LocationEditAddressInput = {
+}) {
+  const ret: VariablesOf<typeof UpdateLocation>['input']['address'] = {
     address1: parts?.address1,
     address2: parts?.address2,
     city: parts?.city,
@@ -101,8 +67,8 @@ export function formatGraphQlLocationEditInput(params: {
   phone?: string;
   provinceCode?: string;
   zip?: string;
-}): LocationEditInput {
-  const ret: LocationEditInput = {
+}) {
+  const ret: VariablesOf<typeof UpdateLocation>['input'] = {
     name: params.name,
     address: formatGraphQlLocationEditAddressInput({
       address1: params.address1,
@@ -123,7 +89,7 @@ export function formatGraphQlLocationEditInput(params: {
 
 export async function handleLocationUpdateJob(
   update: coda.SyncUpdate<string, string, typeof LocationSyncTableSchema>,
-  metafieldDefinitions: MetafieldDefinitionFragment[],
+  metafieldDefinitions: Array<ResultOf<typeof MetafieldDefinitionFragment>>,
   context: coda.ExecutionContext
 ) {
   const { updatedFields } = update;
@@ -173,13 +139,16 @@ export async function handleLocationUpdateJob(
 
   const [graphQlResponse, metafields] = (await Promise.all(subJobs)) as [
     // TODO: better typing
-    coda.FetchResponse<GraphQlResponse<LocationEditMutation>>,
+    coda.FetchResponse<GraphQlResponse<ResultOf<typeof UpdateLocation>>>,
     { [key: string]: any }
   ];
   if (graphQlResponse?.body?.data?.locationEdit?.location) {
     obj = {
       ...obj,
-      ...formatLocationForSchemaFromGraphQlApi(graphQlResponse.body.data.locationEdit.location, context),
+      ...formatLocationForSchemaFromGraphQlApi(
+        readFragment(LocationFragment, graphQlResponse.body.data.locationEdit.location),
+        context
+      ),
     };
   }
   if (metafields) {
@@ -193,7 +162,7 @@ export async function handleLocationUpdateJob(
 // #endregion
 
 // #region Formatting
-export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment, context) => {
+export const formatLocationForSchemaFromGraphQlApi = (location: ResultOf<typeof LocationFragment>, context) => {
   const location_id = graphQlGidToId(location.id);
 
   let obj: coda.SchemaType<typeof LocationSyncTableSchema> = {
@@ -219,7 +188,8 @@ export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment
   };
 
   if (location.metafields?.nodes) {
-    location.metafields.nodes.forEach((metafield) => {
+    const metafields = readFragment(MetafieldFieldsFragment, location.metafields.nodes);
+    metafields.forEach((metafield) => {
       const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
       obj[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
     });
@@ -237,16 +207,16 @@ export const formatLocationForSchemaFromGraphQlApi = (location: LocationFragment
 
 // #region GraphQl requests
 export const fetchLocationsGraphQl = async (
-  variables: GetLocationsQueryVariables,
+  variables: VariablesOf<typeof QueryLocations>,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
-    query: QueryLocations,
+    query: printGql(QueryLocations),
     variables,
   };
 
-  const { response } = await makeGraphQlRequest<GetLocationsQuery>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof QueryLocations>>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -259,16 +229,16 @@ export const fetchSingleLocationGraphQl = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
-    query: QuerySingleLocation,
+    query: printGql(QuerySingleLocation),
     variables: {
       id: locationGid,
       includeMetafields: false,
       includeFulfillmentService: true,
       includeLocalPickupSettings: false,
-    } as GetSingleLocationQueryVariables,
+    } as VariablesOf<typeof QuerySingleLocation>,
   };
 
-  const { response } = await makeGraphQlRequest<GetSingleLocationQuery>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof QuerySingleLocation>>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -277,22 +247,22 @@ export const fetchSingleLocationGraphQl = async (
 
 export async function updateLocationGraphQl(
   locationGid: string,
-  locationEditInput: LocationEditInput,
+  locationEditInput: VariablesOf<typeof UpdateLocation>['input'],
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: UpdateLocation,
+    query: printGql(UpdateLocation),
     variables: {
       id: locationGid,
       input: locationEditInput,
       includeMetafields: false,
       includeLocalPickupSettings: false,
       includeFulfillmentService: false,
-    } as LocationEditMutationVariables,
+    } as VariablesOf<typeof UpdateLocation>,
   };
 
-  const { response } = await makeGraphQlRequest<LocationEditMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof UpdateLocation>>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.locationEdit.userErrors },
     context
   );
@@ -305,13 +275,13 @@ export async function activateLocationGraphQl(
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: ActivateLocation,
+    query: printGql(ActivateLocation),
     variables: {
       locationId: locationGid,
-    } as LocationActivateMutationVariables,
+    } as VariablesOf<typeof ActivateLocation>,
   };
 
-  const { response } = await makeGraphQlRequest<LocationActivateMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof ActivateLocation>>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.locationActivate.locationActivateUserErrors },
     context
   );
@@ -325,14 +295,14 @@ export async function deactivateLocationGraphQl(
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: DeactivateLocation,
+    query: printGql(DeactivateLocation),
     variables: {
       locationId: locationGid,
       destinationLocationId: destinationLocationGid,
-    } as LocationDeactivateMutationVariables,
+    } as VariablesOf<typeof DeactivateLocation>,
   };
 
-  const { response } = await makeGraphQlRequest<LocationDeactivateMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof DeactivateLocation>>(
     {
       ...requestOptions,
       payload,

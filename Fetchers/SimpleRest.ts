@@ -1,7 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf } from '../types/graphql';
 
-import { getObjectSchemaEffectiveKey } from '../helpers';
-import { CodaMetafieldKeyValueSet } from '../helpers-setup';
+import { METAFIELDS_REQUIRED } from '../constants';
+import { getObjectSchemaEffectiveKey } from '../utils/helpers';
+import { idToGraphQlGid } from '../helpers-graphql';
 import {
   cleanQueryParams,
   getRestBaseUrl,
@@ -10,45 +12,36 @@ import {
   makePostRequest,
   makePutRequest,
 } from '../helpers-rest';
-import { idToGraphQlGid } from '../helpers-graphql';
-import { getMetafieldKeyValueSetsFromUpdate } from '../resources/metafields/metafields-functions';
-import { separatePrefixedMetafieldsKeysFromKeys } from '../resources/metafields/metafields-helpers';
+import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import {
+  ResourceCreateRestParams,
+  Resource,
+  ResourceSyncRestParams,
+  ResourceUpdateRestParams,
+  ResourceWithMetafields,
+} from '../resources/Resource.types';
+import {
+  getMetafieldKeyValueSetsFromUpdate,
   updateAndFormatResourceMetafieldsGraphQl,
   updateAndFormatResourceMetafieldsRest,
 } from '../resources/metafields/metafields-functions';
+import { separatePrefixedMetafieldsKeysFromKeys } from '../resources/metafields/metafields-helpers';
+import { FetchRequestOptions } from './Fetcher.types';
+import { MultipleFetchData, SingleFetchData } from './SyncTableRest';
+import { MetafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
 
-import type { FetchRequestOptions } from '../types/Fetcher';
-import type { MetafieldDefinitionFragment } from '../types/generated/admin.generated';
-import type {
-  GetCodaRow,
-  GetCreateParams,
-  GetSyncParams,
-  GetSyncSchema,
-  GetUpdateParams,
-  MultipleFetchData,
-  SingleFetchData,
-} from './SyncTableRest';
-import type {
-  RestCreateParamsUnion,
-  RestSyncParamsUnion,
-  RestUpdateParamsUnion,
-  SyncTableTypeUnion,
-} from '../types/SyncTable';
-import type { ResourceTypeUnion } from '../types/allResources';
-
-export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
-  readonly resource: ResourceTypeUnion;
+export abstract class SimpleRest<ResourceT extends Resource<any> | ResourceWithMetafields<any>> {
+  readonly resource: ResourceT;
   readonly context: coda.ExecutionContext;
-  readonly singular: string;
-  readonly plural: string;
+  readonly singular: ResourceT['rest']['singular'];
+  readonly plural: ResourceT['rest']['plural'];
   readonly baseUrl: string;
-  readonly schema: GetSyncSchema<SyncT>;
+  readonly schema: ResourceT['schema'];
   /** Wether this Resource always retrieve just a single result. e.g. Shop */
   readonly isSingleFetch: Boolean;
   metafieldsStrategy: 'legacy' | 'new';
 
-  constructor(resource: ResourceTypeUnion, context: coda.ExecutionContext, isSingleFetch = false) {
+  constructor(resource: ResourceT, context: coda.ExecutionContext, isSingleFetch = false) {
     this.context = context;
     this.resource = resource;
     this.singular = resource.rest.singular;
@@ -76,7 +69,7 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
   };
 
   getFetchUrl = (id?: number): string => this.getSingleResourceUrl(id);
-  getFetchAllUrl = (params?: GetSyncParams<SyncT>): string =>
+  getFetchAllUrl = (params?: ResourceT['rest']['params']['sync']): string =>
     coda.withQueryParams(this.getResourcesUrl(), params ? cleanQueryParams(params) : {});
   getCreateUrl = (): string => this.getResourcesUrl();
   getUpdateUrl = (id: number): string => this.getSingleResourceUrl(id);
@@ -84,43 +77,48 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
   // #endregion
 
   // #region Validation
-  validateParams = (params: RestSyncParamsUnion | RestCreateParamsUnion | RestUpdateParamsUnion): Boolean => true;
+  validateParams = (params: ResourceSyncRestParams | ResourceCreateRestParams | ResourceUpdateRestParams): Boolean =>
+    true;
   // #endregion
 
   // #region Formatting
   formatRowToApi = (row: any, metafieldKeyValueSets: any[] = []) => ({});
 
-  abstract formatApiToRow(restData: any): GetCodaRow<SyncT>;
+  abstract formatApiToRow(restData: any): ResourceT['codaRow'];
 
   // #endregion
 
   // #region Requests
-  fetchAll = (params: GetSyncParams<SyncT>, requestOptions: FetchRequestOptions = {}) => {
+  fetchAll = (params: ResourceT['rest']['params']['sync'], requestOptions: FetchRequestOptions = {}) => {
     let url = requestOptions.url ?? this.getFetchAllUrl(params);
-    return makeGetRequest<MultipleFetchData<SyncT>>({ ...requestOptions, url }, this.context);
+    return makeGetRequest<MultipleFetchData<ResourceT>>({ ...requestOptions, url }, this.context);
   };
 
   // l'id est optionnelle pour certains edge cases, comme Shop
   fetch = (id?: number, requestOptions: FetchRequestOptions = {}) => {
     const url = this.getFetchUrl(id);
-    return makeGetRequest<SingleFetchData<SyncT>>({ ...requestOptions, url }, this.context);
+    return makeGetRequest<SingleFetchData<ResourceT>>({ ...requestOptions, url }, this.context);
   };
 
-  create = (params: GetCreateParams<SyncT>, requestOptions: FetchRequestOptions = {}) => {
+  create = (params: ResourceT['rest']['params']['create'], requestOptions: FetchRequestOptions = {}) => {
     this.validateParams(params);
     const payload = { [this.singular]: cleanQueryParams(params) };
     const url = this.getCreateUrl();
-    return makePostRequest<SingleFetchData<SyncT>>({ ...requestOptions, url, payload }, this.context);
+    return makePostRequest<SingleFetchData<ResourceT>>({ ...requestOptions, url, payload }, this.context);
   };
 
-  update = async (id: number, params: GetUpdateParams<SyncT>, requestOptions: FetchRequestOptions = {}) => {
+  update = async (
+    id: number,
+    params: ResourceT['rest']['params']['update'],
+    requestOptions: FetchRequestOptions = {}
+  ) => {
     const restParams = cleanQueryParams(params);
 
     if (Object.keys(restParams).length) {
       this.validateParams(params);
       const payload = { [this.singular]: restParams };
       const url = this.getUpdateUrl(id);
-      return makePutRequest<SingleFetchData<SyncT>>({ ...requestOptions, url, payload }, this.context);
+      return makePutRequest<SingleFetchData<ResourceT>>({ ...requestOptions, url, payload }, this.context);
     }
   };
 
@@ -129,23 +127,23 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
     return makeDeleteRequest({ ...requestOptions, url }, this.context);
   };
 
-  validateUpdateJob(update: coda.SyncUpdate<any, any, SyncT['schema']>) {
+  validateUpdateJob(update: coda.SyncUpdate<any, any, ResourceT['schema']>) {
     return true;
   }
 
   handleUpdateJob = async (
-    update: coda.SyncUpdate<string, string, SyncT['schema']>,
-    metafieldDefinitions: MetafieldDefinitionFragment[] = []
+    update: coda.SyncUpdate<string, string, ResourceT['schema']>,
+    metafieldDefinitions: ResultOf<typeof MetafieldDefinitionFragment>[] = []
   ) => {
     this.validateUpdateJob(update);
 
-    const originalRow = update.previousValue as GetCodaRow<SyncT>;
+    const originalRow = update.previousValue as ResourceT['codaRow'];
     const includedProperties = update.updatedFields.concat([
       getObjectSchemaEffectiveKey(this.schema, this.schema.idProperty),
     ]);
     const updatedRow = Object.fromEntries(
       Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
-    ) as GetCodaRow<SyncT>;
+    ) as ResourceT['codaRow'];
 
     const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(updatedRow));
     const metafieldKeyValueSets =
@@ -168,17 +166,20 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
    * Il va falloir faire un appel séparé pour chaque metafield
    */
   updateWithMetafields = async (
-    row: { original?: GetCodaRow<SyncT>; updated: GetCodaRow<SyncT> },
+    row: { original?: ResourceT['codaRow']; updated: ResourceT['codaRow'] },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): Promise<GetCodaRow<SyncT>> => {
+  ): Promise<ResourceT['codaRow']> => {
     const originalRow = row.original ?? {};
     const updatedRow = row.updated;
     const rowId = updatedRow.id;
     if (typeof rowId !== 'number') {
       throw new Error('handleUpdateJob only support ids as numbers');
     }
+    if (!('metafields' in this.resource)) {
+      throw new Error(METAFIELDS_REQUIRED);
+    }
 
-    const restParams = this.formatRowToApi(updatedRow) as GetUpdateParams<SyncT>;
+    const restParams = this.formatRowToApi(updatedRow) as ResourceT['rest']['params']['update'];
     const updateResourcePromise = restParams ? this.update(rowId, restParams) : undefined;
 
     const updateMetafieldsPromise = metafieldKeyValueSets.length
@@ -196,16 +197,16 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
       id: rowId,
       ...updatedResource,
       ...(formattedMetafields ?? {}),
-    } as GetCodaRow<SyncT>;
+    } as ResourceT['codaRow'];
   };
 
   _updateWithMetafieldsGraphQl = async (
     row: {
-      original?: GetCodaRow<SyncT>;
-      updated: GetCodaRow<SyncT>;
+      original?: ResourceT['codaRow'];
+      updated: ResourceT['codaRow'];
     },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
-  ): Promise<GetCodaRow<SyncT>> => {
+  ): Promise<ResourceT['codaRow']> => {
     if (!('metafieldOwnerType' in this.resource)) {
       throw new Error('resource must have a metafieldOwnerType to use _updateWithMetafieldsGraphQl');
     }
@@ -217,7 +218,7 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
       throw new Error('handleUpdateJob only support ids as numbers');
     }
 
-    const restParams = this.formatRowToApi(updatedRow) as GetUpdateParams<SyncT>;
+    const restParams = this.formatRowToApi(updatedRow) as ResourceT['rest']['params']['update'];
     const updateResourcePromise = restParams ? this.update(rowId, restParams) : undefined;
 
     const updateMetafieldsPromise = metafieldKeyValueSets.length
@@ -238,7 +239,7 @@ export abstract class SimpleRestNew<SyncT extends SyncTableTypeUnion> {
       id: rowId,
       ...updatedResource,
       ...(formattedMetafields ?? {}),
-    } as GetCodaRow<SyncT>;
+    } as ResourceT['codaRow'];
   };
   // #endregion
 }

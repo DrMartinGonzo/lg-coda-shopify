@@ -1,15 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { getRestBaseUrl, makeGetRequest } from '../../helpers-rest';
 
-import type { RestResources } from '../../types/ShopifyRestResourceTypes';
-import type { FetchRequestOptions } from '../../types/Fetcher';
+import type { RestResources } from '../../Fetchers/ShopifyRestResource.types';
+import type { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 
-// #region Autocomplete
-export function makeAutocompleteTemplateSuffixesFor(kind: string) {
-  return async function (context: coda.ExecutionContext, search: string, args: any) {
-    return getTemplateSuffixesFor(kind, context);
-  };
-}
 export async function getTemplateSuffixesFor(kind: string, context: coda.ExecutionContext): Promise<string[]> {
   const activeTheme = await getActiveTheme(context);
   if (activeTheme) {
@@ -29,18 +23,14 @@ export async function getTemplateSuffixesFor(kind: string, context: coda.Executi
 
   return [];
 }
-// #endregion
 
-// #region Helpers
 async function getActiveTheme(context: coda.ExecutionContext) {
   const themesResponse = await fetchThemesRest(context);
   if (themesResponse?.body?.themes) {
     return themesResponse.body.themes.find((theme) => theme.role === 'main');
   }
 }
-// #endregion
 
-// #region Rest requests
 function fetchThemesRest(context: coda.ExecutionContext, requestOptions: FetchRequestOptions = {}) {
   const url = coda.joinUrl(getRestBaseUrl(context), 'themes.json');
   return makeGetRequest<{ themes: RestResources['Theme'][] }>({ ...requestOptions, url }, context);

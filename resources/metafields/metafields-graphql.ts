@@ -1,8 +1,11 @@
-import { capitalizeFirstChar } from '../../helpers';
+import { print as printGql } from '@0no-co/graphql.web';
+import { ResultOf, graphql } from '../../types/graphql';
+import { capitalizeFirstChar } from '../../utils/helpers';
 
 // #region Fragments
-export const MetafieldFieldsFragment = /* GraphQL */ `
+export const MetafieldFieldsFragment = graphql(`
   fragment MetafieldFields on Metafield {
+    __typename
     id
     namespace
     key
@@ -11,9 +14,27 @@ export const MetafieldFieldsFragment = /* GraphQL */ `
     ownerType
     createdAt
     updatedAt
-    __typename
   }
-`;
+`);
+
+export const MetafieldFieldsFragmentWithDefinition = graphql(
+  `
+    fragment MetafieldWithDefinitionFields on Metafield {
+      __typename
+      id
+      namespace
+      key
+      type
+      value
+      ownerType
+      createdAt
+      updatedAt
+      definition {
+        id
+      }
+    }
+  `
+);
 // #endregion
 
 // #region Queries
@@ -49,134 +70,83 @@ export const MetafieldFieldsFragment = /* GraphQL */ `
 //   `;
 // };
 
-// ${parentOwnerQuery}
-// TODO: rewrite
-export const makeQuerySingleMetafield = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
-
-  query GetSingleMetafield($gid: ID!) {
-    node(id: $gid) {
-      ... on Metafield {
-        ...MetafieldFields
-        owner {
-          __typename
-          ... on Node {
-            id
-          }
-          ... on Product {
-            id
-          }
-          ... on Collection {
-            id
-          }
-          ... on Customer {
-            id
-          }
-          ... on DraftOrder {
-            id
-          }
-          ... on Location {
-            id
-          }
-          ... on Order {
-            id
-          }
-          ... on ProductVariant {
-            id
-            owner: product {
-              id
-            }
-          }
-          ... on Shop {
-            id
-          }
-        }
-        definition {
-          id
-        }
-      }
-    }
-  }
-`;
-
 /**
  * Get Metafields from multiple nodes by their keys.
  * There is a maximum of 250 ids and 250 metafields keys per request.
  */
-export const queryNodesMetafieldsByKey = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
-
-  query GetNodesMetafieldsByKey($ids: [ID!]!, $metafieldKeys: [String!], $countMetafields: Int) {
-    nodes(ids: $ids) {
-      id
-      __typename
-      ... on HasMetafields {
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
+export const queryNodesMetafieldsByKey = graphql(
+  `
+    query GetNodesMetafieldsByKey($ids: [ID!]!, $metafieldKeys: [String!], $countMetafields: Int) {
+      nodes(ids: $ids) {
+        id
+        __typename
+        ... on HasMetafields {
+          metafields(keys: $metafieldKeys, first: $countMetafields) {
+            nodes {
+              ...MetafieldFields
+            }
           }
         }
       }
     }
-  }
-`;
+  `,
+  [MetafieldFieldsFragment]
+);
 
 /**
  * Get Metafields from a single node by their keys.
  * There is a maximum of 250 metafields keys per request.
  */
-export const querySingleNodeMetafieldsByKey = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
-
-  query GetSingleNodeMetafieldsByKey($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
-    node(id: $ownerGid) {
-      id
-      __typename
-      ... on ProductVariant {
-        parentOwner: product {
-          id
+export const querySingleNodeMetafieldsByKey = graphql(
+  `
+    query GetSingleNodeMetafieldsByKey($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
+      node(id: $ownerGid) {
+        id
+        __typename
+        ... on ProductVariant {
+          parentOwner: product {
+            id
+          }
         }
-      }
-      ... on HasMetafields {
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-            definition {
-              id
+        ... on HasMetafields {
+          metafields(keys: $metafieldKeys, first: $countMetafields) {
+            nodes {
+              ...MetafieldWithDefinitionFields
             }
           }
         }
       }
     }
-  }
-`;
+  `,
+  [MetafieldFieldsFragmentWithDefinition]
+);
+export type SingleNodeMetafieldsByKeyResult = ResultOf<typeof querySingleNodeMetafieldsByKey>;
 
 /**
  * Edge case: Same as querySingleNodeMetafieldsByKey but for Shop, which don't require a Gid.
  * There is a maximum of 250 metafields keys per request.
  */
-export const queryShopMetafieldsByKeys = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
-
-  query GetShopMetafieldsByKey($metafieldKeys: [String!], $countMetafields: Int!) {
-    shop {
-      id
-      metafields(keys: $metafieldKeys, first: $countMetafields) {
-        nodes {
-          ...MetafieldFields
-          definition {
-            id
+export const queryShopMetafieldsByKeys = graphql(
+  `
+    query GetShopMetafieldsByKey($metafieldKeys: [String!], $countMetafields: Int!) {
+      shop {
+        id
+        metafields(keys: $metafieldKeys, first: $countMetafields) {
+          nodes {
+            ...MetafieldWithDefinitionFields
           }
         }
       }
     }
-  }
-`;
+  `,
+  [MetafieldFieldsFragmentWithDefinition]
+);
+export type ShopMetafieldsByKeysResult = ResultOf<typeof queryShopMetafieldsByKeys>;
 
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
  */
-export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string, requestAllMetafields = false) => {
+export const buildQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string, requestAllMetafields = false) => {
   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
   /* Ca nous sert à récupérer l'ID de la ressource parente
   (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
@@ -186,7 +156,7 @@ export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string,
   }
 
   return `
-    ${MetafieldFieldsFragment}
+    ${printGql(MetafieldFieldsFragmentWithDefinition)}
 
     query ${queryName}($metafieldKeys: [String!], $countMetafields: Int!, $maxEntriesPerRun: Int!, $cursor: String) {
       ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
@@ -195,10 +165,7 @@ export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string,
           ${parentOwnerQuery}
           metafields(keys: $metafieldKeys, first: $countMetafields) {
             nodes {
-              ...MetafieldFields
-              definition {
-                id
-              }
+              ...MetafieldWithDefinitionFields
             }
           }
         }
@@ -210,38 +177,37 @@ export const makeQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string,
     }
   `;
 };
-
 // #endregion
 
 // #region Mutations
-export const MutationSetMetafields = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
-
-  mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $inputs) {
-      metafields {
-        ...MetafieldFields
-        definition {
-          id
+export const MutationSetMetafields = graphql(
+  `
+    mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $inputs) {
+        metafields {
+          ...MetafieldWithDefinitionFields
+        }
+        userErrors {
+          field
+          message
         }
       }
-      userErrors {
-        field
-        message
-      }
     }
-  }
-`;
+  `,
+  [MetafieldFieldsFragmentWithDefinition]
+);
 
-export const MutationDeleteMetafield = /* GraphQL */ `
-  mutation metafieldDelete($input: MetafieldDeleteInput!) {
-    metafieldDelete(input: $input) {
-      deletedId
-      userErrors {
-        field
-        message
+export const MutationDeleteMetafield = graphql(
+  `
+    mutation metafieldDelete($input: MetafieldDeleteInput!) {
+      metafieldDelete(input: $input) {
+        deletedId
+        userErrors {
+          field
+          message
+        }
       }
     }
-  }
-`;
+  `
+);
 // #endregion

@@ -3,7 +3,7 @@ import { BlogReference } from './BlogSchema';
 import { NOT_FOUND } from '../../constants';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const ArticleSyncTableSchema = coda.makeObjectSchema({
   properties: {

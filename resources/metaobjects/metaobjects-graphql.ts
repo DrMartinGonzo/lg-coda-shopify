@@ -1,10 +1,54 @@
-import { METAOBJECT_CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
-import { MetaobjectDefinitionFragment } from '../metaobjectDefinitions/metaobjectDefinitions-graphql';
+import { print as printGql } from '@0no-co/graphql.web';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import { graphql } from '../../types/graphql';
 
 // #region Fragments
+export const MetaobjectFieldDefinitionFragment = graphql(`
+  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {
+    key
+    description
+    name
+    required
+    type {
+      category
+      name
+      supportedValidations {
+        name
+        type
+      }
+      supportsDefinitionMigrations
+    }
+    validations {
+      name
+      type
+      value
+    }
+  }
+`);
+
+export const MetaobjectDefinitionFragment = graphql(
+  `
+    fragment MetaobjectDefinition on MetaobjectDefinition {
+      id
+      name
+      displayNameKey
+      type
+      capabilities @include(if: $includeCapabilities) {
+        publishable {
+          enabled
+        }
+      }
+      fieldDefinitions @include(if: $includeFieldDefinitions) {
+        ...MetaobjectFieldDefinition
+      }
+    }
+  `,
+  [MetaobjectFieldDefinitionFragment]
+);
+
 function buildMetaobjectFragment(fieldsKey: string[]) {
   return `
-    ${MetaobjectDefinitionFragment}
+    ${printGql(MetaobjectDefinitionFragment)}
 
     fragment MetaobjectFragment on Metaobject {
       id
@@ -24,7 +68,7 @@ function buildMetaobjectFragment(fieldsKey: string[]) {
           // handle is a special case
           if (key === 'handle') return;
           // include prefix to easiy identify custom fields key later when formatting the returned data
-          return `${METAOBJECT_CUSTOM_FIELD_PREFIX_KEY}${key}: field(key: "${key}") {
+          return `${CUSTOM_FIELD_PREFIX_KEY}${key}: field(key: "${key}") {
             key
             type
             value
@@ -38,6 +82,54 @@ function buildMetaobjectFragment(fieldsKey: string[]) {
 // #endregion
 
 // #region Queries
+export const querySingleMetaObjectDefinition = graphql(
+  `
+    query GetSingleMetaObjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {
+      metaobjectDefinition(id: $id) {
+        ...MetaobjectDefinition
+      }
+    }
+  `,
+  [MetaobjectDefinitionFragment]
+);
+
+export const querySingleMetaobjectDefinitionByType = graphql(
+  `
+    query GetSingleMetaObjectDefinitionByType(
+      $type: String!
+      $includeCapabilities: Boolean!
+      $includeFieldDefinitions: Boolean!
+    ) {
+      metaobjectDefinitionByType(type: $type) {
+        ...MetaobjectDefinition
+      }
+    }
+  `,
+  [MetaobjectDefinitionFragment]
+);
+
+export const queryAllMetaobjectDefinitions = graphql(
+  `
+    query GetMetaobjectDefinitions(
+      $maxEntriesPerRun: Int!
+      $cursor: String
+      $includeCapabilities: Boolean!
+      $includeFieldDefinitions: Boolean!
+    ) {
+      metaobjectDefinitions(first: $maxEntriesPerRun, after: $cursor) {
+        nodes {
+          ...MetaobjectDefinition
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  `,
+  [MetaobjectDefinitionFragment]
+);
+
 export function buildQueryAllMetaObjectsWithFields(fieldsKey: string[]) {
   return `
     ${buildMetaobjectFragment(fieldsKey)}
@@ -83,21 +175,23 @@ export function buildQuerySingleMetaObjectWithFields(fieldsKey: string[]) {
 // #endregion
 
 // #region Mutations
-export const createMetaobjectMutation = /* GraphQL */ `
-  mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {
-    metaobjectCreate(metaobject: $metaobject) {
-      metaobject {
-        id
-      }
+export const createMetaobjectMutation = graphql(
+  `
+    mutation CreateMetaobject($metaobject: MetaobjectCreateInput!) {
+      metaobjectCreate(metaobject: $metaobject) {
+        metaobject {
+          id
+        }
 
-      userErrors {
-        field
-        message
-        code
+        userErrors {
+          field
+          message
+          code
+        }
       }
     }
-  }
-`;
+  `
+);
 
 export function buildUpdateMetaObjectMutation(fieldsKey: string[]) {
   return `
@@ -125,17 +219,19 @@ export function buildUpdateMetaObjectMutation(fieldsKey: string[]) {
   `;
 }
 
-export const deleteMetaobjectMutation = /* GraphQL */ `
-  mutation DeleteMetaobject($id: ID!) {
-    metaobjectDelete(id: $id) {
-      deletedId
+export const deleteMetaobjectMutation = graphql(
+  `
+    mutation DeleteMetaobject($id: ID!) {
+      metaobjectDelete(id: $id) {
+        deletedId
 
-      userErrors {
-        field
-        message
-        code
+        userErrors {
+          field
+          message
+          code
+        }
       }
     }
-  }
-`;
+  `
+);
 // #endregion

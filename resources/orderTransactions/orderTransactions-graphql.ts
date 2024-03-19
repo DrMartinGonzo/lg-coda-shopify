@@ -1,3 +1,5 @@
+import { graphql } from '../../types/graphql';
+
 // #region Helpers
 export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
@@ -31,7 +33,7 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
 // #endregion
 
 // #region Fragments
-const OrderTransactionFieldsFragment = /* GraphQL */ `
+export const OrderTransactionFieldsFragment = graphql(`
   fragment OrderTransactionFields on OrderTransaction {
     id
     kind
@@ -86,38 +88,39 @@ const OrderTransactionFieldsFragment = /* GraphQL */ `
     #   id
     # }
   }
-`;
+`);
 // #endregion
 
 // #region Queries
-export const QueryOrderTransactions = /* GraphQL */ `
-  ${OrderTransactionFieldsFragment}
-
-  query getOrderTransactions(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $searchQuery: String
-    $includeAmount: Boolean!
-    $includeIcon: Boolean!
-    $includeParentTransaction: Boolean!
-    $includePaymentDetails: Boolean!
-    $includeReceiptJson: Boolean!
-    $includeTotalUnsettled: Boolean!
-    $includeTransactionCurrency: Boolean!
-  ) {
-    orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-      nodes {
-        id
-        name
-        transactions(first: 5) {
-          ...OrderTransactionFields
+export const QueryOrderTransactions = graphql(
+  `
+    query getOrderTransactions(
+      $maxEntriesPerRun: Int!
+      $cursor: String
+      $searchQuery: String
+      $includeAmount: Boolean!
+      $includeIcon: Boolean!
+      $includeParentTransaction: Boolean!
+      $includePaymentDetails: Boolean!
+      $includeReceiptJson: Boolean!
+      $includeTotalUnsettled: Boolean!
+      $includeTransactionCurrency: Boolean!
+    ) {
+      orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+        nodes {
+          id
+          name
+          transactions(first: 5) {
+            ...OrderTransactionFields
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
         }
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
     }
-  }
-`;
+  `,
+  [OrderTransactionFieldsFragment]
+);
 // #endregion

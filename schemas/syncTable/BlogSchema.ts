@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const COMMENTABLE_OPTIONS = [
   { display: 'No', value: 'no' },

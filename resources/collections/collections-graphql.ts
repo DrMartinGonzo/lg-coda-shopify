@@ -1,3 +1,4 @@
+import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
@@ -11,102 +12,108 @@ export function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-const CollectionFieldsFragmentAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+const CollectionFieldsFragmentAdmin = graphql(
+  `
+    fragment CollectionFields on Collection {
+      handle
+      id
+      descriptionHtml
+      updatedAt
+      templateSuffix
+      title
+      # availableForSale
+      # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
+      # seo {
+      #   description
+      #   title
+      # }
+      # trackingParameters
+      # media(first: 10) {
+      #   nodes {
+      #     mediaContentType
+      #   }
+      # }
 
-  fragment CollectionFields on Collection {
-    handle
-    id
-    descriptionHtml
-    updatedAt
-    templateSuffix
-    title
-    # availableForSale
-    # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
-    # seo {
-    #   description
-    #   title
-    # }
-    # trackingParameters
-    # media(first: 10) {
-    #   nodes {
-    #     mediaContentType
-    #   }
-    # }
-
-    # Optional fields and connections
-    image @include(if: $includeImage) {
-      url
-    }
-    sortOrder @include(if: $includeSortOrder)
-    ruleSet @include(if: $includeRuleSet) {
-      appliedDisjunctively
-      rules {
-        column
-        condition
-        relation
+      # Optional fields and connections
+      image @include(if: $includeImage) {
+        url
+      }
+      sortOrder @include(if: $includeSortOrder)
+      ruleSet @include(if: $includeRuleSet) {
+        appliedDisjunctively
+        rules {
+          column
+          condition
+          relation
+        }
+      }
+      metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
+        nodes {
+          ...MetafieldFields
+        }
       }
     }
-    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
-      nodes {
-        ...MetafieldFields
-      }
-    }
-  }
-`;
+  `,
+  [MetafieldFieldsFragment]
+);
 // #endregion
 
 // #region Queries
-export const QueryCollectionsAdmin = /* GraphQL */ `
-  ${CollectionFieldsFragmentAdmin}
-
-  query GetCollections(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-    $includeImage: Boolean!
-    $includeMetafields: Boolean!
-    $includeSortOrder: Boolean!
-    $includeRuleSet: Boolean!
-  ) {
-    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-      nodes {
-        ...CollectionFields
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-
-export const getCollectionType = /* GraphQL */ `
-  query GetCollectionType($collectionGid: ID!) {
-    collection(id: $collectionGid) {
-      # will be null for non smart collections
-      isSmartCollection: ruleSet {
-        appliedDisjunctively
+export const queryCollectionsAdmin = graphql(
+  `
+    query GetCollections(
+      $maxEntriesPerRun: Int!
+      $cursor: String
+      $metafieldKeys: [String!]
+      $countMetafields: Int
+      $searchQuery: String
+      $includeImage: Boolean!
+      $includeMetafields: Boolean!
+      $includeSortOrder: Boolean!
+      $includeRuleSet: Boolean!
+    ) {
+      collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+        nodes {
+          ...CollectionFields
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
-  }
-`;
+  `,
+  [CollectionFieldsFragmentAdmin]
+);
 
-export const getCollectionTypes = /* GraphQL */ `
-  query GetCollectionTypes($ids: [ID!]!) {
-    nodes(ids: $ids) {
-      id
-      __typename
-      ... on Collection {
+export const queryCollectionType = graphql(
+  `
+    query GetCollectionType($collectionGid: ID!) {
+      collection(id: $collectionGid) {
+        # will be null for non smart collections
         isSmartCollection: ruleSet {
           appliedDisjunctively
         }
       }
     }
-  }
-`;
+  `
+);
+
+export const queryCollectionTypes = graphql(
+  `
+    query GetCollectionTypes($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        id
+        __typename
+        ... on Collection {
+          isSmartCollection: ruleSet {
+            appliedDisjunctively
+          }
+        }
+      }
+    }
+  `
+);
 
 /*
 export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `

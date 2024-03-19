@@ -1,12 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
-import { CODA_PACK_ID } from '../../pack-config.json';
-import { NOT_FOUND } from '../../constants';
-import { Identity } from '../../constants';
+import { ResultOf } from '../../types/graphql';
 
-import type {
-  MetafieldDefinitionFragment,
-  MetaobjectFieldDefinitionFragment,
-} from '../../types/generated/admin.generated';
+import { Identity, NOT_FOUND } from '../../constants';
+import { CODA_PACK_ID } from '../../pack-config.json';
+import { MetafieldDefinitionFragment } from '../../resources/metafieldDefinitions/metafieldDefinitions-graphql';
+import { MetaobjectFieldDefinitionFragment } from '../../resources/metaobjects/metaobjects-graphql';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -41,7 +39,7 @@ export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
 });
 
 export function getMetaobjectReferenceSchema(
-  fieldDefinition: MetafieldDefinitionFragment | MetaobjectFieldDefinitionFragment
+  fieldDefinition: ResultOf<typeof MetafieldDefinitionFragment> | ResultOf<typeof MetaobjectFieldDefinitionFragment>
 ) {
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
     (v) => v.name === 'metaobject_definition_id'

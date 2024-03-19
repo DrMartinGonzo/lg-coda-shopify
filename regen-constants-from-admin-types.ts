@@ -1,9 +1,11 @@
 const fs = require('fs');
+// TODO: use https://github.com/jonschlinkert/pascalcase like @codahq does
 const toPascalCase = require('to-pascal-case');
 
 import { GraphQLClient, gql } from 'graphql-request';
-import { GRAPHQL_DEFAULT_API_VERSION } from './constants';
+import { GRAPHQL_DEFAULT_API_VERSION } from './config/config';
 import toPascalCase from 'to-pascal-case';
+import { join } from 'path';
 
 async function fetchSchema(url: string) {
   const client = new GraphQLClient(url, {
@@ -13,8 +15,8 @@ async function fetchSchema(url: string) {
   });
 
   const query = gql`
-    query IntrospectionCountryCodeQuery {
-      __type(name: "CountryCode") {
+    query Introspection {
+      countryCodes: __type(name: "CountryCode") {
         kind
         name
         description
@@ -28,23 +30,23 @@ async function fetchSchema(url: string) {
 
   try {
     const data = await client.request(query);
-    // console.log('data', data);
 
-    const values = data['__type']['enumValues'];
-    const parts = values.map((country) => {
+    const countryCodes = data['countryCodes']['enumValues'];
+    const countryCodesParts = countryCodes.map((country) => {
       return `  [CountryCode.${toPascalCase(country.name)}]: \`${country.description}\``;
     });
+
     let lol = `/**
  * This file is auto generated from a GraphQl introspection query
  */
 
-import { CountryCode } from './types/generated/admin.types';
+import { CountryCode } from './types/admin.types';
 
 /**
  * Les noms complets des pays présent dans l'enum CountryCode présente dans ./admin.types.d.ts
  */
 export const countryNames: Record<CountryCode, string> = {
-${parts.join(',\n')}
+${countryCodesParts.join(',\n')}
 } as const;
 `;
 

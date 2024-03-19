@@ -1,3 +1,4 @@
+import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
@@ -11,7 +12,7 @@ export function buildCustomersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-const CustomerAddressFieldsFragment = /* GraphQL */ `
+export const CustomerAddressFieldsFragment = graphql(`
   fragment CustomerAddressFields on MailingAddress {
     address1
     address2
@@ -34,107 +35,108 @@ const CustomerAddressFieldsFragment = /* GraphQL */ `
     zip
     formatted(withName: true, withCompany: true)
   }
-`;
+`);
 
-const CustomerFieldsFragment = /* GraphQL */ `
-  ${CustomerAddressFieldsFragment}
-  ${MetafieldFieldsFragment}
+export const CustomerFieldsFragment = graphql(
+  `
+    fragment CustomerFields on Customer {
+      id
+      createdAt
+      displayName
+      email
+      firstName
+      lastName
+      lifetimeDuration
+      locale
+      multipassIdentifier
+      note
+      numberOfOrders
+      phone
+      productSubscriberStatus
+      state
+      tags
+      taxExempt
+      taxExemptions
+      unsubscribeUrl
+      updatedAt
+      validEmailAddress
+      verifiedEmail
+      addresses(first: 3) {
+        ...CustomerAddressFields
+      }
+      defaultAddress {
+        ...CustomerAddressFields
+      }
+      amountSpent {
+        amount
+        currencyCode
+      }
+      canDelete
+      # events(first: 2) {
+      #   nodes {
+      #     ... on CommentEvent {
+      #       id
+      #       message
+      #     }
+      #   }
+      # }
+      emailMarketingConsent {
+        consentUpdatedAt
+        marketingOptInLevel
+        marketingState
+      }
+      smsMarketingConsent {
+        consentCollectedFrom
+        consentUpdatedAt
+        marketingOptInLevel
+        marketingState
+      }
+      statistics {
+        predictedSpendTier
+      }
 
-  fragment CustomerFields on Customer {
-    id
-    createdAt
-    displayName
-    email
-    firstName
-    lastName
-    lifetimeDuration
-    locale
-    multipassIdentifier
-    note
-    numberOfOrders
-    phone
-    productSubscriberStatus
-    state
-    tags
-    taxExempt
-    taxExemptions
-    unsubscribeUrl
-    updatedAt
-    validEmailAddress
-    verifiedEmail
-    addresses(first: 3) {
-      ...CustomerAddressFields
-    }
-    defaultAddress {
-      ...CustomerAddressFields
-    }
-    amountSpent {
-      amount
-      currencyCode
-    }
-    canDelete
-    # events(first: 2) {
-    #   nodes {
-    #     ... on CommentEvent {
-    #       id
-    #       message
-    #     }
-    #   }
-    # }
-    emailMarketingConsent {
-      consentUpdatedAt
-      marketingOptInLevel
-      marketingState
-    }
-    smsMarketingConsent {
-      consentCollectedFrom
-      consentUpdatedAt
-      marketingOptInLevel
-      marketingState
-    }
-    statistics {
-      predictedSpendTier
-    }
-
-    # Optional fields and connections
-    # options(first: $maxOptions) @include(if: $includeOptions) {
-    #   name
-    # }
-    # featuredImage @include(if: $includeFeaturedImage) {
-    #   url
-    # }
-    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
-      nodes {
-        ...MetafieldFields
+      # Optional fields and connections
+      # options(first: $maxOptions) @include(if: $includeOptions) {
+      #   name
+      # }
+      # featuredImage @include(if: $includeFeaturedImage) {
+      #   url
+      # }
+      metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
+        nodes {
+          ...MetafieldFields
+        }
       }
     }
-  }
-`;
+  `,
+  [CustomerAddressFieldsFragment, MetafieldFieldsFragment]
+);
 // #endregion
 
 // #region Queries
-export const QueryCustomersAdmin = /* GraphQL */ `
-  ${CustomerFieldsFragment}
-
-  query getCustomersWithMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-    $includeMetafields: Boolean!
-  ) {
-    customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-      nodes {
-        ...CustomerFields
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
+export const queryNodesMetafieldsByKey = graphql(
+  `
+    query getCustomersWithMetafields(
+      $maxEntriesPerRun: Int!
+      $cursor: String
+      $metafieldKeys: [String!]
+      $countMetafields: Int
+      $searchQuery: String
+      $includeMetafields: Boolean!
+    ) {
+      customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+        nodes {
+          ...CustomerFields
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
-  }
-`;
+  `,
+  [CustomerFieldsFragment]
+);
 
 // export const QueryCustomersMetafieldsAdmin = /* GraphQL */ `
 //   ${MetafieldFieldsFragment}

@@ -1,10 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
-import { getShopifyRequestHeaders, isCodaCached, logAdmin } from './helpers';
-import { GraphQlResourceName } from './types/ShopifyGraphQlResourceTypes';
-import { CACHE_DEFAULT, REST_DEFAULT_API_VERSION } from './constants';
 
-import type { FetchRequestOptions } from './types/Fetcher';
-import type { SyncTableRestContinuation } from './types/SyncTable';
+import { SyncTableRestContinuation } from './Fetchers/SyncTableRest';
+import { CACHE_DEFAULT } from './constants';
+import { REST_DEFAULT_API_VERSION } from './config/config';
+import { getShopifyRequestHeaders, logAdmin } from './utils/helpers';
+import { FetchRequestOptions } from './Fetchers/Fetcher.types';
 
 // TODO: better error handling
 
@@ -59,6 +59,7 @@ export async function makeSyncTableGetRequest<Data extends any>(
   if (nextUrl) {
     continuation = {
       nextUrl,
+      skipNextRestSync: 'false',
       extraContinuationData: params.extraContinuationData,
     };
   }

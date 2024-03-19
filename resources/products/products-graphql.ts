@@ -1,6 +1,5 @@
+import { graphql } from '../../types/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-
-export const MAX_OPTIONS_PER_PRODUCT = 3;
 
 // #region Helpers
 export function buildProductsSearchQuery(filters: { [key: string]: any }) {
@@ -34,94 +33,98 @@ export function buildProductsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-const ProductFieldsFragment = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+export const ProductFieldsFragment = graphql(
+  `
+    fragment ProductFields on Product {
+      id
+      handle
+      createdAt
+      title
+      productType
+      publishedAt
+      status
+      tags
+      templateSuffix
+      updatedAt
+      vendor
+      isGiftCard
+      descriptionHtml
+      onlineStoreUrl
 
-  fragment ProductFields on Product {
-    id
-    handle
-    createdAt
-    title
-    productType
-    publishedAt
-    status
-    tags
-    templateSuffix
-    updatedAt
-    vendor
-    isGiftCard
-    descriptionHtml
-    onlineStoreUrl
-
-    # Optional fields and connections
-    options(first: $maxOptions) @include(if: $includeOptions) {
-      name
-    }
-    featuredImage @include(if: $includeFeaturedImage) {
-      url
-    }
-    metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
-      nodes {
-        ...MetafieldFields
+      # Optional fields and connections
+      options(first: $maxOptions) @include(if: $includeOptions) {
+        name
       }
-    }
+      featuredImage @include(if: $includeFeaturedImage) {
+        url
+      }
+      metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
+        nodes {
+          ...MetafieldFields
+        }
+      }
 
-    # availableForSale
-    # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
-    # seo {
-    #   description
-    #   title
-    # }
-    # trackingParameters
-    # media(first: 10) {
-    #   nodes {
-    #     mediaContentType
-    #   }
-    # }
-  }
-`;
+      # availableForSale
+      # publishedOnPublication(publicationId: "gid://shopify/Publication/42911268979")
+      # seo {
+      #   description
+      #   title
+      # }
+      # trackingParameters
+      # media(first: 10) {
+      #   nodes {
+      #     mediaContentType
+      #   }
+      # }
+    }
+  `,
+  [MetafieldFieldsFragment]
+);
 // #endregion
 
 // #region Queries
 // List max 250 available product types
-export const queryProductTypes = /* GraphQL */ `
-  query QueryProductTypes {
-    shop {
-      name
-      productTypes(first: 250) {
-        edges {
-          node
+export const queryProductTypes = graphql(
+  `
+    query QueryProductTypes {
+      shop {
+        name
+        productTypes(first: 250) {
+          edges {
+            node
+          }
         }
       }
     }
-  }
-`;
+  `
+);
 
-export const QueryProductsAdmin = /* GraphQL */ `
-  ${ProductFieldsFragment}
-
-  query getProductsWithMetafields(
-    $maxEntriesPerRun: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $maxOptions: Int
-    $searchQuery: String
-    $includeOptions: Boolean!
-    $includeFeaturedImage: Boolean!
-    $includeMetafields: Boolean!
-  ) {
-    products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-      nodes {
-        ...ProductFields
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
+export const QueryProductsAdmin = graphql(
+  `
+    query getProductsWithMetafields(
+      $maxEntriesPerRun: Int!
+      $cursor: String
+      $metafieldKeys: [String!]
+      $countMetafields: Int
+      $maxOptions: Int
+      $searchQuery: String
+      $includeOptions: Boolean!
+      $includeFeaturedImage: Boolean!
+      $includeMetafields: Boolean!
+    ) {
+      products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+        nodes {
+          ...ProductFields
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
-  }
-`;
+  `,
+  [ProductFieldsFragment]
+);
 
 // export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
 //   ${MetafieldFieldsFragment}
@@ -152,54 +155,57 @@ export const QueryProductsAdmin = /* GraphQL */ `
 // #endregion
 
 // #region Mutations
-export const MutationUpdateProduct = /* GraphQL */ `
-  ${ProductFieldsFragment}
-
-  mutation UpdateProduct(
-    $countMetafields: Int
-    $includeFeaturedImage: Boolean!
-    $includeMetafields: Boolean!
-    $includeOptions: Boolean!
-    $maxOptions: Int
-    $metafieldKeys: [String!]
-    $metafieldsSetsInput: [MetafieldsSetInput!]!
-    $productInput: ProductInput!
-  ) {
-    metafieldsSet(metafields: $metafieldsSetsInput) {
-      metafields {
-        key
-        namespace
-        value
+export const MutationUpdateProduct = graphql(
+  `
+    mutation UpdateProduct(
+      $countMetafields: Int
+      $includeFeaturedImage: Boolean!
+      $includeMetafields: Boolean!
+      $includeOptions: Boolean!
+      $maxOptions: Int
+      $metafieldKeys: [String!]
+      $metafieldsSetsInput: [MetafieldsSetInput!]!
+      $productInput: ProductInput!
+    ) {
+      metafieldsSet(metafields: $metafieldsSetsInput) {
+        metafields {
+          key
+          namespace
+          value
+        }
+        userErrors {
+          field
+          message
+        }
       }
-      userErrors {
-        field
-        message
+      productUpdate(input: $productInput) {
+        product {
+          ...ProductFields
+        }
+        userErrors {
+          field
+          message
+        }
       }
     }
-    productUpdate(input: $productInput) {
-      product {
-        ...ProductFields
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
+  `,
+  [ProductFieldsFragment]
+);
 // #endregion
 
 /**====================================================================================================================
  *    Unused stuff
  *===================================================================================================================== */
 // #region Unused stuff
-export const queryProductInCollection = `
-  query queryProductInCollection($collectionId: ID!, $productId: ID!) {
-    collection(id: $collectionId) {
-      hasProduct(id: $productId)
+const queryProductInCollection = graphql(
+  `
+    query queryProductInCollection($collectionId: ID!, $productId: ID!) {
+      collection(id: $collectionId) {
+        hasProduct(id: $productId)
+      }
     }
-  }
-`;
+  `
+);
 
 // export const makeQueryProductsStorefront = `
 //   query queryProducts($cursor: String) {
@@ -266,21 +272,23 @@ export const makeMutationProductsWithMetafieldsBulk = () => `
 `;
 */
 
-export const queryCurrentBulkOperation = `
-  query queryCurrentBulkOperation {
-    currentBulkOperation {
-      id
-      status
-      errorCode
-      createdAt
-      completedAt
-      objectCount
-      fileSize
-      url
-      partialDataUrl
-      type
-      rootObjectCount
+const queryCurrentBulkOperation = graphql(
+  `
+    query queryCurrentBulkOperation {
+      currentBulkOperation {
+        id
+        status
+        errorCode
+        createdAt
+        completedAt
+        objectCount
+        fileSize
+        url
+        partialDataUrl
+        type
+        rootObjectCount
+      }
     }
-  }
-`;
+  `
+);
 // #endregion
