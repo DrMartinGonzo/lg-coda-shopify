@@ -1,27 +1,24 @@
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
 
-import { CACHE_DEFAULT } from '../../constants';
-import { getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../helpers';
-import { makeGraphQlRequest } from '../../helpers-graphql';
-import { deleteFiles, querySingleFile, UpdateFile } from './files-graphql';
-import { FileUpdateInput } from '../../types/generated/admin.types';
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { SimpleGraphQl } from '../../Fetchers/SimpleGraphQl';
-import { GraphQlResourceName } from '../../types/ShopifyGraphQlResourceTypes';
-
-import type { FileRow } from '../../types/CodaRows';
-import type { FetchRequestOptions } from '../../types/Fetcher';
-import type {
-  FileDeleteMutation,
-  FileFields_GenericFile_Fragment,
-  FileFields_MediaImage_Fragment,
-  FileFields_Video_Fragment,
-  FileFieldsFragment,
-  FileUpdateMutation,
-  FileUpdateMutationVariables,
-  GetSingleFileQuery,
-  GetSingleFileQueryVariables,
-} from '../../types/generated/admin.generated';
+import { CACHE_DEFAULT } from '../../constants';
+import { makeGraphQlRequest } from '../../helpers-graphql';
+import { FileRow } from '../../schemas/CodaRows.types';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
+import { getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../utils/helpers';
+import {
+  FileFieldsFragment,
+  GenericFileFieldsFragment,
+  MediaImageFieldsFragment,
+  UpdateFile,
+  VideoFieldsFragment,
+  deleteFiles,
+  querySingleFile,
+} from './files-graphql';
 
 // #region Helpers
 export async function handleFileUpdateJob(
@@ -34,11 +31,11 @@ export async function handleFileUpdateJob(
   let obj = row.original ?? {};
 
   const fileUpdateInput = formatGraphQlFileUpdateInput(row.updated);
-  console.log('row.updated', row.updated);
   if (fileUpdateInput !== undefined) {
-    const updateJob = await updateFileGraphQl(fileUpdateInput, context);
+    const updateJob = await updateFileGraphQl([fileUpdateInput], context);
     if (updateJob?.body?.data?.fileUpdate?.files) {
-      const file = updateJob.body.data.fileUpdate.files.find((file) => file.id === fileUpdateInput.id);
+      const files = readFragment(FileFieldsFragment, updateJob.body.data.fileUpdate.files);
+      const file = files.find((file) => file.id === fileUpdateInput.id);
       obj = {
         ...obj,
         ...formatFileNodeForSchema(file),
@@ -50,8 +47,8 @@ export async function handleFileUpdateJob(
 // #endregion
 
 // #region Formatting functions
-export function formatGraphQlFileUpdateInput(row: FileRow): FileUpdateInput | undefined {
-  const ret: FileUpdateInput = {
+export function formatGraphQlFileUpdateInput(row: FileRow): VariablesOf<typeof UpdateFile>['files'][0] | undefined {
+  const ret: VariablesOf<typeof UpdateFile>['files'][0] = {
     id: row.id,
   };
 
@@ -71,7 +68,7 @@ export function formatGraphQlFileUpdateInput(row: FileRow): FileUpdateInput | un
   return ret;
 }
 
-function formatFileNodeCommonProps(file: FileFieldsFragment, previewSize?: number): FileRow {
+function formatFileNodeCommonProps(file: ResultOf<typeof FileFieldsFragment>, previewSize?: number): FileRow {
   const obj: FileRow = {
     alt: file.alt,
     id: file.id,
@@ -88,10 +85,8 @@ function formatFileNodeCommonProps(file: FileFieldsFragment, previewSize?: numbe
 
   return obj;
 }
-function formatGenericFileNodeForSchema(file: FileFields_GenericFile_Fragment, previewSize?: number): FileRow {
-  const obj: FileRow = {
-    ...formatFileNodeCommonProps(file, previewSize),
-
+function formatGenericFileFragmentForSchema(file: ResultOf<typeof GenericFileFieldsFragment>) {
+  const obj = {
     fileSize: file.originalFileSize,
     mimeType: file.mimeType,
     name: file.url ? file.url.split('/').pop().split('?').shift() : '',
@@ -100,10 +95,8 @@ function formatGenericFileNodeForSchema(file: FileFields_GenericFile_Fragment, p
 
   return obj;
 }
-function formatMediaImageNodeForSchema(file: FileFields_MediaImage_Fragment, previewSize?: number): FileRow {
-  const obj: FileRow = {
-    ...formatFileNodeCommonProps(file, previewSize),
-
+function formatMediaImageFragmentForSchema(file: ResultOf<typeof MediaImageFieldsFragment>) {
+  const obj = {
     fileSize: file.originalSource?.fileSize,
     height: file.image?.height,
     mimeType: file.mimeType,
@@ -114,10 +107,8 @@ function formatMediaImageNodeForSchema(file: FileFields_MediaImage_Fragment, pre
 
   return obj;
 }
-function formatVideoNodeForSchema(file: FileFields_Video_Fragment, previewSize?: number): FileRow {
-  const obj: FileRow = {
-    ...formatFileNodeCommonProps(file, previewSize),
-
+function formatVideoFragmentForSchema(file: ResultOf<typeof VideoFieldsFragment>) {
+  const obj = {
     duration: file.duration,
     fileSize: file.originalSource?.fileSize,
     height: file.originalSource?.height,
@@ -130,19 +121,33 @@ function formatVideoNodeForSchema(file: FileFields_Video_Fragment, previewSize?:
   return obj;
 }
 
-export const formatFileNodeForSchema = (file: FileFieldsFragment, previewSize?: number): FileRow => {
+export const formatFileNodeForSchema = (file: ResultOf<typeof FileFieldsFragment>, previewSize?: number): FileRow => {
+  const baseFile = formatFileNodeCommonProps(file, previewSize);
+
   switch (file.__typename) {
     case 'GenericFile':
-      return formatGenericFileNodeForSchema(file, previewSize);
+      const genericFile = readFragment(GenericFileFieldsFragment, file);
+      return {
+        ...baseFile,
+        ...formatGenericFileFragmentForSchema(genericFile),
+      };
 
     case 'MediaImage':
-      return formatMediaImageNodeForSchema(file, previewSize);
+      const mediaImageFile = readFragment(MediaImageFieldsFragment, file);
+      return {
+        ...baseFile,
+        ...formatMediaImageFragmentForSchema(mediaImageFile),
+      };
 
     case 'Video':
-      return formatVideoNodeForSchema(file, previewSize);
+      const videoFile = readFragment(VideoFieldsFragment, file);
+      return {
+        ...baseFile,
+        ...formatVideoFragmentForSchema(videoFile),
+      };
   }
 
-  return formatFileNodeCommonProps(file, previewSize);
+  return baseFile;
 };
 
 // #endregion
@@ -154,7 +159,7 @@ export async function fetchSingleFileGraphQl(
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: querySingleFile,
+    query: printGql(querySingleFile),
     variables: {
       id: fileGid,
       includeAlt: true,
@@ -167,10 +172,10 @@ export async function fetchSingleFileGraphQl(
       includeUpdatedAt: true,
       includeUrl: true,
       includeWidth: true,
-    } as GetSingleFileQueryVariables,
+    } as VariablesOf<typeof querySingleFile>,
   };
 
-  const { response } = await makeGraphQlRequest<GetSingleFileQuery>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof querySingleFile>>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -178,12 +183,12 @@ export async function fetchSingleFileGraphQl(
 }
 
 async function updateFileGraphQl(
-  fileUpdateInput: FileUpdateInput,
+  fileUpdateInput: VariablesOf<typeof UpdateFile>['files'],
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: UpdateFile,
+    query: printGql(UpdateFile),
     variables: {
       files: fileUpdateInput,
       includeAlt: true,
@@ -196,10 +201,10 @@ async function updateFileGraphQl(
       includeUpdatedAt: true,
       includeUrl: true,
       includeWidth: true,
-    } as FileUpdateMutationVariables,
+    } as VariablesOf<typeof UpdateFile>,
   };
 
-  const { response } = await makeGraphQlRequest<FileUpdateMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof UpdateFile>>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.fileUpdate.userErrors },
     context
   );
@@ -217,7 +222,7 @@ export const deleteFileGraphQl = async (
   requestOptions: FetchRequestOptions = {}
 ): Promise<string> => {
   const payload = {
-    query: deleteFiles,
+    query: printGql(deleteFiles),
     variables: {
       fileIds: [fileGid],
     },

@@ -1,4 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, graphql } from './types/graphql';
+import { print as printGql } from '@0no-co/graphql.web';
 
 import {
   arrayUnique,
@@ -7,33 +9,32 @@ import {
   isCodaCached,
   logAdmin,
   wait,
-} from './helpers';
-import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from './constants';
-import { ShopifyMaxExceededError } from './ShopifyErrors';
-import { GraphQlResourceName } from './types/ShopifyGraphQlResourceTypes';
+} from './utils/helpers';
+import { INVALID_GID } from './constants';
+import { GRAPHQL_BUDGET__MAX, GRAPHQL_RETRIES__MAX } from './config/config';
+import { GRAPHQL_DEFAULT_API_VERSION } from './config/config';
+import { ShopifyMaxExceededError } from './Fetchers/ShopifyErrors';
+import { GraphQlResourceName } from './Fetchers/ShopifyGraphQlResource.types';
 
-import type {
-  SyncTableGraphQlContinuation,
-  SyncTableMixedContinuation,
-  SyncTableRestAugmentedContinuation,
-} from './types/SyncTable';
+import type { SyncTableGraphQlContinuation } from './Fetchers/SyncTable.types';
 import type {
   FetchRequestOptions,
   ShopifyGraphQlError,
   ShopifyGraphQlRequestCost,
   ShopifyGraphQlThrottleStatus,
   ShopifyGraphQlUserError,
-} from './types/Fetcher';
+} from './Fetchers/Fetcher.types';
+import { SyncTableMixedContinuation } from './Fetchers/SyncTableRest';
 
 const ABSOLUTE_MAX_ENTRIES_PER_RUN = 250;
 
-const queryCheckThrottleStatus = /* GraphQL */ `
+const queryCheckThrottleStatus = graphql(`
   query CheckThrottleStatus {
     shop {
       id
     }
   }
-`;
+`);
 
 // #region GID functions
 function isGraphQlGid(gid: string) {
@@ -50,17 +51,17 @@ export function idToGraphQlGid(resourceType: string, id: number | string) {
   return `gid://shopify/${resourceType}/${id}`;
 }
 export function graphQlGidToId(gid: string): number {
-  if (!gid) throw new Error('Invalid GID');
+  if (!gid || !isGraphQlGid(gid)) throw new Error(INVALID_GID);
   if (!Number.isNaN(parseInt(gid))) return Number(gid);
 
   const maybeNum = gid.split('/').at(-1)?.split('?').at(0);
   if (maybeNum) {
     return Number(maybeNum);
   }
-  throw new Error(`Invalid GID: ${gid}`);
+  throw new Error(INVALID_GID);
 }
 export function graphQlGidToResourceName(gid: string): GraphQlResourceName {
-  if (!gid) throw new Error('Invalid GID');
+  if (!gid || !isGraphQlGid(gid)) throw new Error(INVALID_GID);
   return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
 }
 // #endregion
@@ -101,7 +102,10 @@ function formatGraphQlUserErrors(userErrors: ShopifyGraphQlUserError[]) {
 
 // #region GraphQl auto throttling
 export async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
-  const { response } = await makeGraphQlRequest({ payload: { query: queryCheckThrottleStatus } }, context);
+  const { response } = await makeGraphQlRequest<ResultOf<typeof queryCheckThrottleStatus>>(
+    { payload: { query: printGql(queryCheckThrottleStatus) } },
+    context
+  );
   const { extensions } = response.body;
   return extensions.cost.throttleStatus;
 }
@@ -404,11 +408,11 @@ export async function makeSyncTableGraphQlRequest<Data extends any>(
   }
 }
 
-interface GraphQlAugmentedSyncTableRequestParams
-  extends Omit<GraphQlSyncTableRequestParams, 'getPageInfo' | 'getUserErrors'> {
-  prevContinuation: SyncTableRestAugmentedContinuation;
-  nextRestUrl?: string;
-}
+// interface GraphQlAugmentedSyncTableRequestParams
+//   extends Omit<GraphQlSyncTableRequestParams, 'getPageInfo' | 'getUserErrors'> {
+//   prevContinuation: SyncTableRestAugmentedContinuation;
+//   nextRestUrl?: string;
+// }
 /**
  * A special function used when we try to augment a Rest request with GraphQL results
  * Il n'y a jamais de continuation, puisque l'on query uniquement spécifiquement par ID
@@ -510,11 +514,11 @@ export async function makeAugmentedSyncTableGraphQlRequest(
 }
 */
 
-export function getMixedSyncTableRemainingAndToProcessItems<
-  C extends SyncTableMixedContinuation,
-  Item,
-  N extends number
->(prevContinuation: C, restItems: Item[], maxEntriesPerRun: N) {
+function getMixedSyncTableRemainingAndToProcessItems<C extends SyncTableMixedContinuation, Item, N extends number>(
+  prevContinuation: C,
+  restItems: Item[],
+  maxEntriesPerRun: N
+) {
   let toProcess: Item[] = [];
   let remaining: Item[] = [];
 

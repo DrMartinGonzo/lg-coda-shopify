@@ -1,3 +1,5 @@
+import { graphql } from '../../types/graphql';
+
 // #region Helpers
 export function buildInventoryItemsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
@@ -19,7 +21,7 @@ export function buildInventoryItemsSearchQuery(filters: { [key: string]: any }) 
 // #endregion
 
 // #region Fragments
-const InventoryItemFieldsFragment = /* GraphQL */ `
+export const InventoryItemFieldsFragment = graphql(`
   fragment InventoryItemFields on InventoryItem {
     harmonizedSystemCode
     createdAt
@@ -44,42 +46,44 @@ const InventoryItemFieldsFragment = /* GraphQL */ `
       id
     }
   }
-`;
+`);
 // #endregion
 
 // #region Queries
-export const QueryAllInventoryItems = /* GraphQL */ `
-  ${InventoryItemFieldsFragment}
+export const QueryAllInventoryItems = graphql(
+  `
+    query GetInventoryItems($maxEntriesPerRun: Int!, $cursor: String, $searchQuery: String) {
+      inventoryItems(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+        nodes {
+          ...InventoryItemFields
+        }
 
-  query GetInventoryItems($maxEntriesPerRun: Int!, $cursor: String, $searchQuery: String) {
-    inventoryItems(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-      nodes {
-        ...InventoryItemFields
-      }
-
-      pageInfo {
-        hasNextPage
-        endCursor
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
-  }
-`;
+  `,
+  [InventoryItemFieldsFragment]
+);
 // #endregion
 
 // #region Mutations
-export const UpdateInventoryItem = /* GraphQL */ `
-  ${InventoryItemFieldsFragment}
-
-  mutation inventoryItemUpdate($id: ID!, $input: InventoryItemUpdateInput!) {
-    inventoryItemUpdate(id: $id, input: $input) {
-      inventoryItem {
-        ...InventoryItemFields
-      }
-      userErrors {
-        field
-        message
+export const UpdateInventoryItem = graphql(
+  `
+    mutation inventoryItemUpdate($id: ID!, $input: InventoryItemUpdateInput!) {
+      inventoryItemUpdate(id: $id, input: $input) {
+        inventoryItem {
+          ...InventoryItemFields
+        }
+        userErrors {
+          field
+          message
+        }
       }
     }
-  }
-`;
+  `,
+  [InventoryItemFieldsFragment]
+);
 // #endregion

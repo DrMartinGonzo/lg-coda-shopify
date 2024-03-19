@@ -1,5 +1,5 @@
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-import { MAX_OPTIONS_PER_PRODUCT } from './products-graphql';
+import { MAX_OPTIONS_PER_PRODUCT } from './productResource';
 
 const metafieldStorefrontNodes = `
   metafields(identifiers: $metafieldsIdentifiers) {

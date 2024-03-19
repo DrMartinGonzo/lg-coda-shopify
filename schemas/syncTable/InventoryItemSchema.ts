@@ -3,7 +3,7 @@ import { ProductVariantReference } from './ProductVariantSchema';
 import { countryNameAutocompleteValues } from '../../constants';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
   properties: {

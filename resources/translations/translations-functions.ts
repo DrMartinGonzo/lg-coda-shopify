@@ -73,7 +73,7 @@ export const getTranslatableResource = async ([resourceId, locale], context) => 
     },
   };
 
-  const { response } = await makeGraphQlRequest({ payload }, context);
+  const { response } = await makeGraphQlRequest<{ translatableResource: any }>({ payload }, context);
 
   const { body } = response;
   return body.data.translatableResource;

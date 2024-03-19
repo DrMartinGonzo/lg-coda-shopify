@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ProductReference } from './ProductSchemaRest';
 import { CollectionReference } from './CollectionSchema';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const CollectSyncTableSchema = coda.makeObjectSchema({
   properties: {

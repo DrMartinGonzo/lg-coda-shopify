@@ -4,12 +4,10 @@
       "name": "📌 Root",
       "path": "../"
     },
-    {
-      "name": "Vs Code",
-      "path": "../.vscode"
-    }
   ],
   "settings": {
+    "typescript.workspaceSymbols.excludeLibrarySymbols": true,
+    "typescript.enablePromptUseWorkspaceTsdk": true,
     "peacock.color": "#ee5a29",
     "peacock.remoteColor": "#95bf47",
     "workbench.colorCustomizations": {

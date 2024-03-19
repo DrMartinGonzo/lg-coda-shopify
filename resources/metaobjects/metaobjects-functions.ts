@@ -1,32 +1,41 @@
 // #region Imports
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf, readFragment } from '../../types/graphql';
 
-import { makeGraphQlRequest, graphQlGidToId, idToGraphQlGid } from '../../helpers-graphql';
-import { CACHE_DEFAULT, METAOBJECT_CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
+import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { CACHE_DEFAULT, CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
 import {
-  createMetaobjectMutation,
-  deleteMetaobjectMutation,
-  buildUpdateMetaObjectMutation,
-  buildQuerySingleMetaObjectWithFields,
-} from './metaobjects-graphql';
-import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
-import { shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-helpers';
-
-import { GraphQlResourceName } from '../../types/ShopifyGraphQlResourceTypes';
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  graphQlGidToId,
+  idToGraphQlGid,
+  makeGraphQlRequest,
+  makeSyncTableGraphQlRequest,
+  skipGraphQlSyncTableRun,
+} from '../../helpers-graphql';
 import {
-  fetchAllMetaObjectDefinitions,
-  fetchSingleMetaObjectDefinitionByType,
-} from '../metaobjectDefinitions/metaobjectDefinitions-functions';
-
-import type { MetaobjectFragment } from '../../types/Resources/Metaobject';
-import type {
   MetaobjectCreateInput,
   MetaobjectFieldInput,
   MetaobjectStatus,
   MetaobjectUpdateInput,
-} from '../../types/generated/admin.types';
-import type { FetchRequestOptions } from '../../types/Fetcher';
-import type { CreateMetaobjectMutation, DeleteMetaobjectMutation } from '../../types/generated/admin.generated';
+} from '../../types/admin.types';
+import { Writeable } from '../../types/misc';
+import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
+import { shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-helpers';
+import { MetaobjectWithFields } from './Metaobject.types';
+import {
+  MetaobjectDefinitionFragment,
+  MetaobjectFieldDefinitionFragment,
+  buildQuerySingleMetaObjectWithFields,
+  buildUpdateMetaObjectMutation,
+  createMetaobjectMutation,
+  deleteMetaobjectMutation,
+  queryAllMetaobjectDefinitions,
+  querySingleMetaObjectDefinition,
+  querySingleMetaobjectDefinitionByType,
+} from './metaobjects-graphql';
 
 // #endregion
 
@@ -46,7 +55,12 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
     },
     context
   );
-  return coda.autocompleteSearchObjects(search, response?.definition?.fieldDefinitions, 'name', 'key');
+  const fieldDefinitionsR = readFragment(MetaobjectFieldDefinitionFragment, response?.definition?.fieldDefinitions);
+  response.definition.fieldDefinitions;
+  const fieldDefinitions = response.definition.fieldDefinitions.map((f) =>
+    readFragment(MetaobjectFieldDefinitionFragment, f)
+  );
+  return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   context: coda.ExecutionContext,
@@ -56,8 +70,9 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   if (!args.type || args.type === '') {
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
-  const { fieldDefinitions } = await fetchSingleMetaObjectDefinitionByType(args.type, false, true, context);
-  return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
+  const metaObjectDefinition = await fetchSingleMetaObjectDefinitionByType(args.type, false, true, context);
+  const fieldDefinitions = readFragment(MetaobjectFieldDefinitionFragment, metaObjectDefinition.fieldDefinitions);
+  return coda.autocompleteSearchObjects(search, fieldDefinitions as Writeable<typeof fieldDefinitions>, 'name', 'key');
 }
 export async function autocompleteMetaobjectType(context: coda.ExecutionContext, search: string, args: any) {
   const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
@@ -69,7 +84,7 @@ export async function autocompleteMetaobjectType(context: coda.ExecutionContext,
 export function formatMetaobjectUpdateInput(
   handle: string,
   status: string,
-  metaobjectFieldInput: MetaobjectFieldInput[]
+  metaobjectFieldInput: Array<MetaobjectFieldInput>
 ): MetaobjectUpdateInput {
   const metaobjectUpdateInput: MetaobjectUpdateInput = {};
 
@@ -90,7 +105,7 @@ export function formatMetaobjectCreateInputInput(
   type: string,
   handle: string,
   status: string,
-  metaobjectFieldInput: MetaobjectFieldInput[]
+  metaobjectFieldInput: Array<MetaobjectFieldInput>
 ): MetaobjectCreateInput {
   const metaobjectCreateInput: MetaobjectCreateInput = { type };
 
@@ -116,7 +131,7 @@ export function formatMetaobjectCreateInputInput(
  * @returns
  */
 export function formatMetaobjectForSchemaFromGraphQlApi(
-  node: MetaobjectFragment,
+  node: MetaobjectWithFields,
   context: coda.ExecutionContext,
   schemaWithIdentity = false
 ) {
@@ -136,7 +151,7 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
   Object.keys(node)
     .filter(
       (key) =>
-        key.indexOf(METAOBJECT_CUSTOM_FIELD_PREFIX_KEY) === 0 &&
+        key.indexOf(CUSTOM_FIELD_PREFIX_KEY) === 0 &&
         shouldUpdateSyncTableMetafieldValue(node[key].type, schemaWithIdentity)
     )
     .forEach((key) => {
@@ -152,6 +167,123 @@ export function formatMetaobjectForSchemaFromGraphQlApi(
 // #endregion
 
 // #region GraphQl requests
+export async function fetchAllMetaObjectDefinitions(
+  params: {
+    includeCapabilities?: boolean;
+    includeFieldDefinitions?: boolean;
+  },
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<Array<ResultOf<typeof MetaobjectDefinitionFragment>>> {
+  let nodes: Array<ResultOf<typeof MetaobjectDefinitionFragment>> = [];
+  let prevContinuation: SyncTableGraphQlContinuation;
+  let run = true;
+  while (run) {
+    const defaultMaxEntriesPerRun = 50;
+    const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+      defaultMaxEntriesPerRun,
+      prevContinuation,
+      context
+    );
+    if (shouldDeferBy > 0) {
+      skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
+      continue;
+    }
+
+    const payload = {
+      query: printGql(queryAllMetaobjectDefinitions),
+      variables: {
+        cursor: prevContinuation?.cursor ?? null,
+        maxEntriesPerRun,
+        includeCapabilities: params.includeCapabilities ?? false,
+        includeFieldDefinitions: params.includeFieldDefinitions ?? false,
+      } as VariablesOf<typeof queryAllMetaobjectDefinitions>,
+    };
+    // prettier-ignore
+    const { response, continuation } = await makeSyncTableGraphQlRequest<ResultOf<typeof queryAllMetaobjectDefinitions>>(
+      {
+        payload,
+        maxEntriesPerRun,
+        prevContinuation,
+        cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT,
+        getPageInfo: (data: any) => data.metaobjectDefinitions?.pageInfo,
+      },
+      context as coda.SyncExecutionContext
+    );
+
+    if (response?.body?.data?.metaobjectDefinitions?.nodes) {
+      const metaObjectDefinitions = readFragment(
+        MetaobjectDefinitionFragment,
+        response.body.data.metaobjectDefinitions.nodes
+      );
+      nodes = nodes.concat(metaObjectDefinitions);
+    }
+
+    if (continuation?.cursor) {
+      prevContinuation = continuation;
+    } else {
+      run = false;
+    }
+  }
+
+  return nodes;
+}
+
+export async function fetchSingleMetaObjectDefinition(
+  params: {
+    gid: string;
+    includeCapabilities?: boolean;
+    includeFieldDefinitions?: boolean;
+  },
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<ResultOf<typeof MetaobjectDefinitionFragment>> {
+  const payload = {
+    query: printGql(querySingleMetaObjectDefinition),
+    variables: {
+      id: params.gid,
+      includeCapabilities: params.includeCapabilities ?? false,
+      includeFieldDefinitions: params.includeFieldDefinitions ?? false,
+    } as VariablesOf<typeof querySingleMetaObjectDefinition>,
+  };
+  const { response } = await makeGraphQlRequest<ResultOf<typeof querySingleMetaObjectDefinition>>(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
+  if (response?.body?.data?.metaobjectDefinition) {
+    return readFragment(MetaobjectDefinitionFragment, response.body.data.metaobjectDefinition);
+  } else {
+    throw new coda.UserVisibleError(`MetaobjectDefinition with id ${params.gid} not found.`);
+  }
+}
+
+export async function fetchSingleMetaObjectDefinitionByType(
+  type: string,
+  includeCapabilities = true,
+  includeFieldDefinitions = true,
+  context: coda.ExecutionContext,
+  requestOptions: FetchRequestOptions = {}
+): Promise<ResultOf<typeof MetaobjectDefinitionFragment>> {
+  const payload = {
+    query: printGql(querySingleMetaobjectDefinitionByType),
+    variables: {
+      type,
+      includeCapabilities,
+      includeFieldDefinitions,
+    } as VariablesOf<typeof querySingleMetaobjectDefinitionByType>,
+  };
+
+  const { response } = await makeGraphQlRequest<ResultOf<typeof querySingleMetaobjectDefinitionByType>>(
+    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+    context
+  );
+  if (response?.body?.data?.metaobjectDefinitionByType) {
+    return readFragment(MetaobjectDefinitionFragment, response.body.data.metaobjectDefinitionByType);
+  } else {
+    throw new coda.UserVisibleError(`Metaobject definition with type ${type} not found.`);
+  }
+}
+
 async function fetchSingleMetaObjectGraphQl(
   params: {
     gid: string;
@@ -161,7 +293,7 @@ async function fetchSingleMetaObjectGraphQl(
   },
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<MetaobjectFragment> {
+): Promise<MetaobjectWithFields> {
   const payload = {
     query: buildQuerySingleMetaObjectWithFields(params.fields ?? []),
     variables: {
@@ -171,7 +303,7 @@ async function fetchSingleMetaObjectGraphQl(
       includeFieldDefinitions: params.includeFieldDefinitions ?? false,
     },
   };
-  const { response } = await makeGraphQlRequest<{ metaobject: MetaobjectFragment }>(
+  const { response } = await makeGraphQlRequest<{ metaobject: MetaobjectWithFields }>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
@@ -202,7 +334,7 @@ export const updateMetaObjectGraphQl = async (
     },
   };
   // TODO: add userErrors type
-  const { response } = await makeGraphQlRequest<{ metaobjectUpdate: { metaobject: MetaobjectFragment } }>(
+  const { response } = await makeGraphQlRequest<{ metaobjectUpdate: { metaobject: MetaobjectWithFields } }>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectUpdate.userErrors },
     context
   );
@@ -215,12 +347,12 @@ export const createMetaObjectGraphQl = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
-    query: createMetaobjectMutation,
+    query: printGql(createMetaobjectMutation),
     variables: {
       metaobject: metaobjectCreateInput,
-    },
+    } as VariablesOf<typeof createMetaobjectMutation>,
   };
-  const { response } = await makeGraphQlRequest<CreateMetaobjectMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof createMetaobjectMutation>>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectCreate.userErrors },
     context
   );
@@ -233,16 +365,33 @@ export const deleteMetaObjectGraphQl = async (
   requestOptions: FetchRequestOptions = {}
 ) => {
   const payload = {
-    query: deleteMetaobjectMutation,
+    query: printGql(deleteMetaobjectMutation),
     variables: {
       id,
-    },
+    } as VariablesOf<typeof deleteMetaobjectMutation>,
   };
 
-  const { response } = await makeGraphQlRequest<DeleteMetaobjectMutation>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof deleteMetaobjectMutation>>(
     { ...requestOptions, payload, getUserErrors: (body) => body.data.metaobjectDelete.userErrors },
     context
   );
   return response;
 };
+// #endregion
+
+// #region Helpers
+export function findMatchingMetaobjectFieldDefinition(
+  key: string,
+  fieldDefinitions: Array<ResultOf<typeof MetaobjectFieldDefinitionFragment>>
+) {
+  return fieldDefinitions.find((f) => f.key === key);
+}
+export function requireMatchingMetaobjectFieldDefinition(
+  fullKey: string,
+  fieldDefinitions: Array<ResultOf<typeof MetaobjectFieldDefinitionFragment>>
+) {
+  const MetaobjectFieldDefinition = findMatchingMetaobjectFieldDefinition(fullKey, fieldDefinitions);
+  if (!MetaobjectFieldDefinition) throw new Error('MetaobjectFieldDefinition not found');
+  return MetaobjectFieldDefinition;
+}
 // #endregion

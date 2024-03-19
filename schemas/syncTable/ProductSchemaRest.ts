@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
   properties: {

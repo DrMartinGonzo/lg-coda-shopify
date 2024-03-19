@@ -12,7 +12,7 @@ import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { OrderReference } from './OrderSchema';
 import { Identity } from '../../constants';
 
-import type { FieldDependency } from '../../types/SyncTable';
+import type { FieldDependency } from '../Schema.types';
 
 export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   properties: {

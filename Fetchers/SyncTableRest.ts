@@ -1,69 +1,52 @@
 // #region Imports
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf, readFragment } from '../types/graphql';
 
-import { GRAPHQL_NODES_LIMIT, REST_DEFAULT_LIMIT } from '../constants';
-import { arrayUnique, logAdmin } from '../helpers';
-import { extractNextUrlPagination, GetRequestParams, makeGetRequest } from '../helpers-rest';
+import { GRAPHQL_NODES_LIMIT, METAFIELDS_REQUIRED, REST_DEFAULT_LIMIT } from '../constants';
 import {
+  GraphQlResponse,
   calcSyncTableMaxEntriesPerRunNew,
   checkThrottleStatus,
   graphQlGidToId,
-  GraphQlResponse,
   idToGraphQlGid,
   makeGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
+import { GetRequestParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
+import { ResourceUnion } from '../resources/Resource.types';
+import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { fetchMetafieldsRest, formatMetaFieldValueForSchema } from '../resources/metafields/metafields-functions';
+import { MetafieldFieldsFragment, queryNodesMetafieldsByKey } from '../resources/metafields/metafields-graphql';
 import {
   getMetaFieldFullKey,
+  hasMetafieldsInUpdates,
   preprendPrefixToMetaFieldKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../resources/metafields/metafields-helpers';
-import { hasMetafieldsInUpdates } from '../resources/metafields/metafields-helpers';
-import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
-import { queryNodesMetafieldsByKey, querySingleNodeMetafieldsByKey } from '../resources/metafields/metafields-graphql';
-import { ShopifyMaxExceededError } from '../ShopifyErrors';
-
-import type {
-  GetNodesMetafieldsByKeyQuery,
-  GetNodesMetafieldsByKeyQueryVariables,
-} from '../types/generated/admin.generated';
-import type { GraphQlResourceName } from '../types/ShopifyGraphQlResourceTypes';
-import type { Node, HasMetafields, MetafieldOwnerType } from '../types/generated/admin.types';
-import type { SimpleRestNew } from './SimpleRest';
-import type { ResourceTypeUnion } from '../types/allResources';
-import type { SyncTableTypeUnion } from '../types/SyncTable';
-import { ShopifyGraphQlRequestCost } from '../types/Fetcher';
+import { BaseRow, RowWithMetafields } from '../schemas/CodaRows.types';
+import { MetafieldOwnerType } from '../types/admin.types';
+import { arrayUnique, logAdmin } from '../utils/helpers';
+import { ShopifyGraphQlRequestCost } from './Fetcher.types';
+import { ShopifyMaxExceededError } from './ShopifyErrors';
+import { GraphQlResourceName } from './ShopifyGraphQlResource.types';
+import { SimpleRest } from './SimpleRest';
 
 // #endregion
 
 // #region Types
-type Stringified<T> = string & {
-  [P in keyof T]: { '_ value': T[P] };
-};
-
 /** Helper type to extract the parameter values from a SyncTableDef. */
 export type SyncTableParamValues<
   T extends coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
 > = coda.ParamValues<T['getter']['parameters']>;
 
-export type SingleFetchData<T extends SyncTableTypeUnion> = T['rest']['singleFetchResponse'];
-export type SingleFetchResponse<T extends SyncTableTypeUnion> = coda.FetchResponse<T['rest']['singleFetchResponse']>;
-export type MultipleFetchData<T extends SyncTableTypeUnion> = T['rest']['multipleFetchResponse'];
-export type MultipleFetchResponse<T extends SyncTableTypeUnion> = coda.FetchResponse<
-  T['rest']['multipleFetchResponse']
->;
+// Helper types for easier access
+export type SingleFetchData<T extends ResourceUnion> = T['rest']['singleFetchResponse'];
+export type MultipleFetchData<T extends ResourceUnion> = T['rest']['multipleFetchResponse'];
+export type MultipleFetchResponse<T extends ResourceUnion> = coda.FetchResponse<T['rest']['multipleFetchResponse']>;
 
-export type GetSyncSchema<T extends SyncTableTypeUnion> = T['schema'];
-export type GetCodaRow<T extends SyncTableTypeUnion> = T['codaRow'];
-export type CodaRowWithMetafields<T extends SyncTableTypeUnion> = GetCodaRow<T> & { [key: string]: any };
-
-export type GetSyncParams<T extends SyncTableTypeUnion> = T['rest']['params']['sync'];
-export type GetUpdateParams<T extends SyncTableTypeUnion> = T['rest']['params']['update'];
-export type GetCreateParams<T extends SyncTableTypeUnion> = T['rest']['params']['create'];
-
-interface SyncLolRest extends coda.Continuation {
+export interface SyncTableRestContinuation extends coda.Continuation {
   nextUrl?: string;
   scheduledNextRestUrl?: string;
   skipNextRestSync: string;
@@ -72,11 +55,11 @@ interface SyncLolRest extends coda.Continuation {
   };
 }
 
-type currentBatchType<CodaRowT = any> = {
+type currentBatchType<CodaRowT extends BaseRow = any> = {
   processing: CodaRowT[];
   remaining: CodaRowT[];
 };
-interface SyncTableMixedNewContinuationNew<CodaRowT = any> extends SyncLolRest {
+export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> extends SyncTableRestContinuation {
   retries: number;
   cursor?: string;
   graphQlLock: string;
@@ -91,10 +74,53 @@ interface SyncTableMixedNewContinuationNew<CodaRowT = any> extends SyncLolRest {
     [key: string]: any;
   };
 }
-
 // #endregion
 
 // #region Helpers
+function wrapDynamicSchemaForCli(
+  fn: coda.MetadataFunction,
+  context: coda.ExecutionContext,
+  args: Omit<coda.MetadataContext, '__brand'>
+) {
+  return fn(context, '', { ...args, __brand: 'MetadataContext' }) as Promise<coda.ArraySchema<coda.Schema>>;
+}
+/**
+ * Handles dynamic schema in CLI context.
+ * It calls the provided `getSchemaFunction` if `context.sync.schema` is falsy.
+ * It helps to overcome an issue where the dynamic schema is not present in `context.sync.schema` in CLI context.
+ *
+ * @param getSchemaFunction - The function to generate dynamic schema.
+ * @param context - The sync execution context.
+ * @param formulaContext - The formula metadata context.
+ * @returns The schema
+ */
+export async function handleDynamicSchemaForCli(
+  getSchemaFunction: coda.MetadataFormulaDef,
+  context: coda.SyncExecutionContext,
+  formulaContext: Omit<coda.MetadataContext, '__brand'>
+) {
+  return (
+    context.sync.schema ??
+    (await wrapDynamicSchemaForCli(getSchemaFunction as coda.MetadataFunction, context, formulaContext))
+  );
+}
+
+type Stringified<T> = string & {
+  [P in keyof T]: { '_ value': T[P] };
+};
+
+/**
+ * Serializes a value to a JSON string with a special type to ensure that the
+ * resulting string can be used to recreate the original value.
+ *
+ * @param value The value to serialize.
+ * @param replacer An optional function used to transform values before they
+ * are serialized.
+ * @param space An optional string or number used to add indentation,
+ * white space, and line breaks to the resulting JSON.
+ * @returns A string that contains the JSON representation of the given value
+ * with a special type to ensure it can be used to recreate the original value.
+ */
 function stringifyContinuationProperty<T>(
   value: T,
   replacer?: (key: string, value: any) => any,
@@ -103,14 +129,23 @@ function stringifyContinuationProperty<T>(
   return JSON.stringify(value, replacer, space) as string & Stringified<T>;
 }
 
+/**
+ * Parses a JSON string with a special type created by
+ * `stringifyContinuationProperty` to recreate the original value.
+ *
+ * @param text The string to parse.
+ * @param reviver An optional function used to transform values after they
+ * are parsed.
+ * @returns The original value recreated from the parsed string.
+ */
 function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
   return JSON.parse(text);
 }
 // #endregion
 
-export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
-  readonly resource: ResourceTypeUnion;
-  readonly fetcher: SimpleRestNew<SyncT>;
+export abstract class SyncTableRest<ResourceT extends ResourceUnion> {
+  readonly resource: ResourceT;
+  readonly fetcher: SimpleRest<any>;
   readonly useGraphQlForMetafields: boolean;
   readonly metafieldOwnerType: MetafieldOwnerType;
   /** Array of Coda formula parameters */
@@ -125,28 +160,24 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
 
   restLimit: number;
   /** An object of Rest Admin API parameters */
-  syncParams: GetSyncParams<SyncT> = {} as GetSyncParams<SyncT>;
+  syncParams: ResourceT['rest']['params']['sync'] = {} as ResourceT['rest']['params']['sync'];
   /** The url to call the API with for the sync */
   syncUrl: string;
 
   /** Formatted items result */
-  items: Array<GetCodaRow<SyncT>> = [];
+  items: Array<ResourceT['codaRow']> = [];
   /** The continuation from the previous sync */
-  prevContinuation: SyncTableMixedNewContinuationNew<GetCodaRow<SyncT>>;
+  prevContinuation: SyncTableMixedContinuation<ResourceT['codaRow']>;
   /** The continuation from the current sync */
-  continuation: SyncLolRest;
+  continuation: SyncTableRestContinuation;
   extraContinuationData: any = {};
 
-  constructor(
-    resource: ResourceTypeUnion,
-    fetcher: SimpleRestNew<SyncT>,
-    codaParams: coda.ParamValues<coda.ParamDefs>
-  ) {
+  constructor(resource: ResourceT, fetcher: SimpleRest<ResourceT>, codaParams: coda.ParamValues<coda.ParamDefs>) {
     this.resource = resource;
     this.fetcher = fetcher;
     this.codaParams = codaParams;
-    this.useGraphQlForMetafields = 'useGraphQlForMetafields' in resource ? resource.useGraphQlForMetafields : undefined;
-    this.metafieldOwnerType = 'metafieldOwnerType' in resource ? resource.metafieldOwnerType : undefined;
+    this.useGraphQlForMetafields = 'metafields' in resource ? resource.metafields.useGraphQl : undefined;
+    this.metafieldOwnerType = 'metafields' in resource ? resource.metafields.ownerType : undefined;
     if ('graphQl' in resource) {
       this.graphQlResourceName = resource.graphQl.name;
     }
@@ -159,7 +190,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   }
 
   abstract setSyncParams(): void;
-  validateSyncParams = (params: GetSyncParams<SyncT>): Boolean => true;
+  validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
 
   setSyncUrl() {
     this.syncUrl = this.prevContinuation?.nextUrl
@@ -169,9 +200,9 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   // #endregion
 
   // #region Sync
-  async makeSyncRequest(params: GetRequestParams): Promise<MultipleFetchResponse<SyncT>> {
+  async makeSyncRequest(params: GetRequestParams): Promise<MultipleFetchResponse<ResourceT>> {
     logAdmin(`🚀  Rest Admin API: Starting ${this.resource.display} sync…`);
-    return makeGetRequest<SyncT['rest']['multipleFetchResponse']>({ url: params.url }, this.fetcher.context);
+    return makeGetRequest<MultipleFetchData<ResourceT>>({ url: params.url }, this.fetcher.context);
   }
 
   private handleShopifyMaxExceededError(error: ShopifyMaxExceededError, currentBatch: currentBatchType) {
@@ -183,7 +214,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
       Math.max(1, Math.floor((maxCost / cost) * this.restLimit * diminishingFactor))
     );
 
-    const errorContinuation: SyncTableMixedNewContinuationNew = {
+    const errorContinuation: SyncTableMixedContinuation = {
       ...this.prevContinuation,
       graphQlLock: 'true',
       retries: (this.prevContinuation?.retries ?? 0) + 1,
@@ -206,7 +237,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     };
   }
 
-  private extractCurrentBatch(): currentBatchType<GetCodaRow<SyncT>> {
+  private extractCurrentBatch(): currentBatchType<ResourceT['codaRow']> {
     if (this.prevContinuation?.cursor || this.prevContinuation?.retries) {
       logAdmin(`🔁 Fetching remaining graphQL results from current batch`);
       return this.prevContinuation?.extraContinuationData?.currentBatch;
@@ -230,11 +261,11 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   }
 
   private buildGraphQlMetafieldsContinuation(
-    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsByKeyQuery>>,
+    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof queryNodesMetafieldsByKey>>>,
     retries: number,
     currentBatch: currentBatchType
   ) {
-    let continuation: SyncTableMixedNewContinuationNew | null = null;
+    let continuation: SyncTableMixedContinuation | null = null;
     const unfinishedGraphQl = retries > 0 || currentBatch.remaining.length > 0;
     const unfinishedRest =
       !retries &&
@@ -273,8 +304,8 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   }
 
   private async makeGraphQlMetafieldsRequest(): Promise<{
-    response: coda.FetchResponse<GraphQlResponse<GetNodesMetafieldsByKeyQuery>>;
-    continuation: SyncTableMixedNewContinuationNew | null;
+    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof queryNodesMetafieldsByKey>>>;
+    continuation: SyncTableMixedContinuation | null;
   }> {
     const count = Math.min(this.items.length, this.restLimit);
     if (this.prevContinuation?.retries) {
@@ -287,18 +318,18 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     // TODO: implement cost adjustment
     // Mais le coût semble négligeable en utilisant une query par node
     const payload = {
-      query: queryNodesMetafieldsByKey,
+      query: printGql(queryNodesMetafieldsByKey),
       variables: {
         metafieldKeys: this.effectiveMetafieldKeys,
         countMetafields: this.effectiveMetafieldKeys.length,
         ids: arrayUnique(currentBatch.processing.map((c) => c.id))
           .sort()
           .map((id) => this.convertRestIdToGid(id)),
-      } as GetNodesMetafieldsByKeyQueryVariables,
+      } as VariablesOf<typeof queryNodesMetafieldsByKey>,
     };
 
     try {
-      let { response, retries } = await makeGraphQlRequest<GetNodesMetafieldsByKeyQuery>(
+      let { response, retries } = await makeGraphQlRequest<ResultOf<typeof queryNodesMetafieldsByKey>>(
         { payload, retries: this.prevContinuation?.retries ?? 0 },
         this.fetcher.context
       );
@@ -359,7 +390,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
 
   executeSync = async (schema: any) => {
     const { context } = this.fetcher;
-    this.prevContinuation = context.sync.continuation as SyncTableMixedNewContinuationNew;
+    this.prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
     this.continuation = null;
 
     this.effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(schema);
@@ -415,7 +446,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     };
   };
 
-  executeUpdate = async (updates: Array<coda.SyncUpdate<string, string, SyncT['schema']>>) => {
+  executeUpdate = async (updates: Array<coda.SyncUpdate<string, string, ResourceT['schema']>>) => {
     const metafieldDefinitions =
       !!this.metafieldOwnerType && hasMetafieldsInUpdates(updates)
         ? await fetchMetafieldDefinitionsGraphQl({ ownerType: this.metafieldOwnerType }, this.fetcher.context)
@@ -434,7 +465,7 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   // #endregion
 
   // #region Sync:After
-  handleSyncTableResponse = (response: MultipleFetchResponse<SyncT>): GetCodaRow<SyncT>[] => {
+  handleSyncTableResponse = (response: MultipleFetchResponse<ResourceT>): ResourceT['codaRow'][] => {
     const { formatApiToRow } = this.fetcher;
     const { plural, singular } = this.resource.rest;
     const resourceKey = this.fetcher.isSingleFetch ? singular : plural;
@@ -442,13 +473,13 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     if (data) {
       return Array.isArray(data) ? data.map(formatApiToRow) : [formatApiToRow(data)];
     }
-    return [] as GetCodaRow<SyncT>[];
+    return [] as ResourceT['codaRow'][];
   };
 
   // afterSync(response: coda.FetchResponse<FetchMulT>) {
-  afterSync(response: MultipleFetchResponse<SyncT>) {
+  afterSync(response: MultipleFetchResponse<ResourceT>) {
     this.items = this.handleSyncTableResponse(response as any);
-    let continuation: SyncLolRest | null = null;
+    let continuation: SyncTableRestContinuation | null = null;
     // Check if we have paginated results
     const nextUrl = extractNextUrlPagination(response);
     if (nextUrl) {
@@ -464,12 +495,16 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
   // #endregion
 
   // #region Augmented Metafields Sync
-  augmentResourceWithRestMetafields = async (data: GetCodaRow<SyncT>) => {
+  augmentResourceWithRestMetafields = async (data: ResourceT['codaRow']) => {
     if (typeof data.id !== 'number') {
       throw new Error('syncMetafields only support ids as numbers');
     }
+    if (!('metafields' in this.resource)) {
+      throw new Error(METAFIELDS_REQUIRED);
+    }
+
     const response = await fetchMetafieldsRest(data.id, this.resource, {}, this.fetcher.context);
-    const updatedData = { ...data } as CodaRowWithMetafields<SyncT>;
+    const updatedData = { ...data } as RowWithMetafields<ResourceT['codaRow']>;
 
     // Only keep metafields that have a definition and in the schema
     const metafields = response.body.metafields.filter((m) =>
@@ -495,16 +530,17 @@ export abstract class SyncTableRestNew<SyncT extends SyncTableTypeUnion> {
     const { response, continuation } = await this.makeGraphQlMetafieldsRequest();
 
     if (response?.body?.data?.nodes.length) {
-      const augmentedItems = (response.body.data.nodes as unknown as Array<Node & HasMetafields>)
+      const augmentedItems = response.body.data.nodes
         .map((node) => {
           const resourceMatch = this.items.find((resource) => graphQlGidToId(node.id) === resource.id);
 
           // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
           if (!resourceMatch) return;
 
-          const updatedresource = { ...resourceMatch } as CodaRowWithMetafields<SyncT>;
-          if (node.metafields?.nodes?.length) {
-            node.metafields.nodes.forEach((metafield) => {
+          const updatedresource = { ...resourceMatch } as RowWithMetafields<ResourceT['codaRow']>;
+          if ('metafields' in node && node.metafields.nodes) {
+            const metafields = readFragment(MetafieldFieldsFragment, node.metafields.nodes);
+            metafields.forEach((metafield) => {
               const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
               (updatedresource as any)[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
             });
