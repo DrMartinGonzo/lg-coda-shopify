@@ -11,7 +11,7 @@ import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import type { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { DraftOrder, draftOrderResource } from './draftOrder';
 
-export class DraftOrderRestFetcher extends SimpleRest<typeof draftOrderResource> {
+export class DraftOrderRestFetcher extends SimpleRest<DraftOrder> {
   constructor(context: coda.ExecutionContext) {
     super(draftOrderResource, context);
   }

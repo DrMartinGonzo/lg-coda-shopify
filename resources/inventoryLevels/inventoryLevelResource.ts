@@ -1,7 +1,7 @@
-import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
+import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { Resource, ResourceSyncRestParams } from '../Resource.types';
 
 // #region Rest Parameters
@@ -23,21 +23,7 @@ interface InventoryLevelAdjustRestParams {
 }
 // #endregion
 
-export type InventoryLevel = Resource<{
-  codaRow: InventoryLevelRow;
-  schema: typeof InventoryLevelSyncTableSchema;
-  params: {
-    sync: InventoryLevelSyncRestParams;
-    set: InventoryLevelSetRestParams;
-    adjust: InventoryLevelAdjustRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.InventoryLevel;
-    plural: RestResourcePlural.InventoryLevel;
-  };
-}>;
-
-export const inventoryLevelResource = {
+const inventoryLevelResourceBase = {
   display: 'Inventory Level',
   schema: InventoryLevelSyncTableSchema,
   graphQl: {
@@ -47,4 +33,19 @@ export const inventoryLevelResource = {
     singular: RestResourceSingular.InventoryLevel,
     plural: RestResourcePlural.InventoryLevel,
   },
-} as InventoryLevel;
+} as const;
+
+export type InventoryLevel = Resource<
+  typeof inventoryLevelResourceBase,
+  {
+    codaRow: InventoryLevelRow;
+    rest: {
+      params: {
+        sync: InventoryLevelSyncRestParams;
+        set: InventoryLevelSetRestParams;
+        adjust: InventoryLevelAdjustRestParams;
+      };
+    };
+  }
+>;
+export const inventoryLevelResource = inventoryLevelResourceBase as InventoryLevel;

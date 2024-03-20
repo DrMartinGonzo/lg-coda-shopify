@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
-import { ResourceWithMetafieldDefinitionsNew } from '../../resources/Resource.types';
+import { ResourceWithMetafieldDefinitions } from '../../resources/Resource.types';
 import { ValidationSchema } from '../basic/ValidationSchema';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
@@ -105,7 +105,7 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export function getMetafieldDefinitionReferenceSchema(ownerResource: ResourceWithMetafieldDefinitionsNew<any>) {
+export function getMetafieldDefinitionReferenceSchema(ownerResource: ResourceWithMetafieldDefinitions<any, any>) {
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,
     properties: {

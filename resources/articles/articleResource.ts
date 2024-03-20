@@ -1,13 +1,13 @@
-import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { ArticleRow } from '../../schemas/CodaRows.types';
+import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import type { Metafield } from '../metafields/Metafield.types';
 
@@ -63,24 +63,7 @@ interface ArticleUpdateRestParams extends ResourceUpdateRestParams {
 
 // #endregion
 
-export type Article = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: ArticleRow;
-  schema: typeof ArticleSyncTableSchema;
-  params: {
-    sync: ArticleSyncRestParams;
-    create: ArticleCreateRestParams;
-    update: ArticleUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Article;
-    plural: RestResourcePlural.Article;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Article;
-  };
-}>;
-
-export const articleResource = {
+const articleResourceBase = {
   display: 'Article',
   schema: ArticleSyncTableSchema,
   graphQl: {
@@ -96,4 +79,19 @@ export const articleResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Article;
+} as const;
+
+export type Article = ResourceWithMetafieldDefinitions<
+  typeof articleResourceBase,
+  {
+    codaRow: ArticleRow;
+    rest: {
+      params: {
+        sync: ArticleSyncRestParams;
+        create: ArticleCreateRestParams;
+        update: ArticleUpdateRestParams;
+      };
+    };
+  }
+>;
+export const articleResource = articleResourceBase as Article;

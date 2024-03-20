@@ -5,6 +5,7 @@ import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES } from '../../constants';
 import { validShopFields } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode } from '../../types/admin.types';
 import { Shop, shopResource } from './shopResource';
+import { DEFAULT_CURRENCY_CODE } from '../../config/config';
 
 export class ShopRestFetcher extends SimpleRest<Shop> {
   constructor(context: coda.ExecutionContext) {
@@ -29,7 +30,7 @@ export class ShopRestFetcher extends SimpleRest<Shop> {
   };
 
   getActiveCurrency = async () => {
-    let currencyCode = 'USD'; // default currency code
+    let currencyCode = DEFAULT_CURRENCY_CODE;
 
     const response = await this.fetch(undefined, {
       cacheTtlSecs: CACHE_TEN_MINUTES,

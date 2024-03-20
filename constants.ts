@@ -130,6 +130,9 @@ export enum Identity {
 }
 
 // #region Error Messages
+export const NOT_FOUND = 'NOT_FOUND';
 export const METAFIELDS_REQUIRED = 'Resource with metafieldOwnerType required';
+export const GRAPHQL_REQUIRED_FOR_METAFIELDS =
+  '`useGraphQl` must be enabled for at resource definition level to update metafields with GraphQL';
 export const INVALID_GID = 'Invalid GID provided';
 // #endregion

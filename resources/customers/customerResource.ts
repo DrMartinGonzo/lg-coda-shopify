@@ -1,15 +1,15 @@
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { RestResourceSingular, RestResourcePlural } from '../../Fetchers/ShopifyRestResource.types';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { CustomerRow } from '../../schemas/CodaRows.types';
+import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
+import { MetafieldOwnerType } from '../../types/admin.types';
 import type {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
-import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import type { Metafield } from '../metafields/Metafield.types';
-import { CustomerRow } from '../../schemas/CodaRows.types';
 
 // #region Rest Parameters
 interface CustomerSyncRestParams extends ResourceSyncRestParams {
@@ -59,24 +59,7 @@ interface CustomerUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Customer = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: CustomerRow;
-  schema: typeof CustomerSyncTableSchema;
-  params: {
-    sync: CustomerSyncRestParams;
-    create: CustomerCreateRestParams;
-    update: CustomerUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Customer;
-    plural: RestResourcePlural.Customer;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Customer;
-  };
-}>;
-
-export const customerResource = {
+const customerResourceBase = {
   display: 'Customer',
   schema: CustomerSyncTableSchema,
   graphQl: {
@@ -94,4 +77,19 @@ export const customerResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Customer;
+} as const;
+
+export type Customer = ResourceWithMetafieldDefinitions<
+  typeof customerResourceBase,
+  {
+    codaRow: CustomerRow;
+    rest: {
+      params: {
+        sync: CustomerSyncRestParams;
+        create: CustomerCreateRestParams;
+        update: CustomerUpdateRestParams;
+      };
+    };
+  }
+>;
+export const customerResource = customerResourceBase as Customer;

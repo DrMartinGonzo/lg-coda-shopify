@@ -1,13 +1,9 @@
-import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { OrderRow } from '../../schemas/CodaRows.types';
+import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import {
-  ResourceSyncRestParams,
-  ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
-} from '../Resource.types';
+import { ResourceSyncRestParams, ResourceUpdateRestParams, ResourceWithMetafieldDefinitions } from '../Resource.types';
 
 // #region Rest Parameters
 export interface OrderSyncRestParams extends ResourceSyncRestParams {
@@ -35,23 +31,7 @@ interface OrderUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Order = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: OrderRow;
-  schema: typeof OrderSyncTableSchema;
-  params: {
-    sync: OrderSyncRestParams;
-    update: OrderUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Order;
-    plural: RestResourcePlural.Order;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Order;
-  };
-}>;
-
-export const orderResource = {
+const orderResourceBase = {
   display: 'Order',
   schema: OrderSyncTableSchema,
   graphQl: {
@@ -69,4 +49,18 @@ export const orderResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Order;
+} as const;
+
+export type Order = ResourceWithMetafieldDefinitions<
+  typeof orderResourceBase,
+  {
+    codaRow: OrderRow;
+    rest: {
+      params: {
+        sync: OrderSyncRestParams;
+        update: OrderUpdateRestParams;
+      };
+    };
+  }
+>;
+export const orderResource = orderResourceBase as Order;

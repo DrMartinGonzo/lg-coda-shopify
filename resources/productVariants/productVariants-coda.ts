@@ -34,6 +34,7 @@ async function getProductVariantsSchema(
   const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
   // Main props
   augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
+  augmentedSchema.properties.compare_at_price['currencyCode'] = shopCurrencyCode;
 
   // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
   augmentedSchema.featuredProperties.push('admin_url');

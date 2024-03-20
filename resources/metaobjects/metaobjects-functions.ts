@@ -379,7 +379,7 @@ export const deleteMetaObjectGraphQl = async (
 // #endregion
 
 // #region Helpers
-export function findMatchingMetaobjectFieldDefinition(
+function findMatchingMetaobjectFieldDefinition(
   key: string,
   fieldDefinitions: Array<ResultOf<typeof MetaobjectFieldDefinitionFragment>>
 ) {

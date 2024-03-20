@@ -1,6 +1,6 @@
 import { MetafieldFieldsFragment } from './metafields-graphql';
 
-export const makeQueryMetafieldsStorefront = (type: string) => {
+const makeQueryMetafieldsStorefront = (type: string) => {
   return `
     query GetResourceMetafields($metafieldsIdentifiers: [HasMetafieldsIdentifier!]!, $cursor: String) {
       ${type}(first: 200, after: $cursor) {
@@ -22,7 +22,7 @@ export const makeQueryMetafieldsStorefront = (type: string) => {
   `;
 };
 
-export const makeQueryVariantMetafieldsStorefront = /* GraphQL */ `
+const makeQueryVariantMetafieldsStorefront = /* GraphQL */ `
   ${MetafieldFieldsFragment}
 
   fragment variantFields on ProductVariant {

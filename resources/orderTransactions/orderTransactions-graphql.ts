@@ -21,8 +21,8 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
   if (filters.test !== undefined) searchItems.push(`test:${filters.test}`);
 
   // order status
-  if (filters.status && filters.status.length)
-    searchItems.push('(' + filters.status.map((status) => `status:${status}`).join(' OR ') + ')');
+  if (filters.status) searchItems.push(`status:'${filters.status}'`);
+
   // order financial_status
   if (filters.financial_status !== undefined) searchItems.push(`financial_status:${filters.financial_status}`);
   // order fulfillment_status

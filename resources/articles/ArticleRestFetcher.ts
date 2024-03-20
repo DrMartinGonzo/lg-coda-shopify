@@ -10,7 +10,7 @@ import { RestResourcePlural } from '../../Fetchers/ShopifyRestResource.types';
 import { formatMetafieldRestInputFromKeyValueSet } from '../metafields/metafields-functions';
 import { Article, articleResource } from './articleResource';
 
-export class ArticleRestFetcher extends SimpleRest<typeof articleResource> {
+export class ArticleRestFetcher extends SimpleRest<Article> {
   constructor(context: coda.ExecutionContext) {
     super(articleResource, context);
   }
@@ -37,7 +37,7 @@ export class ArticleRestFetcher extends SimpleRest<typeof articleResource> {
 
   formatRowToApi = (
     row: Partial<Article['codaRow']>,
-    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+    metafieldKeyValueSets: Array<CodaMetafieldKeyValueSet> = []
   ): Article['rest']['params']['update'] | Article['rest']['params']['create'] | undefined => {
     let restParams: Article['rest']['params']['update'] | Article['rest']['params']['create'] = {};
 

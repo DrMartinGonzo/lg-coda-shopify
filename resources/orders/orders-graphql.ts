@@ -1,7 +1,5 @@
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-
 // #region Helpers
-export function buildOrdersSearchQuery(filters: { [key: string]: any }) {
+function buildOrdersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');

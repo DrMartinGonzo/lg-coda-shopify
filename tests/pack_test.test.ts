@@ -48,6 +48,43 @@ const defaultExecuteOptions = {
   manifestPath: require.resolve('../pack.ts'),
 };
 
+describe('Customer', () => {
+  test('Fetch', async () => {
+    const expected = normalizeExpectedRowKeys(expectedRows.customer);
+    const result = await executeFormulaFromPackDef(
+      pack,
+      'Customer',
+      [expected.Id],
+      undefined,
+      undefined,
+      defaultExecuteOptions
+    );
+    compareToExpectedRow(result, expected);
+  });
+
+  test('Sync with Metafields', async () => {
+    // No need to normalize with executeSyncFormulaFromPackDef…
+    const expected = [expectedRows.customer];
+    const result = await executeSyncFormulaFromPackDef(
+      pack,
+      'Customers',
+      [
+        true, // syncMetafields
+        undefined, // createdAtRange
+        undefined, // updatedAtRange
+        [expected[0].id], // idArray
+      ],
+      undefined,
+      { useDeprecatedResultNormalization: true },
+      defaultExecuteOptions
+    );
+
+    result.forEach((res, index) => {
+      compareToExpectedRow(res, expected[index]);
+    });
+  });
+});
+
 describe('Product', () => {
   test('Fetch', async () => {
     const expected = normalizeExpectedRowKeys(expectedRows.product);
@@ -91,12 +128,12 @@ describe('Product', () => {
   });
 });
 
-describe('Customer', () => {
+describe('ProductVariant', () => {
   test('Fetch', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.customer);
+    const expected = normalizeExpectedRowKeys(expectedRows.productVariant);
     const result = await executeFormulaFromPackDef(
       pack,
-      'Customer',
+      'ProductVariant',
       [expected.Id],
       undefined,
       undefined,
@@ -107,15 +144,21 @@ describe('Customer', () => {
 
   test('Sync with Metafields', async () => {
     // No need to normalize with executeSyncFormulaFromPackDef…
-    const expected = [expectedRows.customer];
+    const expected = [expectedRows.productVariant];
     const result = await executeSyncFormulaFromPackDef(
       pack,
-      'Customers',
+      'ProductVariants',
       [
+        undefined, // productType
         true, // syncMetafields
         undefined, // createdAtRange
         undefined, // updatedAtRange
-        [expected[0].id], // idArray
+        undefined, // publishedAtRange
+        undefined, // statusArray
+        undefined, // publishedStatus
+        undefined, // vendor
+        undefined, // handleArray
+        [expectedRows.product.id], // idArray
       ],
       undefined,
       { useDeprecatedResultNormalization: true },

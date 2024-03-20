@@ -7,12 +7,12 @@ import { blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { handleFieldDependencies } from '../../utils/helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { BlogRestFetcher } from './BlogRestFetcher';
-import { blogResource } from './blogResource';
+import { Blog, blogResource } from './blogResource';
 
 // #endregion
 
 // #region Class
-export class BlogSyncTable extends SyncTableRest<typeof blogResource> {
+export class BlogSyncTable extends SyncTableRest<Blog> {
   constructor(fetcher: BlogRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
     super(blogResource, fetcher, params);
   }

@@ -2,7 +2,7 @@ import { graphql } from '../../utils/graphql';
 import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
-export function buildCustomersSearchQuery(filters: { [key: string]: any }) {
+function buildCustomersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');
@@ -12,7 +12,7 @@ export function buildCustomersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-export const CustomerAddressFieldsFragment = graphql(`
+const CustomerAddressFieldsFragment = graphql(`
   fragment CustomerAddressFields on MailingAddress {
     address1
     address2
@@ -37,7 +37,7 @@ export const CustomerAddressFieldsFragment = graphql(`
   }
 `);
 
-export const CustomerFieldsFragment = graphql(
+const CustomerFieldsFragment = graphql(
   `
     fragment CustomerFields on Customer {
       id
@@ -114,30 +114,6 @@ export const CustomerFieldsFragment = graphql(
 // #endregion
 
 // #region Queries
-export const queryNodesMetafieldsByKey = graphql(
-  `
-    query getCustomersWithMetafields(
-      $maxEntriesPerRun: Int!
-      $cursor: String
-      $metafieldKeys: [String!]
-      $countMetafields: Int
-      $searchQuery: String
-      $includeMetafields: Boolean!
-    ) {
-      customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
-        nodes {
-          ...CustomerFields
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  `,
-  [CustomerFieldsFragment]
-);
-
 // export const QueryCustomersMetafieldsAdmin = /* GraphQL */ `
 //   ${MetafieldFieldsFragment}
 

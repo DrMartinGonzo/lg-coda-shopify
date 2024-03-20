@@ -12,7 +12,7 @@ import { ArticleRestFetcher } from './ArticleRestFetcher';
 import { Article, articleResource } from './articleResource';
 import { Sync_Articles } from './articles-coda';
 
-export class ArticleSyncTable extends SyncTableRest<typeof articleResource> {
+export class ArticleSyncTable extends SyncTableRest<Article> {
   blogIdsLeft: number[];
   currentBlogId: number;
 

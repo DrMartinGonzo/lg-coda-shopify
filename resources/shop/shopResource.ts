@@ -1,9 +1,9 @@
-import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { ShopRow } from '../../schemas/CodaRows.types';
+import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { ResourceSyncRestParams, ResourceWithMetafields } from '../Resource.types';
+import { ResourceWithMetafields, ResourceSyncRestParams } from '../Resource.types';
 
 // #region Rest Parameters
 interface ShopSyncRestParams extends ResourceSyncRestParams {
@@ -11,22 +11,7 @@ interface ShopSyncRestParams extends ResourceSyncRestParams {
 }
 // #endregion
 
-export type Shop = ResourceWithMetafields<{
-  codaRow: ShopRow;
-  schema: typeof ShopSyncTableSchema;
-  params: {
-    sync: ShopSyncRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Shop;
-    plural: RestResourcePlural.Shop;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Shop;
-  };
-}>;
-
-export const shopResource = {
+const shopResourceBase = {
   display: 'Shop',
   schema: ShopSyncTableSchema,
   graphQl: {
@@ -45,4 +30,17 @@ export const shopResource = {
     hasSyncTable: true,
     supportsDefinitions: false,
   },
-} as Shop;
+} as const;
+
+export type Shop = ResourceWithMetafields<
+  typeof shopResourceBase,
+  {
+    codaRow: ShopRow;
+    rest: {
+      params: {
+        sync: ShopSyncRestParams;
+      };
+    };
+  }
+>;
+export const shopResource = shopResourceBase as Shop;

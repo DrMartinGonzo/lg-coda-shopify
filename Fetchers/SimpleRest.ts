@@ -1,8 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../utils/graphql';
 
-import { METAFIELDS_REQUIRED } from '../constants';
-import { getObjectSchemaEffectiveKey } from '../utils/helpers';
+import { GRAPHQL_REQUIRED_FOR_METAFIELDS, METAFIELDS_REQUIRED } from '../constants';
 import { idToGraphQlGid } from '../helpers-graphql';
 import {
   cleanQueryParams,
@@ -15,22 +14,22 @@ import {
 import { CodaMetafieldKeyValueSet } from '../helpers-setup';
 import {
   ResourceCreateRestParams,
-  Resource,
   ResourceSyncRestParams,
+  ResourceUnion,
   ResourceUpdateRestParams,
-  ResourceWithMetafields,
 } from '../resources/Resource.types';
+import { MetafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
 import {
   getMetafieldKeyValueSetsFromUpdate,
   updateAndFormatResourceMetafieldsGraphQl,
   updateAndFormatResourceMetafieldsRest,
 } from '../resources/metafields/metafields-functions';
 import { separatePrefixedMetafieldsKeysFromKeys } from '../resources/metafields/metafields-helpers';
+import { getObjectSchemaEffectiveKey } from '../utils/helpers';
 import { FetchRequestOptions } from './Fetcher.types';
 import { MultipleFetchData, SingleFetchData } from './SyncTableRest';
-import { MetafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
 
-export abstract class SimpleRest<ResourceT extends Resource<any> | ResourceWithMetafields<any>> {
+export abstract class SimpleRest<ResourceT extends ResourceUnion> {
   readonly resource: ResourceT;
   readonly context: coda.ExecutionContext;
   readonly singular: ResourceT['rest']['singular'];
@@ -207,8 +206,11 @@ export abstract class SimpleRest<ResourceT extends Resource<any> | ResourceWithM
     },
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
   ): Promise<ResourceT['codaRow']> => {
-    if (!('metafieldOwnerType' in this.resource)) {
-      throw new Error('resource must have a metafieldOwnerType to use _updateWithMetafieldsGraphQl');
+    if (!('metafields' in this.resource)) {
+      throw new Error(METAFIELDS_REQUIRED);
+    }
+    if (!this.resource.metafields.useGraphQl) {
+      throw new Error(GRAPHQL_REQUIRED_FOR_METAFIELDS);
     }
 
     const originalRow = row.original ?? {};

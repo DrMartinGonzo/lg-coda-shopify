@@ -5,14 +5,14 @@ import { CollectionSyncTableBase } from '../CollectionSyncTableBase';
 import { SmartCollectionRestFetcher } from '../smart_collection/SmartCollectionRestFetcher';
 import { smartCollectionResource } from '../smart_collection/smartCollectionResource';
 import { CustomCollectionRestFetcher } from './CustomCollectionRestFetcher';
-import { customCollectionResource } from './customCollectionResource';
+import { CustomCollection, customCollectionResource } from './customCollectionResource';
 
-export class CustomCollectionSyncTable extends CollectionSyncTableBase<typeof customCollectionResource> {
+export class CustomCollectionSyncTable extends CollectionSyncTableBase<CustomCollection> {
   constructor(fetcher: CustomCollectionRestFetcher, params: coda.ParamValues<coda.ParamDefs>) {
     super(customCollectionResource, fetcher, params);
   }
 
-  afterSync(response: MultipleFetchResponse<typeof customCollectionResource>) {
+  afterSync(response: MultipleFetchResponse<CustomCollection>) {
     let { restItems, continuation: superContinuation } = super.afterSync(response);
 
     /**

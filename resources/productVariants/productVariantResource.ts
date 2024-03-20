@@ -1,12 +1,12 @@
-import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
+import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import {
   ResourceCreateRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import { Metafield } from '../metafields/Metafield.types';
 import { ProductSyncRestParams } from '../products/productResource';
@@ -45,24 +45,7 @@ interface ProductVariantUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type ProductVariant = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: ProductVariantRow;
-  schema: typeof ProductVariantSyncTableSchema;
-  params: {
-    sync: ProductVariantSyncRestParams;
-    create: ProductVariantCreateRestParams;
-    update: ProductVariantUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.ProductVariant;
-    plural: RestResourcePlural.ProductVariant;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Productvariant;
-  };
-}>;
-
-export const productVariantResource = {
+const productVariantResourceBase = {
   display: 'Product Variant',
   schema: ProductVariantSyncTableSchema,
   graphQl: {
@@ -80,4 +63,19 @@ export const productVariantResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as ProductVariant;
+} as const;
+
+export type ProductVariant = ResourceWithMetafieldDefinitions<
+  typeof productVariantResourceBase,
+  {
+    codaRow: ProductVariantRow;
+    rest: {
+      params: {
+        sync: ProductVariantSyncRestParams;
+        create: ProductVariantCreateRestParams;
+        update: ProductVariantUpdateRestParams;
+      };
+    };
+  }
+>;
+export const productVariantResource = productVariantResourceBase as ProductVariant;

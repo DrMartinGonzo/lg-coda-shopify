@@ -146,21 +146,29 @@ export function formatMetaFieldValueForSchema(
     case METAFIELD_TYPES.multi_line_text_field:
     case METAFIELD_TYPES.url:
     case METAFIELD_TYPES.color:
-    case METAFIELD_TYPES.number_integer:
-    case METAFIELD_TYPES.number_decimal:
     case METAFIELD_TYPES.date:
     case METAFIELD_TYPES.date_time:
     case METAFIELD_TYPES.boolean:
     case METAFIELD_LEGACY_TYPES.string:
-    case METAFIELD_LEGACY_TYPES.integer:
     case METAFIELD_TYPES.list_single_line_text_field:
     case METAFIELD_TYPES.list_url:
     case METAFIELD_TYPES.list_color:
-    case METAFIELD_TYPES.list_number_integer:
-    case METAFIELD_TYPES.list_number_decimal:
     case METAFIELD_TYPES.list_date:
     case METAFIELD_TYPES.list_date_time:
       return parsedValue;
+
+    case METAFIELD_TYPES.number_integer:
+    case METAFIELD_LEGACY_TYPES.integer:
+      return parseInt(parsedValue);
+
+    case METAFIELD_TYPES.number_decimal:
+      return parseFloat(parsedValue);
+
+    case METAFIELD_TYPES.list_number_integer:
+      return parsedValue.map((v) => parseInt(v));
+
+    case METAFIELD_TYPES.list_number_decimal:
+      return parsedValue.map((v) => parseFloat(v));
 
     case METAFIELD_TYPES.rich_text_field:
       return convertSchemaToHtml(parsedValue);
@@ -177,7 +185,7 @@ export function formatMetaFieldValueForSchema(
 
     // MONEY
     case METAFIELD_TYPES.money:
-      return parsedValue.amount;
+      return parseFloat(parsedValue.amount);
 
     // REFERENCES
     case METAFIELD_TYPES.collection_reference:
@@ -263,7 +271,7 @@ export function formatMetafieldForSchemaFromGraphQlApi(
   metafieldNode: ResultOf<typeof MetafieldFieldsFragmentWithDefinition>,
   ownerNodeGid: string,
   parentOwnerNodeGid: string | undefined,
-  ownerResource: ResourceWithMetafields<any>,
+  ownerResource: ResourceWithMetafields<any, any>,
   context: coda.ExecutionContext,
   includeHelperColumns = true
 ) {
@@ -607,7 +615,7 @@ export async function formatMetafieldValueForApi(
 // #region Rest requests
 export const fetchMetafieldsRest = async (
   ownerId: number,
-  ownerResource: ResourceWithMetafields<any>,
+  ownerResource: ResourceWithMetafields<any, any>,
   filters: {
     /** Show metafields with given namespace */
     namespace?: string;
@@ -1050,7 +1058,7 @@ export interface DeletedMetafieldsByKeysRest {
 const deleteMetafieldsByKeysRest = async (
   metafieldsToDelete: CodaMetafieldKeyValueSet[],
   ownerId: number,
-  ownerResource: ResourceWithMetafields<any>,
+  ownerResource: ResourceWithMetafields<any, any>,
   context: coda.ExecutionContext
 ): Promise<DeletedMetafieldsByKeysRest[]> => {
   const response = await fetchMetafieldsRest(ownerId, ownerResource, {}, context, { cacheTtlSecs: CACHE_DISABLED });
@@ -1183,7 +1191,7 @@ export async function updateAndFormatResourceMetafieldsGraphQl(
 // CAD une fonction qui gere l'update de la ressource et de ses metafields et qui gere aussi la suppression des metafields
 export async function updateResourceMetafieldsRest(
   ownerId: number,
-  ownerResource: ResourceWithMetafields<any>,
+  ownerResource: ResourceWithMetafields<any, any>,
   metafieldKeyValueSets: CodaMetafieldKeyValueSet[],
   context: coda.ExecutionContext
 ): Promise<{ deletedMetafields: DeletedMetafieldsByKeysRest[]; updatedMetafields: RestResources['Metafield'][] }> {
@@ -1237,7 +1245,7 @@ type RowMetafieldsProperties = { [key: string]: any };
 export async function updateAndFormatResourceMetafieldsRest(
   params: {
     ownerId: number;
-    ownerResource: ResourceWithMetafields<any>;
+    ownerResource: ResourceWithMetafields<any, any>;
     metafieldKeyValueSets: CodaMetafieldKeyValueSet[];
     /** Wether the data will be consumed by an action wich result use a `coda.withIdentity` schema. */
     schemaWithIdentity?: boolean;

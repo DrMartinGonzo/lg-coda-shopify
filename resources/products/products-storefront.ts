@@ -47,7 +47,7 @@ const makeProductFieldsFragmentStorefront = (includeMetafields: boolean = false)
 `;
 
 // Storefront query to list max 50 available product types
-export const queryAvailableProductTypes = `
+const queryAvailableProductTypes = `
   query QueryAvailableProductTypes{
     productTypes(first: 250) {
       edges {
@@ -57,7 +57,7 @@ export const queryAvailableProductTypes = `
   }
 `;
 
-export const makeQueryProductsStorefront = `
+const makeQueryProductsStorefront = `
   query queryProducts($cursor: String, $metafieldsIdentifiers: [HasMetafieldsIdentifier!]!, $includeMetafields: Boolean!) {
     products(first: 200, after: $cursor) {
       nodes {

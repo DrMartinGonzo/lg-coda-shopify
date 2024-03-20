@@ -1,13 +1,13 @@
-import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { BlogRow } from '../../schemas/CodaRows.types';
+import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import type {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import type { Metafield } from '../metafields/Metafield.types';
 
@@ -45,24 +45,7 @@ interface BlogUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Blog = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: BlogRow;
-  schema: typeof BlogSyncTableSchema;
-  params: {
-    sync: BlogSyncRestParams;
-    create: BlogCreateRestParams;
-    update: BlogUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Blog;
-    plural: RestResourcePlural.Blog;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Blog;
-  };
-}>;
-
-export const blogResource = {
+const blogResourceBase = {
   display: 'Blog',
   schema: BlogSyncTableSchema,
   graphQl: {
@@ -78,4 +61,19 @@ export const blogResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Blog;
+} as const;
+
+export type Blog = ResourceWithMetafieldDefinitions<
+  typeof blogResourceBase,
+  {
+    codaRow: BlogRow;
+    rest: {
+      params: {
+        sync: BlogSyncRestParams;
+        create: BlogCreateRestParams;
+        update: BlogUpdateRestParams;
+      };
+    };
+  }
+>;
+export const blogResource = blogResourceBase as Blog;

@@ -1,13 +1,9 @@
-import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
+import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import {
-  ResourceSyncRestParams,
-  ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
-} from '../Resource.types';
+import { ResourceSyncRestParams, ResourceUpdateRestParams, ResourceWithMetafieldDefinitions } from '../Resource.types';
 
 // #region Rest Parameters
 interface DraftOrderSyncRestParams extends ResourceSyncRestParams {
@@ -42,25 +38,7 @@ interface DraftOrderSendInvoiceRestParams {
 }
 // #endregion
 
-export type DraftOrder = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: DraftOrderRow;
-  schema: typeof DraftOrderSyncTableSchema;
-  params: {
-    sync: DraftOrderSyncRestParams;
-    update: DraftOrderUpdateRestParams;
-    complete: DraftOrderCompleteRestParams;
-    sendInvoice: DraftOrderSendInvoiceRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.DraftOrder;
-    plural: RestResourcePlural.DraftOrder;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Draftorder;
-  };
-}>;
-
-export const draftOrderResource = {
+const draftOrderResourceBase = {
   display: 'Draft Order',
   schema: DraftOrderSyncTableSchema,
   graphQl: {
@@ -78,4 +56,20 @@ export const draftOrderResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as DraftOrder;
+} as const;
+
+export type DraftOrder = ResourceWithMetafieldDefinitions<
+  typeof draftOrderResourceBase,
+  {
+    codaRow: DraftOrderRow;
+    rest: {
+      params: {
+        sync: DraftOrderSyncRestParams;
+        update: DraftOrderUpdateRestParams;
+        complete: DraftOrderCompleteRestParams;
+        sendInvoice: DraftOrderSendInvoiceRestParams;
+      };
+    };
+  }
+>;
+export const draftOrderResource = draftOrderResourceBase as DraftOrder;

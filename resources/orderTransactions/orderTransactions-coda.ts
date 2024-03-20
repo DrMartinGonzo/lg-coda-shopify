@@ -66,7 +66,15 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
       }),
     ],
     execute: async function (
-      [orderCreatedAt, orderUpdatedAt, orderProcessedAt, orderFinancialStatus, orderFulfillmentStatus, gateways],
+      [
+        orderCreatedAt,
+        orderUpdatedAt,
+        orderProcessedAt,
+        orderFinancialStatus,
+        orderFulfillmentStatus,
+        orderStatus,
+        gateways,
+      ],
       context: coda.SyncExecutionContext
     ) {
       const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
@@ -92,6 +100,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
         financial_status: orderFinancialStatus,
         fulfillment_status: orderFulfillmentStatus,
         gateways,
+        status: orderStatus,
       };
       // Remove any undefined filters
       Object.keys(queryFilters).forEach((key) => {

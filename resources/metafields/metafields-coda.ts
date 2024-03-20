@@ -23,7 +23,7 @@ import { ProductVariantReference } from '../../schemas/syncTable/ProductVariantS
 import { filters, inputs } from '../../shared-parameters';
 import { CurrencyCode, MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
 import { arrayUnique, retrieveObjectSchemaEffectiveKeys } from '../../utils/helpers';
-import { ResourceWithMetafieldDefinitionsNew } from '../Resource.types';
+import { ResourceWithMetafieldDefinitions } from '../Resource.types';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { MetafieldDefinitionFragment } from '../metafieldDefinitions/metafieldDefinitions-graphql';
 import { getResourcesWithMetaFieldsSyncTable, requireResourceWithMetaFieldsByOwnerType } from '../resources';
@@ -151,7 +151,9 @@ async function getMetafieldSchema(context: coda.ExecutionContext, _: string, for
     }),
       (augmentedSchema.properties['definition'] = {
         // TODO: fix type
-        ...getMetafieldDefinitionReferenceSchema(ownerResource as unknown as ResourceWithMetafieldDefinitionsNew<any>),
+        ...getMetafieldDefinitionReferenceSchema(
+          ownerResource as unknown as ResourceWithMetafieldDefinitions<any, any>
+        ),
         fromKey: 'definition',
         fixedId: 'definition',
         description: 'The metafield definition of the metafield, if it exists.',

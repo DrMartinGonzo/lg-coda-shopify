@@ -1,13 +1,13 @@
-import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { CollectionRow } from '../../schemas/CodaRows.types';
+import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import type {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import type { Metafield } from '../metafields/Metafield.types';
 
@@ -49,24 +49,7 @@ export interface CollectionUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Collection = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: CollectionRow;
-  schema: typeof CollectionSyncTableSchema;
-  params: {
-    sync: CollectionSyncRestParams;
-    create: CollectionCreateRestParams;
-    update: CollectionUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Collection;
-    plural: RestResourcePlural.Collection;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Collection;
-  };
-}>;
-
-export const collectionResource = {
+const collectionResourceBase = {
   display: 'Collection',
   schema: CollectionSyncTableSchema,
   graphQl: {
@@ -84,4 +67,19 @@ export const collectionResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Collection;
+} as const;
+
+export type Collection = ResourceWithMetafieldDefinitions<
+  typeof collectionResourceBase,
+  {
+    codaRow: CollectionRow;
+    rest: {
+      params: {
+        sync: CollectionSyncRestParams;
+        create: CollectionCreateRestParams;
+        update: CollectionUpdateRestParams;
+      };
+    };
+  }
+>;
+export const collectionResource = collectionResourceBase as Collection;

@@ -1,13 +1,13 @@
-import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { ProductRow } from '../../schemas/CodaRows.types';
+import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import type {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import type { Metafield } from '../metafields/Metafield.types';
 
@@ -64,24 +64,7 @@ interface ProductUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Product = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: ProductRow;
-  schema: typeof ProductSyncTableSchemaRest;
-  params: {
-    sync: ProductSyncRestParams;
-    create: ProductCreateRestParams;
-    update: ProductUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Product;
-    plural: RestResourcePlural.Product;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Product;
-  };
-}>;
-
-export const productResource = {
+const productResourceBase = {
   display: 'Product',
   schema: ProductSyncTableSchemaRest,
   graphQl: {
@@ -99,4 +82,19 @@ export const productResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Product;
+} as const;
+
+export type Product = ResourceWithMetafieldDefinitions<
+  typeof productResourceBase,
+  {
+    codaRow: ProductRow;
+    rest: {
+      params: {
+        sync: ProductSyncRestParams;
+        create: ProductCreateRestParams;
+        update: ProductUpdateRestParams;
+      };
+    };
+  }
+>;
+export const productResource = productResourceBase as Product;

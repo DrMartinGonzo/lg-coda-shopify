@@ -87,6 +87,9 @@ export class ProductVariantRestFetcher extends SimpleRest<ProductVariant> {
       ...variant,
       admin_url: `${this.context.endpoint}/admin/products/${variant.product_id}/variants/${variant.id}`,
       product: formatProductReference(variant.product_id),
+      price: variant.price ? parseFloat(variant.price) : undefined,
+      compare_at_price: variant.compare_at_price ? parseFloat(variant.compare_at_price) : undefined,
+      weight: variant.weight ? parseFloat(variant.weight) : undefined,
       // displayTitle: variant.title,
     };
 

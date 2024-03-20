@@ -1,13 +1,13 @@
-import { RestResourceSingular, RestResourcePlural } from '../../Fetchers/ShopifyRestResource.types';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { RedirectRow } from '../../schemas/CodaRows.types';
+import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import type {
   ResourceCreateRestParams,
   Resource,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
 } from '../Resource.types';
-import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
-import { RedirectRow } from '../../schemas/CodaRows.types';
 
 // #region Rest Parameters
 interface RedirectSyncRestParams extends ResourceSyncRestParams {
@@ -27,21 +27,7 @@ interface RedirectUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Redirect = Resource<{
-  codaRow: RedirectRow;
-  schema: typeof RedirectSyncTableSchema;
-  params: {
-    sync: RedirectSyncRestParams;
-    create: RedirectCreateRestParams;
-    update: RedirectUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Redirect;
-    plural: RestResourcePlural.Redirect;
-  };
-}>;
-
-export const redirectResource = {
+const redirectResourceBase = {
   display: 'Redirect',
   schema: RedirectSyncTableSchema,
   graphQl: {
@@ -51,4 +37,19 @@ export const redirectResource = {
     singular: RestResourceSingular.Redirect,
     plural: RestResourcePlural.Redirect,
   },
-} as Redirect;
+} as const;
+
+export type Redirect = Resource<
+  typeof redirectResourceBase,
+  {
+    codaRow: RedirectRow;
+    rest: {
+      params: {
+        sync: RedirectSyncRestParams;
+        create: RedirectCreateRestParams;
+        update: RedirectUpdateRestParams;
+      };
+    };
+  }
+>;
+export const redirectResource = redirectResourceBase as Redirect;

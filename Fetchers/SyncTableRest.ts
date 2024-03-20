@@ -14,7 +14,7 @@ import {
   skipGraphQlSyncTableRun,
 } from '../helpers-graphql';
 import { GetRequestParams, extractNextUrlPagination, makeGetRequest } from '../helpers-rest';
-import { ResourceUnion } from '../resources/Resource.types';
+import { Resource, ResourceWithMetafields, ResourceUnion } from '../resources/Resource.types';
 import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { fetchMetafieldsRest, formatMetaFieldValueForSchema } from '../resources/metafields/metafields-functions';
 import { MetafieldFieldsFragment, queryNodesMetafieldsByKey } from '../resources/metafields/metafields-graphql';

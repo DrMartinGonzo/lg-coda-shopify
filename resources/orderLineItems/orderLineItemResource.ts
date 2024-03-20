@@ -1,7 +1,7 @@
-import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
+import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { Resource } from '../Resource.types';
 import { OrderSyncRestParams } from '../orders/orderResource';
 
@@ -9,19 +9,7 @@ import { OrderSyncRestParams } from '../orders/orderResource';
 interface OrderLineItemSyncRestParams extends OrderSyncRestParams {}
 // #endregion
 
-export type OrderLineItem = Resource<{
-  codaRow: OrderLineItemRow;
-  schema: typeof OrderLineItemSyncTableSchema;
-  params: {
-    sync: OrderLineItemSyncRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Order;
-    plural: RestResourcePlural.Order;
-  };
-}>;
-
-export const orderLineItemResource = {
+const orderLineItemResourceBase = {
   display: 'Order Line Item',
   schema: OrderLineItemSyncTableSchema,
   graphQl: {
@@ -31,4 +19,17 @@ export const orderLineItemResource = {
     singular: RestResourceSingular.Order,
     plural: RestResourcePlural.Order,
   },
-} as OrderLineItem;
+} as const;
+
+export type OrderLineItem = Resource<
+  typeof orderLineItemResourceBase,
+  {
+    codaRow: OrderLineItemRow;
+    rest: {
+      params: {
+        sync: OrderLineItemSyncRestParams;
+      };
+    };
+  }
+>;
+export const orderLineItemResource = orderLineItemResourceBase as OrderLineItem;

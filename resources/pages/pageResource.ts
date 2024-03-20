@@ -1,13 +1,13 @@
-import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
 import { PageRow } from '../../schemas/CodaRows.types';
+import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import {
   ResourceCreateRestParams,
   ResourceSyncRestParams,
   ResourceUpdateRestParams,
-  ResourceWithMetafieldDefinitionsNew,
+  ResourceWithMetafieldDefinitions,
 } from '../Resource.types';
 import { Metafield } from '../metafields/Metafield.types';
 
@@ -49,24 +49,7 @@ interface PageUpdateRestParams extends ResourceUpdateRestParams {
 }
 // #endregion
 
-export type Page = ResourceWithMetafieldDefinitionsNew<{
-  codaRow: PageRow;
-  schema: typeof PageSyncTableSchema;
-  params: {
-    sync: PageSyncRestParams;
-    create: PageCreateRestParams;
-    update: PageUpdateRestParams;
-  };
-  rest: {
-    singular: RestResourceSingular.Page;
-    plural: RestResourcePlural.Page;
-  };
-  metafields: {
-    ownerType: MetafieldOwnerType.Page;
-  };
-}>;
-
-export const pageResource = {
+const pageResourceBase = {
   display: 'Page',
   schema: PageSyncTableSchema,
   graphQl: {
@@ -82,4 +65,19 @@ export const pageResource = {
     hasSyncTable: true,
     supportsDefinitions: true,
   },
-} as Page;
+} as const;
+
+export type Page = ResourceWithMetafieldDefinitions<
+  typeof pageResourceBase,
+  {
+    codaRow: PageRow;
+    rest: {
+      params: {
+        sync: PageSyncRestParams;
+        create: PageCreateRestParams;
+        update: PageUpdateRestParams;
+      };
+    };
+  }
+>;
+export const pageResource = pageResourceBase as Page;

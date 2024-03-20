@@ -16,6 +16,8 @@ import { getMetaobjectReferenceSchema } from './syncTable/MetaObjectSchema';
 import { PageReference } from './syncTable/PageSchema';
 import { ProductReference } from './syncTable/ProductSchemaRest';
 import { ProductVariantReference } from './syncTable/ProductVariantSchema';
+import { ShopRestFetcher } from '../resources/shop/ShopRestFetcher';
+import { DEFAULT_CURRENCY_CODE } from '../config/config';
 
 export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSchemaDefinition<string, string>>(
   baseSchema: SchemaT,
@@ -26,9 +28,22 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
   schema.featuredProperties = schema.featuredProperties ?? [];
 
   const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
+  const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
+    return metafieldDefinition.type.name === METAFIELD_TYPES.money;
+  });
+
+  let shopCurrencyCode = DEFAULT_CURRENCY_CODE;
+  if (hasMoneyFields) {
+    shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  }
+
   metafieldDefinitions.forEach((metafieldDefinition) => {
     const property = mapMetaFieldToSchemaProperty(metafieldDefinition);
     if (property) {
+      // TODO: write a generic function for setting Shop currency code in schema
+      if ('codaType' in property && property.codaType === coda.ValueHintType.Currency) {
+        property['currencyCode'] = shopCurrencyCode;
+      }
       const fullKey = getMetaFieldFullKey(metafieldDefinition);
       const name = accents.remove(metafieldDefinition.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
@@ -193,7 +208,6 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         type: coda.ValueType.Number,
         codaType: coda.ValueHintType.Currency,
-
         mutable: true,
       };
 

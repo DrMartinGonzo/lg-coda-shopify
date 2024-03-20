@@ -4,7 +4,7 @@
   "description": "Coda pack to add misc Shopify functions for Lydia Gautier",
   "scripts": {
     "postinstall": "npx patch-package",
-    "test": "vitest --silent",
+    "test": "vitest",
     "test:coverage": "vitest --coverage --silent",
     "set_release:admin": "IS_ADMIN_RELEASE=true node set-pack-config.js",
     "set_release:user": "IS_ADMIN_RELEASE=false node set-pack-config.js",

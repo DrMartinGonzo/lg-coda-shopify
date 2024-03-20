@@ -1,9 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
-import { REST_DEFAULT_API_VERSION } from '../../config/config';
-import { arrayUnique } from '../../utils/helpers';
 import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { REST_DEFAULT_API_VERSION } from '../../config/config';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import { arrayUnique } from '../../utils/helpers';
 import { ResourceWithMetafields } from '../Resource.types';
 import { METAFIELD_TYPES_RAW_REFERENCE } from './metafields-constants';
 
@@ -28,13 +28,13 @@ export function shouldDeleteMetafield(string: string) {
 export function getResourceMetafieldsRestApiUrl(
   context: coda.ExecutionContext,
   ownerId: number,
-  ownerResource: ResourceWithMetafields<any>
+  ownerResource: ResourceWithMetafields<any, any>
 ) {
   return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}/${ownerResource.rest.plural}/${ownerId}/metafields.json`;
 }
 export function getResourceMetafieldsAdminUrl(
   context: coda.ExecutionContext,
-  restResource: ResourceWithMetafields<any>,
+  restResource: ResourceWithMetafields<any, any>,
   hasMetafieldDefinition: boolean,
   ownerId: number,
   parentOwnerId?: number

@@ -17,9 +17,9 @@ import { productVariantResource } from './productVariants/productVariantResource
 import { redirectResource } from './redirects/redirectResource';
 import { shopResource } from './shop/shopResource';
 
-import { MetafieldOwnerType } from '../types/admin.types';
 import { GraphQlResourceName } from '../Fetchers/ShopifyGraphQlResource.types';
-import { Resource, ResourceWithMetafieldDefinitionsNew, ResourceWithMetafields } from './Resource.types';
+import { MetafieldOwnerType } from '../types/admin.types';
+import { ResourceWithMetafields, ResourceWithMetafieldDefinitions } from './Resource.types';
 
 // #endregion
 
@@ -44,15 +44,15 @@ const resources = [
 ];
 
 // #region Helpers
-export const getResourcesWithMetaFieldsSyncTable = (): ResourceWithMetafields<any>[] =>
+export const getResourcesWithMetaFieldsSyncTable = (): ResourceWithMetafields<any, any>[] =>
   resources.filter(
     (resource) => 'metafields' in resource && resource.metafields.hasSyncTable === true
-  ) as ResourceWithMetafields<any>[];
+  ) as ResourceWithMetafields<any, any>[];
 
-export const getResourcesWithMetaFieldDefinitions = (): ResourceWithMetafieldDefinitionsNew<any>[] =>
+export const getResourcesWithMetaFieldDefinitions = (): ResourceWithMetafieldDefinitions<any, any>[] =>
   resources.filter(
     (resource) => 'metafields' in resource && resource.metafields.supportsDefinitions === true
-  ) as ResourceWithMetafieldDefinitionsNew<any>[];
+  ) as ResourceWithMetafieldDefinitions<any, any>[];
 
 // export function getSingleResourceByGraphQlName(graphQlName: GraphQlResourceName): Resource<any> {
 //   return resources.find((resource) => resource.graphQl.name === graphQlName) as Resource<any>;
@@ -60,13 +60,13 @@ export const getResourcesWithMetaFieldDefinitions = (): ResourceWithMetafieldDef
 
 export function requireResourceWithDefinedMetaFieldsByGraphQlName(
   graphQlName: GraphQlResourceName
-): ResourceWithMetafields<any> {
+): ResourceWithMetafields<any, any> {
   const definition = resources.find(
     (resource) =>
       resource.graphQl.name === graphQlName &&
       'metafields' in resource &&
       resource.metafields.supportsDefinitions === true
-  ) as ResourceWithMetafields<any>;
+  ) as ResourceWithMetafields<any, any>;
   if (!definition) {
     throw new Error(`GraphQl resource ${graphQlName} not found or has no metafieldOwnerType`);
   }
@@ -75,10 +75,10 @@ export function requireResourceWithDefinedMetaFieldsByGraphQlName(
 
 export function requireResourceWithMetaFieldsByOwnerType(
   metafieldOwnerType: MetafieldOwnerType
-): ResourceWithMetafields<any> {
+): ResourceWithMetafields<any, any> {
   const definition = resources.find(
     (resource) => 'metafields' in resource && resource.metafields.ownerType === metafieldOwnerType
-  ) as ResourceWithMetafields<any>;
+  ) as ResourceWithMetafields<any, any>;
   if (!definition) {
     throw new Error('Unknown MetafieldOwnerType: ' + MetafieldOwnerType);
   }

@@ -1,4 +1,5 @@
 import { Customer } from '../resources/customers/customerResource';
+import { ProductVariant } from '../resources/productVariants/productVariantResource';
 import { Product } from '../resources/products/productResource';
 
 export const expectedRows = {
@@ -35,6 +36,41 @@ export const expectedRows = {
     // not needed
     // updated_at
   } as Product['codaRow'],
+
+  productVariant: {
+    admin_graphql_api_id: 'gid://shopify/ProductVariant/44365639713024',
+    admin_url: 'https://coda-pack-test.myshopify.com/admin/products/8406091333888/variants/44365639713024',
+    barcode: '123456789',
+    compare_at_price: 60,
+    created_at: '2024-02-20T13:22:14-05:00' as unknown as Date,
+    displayTitle: 'Vitest Product - Vitest / ProductVariant',
+    grams: 850,
+    id: 44365639713024,
+    image:
+      'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/044f848776141f1024eae6c610a28d12.jpg?v=1708453334',
+    inventory_item_id: 46469099815168,
+    inventory_management: 'shopify',
+    inventory_policy: 'deny',
+    inventory_quantity: 12,
+    option1: 'Vitest',
+    option2: 'ProductVariant',
+    option3: null,
+    position: 1,
+    price: 50,
+    product: { id: 8406091333888, title: 'Vitest Product' },
+    sku: 'AD-04\r\n-blue-OS',
+    storeUrl: 'https://coda-pack-test.myshopify.com/products/vitest-product?variant=44365639713024',
+    taxable: true,
+    title: 'Vitest / ProductVariant',
+    weight: 850,
+    weight_unit: 'g',
+
+    // Metafields
+    'lgs_meta__custom.test': 'vitest',
+    'lgs_meta__custom.test_money_field': 55,
+    // not needed
+    // updated_at: '2024-03-20T08:48:07-04:00',
+  } as ProductVariant['codaRow'],
 
   customer: {
     accepts_email_marketing: false,

@@ -1,7 +1,5 @@
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-
 // #region Helpers
-export function buildProductVariantsSearchQuery(filters: { [key: string]: any }) {
+function buildProductVariantsSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
 
   if (filters.product_ids && filters.product_ids.length)
