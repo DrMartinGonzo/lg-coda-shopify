@@ -14,6 +14,7 @@ import { ProductVariantRestFetcher } from './ProductVariantRestFetcher';
 import { ProductVariantSyncTable } from './ProductVariantSyncTable';
 import { ProductVariant } from './productVariantResource';
 import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
@@ -22,7 +23,7 @@ async function getProductVariantsSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema = ProductVariantSyncTableSchema;
+  let augmentedSchema = deepCopy(ProductVariantSyncTableSchema);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       ProductVariantSyncTableSchema,

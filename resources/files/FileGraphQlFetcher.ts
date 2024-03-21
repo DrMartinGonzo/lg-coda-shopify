@@ -5,7 +5,7 @@ import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { GraphQlResponse } from '../../helpers-graphql';
 import { FileRow } from '../../schemas/CodaRows.types';
 import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
-import { getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../utils/helpers';
+import { extractNameFromFileUrl, getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../utils/helpers';
 import { File, fileResource } from './fileResource';
 import {
   FileFieldsFragment,
@@ -41,7 +41,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
     return {
       fileSize: file.originalFileSize,
       mimeType: file.mimeType,
-      name: file.url ? file.url.split('/').pop().split('?').shift() : '',
+      name: file.url ? extractNameFromFileUrl(file.url) : '',
       url: file.url,
     };
   }
@@ -50,7 +50,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       fileSize: file.originalSource?.fileSize,
       height: file.image?.height,
       mimeType: file.mimeType,
-      name: file.image?.url ? file.image.url.split('/').pop().split('?').shift() : '',
+      name: file.image?.url ? extractNameFromFileUrl(file.image.url) : '',
       url: file.image?.url,
       width: file.image?.width,
     };

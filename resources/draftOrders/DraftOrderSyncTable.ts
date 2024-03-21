@@ -16,7 +16,7 @@ export class DraftOrderSyncTable extends SyncTableRest<DraftOrder> {
   // static dynamicOptions: coda.DynamicOptions = {
   //   getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   //     let { schema, metafieldOwnerType } = draftOrderResource;
-  //     let augmentedSchema = schema;
+  //     let augmentedSchema = deepCopy(schema);
   //     if (formulaContext.syncMetafields) {
   //       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafieldOwnerType, context);
   //     }
@@ -80,7 +80,7 @@ export class DraftOrderSyncTable extends SyncTableRest<DraftOrder> {
 //   static dynamicOptions: coda.DynamicOptions = {
 //     getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
 //       let { schema, metafieldOwnerType } = draftOrderResource;
-//       let augmentedSchema = schema;
+//       let augmentedSchema = deepCopy(schema);
 //       if (formulaContext.syncMetafields) {
 //         augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafieldOwnerType, context);
 //       }

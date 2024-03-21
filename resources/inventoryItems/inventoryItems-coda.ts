@@ -1,31 +1,32 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/graphql';
 import { print as printGql } from '@0no-co/graphql.web';
+import * as coda from '@codahq/packs-sdk';
+import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 
-import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
-import { formatInventoryItemNodeForSchema, handleInventoryItemUpdateJob } from './inventoryItems-functions';
+import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { Identity } from '../../constants';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../../helpers-graphql';
+import { InventoryItemRow } from '../../schemas/CodaRows.types';
+import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
+import { filters, inputs } from '../../shared-parameters';
+import { ShopRestFetcher } from '../shop/ShopRestFetcher';
+import { InventoryItemGraphQlFetcher } from './InventoryItemGraphQlFetcher';
+import { handleInventoryItemUpdateJob } from './inventoryItems-functions';
 import {
   InventoryItemFieldsFragment,
   QueryAllInventoryItems,
   buildInventoryItemsSearchQuery,
 } from './inventoryItems-graphql';
-import { filters, inputs } from '../../shared-parameters';
-import { cleanQueryParams } from '../../helpers-rest';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
-import { Identity } from '../../constants';
-
-import type { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = InventoryItemSyncTableSchema;
+  let augmentedSchema = deepCopy(InventoryItemSyncTableSchema);
 
   const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
   augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
@@ -94,9 +95,10 @@ export const Sync_InventoryItems = coda.makeSyncTable({
         context
       );
       if (response?.body?.data?.inventoryItems?.nodes) {
+        const inventoryItemsFetcher = new InventoryItemGraphQlFetcher(context);
         const inventoryItems = readFragment(InventoryItemFieldsFragment, response.body.data.inventoryItems.nodes);
         return {
-          result: inventoryItems.map((inventoryItem) => formatInventoryItemNodeForSchema(inventoryItem)),
+          result: inventoryItems.map((inventoryItem) => inventoryItemsFetcher.formatApiToRow(inventoryItem)),
           continuation,
         };
       } else {
@@ -108,7 +110,17 @@ export const Sync_InventoryItems = coda.makeSyncTable({
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) => handleInventoryItemUpdateJob(update, context));
+      const jobs = updates.map((update) =>
+        handleInventoryItemUpdateJob(
+          {
+            original: update.previousValue as unknown as InventoryItemRow,
+            updated: Object.fromEntries(
+              Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
+            ) as InventoryItemRow,
+          },
+          context
+        )
+      );
       const completed = await Promise.allSettled(jobs);
       return {
         result: completed.map((job) => {
@@ -156,27 +168,24 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],
     context
   ) {
-    // Build a Coda update object for Rest Admin and GraphQL API updates
-    let update: coda.SyncUpdate<string, string, any>;
-
-    const newValues = cleanQueryParams({
+    const originalRow = {
+      id: inventoryItemId,
+    };
+    const updatedRow = {
+      id: inventoryItemId,
       cost,
       country_code_of_origin,
       harmonized_system_code,
       province_code_of_origin,
       tracked,
-    });
-    /* Edge case for cost. Setting it to 0 should delete the value. All other
-      values when undefined will not be deleted, just not updated */
-    newValues.cost = cost === 0 ? undefined : cost;
-
-    update = {
-      previousValue: { id: inventoryItemId },
-      newValue: newValues,
-      updatedFields: Object.keys(newValues),
     };
-
-    return handleInventoryItemUpdateJob(update, context);
+    return handleInventoryItemUpdateJob(
+      {
+        original: originalRow,
+        updated: updatedRow,
+      },
+      context
+    );
   },
 });
 // #endregion

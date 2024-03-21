@@ -1,26 +1,22 @@
 // #region Imports
+import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import { FragmentOf, ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 
-import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
-import {
-  deleteFileGraphQl,
-  handleFileUpdateJob,
-  formatFileNodeForSchema,
-  fetchSingleFileGraphQl,
-} from './files-functions';
-import { CACHE_DEFAULT, OPTIONS_FILE_TYPE } from '../../constants';
+import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
+import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { CACHE_DEFAULT, Identity, OPTIONS_FILE_TYPE } from '../../constants';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   makeSyncTableGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../../helpers-graphql';
-import { queryAllFiles } from './files-graphql';
+import { FileRow } from '../../schemas/CodaRows.types';
+import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { inputs } from '../../shared-parameters';
-import { Identity } from '../../constants';
-
-import type { FileRow } from '../../types/CodaRows';
-import type { FileFieldsFragment, GetFilesQuery, GetFilesQueryVariables } from '../../types/generated/admin.generated';
-import type { SyncTableGraphQlContinuation } from '../../types/SyncTable';
+import { FileGraphQlFetcher } from './FileGraphQlFetcher';
+import { handleFileUpdateJob } from './files-functions';
+import { FileFieldsFragment, queryAllFiles } from './files-graphql';
 
 // #endregion
 
@@ -64,7 +60,7 @@ export const Sync_Files = coda.makeSyncTable({
       }
 
       const payload = {
-        query: queryAllFiles,
+        query: printGql(queryAllFiles),
         variables: {
           maxEntriesPerRun,
           cursor: prevContinuation?.cursor ?? null,
@@ -80,10 +76,10 @@ export const Sync_Files = coda.makeSyncTable({
           includeUpdatedAt: effectivePropertyKeys.includes('updatedAt'),
           includeUrl: effectivePropertyKeys.includes('url'),
           includeWidth: effectivePropertyKeys.includes('width'),
-        } as GetFilesQueryVariables,
+        } as VariablesOf<typeof queryAllFiles>,
       };
 
-      const { response, continuation } = await makeSyncTableGraphQlRequest<GetFilesQuery>(
+      const { response, continuation } = await makeSyncTableGraphQlRequest<ResultOf<typeof queryAllFiles>>(
         {
           payload,
           maxEntriesPerRun,
@@ -92,10 +88,11 @@ export const Sync_Files = coda.makeSyncTable({
         },
         context
       );
-      if (response?.body?.data?.files) {
-        const data = response.body.data as GetFilesQuery;
+      if (response?.body?.data?.files?.nodes) {
+        const fileFetcher = new FileGraphQlFetcher(context);
+        const files = readFragment(FileFieldsFragment, response.body.data.files.nodes);
         return {
-          result: data.files.nodes.map((file) => formatFileNodeForSchema(file, previewSize)),
+          result: files.map((file) => fileFetcher.formatApiToRow(file, previewSize)),
           continuation,
         };
       } else {
@@ -115,6 +112,7 @@ export const Sync_Files = coda.makeSyncTable({
               Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
             ) as FileRow,
           },
+          params,
           context
         );
       });
@@ -140,7 +138,9 @@ export const Action_DeleteFile = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([fileGid], context) {
-    await deleteFileGraphQl(fileGid, context);
+    const fileFetcher = new FileGraphQlFetcher(context);
+    const response = await fileFetcher.delete([fileGid]);
+    const deletedFileId = response?.body?.data?.fileDelete?.deletedFileIds[0];
     return true;
   },
 });
@@ -156,10 +156,9 @@ export const Formula_File = coda.makeFormula({
   schema: FileSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([fileGid], context) {
-    const response = await fetchSingleFileGraphQl(fileGid, context);
-    if (response?.body?.data?.node) {
-      return formatFileNodeForSchema(response.body.data.node as FileFieldsFragment);
-    }
+    const fileFetcher = new FileGraphQlFetcher(context);
+    const response = await fileFetcher.fetch(fileGid, { cacheTtlSecs: CACHE_DEFAULT });
+    return fileFetcher.formatApiToRow(response.body.data.node);
   },
 });
 

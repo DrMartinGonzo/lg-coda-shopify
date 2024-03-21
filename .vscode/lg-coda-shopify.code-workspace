@@ -7,6 +7,7 @@
   ],
   "settings": {
     "typescript.workspaceSymbols.excludeLibrarySymbols": true,
+    "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "peacock.color": "#ee5a29",
     "peacock.remoteColor": "#95bf47",

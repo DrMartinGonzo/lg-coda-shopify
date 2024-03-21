@@ -521,17 +521,17 @@ export async function formatMetafieldValueForApi(
     case METAFIELD_TYPES.multi_line_text_field:
     case METAFIELD_TYPES.url:
     case METAFIELD_TYPES.color:
-    case METAFIELD_TYPES.number_integer:
-    case METAFIELD_TYPES.number_decimal:
     case METAFIELD_TYPES.date:
     case METAFIELD_TYPES.date_time:
-    case METAFIELD_TYPES.boolean:
     case METAFIELD_TYPES.json:
     case METAFIELD_LEGACY_TYPES.string:
-    case METAFIELD_LEGACY_TYPES.integer:
     case METAFIELD_LEGACY_TYPES.json_string:
       return value;
 
+    case METAFIELD_TYPES.boolean:
+    case METAFIELD_LEGACY_TYPES.integer:
+    case METAFIELD_TYPES.number_integer:
+    case METAFIELD_TYPES.number_decimal:
     case METAFIELD_TYPES.list_single_line_text_field:
     case METAFIELD_TYPES.list_url:
     case METAFIELD_TYPES.list_color:

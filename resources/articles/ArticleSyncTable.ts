@@ -6,7 +6,7 @@ import { REST_DEFAULT_LIMIT } from '../../constants';
 import { cleanQueryParams, getRestBaseUrl } from '../../helpers-rest';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
 import { articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
-import { handleFieldDependencies, parseOptionId } from '../../utils/helpers';
+import { deepCopy, handleFieldDependencies, parseOptionId } from '../../utils/helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { ArticleRestFetcher } from './ArticleRestFetcher';
 import { Article, articleResource } from './articleResource';
@@ -23,7 +23,7 @@ export class ArticleSyncTable extends SyncTableRest<Article> {
   static dynamicOptions: coda.DynamicOptions = {
     getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
       let { schema, metafields } = articleResource;
-      let augmentedSchema = schema;
+      let augmentedSchema = deepCopy(schema);
       if (formulaContext.syncMetafields) {
         augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafields.ownerType, context);
       }

@@ -69,7 +69,10 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   if (!args.type || args.type === '') {
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
-  const metaObjectDefinition = await fetchSingleMetaObjectDefinitionByType(args.type, false, true, context);
+  const metaObjectDefinition = await fetchSingleMetaObjectDefinitionByType(
+    { type: args.type, includeCapabilities: false, includeFieldDefinitions: true },
+    context
+  );
   const fieldDefinitions = readFragmentArray(MetaobjectFieldDefinitionFragment, metaObjectDefinition.fieldDefinitions);
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
@@ -256,19 +259,21 @@ export async function fetchSingleMetaObjectDefinition(
   }
 }
 
-async function fetchSingleMetaObjectDefinitionByType(
-  type: string,
-  includeCapabilities = true,
-  includeFieldDefinitions = true,
+export async function fetchSingleMetaObjectDefinitionByType(
+  params: {
+    type: string;
+    includeCapabilities?: boolean;
+    includeFieldDefinitions?: boolean;
+  },
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<ResultOf<typeof MetaobjectDefinitionFragment>> {
   const payload = {
     query: printGql(querySingleMetaobjectDefinitionByType),
     variables: {
-      type,
-      includeCapabilities,
-      includeFieldDefinitions,
+      type: params.type,
+      includeCapabilities: params.includeCapabilities ?? false,
+      includeFieldDefinitions: params.includeFieldDefinitions ?? false,
     } as VariablesOf<typeof querySingleMetaobjectDefinitionByType>,
   };
 
@@ -279,7 +284,7 @@ async function fetchSingleMetaObjectDefinitionByType(
   if (response?.body?.data?.metaobjectDefinitionByType) {
     return readFragment(MetaobjectDefinitionFragment, response.body.data.metaobjectDefinitionByType);
   } else {
-    throw new coda.UserVisibleError(`Metaobject definition with type ${type} not found.`);
+    throw new coda.UserVisibleError(`Metaobject definition with type ${params.type} not found.`);
   }
 }
 

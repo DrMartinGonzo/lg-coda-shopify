@@ -11,11 +11,12 @@ import { formatProductVariantReference } from '../../schemas/syncTable/ProductVa
 import { Identity } from '../../constants';
 
 import type { OrderRow } from '../../schemas/CodaRows.types';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = OrderLineItemSyncTableSchema;
+  let augmentedSchema = deepCopy(OrderLineItemSyncTableSchema);
 
   const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
 

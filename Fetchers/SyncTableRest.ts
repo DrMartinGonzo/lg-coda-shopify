@@ -60,8 +60,8 @@ type currentBatchType<CodaRowT extends BaseRow = any> = {
   remaining: CodaRowT[];
 };
 export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> extends SyncTableRestContinuation {
-  retries: number;
   cursor?: string;
+  retries: number;
   graphQlLock: string;
 
   lastCost?: Stringified<ShopifyGraphQlRequestCost>;
@@ -105,7 +105,7 @@ export async function handleDynamicSchemaForCli(
   );
 }
 
-type Stringified<T> = string & {
+export type Stringified<T> = string & {
   [P in keyof T]: { '_ value': T[P] };
 };
 
@@ -121,7 +121,7 @@ type Stringified<T> = string & {
  * @returns A string that contains the JSON representation of the given value
  * with a special type to ensure it can be used to recreate the original value.
  */
-function stringifyContinuationProperty<T>(
+export function stringifyContinuationProperty<T>(
   value: T,
   replacer?: (key: string, value: any) => any,
   space?: string | number
@@ -138,7 +138,7 @@ function stringifyContinuationProperty<T>(
  * are parsed.
  * @returns The original value recreated from the parsed string.
  */
-function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
+export function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
   return JSON.parse(text);
 }
 // #endregion

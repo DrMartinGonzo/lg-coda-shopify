@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { handleFieldDependencies } from '../../utils/helpers';
+import { deepCopy, handleFieldDependencies } from '../../utils/helpers';
 import { cleanQueryParams } from '../../helpers-rest';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
@@ -16,7 +16,7 @@ export class CollectionSyncTableBase<T extends CustomCollection | SmartCollectio
   static dynamicOptions: coda.DynamicOptions = {
     getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
       let { schema, metafields } = collectionResource;
-      let augmentedSchema = schema;
+      let augmentedSchema = deepCopy(schema);
       if (formulaContext.syncMetafields) {
         augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafields.ownerType, context);
       }

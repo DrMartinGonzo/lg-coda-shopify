@@ -4,7 +4,7 @@ import { SyncTableRest } from '../../Fetchers/SyncTableRest';
 import { cleanQueryParams } from '../../helpers-rest';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
 import { blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
-import { handleFieldDependencies } from '../../utils/helpers';
+import { deepCopy, handleFieldDependencies } from '../../utils/helpers';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { BlogRestFetcher } from './BlogRestFetcher';
 import { Blog, blogResource } from './blogResource';
@@ -20,7 +20,7 @@ export class BlogSyncTable extends SyncTableRest<Blog> {
   static dynamicOptions: coda.DynamicOptions = {
     getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
       let { schema, metafields } = blogResource;
-      let augmentedSchema = schema;
+      let augmentedSchema = deepCopy(schema);
       if (formulaContext.syncMetafields) {
         augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafields.ownerType, context);
       }

@@ -12,11 +12,12 @@ import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
 import { ShopRestFetcher } from '../shop/ShopRestFetcher';
 import { DraftOrderRestFetcher } from './DraftOrderRestFetcher';
 import { DraftOrderSyncTable } from './DraftOrderSyncTable';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getDraftOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = DraftOrderSyncTableSchema;
+  let augmentedSchema = deepCopy(DraftOrderSyncTableSchema);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       DraftOrderSyncTableSchema,

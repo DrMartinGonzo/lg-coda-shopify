@@ -5,7 +5,7 @@ import { SyncTableParamValues, SyncTableRest } from '../../Fetchers/SyncTableRes
 import { cleanQueryParams } from '../../helpers-rest';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
 import { customerFieldDependencies } from '../../schemas/syncTable/CustomerSchema';
-import { handleFieldDependencies } from '../../utils/helpers';
+import { deepCopy, handleFieldDependencies } from '../../utils/helpers';
 import { Customer, customerResource } from './customerResource';
 import { Sync_Customers } from './customers-coda';
 
@@ -17,7 +17,7 @@ export class CustomerSyncTable extends SyncTableRest<Customer> {
   static dynamicOptions: coda.DynamicOptions = {
     getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
       let { schema, metafields } = customerResource;
-      let augmentedSchema = schema;
+      let augmentedSchema = deepCopy(schema);
       if (formulaContext.syncMetafields) {
         augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, metafields.ownerType, context);
       }

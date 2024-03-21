@@ -209,13 +209,15 @@ export async function skipGraphQlSyncTableRun(prevContinuation: SyncTableGraphQl
 // #endregion
 
 // #region GraphQL Request functions
-interface GraphQlRequestParams extends Omit<FetchRequestOptions, 'url'> {
-  payload: {
-    query: string;
-    variables?: {
-      [key: string]: any;
-    };
+
+export type GraphQlPayload = {
+  query: string;
+  variables?: {
+    [key: string]: any;
   };
+};
+interface GraphQlRequestParams extends Omit<FetchRequestOptions, 'url'> {
+  payload: GraphQlPayload;
   apiVersion?: string;
   getUserErrors?: CallableFunction;
   retries?: number;

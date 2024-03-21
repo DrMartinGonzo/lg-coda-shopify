@@ -19,6 +19,7 @@ import {
   QueryOrderTransactions,
   buildOrderTransactionsSearchQuery,
 } from './orderTransactions-graphql';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
@@ -27,7 +28,7 @@ async function getOrderTransactionSchema(
   _: string,
   formulaContext: coda.MetadataContext
 ) {
-  let augmentedSchema = OrderTransactionSyncTableSchema;
+  let augmentedSchema = deepCopy(OrderTransactionSyncTableSchema);
 
   const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
   // Main props

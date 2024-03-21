@@ -43,6 +43,16 @@ export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
 
+/**
+ * Extracts the name from the given file URL.
+ *
+ * @param  url - The file URL
+ * @return The extracted name from the file URL
+ */
+export function extractNameFromFileUrl(url: string) {
+  return url.split('/').pop().split('?').shift();
+}
+
 export const weightUnitsMap: { [key in WeightUnit]: string } = {
   // WEIGHT
   GRAMS: 'g',

@@ -13,11 +13,12 @@ import { ProductRestFetcher } from './ProductRestFetcher';
 import { ProductSyncTable } from './ProductSyncTable';
 import { Product } from './productResource';
 import { fetchProductTypesGraphQl } from './products-functions';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = ProductSyncTableSchemaRest;
+  let augmentedSchema = deepCopy(ProductSyncTableSchemaRest);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(
       ProductSyncTableSchemaRest,

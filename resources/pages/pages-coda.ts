@@ -14,11 +14,12 @@ import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { Page } from './pageResource';
 import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getPageSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = PageSyncTableSchema;
+  let augmentedSchema = deepCopy(PageSyncTableSchema);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(PageSyncTableSchema, MetafieldOwnerType.Page, context);
   }

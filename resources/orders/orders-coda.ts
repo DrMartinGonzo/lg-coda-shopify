@@ -13,11 +13,12 @@ import { OrderRestFetcher } from './OrderRestFetcher';
 import { OrderSyncTable } from './OrderSyncTable';
 import { Order } from './orderResource';
 import { formatOrderForDocExport } from './orders-functions';
+import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
 async function getOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = OrderSyncTableSchema;
+  let augmentedSchema = deepCopy(OrderSyncTableSchema);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
   }

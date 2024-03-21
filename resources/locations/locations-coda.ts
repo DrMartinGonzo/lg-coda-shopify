@@ -6,7 +6,7 @@ import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/gra
 import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
 import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
 import { CACHE_DEFAULT, CUSTOM_FIELD_PREFIX_KEY, Identity } from '../../constants';
-import { arrayUnique } from '../../utils/helpers';
+import { arrayUnique, deepCopy } from '../../utils/helpers';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   idToGraphQlGid,
@@ -35,7 +35,7 @@ import { LocationFragment, QueryLocations } from './locations-graphql';
 // #endregion
 
 async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = LocationSyncTableSchema;
+  let augmentedSchema = deepCopy(LocationSyncTableSchema);
   if (formulaContext.syncMetafields) {
     augmentedSchema = await augmentSchemaWithMetafields(LocationSyncTableSchema, MetafieldOwnerType.Location, context);
   }

@@ -22,7 +22,7 @@ import { ProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { filters, inputs } from '../../shared-parameters';
 import { CurrencyCode, MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
-import { arrayUnique, retrieveObjectSchemaEffectiveKeys } from '../../utils/helpers';
+import { arrayUnique, deepCopy, retrieveObjectSchemaEffectiveKeys } from '../../utils/helpers';
 import { ResourceWithMetafieldDefinitions } from '../Resource.types';
 import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
 import { MetafieldDefinitionFragment } from '../metafieldDefinitions/metafieldDefinitions-graphql';
@@ -91,7 +91,7 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
 }
 
 async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = MetafieldSyncTableSchema;
+  let augmentedSchema = deepCopy(MetafieldSyncTableSchema);
   const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
   const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
 

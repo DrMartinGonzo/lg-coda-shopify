@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import type { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from './Fetcher.types';
+import { Stringified } from './SyncTableRest';
 
 // #endregion
 
@@ -15,6 +16,20 @@ export interface SyncTableGraphQlContinuation extends coda.Continuation {
   reducedMaxEntriesPerRun?: number;
   lastCost?: Omit<ShopifyGraphQlRequestCost, 'throttleStatus'>;
   lastThrottleStatus?: ShopifyGraphQlThrottleStatus;
+}
+
+export interface SyncTableGraphQlContinuationNew extends coda.Continuation {
+  cursor?: string;
+  retries: number;
+  graphQlLock: string;
+
+  lastCost?: Stringified<ShopifyGraphQlRequestCost>;
+  lastMaxEntriesPerRun?: number;
+  reducedMaxEntriesPerRun?: number;
+
+  extraContinuationData: {
+    [key: string]: any;
+  };
 }
 
 // export interface SyncTableRestContinuation extends coda.Continuation {
