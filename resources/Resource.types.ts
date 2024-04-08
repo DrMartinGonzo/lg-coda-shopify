@@ -33,17 +33,6 @@ type ResourceParams = {
     singular?: string;
     /** GraphQl plural name used for queries */
     plural?: string;
-    operations?: {
-      sync?: TadaDocumentNode;
-      /** GraphQl operation used for creating resource */
-      create?: TadaDocumentNode;
-      /** GraphQl operation used for updating resource */
-      update?: TadaDocumentNode;
-      /** GraphQl operation used for updating resource */
-      delete?: TadaDocumentNode;
-      /** Other GraphQL operations */
-      [key: string]: TadaDocumentNode;
-    };
   };
   rest: {
     singular: RestResourceSingular;
@@ -80,20 +69,6 @@ export type Resource<ParamsT extends ResourceParams, ExtraParamsT extends Resour
     singular?: ParamsT['graphQl']['singular'];
     /** GraphQl plural name used for queries */
     plural?: ParamsT['graphQl']['plural'];
-    operations?: {
-      // sync?: ParamsT['graphQl']['operations']['sync'];
-      // /** GraphQl operation used for creating resource */
-      // create?: ParamsT['graphQl']['operations']['create'];
-      // /** GraphQl operation used for updating resource */
-      // update?: ParamsT['graphQl']['operations']['update'];
-      // /** GraphQl operation used for updating resource */
-      // delete?: ParamsT['graphQl']['operations']['delete'];
-      /** Other GraphQL operations */
-      // [key string]: ParamsT['graphQl']['operations'][key];
-
-      // [key in keyof ParamsT['graphQl']['operations']]: ParamsT['graphQl']['operations'][key];
-      [key in keyof ParamsT['graphQl']['operations']]: ParamsT['graphQl']['operations'][key];
-    };
   };
 
   rest: ParamsT['rest'] & {

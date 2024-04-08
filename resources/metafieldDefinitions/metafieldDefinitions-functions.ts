@@ -11,9 +11,9 @@ import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../t
 import { METAFIELD_TYPES } from '../metafields/metafields-constants';
 import { getMetaFieldFullKey } from '../metafields/metafields-helpers';
 import {
-  MetafieldDefinitionFragment,
-  QuerySingleMetafieldDefinition,
-  queryMetafieldDefinitions,
+  metafieldDefinitionFragment,
+  getSingleMetafieldDefinitionQuery,
+  getMetafieldDefinitionsQuery,
 } from './metafieldDefinitions-graphql';
 
 // #endregion
@@ -37,13 +37,13 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
 // #region Helpers
 export function findMatchingMetafieldDefinition(
   fullKey: string,
-  metafieldDefinitions: Array<ResultOf<typeof MetafieldDefinitionFragment>>
+  metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>
 ) {
   return metafieldDefinitions.find((f) => f && getMetaFieldFullKey(f) === fullKey);
 }
 export function requireMatchingMetafieldDefinition(
   fullKey: string,
-  metafieldDefinitions: Array<ResultOf<typeof MetafieldDefinitionFragment>>
+  metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>
 ) {
   const metafieldDefinition = findMatchingMetafieldDefinition(fullKey, metafieldDefinitions);
   if (!metafieldDefinition) throw new Error('MetafieldDefinition not found');
@@ -56,7 +56,7 @@ export function requireMatchingMetafieldDefinition(
  * Format a metafield for Metafield Sync Table Schema
  */
 export function formatMetafieldDefinitionForSchemaFromGraphQlApi(
-  metafieldDefinitionNode: ResultOf<typeof MetafieldDefinitionFragment>,
+  metafieldDefinitionNode: ResultOf<typeof metafieldDefinitionFragment>,
   context: coda.ExecutionContext
 ) {
   const definitionId = graphQlGidToId(metafieldDefinitionNode.id);
@@ -87,7 +87,7 @@ export async function fetchMetafieldDefinitionsGraphQl(
   },
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<Array<ResultOf<typeof MetafieldDefinitionFragment>>> {
+): Promise<Array<ResultOf<typeof metafieldDefinitionFragment>>> {
   const { ownerType } = params;
   let { includeFakeExtraDefinitions } = params;
   if (params.includeFakeExtraDefinitions === undefined) {
@@ -95,15 +95,15 @@ export async function fetchMetafieldDefinitionsGraphQl(
   }
   const maxEntriesPerRun = 200;
   const payload = {
-    query: printGql(queryMetafieldDefinitions),
+    query: printGql(getMetafieldDefinitionsQuery),
     variables: {
       ownerType,
       maxEntriesPerRun,
-    } as VariablesOf<typeof queryMetafieldDefinitions>,
+    } as VariablesOf<typeof getMetafieldDefinitionsQuery>,
   };
 
   /* Add 'Fake' metafield definitions for SEO metafields */
-  const extraDefinitions: Array<ResultOf<typeof MetafieldDefinitionFragment>> = [];
+  const extraDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>> = [];
   if (
     includeFakeExtraDefinitions &&
     [
@@ -148,13 +148,13 @@ export async function fetchMetafieldDefinitionsGraphQl(
     });
   }
 
-  const { response } = await makeGraphQlRequest<ResultOf<typeof queryMetafieldDefinitions>>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof getMetafieldDefinitionsQuery>>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
 
   const metafieldDefinitions =
-    readFragment(MetafieldDefinitionFragment, response?.body?.data?.metafieldDefinitions?.nodes) ?? [];
+    readFragment(metafieldDefinitionFragment, response?.body?.data?.metafieldDefinitions?.nodes) ?? [];
   return metafieldDefinitions.concat(extraDefinitions);
 }
 
@@ -165,20 +165,20 @@ export async function fetchSingleMetafieldDefinitionGraphQl(
   metafieldDefinitionGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
-): Promise<ResultOf<typeof MetafieldDefinitionFragment>> {
+): Promise<ResultOf<typeof metafieldDefinitionFragment>> {
   const payload = {
-    query: printGql(QuerySingleMetafieldDefinition),
+    query: printGql(getSingleMetafieldDefinitionQuery),
     variables: {
       id: metafieldDefinitionGid,
-    } as VariablesOf<typeof QuerySingleMetafieldDefinition>,
+    } as VariablesOf<typeof getSingleMetafieldDefinitionQuery>,
   };
 
-  const { response } = await makeGraphQlRequest<ResultOf<typeof QuerySingleMetafieldDefinition>>(
+  const { response } = await makeGraphQlRequest<ResultOf<typeof getSingleMetafieldDefinitionQuery>>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );
   if (response?.body?.data.metafieldDefinition) {
-    return readFragment(MetafieldDefinitionFragment, response.body.data.metafieldDefinition);
+    return readFragment(metafieldDefinitionFragment, response.body.data.metafieldDefinition);
   }
 }
 

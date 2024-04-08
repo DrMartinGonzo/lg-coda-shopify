@@ -1,247 +1,75 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import * as accents from 'remove-accents';
 
 import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
-import { Identity, OPTIONS_METAOBJECT_STATUS } from '../../constants';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  idToGraphQlGid,
-  makeSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../../helpers-graphql';
-import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-helpers';
+import { Identity } from '../../constants';
+import { idToGraphQlGid } from '../../helpers-graphql';
+import { MetaobjectRow } from '../../schemas/CodaRows.types';
+import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
-import { inputs } from '../../shared-parameters';
-import { MetaobjectFieldInput } from '../../types/admin.types';
-import { readFragment, readFragmentArray } from '../../utils/graphql';
-import {
-  capitalizeFirstChar,
-  compareByDisplayKey,
-  isString,
-  retrieveObjectSchemaEffectiveKeys,
-} from '../../utils/helpers';
-import { AllMetafieldTypeValue } from '../metafields/metafields-constants';
-import { formatMetafieldValueForApi } from '../metafields/metafields-functions';
-import { MetaobjectWithFields } from './Metaobject.types';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
-  createMetaObjectGraphQl,
-  deleteMetaObjectGraphQl,
-  fetchAllMetaObjectDefinitions,
-  fetchSingleMetaObjectDefinition,
-  formatMetaobjectCreateInputInput,
-  formatMetaobjectForSchemaFromGraphQlApi,
-  formatMetaobjectUpdateInput,
-  requireMatchingMetaobjectFieldDefinition,
-  updateMetaObjectGraphQl,
-} from './metaobjects-functions';
-import { MetaobjectFieldDefinitionFragment, buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
+  inputs,
+} from '../../shared-parameters';
+import { readFragment, readFragmentArray } from '../../utils/graphql';
+import { MetaobjectGraphQlFetcher } from './MetaobjectGraphQlFetcher';
+import { MetaobjectSyncTable } from './MetaobjectSyncTable';
+import { fetchSingleMetaObjectDefinition, parseMetaobjectFieldInputsFromVarArgs } from './metaobjects-functions';
+import { metaobjectFieldDefinitionFragment, metaobjectFragment } from './metaobjects-graphql';
 
 // #endregion
-
-async function getMetaobjectSyncTableSchema(context: coda.SyncExecutionContext, _, parameters) {
-  const metaobjectDefinition = await fetchSingleMetaObjectDefinition(
-    { gid: context.sync.dynamicUrl, includeCapabilities: true, includeFieldDefinitions: true },
-    context
-  );
-  const { displayNameKey } = metaobjectDefinition;
-  const fieldDefinitions = readFragment(MetaobjectFieldDefinitionFragment, metaobjectDefinition.fieldDefinitions);
-  const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
-  let defaultDisplayProperty = 'handle';
-
-  let augmentedSchema = MetaObjectSyncTableBaseSchema;
-
-  if (isPublishable) {
-    augmentedSchema.properties['status'] = {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
-      fixedId: 'status',
-      description: `The status of the metaobject`,
-      mutable: true,
-      options: OPTIONS_METAOBJECT_STATUS.filter((s) => s.value !== '*').map((s) => s.value),
-      requireForUpdates: true,
-    };
-  }
-
-  fieldDefinitions.forEach((fieldDefinition) => {
-    const name = accents.remove(fieldDefinition.name);
-    const property = mapMetaFieldToSchemaProperty(fieldDefinition);
-    if (property) {
-      property.displayName = fieldDefinition.name;
-      augmentedSchema.properties[name] = property;
-
-      if (displayNameKey === fieldDefinition.key) {
-        // @ts-ignore
-        augmentedSchema.displayProperty = name;
-        augmentedSchema.properties[name].required = true;
-        // @ts-ignore
-        augmentedSchema.featuredProperties[augmentedSchema.featuredProperties.indexOf(defaultDisplayProperty)] = name;
-      }
-    }
-  });
-
-  // @ts-ignore: admin_url should always be the last featured property, regardless of any custom field keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  return augmentedSchema;
-}
 
 // #region SyncTables
 export const Sync_Metaobjects = coda.makeDynamicSyncTable({
   name: 'Metaobjects',
-  description: 'All Metaobjects.',
+  description: 'Return Metaobjects with specified type from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Metaobject,
   defaultAddDynamicColumns: false,
-  listDynamicUrls: async function (context) {
-    const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
-    return metaobjectDefinitions.length
-      ? metaobjectDefinitions
-          .map((definition) => ({
-            display: definition.name,
-            value: definition.id,
-          }))
-          .sort(compareByDisplayKey)
-      : [];
-  },
-  getName: async function getMetaobjectSyncTableName(context: coda.SyncExecutionContext) {
-    const { type } = await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context);
-    return `Metaobjects_${capitalizeFirstChar(type)}`;
-  },
-  getDisplayUrl: async function getMetaobjectSyncTableDisplayUrl(context: coda.SyncExecutionContext) {
-    const { type } = await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context);
-    return `${context.endpoint}/admin/content/entries/${type}`;
-  },
-  getSchema: getMetaobjectSyncTableSchema,
+  listDynamicUrls: MetaobjectSyncTable.listDynamicUrls,
+  getName: MetaobjectSyncTable.getName,
+  getDisplayUrl: MetaobjectSyncTable.getDisplayUrl,
+  getSchema: MetaobjectSyncTable.getSchema,
   formula: {
     name: 'SyncMetaObjects',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
-    execute: async function ([], context) {
-      const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-      // TODO: get an approximation for first run by using count of relation columns ?
-      const defaultMaxEntriesPerRun = 50;
-      const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-        defaultMaxEntriesPerRun,
-        prevContinuation,
-        context
-      );
-      if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-      }
-
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-
-      const { type } =
-        prevContinuation?.extraContinuationData ??
-        (await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context));
-
-      // Separate constant fields keys from the custom ones
-      const constantKeys = retrieveObjectSchemaEffectiveKeys(MetaObjectSyncTableBaseSchema).concat('status');
-      const optionalFieldsKeys = effectivePropertyKeys.filter((key) => !constantKeys.includes(key));
-
-      const payload = {
-        query: buildQueryAllMetaObjectsWithFields(optionalFieldsKeys),
-        variables: {
-          type,
-          maxEntriesPerRun,
-          includeCapabilities: effectivePropertyKeys.includes('status'),
-          includeDefinition: false,
-          includeFieldDefinitions: false,
-          cursor: prevContinuation?.cursor ?? null,
-        },
-      };
-
-      const { response, continuation } = await makeSyncTableGraphQlRequest<{
-        metaobjects: {
-          nodes: Array<MetaobjectWithFields>;
-          pageInfo: {
-            endCursor: string;
-            hasNextPage: boolean;
-          };
-        };
-      }>(
-        {
-          payload,
-          maxEntriesPerRun,
-          prevContinuation,
-          extraContinuationData: { type },
-          getPageInfo: (data: any) => data.metaobjects?.pageInfo,
-        },
-        context
-      );
-      if (response?.body?.data?.metaobjects?.nodes) {
-        return {
-          result: response.body.data.metaobjects.nodes.map((metaobject) =>
-            formatMetaobjectForSchemaFromGraphQlApi(metaobject, context)
-          ),
-          continuation,
-        };
-      } else {
-        return {
-          result: [],
-          continuation,
-        };
-      }
+    execute: async function (params, context) {
+      const schema = await handleDynamicSchemaForCli(MetaobjectSyncTable.getSchema, context, params);
+      const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
+      const metaobjectSyncTable = new MetaobjectSyncTable(metaobjectFetcher, params);
+      return metaobjectSyncTable.executeSync(schema);
     },
     maxUpdateBatchSize: 10,
-    executeUpdate: async function ([], updates, context: coda.SyncExecutionContext) {
-      const metaobjectDefinition = await fetchSingleMetaObjectDefinition(
+    executeUpdate: async function (params, updates, context) {
+      const definition = await fetchSingleMetaObjectDefinition(
         { gid: context.sync.dynamicUrl, includeFieldDefinitions: true },
         context
       );
-      const metaobjectFieldDefinitions = readFragmentArray(
-        MetaobjectFieldDefinitionFragment,
-        metaobjectDefinition.fieldDefinitions
-      );
+      const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, definition.fieldDefinitions);
 
       const jobs = updates.map(async (update) => {
-        const { updatedFields } = update;
+        const originalRow = update.previousValue as unknown as MetaobjectRow;
+        const updatedRow = Object.fromEntries(
+          Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
+        ) as MetaobjectRow;
 
-        const handle = update.newValue['handle'];
-        const status = update.newValue['status'];
-        const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, update.previousValue.id as number);
-        const metaobjectFieldFromKeys = updatedFields.filter((key) => key !== 'handle' && key !== 'status');
+        const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, originalRow.id);
+        const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
+        const metaobjectFieldInputs = await metaobjectFetcher.formatMetaobjectFieldInputs(updatedRow, fieldDefinitions);
 
-        const fields = await Promise.all(
-          metaobjectFieldFromKeys.map(async (fromKey): Promise<MetaobjectFieldInput> => {
-            const value = update.newValue[fromKey] as string;
-            const fieldDefinition = requireMatchingMetaobjectFieldDefinition(fromKey, metaobjectFieldDefinitions);
+        const metaobjectUpdateInput = metaobjectFetcher.formatMetaobjectUpdateInput(updatedRow, metaobjectFieldInputs);
+        const response = await metaobjectFetcher.update({
+          gid: metaobjectGid,
+          updateInput: metaobjectUpdateInput,
+        });
 
-            let formattedValue: string;
-            try {
-              formattedValue = await formatMetafieldValueForApi(
-                value,
-                fieldDefinition.type.name as AllMetafieldTypeValue,
-                context,
-                fieldDefinition.validations
-              );
-            } catch (error) {
-              throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
-            }
-
-            return {
-              key: fromKey,
-              value: formattedValue ?? '',
-            };
-          })
-        );
-
-        const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
-        const response = await updateMetaObjectGraphQl(
-          {
-            gid: metaobjectGid,
-            updateInput: metaobjectUpdateInput,
-          },
-          context
-        );
-
+        const metaobject = readFragment(metaobjectFragment, response.body.data.metaobjectUpdate.metaobject);
         return {
           ...update.previousValue,
-          ...formatMetaobjectForSchemaFromGraphQlApi(response.body.data.metaobjectUpdate.metaobject, context),
+          ...metaobjectFetcher.formatApiToRow(metaobject),
         };
       });
 
@@ -292,15 +120,16 @@ export const Action_CreateMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.String,
   execute: async function ([type, handle, status = 'DRAFT', ...varargs], context) {
-    const fields: Array<MetaobjectFieldInput> = [];
-    while (varargs.length > 0) {
-      let key: string, value: string;
-      // Pull the first set of varargs off the list, and leave the rest.
-      [key, value, ...varargs] = varargs;
-      fields.push({ key, value });
-    }
-    const metaobjectCreateInput = formatMetaobjectCreateInputInput(type, handle, status, fields);
-    const response = await createMetaObjectGraphQl(metaobjectCreateInput, context);
+    let newRow: Omit<MetaobjectRow, 'id'> = {
+      handle,
+      status,
+    };
+
+    const fieldInputs = parseMetaobjectFieldInputsFromVarArgs(varargs);
+    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
+    const metaobjectCreateInput = metaobjectFetcher.formatMetaobjectCreateInput(type, newRow, fieldInputs);
+
+    const response = await metaobjectFetcher.create({ createInput: metaobjectCreateInput });
     return response.body.data.metaobjectCreate.metaobject.id;
   },
 });
@@ -339,28 +168,23 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   // schema: coda.withIdentity(MetaObjectBaseSchema, Identity.Metaobject),
   schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
-    const fields: Array<MetaobjectFieldInput> = [];
-    while (varargs.length > 0) {
-      let key: string, value: string;
-      [key, value, ...varargs] = varargs;
-      fields.push({
-        key,
-        // value should always be a string
-        value: isString(value) ? value : JSON.stringify(value),
-      });
-    }
+    let newRow: Omit<MetaobjectRow, 'id'> = {
+      handle,
+      status,
+    };
 
-    const metaobjectUpdateInput = formatMetaobjectUpdateInput(handle, status, fields);
-    const response = await updateMetaObjectGraphQl(
-      {
-        gid: idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId),
-        updateInput: metaobjectUpdateInput,
-      },
-      context
-    );
+    const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId);
+    const fieldInputs = parseMetaobjectFieldInputsFromVarArgs(varargs);
+    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
+    const metaobjectUpdateInput = metaobjectFetcher.formatMetaobjectUpdateInput(newRow, fieldInputs);
 
+    const response = await metaobjectFetcher.update({
+      gid: metaobjectGid,
+      updateInput: metaobjectUpdateInput,
+    });
     if (response?.body?.data?.metaobjectUpdate?.metaobject) {
-      return formatMetaobjectForSchemaFromGraphQlApi(response.body.data.metaobjectUpdate.metaobject, context);
+      const metaobject = readFragment(metaobjectFragment, response.body.data.metaobjectUpdate.metaobject);
+      return metaobjectFetcher.formatApiToRow(metaobject);
     }
   },
 });
@@ -373,10 +197,9 @@ export const Action_DeleteMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.String,
   execute: async function ([metaobjectId], context) {
-    const response = await deleteMetaObjectGraphQl(
-      idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId),
-      context
-    );
+    const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId);
+    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
+    const response = await metaobjectFetcher.delete(metaobjectGid);
     return response.body.data.metaobjectDelete.deletedId;
   },
 });

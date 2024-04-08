@@ -8,13 +8,13 @@ import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 import { extractNameFromFileUrl, getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../utils/helpers';
 import { File, fileResource } from './fileResource';
 import {
-  FileFieldsFragment,
-  GenericFileFieldsFragment,
-  MediaImageFieldsFragment,
-  UpdateFile,
-  VideoFieldsFragment,
-  deleteFiles,
-  querySingleFile,
+  fileFieldsFragment,
+  genericFileFieldsFragment,
+  mediaImageFieldsFragment,
+  updateFilesMutation,
+  videoFieldsFragment,
+  deleteFilesMutation,
+  getSingleFileQuery,
 } from './files-graphql';
 
 export class FileGraphQlFetcher extends ClientGraphQl<File> {
@@ -22,7 +22,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
     super(fileResource, context);
   }
 
-  formatFileNodeCommonProps(file: ResultOf<typeof FileFieldsFragment>, previewSize?: number): FileRow {
+  formatFileNodeCommonProps(file: ResultOf<typeof fileFieldsFragment>, previewSize?: number): FileRow {
     return {
       alt: file.alt,
       id: file.id,
@@ -37,7 +37,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       updatedAt: file.updatedAt,
     };
   }
-  formatGenericFileFragmentForSchema(file: ResultOf<typeof GenericFileFieldsFragment>) {
+  formatGenericFileFragmentForSchema(file: ResultOf<typeof genericFileFieldsFragment>) {
     return {
       fileSize: file.originalFileSize,
       mimeType: file.mimeType,
@@ -45,7 +45,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       url: file.url,
     };
   }
-  formatMediaImageFragmentForSchema(file: ResultOf<typeof MediaImageFieldsFragment>) {
+  formatMediaImageFragmentForSchema(file: ResultOf<typeof mediaImageFieldsFragment>) {
     return {
       fileSize: file.originalSource?.fileSize,
       height: file.image?.height,
@@ -55,7 +55,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       width: file.image?.width,
     };
   }
-  formatVideoFragmentForSchema(file: ResultOf<typeof VideoFieldsFragment>) {
+  formatVideoFragmentForSchema(file: ResultOf<typeof videoFieldsFragment>) {
     return {
       duration: file.duration,
       fileSize: file.originalSource?.fileSize,
@@ -67,26 +67,26 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
     };
   }
 
-  formatApiToRow(file: ResultOf<typeof FileFieldsFragment>, previewSize?: number): FileRow {
+  formatApiToRow(file: ResultOf<typeof fileFieldsFragment>, previewSize?: number): FileRow {
     const baseFormattedFile = this.formatFileNodeCommonProps(file, previewSize);
 
     switch (file.__typename) {
       case 'GenericFile':
-        const genericFile = readFragment(GenericFileFieldsFragment, file);
+        const genericFile = readFragment(genericFileFieldsFragment, file);
         return {
           ...baseFormattedFile,
           ...this.formatGenericFileFragmentForSchema(genericFile),
         };
 
       case 'MediaImage':
-        const mediaImageFile = readFragment(MediaImageFieldsFragment, file);
+        const mediaImageFile = readFragment(mediaImageFieldsFragment, file);
         return {
           ...baseFormattedFile,
           ...this.formatMediaImageFragmentForSchema(mediaImageFile),
         };
 
       case 'Video':
-        const videoFile = readFragment(VideoFieldsFragment, file);
+        const videoFile = readFragment(videoFieldsFragment, file);
         return {
           ...baseFormattedFile,
           ...this.formatVideoFragmentForSchema(videoFile),
@@ -98,7 +98,7 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
   }
 
   formatRowToApi(row: FileRow, metafieldKeyValueSets?: any[]) {
-    const ret: VariablesOf<typeof UpdateFile>['files'][0] = {
+    const ret: VariablesOf<typeof updateFilesMutation>['files'][0] = {
       id: row.id,
     };
 
@@ -131,14 +131,18 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       includeUpdatedAt: true,
       includeUrl: true,
       includeWidth: true,
-    } as VariablesOf<typeof querySingleFile>;
+    } as VariablesOf<typeof getSingleFileQuery>;
 
-    return this.makeRequest('fetchSingle', variables, requestOptions) as unknown as coda.FetchResponse<
-      GraphQlResponse<{ node: ResultOf<typeof FileFieldsFragment> }>
+    // TODO
+    return this.makeRequest(getSingleFileQuery, variables, requestOptions) as unknown as coda.FetchResponse<
+      GraphQlResponse<{ node: ResultOf<typeof fileFieldsFragment> }>
     >;
   }
 
-  async update(fileUpdateInput: VariablesOf<typeof UpdateFile>['files'], requestOptions: FetchRequestOptions = {}) {
+  async update(
+    fileUpdateInput: VariablesOf<typeof updateFilesMutation>['files'],
+    requestOptions: FetchRequestOptions = {}
+  ) {
     const variables = {
       files: fileUpdateInput,
       includeAlt: true,
@@ -151,9 +155,9 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
       includeUpdatedAt: true,
       includeUrl: true,
       includeWidth: true,
-    } as VariablesOf<typeof UpdateFile>;
+    } as VariablesOf<typeof updateFilesMutation>;
 
-    return this.makeRequest('update', variables, requestOptions);
+    return this.makeRequest(updateFilesMutation, variables, requestOptions);
   }
 
   /**
@@ -164,8 +168,8 @@ export class FileGraphQlFetcher extends ClientGraphQl<File> {
   async delete(fileGids: Array<string>, requestOptions: FetchRequestOptions = {}) {
     const variables = {
       fileIds: fileGids,
-    } as VariablesOf<typeof deleteFiles>;
+    } as VariablesOf<typeof deleteFilesMutation>;
 
-    return this.makeRequest('delete', variables, requestOptions);
+    return this.makeRequest(deleteFilesMutation, variables, requestOptions);
   }
 }

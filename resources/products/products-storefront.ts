@@ -1,5 +1,6 @@
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
-import { MAX_OPTIONS_PER_PRODUCT } from './productResource';
+import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
+
+const MAX_OPTIONS_PER_PRODUCT = 3;
 
 const metafieldStorefrontNodes = `
   metafields(identifiers: $metafieldsIdentifiers) {
@@ -7,7 +8,7 @@ const metafieldStorefrontNodes = `
   }`;
 
 const makeProductFieldsFragmentStorefront = (includeMetafields: boolean = false) => `
-  ${MetafieldFieldsFragment}
+  ${metafieldFieldsFragment}
 
   fragment productFields on Product {
     availableForSale

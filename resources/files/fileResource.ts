@@ -1,16 +1,9 @@
-import { TadaDocumentNode } from 'gql.tada';
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../ShopifyResource.types';
 import { FileRow } from '../../schemas/CodaRows.types';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { ResourceWithMetafieldDefinitions, ResourceWithMetafields } from '../Resource.types';
-import { FieldNode } from 'graphql';
-import { UpdateFile, deleteFiles, queryAllFiles, querySingleFile } from './files-graphql';
-
-// #region GraphQl Parameters
-
-// #endregion
+import { ResourceWithMetafields } from '../Resource.types';
 
 // TODO: finish this
 const fileResourceBase = {
@@ -20,12 +13,6 @@ const fileResourceBase = {
     name: GraphQlResourceName.GenericFile,
     singular: 'file',
     plural: 'files',
-    operations: {
-      fetchSingle: querySingleFile,
-      fetchAll: queryAllFiles,
-      update: UpdateFile,
-      delete: deleteFiles,
-    },
   },
   rest: {
     singular: RestResourceSingular.Collection,
@@ -43,9 +30,6 @@ export type File = ResourceWithMetafields<
   typeof fileResourceBase,
   {
     codaRow: FileRow;
-    rest: {
-      params: {};
-    };
   }
 >;
 

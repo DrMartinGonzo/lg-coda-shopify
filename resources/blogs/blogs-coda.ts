@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { Blog } from '../../Fetchers/NEW/Resources/WithRestMetafields/Blog';
 import { CACHE_DEFAULT, Identity } from '../../constants';
+import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
-import { BlogRestFetcher } from './BlogRestFetcher';
-import { BlogSyncTable } from './BlogSyncTable';
-
-import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
-import { Blog } from './blogResource';
+import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 
 // #endregion
 
@@ -21,10 +21,26 @@ export const Sync_Blogs = coda.makeSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Blog,
   schema: BlogSyncTableSchema,
-  dynamicOptions: BlogSyncTable.dynamicOptions,
+  dynamicOptions: {
+    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+      return Blog.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+    },
+    defaultAddDynamicColumns: false,
+    propertyOptions: async function (context) {
+      if (context.propertyName === 'template_suffix') {
+        return getTemplateSuffixesFor('blog', context);
+      }
+    },
+  },
   formula: {
     name: 'SyncBlogs',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema method in dynamicOptions.
+     *  - {@link Blog.getDynamicSchema}
+     *  - {@link Blog.makeSyncFunction}
+     */
     parameters: [
       {
         ...filters.general.syncMetafields,
@@ -34,17 +50,11 @@ export const Sync_Blogs = coda.makeSyncTable({
       },
     ],
     execute: async function (params, context) {
-      const [syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(BlogSyncTable.dynamicOptions.getSchema, context, {
-        syncMetafields,
-      });
-      const blogSyncTable = new BlogSyncTable(new BlogRestFetcher(context), params);
-      return blogSyncTable.executeSync(schema);
+      return Blog.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const blogSyncTable = new BlogSyncTable(new BlogRestFetcher(context), params);
-      return blogSyncTable.executeUpdate(updates);
+      return Blog.syncUpdate(params, updates, context);
     },
   },
 });
@@ -73,19 +83,22 @@ export const Action_UpdateBlog = coda.makeFormula({
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(BlogSchema, Identity.Blog),
   schema: BlogSyncTableSchema,
-  execute: async function ([blogId, title, handle, commentable, templateSuffix, metafields], context) {
-    let row: Blog['codaRow'] = {
-      id: blogId,
-      title,
-      handle,
-      commentable,
-      template_suffix: templateSuffix,
+  execute: async function ([blogId, title, handle, commentable, template_suffix, metafields], context) {
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<BlogRow> = {
+      row: {
+        id: blogId,
+        title,
+        handle,
+        commentable,
+        template_suffix,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    return new BlogRestFetcher(context).updateWithMetafields(
-      { original: undefined, updated: row },
-      metafieldKeyValueSets
-    );
+
+    const updatedBlog = new Blog({ context, fromRow });
+    await updatedBlog.saveAndUpdate();
+    return updatedBlog.formatToRow();
   },
 });
 
@@ -108,19 +121,21 @@ export const Action_CreateBlog = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
-  execute: async function ([title, handle, commentable, templateSuffix, metafields], context) {
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<Blog['codaRow']> = {
-      title,
-      commentable,
-      handle,
-      template_suffix: templateSuffix,
+  execute: async function ([title, handle, commentable, template_suffix, metafields], context) {
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<BlogRow> = {
+      row: {
+        title,
+        commentable,
+        handle,
+        template_suffix,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
 
-    const blogFetcher = new BlogRestFetcher(context);
-    const restParams = blogFetcher.formatRowToApi(newRow, metafieldKeyValueSets) as Blog['rest']['params']['create'];
-    const response = await blogFetcher.create(restParams);
-    return response?.body?.blog?.id;
+    const newBlog = new Blog({ context, fromRow });
+    await newBlog.saveAndUpdate();
+    return newBlog.apiData.id;
   },
 });
 
@@ -132,7 +147,7 @@ export const Action_DeleteBlog = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([blogId], context) {
-    await new BlogRestFetcher(context).delete(blogId);
+    await Blog.delete({ context, id: blogId });
     return true;
   },
 });
@@ -148,11 +163,8 @@ export const Formula_Blog = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: BlogSyncTableSchema,
   execute: async ([blogId], context) => {
-    const blogFetcher = new BlogRestFetcher(context);
-    const blogResponse = await blogFetcher.fetch(blogId);
-    if (blogResponse.body?.blog) {
-      return blogFetcher.formatApiToRow(blogResponse.body.blog);
-    }
+    const blog = await Blog.find({ context, id: blogId });
+    return blog.formatToRow();
   },
 });
 

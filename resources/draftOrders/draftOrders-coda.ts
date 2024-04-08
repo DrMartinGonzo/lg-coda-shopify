@@ -1,18 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { CACHE_DEFAULT, Identity } from '../../constants';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
+import { DraftOrderRow } from '../../schemas/CodaRows.types';
+import { augmentSchemaWithMetafields, resolveSchemaFromContext } from '../../schemas/schema-helpers';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
+import { deepCopy } from '../../utils/helpers';
+import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { DraftOrderRestFetcher } from './DraftOrderRestFetcher';
 import { DraftOrderSyncTable } from './DraftOrderSyncTable';
-import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
@@ -26,7 +25,7 @@ async function getDraftOrderSchema(context: coda.ExecutionContext, _: string, fo
     );
   }
 
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  const shopCurrencyCode = await Shop.activeCurrency({ context });
 
   // Line items
   [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
@@ -54,6 +53,11 @@ async function getDraftOrderSchema(context: coda.ExecutionContext, _: string, fo
   return augmentedSchema;
 }
 
+async function resolveDraftOrderSchemaFromContext(params, context: coda.SyncExecutionContext) {
+  const [syncMetafields] = params;
+  return resolveSchemaFromContext(getDraftOrderSchema, context, { syncMetafields });
+}
+
 // #region Sync tables
 export const Sync_DraftOrders = coda.makeSyncTable({
   name: 'DraftOrders',
@@ -69,6 +73,11 @@ export const Sync_DraftOrders = coda.makeSyncTable({
   formula: {
     name: 'SyncDraftOrders',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link resolveDraftOrderSchemaFromContext}
+     *  - {@link DraftOrderSyncTable}
+     */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
       { ...filters.draftOrder.status, optional: true },
@@ -77,14 +86,14 @@ export const Sync_DraftOrders = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
     ],
     execute: async function (params, context) {
-      const [syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(getDraftOrderSchema, context, { syncMetafields });
-      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), params);
-      return draftOrderSyncTable.executeSync(schema);
+      const schema = await resolveDraftOrderSchemaFromContext(params, context);
+      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), schema, params);
+      return draftOrderSyncTable.executeSync();
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), params);
+      const schema = await resolveDraftOrderSchemaFromContext(params, context);
+      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), schema, params);
       return draftOrderSyncTable.executeUpdate(updates);
     },
   },
@@ -140,7 +149,12 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
     };
     const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
     const draftOrderFetcher = new DraftOrderRestFetcher(context);
-    return draftOrderFetcher.updateWithMetafields({ original: undefined, updated: row }, metafieldKeyValueSets);
+    const restParams = draftOrderFetcher.formatRowToApi(row);
+    return draftOrderFetcher.updateAndFormatToRow({
+      id: draftOrderId,
+      restUpdate: restParams,
+      metafieldSets: metafieldKeyValueSets,
+    });
   },
 });
 

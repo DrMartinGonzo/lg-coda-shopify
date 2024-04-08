@@ -1,21 +1,9 @@
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../ShopifyResource.types';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
-import { Resource } from '../Resource.types';
-import {
-  buildQueryAllMetaObjectsWithFields,
-  buildQuerySingleMetaObjectWithFields,
-  buildUpdateMetaObjectMutation,
-  createMetaobjectMutation,
-  deleteMetaobjectMutation,
-} from './metaobjects-graphql';
+import { ResourceWithSchema } from '../Resource.types';
 
-// #region GraphQl Parameters
-
-// #endregion
-
-// TODO: finish this
 const metaobjectResourceBase = {
   display: 'Metaobject',
   schema: MetaObjectSyncTableBaseSchema,
@@ -23,13 +11,6 @@ const metaobjectResourceBase = {
     name: GraphQlResourceName.Metaobject,
     singular: 'metaobject',
     plural: 'metaobjects',
-    operations: {
-      fetchSingle: buildQuerySingleMetaObjectWithFields,
-      fetchAll: buildQueryAllMetaObjectsWithFields,
-      create: createMetaobjectMutation,
-      update: buildUpdateMetaObjectMutation,
-      delete: deleteMetaobjectMutation,
-    },
   },
   rest: {
     // TODO: fix this
@@ -39,13 +20,10 @@ const metaobjectResourceBase = {
   },
 } as const;
 
-export type Metaobject = Resource<
+export type Metaobject = ResourceWithSchema<
   typeof metaobjectResourceBase,
   {
     codaRow: MetaobjectRow;
-    rest: {
-      params: {};
-    };
   }
 >;
 

@@ -1,5 +1,5 @@
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { RestResourcePlural, RestResourceSingular, RestResources } from '../ShopifyResource.types';
 import { OrderRow } from '../../schemas/CodaRows.types';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -56,6 +56,7 @@ export type Order = ResourceWithMetafieldDefinitions<
   {
     codaRow: OrderRow;
     rest: {
+      type: RestResources['Order'];
       params: {
         sync: OrderSyncRestParams;
         update: OrderUpdateRestParams;

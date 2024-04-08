@@ -5,7 +5,7 @@ import { SyncTableParamValues } from '../../Fetchers/SyncTableRest';
 import { FileRow } from '../../schemas/CodaRows.types';
 import { FileGraphQlFetcher } from './FileGraphQlFetcher';
 import { Sync_Files } from './files-coda';
-import { FileFieldsFragment } from './files-graphql';
+import { fileFieldsFragment } from './files-graphql';
 
 // #region Helpers
 export async function handleFileUpdateJob(
@@ -25,7 +25,7 @@ export async function handleFileUpdateJob(
   if (fileUpdateInput !== undefined) {
     const updateJob = await fileFetcher.update([fileUpdateInput]);
     if (updateJob?.body?.data?.fileUpdate?.files) {
-      const files = readFragment(FileFieldsFragment, updateJob.body.data.fileUpdate.files);
+      const files = readFragment(fileFieldsFragment, updateJob.body.data.fileUpdate.files);
       const file = files.find((file) => file.id === fileUpdateInput.id);
       obj = {
         ...obj,

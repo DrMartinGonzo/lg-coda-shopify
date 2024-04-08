@@ -17,7 +17,7 @@ import { GetRequestParams, extractNextUrlPagination, makeGetRequest } from '../h
 import { Resource, ResourceWithMetafields, ResourceUnion } from '../resources/Resource.types';
 import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { fetchMetafieldsRest, formatMetaFieldValueForSchema } from '../resources/metafields/metafields-functions';
-import { MetafieldFieldsFragment, queryNodesMetafieldsByKey } from '../resources/metafields/metafields-graphql';
+import { metafieldFieldsFragment, getNodesMetafieldsByKeyQuery } from '../resources/metafields/metafields-graphql';
 import {
   getMetaFieldFullKey,
   hasMetafieldsInUpdates,
@@ -77,34 +77,6 @@ export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> exte
 // #endregion
 
 // #region Helpers
-function wrapDynamicSchemaForCli(
-  fn: coda.MetadataFunction,
-  context: coda.ExecutionContext,
-  args: Omit<coda.MetadataContext, '__brand'>
-) {
-  return fn(context, '', { ...args, __brand: 'MetadataContext' }) as Promise<coda.ArraySchema<coda.Schema>>;
-}
-/**
- * Handles dynamic schema in CLI context.
- * It calls the provided `getSchemaFunction` if `context.sync.schema` is falsy.
- * It helps to overcome an issue where the dynamic schema is not present in `context.sync.schema` in CLI context.
- *
- * @param getSchemaFunction - The function to generate dynamic schema.
- * @param context - The sync execution context.
- * @param formulaContext - The formula metadata context.
- * @returns The schema
- */
-export async function handleDynamicSchemaForCli(
-  getSchemaFunction: coda.MetadataFormulaDef,
-  context: coda.SyncExecutionContext,
-  formulaContext: Omit<coda.MetadataContext, '__brand'>
-) {
-  return (
-    context.sync.schema ??
-    (await wrapDynamicSchemaForCli(getSchemaFunction as coda.MetadataFunction, context, formulaContext))
-  );
-}
-
 export type Stringified<T> = string & {
   [P in keyof T]: { '_ value': T[P] };
 };
@@ -261,7 +233,7 @@ export abstract class SyncTableRest<ResourceT extends ResourceUnion> {
   }
 
   private buildGraphQlMetafieldsContinuation(
-    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof queryNodesMetafieldsByKey>>>,
+    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof getNodesMetafieldsByKeyQuery>>>,
     retries: number,
     currentBatch: currentBatchType
   ) {
@@ -304,7 +276,7 @@ export abstract class SyncTableRest<ResourceT extends ResourceUnion> {
   }
 
   private async makeGraphQlMetafieldsRequest(): Promise<{
-    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof queryNodesMetafieldsByKey>>>;
+    response: coda.FetchResponse<GraphQlResponse<ResultOf<typeof getNodesMetafieldsByKeyQuery>>>;
     continuation: SyncTableMixedContinuation | null;
   }> {
     const count = Math.min(this.items.length, this.restLimit);
@@ -318,18 +290,18 @@ export abstract class SyncTableRest<ResourceT extends ResourceUnion> {
     // TODO: implement cost adjustment
     // Mais le coût semble négligeable en utilisant une query par node
     const payload = {
-      query: printGql(queryNodesMetafieldsByKey),
+      query: printGql(getNodesMetafieldsByKeyQuery),
       variables: {
         metafieldKeys: this.effectiveMetafieldKeys,
         countMetafields: this.effectiveMetafieldKeys.length,
         ids: arrayUnique(currentBatch.processing.map((c) => c.id))
           .sort()
           .map((id) => this.convertRestIdToGid(id)),
-      } as VariablesOf<typeof queryNodesMetafieldsByKey>,
+      } as VariablesOf<typeof getNodesMetafieldsByKeyQuery>,
     };
 
     try {
-      let { response, retries } = await makeGraphQlRequest<ResultOf<typeof queryNodesMetafieldsByKey>>(
+      let { response, retries } = await makeGraphQlRequest<ResultOf<typeof getNodesMetafieldsByKeyQuery>>(
         { payload, retries: this.prevContinuation?.retries ?? 0 },
         this.fetcher.context
       );
@@ -539,7 +511,7 @@ export abstract class SyncTableRest<ResourceT extends ResourceUnion> {
 
           const updatedresource = { ...resourceMatch } as RowWithMetafields<ResourceT['codaRow']>;
           if ('metafields' in node && node.metafields.nodes) {
-            const metafields = readFragment(MetafieldFieldsFragment, node.metafields.nodes);
+            const metafields = readFragment(metafieldFieldsFragment, node.metafields.nodes);
             metafields.forEach((metafield) => {
               const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
               (updatedresource as any)[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);

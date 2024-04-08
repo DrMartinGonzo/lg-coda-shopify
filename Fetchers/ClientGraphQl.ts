@@ -3,11 +3,18 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../utils/graphql';
 
 import { print as printGql } from '@0no-co/graphql.web';
-import { GraphQlResponse, makeGraphQlRequest } from '../helpers-graphql';
+import { GraphQlPayload, GraphQlResponse, makeGraphQlRequest } from '../helpers-graphql';
 import { ResourceUnion } from '../resources/Resource.types';
 import { FetchRequestOptions, ShopifyGraphQlUserError } from './Fetcher.types';
 import { PageInfo } from '../types/admin.types';
+import { TadaDocumentNode } from 'gql.tada';
 
+// #endregion
+
+// #region type
+export interface graphQlFetchParams {
+  gid: string;
+}
 // #endregion
 
 export abstract class ClientGraphQl<ResourceT extends ResourceUnion> {
@@ -48,21 +55,17 @@ export abstract class ClientGraphQl<ResourceT extends ResourceUnion> {
 
   abstract formatApiToRow(data: any): ResourceT['codaRow'];
 
-  formatFetchPayload() {}
-
-  formatUpdatePayload() {}
-
-  async makeRequest<actionT extends string>(
-    action: actionT,
-    variables: VariablesOf<ResourceT['graphQl']['operations'][actionT]>,
+  async makeRequest<TadaT extends TadaDocumentNode>(
+    documentNode: TadaT,
+    variables: VariablesOf<TadaT>,
     requestOptions: FetchRequestOptions = {}
   ) {
-    const { response } = await makeGraphQlRequest<ResultOf<ResourceT['graphQl']['operations'][actionT]>>(
+    const { response } = await makeGraphQlRequest<ResultOf<TadaT>>(
       {
         ...requestOptions,
-        // cacheTtlSecs: requestOptions.cacheTtlSecs ?? action === 'fetchSingle' ? CACHE_DEFAULT : undefined,
+
         payload: {
-          query: printGql(this.resource.graphQl.operations[action]),
+          query: printGql(documentNode),
           variables,
         },
         getUserErrors: ClientGraphQl.findUserErrors,

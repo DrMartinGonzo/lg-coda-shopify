@@ -1,10 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
-import { METAFIELD_TYPES } from '../../resources/metafields/metafields-constants';
+import { METAFIELD_TYPES } from '../../resources/metafields/Metafield.types';
 import { ProductReference } from './ProductSchemaRest';
 import { CollectionReference } from './CollectionSchema';
 import { PageReference } from './PageSchema';
 import { FileReference } from './FileSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
+import { formatMetafieldValueForApi } from '../../resources/metafields/utils/metafields-utils-formatToApi';
 
 export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -24,6 +25,7 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
     label: {
       type: coda.ValueType.String,
       required: true,
+      fromKey: 'label',
       fixedId: 'label',
     },
     admin_url: {
@@ -69,6 +71,7 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
       codaType: coda.ValueHintType.SelectList,
       options: Object.values(METAFIELD_TYPES),
       required: true,
+      fromKey: 'type',
       fixedId: 'type',
       description: 'The type of data that the metafield stores.',
     },
@@ -171,6 +174,10 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
+/**
+ *? Si jamais on implémente une colonne pour les currencies,
+ *? il faudra veiller a bien passer le currencyCode a {@link formatMetafieldValueForApi}
+ */
 export const metafieldSyncTableHelperEditColumns = [
   { key: 'editCollectionReference', type: METAFIELD_TYPES.collection_reference },
   { key: 'editCollectionReferenceList', type: METAFIELD_TYPES.list_collection_reference },

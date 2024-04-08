@@ -1,25 +1,14 @@
 // #region Imports
-import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 
-import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { Identity } from '../../constants';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  makeSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../../helpers-graphql';
 import { OrderTransactionSyncTableSchema } from '../../schemas/syncTable/OrderTransactionSchema';
 import { filters } from '../../shared-parameters';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
-import { formatOrderTransactionForSchemaFromGraphQlApi } from './orderTransactions-functions';
-import {
-  OrderTransactionFieldsFragment,
-  QueryOrderTransactions,
-  buildOrderTransactionsSearchQuery,
-} from './orderTransactions-graphql';
 import { deepCopy } from '../../utils/helpers';
+import { OrderTransactionGraphQlFetcher } from './OrderTransactionGraphQlFetcher';
+import { OrderTransactionSyncTable } from './OrderTransactionSyncTable';
+import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
 
 // #endregion
 
@@ -30,7 +19,7 @@ async function getOrderTransactionSchema(
 ) {
   let augmentedSchema = deepCopy(OrderTransactionSyncTableSchema);
 
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  const shopCurrencyCode = await Shop.activeCurrency({ context });
   // Main props
   augmentedSchema.properties.amount['currencyCode'] = shopCurrencyCode;
   augmentedSchema.properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
@@ -66,96 +55,11 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
         optional: true,
       }),
     ],
-    execute: async function (
-      [
-        orderCreatedAt,
-        orderUpdatedAt,
-        orderProcessedAt,
-        orderFinancialStatus,
-        orderFulfillmentStatus,
-        orderStatus,
-        gateways,
-      ],
-      context: coda.SyncExecutionContext
-    ) {
-      const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-      const defaultMaxEntriesPerRun = 50;
-      const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-        defaultMaxEntriesPerRun,
-        prevContinuation,
-        context
-      );
-      if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-      }
-
-      const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(context.sync.schema);
-
-      const queryFilters = {
-        created_at_min: orderCreatedAt ? orderCreatedAt[0] : undefined,
-        created_at_max: orderCreatedAt ? orderCreatedAt[1] : undefined,
-        updated_at_min: orderUpdatedAt ? orderUpdatedAt[0] : undefined,
-        updated_at_max: orderUpdatedAt ? orderUpdatedAt[1] : undefined,
-        processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
-        processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
-        financial_status: orderFinancialStatus,
-        fulfillment_status: orderFulfillmentStatus,
-        gateways,
-        status: orderStatus,
-      };
-      // Remove any undefined filters
-      Object.keys(queryFilters).forEach((key) => {
-        if (queryFilters[key] === undefined) delete queryFilters[key];
-      });
-      const payload = {
-        query: printGql(QueryOrderTransactions),
-        variables: {
-          maxEntriesPerRun,
-          cursor: prevContinuation?.cursor ?? null,
-          searchQuery: buildOrderTransactionsSearchQuery(queryFilters),
-          includeParentTransaction:
-            effectivePropertyKeys.includes('parentTransaction') ||
-            effectivePropertyKeys.includes('parentTransactionId'),
-          includePaymentDetails: effectivePropertyKeys.includes('paymentDetails'),
-          includeReceiptJson: effectivePropertyKeys.includes('receiptJson'),
-          includeAmount: effectivePropertyKeys.includes('amount'),
-          includeIcon: effectivePropertyKeys.includes('paymentIcon'),
-          includeTotalUnsettled: effectivePropertyKeys.includes('totalUnsettled'),
-          includeTransactionCurrency: effectivePropertyKeys.includes('currency'),
-        } as VariablesOf<typeof QueryOrderTransactions>,
-      };
-
-      const { response, continuation } = await makeSyncTableGraphQlRequest<ResultOf<typeof QueryOrderTransactions>>(
-        {
-          payload,
-          maxEntriesPerRun,
-          prevContinuation,
-          getPageInfo: (data: any) => data.orders?.pageInfo,
-        },
-        context
-      );
-      if (response?.body?.data?.orders) {
-        const data = response.body.data;
-        return {
-          result: data.orders.nodes
-            .map((order) => {
-              const transactions = readFragment(OrderTransactionFieldsFragment, order.transactions);
-              return transactions
-                .filter((transaction) => {
-                  if (gateways && gateways.length) return gateways.includes(transaction.gateway);
-                  return true;
-                })
-                .map((transaction) => formatOrderTransactionForSchemaFromGraphQlApi(transaction, order));
-            })
-            .flat(),
-          continuation,
-        };
-      } else {
-        return {
-          result: [],
-          continuation,
-        };
-      }
+    execute: async function (params, context) {
+      const schema = await handleDynamicSchemaForCli(getOrderTransactionSchema, context, {});
+      const orderTransactionFetcher = new OrderTransactionGraphQlFetcher(context);
+      const orderTransactionSyncTable = new OrderTransactionSyncTable(orderTransactionFetcher, params);
+      return orderTransactionSyncTable.executeSync(schema);
     },
   },
 });

@@ -1,34 +1,23 @@
 // #region Imports
-import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 
-import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { Identity } from '../../constants';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  makeSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../../helpers-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
+import { resolveSchemaFromContext } from '../../schemas/schema-helpers';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { filters, inputs } from '../../shared-parameters';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
-import { InventoryItemGraphQlFetcher } from './InventoryItemGraphQlFetcher';
-import { handleInventoryItemUpdateJob } from './inventoryItems-functions';
-import {
-  InventoryItemFieldsFragment,
-  QueryAllInventoryItems,
-  buildInventoryItemsSearchQuery,
-} from './inventoryItems-graphql';
 import { deepCopy } from '../../utils/helpers';
+import { InventoryItemGraphQlFetcher } from './InventoryItemGraphQlFetcher';
+import { InventoryItemSyncTable } from './InventoryItemSyncTable';
+import { handleInventoryItemUpdateJob } from './inventoryItems-functions';
 
 // #endregion
 
 async function getInventoryItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema = deepCopy(InventoryItemSyncTableSchema);
 
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  const shopCurrencyCode = await Shop.activeCurrency({ context });
   augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
 
   return augmentedSchema;
@@ -53,60 +42,11 @@ export const Sync_InventoryItems = coda.makeSyncTable({
       { ...filters.general.updatedAtRange, optional: true },
       { ...filters.productVariant.skuArray, optional: true },
     ],
-    execute: async function ([createdAtRange, updatedAtRange, skus], context: coda.SyncExecutionContext) {
-      const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-      const defaultMaxEntriesPerRun = 50;
-      const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-        defaultMaxEntriesPerRun,
-        prevContinuation,
-        context
-      );
-      if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRun(prevContinuation, shouldDeferBy);
-      }
-
-      const queryFilters = {
-        created_at_min: createdAtRange ? createdAtRange[0] : undefined,
-        created_at_max: createdAtRange ? createdAtRange[1] : undefined,
-        updated_at_min: updatedAtRange ? updatedAtRange[0] : undefined,
-        updated_at_max: updatedAtRange ? updatedAtRange[1] : undefined,
-        skus,
-      };
-      // Remove any undefined filters
-      Object.keys(queryFilters).forEach((key) => {
-        if (queryFilters[key] === undefined) delete queryFilters[key];
-      });
-      const payload = {
-        query: printGql(QueryAllInventoryItems),
-        variables: {
-          maxEntriesPerRun,
-          cursor: prevContinuation?.cursor ?? null,
-          searchQuery: buildInventoryItemsSearchQuery(queryFilters),
-        } as VariablesOf<typeof QueryAllInventoryItems>,
-      };
-
-      const { response, continuation } = await makeSyncTableGraphQlRequest<ResultOf<typeof QueryAllInventoryItems>>(
-        {
-          payload,
-          maxEntriesPerRun,
-          prevContinuation,
-          getPageInfo: (data: any) => data.inventoryItems?.pageInfo,
-        },
-        context
-      );
-      if (response?.body?.data?.inventoryItems?.nodes) {
-        const inventoryItemsFetcher = new InventoryItemGraphQlFetcher(context);
-        const inventoryItems = readFragment(InventoryItemFieldsFragment, response.body.data.inventoryItems.nodes);
-        return {
-          result: inventoryItems.map((inventoryItem) => inventoryItemsFetcher.formatApiToRow(inventoryItem)),
-          continuation,
-        };
-      } else {
-        return {
-          result: [],
-          continuation,
-        };
-      }
+    execute: async function (params, context) {
+      const schema = await resolveSchemaFromContext(getInventoryItemSchema, context, {});
+      const inventoryItemFetcher = new InventoryItemGraphQlFetcher(context);
+      const inventoryItemSynctable = new InventoryItemSyncTable(inventoryItemFetcher, schema, params);
+      return inventoryItemSynctable.executeSync();
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {

@@ -215,7 +215,11 @@ export const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContex
  * this parent field, this function allows adding it according to a dependency
  * array defined next to the entity schema
  */
-export function handleFieldDependencies(effectivePropertyKeys: string[], fieldDependencies: FieldDependency<any>[]) {
+export function handleFieldDependencies(
+  effectivePropertyKeys: Array<string>,
+  fieldDependencies: Array<FieldDependency<any>>,
+  forcedFields: Array<string> = []
+) {
   fieldDependencies.forEach((def) => {
     if (
       def.dependencies.some(
@@ -226,7 +230,7 @@ export function handleFieldDependencies(effectivePropertyKeys: string[], fieldDe
     }
   });
 
-  return arrayUnique(effectivePropertyKeys);
+  return arrayUnique(effectivePropertyKeys.concat(forcedFields));
 }
 
 /**
@@ -309,8 +313,8 @@ export function deepCopy<T>(obj: T): T {
 
 /**
  * Checks if a value is nullish or empty, taking into account all possible value types.
- * @param {any} value - The value to be checked for nullishness or emptiness.
- * @returns {boolean} - Returns true if the value is nullish or empty; otherwise, returns false.
+ * @param value The value to be checked for nullishness or emptiness.
+ * @returns Returns true if the value is nullish or empty; otherwise, returns false.
  */
 export function isNullOrEmpty(value: any) {
   if (value === null || value === undefined) return true;
@@ -414,5 +418,21 @@ function parseGid(gid: string | undefined): ShopifyGid {
   } catch {
     return defaultReturn;
   }
+}
+
+/**
+ * Filters out specific keys from an object and returns a new object with only
+ * the remaining keys and their corresponding values.
+ // TODO: better typing for the return
+ * @param obj the object to filter
+ * @param keysToFilterOut the keys we want to exclude
+ */
+export function filterObjectKeys<LolT extends Array<string>, ObjT>(obj: ObjT, keysToFilterOut: LolT): ObjT {
+  return Object.keys(obj)
+    .filter((key) => !keysToFilterOut.includes(key))
+    .reduce((acc, key) => {
+      acc[key] = obj[key];
+      return acc;
+    }, {}) as ObjT;
 }
 // #endregion

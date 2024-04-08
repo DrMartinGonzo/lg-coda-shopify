@@ -1,5 +1,5 @@
 import { graphql } from '../../utils/graphql';
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
+import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
 function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
@@ -12,7 +12,7 @@ function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-const CollectionFieldsFragmentAdmin = graphql(
+const collectionFieldsFragmentAdmin = graphql(
   `
     fragment CollectionFields on Collection {
       handle
@@ -54,12 +54,12 @@ const CollectionFieldsFragmentAdmin = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragment]
+  [metafieldFieldsFragment]
 );
 // #endregion
 
 // #region Queries
-const queryCollectionsAdmin = graphql(
+const collectionsAdminQuery = graphql(
   `
     query GetCollections(
       $maxEntriesPerRun: Int!
@@ -83,10 +83,10 @@ const queryCollectionsAdmin = graphql(
       }
     }
   `,
-  [CollectionFieldsFragmentAdmin]
+  [collectionFieldsFragmentAdmin]
 );
 
-export const queryCollectionType = graphql(
+export const collectionTypeQuery = graphql(
   `
     query GetCollectionType($collectionGid: ID!) {
       collection(id: $collectionGid) {
@@ -99,7 +99,7 @@ export const queryCollectionType = graphql(
   `
 );
 
-export const queryCollectionTypes = graphql(
+export const collectionTypesQuery = graphql(
   `
     query GetCollectionTypes($ids: [ID!]!) {
       nodes(ids: $ids) {
@@ -117,7 +117,7 @@ export const queryCollectionTypes = graphql(
 
 /*
 export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+  ${metafieldFieldsFragment}
 
   query getCollectionsMetafields(
     $maxEntriesPerRun: Int!

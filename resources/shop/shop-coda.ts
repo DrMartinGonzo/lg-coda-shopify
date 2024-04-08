@@ -1,12 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ShopSyncTable } from './ShopSyncTable';
-import { ShopRestFetcher } from './ShopRestFetcher';
-import { CACHE_DEFAULT } from '../../constants';
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
+import { CACHE_DEFAULT, Identity } from '../../constants';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { filters } from '../../shared-parameters';
-import { Identity } from '../../constants';
 
 // #endregion
 
@@ -20,11 +18,13 @@ export const Sync_Shops = coda.makeSyncTable({
   formula: {
     name: 'SyncShops',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link Shop.makeSyncFunction}
+     */
     parameters: [],
-    execute: async function (params, context: coda.SyncExecutionContext) {
-      const schema = context.sync.schema ?? ShopSyncTableSchema;
-      const shopSyncTable = new ShopSyncTable(new ShopRestFetcher(context), params);
-      return shopSyncTable.executeSync(schema);
+    execute: async function (params, context) {
+      return Shop.sync(params, context);
     },
   },
 });
@@ -39,12 +39,16 @@ export const Formula_Shop = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ShopSyncTableSchema,
-  execute: async function ([], context: coda.SyncExecutionContext) {
-    const shopFetcher = new ShopRestFetcher(context);
-    const response = await shopFetcher.fetch();
-    if (response?.body?.shop) {
-      return shopFetcher.formatApiToRow(response.body.shop);
-    }
+  execute: async function ([], context) {
+    const shop = await Shop.current({ context });
+    return shop.formatToRow();
+
+    // const shopFetcher = new ShopRestFetcher(context);
+
+    // const response = await shopFetcher.fetch();
+    // if (response?.body?.shop) {
+    //   return shopFetcher.formatApiToRow(response.body.shop);
+    // }
   },
 });
 
@@ -56,13 +60,12 @@ export const Formula_ShopField = coda.makeFormula({
   parameters: [filters.shop.shopField],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.String,
-  execute: async function ([field], context: coda.SyncExecutionContext) {
-    const shopFetcher = new ShopRestFetcher(context);
-    shopFetcher.validateParams({ shopField: field });
-    const response = await shopFetcher.fetch();
-    if (response?.body?.shop[field]) {
-      return response.body.shop[field];
+  execute: async function ([field], context) {
+    const shop = await Shop.current({ context });
+    if (shop.apiData[field]) {
+      return shop.apiData[field];
     }
+    throw new coda.UserVisibleError(`Unknown shop field: ${field}`);
   },
 });
 // #endregion

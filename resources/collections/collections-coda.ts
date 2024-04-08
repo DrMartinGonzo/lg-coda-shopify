@@ -1,18 +1,21 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableMixedContinuation, handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { MergedCollection } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection';
+import { MergedCollection_Custom } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection_Custom';
+import { MergedCollection_Smart } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection_Smart';
+import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../Fetchers/SyncTable/SyncTable.types';
 import { CACHE_DEFAULT, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, Identity } from '../../constants';
 import { graphQlGidToId, idToGraphQlGid } from '../../helpers-graphql';
+import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
-import { CollectionRestFetcher } from './CollectionRestFetcher';
-import { CollectionSyncTableBase } from './CollectionSyncTableBase';
-import { Collection } from './collectionResource';
-import { getCollectionFetcher, getCollectionSyncTableOfType, getCollectionTypes } from './collections-helpers';
-import { CustomCollectionRestFetcher } from './custom_collection/CustomCollectionRestFetcher';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
+import { getTemplateSuffixesFor } from '../themes/themes-functions';
+import { getCollectionType, getCollectionTypes } from './collections-helpers';
 
 // #region Sync tables
 export const Sync_Collections = coda.makeSyncTable({
@@ -22,12 +25,30 @@ export const Sync_Collections = coda.makeSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Collection,
   schema: CollectionSyncTableSchema,
-  dynamicOptions: CollectionSyncTableBase.dynamicOptions,
+  dynamicOptions: {
+    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+      return MergedCollection.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+    },
+    defaultAddDynamicColumns: false,
+    propertyOptions: async function (context) {
+      if (context.propertyName === 'template_suffix') {
+        return getTemplateSuffixesFor('collection', context);
+      }
+    },
+  },
   formula: {
     name: 'SyncCollections',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema method in dynamicOptions.
+     *  - {@link MergedCollection.getDynamicSchema}
+     *  - {@link MergedCollection_Custom.makeSyncFunction}
+     *  - {@link MergedCollection_Smart.makeSyncFunction}
+     */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
+      // TODO: not sure this one works -> TEST
       { ...filters.general.createdAtRange, optional: true },
       { ...filters.general.updatedAtRange, optional: true },
       { ...filters.general.publishedAtRange, optional: true },
@@ -39,43 +60,45 @@ export const Sync_Collections = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (params, context: coda.SyncExecutionContext) {
-      const [syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(CollectionSyncTableBase.dynamicOptions.getSchema, context, {
-        syncMetafields,
-      });
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation<Collection['codaRow']>;
-      let restType = prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
+    execute: async function (params, context) {
+      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation<CollectionRow>;
+      const restType = prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
 
-      const collectionSyncTable = getCollectionSyncTableOfType(restType, params, context);
-      return collectionSyncTable.executeSync(schema);
+      if (restType === COLLECTION_TYPE__SMART) {
+        return MergedCollection_Smart.sync(params, context);
+      }
+      return MergedCollection_Custom.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const collectionGIds = updates.map((update) =>
-        idToGraphQlGid(GraphQlResourceName.Collection, update.previousValue.id)
+      const gids = updates.map(({ previousValue }) => idToGraphQlGid(GraphQlResourceName.Collection, previousValue.id));
+      const collectionTypes = await getCollectionTypes(gids, context);
+
+      const customCollectionIds = collectionTypes
+        .filter(({ type }) => type === COLLECTION_TYPE__CUSTOM)
+        .map(({ id }) => graphQlGidToId(id));
+      const customCollectionsUpdates = updates.filter(({ previousValue }) =>
+        customCollectionIds.includes(previousValue.id)
       );
-      const collectionTypes = await getCollectionTypes(collectionGIds, context);
 
-      const customCollectionsUpdates = collectionTypes
-        .filter((c) => c.type === COLLECTION_TYPE__CUSTOM)
-        .map((c) => updates.find((update) => update.previousValue.id === graphQlGidToId(c.id)));
-      const smartCollectionsUpdates = collectionTypes
-        .filter((c) => c.type === COLLECTION_TYPE__SMART)
-        .map((c) => updates.find((update) => update.previousValue.id === graphQlGidToId(c.id)));
+      const smartCollectionIds = collectionTypes
+        .filter(({ type }) => type === COLLECTION_TYPE__SMART)
+        .map(({ id }) => graphQlGidToId(id));
+      const smartCollectionsUpdates = updates.filter(({ previousValue }) =>
+        smartCollectionIds.includes(previousValue.id)
+      );
 
-      const jobs: Array<Promise<{ result: any }>> = [];
+      const jobs: Array<Promise<SyncTableUpdateResult>> = [];
       if (customCollectionsUpdates.length) {
-        const customCollectionSyncTable = getCollectionSyncTableOfType(COLLECTION_TYPE__CUSTOM, params, context);
-        jobs.push(customCollectionSyncTable.executeUpdate(customCollectionsUpdates));
+        jobs.push(MergedCollection_Custom.syncUpdate(params, customCollectionsUpdates, context));
       }
       if (smartCollectionsUpdates.length) {
-        const customCollectionSyncTable = getCollectionSyncTableOfType(COLLECTION_TYPE__SMART, params, context);
-        jobs.push(customCollectionSyncTable.executeUpdate(smartCollectionsUpdates));
+        jobs.push(MergedCollection_Smart.syncUpdate(params, smartCollectionsUpdates, context));
       }
 
+      const results = await Promise.all(jobs);
       return {
-        result: (await Promise.all(jobs)).map((j) => j.result).flat(),
+        result: results.flatMap((r) => r.result),
       };
     },
   },
@@ -112,25 +135,23 @@ export const Action_CreateCollection = coda.makeFormula({
     context
   ) {
     const defaultPublishedStatus = false;
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<Collection['codaRow']> = {
-      title,
-      body_html,
-      handle,
-      published: published ?? defaultPublishedStatus,
-      template_suffix,
-      image_url,
-      image_alt_text,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<CollectionRow> = {
+      row: {
+        title,
+        body_html,
+        handle,
+        published: published ?? defaultPublishedStatus,
+        template_suffix,
+        image_url,
+        image_alt_text,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
 
-    // TODO: support creating smart collections
-    const collectionFetcher = new CustomCollectionRestFetcher(context);
-    const restParams = collectionFetcher.formatRowToApi(
-      newRow,
-      metafieldKeyValueSets
-    ) as Collection['rest']['params']['create'];
-    const response = await collectionFetcher.create(restParams);
-    return response?.body?.custom_collection.id;
+    const newCustomCollection = new MergedCollection_Custom({ context, fromRow });
+    await newCustomCollection.saveAndUpdate();
+    return newCustomCollection.apiData.id;
   },
 });
 
@@ -164,19 +185,30 @@ export const Action_UpdateCollection = coda.makeFormula({
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
   ) => {
-    let row: Collection['codaRow'] = {
-      id: collectionId,
-      body_html: bodyHtml,
-      handle,
-      published,
-      template_suffix: templateSuffix,
-      title,
-      image_alt_text: imageAlt,
-      image_url: imageUrl,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<CollectionRow> = {
+      row: {
+        id: collectionId,
+        body_html: bodyHtml,
+        handle,
+        published,
+        template_suffix: templateSuffix,
+        title,
+        image_alt_text: imageAlt,
+        image_url: imageUrl,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    const collectionFetcher = await getCollectionFetcher(collectionId, context);
-    return collectionFetcher.updateWithMetafields({ original: undefined, updated: row }, metafieldKeyValueSets);
+
+    const collectionType = await getCollectionType(
+      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      context
+    );
+    const collectionClass =
+      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+    const updatedCollection = new collectionClass({ context, fromRow });
+    await updatedCollection.saveAndUpdate();
+    return updatedCollection.formatToRow();
   },
 });
 
@@ -188,8 +220,13 @@ export const Action_DeleteCollection = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([collectionId], context) {
-    const collectionFetcher = await getCollectionFetcher(collectionId, context);
-    await collectionFetcher.delete(collectionId);
+    const collectionType = await getCollectionType(
+      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      context
+    );
+    const collectionClass =
+      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+    await collectionClass.delete({ context, id: collectionId });
     return true;
   },
 });
@@ -209,11 +246,14 @@ export const Formula_Collection = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: CollectionSyncTableSchema,
   execute: async function ([collectionId], context) {
-    const collectionFetcher = new CollectionRestFetcher(context);
-    const collectionResponse = await collectionFetcher.fetch(collectionId);
-    if (collectionResponse?.body?.collection) {
-      return collectionFetcher.formatApiToRow(collectionResponse.body.collection);
-    }
+    const collectionType = await getCollectionType(
+      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      context
+    );
+    const collectionClass =
+      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+    const collection = await collectionClass.find({ context, id: collectionId });
+    return collection.formatToRow();
   },
 });
 

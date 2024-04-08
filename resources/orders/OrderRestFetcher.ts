@@ -1,16 +1,16 @@
 import * as coda from '@codahq/packs-sdk';
-import { SimpleRest } from '../../Fetchers/SimpleRest';
+import { RestClientWithGraphQlMetafields } from '../../Fetchers/Client/Rest/RestClientWithSchemaWithGraphQlMetafields';
 import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
 } from '../../constants';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { CodaMetafieldKeyValueSet } from '../../helpers-setup';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
+import { formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { Order, orderResource } from './orderResource';
 
-export class OrderRestFetcher extends SimpleRest<Order> {
+export class OrderRestFetcher extends RestClientWithGraphQlMetafields<Order> {
   constructor(context: coda.ExecutionContext) {
     super(orderResource, context);
   }
@@ -45,7 +45,7 @@ export class OrderRestFetcher extends SimpleRest<Order> {
 
   formatRowToApi = (
     row: Partial<Order['codaRow']>,
-    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+    metafieldKeyValueSets: Array<CodaMetafieldKeyValueSet> = []
   ): Order['rest']['params']['update'] | undefined => {
     let restParams: Order['rest']['params']['update'] = {};
 

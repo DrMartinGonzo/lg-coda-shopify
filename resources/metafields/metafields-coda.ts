@@ -2,51 +2,32 @@
 import * as coda from '@codahq/packs-sdk';
 import { createHash } from 'node:crypto';
 import toPascalCase from 'to-pascal-case';
-import { ResultOf, readFragment } from '../../utils/graphql';
 
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResources } from '../../Fetchers/ShopifyRestResource.types';
+import { AbstractResource_Synced_HasMetafields } from '../../Fetchers/NEW/AbstractResource_Synced_HasMetafields';
+import { Metafield, graphQLToRestMap } from '../../Fetchers/NEW/Resources/Metafield';
+import { Article } from '../../Fetchers/NEW/Resources/WithRestMetafields/Article';
+import { Blog } from '../../Fetchers/NEW/Resources/WithRestMetafields/Blog';
+import { Page } from '../../Fetchers/NEW/Resources/WithRestMetafields/Page';
 import { CACHE_DEFAULT, CACHE_DISABLED, Identity } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
+import { idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
 import { CodaMetafieldKeyValueSet, CodaMetafieldValue } from '../../helpers-setup';
-import { ArticleReference } from '../../schemas/syncTable/ArticleSchema';
-import { BlogReference } from '../../schemas/syncTable/BlogSchema';
-import { CollectionReference } from '../../schemas/syncTable/CollectionSchema';
-import { CustomerReference } from '../../schemas/syncTable/CustomerSchema';
-import { LocationReference } from '../../schemas/syncTable/LocationSchema';
-import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
-import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
-import { OrderReference } from '../../schemas/syncTable/OrderSchema';
-import { PageReference } from '../../schemas/syncTable/PageSchema';
-import { ProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { ProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
+import { MetafieldRow } from '../../schemas/CodaRows.types';
+import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { filters, inputs } from '../../shared-parameters';
-import { CurrencyCode, MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
-import { arrayUnique, deepCopy, retrieveObjectSchemaEffectiveKeys } from '../../utils/helpers';
-import { ResourceWithMetafieldDefinitions } from '../Resource.types';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { MetafieldDefinitionFragment } from '../metafieldDefinitions/metafieldDefinitions-graphql';
+import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
+import { arrayUnique } from '../../utils/helpers';
+import { GraphQlResourceName } from '../ShopifyResource.types';
 import { getResourcesWithMetaFieldsSyncTable, requireResourceWithMetaFieldsByOwnerType } from '../resources';
-import { MetafieldFragmentWithDefinition } from './Metafield.types';
-import { METAFIELD_TYPES, MetafieldTypeValue } from './metafields-constants';
+import { METAFIELD_TYPES, MetafieldTypeValue } from './Metafield.types';
+import { MetafieldGraphQlFetcher } from './MetafieldGraphQlFetcher';
+import { MetafieldGraphQlSyncTable } from './MetafieldGraphQlSyncTable';
+import { fetchMetafieldsGraphQlByKey } from './metafields-graphql';
+import { shouldDeleteMetafield } from './utils/metafields-utils';
 import {
-  DeletedMetafieldsByKeysRest,
-  deleteMetafieldRest,
-  fetchMetafieldsGraphQlByKey,
-  fetchSingleMetafieldGraphQlByKey,
-  formatMetafieldForSchemaFromGraphQlApi,
-  formatMetafieldValueForApi,
-  normalizeRestMetafieldResponseToGraphQLResponse,
   parseAndValidateFormatMetafieldFormulaOutput,
   parseAndValidateMetaValueFormulaOutput,
-  setMetafieldsGraphQl,
-  syncGraphQlResourceMetafields,
-  syncRestResourceMetafields,
-  updateResourceMetafieldsGraphQl,
-  updateResourceMetafieldsRest,
-} from './metafields-functions';
-import { MetafieldFieldsFragmentWithDefinition } from './metafields-graphql';
-import { shouldDeleteMetafield, splitMetaFieldFullKey } from './metafields-helpers';
+} from './utils/metafields-utils-keyValueSets';
+import { splitMetaFieldFullKey } from './utils/metafields-utils-keys';
 
 // #endregion
 
@@ -90,79 +71,111 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
   });
 }
 
-async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(MetafieldSyncTableSchema);
-  const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-  const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
+// async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+//   let augmentedSchema = deepCopy(MetafieldSyncTableSchema);
+//   const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
+//   const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
 
-  // Augment schema with a relation to the owner of the metafield
-  let ownerReference: coda.GenericObjectSchema & coda.ObjectSchemaProperty;
-  switch (ownerResource.metafields.ownerType) {
-    case MetafieldOwnerType.Article:
-      ownerReference = ArticleReference;
-      break;
-    case MetafieldOwnerType.Blog:
-      ownerReference = BlogReference;
-      break;
-    case MetafieldOwnerType.Collection:
-      ownerReference = CollectionReference;
-      break;
-    case MetafieldOwnerType.Customer:
-      ownerReference = CustomerReference;
-      break;
-    case MetafieldOwnerType.Location:
-      ownerReference = LocationReference;
-      break;
-    case MetafieldOwnerType.Order:
-      ownerReference = OrderReference;
-      break;
-    case MetafieldOwnerType.Page:
-      ownerReference = PageReference;
-      break;
-    case MetafieldOwnerType.Product:
-      ownerReference = ProductReference;
-      break;
-    case MetafieldOwnerType.Productvariant:
-      ownerReference = ProductVariantReference;
-      break;
+//   // Augment schema with a relation to the owner of the metafield
+//   let ownerReference: coda.GenericObjectSchema & coda.ObjectSchemaProperty;
+//   switch (metafieldOwnerType) {
+//     case MetafieldOwnerType.Article:
+//       ownerReference = ArticleReference;
+//       break;
+//     case MetafieldOwnerType.Blog:
+//       ownerReference = BlogReference;
+//       break;
+//     case MetafieldOwnerType.Collection:
+//       ownerReference = CollectionReference;
+//       break;
+//     case MetafieldOwnerType.Customer:
+//       ownerReference = CustomerReference;
+//       break;
+//     case MetafieldOwnerType.Location:
+//       ownerReference = LocationReference;
+//       break;
+//     case MetafieldOwnerType.Order:
+//       ownerReference = OrderReference;
+//       break;
+//     case MetafieldOwnerType.Page:
+//       ownerReference = PageReference;
+//       break;
+//     case MetafieldOwnerType.Product:
+//       ownerReference = ProductReference;
+//       break;
+//     case MetafieldOwnerType.Productvariant:
+//       ownerReference = ProductVariantReference;
+//       break;
 
-    default:
-      break;
-  }
-  if (ownerReference) {
-    augmentedSchema.properties['owner'] = {
-      ...ownerReference,
-      fromKey: 'owner',
-      fixedId: 'owner',
-      required: true,
-      description: 'A relation to the owner of this metafield.',
-    };
-    // @ts-ignore
-    augmentedSchema.featuredProperties.push('owner');
-  }
+//     default:
+//       break;
+//   }
+//   // switch (ownerResource.metafields.ownerType) {
+//   //   case MetafieldOwnerType.Article:
+//   //     ownerReference = ArticleReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Blog:
+//   //     ownerReference = BlogReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Collection:
+//   //     ownerReference = CollectionReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Customer:
+//   //     ownerReference = CustomerReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Location:
+//   //     ownerReference = LocationReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Order:
+//   //     ownerReference = OrderReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Page:
+//   //     ownerReference = PageReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Product:
+//   //     ownerReference = ProductReference;
+//   //     break;
+//   //   case MetafieldOwnerType.Productvariant:
+//   //     ownerReference = ProductVariantReference;
+//   //     break;
 
-  if ('metafields' in ownerResource && ownerResource.metafields.supportsDefinitions) {
-    (augmentedSchema.properties['definition_id'] = {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
-      fixedId: 'definition_id',
-      fromKey: 'definition_id',
-      description: 'The ID of the metafield definition of the metafield, if it exists.',
-    }),
-      (augmentedSchema.properties['definition'] = {
-        // TODO: fix type
-        ...getMetafieldDefinitionReferenceSchema(
-          ownerResource as unknown as ResourceWithMetafieldDefinitions<any, any>
-        ),
-        fromKey: 'definition',
-        fixedId: 'definition',
-        description: 'The metafield definition of the metafield, if it exists.',
-      });
-    // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
-    augmentedSchema.featuredProperties.push('admin_url');
-  }
-  return augmentedSchema;
-}
+//   //   default:
+//   //     break;
+//   // }
+//   if (ownerReference) {
+//     augmentedSchema.properties['owner'] = {
+//       ...ownerReference,
+//       fromKey: 'owner',
+//       fixedId: 'owner',
+//       required: true,
+//       description: 'A relation to the owner of this metafield.',
+//     };
+//     // @ts-ignore
+//     augmentedSchema.featuredProperties.push('owner');
+//   }
+
+//   if ('metafields' in ownerResource && ownerResource.metafields.supportsDefinitions) {
+//     (augmentedSchema.properties['definition_id'] = {
+//       type: coda.ValueType.Number,
+//       useThousandsSeparator: false,
+//       fixedId: 'definition_id',
+//       fromKey: 'definition_id',
+//       description: 'The ID of the metafield definition of the metafield, if it exists.',
+//     }),
+//       (augmentedSchema.properties['definition'] = {
+//         // TODO: fix type
+//         ...getMetafieldDefinitionReferenceSchema(
+//           ownerResource as unknown as ResourceWithMetafieldDefinitions<any, any>
+//         ),
+//         fromKey: 'definition',
+//         fixedId: 'definition',
+//         description: 'The metafield definition of the metafield, if it exists.',
+//       });
+//     // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
+//     augmentedSchema.featuredProperties.push('admin_url');
+//   }
+//   return augmentedSchema;
+// }
 // #endregion
 
 // #region Sync tables
@@ -194,13 +207,18 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
     }
     return `${context.endpoint}/admin/settings/custom_data/${ownerResource.rest.singular}/metafields`;
   },
-  getSchema: getMetafieldSchema,
+  getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+    return Metafield.getDynamicSchema({ context, codaSyncParams: [] });
+  },
   defaultAddDynamicColumns: false,
   formula: {
     name: 'SyncMetafields',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link Metafield.getDynamicSchema}
+     */
     parameters: [{ ...filters.metafield.metafieldKeys, optional: true }],
-    execute: async function ([metafieldKeys], context) {
       const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
       const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
       const isRestSync = !ownerResource.metafields.useGraphQl;
@@ -220,7 +238,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
       const isRestUpdate = !ownerResource.metafields.useGraphQl;
 
       // MetafieldDefinitionFragment is included in each GraphQL mutation response, not in Rest
-      let metafieldDefinitions: Array<ResultOf<typeof MetafieldDefinitionFragment>>;
+      let metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>;
       if (isRestUpdate) {
         metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
           { ownerType: ownerResource.metafields.ownerType },
@@ -408,7 +426,7 @@ export const Action_SetMetafield = coda.makeFormula({
         ];
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = readFragment(
-          MetafieldFieldsFragmentWithDefinition,
+          metafieldFieldsFragmentWithDefinition,
           response.body.data.metafieldsSet.metafields
         )[0] as MetafieldFragmentWithDefinition;
 
@@ -436,7 +454,7 @@ export const Action_SetMetafield = coda.makeFormula({
         ];
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = readFragment(
-          MetafieldFieldsFragmentWithDefinition,
+          metafieldFieldsFragmentWithDefinition,
           response.body.data.metafieldsSet.metafields[0]
         ) as MetafieldFragmentWithDefinition;
         return formatMetafieldForSchemaFromGraphQlApi(metafield, ownerGid, undefined, ownerResource, context);
@@ -583,7 +601,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
         ];
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = readFragment(
-          MetafieldFieldsFragmentWithDefinition,
+          metafieldFieldsFragmentWithDefinition,
           response.body.data.metafieldsSet.metafields[0]
         ) as MetafieldFragmentWithDefinition;
         return formatMetafieldForSchemaFromGraphQlApi(
@@ -611,7 +629,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
         ];
         const { response } = await setMetafieldsGraphQl(metafieldsSetInputs, context);
         const metafield = readFragment(
-          MetafieldFieldsFragmentWithDefinition,
+          metafieldFieldsFragmentWithDefinition,
           response.body.data.metafieldsSet.metafields[0]
         ) as MetafieldFragmentWithDefinition;
         return formatMetafieldForSchemaFromGraphQlApi(metafield, ownerGid, undefined, ownerResource, context);
@@ -641,7 +659,7 @@ export const Action_DeleteMetafield = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([metafieldId], context) => {
-    await deleteMetafieldRest(metafieldId, context);
+    await Metafield.delete({ context, id: metafieldId });
     return true;
   },
 });

@@ -5,36 +5,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
-import { ShopRestFetcher } from './resources/shop/ShopRestFetcher';
 
+import { Shop } from './Fetchers/NEW/Resources/Shop';
 import { Formula_ProductStatus, Formula_ProductType } from './helpers-setup';
-import {
-  Formula_MetaBoolean,
-  Formula_MetaCollectionReference,
-  Formula_MetaColor,
-  Formula_MetaDateTime,
-  Formula_MetaDate,
-  // Formula_MetafieldKeyValueSet,
-  Formula_MetaMetaobjectReference,
-  Formula_MetaMixedReference,
-  Formula_MetaPageReference,
-  Formula_MetaProductReference,
-  Formula_MetaSingleLineText,
-  Formula_MetaVariantReference,
-  Formula_MetaWeight,
-  Formula_MetaNumberInteger,
-  Formula_MetaNumberDecimal,
-  Formula_FormatListMetafield,
-  Formula_FormatMetafield,
-  Formula_MetafieldKey,
-  Formula_MetaUrl,
-  Formula_MetaVolume,
-  Formula_MetaMoney,
-  Formula_MetaJson,
-  Formula_MetaMultiLineText,
-  Formula_MetaDimension,
-  Formula_MetaRating,
-} from './resources/metafields/metafields-coda';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -93,25 +66,51 @@ import {
   Sync_Locations,
 } from './resources/locations/locations-coda';
 import {
-  Action_DeleteMetafield,
-  Action_SALUT,
-  Action_SetMetafield,
-  Action_SetMetafieldAltVersion,
-  Formula_Metafield,
-  Formula_Metafields,
-  Sync_Metafields,
-} from './resources/metafields/metafields-coda';
-import {
   Format_MetafieldDefinition,
   Formula_MetafieldDefinition,
   Sync_MetafieldDefinitions,
 } from './resources/metafieldDefinitions/metafieldDefinitions-coda';
+import {
+  Action_DeleteMetafield,
+  Action_SALUT,
+  Action_SetMetafield,
+  Formula_FormatListMetafield,
+  Formula_FormatMetafield,
+  Formula_MetaBoolean,
+  Formula_MetaCollectionReference,
+  Formula_MetaColor,
+  Formula_MetaDate,
+  Formula_MetaDateTime,
+  Formula_MetaDimension,
+  Formula_MetaJson,
+  // Formula_MetafieldKeyValueSet,
+  Formula_MetaMetaobjectReference,
+  Formula_MetaMixedReference,
+  Formula_MetaMoney,
+  Formula_MetaMultiLineText,
+  Formula_MetaNumberDecimal,
+  Formula_MetaNumberInteger,
+  Formula_MetaPageReference,
+  Formula_MetaProductReference,
+  Formula_MetaRating,
+  Formula_MetaSingleLineText,
+  Formula_MetaUrl,
+  Formula_MetaVariantReference,
+  Formula_MetaVolume,
+  Formula_MetaWeight,
+  Formula_Metafield,
+  Formula_MetafieldKey,
+  Formula_Metafields,
+  Sync_Metafields,
+} from './resources/metafields/metafields-coda';
 import {
   Action_CreateMetaObject,
   Action_DeleteMetaObject,
   Action_UpdateMetaObject,
   Sync_Metaobjects,
 } from './resources/metaobjects/metaobjects-coda';
+import { Sync_OrderLineItems } from './resources/orderLineItems/orderLineItems-coda';
+import { Sync_OrderTransactions } from './resources/orderTransactions/orderTransactions-coda';
 import {
   Format_Order,
   Formula_Order,
@@ -119,8 +118,6 @@ import {
   Formula_Orders,
   Sync_Orders,
 } from './resources/orders/orders-coda';
-import { Sync_OrderLineItems } from './resources/orderLineItems/orderLineItems-coda';
-import { Sync_OrderTransactions } from './resources/orderTransactions/orderTransactions-coda';
 import {
   Action_CreatePage,
   Action_DeletePage,
@@ -169,10 +166,9 @@ pack.setUserAuthentication({
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
-    const shopFetcher = new ShopRestFetcher(context);
-    const response = await shopFetcher.fetch();
-    if (response?.body?.shop?.myshopify_domain) {
-      return response.body.shop.myshopify_domain;
+    const shop = await Shop.current({ context, fields: 'myshopify_domain' });
+    if (shop?.apiData?.myshopify_domain) {
+      return shop.apiData.myshopify_domain;
     }
   },
 });

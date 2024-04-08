@@ -48,7 +48,7 @@ export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
   ],
 });
 
-export const OrderLineItemReference = coda.makeReferenceSchemaFromObjectSchema(
+const OrderLineItemReference = coda.makeReferenceSchemaFromObjectSchema(
   OrderLineItemSyncTableSchema,
   Identity.OrderLineItem
 );

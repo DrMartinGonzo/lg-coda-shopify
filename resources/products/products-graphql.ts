@@ -1,5 +1,5 @@
 import { graphql } from '../../utils/graphql';
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
+import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
 function buildProductsSearchQuery(filters: { [key: string]: any }) {
@@ -33,7 +33,7 @@ function buildProductsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-const ProductFieldsFragment = graphql(
+const productFieldsFragment = graphql(
   `
     fragment ProductFields on Product {
       id
@@ -78,13 +78,13 @@ const ProductFieldsFragment = graphql(
       # }
     }
   `,
-  [MetafieldFieldsFragment]
+  [metafieldFieldsFragment]
 );
 // #endregion
 
 // #region Queries
 // List max 250 available product types
-export const queryProductTypes = graphql(
+export const getProductTypesQuery = graphql(
   `
     query QueryProductTypes {
       shop {
@@ -99,7 +99,7 @@ export const queryProductTypes = graphql(
   `
 );
 
-const QueryProductsAdmin = graphql(
+const getProductsAdminQuery = graphql(
   `
     query getProductsWithMetafields(
       $maxEntriesPerRun: Int!
@@ -123,7 +123,7 @@ const QueryProductsAdmin = graphql(
       }
     }
   `,
-  [ProductFieldsFragment]
+  [productFieldsFragment]
 );
 
 // export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
@@ -155,7 +155,7 @@ const QueryProductsAdmin = graphql(
 // #endregion
 
 // #region Mutations
-export const MutationUpdateProduct = graphql(
+export const updateProductMutation = graphql(
   `
     mutation UpdateProduct(
       $countMetafields: Int
@@ -189,7 +189,7 @@ export const MutationUpdateProduct = graphql(
       }
     }
   `,
-  [ProductFieldsFragment]
+  [productFieldsFragment]
 );
 // #endregion
 
@@ -197,9 +197,9 @@ export const MutationUpdateProduct = graphql(
  *    Unused stuff
  *===================================================================================================================== */
 // #region Unused stuff
-const queryProductInCollection = graphql(
+const getProductInCollectionQuery = graphql(
   `
-    query queryProductInCollection($collectionId: ID!, $productId: ID!) {
+    query ProductInCollection($collectionId: ID!, $productId: ID!) {
       collection(id: $collectionId) {
         hasProduct(id: $productId)
       }
@@ -272,9 +272,9 @@ export const makeMutationProductsWithMetafieldsBulk = () => `
 `;
 */
 
-const queryCurrentBulkOperation = graphql(
+const currentBulkOperationQuery = graphql(
   `
-    query queryCurrentBulkOperation {
+    query CurrentBulkOperation {
       currentBulkOperation {
         id
         status

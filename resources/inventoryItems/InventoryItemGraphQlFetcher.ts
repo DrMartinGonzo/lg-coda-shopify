@@ -9,14 +9,14 @@ import { CountryCode } from '../../types/admin.types';
 import { ResultOf, VariablesOf } from '../../utils/graphql';
 import { isNullOrEmpty } from '../../utils/helpers';
 import { InventoryItem, inventoryItemResource } from './inventoryItemResource';
-import { InventoryItemFieldsFragment, UpdateInventoryItem } from './inventoryItems-graphql';
+import { inventoryItemFieldsFragment, updateInventoryItemMutation } from './inventoryItems-graphql';
 
 export class InventoryItemGraphQlFetcher extends ClientGraphQl<InventoryItem> {
   constructor(context: coda.ExecutionContext) {
     super(inventoryItemResource, context);
   }
 
-  formatApiToRow(inventoryItem: ResultOf<typeof InventoryItemFieldsFragment>): InventoryItemRow {
+  formatApiToRow(inventoryItem: ResultOf<typeof inventoryItemFieldsFragment>): InventoryItemRow {
     const obj: any = {
       ...inventoryItem,
       admin_graphql_api_id: inventoryItem.id,
@@ -46,7 +46,7 @@ export class InventoryItemGraphQlFetcher extends ClientGraphQl<InventoryItem> {
    * Format InventoryItem data from Coda for a GraphQL InventoryItem update mutation
    */
   formatRowToApi(row: InventoryItemRow, metafieldKeyValueSets?: any[]) {
-    const ret: VariablesOf<typeof UpdateInventoryItem> = {
+    const ret: VariablesOf<typeof updateInventoryItemMutation> = {
       id: idToGraphQlGid(this.resource.graphQl.name, row.id),
       input: {},
     };
@@ -76,7 +76,7 @@ export class InventoryItemGraphQlFetcher extends ClientGraphQl<InventoryItem> {
     return ret;
   }
 
-  async update(variables: VariablesOf<typeof UpdateInventoryItem>, requestOptions: FetchRequestOptions = {}) {
-    return this.makeRequest('update', variables, requestOptions);
+  async update(variables: VariablesOf<typeof updateInventoryItemMutation>, requestOptions: FetchRequestOptions = {}) {
+    return this.makeRequest(updateInventoryItemMutation, variables, requestOptions);
   }
 }

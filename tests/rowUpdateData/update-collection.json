@@ -1,0 +1,32 @@
+[
+  {
+    "previousValue": {
+      "id": 413874323712,
+      "title": "@TEST TEST",
+      "handle": "ddedee",
+      "lgs_meta__custom.test": "test"
+    },
+    "newValue": {
+      "id": 413874323712,
+      "title": "@TEST TEST NEW",
+      "handle": "ddedee NEW",
+      "lgs_meta__custom.test": "test NEW"
+    },
+    "updatedFields": ["title", "handle", "lgs_meta__custom.test"]
+  },
+  {
+    "previousValue": {
+      "id": 413087203584,
+      "title": "FLEX FIT",
+      "handle": "flex-fit",
+      "lgs_meta__custom.test": "test"
+    },
+    "newValue": {
+      "id": 413087203584,
+      "title": "FLEX FIT",
+      "handle": "flex-fit",
+      "lgs_meta__custom.test": "test NEW"
+    },
+    "updatedFields": ["title", "handle", "lgs_meta__custom.test"]
+  }
+]

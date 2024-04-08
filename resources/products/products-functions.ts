@@ -6,15 +6,15 @@ import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/gra
 import { CACHE_DEFAULT } from '../../constants';
 import { makeGraphQlRequest } from '../../helpers-graphql';
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { queryProductTypes } from './products-graphql';
+import { getProductTypesQuery } from './products-graphql';
 
 // #region GraphQL Requests
 export async function fetchProductTypesGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<string[]> {
-  const payload = { query: printGql(queryProductTypes) };
-  const { response } = await makeGraphQlRequest<ResultOf<typeof queryProductTypes>>(
+  const payload = { query: printGql(getProductTypesQuery) };
+  const { response } = await makeGraphQlRequest<typeof getProductTypesQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
     context
   );

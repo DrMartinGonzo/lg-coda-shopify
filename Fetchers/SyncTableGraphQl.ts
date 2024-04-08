@@ -19,7 +19,7 @@ import { GetRequestParams, extractNextUrlPagination, makeGetRequest } from '../h
 import { Resource, ResourceWithMetafields, ResourceUnion } from '../resources/Resource.types';
 import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { fetchMetafieldsRest, formatMetaFieldValueForSchema } from '../resources/metafields/metafields-functions';
-import { MetafieldFieldsFragment, queryNodesMetafieldsByKey } from '../resources/metafields/metafields-graphql';
+import { metafieldFieldsFragment, getNodesMetafieldsByKeyQuery } from '../resources/metafields/metafields-graphql';
 import {
   getMetaFieldFullKey,
   hasMetafieldsInUpdates,
@@ -36,18 +36,17 @@ import { GraphQlResourceName } from './ShopifyGraphQlResource.types';
 import { ClientGraphQl } from './ClientGraphQl';
 import { SyncTableGraphQlContinuationNew } from './SyncTable.types';
 import { parseContinuationProperty, stringifyContinuationProperty } from './SyncTableRest';
+import { TadaDocumentNode } from 'gql.tada';
 
 // #endregion
 
 // #region Types
-export type GraphQlFetchResponse<T extends ResourceUnion, actionT extends string> = coda.FetchResponse<
-  GraphQlResponse<ResultOf<T['graphQl']['operations'][actionT]>>
->;
+export type GraphQlFetchResponse<TadaT extends TadaDocumentNode> = coda.FetchResponse<GraphQlResponse<ResultOf<TadaT>>>;
 // #endregion
 
 export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
   readonly resource: ResourceT;
-  readonly fetcher: ClientGraphQl<any>;
+  readonly fetcher: ClientGraphQl<ResourceT>;
   readonly useGraphQlForMetafields: boolean;
   readonly metafieldOwnerType: MetafieldOwnerType;
   /** Array of Coda formula parameters */
@@ -59,10 +58,13 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
   effectiveStandardFromKeys: string[];
   effectiveMetafieldKeys: string[];
   shouldSyncMetafields: boolean;
-
   maxEntriesPerRun: number;
-  /** The GraphQl payload for the current sync*/
-  payload: GraphQlPayload;
+  initalMaxEntriesPerRun = 50;
+
+  /** The GraphQl document for the current sync */
+  documentNode: TadaDocumentNode;
+  /** The GraphQl variables for the current sync */
+  variables: VariablesOf<TadaDocumentNode>;
 
   /** Formatted items result */
   items: Array<ResourceT['codaRow']> = [];
@@ -96,11 +98,17 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
   // #endregion
 
   // #region Sync
-  async makeSyncRequest(): Promise<{ response: GraphQlFetchResponse<ResourceT, 'fetchAll'>; retries: number }> {
+  async makeSyncRequest(): Promise<{
+    response: GraphQlFetchResponse<typeof this.documentNode>;
+    retries: number;
+  }> {
     logAdmin(`🚀  GraphQL Admin API: Starting ${this.resource.display} sync…`);
-    return makeGraphQlRequest<ResultOf<ResourceT['graphQl']['operations']['fetchAll']>>(
+    return makeGraphQlRequest<ResultOf<typeof this.documentNode>>(
       {
-        payload: this.payload,
+        payload: {
+          query: printGql(this.documentNode),
+          variables: this.variables,
+        },
       },
       this.fetcher.context
     );
@@ -289,11 +297,14 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
     };
   }
 
-  async executeSync(schema: any) {
+  async executeSync(schema: any): Promise<{
+    result: any[];
+    continuation: coda.Continuation;
+  }> {
     const { context } = this.fetcher;
     this.prevContinuation = context.sync.continuation as SyncTableGraphQlContinuationNew;
     this.continuation = null;
-    const defaultMaxEntriesPerRun = 50;
+    const defaultMaxEntriesPerRun = this.initalMaxEntriesPerRun;
 
     const { maxEntriesPerRun, shouldDeferBy } = await this.getGraphQlMaxEntriesAndDeferWait(defaultMaxEntriesPerRun);
     if (shouldDeferBy > 0) {
@@ -337,7 +348,7 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
 
     // if (!this.shouldSyncMetafields) {
     return {
-      result: this.items as Array<coda.ObjectSchemaDefinition<string, string>>,
+      result: this.items,
       continuation: this.continuation,
     };
     // }
@@ -373,7 +384,7 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
   // #endregion
 
   // #region Sync:After
-  handleSyncTableResponse = (response: GraphQlFetchResponse<ResourceT, 'fetchAll'>): Array<ResourceT['codaRow']> => {
+  handleSyncTableResponse = (response: GraphQlFetchResponse<typeof this.documentNode>): Array<ResourceT['codaRow']> => {
     // const { formatApiToRow } = this.fetcher;
     const { plural, singular } = this.resource.graphQl;
     const resourceKey = plural;
@@ -392,7 +403,7 @@ export abstract class SyncTableGraphQl<ResourceT extends ResourceUnion> {
     return [] as Array<ResourceT['codaRow']>;
   };
 
-  afterSync(response: GraphQlFetchResponse<ResourceT, 'fetchAll'>) {
+  afterSync(response: GraphQlFetchResponse<typeof this.documentNode>) {
     this.items = this.handleSyncTableResponse(response as any);
 
     // Check if we have paginated results

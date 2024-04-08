@@ -2,7 +2,7 @@ import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { CurrencyCode } from '../../types/admin.types';
 import { ResultOf } from '../../utils/graphql';
 import { ResourceSyncRestParams } from '../Resource.types';
-import { MetafieldFieldsFragment, MetafieldFieldsFragmentWithDefinition } from './metafields-graphql';
+import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from './metafields-graphql';
 
 export declare namespace Metafield {
   type Row = MetafieldRow;
@@ -65,7 +65,7 @@ export declare namespace Metafield {
 }
 
 export type MetafieldFragmentWithDefinition = Omit<
-  ResultOf<typeof MetafieldFieldsFragmentWithDefinition>,
+  ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
   'fragmentRefs'
 > &
-  Omit<ResultOf<typeof MetafieldFieldsFragment>, 'fragmentRefs'>;
+  Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;

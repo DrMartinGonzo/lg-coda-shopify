@@ -337,8 +337,8 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, Identity.Shop);
-export const formatShopReference = (id: number, name = NOT_FOUND) => ({ id, name });
+const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, Identity.Shop);
+const formatShopReference = (id: number, name = NOT_FOUND) => ({ id, name });
 
 export const validShopFields = Object.keys(ShopSyncTableSchema.properties)
   .map((key) => ShopSyncTableSchema.properties[key].fromKey)

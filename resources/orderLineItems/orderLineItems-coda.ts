@@ -1,9 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../../shared-parameters';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
 import { OrderRestFetcher } from '../orders/OrderRestFetcher';
 import { OrderLineItemSyncTable } from './OrderLineItemSyncTable';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
@@ -18,7 +18,7 @@ import { deepCopy } from '../../utils/helpers';
 async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
   let augmentedSchema = deepCopy(OrderLineItemSyncTableSchema);
 
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  const shopCurrencyCode = await Shop.activeCurrency({ context });
 
   // Main props
   augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;

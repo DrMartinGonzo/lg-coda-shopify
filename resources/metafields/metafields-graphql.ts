@@ -3,7 +3,7 @@ import { ResultOf, graphql } from '../../utils/graphql';
 import { capitalizeFirstChar } from '../../utils/helpers';
 
 // #region Fragments
-export const MetafieldFieldsFragment = graphql(`
+export const metafieldFieldsFragment = graphql(`
   fragment MetafieldFields on Metafield {
     __typename
     id
@@ -17,7 +17,7 @@ export const MetafieldFieldsFragment = graphql(`
   }
 `);
 
-export const MetafieldFieldsFragmentWithDefinition = graphql(
+export const metafieldFieldsFragmentWithDefinition = graphql(
   `
     fragment MetafieldWithDefinitionFields on Metafield {
       __typename
@@ -74,7 +74,7 @@ export const MetafieldFieldsFragmentWithDefinition = graphql(
  * Get Metafields from multiple nodes by their keys.
  * There is a maximum of 250 ids and 250 metafields keys per request.
  */
-export const queryNodesMetafieldsByKey = graphql(
+export const getNodesMetafieldsByKeyQuery = graphql(
   `
     query GetNodesMetafieldsByKey($ids: [ID!]!, $metafieldKeys: [String!], $countMetafields: Int) {
       nodes(ids: $ids) {
@@ -90,14 +90,14 @@ export const queryNodesMetafieldsByKey = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragment]
+  [metafieldFieldsFragment]
 );
 
 /**
  * Get Metafields from a single node by their keys.
  * There is a maximum of 250 metafields keys per request.
  */
-export const querySingleNodeMetafieldsByKey = graphql(
+export const getSingleNodeMetafieldsByKeyQuery = graphql(
   `
     query GetSingleNodeMetafieldsByKey($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
       node(id: $ownerGid) {
@@ -118,15 +118,15 @@ export const querySingleNodeMetafieldsByKey = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragmentWithDefinition]
+  [metafieldFieldsFragmentWithDefinition]
 );
-export type SingleNodeMetafieldsByKeyResult = ResultOf<typeof querySingleNodeMetafieldsByKey>;
+export type SingleNodeMetafieldsByKeyResult = ResultOf<typeof getSingleNodeMetafieldsByKeyQuery>;
 
 /**
  * Edge case: Same as querySingleNodeMetafieldsByKey but for Shop, which don't require a Gid.
  * There is a maximum of 250 metafields keys per request.
  */
-export const queryShopMetafieldsByKeys = graphql(
+export const getShopMetafieldsByKeysQuery = graphql(
   `
     query GetShopMetafieldsByKey($metafieldKeys: [String!], $countMetafields: Int!) {
       shop {
@@ -139,9 +139,9 @@ export const queryShopMetafieldsByKeys = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragmentWithDefinition]
+  [metafieldFieldsFragmentWithDefinition]
 );
-export type ShopMetafieldsByKeysResult = ResultOf<typeof queryShopMetafieldsByKeys>;
+export type ShopMetafieldsByKeysResult = ResultOf<typeof getShopMetafieldsByKeysQuery>;
 
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
@@ -156,7 +156,7 @@ export const buildQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string
   }
 
   return `
-    ${printGql(MetafieldFieldsFragmentWithDefinition)}
+    ${printGql(metafieldFieldsFragmentWithDefinition)}
 
     query ${queryName}($metafieldKeys: [String!], $countMetafields: Int!, $maxEntriesPerRun: Int!, $cursor: String) {
       ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
@@ -180,7 +180,7 @@ export const buildQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string
 // #endregion
 
 // #region Mutations
-export const MutationSetMetafields = graphql(
+export const setMetafieldsMutation = graphql(
   `
     mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $inputs) {
@@ -194,10 +194,10 @@ export const MutationSetMetafields = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragmentWithDefinition]
+  [metafieldFieldsFragmentWithDefinition]
 );
 
-export const MutationDeleteMetafield = graphql(
+export const deleteMetafieldMutation = graphql(
   `
     mutation metafieldDelete($input: MetafieldDeleteInput!) {
       metafieldDelete(input: $input) {

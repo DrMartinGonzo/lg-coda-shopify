@@ -1,25 +1,57 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { ClientGraphQl } from '../../Fetchers/ClientGraphQl';
+import { ClientGraphQl, graphQlFetchParams } from '../../Fetchers/ClientGraphQl';
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { GraphQlResponse, graphQlGidToId } from '../../helpers-graphql';
+import { graphQlGidToId } from '../../helpers-graphql';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
-import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
-import { getThumbnailUrlFromFullUrl, isNullOrEmpty } from '../../utils/helpers';
-import { Metaobject, metaobjectResource } from './metaobjectResource';
-import { deleteMetaobjectMutation } from './metaobjects-graphql';
-import { MetaobjectWithFields } from './Metaobject.types';
-import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import {
+  MetaobjectCreateInput,
+  MetaobjectFieldInput,
+  MetaobjectStatus,
+  MetaobjectUpdateInput,
+} from '../../types/admin.types';
+import { ResultOf, VariablesOf } from '../../utils/graphql';
+import { AllMetafieldTypeValue } from '../metafields/metafields-constants';
+import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../metafields/metafields-functions';
 import { shouldUpdateSyncTableMetafieldValue } from '../metafields/metafields-helpers';
-import { formatMetaFieldValueForSchema } from '../metafields/metafields-functions';
+import { Metaobject, metaobjectResource } from './metaobjectResource';
+import { requireMatchingMetaobjectFieldDefinition } from './metaobjects-functions';
+import {
+  metaobjectFieldDefinitionFragment,
+  createMetaobjectMutation,
+  deleteMetaobjectMutation,
+  metaobjectFragment,
+  getSingleMetaObjectWithFieldsQuery,
+  updateMetaObjectMutation,
+} from './metaobjects-graphql';
+
+interface FetchSingleParams extends graphQlFetchParams {
+  fields?: string[];
+  includeCapabilities?: boolean;
+  includeFieldDefinitions?: boolean;
+}
+interface UpdateParams {
+  gid: string;
+  updateInput: MetaobjectUpdateInput;
+}
+interface CreateParams {
+  createInput: MetaobjectCreateInput;
+}
 
 export class MetaobjectGraphQlFetcher extends ClientGraphQl<Metaobject> {
   constructor(context: coda.ExecutionContext) {
     super(metaobjectResource, context);
   }
 
-  formatApiToRow(node: MetaobjectWithFields, schemaWithIdentity = false): MetaobjectRow {
-    let obj = {
+  /**
+   * Formats metaobjectFragment node into a MetaobjectRow.
+   *
+   * @param node - the metaobjectFragment node to be formatted
+   * @param schemaWithIdentity wether the data will be consumed by an action wich results use a coda.withIdentity schema. Useful to prevent breaking existing relations
+   * @return {MetaobjectRow} the formatted MetaobjectRow
+   */
+  formatApiToRow(node: ResultOf<typeof metaobjectFragment>, schemaWithIdentity = false): MetaobjectRow {
+    let obj: MetaobjectRow = {
       id: graphQlGidToId(node.id),
       admin_graphql_api_id: node.id,
       handle: node.handle,
@@ -32,84 +64,110 @@ export class MetaobjectGraphQlFetcher extends ClientGraphQl<Metaobject> {
       obj.status = node.capabilities.publishable.status;
     }
 
-    Object.keys(node)
-      .filter(
-        (key) =>
-          key.indexOf(CUSTOM_FIELD_PREFIX_KEY) === 0 &&
-          shouldUpdateSyncTableMetafieldValue(node[key].type, schemaWithIdentity)
-      )
-      .forEach((key) => {
-        const prop = node[key];
-        obj[prop.key] = formatMetaFieldValueForSchema({
-          value: prop?.value,
-          type: prop?.type,
+    if (node.fields.length) {
+      node.fields
+        .filter((field) => shouldUpdateSyncTableMetafieldValue(field.type, schemaWithIdentity))
+        .forEach((field) => {
+          obj[field.key] = formatMetaFieldValueForSchema({
+            value: field.value,
+            type: field.type,
+          });
         });
-      });
+    }
 
     return obj;
   }
 
-  // formatRowToApi(row: MetaobjectRow, metafieldKeyValueSets?: any[]) {
-  //   const ret: VariablesOf<typeof UpdateMetaobject>['metaobjects'][0] = {
-  //     id: row.id,
-  //   };
+  async formatMetaobjectFieldInputs(
+    row: MetaobjectRow,
+    metaobjectFieldDefinitions: Array<ResultOf<typeof metaobjectFieldDefinitionFragment>>
+  ) {
+    const metaobjectFieldFromKeys = Object.keys(row).filter((key) => !['id', 'handle', 'status'].includes(key));
+    return Promise.all(
+      metaobjectFieldFromKeys.map(async (fromKey): Promise<MetaobjectFieldInput> => {
+        const value = row[fromKey] as string;
+        const fieldDefinition = requireMatchingMetaobjectFieldDefinition(fromKey, metaobjectFieldDefinitions);
 
-  //   if (row.name !== undefined) {
-  //     if (isNullOrEmpty(row.name)) {
-  //       throw new coda.UserVisibleError("Metaobject name can't be empty");
-  //     }
-  //     ret.metaobjectname = row.name;
-  //   }
-  //   // alt is the only value that can be an empty string
-  //   if (row.alt !== undefined) {
-  //     ret.alt = row.alt;
-  //   }
+        let formattedValue: string;
+        try {
+          formattedValue = await formatMetafieldValueForApi(
+            value,
+            fieldDefinition.type.name as AllMetafieldTypeValue,
+            this.context,
+            fieldDefinition.validations
+          );
+        } catch (error) {
+          throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+        }
 
-  //   // Means we have nothing to update
-  //   if (Object.keys(ret).length <= 1) return undefined;
-  //   return ret;
-  // }
+        return {
+          key: fromKey,
+          value: formattedValue ?? '',
+        };
+      })
+    );
+  }
 
-  // async fetch(metaobjectGid: string, requestOptions: FetchRequestOptions = {}) {
-  //   const variables = {
-  //     id: metaobjectGid,
-  //     includeAlt: true,
-  //     includeCreatedAt: true,
-  //     includeDuration: true,
-  //     includeMetaobjectSize: true,
-  //     includeHeight: true,
-  //     includeMimeType: true,
-  //     includeThumbnail: true,
-  //     includeUpdatedAt: true,
-  //     includeUrl: true,
-  //     includeWidth: true,
-  //   } as VariablesOf<typeof querySingleMetaobject>;
+  formatMetaobjectUpdateInput(row: Omit<MetaobjectRow, 'id'>, metaobjectFieldInputs: Array<MetaobjectFieldInput>) {
+    return this.formatRowToApi(row, metaobjectFieldInputs) as MetaobjectUpdateInput;
+  }
+  formatMetaobjectCreateInput(
+    type: string,
+    row: Omit<MetaobjectRow, 'id'>,
+    metaobjectFieldInputs: Array<MetaobjectFieldInput>
+  ) {
+    return {
+      type: type,
+      ...this.formatRowToApi(row, metaobjectFieldInputs),
+    } as MetaobjectCreateInput;
+  }
+  formatRowToApi(row: Omit<MetaobjectRow, 'id'>, metaobjectFieldInputs: Array<MetaobjectFieldInput>) {
+    const ret: MetaobjectUpdateInput | MetaobjectCreateInput = {};
 
-  //   return this.makeRequest('fetchSingle', variables, requestOptions) as unknown as coda.FetchResponse<
-  //     GraphQlResponse<{ node: ResultOf<typeof MetaobjectFieldsFragment> }>
-  //   >;
-  // }
+    if (row.handle && row.handle !== '') {
+      ret.handle = row.handle;
+    }
+    if (row.status && row.status !== '') {
+      ret.capabilities = { publishable: { status: row.status as MetaobjectStatus } };
+    }
+    if (metaobjectFieldInputs && metaobjectFieldInputs.length) {
+      ret.fields = metaobjectFieldInputs;
+    }
 
-  // async update(
-  //   metaobjectUpdateInput: VariablesOf<typeof UpdateMetaobject>['metaobjects'],
-  //   requestOptions: FetchRequestOptions = {}
-  // ) {
-  //   const variables = {
-  //     metaobjects: metaobjectUpdateInput,
-  //     includeAlt: true,
-  //     includeCreatedAt: true,
-  //     includeDuration: true,
-  //     includeMetaobjectSize: true,
-  //     includeHeight: true,
-  //     includeMimeType: true,
-  //     includeThumbnail: true,
-  //     includeUpdatedAt: true,
-  //     includeUrl: true,
-  //     includeWidth: true,
-  //   } as VariablesOf<typeof UpdateMetaobject>;
+    if (Object.keys(ret).filter((key) => key !== 'type').length === 0) return undefined;
+    return ret;
+  }
 
-  //   return this.makeRequest('update', variables, requestOptions);
-  // }
+  async fetch(params: FetchSingleParams, requestOptions: FetchRequestOptions = {}) {
+    const variables = {
+      id: params.gid,
+      includeDefinition: params.includeFieldDefinitions ?? false,
+      includeCapabilities: params.includeCapabilities ?? false,
+      includeFieldDefinitions: params.includeFieldDefinitions ?? false,
+    } as VariablesOf<typeof getSingleMetaObjectWithFieldsQuery>;
+
+    return this.makeRequest(getSingleMetaObjectWithFieldsQuery, variables, requestOptions);
+  }
+
+  async create(params: CreateParams, requestOptions: FetchRequestOptions = {}) {
+    const variables = {
+      metaobject: params.createInput,
+    } as VariablesOf<typeof createMetaobjectMutation>;
+
+    return this.makeRequest(createMetaobjectMutation, variables, requestOptions);
+  }
+
+  async update(params: UpdateParams, requestOptions: FetchRequestOptions = {}) {
+    const variables = {
+      id: params.gid,
+      metaobject: params.updateInput,
+      includeDefinition: false,
+      includeCapabilities: params.updateInput.hasOwnProperty('capabilities'),
+      includeFieldDefinitions: false,
+    } as VariablesOf<typeof updateMetaObjectMutation>;
+
+    return this.makeRequest(updateMetaObjectMutation, variables, requestOptions);
+  }
 
   /**
    * Delete metaobject with the given metaobject GID.
@@ -121,6 +179,6 @@ export class MetaobjectGraphQlFetcher extends ClientGraphQl<Metaobject> {
       id: metaobjectGid,
     } as VariablesOf<typeof deleteMetaobjectMutation>;
 
-    return this.makeRequest('delete', variables, requestOptions);
+    return this.makeRequest(deleteMetaobjectMutation, variables, requestOptions);
   }
 }

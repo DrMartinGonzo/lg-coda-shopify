@@ -1,0 +1,15 @@
+[
+  {
+    "previousValue": {
+      "id": 8406091235584,
+      "title": "ADIDAS | CLASSIC BACKPACK",
+      "lgs_meta__custom.number_decimal": 145.121
+    },
+    "newValue": {
+      "id": 8406091235584,
+      "title": "ADIDAS | CLASSIC BACKPACK NEW",
+      "lgs_meta__custom.number_decimal": 0.999
+    },
+    "updatedFields": ["title", "lgs_meta__custom.number_decimal"]
+  }
+]

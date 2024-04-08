@@ -1,7 +1,7 @@
 import { graphql } from '../../utils/graphql';
 
 // #region Queries
-export const queryOnlineStorePublication = graphql(
+export const getOnlineStorePublicationQuery = graphql(
   `
     query GetOnlineStorePublication {
       appByHandle(handle: "online_store") {

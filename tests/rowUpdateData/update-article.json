@@ -1,0 +1,32 @@
+[
+  {
+    "previousValue": {
+      "id": 588854919424,
+      "title": "A test title",
+      "handle": "un-test-encore",
+      "lgs_meta__custom.test": "un-test-encore"
+    },
+    "newValue": {
+      "id": 588854919424,
+      "title": "A test title",
+      "handle": "un-test-encore2",
+      "lgs_meta__custom.test": "un-test-encore NEW NEW"
+    },
+    "updatedFields": ["handle", "lgs_meta__custom.test"]
+  },
+  {
+    "previousValue": {
+      "id": 589066436864,
+      "title": "A test title",
+      "handle": "another-article",
+      "lgs_meta__custom.test": "another-article"
+    },
+    "newValue": {
+      "id": 589066436864,
+      "title": "A test title",
+      "handle": "another-article",
+      "lgs_meta__custom.test": "another-article NEW NEW"
+    },
+    "updatedFields": ["handle", "lgs_meta__custom.test"]
+  }
+]

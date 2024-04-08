@@ -1,7 +1,7 @@
 import { graphql } from '../../utils/graphql';
 
 // #region Fragments
-export const MetafieldDefinitionFragment = graphql(`
+export const metafieldDefinitionFragment = graphql(`
   fragment MetafieldDefinition on MetafieldDefinition {
     key
     id
@@ -26,7 +26,7 @@ export const MetafieldDefinitionFragment = graphql(`
 // #endregion
 
 // #region Queries
-export const queryMetafieldDefinitions = graphql(
+export const getMetafieldDefinitionsQuery = graphql(
   `
     query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {
       metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {
@@ -36,10 +36,10 @@ export const queryMetafieldDefinitions = graphql(
       }
     }
   `,
-  [MetafieldDefinitionFragment]
+  [metafieldDefinitionFragment]
 );
 
-export const QuerySingleMetafieldDefinition = graphql(
+export const getSingleMetafieldDefinitionQuery = graphql(
   `
     query GetSingleMetafieldDefinition($id: ID!) {
       metafieldDefinition(id: $id) {
@@ -47,7 +47,7 @@ export const QuerySingleMetafieldDefinition = graphql(
       }
     }
   `,
-  [MetafieldDefinitionFragment]
+  [metafieldDefinitionFragment]
 );
 // #endregion
 

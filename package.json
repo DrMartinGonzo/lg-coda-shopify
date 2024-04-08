@@ -13,7 +13,6 @@
     "check:circular-dependencies": " npx dpdm --no-warning --no-tree -T ./pack.ts",
     "check:types": "tsc --noEmit",
     "check:size": "coda build pack.ts -o ./buildTest && npx source-map-explorer ./buildTest/bundle.js ./buildTest/bundle.js.map && rm -rf ./buildTest",
-    "check:unused-exports": "npx ts-unused-exports ./tsconfig.json",
     "check:unused": "knip",
     "regen:all": "yarn regen:graphql && yarn regen:constants && yarn regen:interfaces",
     "regen:constants": "yarn ts-node ./regen-constants-from-admin-types.ts",
@@ -21,7 +20,10 @@
     "regen:graphql": "graphql-codegen --config codegen.ts",
     "validate:admin": "yarn set_release:admin && coda validate pack.ts",
     "validate:user": "yarn set_release:user && coda validate pack.ts",
-    "test-metafield-update": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=OnlineStoreArticle \"lg_custom.audio\" \"$(cat test-update-metafield.json | tr '\n' ' ')\""
+    "test:update:article": "yarn set_release:admin && coda execute ./pack.ts Articles:update \"$(cat ./tests/rowUpdateData/update-article.json | tr '\n' ' ')\"",
+    "test:update:metafield": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=PRODUCT \"$(cat ./tests/rowUpdateData/update-metafield.json | tr '\n' ' ')\"",
+    "test:update:product": "yarn set_release:admin && coda execute ./pack.ts Products:update \"$(cat ./tests/rowUpdateData/update-product.json | tr '\n' ' ')\"",
+    "test:update:collection": "yarn set_release:admin && coda execute ./pack.ts Collections:update \"$(cat ./tests/rowUpdateData/update-collection.json | tr '\n' ' ')\""
   },
   "author": "Martin Portevin <contact@martinportevin.fr> (https://www.martinportevin.fr/)",
   "license": "MIT",
@@ -33,7 +35,8 @@
     "remove-accents": "^0.5.0",
     "striptags": "^3.2.0",
     "to-pascal-case": "^1.0.0",
-    "to-sentence-case": "^1.0.0"
+    "to-sentence-case": "^1.0.0",
+    "url-parse": "^1.5.10"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.6.0",
@@ -47,7 +50,7 @@
     "gas-coda-export-bills": "github:DrMartinGonzo/gas-coda-export-bills.git#^0.2.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
-    "knip": "^5.1.1",
+    "knip": "5.1.1",
     "ts-node": "^10.9",
     "typescript": "^5.4.2",
     "vitest": "^1.4"

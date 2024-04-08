@@ -1,11 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { Collect } from '../../Fetchers/NEW/Resources/Collect';
 import { Identity } from '../../constants';
 import { CollectSyncTableSchema } from '../../schemas/syncTable/CollectSchema';
 import { filters } from '../../shared-parameters';
-import { CollectRestFetcher } from './CollectRestFetcher';
-import { CollectSyncTable } from './CollectSyncTable';
 
 // #endregion
 
@@ -19,10 +18,13 @@ export const Sync_Collects = coda.makeSyncTable({
   formula: {
     name: 'SyncCollects',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link Collect.makeSyncFunction}
+     */
     parameters: [{ ...filters.collection.id, optional: true }],
     execute: async (params, context: coda.SyncExecutionContext) => {
-      const collectSyncTable = new CollectSyncTable(new CollectRestFetcher(context), params);
-      return collectSyncTable.executeSync(CollectSyncTableSchema);
+      return Collect.sync(params, context);
     },
   },
 });
@@ -48,8 +50,11 @@ pack.addFormula({
   ],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: CollectSchema,
-  execute: fetchCollect,
+  schema: CollectSyncTableSchema,
+  execute: async ([collectID, fields], context) => {
+    const collect = await Collect.find({ context, id: collectID, fields: fields.join(',') });
+    return collect.formatToRow();
+  },
 });
-*/
+ */
 // #endregion

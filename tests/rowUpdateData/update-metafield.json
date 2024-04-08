@@ -1,0 +1,23 @@
+[
+  {
+    "previousValue": {
+      "id": 25974247424256,
+      "label": "custom.single_line_text_field",
+      "namespace": "custom",
+      "key": "single_line_text_field",
+      "owner_id": 8406091333888,
+      "type": "single_line_text_field",
+      "rawValue": "test title"
+    },
+    "newValue": {
+      "id": 25974247424256,
+      "label": "custom.single_line_text_field",
+      "namespace": "custom",
+      "key": "single_line_text_field",
+      "owner_id": 8406091333888,
+      "type": "single_line_text_field",
+      "rawValue": "test title666"
+    },
+    "updatedFields": ["rawValue"]
+  }
+]

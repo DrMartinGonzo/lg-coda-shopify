@@ -3,7 +3,7 @@ import { readFragment } from '../../utils/graphql';
 
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemGraphQlFetcher } from './InventoryItemGraphQlFetcher';
-import { InventoryItemFieldsFragment } from './inventoryItems-graphql';
+import { inventoryItemFieldsFragment } from './inventoryItems-graphql';
 
 // #region Helpers
 export async function handleInventoryItemUpdateJob(
@@ -22,7 +22,7 @@ export async function handleInventoryItemUpdateJob(
     const updateJob = await inventoryItemsFetcher.update(inventoryItemUpdateVariables);
     if (updateJob?.body?.data?.inventoryItemUpdate?.inventoryItem) {
       const inventoryItem = readFragment(
-        InventoryItemFieldsFragment,
+        inventoryItemFieldsFragment,
         updateJob.body.data.inventoryItemUpdate.inventoryItem
       );
       obj = {

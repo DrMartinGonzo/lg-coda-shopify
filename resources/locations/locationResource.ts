@@ -1,20 +1,9 @@
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../ShopifyResource.types';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { ResourceWithMetafieldDefinitions } from '../Resource.types';
-import {
-  ActivateLocation,
-  DeactivateLocation,
-  QueryLocations,
-  QuerySingleLocation,
-  UpdateLocation,
-} from './locations-graphql';
-
-// #region GraphQl Parameters
-
-// #endregion
 
 const locationResourceBase = {
   display: 'Location',
@@ -23,13 +12,6 @@ const locationResourceBase = {
     name: GraphQlResourceName.Location,
     singular: 'location',
     plural: 'locations',
-    operations: {
-      fetchSingle: QuerySingleLocation,
-      fetchAll: QueryLocations,
-      update: UpdateLocation,
-      activate: ActivateLocation,
-      deActivate: DeactivateLocation,
-    },
   },
   rest: {
     singular: RestResourceSingular.Location,
@@ -47,9 +29,6 @@ export type Location = ResourceWithMetafieldDefinitions<
   typeof locationResourceBase,
   {
     codaRow: LocationRow;
-    rest: {
-      params: {};
-    };
   }
 >;
 

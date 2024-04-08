@@ -1,5 +1,5 @@
 import { graphql } from '../../utils/graphql';
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
+import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
 function buildLocationsSearchQuery(filters: { [key: string]: any }) {
@@ -12,7 +12,7 @@ function buildLocationsSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Fragments
-export const LocationFragment = graphql(
+export const locationFragment = graphql(
   `
     fragment Location on Location {
       id
@@ -47,12 +47,12 @@ export const LocationFragment = graphql(
       }
     }
   `,
-  [MetafieldFieldsFragment]
+  [metafieldFieldsFragment]
 );
 // #endregion
 
 // #region Queries
-export const QueryLocations = graphql(
+export const getLocationsQuery = graphql(
   `
     query GetLocations(
       $maxEntriesPerRun: Int!
@@ -75,10 +75,10 @@ export const QueryLocations = graphql(
       }
     }
   `,
-  [LocationFragment]
+  [locationFragment]
 );
 
-export const QuerySingleLocation = graphql(
+export const getSingleLocationQuery = graphql(
   `
     query GetSingleLocation(
       $id: ID!
@@ -93,14 +93,14 @@ export const QuerySingleLocation = graphql(
       }
     }
   `,
-  [LocationFragment]
+  [locationFragment]
 );
 // #endregion
 
 // #region Mutations
-export const UpdateLocation = graphql(
+export const editLocationMutation = graphql(
   `
-    mutation locationEdit(
+    mutation EditLocation(
       $id: ID!
       $input: LocationEditInput!
       $metafieldKeys: [String!]
@@ -120,12 +120,12 @@ export const UpdateLocation = graphql(
       }
     }
   `,
-  [LocationFragment]
+  [locationFragment]
 );
 
-export const ActivateLocation = graphql(
+export const activateLocationMutation = graphql(
   `
-    mutation LocationActivate($locationId: ID!) {
+    mutation ActivateLocation($locationId: ID!) {
       locationActivate(locationId: $locationId) {
         location {
           name
@@ -141,9 +141,9 @@ export const ActivateLocation = graphql(
   `
 );
 
-export const DeactivateLocation = graphql(
+export const deactivateLocationMutation = graphql(
   `
-    mutation LocationDeactivate($locationId: ID!, $destinationLocationId: ID) {
+    mutation DeactivateLocation($locationId: ID!, $destinationLocationId: ID) {
       locationDeactivate(locationId: $locationId, destinationLocationId: $destinationLocationId) {
         location {
           name

@@ -1,5 +1,5 @@
 import { graphql } from '../../utils/graphql';
-import { MetafieldFieldsFragment } from '../metafields/metafields-graphql';
+import { metafieldFieldsFragment } from '../metafields/metafields-graphql';
 
 // #region Helpers
 function buildCustomersSearchQuery(filters: { [key: string]: any }) {
@@ -109,7 +109,7 @@ const CustomerFieldsFragment = graphql(
       }
     }
   `,
-  [CustomerAddressFieldsFragment, MetafieldFieldsFragment]
+  [CustomerAddressFieldsFragment, metafieldFieldsFragment]
 );
 // #endregion
 

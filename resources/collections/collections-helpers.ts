@@ -1,17 +1,11 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf, VariablesOf } from '../../utils/graphql';
+import { VariablesOf } from '../../utils/graphql';
 
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
 import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../../constants';
-import { idToGraphQlGid, makeGraphQlRequest } from '../../helpers-graphql';
-import { CollectionSyncTableBase } from './CollectionSyncTableBase';
-import { queryCollectionType, queryCollectionTypes } from './collections-graphql';
-import { CustomCollectionRestFetcher } from './custom_collection/CustomCollectionRestFetcher';
-import { CustomCollectionSyncTable } from './custom_collection/CustomCollectionSyncTable';
-import { SmartCollectionRestFetcher } from './smart_collection/SmartCollectionRestFetcher';
-import { smartCollectionResource } from './smart_collection/smartCollectionResource';
+import { makeGraphQlRequest } from '../../helpers-graphql';
+import { collectionTypeQuery, collectionTypesQuery } from './collections-graphql';
 
 /**
  * Get Collection type via a GraphQL Admin API query
@@ -20,19 +14,19 @@ import { smartCollectionResource } from './smart_collection/smartCollectionResou
  * @param requestOptions
  * @returns The collection Type
  */
-async function getCollectionType(
+export async function getCollectionType(
   collectionGid: string,
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: printGql(queryCollectionType),
+    query: printGql(collectionTypeQuery),
     variables: {
       collectionGid,
-    } as VariablesOf<typeof queryCollectionType>,
+    } as VariablesOf<typeof collectionTypeQuery>,
   };
   // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest<ResultOf<typeof queryCollectionType>>(
+  const { response } = await makeGraphQlRequest<typeof collectionTypeQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
     context
   );
@@ -53,13 +47,13 @@ export async function getCollectionTypes(
   requestOptions: FetchRequestOptions = {}
 ) {
   const payload = {
-    query: printGql(queryCollectionTypes),
+    query: printGql(collectionTypesQuery),
     variables: {
       ids: collectionGids,
-    } as VariablesOf<typeof queryCollectionTypes>,
+    } as VariablesOf<typeof collectionTypesQuery>,
   };
   // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest<ResultOf<typeof queryCollectionTypes>>(
+  const { response } = await makeGraphQlRequest<typeof collectionTypesQuery>(
     { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
     context
   );
@@ -74,42 +68,4 @@ export async function getCollectionTypes(
       }
     })
     .filter(Boolean);
-}
-
-export async function getCollectionFetcher(collectionId: number, context: coda.ExecutionContext) {
-  const collectionType = await getCollectionType(idToGraphQlGid(GraphQlResourceName.Collection, collectionId), context);
-  return getCollectionFetcherOfType(collectionType, context);
-}
-
-function getCollectionFetcherOfType(collectionType: string, context: coda.ExecutionContext) {
-  switch (collectionType) {
-    case COLLECTION_TYPE__SMART:
-      return new SmartCollectionRestFetcher(context);
-    case COLLECTION_TYPE__CUSTOM:
-      return new CustomCollectionRestFetcher(context);
-  }
-
-  throw new Error(`Unknown collection type: ${collectionType}.`);
-}
-
-export function getCollectionSyncTableOfType(
-  collectionType: string,
-  params: coda.ParamValues<coda.ParamDefs>,
-  context: coda.ExecutionContext
-) {
-  switch (collectionType) {
-    case COLLECTION_TYPE__SMART:
-      return new CollectionSyncTableBase(
-        smartCollectionResource,
-        getCollectionFetcherOfType(collectionType, context) as SmartCollectionRestFetcher,
-        params
-      );
-    case COLLECTION_TYPE__CUSTOM:
-      return new CustomCollectionSyncTable(
-        getCollectionFetcherOfType(collectionType, context) as CustomCollectionRestFetcher,
-        params
-      );
-  }
-
-  throw new Error(`Unknown collection type: ${collectionType}.`);
 }

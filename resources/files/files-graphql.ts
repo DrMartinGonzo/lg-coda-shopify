@@ -1,7 +1,7 @@
 import { graphql } from '../../utils/graphql';
 
 // #region Fragments
-export const GenericFileFieldsFragment = graphql(`
+export const genericFileFieldsFragment = graphql(`
   fragment GenericFileFields on GenericFile {
     mimeType @include(if: $includeMimeType)
     originalFileSize @include(if: $includeFileSize)
@@ -9,7 +9,7 @@ export const GenericFileFieldsFragment = graphql(`
   }
 `);
 
-export const MediaImageFieldsFragment = graphql(`
+export const mediaImageFieldsFragment = graphql(`
   fragment MediaImageFields on MediaImage {
     image {
       url
@@ -23,7 +23,7 @@ export const MediaImageFieldsFragment = graphql(`
   }
 `);
 
-export const VideoFieldsFragment = graphql(`
+export const videoFieldsFragment = graphql(`
   fragment VideoFields on Video {
     filename
     duration @include(if: $includeDuration)
@@ -37,7 +37,7 @@ export const VideoFieldsFragment = graphql(`
   }
 `);
 
-export const FileFieldsFragment = graphql(
+export const fileFieldsFragment = graphql(
   `
     fragment FileFields on File {
       __typename
@@ -56,12 +56,12 @@ export const FileFieldsFragment = graphql(
       ...VideoFields
     }
   `,
-  [GenericFileFieldsFragment, MediaImageFieldsFragment, VideoFieldsFragment]
+  [genericFileFieldsFragment, mediaImageFieldsFragment, videoFieldsFragment]
 );
 // #endregion
 
 // #region Queries
-export const queryAllFiles = graphql(
+export const getFilesQuery = graphql(
   `
     query GetFiles(
       $maxEntriesPerRun: Int!
@@ -90,10 +90,10 @@ export const queryAllFiles = graphql(
       }
     }
   `,
-  [FileFieldsFragment]
+  [fileFieldsFragment]
 );
 
-export const querySingleFile = graphql(
+export const getSingleFileQuery = graphql(
   `
     query GetSingleFile(
       $id: ID!
@@ -118,14 +118,14 @@ export const querySingleFile = graphql(
       }
     }
   `,
-  [FileFieldsFragment]
+  [fileFieldsFragment]
 );
 // #endregion
 
 // #region Mutations
-export const UpdateFile = graphql(
+export const updateFilesMutation = graphql(
   `
-    mutation fileUpdate(
+    mutation UpdateFiles(
       $files: [FileUpdateInput!]!
       $includeAlt: Boolean!
       $includeCreatedAt: Boolean!
@@ -149,12 +149,12 @@ export const UpdateFile = graphql(
       }
     }
   `,
-  [FileFieldsFragment]
+  [fileFieldsFragment]
 );
 
-export const deleteFiles = graphql(
+export const deleteFilesMutation = graphql(
   `
-    mutation fileDelete($fileIds: [ID!]!) {
+    mutation DeleteFiles($fileIds: [ID!]!) {
       fileDelete(fileIds: $fileIds) {
         deletedFileIds
 

@@ -1,46 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { Product } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Product';
+import { Variant } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Variant';
 import { CACHE_DEFAULT, Identity } from '../../constants';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
+import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
-import { ProductRestFetcher } from '../products/ProductRestFetcher';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
-import { ProductVariantRestFetcher } from './ProductVariantRestFetcher';
-import { ProductVariantSyncTable } from './ProductVariantSyncTable';
-import { ProductVariant } from './productVariantResource';
-import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
-import { deepCopy } from '../../utils/helpers';
+import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 
 // #endregion
-
-async function getProductVariantsSchema(
-  context: coda.ExecutionContext,
-  _: string,
-  formulaContext: coda.MetadataContext
-) {
-  let augmentedSchema = deepCopy(ProductVariantSyncTableSchema);
-  if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(
-      ProductVariantSyncTableSchema,
-      MetafieldOwnerType.Productvariant,
-      context
-    );
-  }
-
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
-  // Main props
-  augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.compare_at_price['currencyCode'] = shopCurrencyCode;
-
-  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  return augmentedSchema;
-}
 
 // #region Sync Tables
 export const Sync_ProductVariants = coda.makeSyncTable({
@@ -51,12 +23,21 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   identityName: Identity.ProductVariant,
   schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
-    getSchema: getProductVariantsSchema,
+    // getSchema: getProductVariantSchema,
+    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+      return Variant.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
     name: 'SyncProductVariants',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema method in dynamicOptions.
+     *  - {@link Variant.getDynamicSchema}
+     *  - {@link Product.generateSharedSyncFunction}
+     */
     parameters: [
       { ...filters.product.productType, optional: true },
       { ...filters.general.syncMetafields, optional: true },
@@ -76,20 +57,17 @@ export const Sync_ProductVariants = coda.makeSyncTable({
       { ...filters.product.idArray, name: 'productIds', optional: true },
     ],
     execute: async function (params, context) {
-      const [product_type, syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(getProductVariantsSchema, context, { syncMetafields });
-      const productVariantSyncTable = new ProductVariantSyncTable(new ProductVariantRestFetcher(context), params);
-      return productVariantSyncTable.executeSync(schema);
+      /** We sync from Product class in order to have parent product information */
+      return Product.syncVariants(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const productVariantSyncTable = new ProductVariantSyncTable(new ProductVariantRestFetcher(context), params);
       /**
        * Pour l'instant pas besoin d'utiliser formatRowWithParent,
        * les propriétés qui dépendent du produit parent ne vont pas bouger.
        // TODO: à réévaluer si jamais on update l'image utilisée par la variante
        */
-      return productVariantSyncTable.executeUpdate(updates);
+      return Variant.syncUpdate(params, updates, context);
     },
   },
 });
@@ -143,29 +121,28 @@ export const Action_CreateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<ProductVariant['codaRow']> = {
-      product: formatProductReference(product_id),
-      barcode,
-      compare_at_price,
-      option1,
-      option2,
-      option3,
-      price,
-      position,
-      sku,
-      taxable,
-      weight,
-      weight_unit,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<ProductVariantRow> = {
+      row: {
+        product: formatProductReference(product_id),
+        barcode,
+        compare_at_price,
+        option1,
+        option2,
+        option3,
+        price,
+        position,
+        sku,
+        taxable,
+        weight,
+        weight_unit,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
 
-    const productFetcher = new ProductVariantRestFetcher(context);
-    const restParams = productFetcher.formatRowToApi(
-      newRow,
-      metafieldKeyValueSets
-    ) as ProductVariant['rest']['params']['create'];
-    const response = await productFetcher.create(restParams);
-    return response?.body?.variant?.id;
+    const newVariant = new Variant({ context, fromRow });
+    await newVariant.saveAndUpdate();
+    return newVariant.apiData.id;
   },
 });
 
@@ -216,37 +193,53 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    let row: ProductVariant['codaRow'] = {
-      id: productVariantId,
-      barcode,
-      compare_at_price,
-      option1,
-      option2,
-      option3,
-      price,
-      position,
-      sku,
-      taxable,
-      weight,
-      weight_unit,
-      // just to shut up the typescript linter, but unecessary
-      title: [option1, option2, option3].filter(Boolean).join(' / '),
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<ProductVariantRow> = {
+      row: {
+        id: productVariantId,
+        barcode,
+        compare_at_price,
+        option1,
+        option2,
+        option3,
+        price,
+        position,
+        sku,
+        taxable,
+        weight,
+        weight_unit,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    const variantFetcher = new ProductVariantRestFetcher(context);
-    const variantRow = await variantFetcher.updateWithMetafields(
-      { original: undefined, updated: row },
-      metafieldKeyValueSets
-    );
 
-    // Add parent product info
-    const productFetcher = new ProductRestFetcher(context);
-    const productResponse = await productFetcher.fetch(variantRow.product?.id);
-    if (productResponse?.body?.product) {
-      return variantFetcher.formatRowWithParent(variantRow, productResponse.body.product);
+    const updatedVariant = new Variant({ context, fromRow });
+    await updatedVariant.saveAndUpdate();
+
+    // TODO: maybe incorporate the parent product fetching directly in Variant class ?
+    if (updatedVariant) {
+      const product = await Product.find({
+        id: updatedVariant.apiData.product_id,
+        fields: ['images', 'handle', 'status', 'title'].join(','),
+        context,
+      });
+      updatedVariant.apiData.product_images = product.apiData.images;
+      updatedVariant.apiData.product_handle = product.apiData.handle;
+      updatedVariant.apiData.product_status = product.apiData.status;
+      updatedVariant.apiData.product_title = product.apiData.title;
+
+      return updatedVariant.formatToRow();
     }
 
-    return variantRow;
+    // return updatedVariant.formatToRow();
+
+    // Add parent product info
+    // const productFetcher = new ProductRestFetcher(context);
+    // const productResponse = await productFetcher.fetch(variantRow.product?.id);
+    // if (productResponse?.body?.product) {
+    //   return variantFetcher.formatRowWithParent(variantRow, productResponse.body.product);
+    // }
+
+    // return variantRow;
   },
 });
 
@@ -258,8 +251,7 @@ export const Action_DeleteProductVariant = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([productVariantId], context) {
-    const variantFetcher = new ProductVariantRestFetcher(context);
-    await variantFetcher.delete(productVariantId);
+    await Variant.delete({ id: productVariantId, context });
     return true;
   },
 });
@@ -275,19 +267,20 @@ export const Formula_ProductVariant = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ProductVariantSyncTableSchema,
   execute: async ([productVariantId], context) => {
-    const variantFetcher = new ProductVariantRestFetcher(context);
-    const variantResponse = await variantFetcher.fetch(productVariantId);
+    // TODO: maybe incorporate the parent product fetching directly in Variant class ?
+    const variant = await Variant.find({ id: productVariantId, context });
+    if (variant) {
+      const product = await Product.find({
+        id: variant.apiData.product_id,
+        fields: ['images', 'handle', 'status', 'title'].join(','),
+        context,
+      });
+      variant.apiData.product_images = product.apiData.images;
+      variant.apiData.product_handle = product.apiData.handle;
+      variant.apiData.product_status = product.apiData.status;
+      variant.apiData.product_title = product.apiData.title;
 
-    if (variantResponse?.body?.variant) {
-      const variantRow = variantFetcher.formatApiToRow(variantResponse.body.variant);
-
-      const productFetcher = new ProductRestFetcher(context);
-      const productResponse = await productFetcher.fetch(variantResponse.body.variant.product_id);
-      if (productResponse?.body?.product) {
-        return variantFetcher.formatRowWithParent(variantRow, productResponse.body.product);
-      }
-
-      return variantRow;
+      return variant.formatToRow();
     }
   },
 });

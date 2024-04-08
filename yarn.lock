@@ -8,11 +8,11 @@
   integrity sha512-W3ezhHGfO0MS1PtGloaTpg0PbaT8aZSmmaerL7idtU5F7oCI+uu25k+MsMS31BVFlp4aMkHSrNRxiD72IlK8TA==
 
 "@0no-co/graphqlsp@^1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.6.0.tgz#141dfff1253e396a572b77bab54f73995df780a6"
-  integrity sha512-06wd8ulUs14IAYfF18HwDXIS7qYfC2AOEvnncK9/DQeQdEICIxHG4Ser3Jgy32LAA3+/H0xEambtiXYcKiLdSA==
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.7.1.tgz#e468109e63de2be50aa0cf3ecee10899c7b721e4"
+  integrity sha512-3qSrQegPwjdJH24iaCIb8JP2OtZ3pcO74AQjruTPH632q1/ahAC1+b36y7ynGxb67ikOe+7T3pb+N+Z1+r06Ag==
   dependencies:
-    json5 "^2.2.3"
+    "@gql.tada/internal" "^0.1.0"
     node-fetch "^2.0.0"
 
 "@ampproject/remapping@^2.2.0", "@ampproject/remapping@^2.2.1":
@@ -535,7 +535,15 @@
     "@aws-sdk/util-buffer-from" "3.310.0"
     tslib "^2.5.0"
 
-"@babel/code-frame@^7.0.0", "@babel/code-frame@^7.22.13", "@babel/code-frame@^7.23.5":
+"@babel/code-frame@^7.0.0":
+  version "7.24.2"
+  resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.24.2.tgz#718b4b19841809a58b29b68cde80bc5e1aa6d9ae"
+  integrity sha512-y5+tLQyV8pg3fsiln67BVLD1P13Eg4lh5RW9mF0zUuvLrv9uIQ4MCL+CRT+FTsBlBjcIan6PGsLcBN0m3ClUyQ==
+  dependencies:
+    "@babel/highlight" "^7.24.2"
+    picocolors "^1.0.0"
+
+"@babel/code-frame@^7.22.13", "@babel/code-frame@^7.23.5":
   version "7.23.5"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.23.5.tgz#9009b69a8c602293476ad598ff53e4562e15c244"
   integrity sha512-CgH3s1a96LipHCmSUmYFPwY7MNx8C3avkq7i4Wl3cfa662ldtUe4VM1TPXX70pfmrlWTb6jLqTYrZyT2ZTJBgA==
@@ -753,14 +761,15 @@
     "@babel/traverse" "^7.24.0"
     "@babel/types" "^7.24.0"
 
-"@babel/highlight@^7.23.4":
-  version "7.23.4"
-  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.23.4.tgz#edaadf4d8232e1a961432db785091207ead0621b"
-  integrity sha512-acGdbYSfp2WheJoJm/EBBBLh/ID8KDc64ISZ9DYtBmC8/Q204PZJLHyzeB5qMzJ5trcOkybd78M4x2KWsUq++A==
+"@babel/highlight@^7.23.4", "@babel/highlight@^7.24.2":
+  version "7.24.2"
+  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.24.2.tgz#3f539503efc83d3c59080a10e6634306e0370d26"
+  integrity sha512-Yac1ao4flkTxTteCDZLEvdxg2fZfz1v8M4QpaGypq/WPDqg3ijHYbDfs+LG5hvzSoqaSZ9/Z9lKSP3CjZjv+pA==
   dependencies:
     "@babel/helper-validator-identifier" "^7.22.20"
     chalk "^2.4.2"
     js-tokens "^4.0.0"
+    picocolors "^1.0.0"
 
 "@babel/parser@^7.14.0", "@babel/parser@^7.23.9", "@babel/parser@^7.24.0":
   version "7.24.0"
@@ -1390,12 +1399,19 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.20.0.tgz#2efddf82828aac85e64cef62482af61c29561bee"
   integrity sha512-NgJnesu1RtWihtTtXGFMU5YSE6JyyHPMxCwBZK7a6/8d31GuSo9l0Ss7w1Jw5QnKUawG6UEehs883kcXf5fYwg==
 
-"@gql.tada/cli-utils@0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-0.2.0.tgz#062b625467cd5cea192d7c45e0e201b740feef03"
-  integrity sha512-S/1KdJ08G9wKbsHUrBBT6GK38OtGaC82lY9MIFwkIziR9rf/N1PmDxWOThvMWJsaKQaEf5PhioRxquVCjeIbtw==
+"@gql.tada/cli-utils@0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-0.3.1.tgz#5d86c409c371506a96e59ead710020d76d760207"
+  integrity sha512-Eq7lV0059AqqdM8TL53k3gtxKWQ+aPAG3Nn8ZyTZUM5DNniwqH3CHnHg+pTR67Q51rX8CXRpyAXEHlJvS8GvqQ==
   dependencies:
-    "@urql/introspection" "^1.0.3"
+    "@gql.tada/internal" "0.1.1"
+    graphql "^16.8.1"
+
+"@gql.tada/internal@0.1.1", "@gql.tada/internal@^0.1.0":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@gql.tada/internal/-/internal-0.1.1.tgz#e1b08db928c1591dd97e3ade222215c5d26980c6"
+  integrity sha512-2TrWcoluLySDBKKoGAGWQzXhiF2Vaz9xyfqsAP25Uz/xKmuFm+Nxpma6oLlwRec7lArNiRu9u7Vi1GjLik1UfA==
+  dependencies:
     graphql "^16.8.1"
 
 "@graphql-codegen/add@^5.0.2":
@@ -2251,17 +2267,17 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.13.0.tgz#6abd79db7ff8d01a58865ba20a63cfd23d9e2a10"
   integrity sha512-UKXUQNbO3DOhzLRwHSpa0HnhhCgNODvfoPWv2FCXme8N/ANFfhIPMGuOT+QuKd16+B5yxZ0HdpNlqPvTMS1qfw==
 
-"@shopify/admin-api-client@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@shopify/admin-api-client/-/admin-api-client-0.2.3.tgz#4637b5708af0090db9eb3f34e184a43b03800762"
-  integrity sha512-IYAKgaRoqTLlgAanvbgk3ifBWQoBaQIYAIZkMkZS7lk1ESi9tWsxYj+XHfBIhECv2/NlxQkdAzMjlR+etFiTUg==
+"@shopify/admin-api-client@^0.2.8":
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/@shopify/admin-api-client/-/admin-api-client-0.2.8.tgz#c8d053a0a5a48fde36c8b0907591c2ea26fd9a76"
+  integrity sha512-UyGhssHLw8Cwl7ai9SFtiZj0A78Ldt0qKotKg7r95mNTfKLao01oVjJFOZCZfFK+1x7ePUdh+UD+pbsb17KshA==
   dependencies:
-    "@shopify/graphql-client" "^0.9.3"
+    "@shopify/graphql-client" "^0.10.3"
 
-"@shopify/graphql-client@^0.9.3":
-  version "0.9.3"
-  resolved "https://registry.yarnpkg.com/@shopify/graphql-client/-/graphql-client-0.9.3.tgz#c5140d02948c827d3cb9fe634c0b2ab192d69aa9"
-  integrity sha512-2FEg6/Ue98ozJK3hFOj8kxMTiimW2eiYLDn7k+9ZqYWQ2eg+HHmdW+r5upw3jgT/2FPNYwqyz8qaZxPoxbP9Bw==
+"@shopify/graphql-client@^0.10.3":
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/@shopify/graphql-client/-/graphql-client-0.10.3.tgz#9f58dd00e7a25ec629a6e285dad5d1253b3db52a"
+  integrity sha512-w9noa5wbuyQegOdmqR5Yfj0GQJKmwuDiqIzDETgZhTMcmV45CNxVRxCWx6BQt3MpLzgk0A8G9iaoppfHXzkhfA==
 
 "@shopify/network@^3.2.1":
   version "3.2.1"
@@ -2269,26 +2285,26 @@
   integrity sha512-Ih/6Oe80dynlUsRfEqptWBfsySCqI0rjQvPAjS8HuWeK9nZ+TvmYScfxjucKXZ2deXwAClnU6SMdh3/B1lMMog==
 
 "@shopify/shopify-api@^9.0.1":
-  version "9.2.0"
-  resolved "https://registry.yarnpkg.com/@shopify/shopify-api/-/shopify-api-9.2.0.tgz#8a552fc63a578fdb0b58261fefdc7b87f10065a6"
-  integrity sha512-rHAKzMO2AQLf+UkjG0x6TUNga/LcAPM3gd3ANCx/yFxKSYvyaJDeVdkgidt5GNjl7UacWkICTr9Tc4XFgmFDng==
+  version "9.7.0"
+  resolved "https://registry.yarnpkg.com/@shopify/shopify-api/-/shopify-api-9.7.0.tgz#fc32af61e96fc50812b4db60c98612f8edc63f02"
+  integrity sha512-sP4msdi2BgYSj04+zbpQLX9JNCkqoZYEZCn3pCdJH1F5KWT+TrIEFQa69RLVRzIlLgJvMm9aILmlUkV1NUYEEg==
   dependencies:
-    "@shopify/admin-api-client" "^0.2.3"
+    "@shopify/admin-api-client" "^0.2.8"
     "@shopify/network" "^3.2.1"
-    "@shopify/storefront-api-client" "^0.2.3"
-    compare-versions "^5.0.3"
+    "@shopify/storefront-api-client" "^0.3.3"
+    compare-versions "^6.1.0"
     isbot "^4.4.0"
-    jose "^5.2.0"
+    jose "^5.2.3"
     node-fetch "^2.6.1"
     tslib "^2.0.3"
     uuid "^9.0.0"
 
-"@shopify/storefront-api-client@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@shopify/storefront-api-client/-/storefront-api-client-0.2.3.tgz#828e3eee1a335975778c98a629fcd8d3da099ce3"
-  integrity sha512-n1QITdbQnUFYQwRwYbZtjFQ6onFjdhmOeZw7Zl2K9iwXt7HjBYClMtgk3bbppAAzxDccpQBUimR2f9mt/oOgMg==
+"@shopify/storefront-api-client@^0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@shopify/storefront-api-client/-/storefront-api-client-0.3.3.tgz#e0f510354b81ed2bf015c59faef2aaf39e16ed0a"
+  integrity sha512-yoZul8r2mhb/XCDh55UxKNuo/PDB+bldTOt+rRz9uCKC9WkVQfGfMLwJhKb92i3CT/cxWNREPqEN5z1H+B9+IQ==
   dependencies:
-    "@shopify/graphql-client" "^0.9.3"
+    "@shopify/graphql-client" "^0.10.3"
 
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"
@@ -2776,9 +2792,9 @@
     undici-types "~5.26.4"
 
 "@types/node@^18":
-  version "18.19.24"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.19.24.tgz#707d8a4907e55901466e60e8f7a62bc6197ace95"
-  integrity sha512-eghAz3gnbQbvnHqB+mgB2ZR3aH6RhdEmHGS48BnV75KceQPHqabkxKI0BbUSsqhqy2Ddhc2xD/VAR9ySZd57Lw==
+  version "18.19.26"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.19.26.tgz#18991279d0a0e53675285e8cf4a0823766349729"
+  integrity sha512-+wiMJsIwLOYCvUqSdKTrfkS8mpTp+MPINe6+Np4TAGFWWRWiBQ5kSq9nZGCSPkzx9mvT+uEukzpX4MOSCydcvw==
   dependencies:
     undici-types "~5.26.4"
 
@@ -2793,11 +2809,6 @@
   integrity sha512-vmQSUcfalpIq0R9q7uTo2lXs6eGIpt9wtnLdMv9LVpIjCA/+ufZRozlVoVelIYixx1ugCBKDhn89vnsEGOCx9A==
   dependencies:
     "@types/node" "*"
-
-"@urql/introspection@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@urql/introspection/-/introspection-1.0.3.tgz#e35ffe8aa03e91df7472b07d7d730d8bb029ec10"
-  integrity sha512-5zgnfUDV10c3qudqYvfZ/rOtWVB2QvqanmoDMttqpt+TCCPkSUZdb2qcLCEB6DL7ph8mQRTZhXI29J57nTnqKg==
 
 "@vitest/coverage-v8@^1.4.0":
   version "1.4.0"
@@ -3698,10 +3709,10 @@ common-tags@1.8.2:
   resolved "https://registry.yarnpkg.com/common-tags/-/common-tags-1.8.2.tgz#94ebb3c076d26032745fd54face7f688ef5ac9c6"
   integrity sha512-gk/Z852D2Wtb//0I+kRFNKKE9dIIVirjoqPoA1wJU+XePVXZfGeBpk45+A1rKO4Q43prqWBNY/MiIeRLbPWUaA==
 
-compare-versions@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-5.0.3.tgz#a9b34fea217472650ef4a2651d905f42c28ebfd7"
-  integrity sha512-4UZlZP8Z99MGEY+Ovg/uJxJuvoXuN4M6B3hKaiackiHrgzQFEe3diJi1mf1PNHbFujM7FvLrK2bpgIaImbtZ1A==
+compare-versions@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-6.1.0.tgz#3f2131e3ae93577df111dba133e6db876ffe127a"
+  integrity sha512-LNZQXhqUvqUTotpZ00qLSaify3b4VFD588aRr8MKFw4CMUr98ytzCW5wDH5qx/DEY5kCDXcbcRuCqL0szEf2tg==
 
 compose-function@^3.0.3:
   version "3.0.3"
@@ -4659,12 +4670,13 @@ gopd@^1.0.1:
     get-intrinsic "^1.1.3"
 
 gql.tada@^1.3.5:
-  version "1.3.6"
-  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.3.6.tgz#98deecff08d0d87cd52c9299fc307e52f0e95f93"
-  integrity sha512-POQmGyZ0/nfqZUqXT3OQl4GqXMatnYW67ytl27IPTbzopGQEUazVNBoBmb0QPGDOBIXxFpg5NHXxV3wcJ+h21Q==
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.4.1.tgz#d25f6d4941c146651b85191b4d54bad183183fac"
+  integrity sha512-AnDA26jbbyc4COiNzovgEwI1XKmRz4F5XoFFSI8Gh6TQqqzulOVNafv/1l8/C5S/iIqV9uwQmy33AJ89peCLBg==
   dependencies:
     "@0no-co/graphql.web" "^1.0.4"
-    "@gql.tada/cli-utils" "0.2.0"
+    "@gql.tada/cli-utils" "0.3.1"
+    "@gql.tada/internal" "0.1.1"
 
 graceful-fs@^4.1.15, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.11:
   version "4.2.11"
@@ -5246,10 +5258,10 @@ jose@^5.0.0:
   resolved "https://registry.yarnpkg.com/jose/-/jose-5.2.0.tgz#d0ffd7f7e31253f633eefb190a930cd14a916995"
   integrity sha512-oW3PCnvyrcm1HMvGTzqjxxfnEs9EoFOFWi2HsEGhlFVOXxTE3K9GKWVMFoFw06yPUqwpvEWic1BmtUZBI/tIjw==
 
-jose@^5.2.0:
-  version "5.2.2"
-  resolved "https://registry.yarnpkg.com/jose/-/jose-5.2.2.tgz#b91170e9ba6dbe609b0c0a86568f9a1fbe4335c0"
-  integrity sha512-/WByRr4jDcsKlvMd1dRJnPfS1GVO3WuKyaurJ/vvXcOaUQO8rnNObCQMlv/5uCceVQIq5Q4WLF44ohsdiTohdg==
+jose@^5.2.3:
+  version "5.2.3"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-5.2.3.tgz#071c87f9fe720cff741a403c8080b69bfe13164a"
+  integrity sha512-KUXdbctm1uHVL8BYhnyHkgp3zDX5KW8ZhAKVFEfUbU2P8Alpzjb+48hHvjOdQIyPshoblhzsuqOwEEAbtHVirA==
 
 "js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
@@ -5345,10 +5357,10 @@ just-extend@^6.2.0:
   resolved "https://registry.yarnpkg.com/just-extend/-/just-extend-6.2.0.tgz#b816abfb3d67ee860482e7401564672558163947"
   integrity sha512-cYofQu2Xpom82S6qD778jBDpwvvy39s1l/hrYij2u9AMdQcGRpaBu6kY4mVhuno5kJVi1DAz4aiphA2WI1/OAw==
 
-knip@^5.1.1:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/knip/-/knip-5.1.2.tgz#bab60c6a266684f21fcfe236a20de9e4cb864d4a"
-  integrity sha512-usWoTwvBFtn+auea2/2BOZTqYrWe1hco/0VCtuMeBZhR15mv0ccl9FUgW6GsvgvIW/4YdVCgTACUS4h/JkeCBA==
+knip@5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/knip/-/knip-5.1.1.tgz#55b6fb4f10a842d2a019bd2a26fb0dcd557536ff"
+  integrity sha512-zqCNQNtkcI+mzp2C++9wi0eIrE5b/tIU3F+ODpn9euQxW4tIMUZi86z0rPMHeuHzWaMLIk/eT9olhKOOoGURsg==
   dependencies:
     "@ericcornelissen/bash-parser" "0.5.2"
     "@nodelib/fs.walk" "2.0.0"
@@ -7463,9 +7475,9 @@ typescript@5.1.6:
   integrity sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==
 
 typescript@^5.4.2:
-  version "5.4.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.4.2.tgz#0ae9cebcfae970718474fe0da2c090cad6577372"
-  integrity sha512-+2/g0Fds1ERlP6JsakQQDXjZdZMM+rqpamFZJEKh4kwTIn3iDkgKtby0CeNd5ATNZ4Ry1ax15TMx0W2V+miizQ==
+  version "5.4.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.4.3.tgz#5c6fedd4c87bee01cd7a528a30145521f8e0feff"
+  integrity sha512-KrPd3PKaCLr78MalgiwJnA25Nm8HAmdwN3mYUYZgG/wizIo9EainNVQI9/yDavtVFRN2h3k8uf3GLHuhDMgEHg==
 
 ua-parser-js@^1.0.35:
   version "1.0.37"
@@ -7561,7 +7573,7 @@ upper-case@^2.0.2:
   dependencies:
     tslib "^2.0.3"
 
-url-parse@1.5.10:
+url-parse@1.5.10, url-parse@^1.5.10:
   version "1.5.10"
   resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.5.10.tgz#9d3c2f736c1d75dd3bd2be507dcc111f1e2ea9c1"
   integrity sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==

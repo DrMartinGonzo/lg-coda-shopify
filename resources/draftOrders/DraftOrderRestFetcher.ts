@@ -1,17 +1,17 @@
 import * as coda from '@codahq/packs-sdk';
-import { SimpleRest } from '../../Fetchers/SimpleRest';
-import { SingleFetchData } from '../../Fetchers/SyncTableRest';
+import type { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { RestClientWithGraphQlMetafields } from '../../Fetchers/Client/Rest/RestClientWithSchemaWithGraphQlMetafields';
+import { SingleFetchRestData } from '../../Fetchers/Client/Rest/RestClient';
 import { NOT_FOUND, OPTIONS_DRAFT_ORDER_STATUS } from '../../constants';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { cleanQueryParams, makePostRequest, makePutRequest } from '../../helpers-rest';
 import type { CodaMetafieldKeyValueSet } from '../../helpers-setup';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
-import type { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { DraftOrder, draftOrderResource } from './draftOrder';
+import { formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
+import { DraftOrder, draftOrderResource } from './draftOrderResource';
 
-export class DraftOrderRestFetcher extends SimpleRest<DraftOrder> {
+export class DraftOrderRestFetcher extends RestClientWithGraphQlMetafields<DraftOrder> {
   constructor(context: coda.ExecutionContext) {
     super(draftOrderResource, context);
   }
@@ -38,7 +38,7 @@ export class DraftOrderRestFetcher extends SimpleRest<DraftOrder> {
 
   formatRowToApi = (
     row: Partial<DraftOrder['codaRow']>,
-    metafieldKeyValueSets: CodaMetafieldKeyValueSet[] = []
+    metafieldKeyValueSets: Array<CodaMetafieldKeyValueSet> = []
   ): DraftOrder['rest']['params']['update'] | undefined => {
     let restParams: DraftOrder['rest']['params']['update'] = {};
 
@@ -98,7 +98,7 @@ export class DraftOrderRestFetcher extends SimpleRest<DraftOrder> {
       coda.joinUrl(this.baseUrl, `${this.plural}/${draftOrderId}/complete.json`),
       restParams
     );
-    return makePutRequest<SingleFetchData<typeof draftOrderResource>>({ ...requestOptions, url }, this.context);
+    return makePutRequest<SingleFetchRestData<typeof draftOrderResource>>({ ...requestOptions, url }, this.context);
   };
 
   sendInvoice = async (

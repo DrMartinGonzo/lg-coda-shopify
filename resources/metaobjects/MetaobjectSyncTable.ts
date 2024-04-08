@@ -1,22 +1,94 @@
-import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
+import * as accents from 'remove-accents';
 
 import { SyncTableGraphQl } from '../../Fetchers/SyncTableGraphQl';
-import { VariablesOf } from '../../utils/graphql';
-import { MetaobjectGraphQlFetcher } from './MetaobjectGraphQlFetcher';
-import { buildQueryAllMetaObjectsWithFields } from './metaobjects-graphql';
-import { Sync_Metaobjects } from './metaobjects-coda';
-import { fetchSingleMetaObjectDefinition } from './metaobjects-functions';
+import { OPTIONS_METAOBJECT_STATUS } from '../../constants';
+import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-helpers';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
-import { retrieveObjectSchemaEffectiveKeys } from '../../utils/helpers';
+import { VariablesOf, readFragment } from '../../utils/graphql';
+import { capitalizeFirstChar, compareByDisplayKey, deepCopy } from '../../utils/helpers';
+import { MetaobjectGraphQlFetcher } from './MetaobjectGraphQlFetcher';
 import { Metaobject, metaobjectResource } from './metaobjectResource';
-import { ShopifyGraphQlThrottleStatus } from '../../Fetchers/Fetcher.types';
+import { fetchAllMetaObjectDefinitions, fetchSingleMetaObjectDefinition } from './metaobjects-functions';
+import { getMetaObjectsWithFieldsQuery, metaobjectFieldDefinitionFragment } from './metaobjects-graphql';
 
 export class MetaobjectSyncTable extends SyncTableGraphQl<Metaobject> {
   type: string;
 
   constructor(fetcher: MetaobjectGraphQlFetcher, params: coda.ParamValues<coda.ParamDefs>) {
     super(metaobjectResource, fetcher, params);
+    // TODO: get an approximation for first run by using count of relation columns ?
+    this.initalMaxEntriesPerRun = 50;
+  }
+
+  static async listDynamicUrls(context) {
+    const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
+    return metaobjectDefinitions.length
+      ? metaobjectDefinitions
+          .map((definition) => ({
+            display: definition.name,
+            /** Use id instead of type as an identifier because
+             * its easier to link back to the metaobject dynamic sync table while using {@link getMetaobjectReferenceSchema} */
+            value: definition.id,
+          }))
+          .sort(compareByDisplayKey)
+      : [];
+  }
+
+  static async getName(context: coda.SyncExecutionContext) {
+    const { type } = await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context);
+    return `${capitalizeFirstChar(type)} Metaobjects`;
+  }
+
+  static async getDisplayUrl(context: coda.SyncExecutionContext) {
+    const { type } = await fetchSingleMetaObjectDefinition({ gid: context.sync.dynamicUrl }, context);
+    return `${context.endpoint}/admin/content/entries/${type}`;
+  }
+
+  static async getSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+    const metaobjectDefinition = await fetchSingleMetaObjectDefinition(
+      { gid: context.sync.dynamicUrl, includeCapabilities: true, includeFieldDefinitions: true },
+      context
+    );
+    const { displayNameKey } = metaobjectDefinition;
+    const fieldDefinitions = readFragment(metaobjectFieldDefinitionFragment, metaobjectDefinition.fieldDefinitions);
+    const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
+    let defaultDisplayProperty = 'handle';
+
+    let augmentedSchema = deepCopy(MetaObjectSyncTableBaseSchema);
+
+    if (isPublishable) {
+      augmentedSchema.properties['status'] = {
+        type: coda.ValueType.String,
+        codaType: coda.ValueHintType.SelectList,
+        fixedId: 'status',
+        description: `The status of the metaobject`,
+        mutable: true,
+        options: OPTIONS_METAOBJECT_STATUS.filter((s) => s.value !== '*').map((s) => s.value),
+        requireForUpdates: true,
+      };
+    }
+
+    fieldDefinitions.forEach((fieldDefinition) => {
+      const name = accents.remove(fieldDefinition.name);
+      const property = mapMetaFieldToSchemaProperty(fieldDefinition);
+      if (property) {
+        property.displayName = fieldDefinition.name;
+        augmentedSchema.properties[name] = property;
+
+        if (displayNameKey === fieldDefinition.key) {
+          // @ts-ignore
+          augmentedSchema.displayProperty = name;
+          augmentedSchema.properties[name].required = true;
+          // @ts-ignore
+          augmentedSchema.featuredProperties[augmentedSchema.featuredProperties.indexOf(defaultDisplayProperty)] = name;
+        }
+      }
+    });
+
+    // @ts-ignore: admin_url should always be the last featured property, regardless of any custom field keys added previously
+    augmentedSchema.featuredProperties.push('admin_url');
+    return augmentedSchema;
   }
 
   async executeSync(schema: any) {
@@ -34,35 +106,14 @@ export class MetaobjectSyncTable extends SyncTableGraphQl<Metaobject> {
   }
 
   setPayload(): void {
-    // Separate constant fields keys from the custom ones
-    const constantKeys = retrieveObjectSchemaEffectiveKeys(MetaObjectSyncTableBaseSchema).concat('status');
-    const optionalFieldsKeys = this.effectivePropertyKeys.filter((key) => !constantKeys.includes(key));
-
-    this.payload = {
-      query: buildQueryAllMetaObjectsWithFields(optionalFieldsKeys),
-      variables: {
-        type: this.type,
-        maxEntriesPerRun: this.maxEntriesPerRun,
-        includeCapabilities: this.effectivePropertyKeys.includes('status'),
-        includeDefinition: false,
-        includeFieldDefinitions: false,
-        cursor: this.prevContinuation?.cursor ?? null,
-      },
-    };
+    this.documentNode = getMetaObjectsWithFieldsQuery;
+    this.variables = {
+      type: this.type,
+      maxEntriesPerRun: this.maxEntriesPerRun,
+      includeCapabilities: this.effectivePropertyKeys.includes('status'),
+      includeDefinition: false,
+      includeFieldDefinitions: false,
+      cursor: this.prevContinuation?.cursor ?? null,
+    } as VariablesOf<typeof getMetaObjectsWithFieldsQuery>;
   }
-
-  // afterSync(response: MultipleFetchResponse<Metaobject>) {
-  //   this.extraContinuationData = { blogIdsLeft: this.blogIdsLeft };
-  //   let { restItems, continuation } = super.afterSync(response);
-  //   // If we still have blogs left to fetch metaobjects from, we create a
-  //   // continuation object to force the next sync
-  //   if (this.blogIdsLeft && this.blogIdsLeft.length && !continuation?.nextUrl) {
-  //     // @ts-ignore
-  //     continuation = {
-  //       ...(continuation ?? {}),
-  //       extraContinuationData: this.extraContinuationData,
-  //     };
-  //   }
-  //   return { restItems, continuation };
-  // }
 }

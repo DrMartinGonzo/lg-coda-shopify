@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-03-17T18:15:11.544Z
+ * Last generated: 2024-04-08T08:28:42.260Z
  *
  */
 

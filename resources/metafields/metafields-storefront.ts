@@ -1,4 +1,4 @@
-import { MetafieldFieldsFragment } from './metafields-graphql';
+import { metafieldFieldsFragment } from './metafields-graphql';
 
 const makeQueryMetafieldsStorefront = (type: string) => {
   return `
@@ -18,12 +18,12 @@ const makeQueryMetafieldsStorefront = (type: string) => {
       }
     }
 
-    ${MetafieldFieldsFragment}
+    ${metafieldFieldsFragment}
   `;
 };
 
 const makeQueryVariantMetafieldsStorefront = /* GraphQL */ `
-  ${MetafieldFieldsFragment}
+  ${metafieldFieldsFragment}
 
   fragment variantFields on ProductVariant {
     id

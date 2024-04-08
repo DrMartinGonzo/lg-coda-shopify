@@ -1,13 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { RedirectRestFetcher } from './RedirectRestFetcher';
-import { RedirectSyncTable } from './RedirectSyncTable';
-
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { Redirect } from '../../Fetchers/NEW/Resources/Redirect';
 import { CACHE_DEFAULT, Identity } from '../../constants';
+import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import { filters, inputs } from '../../shared-parameters';
-import { Redirect } from './redirectResource';
 
 // #endregion
 
@@ -21,18 +20,20 @@ export const Sync_Redirects = coda.makeSyncTable({
   formula: {
     name: 'SyncRedirects',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link Redirect.makeSyncFunction}
+     */
     parameters: [
       { ...filters.redirect.path, optional: true },
       { ...filters.redirect.target, optional: true },
     ],
-    execute: async function (params, context: coda.SyncExecutionContext) {
-      const redirectSyncTable = new RedirectSyncTable(new RedirectRestFetcher(context), params);
-      return redirectSyncTable.executeSync(RedirectSyncTableSchema);
+    execute: async function (params, context) {
+      return Redirect.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const redirectSyncTable = new RedirectSyncTable(new RedirectRestFetcher(context), params);
-      return redirectSyncTable.executeUpdate(updates);
+      return Redirect.syncUpdate(params, updates, context);
     },
   },
 });
@@ -56,12 +57,17 @@ export const Action_UpdateRedirect = coda.makeFormula({
       throw new coda.UserVisibleError('Either path or target must be provided');
     }
 
-    let row: Redirect['codaRow'] = {
-      id: redirect_id,
-      path,
-      target,
+    const fromRow: FromRow<RedirectRow> = {
+      row: {
+        id: redirect_id,
+        path,
+        target,
+      },
     };
-    return new RedirectRestFetcher(context).updateWithMetafields({ original: undefined, updated: row });
+
+    const updatedRedirect = new Redirect({ context, fromRow });
+    await updatedRedirect.saveAndUpdate();
+    return updatedRedirect.formatToRow();
   },
 });
 
@@ -73,15 +79,16 @@ export const Action_CreateRedirect = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([path, target], context) {
-    let newRow: Partial<Redirect['codaRow']> = {
-      path,
-      target,
+    const fromRow: FromRow<RedirectRow> = {
+      row: {
+        path,
+        target,
+      },
     };
 
-    const redirectFetcher = new RedirectRestFetcher(context);
-    const restParams = redirectFetcher.formatRowToApi(newRow) as Redirect['rest']['params']['create'];
-    const response = await redirectFetcher.create(restParams);
-    return response?.body?.redirect?.id;
+    const newRedirect = new Redirect({ context, fromRow });
+    await newRedirect.saveAndUpdate();
+    return newRedirect.apiData.id;
   },
 });
 
@@ -93,7 +100,7 @@ export const Action_DeleteRedirect = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([redirectId], context) {
-    await new RedirectRestFetcher(context).delete(redirectId);
+    await Redirect.delete({ context, id: redirectId });
     return true;
   },
 });
@@ -108,12 +115,9 @@ export const Formula_Redirect = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: RedirectSyncTableSchema,
-  execute: async ([redirect_id], context) => {
-    const redirectFetcher = new RedirectRestFetcher(context);
-    const redirectResponse = await redirectFetcher.fetch(redirect_id);
-    if (redirectResponse.body?.redirect) {
-      return redirectFetcher.formatApiToRow(redirectResponse.body.redirect);
-    }
+  execute: async ([redirectId], context) => {
+    const redirect = await Redirect.find({ context, id: redirectId });
+    return redirect.formatToRow();
   },
 });
 

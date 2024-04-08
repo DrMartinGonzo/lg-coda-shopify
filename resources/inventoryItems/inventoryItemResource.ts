@@ -1,15 +1,9 @@
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../../Fetchers/ShopifyRestResource.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../ShopifyResource.types';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
-import { Resource } from '../Resource.types';
-import { QueryAllInventoryItems, UpdateInventoryItem } from './inventoryItems-graphql';
+import { ResourceWithSchema } from '../Resource.types';
 
-// #region GraphQl Parameters
-
-// #endregion
-
-// TODO: finish this
 const inventoryItemResourceBase = {
   display: 'Inventory Item',
   schema: InventoryItemSyncTableSchema,
@@ -17,10 +11,6 @@ const inventoryItemResourceBase = {
     name: GraphQlResourceName.InventoryItem,
     singular: 'inventoryItem',
     plural: 'inventoryItems',
-    operations: {
-      fetchAll: QueryAllInventoryItems,
-      update: UpdateInventoryItem,
-    },
   },
   rest: {
     singular: RestResourceSingular.InventoryItem,
@@ -28,13 +18,10 @@ const inventoryItemResourceBase = {
   },
 } as const;
 
-export type InventoryItem = Resource<
+export type InventoryItem = ResourceWithSchema<
   typeof inventoryItemResourceBase,
   {
     codaRow: InventoryItemRow;
-    rest: {
-      params: {};
-    };
   }
 >;
 

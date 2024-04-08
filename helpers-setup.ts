@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from './constants';
 import { getUnitMap } from './utils/helpers';
 
-import type { MetafieldTypeValue } from './resources/metafields/metafields-constants';
+import type { MetafieldTypeValue } from './resources/metafields/Metafield.types';
 import { filters } from './shared-parameters';
 
 // #endregion

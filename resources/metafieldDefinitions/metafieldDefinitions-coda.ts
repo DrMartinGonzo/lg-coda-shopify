@@ -1,26 +1,21 @@
 // #region Imports
-import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
 import * as coda from '@codahq/packs-sdk';
 
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
-import { SyncTableGraphQlContinuation } from '../../Fetchers/SyncTable.types';
+import { GraphQlResourceName } from '../ShopifyResource.types';
 import { CACHE_DEFAULT, Identity } from '../../constants';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  idToGraphQlGid,
-  makeSyncTableGraphQlRequest,
-  skipGraphQlSyncTableRun,
-} from '../../helpers-graphql';
+import { idToGraphQlGid } from '../../helpers-graphql';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../../shared-parameters';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { getResourcesWithMetaFieldDefinitions, requireResourceWithMetaFieldsByOwnerType } from '../resources';
+import { MetafieldDefinitionGraphQlFetcher } from './MetafieldDefinitionGraphQlFetcher';
+import { MetafieldDefinitionSyncTable } from './MetafieldDefinitionSyncTable';
 import {
   fetchSingleMetafieldDefinitionGraphQl,
   formatMetafieldDefinitionForSchemaFromGraphQlApi,
 } from './metafieldDefinitions-functions';
-import { MetafieldDefinitionFragment, queryMetafieldDefinitions } from './metafieldDefinitions-graphql';
+import { resolveSchemaFromContext } from '../../schemas/schema-helpers';
+import { transformToArraySchema } from '../../utils/helpers';
 
 // #endregion
 
@@ -55,47 +50,11 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
     name: 'SyncMetafieldDefinitions',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
-    execute: async function ([], context) {
-      const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-      const defaultMaxEntriesPerRun = 200;
-      const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-        defaultMaxEntriesPerRun,
-        prevContinuation,
-        context
-      );
-      if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRun(prevContinuation as unknown as SyncTableGraphQlContinuation, shouldDeferBy);
-      }
-
-      const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-      const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-      const payload = {
-        query: printGql(queryMetafieldDefinitions),
-        variables: {
-          ownerType: ownerResource.metafields.ownerType,
-          maxEntriesPerRun,
-          cursor: prevContinuation?.cursor ?? null,
-        } as VariablesOf<typeof queryMetafieldDefinitions>,
-      };
-
-      const { response, continuation } = await makeSyncTableGraphQlRequest<ResultOf<typeof queryMetafieldDefinitions>>(
-        {
-          payload,
-          maxEntriesPerRun,
-          prevContinuation,
-          getPageInfo: (data: any) => data.metafieldDefinitions?.pageInfo,
-        },
-        context
-      );
-
-      const metafieldDefinitions =
-        readFragment(MetafieldDefinitionFragment, response?.body?.data?.metafieldDefinitions?.nodes) ?? [];
-      const items = metafieldDefinitions.map((node) => formatMetafieldDefinitionForSchemaFromGraphQlApi(node, context));
-
-      return {
-        result: items,
-        continuation: continuation,
-      };
+    execute: async function (params, context) {
+      const schema = context.sync.schema ?? transformToArraySchema(MetafieldDefinitionSyncTableSchema);
+      const metafieldDefinitionFetcher = new MetafieldDefinitionGraphQlFetcher(context);
+      const metafieldDefinitionSyncTable = new MetafieldDefinitionSyncTable(metafieldDefinitionFetcher, schema, params);
+      return metafieldDefinitionSyncTable.executeSync();
     },
   },
 });

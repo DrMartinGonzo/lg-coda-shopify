@@ -2,12 +2,16 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf } from '../utils/graphql';
 
+import { wrapGetSchema, wrapMetadataFunction } from '@codahq/packs-sdk/dist/api';
+import { normalizeSchema } from '@codahq/packs-sdk/dist/schema';
+import { Shop } from '../Fetchers/NEW/Resources/Shop';
+import { DEFAULT_CURRENCY_CODE } from '../config/config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
-import { MetafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
-import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../resources/metafields/metafields-constants';
-import { getMetaFieldFullKey } from '../resources/metafields/metafields-helpers';
-import { MetaobjectFieldDefinitionFragment } from '../resources/metaobjects/metaobjects-graphql';
+import { metafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
+import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../resources/metafields/Metafield.types';
+import { getMetaFieldFullKey } from '../resources/metafields/utils/metafields-utils-keys';
+import { metaobjectFieldDefinitionFragment } from '../resources/metaobjects/metaobjects-graphql';
 import { MetafieldDefinition, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { CollectionReference } from './syncTable/CollectionSchema';
@@ -16,9 +20,38 @@ import { getMetaobjectReferenceSchema } from './syncTable/MetaObjectSchema';
 import { PageReference } from './syncTable/PageSchema';
 import { ProductReference } from './syncTable/ProductSchemaRest';
 import { ProductVariantReference } from './syncTable/ProductVariantSchema';
-import { ShopRestFetcher } from '../resources/shop/ShopRestFetcher';
-import { DEFAULT_CURRENCY_CODE } from '../config/config';
 
+async function wrapDynamicSchemaForCli(
+  fn: coda.MetadataFormulaDef,
+  context: coda.SyncExecutionContext,
+  formulaContext: Record<string, any>
+): Promise<coda.ArraySchema<coda.Schema>> {
+  const getSchema = wrapGetSchema(wrapMetadataFunction(fn));
+  const search = '';
+  const serializedFormulaContext = JSON.stringify(formulaContext);
+
+  const schema = await getSchema.execute([search, serializedFormulaContext], context);
+  return normalizeSchema(schema);
+}
+/**
+ * Handles dynamic schema in CLI context.
+ * It calls the provided `getSchemaFunction` if `context.sync.schema` is falsy.
+ * It helps to overcome an issue where the dynamic schema is not present in `context.sync.schema` in CLI context.
+ *
+ * @param getSchemaFunction - The function to generate dynamic schema.
+ * @param context - The sync execution context.
+ * @param formulaContext - The formula metadata context.
+ * @returns The schema
+ */
+export async function resolveSchemaFromContext(
+  getSchemaFunction: coda.MetadataFormulaDef,
+  context: coda.SyncExecutionContext,
+  formulaContext: Record<string, any>
+): Promise<coda.ArraySchema<coda.Schema>> {
+  return context.sync.schema ?? (await wrapDynamicSchemaForCli(getSchemaFunction, context, formulaContext));
+}
+
+// #region Metafields in schema
 export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSchemaDefinition<string, string>>(
   baseSchema: SchemaT,
   ownerType: MetafieldOwnerType,
@@ -34,7 +67,7 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
 
   let shopCurrencyCode = DEFAULT_CURRENCY_CODE;
   if (hasMoneyFields) {
-    shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+    shopCurrencyCode = await Shop.activeCurrency({ context });
   }
 
   metafieldDefinitions.forEach((metafieldDefinition) => {
@@ -58,7 +91,7 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
 }
 
 export function mapMetaFieldToSchemaProperty(
-  fieldDefinition: ResultOf<typeof MetafieldDefinitionFragment> | ResultOf<typeof MetaobjectFieldDefinitionFragment>
+  fieldDefinition: ResultOf<typeof metafieldDefinitionFragment> | ResultOf<typeof metaobjectFieldDefinitionFragment>
 ): coda.Schema & coda.ObjectSchemaProperty {
   const type = fieldDefinition.type.name;
   let description = fieldDefinition.description;

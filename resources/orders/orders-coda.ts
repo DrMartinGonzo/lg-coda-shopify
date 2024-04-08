@@ -1,19 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
+import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { CACHE_DEFAULT, CACHE_DISABLED, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { cleanQueryParams, extractNextUrlPagination } from '../../helpers-rest';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { filters, inputs } from '../../shared-parameters';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { ShopRestFetcher } from '../shop/ShopRestFetcher';
+import { deepCopy } from '../../utils/helpers';
 import { OrderRestFetcher } from './OrderRestFetcher';
 import { OrderSyncTable } from './OrderSyncTable';
 import { Order } from './orderResource';
 import { formatOrderForDocExport } from './orders-functions';
-import { deepCopy } from '../../utils/helpers';
 
 // #endregion
 
@@ -23,7 +23,7 @@ async function getOrderSchema(context: coda.ExecutionContext, _: string, formula
     augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
   }
 
-  const shopCurrencyCode = await new ShopRestFetcher(context).getActiveCurrency();
+  const shopCurrencyCode = await Shop.activeCurrency({ context });
   // Refund order adjustments
   [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
     properties.amount['currencyCode'] = shopCurrencyCode;

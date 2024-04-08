@@ -1,35 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { handleDynamicSchemaForCli } from '../../Fetchers/SyncTableRest';
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { Product } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Product';
 import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, Identity } from '../../constants';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
+import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { parseMetafieldsCodaInput } from '../metafields/metafields-functions';
+import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { ProductRestFetcher } from './ProductRestFetcher';
-import { ProductSyncTable } from './ProductSyncTable';
-import { Product } from './productResource';
 import { fetchProductTypesGraphQl } from './products-functions';
-import { deepCopy } from '../../utils/helpers';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 
 // #endregion
-
-async function getProductSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(ProductSyncTableSchemaRest);
-  if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(
-      ProductSyncTableSchemaRest,
-      MetafieldOwnerType.Product,
-      context
-    );
-  }
-  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  return augmentedSchema;
-}
 
 // #region Sync Tables
 // Products Sync Table via Rest Admin API
@@ -41,7 +24,9 @@ export const Sync_Products = coda.makeSyncTable({
   identityName: Identity.Product,
   schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
-    getSchema: getProductSchema,
+    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
+      return Product.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
+    },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'product_type') {
@@ -56,6 +41,12 @@ export const Sync_Products = coda.makeSyncTable({
   formula: {
     name: 'SyncProducts',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema method in dynamicOptions.
+     *  - {@link Product.getDynamicSchema}
+     *  - {@link Product.generateSharedSyncFunction}
+     */
     parameters: [
       { ...filters.product.productType, optional: true },
       { ...filters.general.syncMetafields, optional: true },
@@ -68,23 +59,16 @@ export const Sync_Products = coda.makeSyncTable({
       { ...filters.general.handleArray, optional: true },
       { ...filters.product.idArray, optional: true },
     ],
-    /**
-     * Sync products using Rest Admin API, optionally augmenting the sync with
-     * metafields from GraphQL Admin API
-     */
     execute: async function (params, context) {
-      const [product_type, syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(getProductSchema, context, { syncMetafields });
-      const productSyncTable = new ProductSyncTable(new ProductRestFetcher(context), params);
-      return productSyncTable.executeSync(schema);
+      return Product.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const productSyncTable = new ProductSyncTable(new ProductRestFetcher(context), params);
-      return productSyncTable.executeUpdate(updates);
+      return Product.syncUpdate(params, updates, context);
     },
   },
 });
+
 // #endregion
 
 // #region Actions
@@ -117,27 +101,26 @@ export const Action_CreateProduct = coda.makeFormula({
     [title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, options, imageUrls, metafields],
     context
   ) {
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    let newRow: Partial<Product['codaRow']> = {
-      title,
-      body_html: bodyHtml,
-      handle,
-      product_type: productType,
-      tags: tags ? tags.join(',') : undefined,
-      template_suffix: templateSuffix,
-      vendor,
-      status: status ?? DEFAULT_PRODUCT_STATUS_REST,
-      options: options.join(','),
-      images: imageUrls,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<ProductRow> = {
+      row: {
+        title,
+        body_html: bodyHtml,
+        handle,
+        product_type: productType,
+        tags: tags ? tags.join(',') : undefined,
+        template_suffix: templateSuffix,
+        vendor,
+        status: status ?? DEFAULT_PRODUCT_STATUS_REST,
+        options: options.join(','),
+        images: imageUrls,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
 
-    const productFetcher = new ProductRestFetcher(context);
-    const restParams = productFetcher.formatRowToApi(
-      newRow,
-      metafieldKeyValueSets
-    ) as Product['rest']['params']['create'];
-    const response = await productFetcher.create(restParams);
-    return response?.body?.product?.id;
+    const newProduct = new Product({ context, fromRow });
+    await newProduct.saveAndUpdate();
+    return newProduct.apiData.id;
   },
 });
 
@@ -173,22 +156,25 @@ export const Action_UpdateProduct = coda.makeFormula({
     [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
     context
   ) {
-    let row: Product['codaRow'] = {
-      id: productId,
-      body_html,
-      handle,
-      product_type,
-      tags: tags ? tags.join(',') : undefined,
-      template_suffix,
-      title,
-      vendor,
-      status,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<ProductRow> = {
+      row: {
+        id: productId,
+        body_html,
+        handle,
+        product_type,
+        tags: tags ? tags.join(',') : undefined,
+        template_suffix,
+        title,
+        vendor,
+        status,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    return new ProductRestFetcher(context).updateWithMetafields(
-      { original: undefined, updated: row },
-      metafieldKeyValueSets
-    );
+
+    const updatedProduct = new Product({ context, fromRow });
+    await updatedProduct.saveAndUpdate();
+    return updatedProduct.formatToRow();
   },
 });
 
@@ -200,7 +186,7 @@ export const Action_DeleteProduct = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([productId], context) {
-    await new ProductRestFetcher(context).delete(productId);
+    await Product.delete({ id: productId, context });
     return true;
   },
 });
@@ -216,11 +202,8 @@ export const Formula_Product = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ProductSyncTableSchemaRest,
   execute: async ([productId], context) => {
-    const productFetcher = new ProductRestFetcher(context);
-    const response = await productFetcher.fetch(productId);
-    if (response?.body?.product) {
-      return productFetcher.formatApiToRow(response.body.product);
-    }
+    const product = await Product.find({ id: productId, context });
+    return product.formatToRow();
   },
 });
 
@@ -309,7 +292,7 @@ export const Format_Product: coda.Format = {
           gift_card,
           ids,
         ],
-        context: coda.SyncExecutionContext
+        context
       ) {
         validateProductParams({ status, published_status });
 

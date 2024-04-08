@@ -33,7 +33,7 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
 // #endregion
 
 // #region Fragments
-export const OrderTransactionFieldsFragment = graphql(`
+export const orderTransactionFieldsFragment = graphql(`
   fragment OrderTransactionFields on OrderTransaction {
     id
     kind
@@ -41,6 +41,7 @@ export const OrderTransactionFieldsFragment = graphql(`
     gateway
     createdAt
     authorizationCode
+    authorizationExpiresAt
     accountNumber
     receiptJson @include(if: $includeReceiptJson)
     settlementCurrency
@@ -92,7 +93,7 @@ export const OrderTransactionFieldsFragment = graphql(`
 // #endregion
 
 // #region Queries
-export const QueryOrderTransactions = graphql(
+export const getOrderTransactionsQuery = graphql(
   `
     query getOrderTransactions(
       $maxEntriesPerRun: Int!
@@ -121,6 +122,6 @@ export const QueryOrderTransactions = graphql(
       }
     }
   `,
-  [OrderTransactionFieldsFragment]
+  [orderTransactionFieldsFragment]
 );
 // #endregion

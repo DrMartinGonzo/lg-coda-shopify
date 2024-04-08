@@ -1,10 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { SyncTableRestContinuation } from './Fetchers/SyncTableRest';
-import { CACHE_DEFAULT } from './constants';
-import { REST_DEFAULT_API_VERSION } from './config/config';
-import { getShopifyRequestHeaders, logAdmin } from './utils/helpers';
 import { FetchRequestOptions } from './Fetchers/Fetcher.types';
+import { REST_DEFAULT_API_VERSION } from './config/config';
+import { CACHE_DEFAULT } from './constants';
+import { getShopifyRequestHeaders } from './utils/helpers';
 
 // TODO: better error handling
 
@@ -12,18 +12,19 @@ export function getRestBaseUrl(context: coda.ExecutionContext): string {
   return `${context.endpoint}/admin/api/${REST_DEFAULT_API_VERSION}`;
 }
 
-export const cleanQueryParams = <T>(params: T) => {
+export const cleanQueryParams = <T>(params: T): T => {
+  if (!params) return {} as T;
+
   Object.keys(params).forEach((key) => {
     if (params[key] === undefined) {
       delete params[key];
     }
   });
-
   return params;
 };
 
 export const extractNextUrlPagination = (response) => {
-  let nextUrl;
+  let nextUrl: string;
   const link = response.headers.link;
   if (link) {
     const parts = link.split(',');

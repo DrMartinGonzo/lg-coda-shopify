@@ -21,7 +21,7 @@ export function buildInventoryItemsSearchQuery(filters: { [key: string]: any }) 
 // #endregion
 
 // #region Fragments
-export const InventoryItemFieldsFragment = graphql(`
+export const inventoryItemFieldsFragment = graphql(`
   fragment InventoryItemFields on InventoryItem {
     harmonizedSystemCode
     createdAt
@@ -50,7 +50,7 @@ export const InventoryItemFieldsFragment = graphql(`
 // #endregion
 
 // #region Queries
-export const QueryAllInventoryItems = graphql(
+export const getInventoryItemsQuery = graphql(
   `
     query GetInventoryItems($maxEntriesPerRun: Int!, $cursor: String, $searchQuery: String) {
       inventoryItems(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
@@ -65,14 +65,14 @@ export const QueryAllInventoryItems = graphql(
       }
     }
   `,
-  [InventoryItemFieldsFragment]
+  [inventoryItemFieldsFragment]
 );
 // #endregion
 
 // #region Mutations
-export const UpdateInventoryItem = graphql(
+export const updateInventoryItemMutation = graphql(
   `
-    mutation inventoryItemUpdate($id: ID!, $input: InventoryItemUpdateInput!) {
+    mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {
       inventoryItemUpdate(id: $id, input: $input) {
         inventoryItem {
           ...InventoryItemFields
@@ -84,6 +84,6 @@ export const UpdateInventoryItem = graphql(
       }
     }
   `,
-  [InventoryItemFieldsFragment]
+  [inventoryItemFieldsFragment]
 );
 // #endregion
