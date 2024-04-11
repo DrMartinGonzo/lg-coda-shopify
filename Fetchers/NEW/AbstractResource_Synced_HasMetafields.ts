@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/graphql';
 
@@ -11,21 +12,23 @@ import { getMetaFieldFullKey } from '../../resources/metafields/utils/metafields
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { SyncTableRestContinuation, SyncTableSyncResult, SyncTableUpdateResult } from '../SyncTable/SyncTable.types';
-import { FindAllResponse, SaveArgs } from './AbstractResource';
+import { FindAllResponse, RestApiData, SaveArgs } from './AbstractResource';
 import { AbstractResource_Synced, SyncFunction } from './AbstractResource_Synced';
 import { Metafield, RestMetafieldOwnerType } from './Resources/Metafield';
 import { SearchParams } from './RestClientNEW';
 import { SyncTableRestHasRestMetafields } from './SyncTableRestHasRestMetafields';
 
+// #endregion
+
 // #region Types
-export type ApiDataWithMetafields = {
+export interface RestApiDataWithMetafields extends RestApiData {
   metafields:
     | Metafield[]
     | null
     | {
         [key: string]: any;
       };
-};
+}
 
 export type AugmentWithMetafieldsFunction = (
   base: AbstractResource_Synced_HasMetafields
@@ -33,7 +36,7 @@ export type AugmentWithMetafieldsFunction = (
 // #endregion
 
 export abstract class AbstractResource_Synced_HasMetafields extends AbstractResource_Synced {
-  public apiData: any & ApiDataWithMetafields;
+  public apiData: RestApiDataWithMetafields;
 
   protected static readonly metafieldRestOwnerType: RestMetafieldOwnerType;
   protected static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
@@ -85,7 +88,7 @@ export abstract class AbstractResource_Synced_HasMetafields extends AbstractReso
     };
   }
 
-  public static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
+  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
     if (hasMetafieldsInRow(newRow)) {
       const metafieldDefinitions = await this.getMetafieldDefinitions(context);
       const metafieldSets = await getMetafieldKeyValueSetsFromUpdate(newRow, metafieldDefinitions, context);

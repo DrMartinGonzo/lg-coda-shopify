@@ -21,7 +21,10 @@
     "validate:admin": "yarn set_release:admin && coda validate pack.ts",
     "validate:user": "yarn set_release:user && coda validate pack.ts",
     "test:update:article": "yarn set_release:admin && coda execute ./pack.ts Articles:update \"$(cat ./tests/rowUpdateData/update-article.json | tr '\n' ' ')\"",
-    "test:update:metafield": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=PRODUCT \"$(cat ./tests/rowUpdateData/update-metafield.json | tr '\n' ' ')\"",
+    "test:update:file": "yarn set_release:admin && coda execute ./pack.ts Files:update \"$(cat ./tests/rowUpdateData/update-file.json | tr '\n' ' ')\"",
+    "test:update:location": "yarn set_release:admin && coda execute ./pack.ts Locations:update \"$(cat ./tests/rowUpdateData/update-location.json | tr '\n' ' ')\"",
+    "test:update:metafield": "yarn set_release:admin && coda execute ./pack.ts Metafields:update --dynamicUrl=PAGE \"$(cat ./tests/rowUpdateData/update-metafield.json | tr '\n' ' ')\"",
+    "test:update:metaobject": "yarn set_release:admin && coda execute ./pack.ts Metaobjects:update --dynamicUrl=967475456 \"$(cat ./tests/rowUpdateData/update-metaobject.json | tr '\n' ' ')\"",
     "test:update:product": "yarn set_release:admin && coda execute ./pack.ts Products:update \"$(cat ./tests/rowUpdateData/update-product.json | tr '\n' ' ')\"",
     "test:update:collection": "yarn set_release:admin && coda execute ./pack.ts Collections:update \"$(cat ./tests/rowUpdateData/update-collection.json | tr '\n' ' ')\""
   },

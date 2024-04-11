@@ -6,9 +6,10 @@ import { CollectRow } from '../../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../../schemas/syncTable/ProductSchemaRest';
-import { BaseContext, FindAllResponse } from '../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
 import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
 import { SearchParams } from '../RestClientNEW';
+import { RestResourcePlural, RestResourceSingular } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -37,6 +38,8 @@ export class Collect extends AbstractResource_Synced {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Collect' as ResourceDisplayName;
+
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'collects/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'collects.json' },
@@ -45,8 +48,8 @@ export class Collect extends AbstractResource_Synced {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'collect',
-      plural: 'collects',
+      singular: RestResourceSingular.Collect,
+      plural: RestResourcePlural.Collect,
     },
   ];
 
@@ -64,7 +67,7 @@ export class Collect extends AbstractResource_Synced {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,
-        fields: syncTableManager.getSyncedStandardFields(collectFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(collectFieldDependencies).join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         collection_id: collectionId,
 

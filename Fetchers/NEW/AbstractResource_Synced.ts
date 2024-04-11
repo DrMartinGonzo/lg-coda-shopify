@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
@@ -7,10 +8,12 @@ import { SyncTableParamValues, SyncTableSyncResult, SyncTableUpdateResult } from
 import { AbstractResource, BaseConstructorArgs, FindAllResponse } from './AbstractResource';
 import { Metafield } from './Resources/Metafield';
 import { SearchParams } from './RestClientNEW';
-import { SyncTableManagerResult, SyncTableRestNew } from './SyncTableRestNew';
+import { SyncTableRestNew } from './SyncTableRestNew';
+
+// #endregion
 
 // #region Types
-interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
+export interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
   fromRow?: FromRow;
 }
 
@@ -34,7 +37,9 @@ export interface FromRow<RowT extends BaseRow = BaseRow> {
   metafields?: Array<Metafield>;
 }
 
-type SyncTableDefinition = coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>;
+export type SyncTableDefinition =
+  | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
+  | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>;
 
 export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = SyncTableDefT extends never
   ? coda.ParamValues<coda.ParamDefs>
@@ -52,14 +57,24 @@ export abstract class AbstractResource_Synced extends AbstractResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
 
+  /**
+   * Get the static Coda schema for the resource
+   */
   public static getStaticSchema(): coda.ObjectSchema<string, string> {
     return;
   }
 
+  /**
+   * Get the dynamic Coda schema for the resource
+   */
   public static async getDynamicSchema(params: GetSchemaArgs): Promise<coda.ObjectSchema<string, string> | undefined> {
     return;
   }
 
+  /**
+   * Get the current Array Schema for the resource. Dynamic if it exists, else static.
+   * Keep the schema in a cache to avoid refetching dynamic schema
+   */
   static async getArraySchema({ context, codaSyncParams = [], normalized = true }: GetSchemaArgs) {
     if (context.sync?.schema) {
       this._schemaCache = context.sync.schema as unknown as coda.ArraySchema<coda.ObjectSchema<string, string>>;
@@ -72,6 +87,9 @@ export abstract class AbstractResource_Synced extends AbstractResource {
     return this._schemaCache;
   }
 
+  /**
+   * Generate a sync function to be used by a SyncTableManager
+   */
   protected static makeSyncFunction({ context }: MakeSyncFunctionArgs<AbstractResource_Synced, any>): SyncFunction {
     return (nextPageQuery: SearchParams = {}) =>
       this.baseFind({
@@ -81,7 +99,6 @@ export abstract class AbstractResource_Synced extends AbstractResource {
       });
   }
 
-  // TODO: set real typing instead of Base
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>

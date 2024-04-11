@@ -1,11 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { GraphQlResourceName } from '../../Fetchers/ShopifyGraphQlResource.types';
+import { FromMetaobjectRow, Metaobject } from '../../Fetchers/NEW/Resources/Metaobject';
 import { Identity } from '../../constants';
 import { idToGraphQlGid } from '../../helpers-graphql';
-import { MetaobjectRow } from '../../schemas/CodaRows.types';
-import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
@@ -13,11 +11,7 @@ import {
   autocompleteMetaobjectType,
   inputs,
 } from '../../shared-parameters';
-import { readFragment, readFragmentArray } from '../../utils/graphql';
-import { MetaobjectGraphQlFetcher } from './MetaobjectGraphQlFetcher';
-import { MetaobjectSyncTable } from './MetaobjectSyncTable';
-import { fetchSingleMetaObjectDefinition, parseMetaobjectFieldInputsFromVarArgs } from './metaobjects-functions';
-import { metaobjectFieldDefinitionFragment, metaobjectFragment } from './metaobjects-graphql';
+import { GraphQlResourceName } from '../ShopifyResource.types';
 
 // #endregion
 
@@ -28,58 +22,21 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Metaobject,
   defaultAddDynamicColumns: false,
-  listDynamicUrls: MetaobjectSyncTable.listDynamicUrls,
-  getName: MetaobjectSyncTable.getName,
-  getDisplayUrl: MetaobjectSyncTable.getDisplayUrl,
-  getSchema: MetaobjectSyncTable.getSchema,
+  listDynamicUrls: Metaobject.listDynamicSyncTableUrls,
+  getName: Metaobject.getDynamicSyncTableName,
+  getDisplayUrl: Metaobject.getDynamicSyncTableDisplayUrl,
+  getSchema: async (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) =>
+    Metaobject.getDynamicSchema({ context }),
   formula: {
     name: 'SyncMetaObjects',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
     execute: async function (params, context) {
-      const schema = await handleDynamicSchemaForCli(MetaobjectSyncTable.getSchema, context, params);
-      const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-      const metaobjectSyncTable = new MetaobjectSyncTable(metaobjectFetcher, params);
-      return metaobjectSyncTable.executeSync(schema);
+      return Metaobject.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const definition = await fetchSingleMetaObjectDefinition(
-        { gid: context.sync.dynamicUrl, includeFieldDefinitions: true },
-        context
-      );
-      const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, definition.fieldDefinitions);
-
-      const jobs = updates.map(async (update) => {
-        const originalRow = update.previousValue as unknown as MetaobjectRow;
-        const updatedRow = Object.fromEntries(
-          Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
-        ) as MetaobjectRow;
-
-        const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, originalRow.id);
-        const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-        const metaobjectFieldInputs = await metaobjectFetcher.formatMetaobjectFieldInputs(updatedRow, fieldDefinitions);
-
-        const metaobjectUpdateInput = metaobjectFetcher.formatMetaobjectUpdateInput(updatedRow, metaobjectFieldInputs);
-        const response = await metaobjectFetcher.update({
-          gid: metaobjectGid,
-          updateInput: metaobjectUpdateInput,
-        });
-
-        const metaobject = readFragment(metaobjectFragment, response.body.data.metaobjectUpdate.metaobject);
-        return {
-          ...update.previousValue,
-          ...metaobjectFetcher.formatApiToRow(metaobject),
-        };
-      });
-
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return Metaobject.syncUpdate(params, updates, context);
     },
   },
 });
@@ -118,19 +75,21 @@ export const Action_CreateMetaObject = coda.makeFormula({
     inputs.general.varArgsPropValue,
   ],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Number,
   execute: async function ([type, handle, status = 'DRAFT', ...varargs], context) {
-    let newRow: Omit<MetaobjectRow, 'id'> = {
-      handle,
-      status,
+    const metaobjectFields = Metaobject.parseMetaobjectFieldsFromVarArgs(varargs);
+    const fromRow: FromMetaobjectRow = {
+      row: {
+        type,
+        handle,
+        status,
+      },
+      metaobjectFields,
     };
 
-    const fieldInputs = parseMetaobjectFieldInputsFromVarArgs(varargs);
-    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-    const metaobjectCreateInput = metaobjectFetcher.formatMetaobjectCreateInput(type, newRow, fieldInputs);
-
-    const response = await metaobjectFetcher.create({ createInput: metaobjectCreateInput });
-    return response.body.data.metaobjectCreate.metaobject.id;
+    const newMetaobject = new Metaobject({ context, fromRow });
+    await newMetaobject.saveAndUpdate();
+    return newMetaobject.restId;
   },
 });
 
@@ -168,39 +127,32 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   // schema: coda.withIdentity(MetaObjectBaseSchema, Identity.Metaobject),
   schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
-    let newRow: Omit<MetaobjectRow, 'id'> = {
-      handle,
-      status,
+    const metaobjectFields = Metaobject.parseMetaobjectFieldsFromVarArgs(varargs);
+    const fromRow: FromMetaobjectRow = {
+      row: {
+        id: metaobjectId,
+        handle,
+        status,
+      },
+      metaobjectFields,
     };
 
-    const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId);
-    const fieldInputs = parseMetaobjectFieldInputsFromVarArgs(varargs);
-    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-    const metaobjectUpdateInput = metaobjectFetcher.formatMetaobjectUpdateInput(newRow, fieldInputs);
-
-    const response = await metaobjectFetcher.update({
-      gid: metaobjectGid,
-      updateInput: metaobjectUpdateInput,
-    });
-    if (response?.body?.data?.metaobjectUpdate?.metaobject) {
-      const metaobject = readFragment(metaobjectFragment, response.body.data.metaobjectUpdate.metaobject);
-      return metaobjectFetcher.formatApiToRow(metaobject);
-    }
+    const updatedMetaobject = new Metaobject({ context, fromRow });
+    await updatedMetaobject.saveAndUpdate();
+    return updatedMetaobject.formatToRow();
   },
 });
 
 export const Action_DeleteMetaObject = coda.makeFormula({
   name: 'DeleteMetaObject',
-  description: 'Delete a metaobject.',
+  description: 'Delete an existing Shopify metaobject and return `true` on success.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.metafieldObject.id],
   isAction: true,
-  resultType: coda.ValueType.String,
+  resultType: coda.ValueType.Boolean,
   execute: async function ([metaobjectId], context) {
-    const metaobjectGid = idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId);
-    const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-    const response = await metaobjectFetcher.delete(metaobjectGid);
-    return response.body.data.metaobjectDelete.deletedId;
+    await Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId) });
+    return true;
   },
 });
 // #endregion

@@ -3,8 +3,6 @@ import UrlParse from 'url-parse';
 
 import { PageInfo, PageInfoParams } from '@shopify/shopify-api/lib/clients/types';
 import { REST_DEFAULT_API_VERSION } from '../../config/config';
-import { CACHE_DEFAULT } from '../../constants';
-import { cleanQueryParams } from '../../helpers-rest';
 import { getShopifyRequestHeaders } from '../../utils/helpers';
 import { FetchRequestOptions } from '../Fetcher.types';
 
@@ -105,7 +103,17 @@ export class RestClientNEW {
     this.apiVersion = apiVersion;
   }
 
-  // }
+  private static cleanQueryParams = <T>(params: T): T => {
+    if (!params) return {} as T;
+
+    Object.keys(params).forEach((key) => {
+      if (params[key] === undefined) {
+        delete params[key];
+      }
+    });
+    return params;
+  };
+
   private static parsePageInfoLinks(link: string, query: SearchParams) {
     const pageInfo: PageInfo = {
       limit: query?.limit ? query?.limit.toString() : RestClientNEW.DEFAULT_LIMIT,
@@ -164,27 +172,23 @@ export class RestClientNEW {
   protected async request<T = any>(params: RequestParams) {
     const url = coda.withQueryParams(
       apiUrlFormatter(this.context, params.path, REST_DEFAULT_API_VERSION),
-      cleanQueryParams(params.query ?? {})
+      RestClientNEW.cleanQueryParams(params.query ?? {})
     );
 
-    const options: coda.FetchRequest = {
+    const fetcherOptions: coda.FetchRequest = {
       method: params.method,
       url,
       headers: getShopifyRequestHeaders(this.context),
     };
-
     if (['POST', 'PUT'].includes(params.method) && 'data' in params) {
-      options.body = JSON.stringify(params.data);
+      fetcherOptions.body = JSON.stringify(params.data);
+    }
+    // Use default Coda cacheTtlSecs value or set a custom one if present
+    if (params.options?.cacheTtlSecs !== undefined) {
+      fetcherOptions.cacheTtlSecs = params.options.cacheTtlSecs;
     }
 
-    // always disable cache when in a synctable context, unless forceSyncContextCache is set
-    if (this.context.sync && !params.options?.forceSyncContextCache) {
-      options.cacheTtlSecs = 0;
-    } else {
-      options.cacheTtlSecs = params.options?.cacheTtlSecs ?? CACHE_DEFAULT;
-    }
-
-    const response = await this.context.fetcher.fetch<T>(options);
+    const response = await this.context.fetcher.fetch<T>(fetcherOptions);
 
     const requestReturn: RestRequestReturn<T> = {
       body: response.body,

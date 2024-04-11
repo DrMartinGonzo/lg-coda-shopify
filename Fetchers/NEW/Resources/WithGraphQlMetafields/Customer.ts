@@ -1,7 +1,13 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
+
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { REST_DEFAULT_LIMIT } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_Customers } from '../../../../resources/customers/customers-coda';
 import { CustomerRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -19,7 +25,7 @@ import {
   formatAddressDisplayName,
   formatPersonDisplayValue,
 } from '../../../../utils/helpers';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -27,13 +33,19 @@ import {
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../../AbstractResource_Synced';
-import { ApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
+import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
 import { Metafield, RestMetafieldOwnerType } from '../Metafield';
 
 // #endregion
+
+export type CustomerCodaData = {
+  [K in keyof (typeof CustomerSyncTableSchema)['properties']]: coda.SchemaType<
+    (typeof CustomerSyncTableSchema)['properties'][K]
+  >;
+};
 
 interface FindArgs extends BaseContext {
   id: number | string;
@@ -76,7 +88,7 @@ interface SendInviteArgs extends BaseContext {
 }
 
 export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     accepts_marketing: boolean | null;
     accepts_marketing_updated_at: string | null;
     addresses: { [key: string]: unknown }[] | null;
@@ -108,6 +120,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
     verified_email: boolean | null;
   };
 
+  static readonly displayName = 'Customer' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Customer;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'customer';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
@@ -131,8 +144,8 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'customer',
-      plural: 'customers',
+      singular: RestResourceSingular.Customer,
+      plural: RestResourcePlural.Customer,
     },
   ];
 
@@ -166,7 +179,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
       this.all({
         context,
 
-        fields: syncTableManager.getSyncedStandardFields(customerFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(customerFieldDependencies).join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         ids: ids && ids.length ? ids.join(',') : undefined,
         created_at_min: created_at ? created_at[0] : undefined,
@@ -214,14 +227,14 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
       context,
       urlIds: {},
       params: {
-        ids: ids,
-        since_id: since_id,
-        created_at_min: created_at_min,
-        created_at_max: created_at_max,
-        updated_at_min: updated_at_min,
-        updated_at_max: updated_at_max,
-        limit: limit,
-        fields: fields,
+        ids,
+        since_id,
+        created_at_min,
+        created_at_max,
+        updated_at_min,
+        updated_at_max,
+        limit,
+        fields,
         ...otherArgs,
       },
       options,
@@ -341,7 +354,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'product';
+        m.apiData.owner_resource = Customer.metafieldRestOwnerType;
         return m;
       });
     }
@@ -407,7 +420,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

@@ -57,7 +57,7 @@ export class SyncTableRestNew<BaseT extends AbstractResource_Synced> {
     this.effectiveStandardFromKeys = coda.getEffectivePropertyKeysFromSchema(this.schema);
   }
 
-  public getSyncedStandardFields(dependencies: Array<FieldDependency<any>>): string[] {
+  public getSyncedStandardFields(dependencies?: Array<FieldDependency<any>>): string[] {
     return handleFieldDependencies(this.effectiveStandardFromKeys, dependencies);
   }
 
@@ -77,6 +77,7 @@ export class SyncTableRestNew<BaseT extends AbstractResource_Synced> {
       const response = await sync(nextQuery, adjustLimit);
       const data = response.data;
 
+      // TODO: Don't set continuation if there's no next page, except for smart collections
       /** Always set continuation if extraContinuationData is set */
       if (this.extraContinuationData) {
         this.continuation = {

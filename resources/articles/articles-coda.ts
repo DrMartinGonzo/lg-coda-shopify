@@ -21,8 +21,9 @@ export const Sync_Articles = coda.makeSyncTable({
   identityName: Identity.Article,
   schema: ArticleSyncTableSchema,
   dynamicOptions: {
-    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-      return Article.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return Article.getDynamicSchema({ context, codaSyncParams });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -36,7 +37,6 @@ export const Sync_Articles = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - getSchema method in dynamicOptions.
      *  - {@link Article.getDynamicSchema}
      *  - {@link Article.makeSyncFunction}
      */

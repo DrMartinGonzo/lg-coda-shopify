@@ -156,19 +156,24 @@ export async function wait(ms: number) {
 /**
  * Retrieve all object schema keys or fromKeys if present
  */
-export function retrieveObjectSchemaEffectiveKeys<T extends ReturnType<typeof coda.makeObjectSchema>>(objectSchema: T) {
-  const properties = objectSchema.properties;
-  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(objectSchema, key));
+export function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
+  // make it easier if the caller simply passed in the full sync schema.
+  if (schema.type === coda.ValueType.Array) schema = schema.items;
+  if (schema.type !== coda.ValueType.Object) return;
+
+  const properties = schema.properties;
+  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(schema, key));
 }
 
 /**
  * Get a single object schema keys or fromKey if present
  */
-export function getObjectSchemaEffectiveKey<T extends ReturnType<typeof coda.makeObjectSchema>>(
-  objectSchema: T,
-  key: string
-) {
-  const properties = objectSchema.properties;
+export function getObjectSchemaEffectiveKey(schema: coda.Schema, key: string) {
+  // make it easier if the caller simply passed in the full sync schema.
+  if (schema.type === coda.ValueType.Array) schema = schema.items;
+  if (schema.type !== coda.ValueType.Object) return;
+
+  const properties = schema.properties;
   if (properties.hasOwnProperty(key)) {
     const property = properties[key];
     const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
@@ -177,11 +182,12 @@ export function getObjectSchemaEffectiveKey<T extends ReturnType<typeof coda.mak
   throw new Error(`Schema doesn't have ${key} property`);
 }
 
-export function getObjectSchemaNormalizedKey<T extends ReturnType<typeof coda.makeObjectSchema>>(
-  objectSchema: T,
-  fromKey: string
-) {
-  const properties = objectSchema.properties;
+export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: string) {
+  // make it easier if the caller simply passed in the full sync schema.
+  if (schema.type === coda.ValueType.Array) schema = schema.items;
+  if (schema.type !== coda.ValueType.Object) return;
+
+  const properties = schema.properties;
   let found = fromKey;
   Object.keys(properties).forEach((propKey) => {
     const property = properties[propKey];
@@ -217,7 +223,7 @@ export const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContex
  */
 export function handleFieldDependencies(
   effectivePropertyKeys: Array<string>,
-  fieldDependencies: Array<FieldDependency<any>>,
+  fieldDependencies: Array<FieldDependency<any>> = [],
   forcedFields: Array<string> = []
 ) {
   fieldDependencies.forEach((def) => {
@@ -434,5 +440,13 @@ export function filterObjectKeys<LolT extends Array<string>, ObjT>(obj: ObjT, ke
       acc[key] = obj[key];
       return acc;
     }, {}) as ObjT;
+}
+
+// TODO: rewrite to handle nested objects
+export function deleteUndefinedInObject<T>(obj: T) {
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] === undefined) delete obj[key];
+  });
+  return obj;
 }
 // #endregion

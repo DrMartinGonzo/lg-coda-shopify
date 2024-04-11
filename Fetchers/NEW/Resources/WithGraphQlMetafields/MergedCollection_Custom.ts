@@ -9,6 +9,7 @@ import { MakeSyncFunctionArgs, SyncFunction } from '../../AbstractResource_Synce
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
 import { MergedCollection } from './MergedCollection';
+import { RestResourcePlural, RestResourceSingular } from '../../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -45,10 +46,11 @@ export class MergedCollection_Custom extends MergedCollection {
     { http_method: 'post', operation: 'post', ids: [], path: 'custom_collections.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'custom_collections/<id>.json' },
   ];
+
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'custom_collection',
-      plural: 'custom_collections',
+      singular: RestResourceSingular.CustomCollection,
+      plural: RestResourcePlural.CustomCollection,
     },
   ];
 
@@ -68,7 +70,7 @@ export class MergedCollection_Custom extends MergedCollection {
       MergedCollection_Custom.all({
         context,
 
-        fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         ids: ids && ids.length ? ids.join(',') : undefined,
         handle,

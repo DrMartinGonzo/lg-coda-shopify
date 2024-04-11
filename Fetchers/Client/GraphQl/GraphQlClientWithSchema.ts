@@ -9,7 +9,7 @@ import { CodaMetafieldKeyValueSet } from '../../../helpers-setup';
 // #endregion
 
 // #region type
-export interface graphQlFetchParams {
+interface graphQlFetchParams {
   gid: string;
 }
 // #endregion

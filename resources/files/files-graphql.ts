@@ -1,4 +1,4 @@
-import { graphql } from '../../utils/graphql';
+import { ResultOf, graphql } from '../../utils/graphql';
 
 // #region Fragments
 export const genericFileFieldsFragment = graphql(`
@@ -46,7 +46,7 @@ export const fileFieldsFragment = graphql(
       alt @include(if: $includeAlt)
       createdAt @include(if: $includeCreatedAt)
       updatedAt @include(if: $includeUpdatedAt)
-      thumbnail: preview @include(if: $includeThumbnail) {
+      preview @include(if: $includePreview) {
         image {
           url
         }
@@ -73,7 +73,7 @@ export const getFilesQuery = graphql(
       $includeFileSize: Boolean!
       $includeHeight: Boolean!
       $includeMimeType: Boolean!
-      $includeThumbnail: Boolean!
+      $includePreview: Boolean!
       $includeUpdatedAt: Boolean!
       $includeUrl: Boolean!
       $includeWidth: Boolean!
@@ -103,7 +103,7 @@ export const getSingleFileQuery = graphql(
       $includeFileSize: Boolean!
       $includeHeight: Boolean!
       $includeMimeType: Boolean!
-      $includeThumbnail: Boolean!
+      $includePreview: Boolean!
       $includeUpdatedAt: Boolean!
       $includeUrl: Boolean!
       $includeWidth: Boolean!
@@ -133,7 +133,7 @@ export const updateFilesMutation = graphql(
       $includeFileSize: Boolean!
       $includeHeight: Boolean!
       $includeMimeType: Boolean!
-      $includeThumbnail: Boolean!
+      $includePreview: Boolean!
       $includeUpdatedAt: Boolean!
       $includeUrl: Boolean!
       $includeWidth: Boolean!

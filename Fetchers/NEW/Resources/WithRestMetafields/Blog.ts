@@ -3,7 +3,11 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { REST_DEFAULT_LIMIT } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_Blogs } from '../../../../resources/blogs/blogs-coda';
 import { BlogRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -14,7 +18,7 @@ import {
 } from '../../../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../../../utils/helpers';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -24,7 +28,7 @@ import {
 } from '../../AbstractResource_Synced';
 import {
   AbstractResource_Synced_HasMetafields,
-  ApiDataWithMetafields,
+  RestApiDataWithMetafields,
 } from '../../AbstractResource_Synced_HasMetafields';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
@@ -49,7 +53,7 @@ interface AllArgs extends BaseContext {
 }
 
 export class Blog extends AbstractResource_Synced_HasMetafields {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     commentable: string | null;
     created_at: string | null;
@@ -63,6 +67,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Blog' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStoreBlog;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'blog';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
@@ -77,8 +82,8 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'blog',
-      plural: 'blogs',
+      singular: RestResourceSingular.Blog,
+      plural: RestResourcePlural.Blog,
     },
   ];
 
@@ -106,7 +111,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,
-        fields: syncTableManager.getSyncedStandardFields(blogFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(blogFieldDependencies).join(','),
         limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
 
         ...nextPageQuery,
@@ -174,7 +179,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'blog';
+        m.apiData.owner_resource = Blog.metafieldRestOwnerType;
         return m;
       });
     }
@@ -196,7 +201,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

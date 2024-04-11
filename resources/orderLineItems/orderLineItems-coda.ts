@@ -1,32 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Shop } from '../../Fetchers/NEW/Resources/Shop';
+import { OrderLineItem } from '../../Fetchers/NEW/Resources/OrderLineItem';
+import { Identity } from '../../constants';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../../shared-parameters';
-import { OrderRestFetcher } from '../orders/OrderRestFetcher';
-import { OrderLineItemSyncTable } from './OrderLineItemSyncTable';
-import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
-import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
-import { Identity } from '../../constants';
-
-import type { OrderRow } from '../../schemas/CodaRows.types';
-import { deepCopy } from '../../utils/helpers';
 
 // #endregion
-
-async function getOrderLineItemSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(OrderLineItemSyncTableSchema);
-
-  const shopCurrencyCode = await Shop.activeCurrency({ context });
-
-  // Main props
-  augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_discount['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-
-  return augmentedSchema;
-}
 
 // #region Sync tables
 export const Sync_OrderLineItems = coda.makeSyncTable({
@@ -36,12 +16,19 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
   identityName: Identity.OrderLineItem,
   schema: OrderLineItemSyncTableSchema,
   dynamicOptions: {
-    getSchema: getOrderLineItemSchema,
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return OrderLineItem.getDynamicSchema({ context, codaSyncParams });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
     name: 'SyncOrderLineItems',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link OrderLineItem.makeSyncFunction}
+     */
     parameters: [
       { ...filters.order.status, name: 'orderStatus' },
 
@@ -58,25 +45,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
         optional: true,
       },
     ],
-    execute: async function (params, context) {
-      const orderFetcher = new OrderRestFetcher(context);
-      const orderLineItemSyncTable = new OrderLineItemSyncTable(orderFetcher, params);
-      const { result, continuation } = await orderLineItemSyncTable.executeSync(OrderLineItemSyncTableSchema);
-
-      return {
-        result: result
-          .map((order: OrderRow) =>
-            order.line_items.map((orderLineItem) => ({
-              ...orderLineItem,
-              order_id: order.id,
-              order: formatOrderReference(order.id, order.name),
-              variant: formatProductVariantReference(orderLineItem.variant_id, orderLineItem.variant_title),
-            }))
-          )
-          .flat(),
-        continuation,
-      };
-    },
+    execute: async (params, context) => OrderLineItem.sync(params, context),
   },
 });
 // #endregion

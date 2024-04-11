@@ -9,6 +9,7 @@ import { MakeSyncFunctionArgs, SyncFunction } from '../../AbstractResource_Synce
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
 import { MergedCollection } from './MergedCollection';
+import { RestResourcePlural, RestResourceSingular } from '../../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -52,10 +53,11 @@ export class MergedCollection_Smart extends MergedCollection {
     { http_method: 'put', operation: 'order', ids: ['id'], path: 'smart_collections/<id>/order.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'smart_collections/<id>.json' },
   ];
+
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'smart_collection',
-      plural: 'smart_collections',
+      singular: RestResourceSingular.SmartCollection,
+      plural: RestResourcePlural.SmartCollection,
     },
   ];
 
@@ -75,7 +77,7 @@ export class MergedCollection_Smart extends MergedCollection {
       MergedCollection_Smart.all({
         context,
 
-        fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         ids: ids && ids.length ? ids.join(',') : undefined,
         handle,
@@ -167,7 +169,7 @@ export class MergedCollection_Smart extends MergedCollection {
       http_method: 'put',
       operation: 'order',
       context: this.context,
-      urlIds: { id: this.id },
+      urlIds: { id: this.apiData.id },
       params: { products: products, sort_order: sort_order, ...otherArgs },
       body: body,
       entity: this,

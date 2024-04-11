@@ -1,7 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { AbstractResource } from './AbstractResource';
 import { AbstractResource_Synced_HasMetafields } from './AbstractResource_Synced_HasMetafields';
 import { SyncTableRestHasGraphQlMetafields } from './SyncTableRestHasGraphQlMetafields';
 

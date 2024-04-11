@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import { GraphQlResourceName, RestResourceSingular } from '../../../../resources/ShopifyResource.types';
 import { Sync_Collections } from '../../../../resources/collections/collections-coda';
 import { CollectionRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -12,14 +12,15 @@ import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../../../utils/helpers';
 import { SyncTableSyncResult } from '../../../SyncTable/SyncTable.types';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
-import { ApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
+import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { ResourceDisplayName } from '../../AbstractResource';
 
 // #endregion
 
 export abstract class MergedCollection extends AbstractResource_Synced_HasMetafields_GraphQl {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     // Collection —————————————————————————————————————————————————————————————————————————————————
     title: string | null;
     body_html: string | null;
@@ -84,6 +85,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
   //   updated_at: string | null;
   // };
 
+  static readonly displayName = 'Collection' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Collection;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'collection';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
@@ -186,7 +188,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'collection';
+        m.apiData.owner_resource = MergedCollection.metafieldRestOwnerType;
         return m;
       });
     }
@@ -217,7 +219,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

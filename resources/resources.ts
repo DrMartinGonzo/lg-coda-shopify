@@ -1,21 +1,16 @@
 // #region Imports
 import { MetafieldOwnerType } from '../types/admin.types';
-
 import { ResourceWithMetafieldDefinitions, ResourceWithMetafields } from './Resource.types';
-import { draftOrderResource } from './draftOrders/draftOrderResource';
-import { locationResource } from './locations/locationResource';
-import { orderLineItemResource } from './orderLineItems/orderLineItemResource';
-import { orderResource } from './orders/orderResource';
 
 // #endregion
 
-const resources = [draftOrderResource, locationResource, orderResource, orderLineItemResource];
+const resources = [];
 
 // #region Helpers
-export const getResourcesWithMetaFieldsSyncTable = (): ResourceWithMetafields<any, any>[] =>
-  resources.filter(
-    (resource) => 'metafields' in resource && resource.metafields.hasSyncTable === true
-  ) as ResourceWithMetafields<any, any>[];
+// export const getResourcesWithMetaFieldsSyncTable = (): ResourceWithMetafields<any, any>[] =>
+//   resources.filter(
+//     (resource) => 'metafields' in resource && resource.metafields.hasSyncTable === true
+//   ) as ResourceWithMetafields<any, any>[];
 
 export const getResourcesWithMetaFieldDefinitions = (): ResourceWithMetafieldDefinitions<any, any>[] =>
   resources.filter(

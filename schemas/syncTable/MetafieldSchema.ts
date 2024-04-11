@@ -170,7 +170,6 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   // Card fields.
   subtitleProperties: ['id', 'type', 'owner_type', 'updated_at'],
   snippetProperty: 'rawValue',
-  // imageProperty: 'featuredImage',
   linkProperty: 'admin_url',
 });
 

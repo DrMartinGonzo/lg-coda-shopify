@@ -4,7 +4,11 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_Articles } from '../../../../resources/articles/articles-coda';
 import { ArticleRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -12,7 +16,7 @@ import { ArticleSyncTableSchema, articleFieldDependencies } from '../../../../sc
 import { formatBlogReference } from '../../../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys, parseOptionId } from '../../../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceName } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -22,7 +26,7 @@ import {
 } from '../../AbstractResource_Synced';
 import {
   AbstractResource_Synced_HasMetafields,
-  ApiDataWithMetafields,
+  RestApiDataWithMetafields,
 } from '../../AbstractResource_Synced_HasMetafields';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
@@ -61,7 +65,7 @@ interface AllArgs extends BaseContext {
 // #endregion
 
 export class Article extends AbstractResource_Synced_HasMetafields {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     author: string | null;
     blog_id: number | null;
     body_html: string | null;
@@ -83,7 +87,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
     user_id: number | null;
   };
 
-  protected static resourceName = 'Article' as ResourceName;
+  static readonly displayName = 'Article' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStoreArticle;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'article';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
@@ -99,8 +103,8 @@ export class Article extends AbstractResource_Synced_HasMetafields {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'article',
-      plural: 'articles',
+      singular: RestResourceSingular.Article,
+      plural: RestResourcePlural.Article,
     },
   ];
 
@@ -110,7 +114,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Articles>;
-    let augmentedSchema = deepCopy(ArticleSyncTableSchema);
+    let augmentedSchema = deepCopy(this.getStaticSchema());
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
@@ -146,7 +150,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
       this.all({
         context,
         blog_id: currentBlogId,
-        fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(','),
         limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
         author,
         tag,
@@ -260,7 +264,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'article';
+        m.apiData.owner_resource = Article.metafieldRestOwnerType;
         return m;
       });
     }
@@ -295,7 +299,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

@@ -1,41 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { readFragment } from '../../utils/graphql';
 
-import { GraphQlResourceName } from '../ShopifyResource.types';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { Location } from '../../Fetchers/NEW/Resources/Location';
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { idToGraphQlGid } from '../../helpers-graphql';
 import { LocationRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields, resolveSchemaFromContext } from '../../schemas/schema-helpers';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy } from '../../utils/helpers';
-import { fetchMetafieldDefinitionsGraphQl } from '../metafieldDefinitions/metafieldDefinitions-functions';
-import { getMetafieldKeyValueSetsFromUpdate } from '../metafields/utils/metafields-utils-keyValueSets';
+import { GraphQlResourceName } from '../ShopifyResource.types';
 import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
-import { hasMetafieldsInUpdates } from '../metafields/utils/metafields-utils';
-import { LocationGraphQlFetcher } from './LocationGraphQlFetcher';
-import { LocationSyncTable } from './LocationSyncTable';
-import { handleLocationUpdateJob } from './locations-functions';
-import { locationFragment } from './locations-graphql';
 
 // #endregion
-
-async function getLocationSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(LocationSyncTableSchema);
-  if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(LocationSyncTableSchema, MetafieldOwnerType.Location, context);
-  }
-  // @ts-ignore: admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties = [...augmentedSchema.featuredProperties, 'admin_url', 'stock_url'];
-  return augmentedSchema;
-}
-
-async function resolveLocationSchemaFromContext(params, context: coda.SyncExecutionContext) {
-  const [syncMetafields] = params;
-  return resolveSchemaFromContext(getLocationSchema, context, { syncMetafields });
-}
 
 // #region Sync Tables
 export const Sync_Locations = coda.makeSyncTable({
@@ -46,7 +23,10 @@ export const Sync_Locations = coda.makeSyncTable({
   identityName: Identity.Location,
   schema: LocationSyncTableSchema,
   dynamicOptions: {
-    getSchema: getLocationSchema,
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return Location.getDynamicSchema({ context, codaSyncParams });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -54,52 +34,15 @@ export const Sync_Locations = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link resolveLocationSchemaFromContext}
-     *  - {@link LocationSyncTable}
+     *  - {@link Location.getDynamicSchema}
      */
     parameters: [{ ...filters.general.syncMetafields, optional: true }],
     execute: async function (params, context) {
-      const schema = await resolveLocationSchemaFromContext(params, context);
-      const locationFetcher = new LocationGraphQlFetcher(context);
-      const locationSynctable = new LocationSyncTable(locationFetcher, schema, params);
-      return locationSynctable.executeSync();
+      return Location.sync(params, context);
     },
-
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const metafieldDefinitions = hasMetafieldsInUpdates(updates)
-        ? await fetchMetafieldDefinitionsGraphQl({ ownerType: MetafieldOwnerType.Location }, context)
-        : [];
-
-      const jobs = updates.map(async (update) => {
-        const originalRow = update.previousValue as unknown as LocationRow;
-        const updatedRow = Object.fromEntries(
-          Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
-        ) as LocationRow;
-
-        const metafieldKeyValueSets = await getMetafieldKeyValueSetsFromUpdate(
-          updatedRow,
-          metafieldDefinitions,
-          context
-        );
-
-        return handleLocationUpdateJob(
-          {
-            original: originalRow,
-            updated: updatedRow,
-          },
-          metafieldKeyValueSets,
-          context
-        );
-      });
-
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return Location.syncUpdate(params, updates, context);
     },
   },
 });
@@ -137,19 +80,25 @@ export const Action_UpdateLocation = coda.makeFormula({
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
   ) {
-    let row: LocationRow = {
-      id: locationId,
-      name,
-      address1,
-      address2,
-      city,
-      country_code: countryCode,
-      phone,
-      province_code: provinceCode,
-      zip,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<LocationRow> = {
+      row: {
+        id: locationId,
+        name,
+        address1,
+        address2,
+        city,
+        country_code: countryCode,
+        phone,
+        province_code: provinceCode,
+        zip,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    return handleLocationUpdateJob({ original: undefined, updated: row }, metafieldKeyValueSets, context);
+
+    const updatedLocation = new Location({ context, fromRow });
+    await updatedLocation.saveAndUpdate();
+    return updatedLocation.formatToRow();
   },
 });
 
@@ -164,17 +113,10 @@ export const Action_ActivateLocation = coda.makeFormula({
   // schema: coda.withIdentity(LocationSchema, Identity.Location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID], context) {
-    const locationGid = idToGraphQlGid(GraphQlResourceName.Location, locationID);
-    const locationFetcher = new LocationGraphQlFetcher(context);
-    const { response } = await locationFetcher.activate(locationGid);
-
-    const location = response?.body?.data?.locationActivate?.location;
-    return {
-      id: locationID,
-      graphql_gid: locationGid,
-      name: location?.name,
-      active: location?.isActive,
-    } as LocationRow;
+    const fromRow: FromRow<LocationRow> = { row: { id: locationID } };
+    const location = new Location({ context, fromRow });
+    await location.activate();
+    return location.formatToRow();
   },
 });
 
@@ -193,20 +135,16 @@ export const Action_DeactivateLocation = coda.makeFormula({
   // schema: coda.withIdentity(LocationSchema, Identity.Location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID, destinationLocationID], context) {
-    const locationGid = idToGraphQlGid(GraphQlResourceName.Location, locationID);
-    const destinationLocationGid = destinationLocationID
+    const location = new Location({
+      context,
+      fromRow: { row: { id: locationID } },
+    });
+    const destinationGid = destinationLocationID
       ? idToGraphQlGid(GraphQlResourceName.Location, destinationLocationID)
       : undefined;
-    const locationFetcher = new LocationGraphQlFetcher(context);
-    const { response } = await locationFetcher.deActivate({ gid: locationGid, destinationGid: destinationLocationGid });
 
-    const location = response?.body?.data?.locationDeactivate?.location;
-    return {
-      id: locationID,
-      graphql_gid: locationGid,
-      name: location?.name,
-      active: location?.isActive,
-    } as LocationRow;
+    await location.deActivate(destinationGid);
+    return location.formatToRow();
   },
 });
 // #endregion
@@ -221,13 +159,8 @@ export const Formula_Location = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: LocationSyncTableSchema,
   execute: async ([location_id], context) => {
-    const locationGid = idToGraphQlGid(GraphQlResourceName.Location, location_id);
-    const locationFetcher = new LocationGraphQlFetcher(context);
-    const { response } = await locationFetcher.fetch(locationGid, { cacheTtlSecs: CACHE_DEFAULT });
-    if (response.body?.data?.location) {
-      const location = readFragment(locationFragment, response.body.data.location);
-      return locationFetcher.formatApiToRow(location);
-    }
+    const location = await Location.find({ context, id: idToGraphQlGid(GraphQlResourceName.Location, location_id) });
+    return location.formatToRow();
   },
 });
 

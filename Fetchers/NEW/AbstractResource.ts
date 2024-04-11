@@ -15,23 +15,37 @@ import { RestClientNEW } from './RestClientNEW';
 
 // #region Types
 // export type ResourceName = keyof typeof MetafieldOwnerType;
-export type ResourceName =
+export type ResourceDisplayName =
   | 'Article'
+  | 'Asset'
   | 'Blog'
+  | 'Collect'
   | 'Collection'
   | 'Customer'
-  | 'Draftorder'
+  | 'Draft Order'
+  | 'File'
+  | 'Inventory Level'
   | 'Location'
-  | 'MediaImage'
+  | 'Media Image'
+  | 'Metafield'
+  | 'Metaobject'
   | 'Order'
+  | 'Order Line Item'
   | 'Page'
   | 'Product'
-  | 'Productvariant'
-  | 'Shop';
+  | 'Product Variant'
+  | 'Redirect'
+  | 'Shop'
+  | 'Theme';
 
 export interface BaseConstructorArgs {
   context: coda.ExecutionContext;
   fromData?: Body | null;
+}
+
+export interface RestApiData {
+  id: number | null;
+  [key: string]: any;
 }
 
 export interface BaseContext {
@@ -75,19 +89,18 @@ export interface FindAllResponse<T = AbstractResource> {
 // #endregion
 
 export abstract class AbstractResource {
-  // For instance attributes
-  [key: string]: any;
-
-  protected static resourceName: ResourceName;
-  // TODO: get it from ResourceName
-  /** Normally, the JSON body name is derived from the class name, but in some cases,
-   * we need to hardcode the value, e.g. {@link MergedCollection_Custom} */
-  protected static jsonBodyName: string;
+  static readonly displayName: ResourceDisplayName;
 
   protected static Client = RestClientNEW;
   protected static apiVersion = REST_DEFAULT_API_VERSION;
-  protected static resourceNames: ResourceNames[] = [];
+
   protected static primaryKey = 'id';
+  protected static resourceNames: ResourceNames[] = [];
+  /**
+   * Normally, the JSON body name is derived from the class name, but in some cases,
+   * we need to hardcode the value, e.g. {@link MergedCollection_Custom}
+   */
+  protected static jsonBodyName: string;
   protected static graphQlName: GraphQlResourceName | undefined;
   protected static readOnlyAttributes: string[] = [];
 
@@ -96,7 +109,6 @@ export abstract class AbstractResource {
   protected static paths: ResourcePath[] = [];
   protected context: coda.ExecutionContext;
 
-  // public rowData: Partial<BaseRow>;
   public apiData: any;
 
   protected static getPath({ http_method, operation, urlIds, entity }: GetPathArgs): string {

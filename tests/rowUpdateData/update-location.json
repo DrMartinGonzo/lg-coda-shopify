@@ -1,0 +1,17 @@
+[
+  {
+    "previousValue": {
+      "id": 74534912256,
+      "name": "Shop location",
+      "phone": "+33154748475",
+      "lgs_meta__custom.test_metafield": "un-test-encore"
+    },
+    "newValue": {
+      "id": 74534912256,
+      "name": "Shop location NEW",
+      "phone": "+33154748433",
+      "lgs_meta__custom.test_metafield": "un-test-encore NEW NEW"
+    },
+    "updatedFields": ["phone"]
+  }
+]

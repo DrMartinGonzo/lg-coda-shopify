@@ -1,93 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
-import { Shop } from '../../Fetchers/NEW/Resources/Shop';
+import { AllArgs, Order } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Order';
 import { CACHE_DEFAULT, CACHE_DISABLED, Identity, REST_DEFAULT_LIMIT } from '../../constants';
-import { cleanQueryParams, extractNextUrlPagination } from '../../helpers-rest';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-helpers';
+import { OrderRow } from '../../schemas/CodaRows.types';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { filters, inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy } from '../../utils/helpers';
-import { OrderRestFetcher } from './OrderRestFetcher';
-import { OrderSyncTable } from './OrderSyncTable';
-import { Order } from './orderResource';
 import { formatOrderForDocExport } from './orders-functions';
 
 // #endregion
-
-async function getOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(OrderSyncTableSchema);
-  if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(OrderSyncTableSchema, MetafieldOwnerType.Order, context);
-  }
-
-  const shopCurrencyCode = await Shop.activeCurrency({ context });
-  // Refund order adjustments
-  [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
-    properties.amount['currencyCode'] = shopCurrencyCode;
-    properties.tax_amount['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Refund transactions
-  [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
-    properties.amount['currencyCode'] = shopCurrencyCode;
-    properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Refund line items
-  [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
-    properties.subtotal['currencyCode'] = shopCurrencyCode;
-    properties.total_tax['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Line items
-  [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-    properties.price['currencyCode'] = shopCurrencyCode;
-    properties.total_discount['currencyCode'] = shopCurrencyCode;
-    properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Shipping lines
-  [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
-    properties.discounted_price['currencyCode'] = shopCurrencyCode;
-    properties.price['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Tax lines
-  [
-    augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-    augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
-    augmentedSchema.properties.tax_lines.items.properties,
-    augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-    augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
-  ].forEach((properties) => {
-    properties.price['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Main props
-  augmentedSchema.properties.current_subtotal_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.current_total_additional_fees['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.current_total_discounts['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.current_total_duties['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.current_total_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.current_total_tax['currencyCode'] = shopCurrencyCode;
-
-  augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
-
-  augmentedSchema.properties.total_discounts['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_line_items_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_outstanding['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_shipping_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_tip_received['currencyCode'] = shopCurrencyCode;
-
-  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  return augmentedSchema;
-}
 
 // #region Sync tables
 export const Sync_Orders = coda.makeSyncTable({
@@ -98,12 +19,20 @@ export const Sync_Orders = coda.makeSyncTable({
   identityName: Identity.Order,
   schema: OrderSyncTableSchema,
   dynamicOptions: {
-    getSchema: getOrderSchema,
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return Order.getDynamicSchema({ context, codaSyncParams });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
     name: 'SyncOrders',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link Order.getDynamicSchema}
+     *  - {@link Order.makeSyncFunction}
+     */
     parameters: [
       filters.order.status,
       { ...filters.general.syncMetafields, optional: true },
@@ -118,15 +47,11 @@ export const Sync_Orders = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
     ],
     execute: async function (params, context) {
-      const [status, syncMetafields] = params;
-      const schema = await handleDynamicSchemaForCli(getOrderSchema, context, { syncMetafields });
-      const orderSyncTable = new OrderSyncTable(new OrderRestFetcher(context), params);
-      return orderSyncTable.executeSync(schema);
+      return Order.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const orderSyncTable = new OrderSyncTable(new OrderRestFetcher(context), params);
-      return orderSyncTable.executeUpdate(updates);
+      return Order.syncUpdate(params, updates, context);
     },
   },
 });
@@ -142,11 +67,8 @@ export const Formula_Order = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: OrderSyncTableSchema,
   execute: async function ([orderId], context) {
-    const orderFetcher = new OrderRestFetcher(context);
-    const response = await orderFetcher.fetch(orderId);
-    if (response.body?.order) {
-      return orderFetcher.formatApiToRow(response.body.order);
-    }
+    const order = await Order.find({ id: orderId, context });
+    return order.formatToRow();
   },
 });
 
@@ -171,35 +93,55 @@ export const Formula_Orders = coda.makeFormula({
     [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
     context
   ) {
-    const restParams = cleanQueryParams({
-      fields,
-      limit: REST_DEFAULT_LIMIT,
-      ids: ids && ids.length ? ids.join(',') : undefined,
-      financial_status,
-      fulfillment_status,
-      status,
-      created_at_min: created_at ? created_at[0] : undefined,
-      created_at_max: created_at ? created_at[1] : undefined,
-      updated_at_min: updated_at ? updated_at[0] : undefined,
-      updated_at_max: updated_at ? updated_at[1] : undefined,
-      processed_at_min: processed_at ? processed_at[0] : undefined,
-      processed_at_max: processed_at ? processed_at[1] : undefined,
-    } as Order['rest']['params']['sync']);
-    const orderFetcher = new OrderRestFetcher(context);
-    orderFetcher.validateParams(restParams);
-
-    let items: Order['codaRow'][] = [];
-    let nextUrl: string;
+    let items: Array<OrderRow> = [];
+    let nextPageQuery: any = {};
     let run = true;
-    while (run) {
-      const response = await orderFetcher.fetchAll(restParams, {
-        url: nextUrl,
-        cacheTtlSecs: CACHE_DISABLED, // cache is disabled intentionnaly (we need fresh results when preparing Shopify orders)
-      });
 
-      items = items.concat(response?.body?.orders ? response.body.orders.map(orderFetcher.formatApiToRow) : []);
-      nextUrl = extractNextUrlPagination(response);
-      if (!nextUrl) run = false;
+    while (run) {
+      // FIXME: !!!!!!!
+      // TODO: do a helper function for this
+      let params: AllArgs = {
+        context,
+        limit: REST_DEFAULT_LIMIT,
+        options: { cacheTtlSecs: CACHE_DISABLED },
+      };
+
+      /**
+       * Because the request URL contains the page_info parameter, you can't add
+       * any other parameters to the request, except for limit. Including other
+       * parameters can cause the request to fail.
+       * @see https://shopify.dev/api/usage/pagination-rest
+       */
+      if ('page_info' in nextPageQuery) {
+        params = {
+          ...params,
+          ...nextPageQuery,
+        };
+      } else {
+        params = {
+          ...params,
+
+          fields,
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          processed_at_min: processed_at ? processed_at[0] : undefined,
+          processed_at_max: processed_at ? processed_at[1] : undefined,
+          financial_status,
+          fulfillment_status,
+          status,
+
+          ...nextPageQuery,
+        };
+      }
+
+      const response = await Order.all(params);
+
+      items = items.concat(response.data.map((data) => data.formatToRow()));
+      nextPageQuery = response.pageInfo?.nextPage?.query ?? {};
+
+      if (Object.keys(nextPageQuery).length === 0) run = false;
     }
 
     return items;
@@ -214,12 +156,16 @@ export const Formula_OrderExportFormat = coda.makeFormula({
   cacheTtlSecs: 10, // small cache because we need fresh results
   resultType: coda.ValueType.String,
   execute: async ([orderId], context) => {
-    const orderFetcher = new OrderRestFetcher(context);
-    const response = await orderFetcher.fetch(orderId, {
-      cacheTtlSecs: CACHE_DISABLED, // we need fresh results
+    const order = await Order.find({
+      id: orderId,
+      context,
+      options: {
+        cacheTtlSecs: CACHE_DISABLED, // we need fresh results
+      },
     });
-    if (response?.body?.order) {
-      return formatOrderForDocExport(response.body.order);
+
+    if (order?.apiData) {
+      return formatOrderForDocExport(order.apiData);
     }
   },
 });

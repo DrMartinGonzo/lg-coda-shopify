@@ -133,7 +133,7 @@ export const formatProductForSchemaFromGraphQlApi = (
   };
 
   if (product.options) {
-    obj.options = product.options.map((option) => option.name).join(', ');
+    obj.options = product.options.map((option) => option.name).join(',');
   }
   if (product.featuredImage) {
     obj.featuredImage = product.featuredImage.url;

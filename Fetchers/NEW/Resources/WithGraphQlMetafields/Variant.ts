@@ -1,6 +1,10 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_ProductVariants } from '../../../../resources/productVariants/productVariants-coda';
 import { ProductVariantRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -8,9 +12,9 @@ import { formatProductReference } from '../../../../schemas/syncTable/ProductSch
 import { ProductVariantSyncTableSchema } from '../../../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../../../utils/helpers';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
-import { ApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
+import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { Metafield, RestMetafieldOwnerType } from '../Metafield';
 import { Shop } from '../Shop';
@@ -36,7 +40,7 @@ interface AllArgs extends BaseContext {
 }
 
 export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     barcode: string | null;
     compare_at_price: string | null;
     created_at: string | null;
@@ -70,6 +74,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
     product_title: Product['apiData']['title'];
   };
 
+  static readonly displayName = 'Product Variant' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.ProductVariant;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'variant';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
@@ -94,8 +99,8 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
   protected static readOnlyAttributes: string[] = ['inventory_quantity'];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'variant',
-      plural: 'variants',
+      singular: RestResourceSingular.ProductVariant,
+      plural: RestResourcePlural.ProductVariant,
     },
   ];
 
@@ -194,7 +199,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'variant';
+        m.apiData.owner_resource = Variant.metafieldRestOwnerType;
         return m;
       });
     }
@@ -231,7 +236,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

@@ -5,6 +5,7 @@ import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { metafieldDefinitionFragment } from '../../resources/metafieldDefinitions/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../../resources/metaobjects/metaobjects-graphql';
+import { graphQlGidToId } from '../../helpers-graphql';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -18,7 +19,8 @@ export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       required: true,
       mutable: true,
-      description: 'The unique handle of the object.',
+      description:
+        "The unique handle of the object. If you update the handle, the old handle won't be redirected to the new one automatically.",
     },
     updatedAt: {
       type: coda.ValueType.String,
@@ -58,7 +60,7 @@ export function getMetaobjectReferenceSchema(
     identity: {
       packId: CODA_PACK_ID,
       name: Identity.Metaobject,
-      dynamicUrl: metaobjectReferenceDefinitionId,
+      dynamicUrl: graphQlGidToId(metaobjectReferenceDefinitionId).toString(),
     },
   });
 }

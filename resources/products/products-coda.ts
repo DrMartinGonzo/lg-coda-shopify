@@ -24,8 +24,9 @@ export const Sync_Products = coda.makeSyncTable({
   identityName: Identity.Product,
   schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
-    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-      return Product.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return Product.getDynamicSchema({ context, codaSyncParams });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -43,7 +44,6 @@ export const Sync_Products = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - getSchema method in dynamicOptions.
      *  - {@link Product.getDynamicSchema}
      *  - {@link Product.generateSharedSyncFunction}
      */

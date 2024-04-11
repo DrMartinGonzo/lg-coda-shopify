@@ -11,7 +11,7 @@ import { separatePrefixedMetafieldsKeysFromKeys } from './metafields-utils-keys'
 /**
  * Wether an update triggered by a 2-way sync table has metafields in it.
  */
-export function hasMetafieldsInUpdates(
+function hasMetafieldsInUpdates(
   updates: Array<coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>>
 ) {
   return updates.map((update) => hasMetafieldsInUpdate(update)).some(Boolean);
@@ -20,6 +20,7 @@ export function hasMetafieldsInUpdates(
 /**
  * Wether an update triggered by a 2-way sync table has metafields in it.
  */
+// TODO: combine with hasMetafieldsInRow
 export function hasMetafieldsInUpdate(
   update: coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>
 ) {

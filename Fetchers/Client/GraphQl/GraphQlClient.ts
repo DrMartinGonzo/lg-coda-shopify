@@ -4,13 +4,14 @@ import { ResultOf, VariablesOf } from '../../../utils/graphql';
 
 import { print as printGql } from '@0no-co/graphql.web';
 import { TadaDocumentNode } from 'gql.tada';
-import { calcSyncTableMaxEntriesPerRunNew, checkThrottleStatus, makeGraphQlRequest } from '../../../helpers-graphql';
+import { getGraphQlSyncTableMaxEntriesAndDeferWait, makeGraphQlRequest } from '../../../helpers-graphql';
 import { ResourceUnion } from '../../../resources/Resource.types';
 import { PageInfo } from '../../../types/admin.types';
-import { logAdmin, wait } from '../../../utils/helpers';
-import { FetchRequestOptions, IClient, ShopifyGraphQlRequestCost, ShopifyGraphQlUserError } from '../../Fetcher.types';
-import { parseContinuationProperty, stringifyContinuationProperty } from '../../SyncTable/Rest/SyncTableRest';
-import { SyncTableGraphQlContinuationNew } from '../../SyncTable/SyncTable.types';
+import { wait } from '../../../utils/helpers';
+import { FetchRequestOptions, IClient } from '../../Fetcher.types';
+import { SyncTableGraphQlContinuation, SyncTableGraphQlExtraContinuationData } from '../../SyncTable/SyncTable.types';
+import { stringifyContinuationProperty } from '../../fetcher-helpers';
+import { ShopifyGraphQlRequestCost, ShopifyGraphQlUserError } from '../../NEW/GraphQLError';
 
 // #endregion
 
@@ -58,13 +59,15 @@ export abstract class GraphQlClient<ResourceT extends ResourceUnion> implements 
     variables: VariablesOf<TadaT>,
     requestOptions: FetchRequestOptions = {},
     prevContinuation: SyncTableGraphQlContinuation = null,
+    extraContinuationData: SyncTableGraphQlExtraContinuationData = {}
   ) {
-    let continuation: SyncTableGraphQlContinuationNew = null;
+    let continuation: SyncTableGraphQlContinuation = null;
 
     const defaultMaxEntriesPerRun = variables.maxEntriesPerRun ?? 50;
-    const { maxEntriesPerRun, shouldDeferBy } = await this.getGraphQlMaxEntriesAndDeferWait(
+    const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
       defaultMaxEntriesPerRun,
-      prevContinuation
+      prevContinuation,
+      this.context
     );
     if (shouldDeferBy > 0) {
       await wait(shouldDeferBy);
@@ -99,7 +102,7 @@ export abstract class GraphQlClient<ResourceT extends ResourceUnion> implements 
       continuation = {
         graphQlLock: 'true',
         retries,
-        extraContinuationData: {},
+        extraContinuationData: extraContinuationData,
       };
 
       if (pageInfo && pageInfo.hasNextPage) {
@@ -129,7 +132,7 @@ export abstract class GraphQlClient<ResourceT extends ResourceUnion> implements 
     requestOptions: FetchRequestOptions = {}
   ) {
     let dataArray: Array<ResultOf<TadaT>> = [];
-    let prevContinuation: SyncTableGraphQlContinuationNew;
+    let prevContinuation: SyncTableGraphQlContinuation;
     let run = true;
 
     while (run) {
@@ -146,7 +149,7 @@ export abstract class GraphQlClient<ResourceT extends ResourceUnion> implements 
 
       if (continuation?.cursor) {
         // TODO: fix 'as'
-        prevContinuation = continuation as SyncTableGraphQlContinuationNew;
+        prevContinuation = continuation as SyncTableGraphQlContinuation;
       } else {
         run = false;
       }
@@ -154,52 +157,6 @@ export abstract class GraphQlClient<ResourceT extends ResourceUnion> implements 
 
     return dataArray;
   }
-
-  async getGraphQlMaxEntriesAndDeferWait(
-    defaultMaxEntriesPerRun: number,
-    prevContinuation: SyncTableGraphQlContinuationNew
-  ) {
-    const previousLockAcquired = prevContinuation?.graphQlLock ? prevContinuation.graphQlLock === 'true' : false;
-    const throttleStatus = await checkThrottleStatus(this.context);
-    const { currentlyAvailable, maximumAvailable } = throttleStatus;
-
-    let maxEntriesPerRun: number;
-    let shouldDeferBy = 0;
-
-    if (previousLockAcquired) {
-      if (prevContinuation?.reducedMaxEntriesPerRun) {
-        maxEntriesPerRun = prevContinuation.reducedMaxEntriesPerRun;
-      } else if (prevContinuation?.lastCost && prevContinuation?.lastMaxEntriesPerRun !== undefined) {
-        const previousCost = parseContinuationProperty(prevContinuation.lastCost);
-        maxEntriesPerRun = calcSyncTableMaxEntriesPerRunNew(
-          previousCost,
-          prevContinuation.lastMaxEntriesPerRun,
-          throttleStatus
-        );
-      } else {
-        maxEntriesPerRun = defaultMaxEntriesPerRun;
-      }
-    } else {
-      const minPointsNeeded = maximumAvailable - 1;
-      shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
-      maxEntriesPerRun = defaultMaxEntriesPerRun;
-
-      if (shouldDeferBy > 0) {
-        logAdmin(
-          `🚫 Not enough points (${currentlyAvailable}/${minPointsNeeded}). Skip and wait ${shouldDeferBy / 1000}s`
-        );
-      }
-    }
-
-    return {
-      maxEntriesPerRun,
-      shouldDeferBy,
-    };
-  }
-
-  // formatRowToApi(row: any, metafieldKeyValueSets: any[] = []) {
-  //   return {};
-  // }
 
   protected async makeRequest<TadaT extends TadaDocumentNode>(
     documentNode: TadaT,

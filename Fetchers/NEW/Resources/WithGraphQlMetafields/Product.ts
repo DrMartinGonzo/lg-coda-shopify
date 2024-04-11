@@ -9,7 +9,11 @@ import {
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_LIMIT,
 } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_ProductVariants } from '../../../../resources/productVariants/productVariants-coda';
 import { Sync_Products } from '../../../../resources/products/products-coda';
 import { ProductRow } from '../../../../schemas/CodaRows.types';
@@ -19,7 +23,7 @@ import { productVariantFieldDependencies } from '../../../../schemas/syncTable/P
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { arrayUnique, deepCopy, filterObjectKeys } from '../../../../utils/helpers';
 import { SyncTableSyncResult } from '../../../SyncTable/SyncTable.types';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -27,7 +31,7 @@ import {
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../../AbstractResource_Synced';
-import { ApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
+import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
@@ -66,7 +70,7 @@ interface AllArgs extends BaseContext {
 }
 
 export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     title: string | null;
     body_html: string | null;
@@ -94,6 +98,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
     vendor: string | null;
   };
 
+  static readonly displayName = 'Product' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Product;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'product';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
@@ -108,8 +113,8 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'product',
-      plural: 'products',
+      singular: RestResourceSingular.Product,
+      plural: RestResourcePlural.Product,
     },
   ];
 
@@ -162,7 +167,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
       this.all({
         context,
 
-        fields: fields.join(', '),
+        fields: fields.join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         handle: handles && handles.length ? handles.join(',') : undefined,
         ids: ids && ids.length ? ids.join(',') : undefined,
@@ -430,7 +435,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'product';
+        m.apiData.owner_resource = Product.metafieldRestOwnerType;
         return m;
       });
     }
@@ -473,7 +478,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
     };
 
     if (apiData.options && Array.isArray(apiData.options)) {
-      obj.options = apiData.options.map((option) => option.name).join(', ');
+      obj.options = apiData.options.map((option) => option.name).join(',');
     }
     if (apiData.images && Array.isArray(apiData.images)) {
       obj.featuredImage = apiData.images.find((image) => image.position === 1)?.src;
@@ -482,7 +487,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

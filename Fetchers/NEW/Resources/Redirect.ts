@@ -4,9 +4,10 @@ import { REST_DEFAULT_LIMIT } from '../../../constants';
 import { Sync_Redirects } from '../../../resources/redirects/redirects-coda';
 import { RedirectRow } from '../../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../../schemas/syncTable/RedirectSchema';
-import { BaseContext, FindAllResponse } from '../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
 import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
 import { SearchParams } from '../RestClientNEW';
+import { RestResourcePlural, RestResourceSingular } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -33,6 +34,8 @@ export class Redirect extends AbstractResource_Synced {
     target: string | null;
   };
 
+  static readonly displayName = 'Redirect' as ResourceDisplayName;
+
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'redirects/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'redirects.json' },
@@ -42,8 +45,8 @@ export class Redirect extends AbstractResource_Synced {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'redirect',
-      plural: 'redirects',
+      singular: RestResourceSingular.Redirect,
+      plural: RestResourcePlural.Redirect,
     },
   ];
 
@@ -61,7 +64,7 @@ export class Redirect extends AbstractResource_Synced {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,
-        fields: syncTableManager.getSyncedStandardFields(redirectFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(redirectFieldDependencies).join(','),
         limit: adjustLimit ?? REST_DEFAULT_LIMIT,
         path,
         target,

@@ -1,7 +1,8 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { AbstractResource, BaseContext, FindAllResponse } from '../AbstractResource';
+import { AbstractResource, BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
+import { RestResourcePlural, RestResourceSingular } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -30,6 +31,8 @@ export class Theme extends AbstractResource {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Theme' as ResourceDisplayName;
+
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'themes/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'themes.json' },
@@ -39,8 +42,8 @@ export class Theme extends AbstractResource {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'theme',
-      plural: 'themes',
+      singular: RestResourceSingular.Theme,
+      plural: RestResourcePlural.Theme,
     },
   ];
 

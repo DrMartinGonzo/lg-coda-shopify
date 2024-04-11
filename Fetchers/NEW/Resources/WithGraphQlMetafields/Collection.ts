@@ -3,16 +3,20 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { OPTIONS_PUBLISHED_STATUS } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_Collections } from '../../../../resources/collections/collections-coda';
 import { CollectionRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
 import { CollectionSyncTableSchema } from '../../../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../../../utils/helpers';
-import { BaseContext } from '../../AbstractResource';
+import { BaseContext, ResourceDisplayName } from '../../AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
-import { ApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
+import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { RestMetafieldOwnerType } from '../Metafield';
 
@@ -29,7 +33,7 @@ interface ProductsArgs extends BaseContext {
 }
 
 export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     title: string | null;
     body_html: string | null;
     handle: string | null;
@@ -43,6 +47,7 @@ export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Collection' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Collection;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'collection';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
@@ -54,8 +59,8 @@ export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'collection',
-      plural: 'collections',
+      singular: RestResourceSingular.Collection,
+      plural: RestResourcePlural.Collection,
     },
   ];
 
@@ -110,10 +115,7 @@ export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
   // TODO: Add validation
   validateParams = (
     // TODO: fix params
-    params:
-      | Collection['rest']['params']['sync']
-      | Collection['rest']['params']['create']
-      | Collection['rest']['params']['update']
+    params
   ) => {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
     if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {

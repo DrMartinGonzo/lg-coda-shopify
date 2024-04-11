@@ -1,9 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
-import { readFragment, readFragmentArray, VariablesOf } from './utils/graphql';
+import { readFragment, readFragmentArray } from './utils/graphql';
 
 import {
+  CACHE_DEFAULT,
   countryNameAutocompleteValues,
   DEFAULT_THUMBNAIL_SIZE,
+  GRAPHQL_NODES_LIMIT,
   OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
   OPTIONS_ORDER_FINANCIAL_STATUS,
@@ -13,13 +15,13 @@ import {
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_LIMIT,
 } from './constants';
+import { Location } from './Fetchers/NEW/Resources/Location';
+import { Metafield } from './Fetchers/NEW/Resources/Metafield';
+import { Metaobject } from './Fetchers/NEW/Resources/Metaobject';
 import { Blog } from './Fetchers/NEW/Resources/WithRestMetafields/Blog';
-import { graphQlGidToId, idToGraphQlGid } from './helpers-graphql';
-import { fetchLocationsGraphQl } from './resources/locations/locations-functions';
-import { getLocationsQuery, locationFragment } from './resources/locations/locations-graphql';
+import { idToGraphQlGid } from './helpers-graphql';
 import { fetchMetafieldDefinitionsGraphQl } from './resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { getMetaFieldFullKey } from './resources/metafields/utils/metafields-utils-keys';
-import { MetaobjectGraphQlFetcher } from './resources/metaobjects/MetaobjectGraphQlFetcher';
 import {
   fetchAllMetaObjectDefinitions,
   fetchSingleMetaObjectDefinitionByType,
@@ -27,10 +29,8 @@ import {
 import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
-  metaobjectFragment,
 } from './resources/metaobjects/metaobjects-graphql';
 import { fetchProductTypesGraphQl } from './resources/products/products-functions';
-import { getResourcesWithMetaFieldsSyncTable } from './resources/resources';
 import { GraphQlResourceName } from './resources/ShopifyResource.types';
 import { getTemplateSuffixesFor } from './resources/themes/themes-functions';
 import { COMMENTABLE_OPTIONS } from './schemas/syncTable/BlogSchema';
@@ -69,19 +69,18 @@ async function autocompleteBlogParameterWithName(context: coda.ExecutionContext,
 }
 
 async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string): Promise<Array<string>> {
-  const variables = {
-    maxEntriesPerRun: 250,
-    includeMetafields: false,
-    includeLocalPickupSettings: false,
-    includeFulfillmentService: false,
-  } as VariablesOf<typeof getLocationsQuery>;
-  const response = await fetchLocationsGraphQl(variables, context);
+  const response = await Location.all({
+    context,
+    maxEntriesPerRun: GRAPHQL_NODES_LIMIT,
+    fields: {
+      fulfillment_service: false,
+      local_pickup_settings: false,
+      metafields: false,
+    },
+    options: {},
+  });
 
-  if (response?.body?.data?.locations?.nodes) {
-    const locations = readFragment(locationFragment, response.body.data.locations.nodes);
-    return locations.map((location) => formatOptionNameId(location.name, graphQlGidToId(location.id)));
-  }
-  return [];
+  return response.data.map((location) => formatOptionNameId(location.apiData.name, location.restId));
 }
 
 function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
@@ -115,17 +114,17 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
   if (!args.metaobjectId || args.metaobjectId === '') {
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
-  const metaobjectFetcher = new MetaobjectGraphQlFetcher(context);
-  const { response } = await metaobjectFetcher.fetch({
-    gid: idToGraphQlGid(GraphQlResourceName.Metaobject, args.metaobjectId),
-    includeFieldDefinitions: true,
+  const metaobject = await Metaobject.find({
+    context,
+    id: idToGraphQlGid(GraphQlResourceName.Metaobject, args.metaobjectId),
+    fields: { definition: true, fieldDefinitions: true },
+    options: { cacheTtlSecs: CACHE_DEFAULT },
   });
 
-  const metaobject = readFragment(metaobjectFragment, response.body.data.metaobject);
-  const fieldDefinitions = metaobject?.definition
+  const fieldDefinitions = metaobject?.apiData.definition
     ? readFragmentArray(
         metaobjectFieldDefinitionFragment,
-        readFragment(metaobjectDefinitionFragment, metaobject.definition).fieldDefinitions
+        readFragment(metaobjectDefinitionFragment, metaobject.apiData.definition).fieldDefinitions
       )
     : [];
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
@@ -564,16 +563,7 @@ const metafieldInputs = {
     type: coda.ParameterType.String,
     name: 'ownerType',
     description: 'The type of the resource owning the metafield.',
-    autocomplete: async function (
-      context: coda.ExecutionContext,
-      search: string,
-      formulaContext: coda.MetadataContext
-    ) {
-      return getResourcesWithMetaFieldsSyncTable().map((v) => ({
-        display: v.display,
-        value: v.metafields.ownerType,
-      }));
-    },
+    autocomplete: Metafield.listSupportedSyncTables(),
   }),
   value: coda.makeParameter({
     type: coda.ParameterType.String,

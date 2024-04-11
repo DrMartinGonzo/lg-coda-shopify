@@ -1,8 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { TadaDocumentNode } from 'gql.tada';
-import type { GraphQlResourceName } from '../Fetchers/ShopifyGraphQlResource.types';
-import type { RestResourcePlural, RestResourceSingular } from '../Fetchers/ShopifyRestResource.types';
+import type { GraphQlResourceName } from './ShopifyResource.types';
+import type { RestResourcePlural, RestResourceSingular, RestResources } from './ShopifyResource.types';
 import { BaseRow } from '../schemas/CodaRows.types';
 import type { MetafieldOwnerType } from '../types/admin.types';
 
@@ -10,8 +10,7 @@ import type { MetafieldOwnerType } from '../types/admin.types';
 export interface ResourceSyncRestParams {
   limit?: number;
 }
-export interface ResourceCreateRestParams {}
-export interface ResourceUpdateRestParams {}
+
 // #endregion
 
 // #region Resource Definition

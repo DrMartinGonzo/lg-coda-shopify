@@ -266,5 +266,8 @@ export const draftOrderFieldDependencies: FieldDependency<typeof DraftOrderSyncT
     dependencies: ['admin_url'],
   },
 ];
-const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(DraftOrderSyncTableSchema, Identity.DraftOrder);
-const formatDraftOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(
+  DraftOrderSyncTableSchema,
+  Identity.DraftOrder
+);
+export const formatDraftOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });

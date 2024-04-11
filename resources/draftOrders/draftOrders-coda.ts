@@ -1,62 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Shop } from '../../Fetchers/NEW/Resources/Shop';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { DraftOrder } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/DraftOrder';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields, resolveSchemaFromContext } from '../../schemas/schema-helpers';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy } from '../../utils/helpers';
 import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
-import { DraftOrderRestFetcher } from './DraftOrderRestFetcher';
-import { DraftOrderSyncTable } from './DraftOrderSyncTable';
 
 // #endregion
-
-async function getDraftOrderSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-  let augmentedSchema = deepCopy(DraftOrderSyncTableSchema);
-  if (formulaContext.syncMetafields) {
-    augmentedSchema = await augmentSchemaWithMetafields(
-      DraftOrderSyncTableSchema,
-      MetafieldOwnerType.Draftorder,
-      context
-    );
-  }
-
-  const shopCurrencyCode = await Shop.activeCurrency({ context });
-
-  // Line items
-  [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-    properties.price['currencyCode'] = shopCurrencyCode;
-    properties.total_discount['currencyCode'] = shopCurrencyCode;
-    properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Tax lines
-  [
-    augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-    augmentedSchema.properties.tax_lines.items.properties,
-    augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-  ].forEach((properties) => {
-    properties.price['currencyCode'] = shopCurrencyCode;
-  });
-
-  // Main props
-  augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
-
-  // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
-  augmentedSchema.featuredProperties.push('admin_url');
-  return augmentedSchema;
-}
-
-async function resolveDraftOrderSchemaFromContext(params, context: coda.SyncExecutionContext) {
-  const [syncMetafields] = params;
-  return resolveSchemaFromContext(getDraftOrderSchema, context, { syncMetafields });
-}
 
 // #region Sync tables
 export const Sync_DraftOrders = coda.makeSyncTable({
@@ -67,7 +21,10 @@ export const Sync_DraftOrders = coda.makeSyncTable({
   identityName: Identity.DraftOrder,
   schema: DraftOrderSyncTableSchema,
   dynamicOptions: {
-    getSchema: getDraftOrderSchema,
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return DraftOrder.getDynamicSchema({ context, codaSyncParams });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -75,8 +32,8 @@ export const Sync_DraftOrders = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link resolveDraftOrderSchemaFromContext}
-     *  - {@link DraftOrderSyncTable}
+     *  - {@link DraftOrder.getDynamicSchema}
+     *  - {@link DraftOrder.makeSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -86,15 +43,11 @@ export const Sync_DraftOrders = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
     ],
     execute: async function (params, context) {
-      const schema = await resolveDraftOrderSchemaFromContext(params, context);
-      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), schema, params);
-      return draftOrderSyncTable.executeSync();
+      return DraftOrder.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const schema = await resolveDraftOrderSchemaFromContext(params, context);
-      const draftOrderSyncTable = new DraftOrderSyncTable(new DraftOrderRestFetcher(context), schema, params);
-      return draftOrderSyncTable.executeUpdate(updates);
+      return DraftOrder.syncUpdate(params, updates, context);
     },
   },
 });
@@ -140,21 +93,21 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
   // schema: coda.withIdentity(ArticleSchema, Identity.Article),
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId, email, note, tags, metafields], context) {
-    let row: DraftOrderRow = {
-      name: undefined, // shut up the typescript error
-      id: draftOrderId,
-      email,
-      note,
-      tags: tags ? tags.join(',') : undefined,
+    const metafieldSets = parseMetafieldsCodaInput(metafields);
+    const fromRow: FromRow<DraftOrderRow> = {
+      row: {
+        // name: undefined, // shut up the typescript error
+        id: draftOrderId,
+        email,
+        note,
+        tags: tags ? tags.join(',') : undefined,
+      },
+      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
     };
-    const metafieldKeyValueSets = parseMetafieldsCodaInput(metafields);
-    const draftOrderFetcher = new DraftOrderRestFetcher(context);
-    const restParams = draftOrderFetcher.formatRowToApi(row);
-    return draftOrderFetcher.updateAndFormatToRow({
-      id: draftOrderId,
-      restUpdate: restParams,
-      metafieldSets: metafieldKeyValueSets,
-    });
+
+    const updatedDraftOrder = new DraftOrder({ context, fromRow });
+    await updatedDraftOrder.saveAndUpdate();
+    return updatedDraftOrder.formatToRow();
   },
 });
 
@@ -172,7 +125,8 @@ export const Action_CompleteDraftOrder = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([draftOrderId, payment_gateway_id, payment_pending], context) {
-    await new DraftOrderRestFetcher(context).complete(draftOrderId, { payment_gateway_id, payment_pending });
+    const draftOrder = new DraftOrder({ context, fromRow: { row: { id: draftOrderId } } });
+    await draftOrder.complete({ payment_gateway_id, payment_pending });
     return true;
   },
 });
@@ -195,13 +149,8 @@ export const Action_SendDraftOrderInvoice = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([draftOrderId, to, from, bcc, subject, custom_message], context) {
-    await new DraftOrderRestFetcher(context).sendInvoice(draftOrderId, {
-      to,
-      from,
-      bcc,
-      subject,
-      custom_message,
-    });
+    const draftOrder = new DraftOrder({ context, fromRow: { row: { id: draftOrderId } } });
+    await draftOrder.send_invoice({});
     return true;
   },
 });
@@ -214,7 +163,7 @@ export const Action_DeleteDraftOrder = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([draftOrderId], context) {
-    await new DraftOrderRestFetcher(context).delete(draftOrderId);
+    await DraftOrder.delete({ context, id: draftOrderId });
     return true;
   },
 });
@@ -230,11 +179,8 @@ export const Formula_DraftOrder = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId], context) {
-    const draftOrderFetcher = new DraftOrderRestFetcher(context);
-    const response = await draftOrderFetcher.fetch(draftOrderId);
-    if (response?.body?.draft_order) {
-      return draftOrderFetcher.formatApiToRow(response.body.draft_order);
-    }
+    const draftOrder = await DraftOrder.find({ context, id: draftOrderId });
+    return draftOrder.formatToRow();
   },
 });
 

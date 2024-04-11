@@ -26,8 +26,9 @@ export const Sync_Collections = coda.makeSyncTable({
   identityName: Identity.Collection,
   schema: CollectionSyncTableSchema,
   dynamicOptions: {
-    getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-      return MergedCollection.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+    getSchema: async function (context, _, formulaContext) {
+      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+      return MergedCollection.getDynamicSchema({ context, codaSyncParams });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -41,7 +42,6 @@ export const Sync_Collections = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - getSchema method in dynamicOptions.
      *  - {@link MergedCollection.getDynamicSchema}
      *  - {@link MergedCollection_Custom.makeSyncFunction}
      *  - {@link MergedCollection_Smart.makeSyncFunction}

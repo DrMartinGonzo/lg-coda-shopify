@@ -4,7 +4,11 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../../../constants';
-import { GraphQlResourceName } from '../../../../resources/ShopifyResource.types';
+import {
+  GraphQlResourceName,
+  RestResourcePlural,
+  RestResourceSingular,
+} from '../../../../resources/ShopifyResource.types';
 import { Sync_Pages } from '../../../../resources/pages/pages-coda';
 import { PageRow } from '../../../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../../../schemas/schema-helpers';
@@ -12,11 +16,11 @@ import { PageSyncTableSchema, pageFieldDependencies } from '../../../../schemas/
 import { MetafieldOwnerType } from '../../../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../../../utils/helpers';
 import { SyncTableParamValues } from '../../../SyncTable/SyncTable.types';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../AbstractResource';
 import { FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../../AbstractResource_Synced';
 import {
   AbstractResource_Synced_HasMetafields,
-  ApiDataWithMetafields,
+  RestApiDataWithMetafields,
 } from '../../AbstractResource_Synced_HasMetafields';
 import { Metafield, RestMetafieldOwnerType } from '../Metafield';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
@@ -48,7 +52,7 @@ interface AllArgs extends BaseContext {
 }
 
 export class Page extends AbstractResource_Synced_HasMetafields {
-  public apiData: ApiDataWithMetafields & {
+  public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     author: string | null;
     body_html: string | null;
@@ -63,6 +67,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Page' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStorePage;
   static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'page';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
@@ -77,8 +82,8 @@ export class Page extends AbstractResource_Synced_HasMetafields {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'page',
-      plural: 'pages',
+      singular: RestResourceSingular.Page,
+      plural: RestResourcePlural.Page,
     },
   ];
 
@@ -108,7 +113,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,
-        fields: syncTableManager.getSyncedStandardFields(pageFieldDependencies).join(', '),
+        fields: syncTableManager.getSyncedStandardFields(pageFieldDependencies).join(','),
         // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
         // TODO: calculate best possible value based on effectiveMetafieldKeys.length
         limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
@@ -214,7 +219,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     if (metafields.length) {
       apiData.metafields = metafields.map((m) => {
         m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = 'page';
+        m.apiData.owner_resource = Page.metafieldRestOwnerType;
         return m;
       });
     }
@@ -243,7 +248,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
 
     if (apiData.metafields) {
       apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForRow();
+        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }
 

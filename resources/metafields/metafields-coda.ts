@@ -17,11 +17,10 @@ import { filters, inputs } from '../../shared-parameters';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique } from '../../utils/helpers';
 import { GraphQlResourceName } from '../ShopifyResource.types';
-import { getResourcesWithMetaFieldsSyncTable, requireResourceWithMetaFieldsByOwnerType } from '../resources';
+import { requireResourceWithMetaFieldsByOwnerType } from '../resources';
 import { METAFIELD_TYPES, MetafieldTypeValue } from './Metafield.types';
 import { MetafieldGraphQlFetcher } from './MetafieldGraphQlFetcher';
 import { MetafieldGraphQlSyncTable } from './MetafieldGraphQlSyncTable';
-import { fetchMetafieldsGraphQlByKey } from './metafields-graphql';
 import { shouldDeleteMetafield } from './utils/metafields-utils';
 import {
   parseAndValidateFormatMetafieldFormulaOutput,
@@ -70,112 +69,6 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
     },
   });
 }
-
-// async function getMetafieldSchema(context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-//   let augmentedSchema = deepCopy(MetafieldSyncTableSchema);
-//   const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-//   const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-
-//   // Augment schema with a relation to the owner of the metafield
-//   let ownerReference: coda.GenericObjectSchema & coda.ObjectSchemaProperty;
-//   switch (metafieldOwnerType) {
-//     case MetafieldOwnerType.Article:
-//       ownerReference = ArticleReference;
-//       break;
-//     case MetafieldOwnerType.Blog:
-//       ownerReference = BlogReference;
-//       break;
-//     case MetafieldOwnerType.Collection:
-//       ownerReference = CollectionReference;
-//       break;
-//     case MetafieldOwnerType.Customer:
-//       ownerReference = CustomerReference;
-//       break;
-//     case MetafieldOwnerType.Location:
-//       ownerReference = LocationReference;
-//       break;
-//     case MetafieldOwnerType.Order:
-//       ownerReference = OrderReference;
-//       break;
-//     case MetafieldOwnerType.Page:
-//       ownerReference = PageReference;
-//       break;
-//     case MetafieldOwnerType.Product:
-//       ownerReference = ProductReference;
-//       break;
-//     case MetafieldOwnerType.Productvariant:
-//       ownerReference = ProductVariantReference;
-//       break;
-
-//     default:
-//       break;
-//   }
-//   // switch (ownerResource.metafields.ownerType) {
-//   //   case MetafieldOwnerType.Article:
-//   //     ownerReference = ArticleReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Blog:
-//   //     ownerReference = BlogReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Collection:
-//   //     ownerReference = CollectionReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Customer:
-//   //     ownerReference = CustomerReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Location:
-//   //     ownerReference = LocationReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Order:
-//   //     ownerReference = OrderReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Page:
-//   //     ownerReference = PageReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Product:
-//   //     ownerReference = ProductReference;
-//   //     break;
-//   //   case MetafieldOwnerType.Productvariant:
-//   //     ownerReference = ProductVariantReference;
-//   //     break;
-
-//   //   default:
-//   //     break;
-//   // }
-//   if (ownerReference) {
-//     augmentedSchema.properties['owner'] = {
-//       ...ownerReference,
-//       fromKey: 'owner',
-//       fixedId: 'owner',
-//       required: true,
-//       description: 'A relation to the owner of this metafield.',
-//     };
-//     // @ts-ignore
-//     augmentedSchema.featuredProperties.push('owner');
-//   }
-
-//   if ('metafields' in ownerResource && ownerResource.metafields.supportsDefinitions) {
-//     (augmentedSchema.properties['definition_id'] = {
-//       type: coda.ValueType.Number,
-//       useThousandsSeparator: false,
-//       fixedId: 'definition_id',
-//       fromKey: 'definition_id',
-//       description: 'The ID of the metafield definition of the metafield, if it exists.',
-//     }),
-//       (augmentedSchema.properties['definition'] = {
-//         // TODO: fix type
-//         ...getMetafieldDefinitionReferenceSchema(
-//           ownerResource as unknown as ResourceWithMetafieldDefinitions<any, any>
-//         ),
-//         fromKey: 'definition',
-//         fixedId: 'definition',
-//         description: 'The metafield definition of the metafield, if it exists.',
-//       });
-//     // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
-//     augmentedSchema.featuredProperties.push('admin_url');
-//   }
-//   return augmentedSchema;
-// }
 // #endregion
 
 // #region Sync tables
@@ -184,31 +77,21 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   description: 'Return Metafields from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.Metafield,
-  listDynamicUrls: async function (context, docUrl: String) {
-    return getResourcesWithMetaFieldsSyncTable().map((v) => ({
-      display: v.display,
-      value: v.metafields.ownerType,
-      hasChildren: false,
-    }));
-  },
+  listDynamicUrls: async (context) => Metafield.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false })),
   getName: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-    return `${ownerResource.display} Metafields`;
+    const { display } = Metafield.getOwnerInfo(metafieldOwnerType, context);
+    return `${display} Metafields`;
   },
   /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-
-    // edge case: Shop doesn't have a dedicated page for metafield definitions
-    if (ownerResource.metafields.ownerType === MetafieldOwnerType.Shop) {
-      return `${context.endpoint}/admin`;
-    }
-    return `${context.endpoint}/admin/settings/custom_data/${ownerResource.rest.singular}/metafields`;
+    const { adminDefinitionUrl: adminUrl } = Metafield.getOwnerInfo(metafieldOwnerType, context);
+    return adminUrl;
   },
-  getSchema: async function (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) {
-    return Metafield.getDynamicSchema({ context, codaSyncParams: [] });
+  getSchema: async function (context, _, formulaContext) {
+    const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
+    return Metafield.getDynamicSchema({ context, codaSyncParams });
   },
   defaultAddDynamicColumns: false,
   formula: {

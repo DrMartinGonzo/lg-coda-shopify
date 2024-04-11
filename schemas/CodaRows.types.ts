@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-04-08T08:28:42.260Z
+ * Last generated: 2024-04-11T07:11:46.783Z
  *
  */
 
@@ -30,18 +30,18 @@ export interface ArticleRow extends BaseRow {
   };
   body?: string;
   body_html?: string;
-  created_at?: Date;
+  created_at?: string | number | Date;
   handle?: string;
   image_url?: string;
   image_alt_text?: string;
   published?: boolean;
-  published_at?: Date;
+  published_at?: string | number | Date;
   summary?: string;
   summary_html?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   user_id?: number;
 }
 
@@ -53,12 +53,12 @@ export interface BlogRow extends BaseRow {
   id: number;
   admin_graphql_api_id?: string;
   commentable?: string;
-  created_at?: Date;
+  created_at?: string | number | Date;
   handle?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
 }
 
 /**
@@ -71,14 +71,14 @@ export interface CollectRow extends BaseRow {
     id: number;
     title: string;
   };
-  created_at?: Date;
+  created_at?: string | number | Date;
   position?: number;
   product_id?: number;
   product?: {
     id: number;
     title: string;
   };
-  updated_at?: Date;
+  updated_at?: string | number | Date;
 }
 
 /**
@@ -94,7 +94,7 @@ export interface CollectionRow extends BaseRow {
   image_url?: string;
   image_alt_text?: string;
   published?: boolean;
-  published_at?: Date;
+  published_at?: string | number | Date;
   published_scope?: string;
   rules?: {
     column?: string;
@@ -114,7 +114,7 @@ export interface CollectionRow extends BaseRow {
   sort_order?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
 }
 
 /**
@@ -153,8 +153,8 @@ export interface DraftOrderRow extends BaseRow {
     province_code?: string;
     zip?: string;
   };
-  completed_at?: Date;
-  created_at?: Date;
+  completed_at?: string | number | Date;
+  created_at?: string | number | Date;
   currency?: string;
   customer?: {
     id: number;
@@ -163,7 +163,7 @@ export interface DraftOrderRow extends BaseRow {
   email?: string;
   admin_graphql_api_id?: string;
   id: number;
-  invoice_sent_at?: Date;
+  invoice_sent_at?: string | number | Date;
   invoice_url?: string;
   line_items?: {
     id: number;
@@ -239,9 +239,9 @@ export interface DraftOrderRow extends BaseRow {
     payment_schedules?: {
       amount?: number;
       currency?: string;
-      issued_at?: Date;
-      due_at?: Date;
-      completed_at?: Date;
+      issued_at?: string | number | Date;
+      due_at?: string | number | Date;
+      completed_at?: string | number | Date;
       expected_payment_method?: string;
     }[];
   };
@@ -294,7 +294,7 @@ export interface DraftOrderRow extends BaseRow {
   taxes_included?: boolean;
   total_price?: number;
   total_tax?: number;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
 }
 
 /**
@@ -326,7 +326,7 @@ export interface CustomerRow extends BaseRow {
     id: number;
     default?: boolean;
   }[];
-  created_at?: Date;
+  created_at?: string | number | Date;
   default_address?: {
     display?: string;
     address1?: string;
@@ -364,7 +364,7 @@ export interface CustomerRow extends BaseRow {
   tax_exempt?: boolean;
   tax_exemptions?: string[];
   total_spent?: number;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   verified_email?: boolean;
 }
 
@@ -375,8 +375,8 @@ export interface FileRow extends BaseRow {
   name: string;
   id: string;
   alt?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string | number | Date;
+  updatedAt?: string | number | Date;
   preview?: string;
   mimeType?: string;
   fileSize?: number;
@@ -398,8 +398,8 @@ export interface InventoryItemRow extends BaseRow {
   country_code_of_origin?: string;
   harmonized_system_code?: string;
   province_code_of_origin?: string;
-  updated_at?: Date;
-  created_at?: Date;
+  updated_at?: string | number | Date;
+  created_at?: string | number | Date;
   tracked?: boolean;
   requires_shipping?: boolean;
   sku?: string;
@@ -426,7 +426,7 @@ export interface InventoryLevelRow extends BaseRow {
     name: string;
   };
   id: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   inventory_history_url?: string;
 }
 
@@ -473,8 +473,8 @@ export interface MetafieldRow extends BaseRow {
   owner_type: string;
   rawValue?: string;
   type: string;
-  created_at?: Date;
-  updated_at?: Date;
+  created_at?: string | number | Date;
+  updated_at?: string | number | Date;
   editCollectionReference?: {
     id: number;
     title: string;
@@ -548,7 +548,7 @@ export interface MetaobjectRow extends BaseRow {
   id: number;
   admin_graphql_api_id?: string;
   handle: string;
-  updatedAt?: Date;
+  updatedAt?: string | number | Date;
   admin_url?: string;
 }
 
@@ -581,17 +581,17 @@ export interface OrderRow extends BaseRow {
   };
   buyer_accepts_marketing?: boolean;
   cancel_reason?: string;
-  cancelled_at?: Date;
+  cancelled_at?: string | number | Date;
   browser_ip?: string;
   browser_user_agent?: string;
   browser_accept_language?: string;
-  closed_at?: Date;
+  closed_at?: string | number | Date;
   company?: {
     id?: number;
     location_id?: number;
   };
   confirmation_number?: string;
-  created_at?: Date;
+  created_at?: string | number | Date;
   currency?: string;
   current_total_additional_fees?: number;
   current_total_discounts?: number;
@@ -626,7 +626,7 @@ export interface OrderRow extends BaseRow {
   financial_status?: string;
   fulfillments?: {
     admin_graphql_api_id?: string;
-    created_at?: Date;
+    created_at?: string | number | Date;
     id?: number;
     line_items?: {
       id: number;
@@ -706,7 +706,7 @@ export interface OrderRow extends BaseRow {
     tracking_number?: string;
     tracking_urls?: string[];
     tracking_url?: string;
-    updated_at?: Date;
+    updated_at?: string | number | Date;
   }[];
   fulfillment_status?: string;
   landing_site?: string;
@@ -785,9 +785,9 @@ export interface OrderRow extends BaseRow {
     payment_schedules?: {
       amount?: number;
       currency?: string;
-      issued_at?: Date;
-      due_at?: Date;
-      completed_at?: Date;
+      issued_at?: string | number | Date;
+      due_at?: string | number | Date;
+      completed_at?: string | number | Date;
       expected_payment_method?: string;
     }[];
   };
@@ -795,11 +795,11 @@ export interface OrderRow extends BaseRow {
   phone?: string;
   po_number?: string;
   presentment_currency?: string;
-  processed_at?: Date;
+  processed_at?: string | number | Date;
   referring_site?: string;
   refunds?: {
     id?: number;
-    created_at?: Date;
+    created_at?: string | number | Date;
     duties?: {
       id?: number;
       tax_lines?: {
@@ -821,7 +821,7 @@ export interface OrderRow extends BaseRow {
       amount?: number;
       tax_amount?: number;
     }[];
-    processed_at?: Date;
+    processed_at?: string | number | Date;
     refund_duties?: {
       duty_id?: number;
       refund_type?: string;
@@ -840,13 +840,13 @@ export interface OrderRow extends BaseRow {
       label: string;
       amount?: number;
       currency?: string;
-      createdAt?: Date;
+      createdAt?: string | number | Date;
       errorCode?: string;
       gateway?: string;
       kind?: string;
       parentTransactionId?: number;
       paymentId?: string;
-      processedAt?: Date;
+      processedAt?: string | number | Date;
       status?: string;
       test?: boolean;
       totalUnsettled?: number;
@@ -909,7 +909,7 @@ export interface OrderRow extends BaseRow {
   total_tax?: number;
   total_tip_received?: number;
   total_weight?: number;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   user_id?: number;
   order_status_url?: string;
   confirmed?: boolean;
@@ -991,19 +991,19 @@ export interface OrderTransactionRow extends BaseRow {
   label: string;
   amount?: number;
   currency?: string;
-  createdAt?: Date;
+  createdAt?: string | number | Date;
   errorCode?: string;
   gateway?: string;
   kind?: string;
   parentTransactionId?: number;
   paymentId?: string;
-  processedAt?: Date;
+  processedAt?: string | number | Date;
   status?: string;
   test?: boolean;
   totalUnsettled?: number;
   accountNumber?: string;
   authorizationCode?: string;
-  authorizationExpiresAt?: Date;
+  authorizationExpiresAt?: string | number | Date;
   order?: {
     id: number;
     name: string;
@@ -1045,10 +1045,10 @@ export interface PageRow extends BaseRow {
   author?: string;
   title: string;
   template_suffix?: string;
-  created_at?: Date;
-  updated_at?: Date;
+  created_at?: string | number | Date;
+  updated_at?: string | number | Date;
   published?: boolean;
-  published_at?: Date;
+  published_at?: string | number | Date;
 }
 
 /**
@@ -1061,19 +1061,19 @@ export interface ProductRow extends BaseRow {
   admin_graphql_api_id?: string;
   body?: string;
   body_html?: string;
-  created_at?: Date;
+  created_at?: string | number | Date;
   handle?: string;
   images?: string[];
   featuredImage?: string;
   options?: string;
   product_type?: string;
-  published_at?: Date;
+  published_at?: string | number | Date;
   published_scope?: string;
   status?: string;
   tags?: string;
   template_suffix?: string;
   title: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   vendor?: string;
 }
 
@@ -1086,7 +1086,7 @@ export interface ProductVariantRow extends BaseRow {
   admin_graphql_api_id?: string;
   barcode?: string;
   compare_at_price?: number;
-  created_at?: Date;
+  created_at?: string | number | Date;
   grams?: number;
   id: number;
   image?: string;
@@ -1108,7 +1108,7 @@ export interface ProductVariantRow extends BaseRow {
   tax_code?: string;
   title: string;
   displayTitle?: string;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   weight?: number;
   weight_unit?: string;
 }
@@ -1137,7 +1137,7 @@ export interface ShopRow extends BaseRow {
   country_code?: string;
   country_name?: string;
   county_taxes?: boolean;
-  created_at?: Date;
+  created_at?: string | number | Date;
   customer_email?: string;
   currency?: string;
   domain?: string;
@@ -1171,7 +1171,7 @@ export interface ShopRow extends BaseRow {
   taxes_included?: boolean;
   timezone?: string;
   transactional_sms_disabled?: boolean;
-  updated_at?: Date;
+  updated_at?: string | number | Date;
   weight_unit?: string;
   zip?: string;
   marketing_sms_consent_enabled_at_checkout?: boolean;

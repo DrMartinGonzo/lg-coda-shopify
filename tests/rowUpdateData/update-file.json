@@ -1,0 +1,13 @@
+[
+  {
+    "previousValue": {
+      "id": "gid://shopify/Video/33100330893568",
+      "alt": "drfeffefe"
+    },
+    "newValue": {
+      "id": "gid://shopify/Video/33100330893568",
+      "alt": "NEW"
+    },
+    "updatedFields": ["alt"]
+  }
+]

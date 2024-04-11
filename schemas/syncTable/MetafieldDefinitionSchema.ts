@@ -4,6 +4,7 @@ import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { ResourceWithMetafieldDefinitions } from '../../resources/Resource.types';
 import { ValidationSchema } from '../basic/ValidationSchema';
+import { MetafieldOwnerType } from '../../types/admin.types';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -105,7 +106,7 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export function getMetafieldDefinitionReferenceSchema(ownerResource: ResourceWithMetafieldDefinitions<any, any>) {
+export function getMetafieldDefinitionReferenceSchema(metafieldOwnerType: MetafieldOwnerType) {
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,
     properties: {
@@ -117,7 +118,7 @@ export function getMetafieldDefinitionReferenceSchema(ownerResource: ResourceWit
     identity: {
       packId: CODA_PACK_ID,
       name: Identity.MetafieldDefinition,
-      dynamicUrl: ownerResource.metafields.ownerType,
+      dynamicUrl: metafieldOwnerType,
     },
   });
 }

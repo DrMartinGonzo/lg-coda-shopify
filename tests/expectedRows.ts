@@ -1,6 +1,4 @@
-import { Customer } from '../resources/customers/customerResource';
-import { ProductVariant } from '../resources/productVariants/productVariantResource';
-import { Product } from '../resources/products/productResource';
+import { CustomerRow, MetafieldRow, ProductRow, ProductVariantRow } from '../schemas/CodaRows.types';
 
 export const expectedRows = {
   product: {
@@ -35,7 +33,7 @@ export const expectedRows = {
     'lgs_meta__global.title_tag': 'test title',
     // not needed
     // updated_at
-  } as Product['codaRow'],
+  } as ProductRow,
 
   productVariant: {
     admin_graphql_api_id: 'gid://shopify/ProductVariant/44365639713024',
@@ -70,7 +68,7 @@ export const expectedRows = {
     'lgs_meta__custom.test_money_field': 55,
     // not needed
     // updated_at: '2024-03-20T08:48:07-04:00',
-  } as ProductVariant['codaRow'],
+  } as ProductVariantRow,
 
   customer: {
     accepts_email_marketing: false,
@@ -137,5 +135,5 @@ export const expectedRows = {
     verified_email: true,
     // not needed
     // updated_at
-  } as Customer['codaRow'],
+  } as CustomerRow,
 };

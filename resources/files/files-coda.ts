@@ -1,13 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { File } from '../../Fetchers/NEW/Resources/File';
 import { CACHE_DEFAULT, Identity, OPTIONS_FILE_TYPE } from '../../constants';
-import { FileRow } from '../../schemas/CodaRows.types';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { inputs } from '../../shared-parameters';
-import { FileGraphQlFetcher } from './FileGraphQlFetcher';
-import { FileSyncTable } from './FileSyncTable';
-import { handleFileUpdateJob } from './files-functions';
 
 // #endregion
 
@@ -21,6 +18,11 @@ export const Sync_Files = coda.makeSyncTable({
   formula: {
     name: 'SyncFiles',
     description: '<Help text for the sync formula, not shown to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link File.sync}
+     *  - {@link File.makeSyncFunction}
+     */
     parameters: [
       coda.makeParameter({
         type: coda.ParameterType.String,
@@ -32,32 +34,11 @@ export const Sync_Files = coda.makeSyncTable({
       { ...inputs.general.previewSize, optional: true },
     ],
     execute: async function (params, context) {
-      const fileFetcher = new FileGraphQlFetcher(context);
-      const fileSyncTable = new FileSyncTable(fileFetcher, params);
-      return fileSyncTable.executeSync(FileSyncTableSchema);
+      return File.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) => {
-        return handleFileUpdateJob(
-          {
-            original: update.previousValue as unknown as FileRow,
-            updated: Object.fromEntries(
-              Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
-            ) as FileRow,
-          },
-          params,
-          context
-        );
-      });
-
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return File.syncUpdate(params, updates, context);
     },
   },
 });
@@ -72,9 +53,8 @@ export const Action_DeleteFile = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([fileGid], context) {
-    const fileFetcher = new FileGraphQlFetcher(context);
-    const response = await fileFetcher.delete([fileGid]);
-    const deletedFileId = response?.body?.data?.fileDelete?.deletedFileIds[0];
+    const response = await File.delete({ context, ids: [fileGid] });
+    const deletedFileId = response?.fileDelete?.deletedFileIds[0];
     return true;
   },
 });
@@ -90,9 +70,8 @@ export const Formula_File = coda.makeFormula({
   schema: FileSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([fileGid], context) {
-    const fileFetcher = new FileGraphQlFetcher(context);
-    const response = await fileFetcher.fetch(fileGid, { cacheTtlSecs: CACHE_DEFAULT });
-    return fileFetcher.formatApiToRow(response.body.data.node);
+    const file = await File.find({ context, id: fileGid });
+    return file.formatToRow();
   },
 });
 

@@ -1,6 +1,7 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { AbstractResource, BaseContext, FindAllResponse } from '../AbstractResource';
+import { AbstractResource, BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
+import { RestResourcePlural, RestResourceSingular } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -29,6 +30,7 @@ export class Asset extends AbstractResource {
     value: string | null;
   };
 
+  static readonly displayName = 'Asset' as ResourceDisplayName;
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
     { http_method: 'get', operation: 'get', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
@@ -38,8 +40,8 @@ export class Asset extends AbstractResource {
   protected static primaryKey: string = 'key';
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'asset',
-      plural: 'assets',
+      singular: RestResourceSingular.Asset,
+      plural: RestResourcePlural.Asset,
     },
   ];
 

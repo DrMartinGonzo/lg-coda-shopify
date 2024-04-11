@@ -45,6 +45,7 @@ export type RestResources = {
 
 export enum RestResourceSingular {
   Article = 'article',
+  Asset = 'asset',
   Blog = 'blog',
   Collection = 'collection',
   Collect = 'collect',
@@ -62,10 +63,12 @@ export enum RestResourceSingular {
   ProductVariant = 'variant',
   Redirect = 'redirect',
   Shop = 'shop',
+  Theme = 'theme',
 }
 
 export enum RestResourcePlural {
   Article = 'articles',
+  Asset = 'assets',
   Blog = 'blogs',
   Collection = 'collections',
   Collect = 'collects',
@@ -83,6 +86,7 @@ export enum RestResourcePlural {
   ProductVariant = 'variants',
   Redirect = 'redirects',
   Shop = 'shops',
+  Theme = 'themes',
 }
 // #endregion
 

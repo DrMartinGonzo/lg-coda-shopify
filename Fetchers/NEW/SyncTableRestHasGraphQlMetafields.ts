@@ -7,7 +7,7 @@ import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   graphQlGidToId,
   makeGraphQlRequest,
-  skipGraphQlSyncTableRunNew,
+  skipGraphQlSyncTableRun,
 } from '../../helpers-graphql';
 import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../resources/metafields/metafields-graphql';
 import { splitMetaFieldFullKey } from '../../resources/metafields/utils/metafields-utils-keys';
@@ -119,7 +119,7 @@ export class SyncTableRestHasGraphQlMetafields<
       );
       const { shouldDeferBy, maxEntriesPerRun } = syncTableMaxEntriesAndDeferWait;
       if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRunNew(this.prevContinuation as any, shouldDeferBy);
+        return skipGraphQlSyncTableRun(this.prevContinuation as any, shouldDeferBy);
       }
       this.currentRestLimit = adjustLimit ?? maxEntriesPerRun;
     }

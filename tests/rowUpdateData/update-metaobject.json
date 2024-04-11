@@ -1,0 +1,15 @@
+[
+  {
+    "previousValue": {
+      "id": 49386356992,
+      "handle": "test",
+      "color": "#c44646"
+    },
+    "newValue": {
+      "id": 49386356992,
+      "handle": "test3",
+      "color": "#cccccc"
+    },
+    "updatedFields": ["handle", "color"]
+  }
+]

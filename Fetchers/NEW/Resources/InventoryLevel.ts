@@ -9,9 +9,10 @@ import { formatInventoryItemReference } from '../../../schemas/syncTable/Invento
 import { InventoryLevelSyncTableSchema } from '../../../schemas/syncTable/InventoryLevelSchema';
 import { formatLocationReference } from '../../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../../utils/helpers';
-import { BaseContext, FindAllResponse, SaveArgs } from '../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName, SaveArgs } from '../AbstractResource';
 import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
 import { SearchParams } from '../RestClientNEW';
+import { RestResourcePlural, RestResourceSingular } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -58,6 +59,8 @@ export class InventoryLevel extends AbstractResource_Synced {
     updated_at: string | null;
   };
 
+  static readonly displayName = 'Inventory Level' as ResourceDisplayName;
+
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: [], path: 'inventory_levels.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'inventory_levels.json' },
@@ -67,8 +70,8 @@ export class InventoryLevel extends AbstractResource_Synced {
   ];
   protected static resourceNames: ResourceNames[] = [
     {
-      singular: 'inventory_level',
-      plural: 'inventory_levels',
+      singular: RestResourceSingular.InventoryLevel,
+      plural: RestResourcePlural.InventoryLevel,
     },
   ];
 
