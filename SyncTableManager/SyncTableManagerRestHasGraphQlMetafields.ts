@@ -15,7 +15,7 @@ import {
   graphQlGidToId,
   skipGraphQlSyncTableRun,
 } from '../utils/graphql-utils';
-import { splitMetaFieldFullKey } from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { FieldDependency } from '../schemas/Schema.types';
 import { arrayUnique, handleFieldDependencies, logAdmin } from '../utils/helpers';

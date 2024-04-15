@@ -1,10 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
 import { AbstractResource_Synced } from '../Resources/AbstractResource_Synced';
 import { SyncTableManagerRest } from './SyncTableManagerRest';
 

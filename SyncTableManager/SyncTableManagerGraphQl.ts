@@ -6,10 +6,7 @@ import { stringifyContinuationProperty } from './syncTableManager-utils';
 import { AbstractGraphQlResource, SyncTableManagerSyncFunction } from '../Resources/AbstractGraphQlResource';
 import { GRAPHQL_NODES_LIMIT } from '../constants';
 import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/graphql-utils';
-import {
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-} from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
 import { logAdmin, wait } from '../utils/helpers';
 
 // #endregion

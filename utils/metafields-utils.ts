@@ -1,32 +1,32 @@
 // #region Imports
-import { ResultOf } from '../../../utils/tada-utils';
+import { ResultOf } from './tada-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
-import { UnsupportedValueError } from '../../../Errors';
+import { InvalidValueError, UnsupportedValueError } from '../Errors';
+import { ResourceName } from '../Resources/AbstractResource';
+import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
   AllMetafieldTypeValue,
   Fields,
   METAFIELD_LEGACY_TYPES,
   METAFIELD_TYPES,
+  METAFIELD_TYPES_RAW_REFERENCE,
   MetafieldTypeValue,
-} from '../../../Resources/Mixed/Metafield.types';
-import { GraphQlResourceName } from '../../../Resources/types/GraphQlResource.types';
-import { DEFAULT_CURRENCY_CODE } from '../../../config';
-import { metafieldDefinitionFragment } from '../../../graphql/metafieldDefinitions-graphql';
-import { formatCollectionReference } from '../../../schemas/syncTable/CollectionSchema';
-import { formatFileReference } from '../../../schemas/syncTable/FileSchema';
-import { formatMetaobjectReference } from '../../../schemas/syncTable/MetaObjectSchema';
-import { formatPageReference } from '../../../schemas/syncTable/PageSchema';
-import { formatProductReference } from '../../../schemas/syncTable/ProductSchemaRest';
-import { formatProductVariantReference } from '../../../schemas/syncTable/ProductVariantSchema';
-import { CurrencyCode } from '../../../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from '../../../utils/graphql-utils';
-import {
-  extractValueAndUnitFromMeasurementString,
-  isNullishOrEmpty,
-  maybeParseJson,
-  unitToShortName,
-} from '../../../utils/helpers';
+} from '../Resources/Mixed/Metafield.types';
+import { SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
+import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types';
+import { DEFAULT_CURRENCY_CODE } from '../config';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
+import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
+import { formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
+import { formatFileReference } from '../schemas/syncTable/FileSchema';
+import { formatMetaobjectReference } from '../schemas/syncTable/MetaObjectSchema';
+import { formatPageReference } from '../schemas/syncTable/PageSchema';
+import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from './graphql-utils';
+import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty, maybeParseJson, unitToShortName } from './helpers';
 
 // #endregion
 
@@ -313,4 +313,202 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
 
 //   return obj;
 // }
+// #endregion
+
+// #region Metafield key utils
+/**
+ * This function checks if a given metafield key is the 'full' one or not.
+ * When querying metafields via their keys, GraphQl returns the 'full' key, i.e. `${namespace}.${key}`.
+ */
+const hasMetafieldFullKey = (metafield: { namespace: string; key: string }) =>
+  metafield.key.indexOf(metafield.namespace) === 0;
+
+/**
+ * A naive way to check if any of the keys might be a metafield key
+ */
+function maybeHasMetaFieldKeys(keys: string[]) {
+  return keys.some((key) => key.indexOf('.') !== -1);
+}
+
+export function getMetaFieldFullKey(m: { namespace: string; key: string }): string {
+  if (hasMetafieldFullKey(m)) return m.key as string;
+  return `${m.namespace}.${m.key}`;
+}
+
+export const splitMetaFieldFullKey = (fullKey: string) => {
+  const lastDotIndex = fullKey.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    throw new InvalidValueError('Metafield full key', fullKey);
+  }
+
+  return {
+    metaKey: fullKey.substring(lastDotIndex + 1),
+    metaNamespace: fullKey.substring(0, lastDotIndex),
+  };
+};
+
+/**
+ * Prepend a custom prefix to the metafield key
+ * This allows us to detect if a coda column key is a metafield column to handle updates
+ */
+export function preprendPrefixToMetaFieldKey(fullKey: string) {
+  return CUSTOM_FIELD_PREFIX_KEY + fullKey;
+}
+
+/**
+ * Remove our custom prefix from the metafield key
+ */
+export function removePrefixFromMetaFieldKey(fromKey: string) {
+  return fromKey.replace(CUSTOM_FIELD_PREFIX_KEY, '');
+}
+
+/**
+ * Differentiate between the metafields columns and the standard columns from
+ * the effective columns keys that we can get when coda does an update or
+ * perform a sync table request.
+ */
+export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
+  const prefixedMetafieldFromKeys = fromKeys.filter((fromKey) => fromKey.startsWith(CUSTOM_FIELD_PREFIX_KEY));
+  const standardFromKeys = fromKeys.filter((fromKey) => prefixedMetafieldFromKeys.indexOf(fromKey) === -1);
+
+  return { prefixedMetafieldFromKeys, standardFromKeys };
+}
+// #endregion
+
+// #region Converters
+/**
+ * Matches a GraphQl MetafieldOwnerType to the corresponding GraphQL resource name.
+ *
+ * @param {MetafieldOwnerType} ownerType - the MetafieldOwnerType to match
+ * @return {GraphQlResourceName} the corresponding GraphQL resource name
+ */
+export function matchOwnerTypeToResourceName(ownerType: MetafieldOwnerType): GraphQlResourceName {
+  switch (ownerType) {
+    case MetafieldOwnerType.Article:
+      return GraphQlResourceName.OnlineStoreArticle;
+    case MetafieldOwnerType.Blog:
+      return GraphQlResourceName.OnlineStoreBlog;
+    case MetafieldOwnerType.Collection:
+      return GraphQlResourceName.Collection;
+    case MetafieldOwnerType.Customer:
+      return GraphQlResourceName.Customer;
+    case MetafieldOwnerType.Draftorder:
+      return GraphQlResourceName.DraftOrder;
+    case MetafieldOwnerType.Location:
+      return GraphQlResourceName.Location;
+    case MetafieldOwnerType.Order:
+      return GraphQlResourceName.Order;
+    case MetafieldOwnerType.Page:
+      return GraphQlResourceName.OnlineStorePage;
+    case MetafieldOwnerType.Product:
+      return GraphQlResourceName.Product;
+    case MetafieldOwnerType.Productvariant:
+      return GraphQlResourceName.ProductVariant;
+    case MetafieldOwnerType.Shop:
+      return GraphQlResourceName.Shop;
+
+    default:
+      throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+  }
+}
+
+/**
+ * Matches a GraphQl MetafieldOwnerType to the corresponding Rest owner resource name.
+ *
+ * @param {MetafieldOwnerType} ownerType - the MetafieldOwnerType to match
+ * @return {GraphQlResourceName} the corresponding Rest owner resource name
+ */
+export function matchOwnerTypeToOwnerResource(ownerType: MetafieldOwnerType): SupportedMetafieldOwnerResource {
+  switch (ownerType) {
+    case MetafieldOwnerType.Article:
+      return 'article';
+    case MetafieldOwnerType.Blog:
+      return 'blog';
+    case MetafieldOwnerType.Collection:
+      return 'collection';
+    case MetafieldOwnerType.Customer:
+      return 'customer';
+    case MetafieldOwnerType.Draftorder:
+      return 'draft_order';
+    case MetafieldOwnerType.Location:
+      return 'location';
+    case MetafieldOwnerType.Order:
+      return 'order';
+    case MetafieldOwnerType.Page:
+      return 'page';
+    case MetafieldOwnerType.Product:
+      return 'product';
+    case MetafieldOwnerType.Productvariant:
+      return 'variant';
+    case MetafieldOwnerType.Shop:
+      return 'shop';
+
+    default:
+      throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+  }
+}
+
+/**
+ * Matches a Rest owner resource name to the corresponding GraphQl MetafieldOwnerType.
+ *
+ * @param {ResourceName} ownerResource - the Rest owner resource name
+ * @return {SupportedMetafieldOwnerType} the corresponding GraphQl MetafieldOwnerType
+ */
+export function matchOwnerResourceToMetafieldOwnerType(ownerResource: ResourceName): SupportedMetafieldOwnerType {
+  switch (ownerResource) {
+    case 'article':
+      return MetafieldOwnerType.Article;
+    case 'blog':
+      return MetafieldOwnerType.Blog;
+    case 'collection':
+      return MetafieldOwnerType.Collection;
+    case 'customer':
+      return MetafieldOwnerType.Customer;
+    case 'draft_order':
+      return MetafieldOwnerType.Draftorder;
+    case 'location':
+      return MetafieldOwnerType.Location;
+    case 'order':
+      return MetafieldOwnerType.Order;
+    case 'page':
+      return MetafieldOwnerType.Page;
+    case 'product':
+      return MetafieldOwnerType.Product;
+    case 'variant':
+      return MetafieldOwnerType.Productvariant;
+    case 'shop':
+      return MetafieldOwnerType.Shop;
+
+    default:
+      throw new UnsupportedValueError('OwnerResource', ownerResource);
+  }
+}
+
+// #region Misc
+/**
+ * Metafields should be deleted if their string value is empty of contains an empty JSON.stringified array
+ */
+export function shouldDeleteMetafield(string: string) {
+  return isNullishOrEmpty(string) || string === '[]';
+}
+
+/**
+ * Determine if a table cell value derived from a metafield ot metaobject field
+ * value should be updated or not.
+ * They are updatable if the value is not a reference to another resource
+ * (except for references in METAFIELD_TYPES_RAW_REFERENCE, wich uses raw text
+ * columns), or if is, it should not come from an action using `coda.withIdentity`
+ * This is to prevent breaking existing relations when using `coda.withIdentity`.
+ *
+ * @param fieldType the type of the field definition
+ * @param schemaWithIdentity wether the data will be consumed by an action wich result use a `coda.withIdentity` schema.
+ * @returns `true` if the value should be updated
+ */
+export function shouldUpdateSyncTableMetafieldValue(fieldType: string, schemaWithIdentity = false): boolean {
+  const isReference = fieldType.indexOf('_reference') !== -1;
+  const shouldUpdateReference =
+    !schemaWithIdentity || (schemaWithIdentity && METAFIELD_TYPES_RAW_REFERENCE.includes(fieldType as any));
+
+  return !isReference || (isReference && shouldUpdateReference);
+}
 // #endregion

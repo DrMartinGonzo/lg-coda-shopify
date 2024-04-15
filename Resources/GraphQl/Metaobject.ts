@@ -17,11 +17,8 @@ import {
   metaobjectFragment,
   updateMetaObjectMutation,
 } from '../../graphql/metaobjects-graphql';
-import { shouldUpdateSyncTableMetafieldValue } from '../../resourcesOld/metafields/utils/metafields-utils';
-import {
-  formatMetaFieldValueForSchema,
-  formatMetafieldValueForApi,
-} from '../../resourcesOld/metafields/utils/metafields-utils-format';
+import { shouldUpdateSyncTableMetafieldValue } from '../../utils/metafields-utils';
+import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';

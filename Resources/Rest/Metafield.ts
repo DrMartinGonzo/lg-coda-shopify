@@ -8,21 +8,15 @@ import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
 import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
-import {
-  matchOwnerResourceToMetafieldOwnerType,
-  matchOwnerTypeToOwnerResource,
-  shouldDeleteMetafield,
-} from '../../resourcesOld/metafields/utils/metafields-utils';
-import {
-  formatMetaFieldValueForSchema,
-  formatMetafieldValueForApi,
-} from '../../resourcesOld/metafields/utils/metafields-utils-format';
+import { shouldDeleteMetafield } from '../../utils/metafields-utils';
+import { matchOwnerResourceToMetafieldOwnerType, matchOwnerTypeToOwnerResource } from '../../utils/metafields-utils';
+import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
 import {
   getMetaFieldFullKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
   splitMetaFieldFullKey,
-} from '../../resourcesOld/metafields/utils/metafields-utils-keys';
+} from '../../utils/metafields-utils';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { ArticleReference, formatArticleReference } from '../../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../../schemas/syncTable/BlogSchema';

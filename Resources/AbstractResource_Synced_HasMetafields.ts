@@ -11,7 +11,7 @@ import {
 import { SyncTableRestHasRestMetafields } from '../SyncTableManager/SyncTableManagerRestHasRestMetafields';
 import { CACHE_DEFAULT, REST_DEFAULT_LIMIT } from '../constants';
 import { graphQlGidToId } from '../utils/graphql-utils';
-import { getMetaFieldFullKey } from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { getMetaFieldFullKey } from '../utils/metafields-utils';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { FindAllResponse, RestApiData, SaveArgs } from './AbstractResource';

@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { RestClient } from '../Clients/RestClient';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, CUSTOM_FIELD_PREFIX_KEY } from '../constants';
-import { separatePrefixedMetafieldsKeysFromKeys } from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { CurrencyCode } from '../types/admin.types';
 import { Shop } from './Rest/Shop';

@@ -19,10 +19,7 @@ import { filters, inputs } from '../coda-parameters';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
 import { METAFIELD_TYPES, MetafieldTypeValue } from '../../Resources/Mixed/Metafield.types';
-import {
-  matchOwnerTypeToOwnerResource,
-  matchOwnerTypeToResourceName,
-} from '../../resourcesOld/metafields/utils/metafields-utils';
+import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
 
 // #endregion
 

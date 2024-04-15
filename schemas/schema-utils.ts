@@ -9,10 +9,7 @@ import { Shop } from '../Resources/Rest/Shop';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
-import {
-  getMetaFieldFullKey,
-  preprendPrefixToMetaFieldKey,
-} from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
 import { MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { CollectionReference } from './syncTable/CollectionSchema';

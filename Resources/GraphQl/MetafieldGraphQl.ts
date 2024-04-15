@@ -17,16 +17,10 @@ import {
   metafieldFieldsFragmentWithDefinition,
   setMetafieldsMutation,
 } from '../../graphql/metafields-graphql';
-import {
-  matchOwnerTypeToOwnerResource,
-  matchOwnerTypeToResourceName,
-  shouldDeleteMetafield,
-} from '../../resourcesOld/metafields/utils/metafields-utils';
-import {
-  formatMetaFieldValueForSchema,
-  formatMetafieldValueForApi,
-} from '../../resourcesOld/metafields/utils/metafields-utils-format';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../../resourcesOld/metafields/utils/metafields-utils-keys';
+import { shouldDeleteMetafield } from '../../utils/metafields-utils';
+import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
+import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
+import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../../utils/metafields-utils';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';

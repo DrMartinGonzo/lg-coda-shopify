@@ -5,7 +5,7 @@ import { CodaMetafieldValueNew } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
 import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
-import { splitMetaFieldFullKey } from '../resourcesOld/metafields/utils/metafields-utils-keys';
+import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
 
 // #endregion
