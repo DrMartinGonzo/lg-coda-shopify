@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Redirect } from '../../Resources/Rest/Redirect';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';

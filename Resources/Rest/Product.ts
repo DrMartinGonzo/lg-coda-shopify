@@ -4,8 +4,8 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableSyncResult } from '../../SyncTableManager/SyncTable.types';
-import { SyncTableManagerRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasGraphQlMetafields';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import {
@@ -20,10 +20,16 @@ import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../sche
 import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
-import { RestApiDataWithMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../AbstractResource_Synced_HasMetafields_GraphQl';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -60,7 +66,7 @@ interface AllArgs extends BaseContext {
   presentment_currencies?: unknown;
 }
 
-export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
+export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     title: string | null;
@@ -138,7 +144,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
     context,
     codaSyncParams,
     fields,
-  }: MakeSyncFunctionArgs<ResourceT, CodaSyncT, SyncTableManagerRestHasRestMetafields<ResourceT>> & {
+  }: MakeSyncFunctionArgs<ResourceT, CodaSyncT, SyncTableManagerRestWithGraphQlMetafields<ResourceT>> & {
     fields: Array<string>;
   }): SyncFunction {
     const [
@@ -184,7 +190,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
   }: MakeSyncFunctionArgs<
     Product,
     typeof Sync_Products,
-    SyncTableManagerRestHasRestMetafields<Product>
+    SyncTableManagerRestWithGraphQlMetafields<Product>
   >): SyncFunction {
     return this.generateSharedSyncFunction({
       context,
@@ -203,7 +209,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
   }: MakeSyncFunctionArgs<
     Variant,
     typeof Sync_ProductVariants,
-    SyncTableManagerRestHasRestMetafields<Variant>
+    SyncTableManagerRestWithGraphQlMetafields<Variant>
   >): SyncFunction {
     const requiredProductFields = ['id', 'variants'];
     const allowedProductFields = ['handle', 'id', 'images', 'status', 'title', 'variants'];

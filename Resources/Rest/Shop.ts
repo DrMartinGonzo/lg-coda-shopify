@@ -13,13 +13,13 @@ import { collectFieldDependencies } from '../../schemas/syncTable/CollectSchema'
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { FromRow, MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import {
-  AbstractResource_Synced_HasMetafields,
+  AbstractSyncedRestResourceWithRestMetafields,
   AugmentWithMetafieldsFunction,
   RestApiDataWithMetafields,
-} from '../AbstractResource_Synced_HasMetafields';
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -29,7 +29,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Shop extends AbstractResource_Synced_HasMetafields {
+export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     address1: string | null;
     address2: string | null;

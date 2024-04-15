@@ -7,7 +7,7 @@ import { Identity } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { CODA_PACK_ID } from '../pack-config.json';
-import { graphQlGidToId } from './graphql-utils';
+import { graphQlGidToId } from './conversion-utils';
 
 // #endregion
 

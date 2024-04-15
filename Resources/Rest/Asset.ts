@@ -1,7 +1,16 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { AbstractResource, BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
+import {
+  AbstractRestResource,
+  BaseContext,
+  FindAllResponse,
+  ResourceDisplayName,
+  ResourceName,
+} from '../Abstract/Rest/AbstractRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { Theme } from './Theme';
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { CACHE_DEFAULT } from '../../constants';
 
 // #endregion
 
@@ -15,8 +24,11 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
   asset?: { [key: string]: unknown } | null;
 }
+interface TemplateSuffixesArgs extends BaseContext {
+  kind: ResourceName;
+}
 
-export class Asset extends AbstractResource {
+export class Asset extends AbstractRestResource {
   public apiData: {
     attachment: string | null;
     checksum: string | null;
@@ -71,5 +83,26 @@ export class Asset extends AbstractResource {
     });
 
     return response;
+  }
+
+  public static async getTemplateSuffixesFor({ context, kind }: TemplateSuffixesArgs): Promise<Array<string>> {
+    const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DEFAULT };
+    const activeTheme = await Theme.findActive({ context, fields: 'id,role', options });
+    if (activeTheme) {
+      const assets = await Asset.all({ theme_id: activeTheme.apiData.id, fields: 'key', context, options });
+      if (assets.data.length) {
+        const regex = new RegExp(`templates\\\/${kind}\\.(.*)\\.`, '');
+
+        return assets.data
+          .map((asset) => asset.apiData.key)
+          .map((key) => {
+            const match = key.match(regex);
+            return match ? match[1] : null;
+          })
+          .filter(Boolean);
+      }
+    }
+
+    return [];
   }
 }

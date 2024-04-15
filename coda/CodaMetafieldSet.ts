@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldValueNew } from './CodaMetafieldValue';
+import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
 import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
@@ -45,7 +45,7 @@ interface FormatListMetafieldFormulaParams {
 }
 // #endregion
 
-export class CodaMetafieldKeyValueSetNew {
+export class CodaMetafieldSet {
   public namespace: string;
   /**  metafield key (not full) */
   public key: string;
@@ -66,14 +66,11 @@ export class CodaMetafieldKeyValueSetNew {
    * Create instance from a Coda string parameter
    * based on the output of `FormatMetafield` formula.
    */
-  public static createFromFormatMetafieldFormula({
-    fullKey,
-    value,
-  }: FormatMetafieldFormulaParams): CodaMetafieldKeyValueSetNew {
+  public static createFromFormatMetafieldFormula({ fullKey, value }: FormatMetafieldFormulaParams): CodaMetafieldSet {
     try {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
-      const parsedValue: CodaMetafieldValueNew = CodaMetafieldValueNew.createFromCodaParameter(value);
-      return new CodaMetafieldKeyValueSetNew({
+      const parsedValue: CodaMetafieldValue = CodaMetafieldValue.createFromCodaParameter(value);
+      return new CodaMetafieldSet({
         namespace: metaNamespace,
         key: metaKey,
         value: parsedValue.value,
@@ -91,15 +88,15 @@ export class CodaMetafieldKeyValueSetNew {
   public static createFromFormatListMetafieldFormula({
     fullKey,
     varargs = [],
-  }: FormatListMetafieldFormulaParams): CodaMetafieldKeyValueSetNew {
+  }: FormatListMetafieldFormulaParams): CodaMetafieldSet {
     try {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
       let type: MetafieldTypeValue;
       let value = null;
 
       if (varargs.length) {
-        const parsedValues: Array<CodaMetafieldValueNew> = varargs
-          .map((value) => CodaMetafieldValueNew.createFromCodaParameter(value))
+        const parsedValues: Array<CodaMetafieldValue> = varargs
+          .map((value) => CodaMetafieldValue.createFromCodaParameter(value))
           .filter((v) => v.value !== null);
         const uniqueTypes = arrayUnique(parsedValues.map((v) => v.type));
         if (uniqueTypes.length > 1) {
@@ -118,7 +115,7 @@ export class CodaMetafieldKeyValueSetNew {
         }
       }
 
-      return new CodaMetafieldKeyValueSetNew({ type, namespace: metaNamespace, key: metaKey, value });
+      return new CodaMetafieldSet({ type, namespace: metaNamespace, key: metaKey, value });
     } catch (error) {
       throw error;
     }
@@ -128,14 +125,14 @@ export class CodaMetafieldKeyValueSetNew {
    * Create instance from a Coda string parameter based on the output
    * of `FormatMetafield` or `FormatListMetafield` formulas.
    */
-  public static createFromCodaParameter(parameter: string): CodaMetafieldKeyValueSetNew {
+  public static createFromCodaParameter(parameter: string): CodaMetafieldSet {
     try {
       const parsedValue: ParsedFormatMetafieldFormula = JSON.parse(parameter);
       if (!parsedValue.key || (parsedValue.value !== null && !parsedValue.type)) {
         throw new InvalidValueVisibleError('You must use `FormatMetafield` or `FormatListMetafield` formula.');
       }
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(parsedValue.key);
-      return new CodaMetafieldKeyValueSetNew({
+      return new CodaMetafieldSet({
         namespace: metaNamespace,
         key: metaKey,
         value: parsedValue.value,
@@ -150,7 +147,7 @@ export class CodaMetafieldKeyValueSetNew {
    * Create instances from a Coda string array parameter based on the output
    * of a List() of `FormatMetafield` or `FormatListMetafield` formulas.
    */
-  public static createFromCodaParameterArray(params: string[]): Array<CodaMetafieldKeyValueSetNew> {
+  public static createFromCodaParameterArray(params: string[]): Array<CodaMetafieldSet> {
     return params && params.length ? params.map((m) => this.createFromCodaParameter(m)) : [];
   }
 

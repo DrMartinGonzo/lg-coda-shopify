@@ -4,8 +4,8 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableParamValues } from '../../SyncTableManager/SyncTable.types';
-import { SyncTableRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasRestMetafields';
+import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
+import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
@@ -13,12 +13,17 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractResource_Synced_HasMetafields,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import {
+  AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
-} from '../AbstractResource_Synced_HasMetafields';
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -48,7 +53,7 @@ interface AllArgs extends BaseContext {
   published_status?: string;
 }
 
-export class Page extends AbstractResource_Synced_HasMetafields {
+export class Page extends AbstractSyncedRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     author: string | null;
@@ -103,7 +108,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Page, typeof Sync_Pages, SyncTableRestHasRestMetafields<Page>>): SyncFunction {
+  }: MakeSyncFunctionArgs<Page, typeof Sync_Pages, SyncTableManagerRestWithRestMetafields<Page>>): SyncFunction {
     const [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title] =
       codaSyncParams;
 

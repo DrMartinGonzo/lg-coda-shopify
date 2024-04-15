@@ -19,20 +19,21 @@ import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
+import { ResourceName } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { Location } from '../Resources/GraphQl/Location';
 import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { Metaobject } from '../Resources/GraphQl/Metaobject';
 import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
+import { Asset } from '../Resources/Rest/Asset';
 import { Blog } from '../Resources/Rest/Blog';
 import { Metafield } from '../Resources/Rest/Metafield';
 import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types';
-import { fetchProductTypesGraphQl } from '../utils/products-utils';
-import { getTemplateSuffixesFor } from '../utils/themes-utils';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
 import { validShopFields } from '../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
-import { idToGraphQlGid } from '../utils/graphql-utils';
+import { idToGraphQlGid } from '../utils/conversion-utils';
 import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
+import { fetchProductTypesGraphQl } from '../utils/products-utils';
 
 export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
@@ -188,9 +189,9 @@ async function autocompleteProductTypes(context: coda.ExecutionContext, search: 
   return coda.simpleAutocomplete(search, productTypes);
 }
 
-function makeAutocompleteTemplateSuffixesFor(kind: string) {
+function makeAutocompleteTemplateSuffixesFor(kind: ResourceName) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    return getTemplateSuffixesFor(kind, context);
+    return Asset.getTemplateSuffixesFor({ kind, context });
   };
 }
 // #endregion

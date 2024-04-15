@@ -3,7 +3,7 @@ import { ResultOf } from './tada-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 import { InvalidValueError, UnsupportedValueError } from '../Errors';
-import { ResourceName } from '../Resources/AbstractResource';
+import { ResourceName } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
   AllMetafieldTypeValue,
@@ -25,7 +25,7 @@ import { formatPageReference } from '../schemas/syncTable/PageSchema';
 import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from './graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from './conversion-utils';
 import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty, maybeParseJson, unitToShortName } from './helpers';
 
 // #endregion

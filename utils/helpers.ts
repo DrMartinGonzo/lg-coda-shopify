@@ -1,35 +1,13 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 // import slugify from 'slugify';
 
-import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { DEFAULT_THUMBNAIL_SIZE } from '../constants';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
 import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';
 
-// export function slug(string: string) {
-//   return slugify(string, {
-//     replacement: '-', // replace spaces with replacement character, defaults to `-`
-//     // remove: undefined, // remove characters that match regex, defaults to `undefined`
-//     lower: true, // convert to lower case, defaults to `false`
-//     strict: true, // strip special characters except replacement, defaults to `false`
-//     trim: true, // trim leading and trailing replacement chars, defaults to `true`
-//   });
-// }
-
-/**
- * Taken from Coda sdk
- */
-export function transformToArraySchema(schema?: any) {
-  if (schema?.type === coda.ValueType.Array) {
-    return schema;
-  } else {
-    return {
-      type: coda.ValueType.Array,
-      items: schema,
-    };
-  }
-}
+// #endregion
 
 export function isString(value: any) {
   return typeof value === 'string' || value instanceof String;
@@ -142,80 +120,6 @@ export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize = DEFAULT_
 }
 
 /**
- * Delays the execution of subsequent code for a specified number of milliseconds.
- * Pack need to be executed/uploaded with --timerStrategy=fake flag for enable setTimeout shim
- *
- * @param {number} ms - The duration in milliseconds to wait
- */
-export async function wait(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve('Rate limit wait'), ms);
-  });
-}
-
-/**
- * Retrieve all object schema keys or fromKeys if present
- */
-export function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
-  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(schema, key));
-}
-
-/**
- * Get a single object schema keys or fromKey if present
- */
-export function getObjectSchemaEffectiveKey(schema: coda.Schema, key: string) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
-  if (properties.hasOwnProperty(key)) {
-    const property = properties[key];
-    const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
-    return propKey;
-  }
-  throw new Error(`Schema doesn't have ${key} property`);
-}
-
-export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: string) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
-  let found = fromKey;
-  Object.keys(properties).forEach((propKey) => {
-    const property = properties[propKey];
-    if (property.hasOwnProperty('fromKey') && property.fromKey === fromKey) {
-      if (property.hasOwnProperty('fixedId')) {
-        found = property.fixedId;
-        return;
-      }
-    }
-  });
-  return normalizeSchemaKey(found);
-}
-
-const getShopifyAccessToken = (context: coda.ExecutionContext) => '{{token-' + context.invocationToken + '}}';
-export const getShopifyRequestHeaders = (context: coda.ExecutionContext) => {
-  return {
-    'Content-Type': 'application/json',
-    'X-Shopify-Access-Token': getShopifyAccessToken(context),
-  };
-};
-export const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContext) => {
-  return {
-    'Content-Type': 'application/json',
-    'Shopify-Storefront-Private-Token': getShopifyAccessToken(context),
-  };
-};
-
-/**
  * Some fields are not returned directly by the API but are derived from a
  * calculation on another field. Since the user may choose not to synchronize
  * this parent field, this function allows adding it according to a dependency
@@ -249,10 +153,6 @@ export function maybeParseJson(value: any) {
   } catch (error) {
     return value;
   }
-}
-
-export function isCodaCached(response: coda.FetchResponse<any>): boolean {
-  return (!!response.headers['Coda-Fetcher-Cache-Hit'] && response.headers['Coda-Fetcher-Cache-Hit'] === '1') ?? false;
 }
 
 export function arrayUnique(array: any[]) {

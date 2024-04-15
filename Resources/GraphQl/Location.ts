@@ -2,7 +2,7 @@
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { idToGraphQlGid } from '../../utils/graphql-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { Sync_Locations } from '../../coda/setup/locations-setup';
 import {
@@ -24,13 +24,13 @@ import {
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
-  AbstractGraphQlResource_Synced_HasMetafields,
+  AbstractSyncedGraphQlResourceWithMetafields,
   GraphQlApiDataWithMetafields,
-} from '../AbstractGraphQlResource_Synced_HasMetafields';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
 
 // #endregion
@@ -58,7 +58,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class Location extends AbstractGraphQlResource_Synced_HasMetafields {
+export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
   public apiData: ResultOf<typeof locationFragment> & GraphQlApiDataWithMetafields;
 
   static readonly displayName = 'Location' as ResourceDisplayName;

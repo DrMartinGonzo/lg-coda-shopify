@@ -1,30 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { Body } from '@shopify/shopify-api/rest/types';
 import { TadaDocumentNode } from 'gql.tada';
-import { ResultOf, VariablesOf } from '../utils/tada-utils';
+import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 
-import { ShopifyGraphQlRequestCost } from '../Clients/GraphQLErrors';
-import { GraphQlClient, GraphQlRequestReturn } from '../Clients/GraphQlClient';
-import { SyncTableSyncResult, SyncTableUpdateResult } from '../SyncTableManager/SyncTable.types';
-import { SyncTableManagerGraphQl } from '../SyncTableManager/SyncTableManagerGraphQl';
-import { GRAPHQL_DEFAULT_API_VERSION } from '../config';
-import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../constants';
-import { graphQlGidToId } from '../utils/graphql-utils';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { PageInfo } from '../types/admin.types';
-import { arrayUnique, getObjectSchemaEffectiveKey, transformToArraySchema } from '../utils/helpers';
-import { BaseContext, ResourceDisplayName } from './AbstractResource';
-import {
-  BaseConstructorSyncedArgs,
-  CodaSyncParams,
-  FromRow,
-  GetSchemaArgs,
-  SyncTableDefinition,
-} from './AbstractResource_Synced';
-import { GraphQlResourceName } from './types/GraphQlResource.types';
-// import { RestResourceError } from '@shopify/shopify-api';
+import { ShopifyGraphQlRequestCost } from '../../../Clients/GraphQlErrors';
+import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlClient';
+import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
+import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
+import { graphQlGidToId } from '../../../utils/conversion-utils';
+import { PageInfo } from '../../../types/admin.types';
+import { BaseContext, ResourceDisplayName } from '../Rest/AbstractRestResource';
+import { CodaSyncParams, SyncTableDefinition } from '../Rest/AbstractSyncedRestResource';
+import { GraphQlResourceName } from '../../types/GraphQlResource.types';
 
 // #endregion
 
@@ -316,130 +305,5 @@ export abstract class AbstractGraphQlResource {
 
   public request<NodeT extends TadaDocumentNode = TadaDocumentNode>(args: RequestArgs<NodeT>) {
     return this.resource().request<NodeT>(args);
-  }
-}
-
-export abstract class AbstractGraphQlResource_Synced extends AbstractGraphQlResource {
-  /**
-   * Get the static Coda schema for the resource
-   */
-  public static getStaticSchema() {
-    return;
-  }
-
-  /**
-   * Get the dynamic Coda schema for the resource
-   */
-  public static async getDynamicSchema(params: GetSchemaArgs): Promise<coda.ObjectSchema<string, string> | undefined> {
-    return;
-  }
-
-  /**
-   * Get the current Array Schema for the resource. Dynamic if it exists, else static.
-   * Keep the schema in a cache to avoid refetching dynamic schema
-   */
-  static async getArraySchema({ context, codaSyncParams = [], normalized = true }: GetSchemaArgs) {
-    if (context.sync?.schema) {
-      this._schemaCache = context.sync.schema as unknown as coda.ArraySchema<coda.ObjectSchema<string, string>>;
-    }
-    if (!this._schemaCache) {
-      const dynamicSchema = await this.getDynamicSchema({ context, codaSyncParams });
-      const schema = dynamicSchema ? normalizeObjectSchema(dynamicSchema) : this.getStaticSchema();
-      this._schemaCache = transformToArraySchema(schema);
-    }
-    return this._schemaCache;
-  }
-
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerGraphQl<AbstractGraphQlResource_Synced>> {
-    const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerGraphQl<AbstractGraphQlResource_Synced>(schema, codaSyncParams, context);
-  }
-
-  /**
-   * Generate a sync function to be used by a SyncTableManager.
-   * Should be overridden by subclasses
-   */
-  protected static makeSyncTableManagerSyncFunction(
-    params: MakeSyncFunctionArgsGraphQl<AbstractGraphQlResource_Synced, any>
-  ): SyncTableManagerSyncFunction {
-    return ({ cursor = null, maxEntriesPerRun }) => this.all({ cursor, maxEntriesPerRun, ...params });
-  }
-
-  public static async sync(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableSyncResult> {
-    const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
-
-    const { response, continuation } = await syncTableManager.executeSync({
-      sync: syncFunction,
-      defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
-    });
-    return {
-      result: response.data.map((data: AbstractGraphQlResource_Synced) => data.formatToRow()),
-      continuation,
-    };
-  }
-
-  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    const instance: AbstractGraphQlResource_Synced = new (this as any)({ context, fromRow: { row: newRow } });
-    await instance.saveAndUpdate();
-    return { ...prevRow, ...instance.formatToRow() };
-  }
-
-  public static getRequiredPropertiesForUpdate(schema: coda.ArraySchema<coda.ObjectSchema<string, string>>) {
-    // Always include the id property
-    return [schema.items.idProperty].filter(Boolean).map((key) => getObjectSchemaEffectiveKey(schema, key));
-  }
-
-  public static async syncUpdate(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableUpdateResult> {
-    const schema = await this.getArraySchema({ context, codaSyncParams });
-
-    const completed = await Promise.allSettled(
-      updates.map(async (update) => {
-        const includedProperties = arrayUnique(
-          update.updatedFields.concat(this.getRequiredPropertiesForUpdate(schema))
-        );
-
-        const prevRow = update.previousValue as BaseRow;
-        const newRow = Object.fromEntries(
-          Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
-        ) as BaseRow;
-
-        return this.handleRowUpdate(prevRow, newRow, context);
-      })
-    );
-
-    return {
-      result: completed.map((job) => {
-        if (job.status === 'fulfilled') return job.value;
-        else return job.reason;
-      }),
-    };
-  }
-
-  /**====================================================================================================================
-   *    Instance Methods
-   *===================================================================================================================== */
-  constructor({ context, fromData, fromRow }: BaseConstructorSyncedArgs) {
-    super({ context, fromData });
-    if (fromRow) {
-      this.setDataFromRow(fromRow);
-    }
-  }
-
-  public abstract formatToRow(...args: any[]): BaseRow;
-  protected abstract formatToApi(...args: any[]): any;
-
-  protected setDataFromRow(fromRow: FromRow): void {
-    this.setData(this.formatToApi(fromRow));
   }
 }

@@ -6,8 +6,13 @@ import { CollectRow } from '../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedRestResource,
+  FromRow,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
@@ -27,7 +32,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Collect extends AbstractResource_Synced {
+export class Collect extends AbstractSyncedRestResource {
   public apiData: {
     collection_id: number | null;
     created_at: string | null;

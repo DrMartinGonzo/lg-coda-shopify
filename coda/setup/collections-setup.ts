@@ -1,21 +1,21 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { Asset } from '../../Resources/Rest/Asset';
 import { Collection } from '../../Resources/Rest/Collection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
 import { MergedCollection_Custom } from '../../Resources/Rest/MergedCollection_Custom';
 import { MergedCollection_Smart } from '../../Resources/Rest/MergedCollection_Smart';
-import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
+import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
+import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { CACHE_DEFAULT, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, Identity } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
-import { getTemplateSuffixesFor } from '../../utils/themes-utils';
 import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #region Sync tables
 export const Sync_Collections = coda.makeSyncTable({
@@ -32,7 +32,7 @@ export const Sync_Collections = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return getTemplateSuffixesFor('collection', context);
+        return Asset.getTemplateSuffixesFor({ kind: 'collection', context });
       }
     },
   },
@@ -146,7 +146,7 @@ export const Action_CreateCollection = coda.makeFormula({
         image_alt_text,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Collection.metafieldRestOwnerType })
       ),
@@ -200,7 +200,7 @@ export const Action_UpdateCollection = coda.makeFormula({
         image_url: imageUrl,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: collectionId, owner_resource: Collection.metafieldRestOwnerType })
       ),

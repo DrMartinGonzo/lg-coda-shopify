@@ -1,11 +1,11 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Location } from '../../Resources/GraphQl/Location';
 import { CACHE_DEFAULT, Identity } from '../../constants';
-import { idToGraphQlGid } from '../../utils/graphql-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
@@ -92,7 +92,7 @@ export const Action_UpdateLocation = coda.makeFormula({
         zip,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: locationId, owner_resource: Location.metafieldRestOwnerType })
       ),

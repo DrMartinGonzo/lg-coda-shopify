@@ -1,7 +1,7 @@
 // #region Imports
 
-import { AbstractResource_Synced } from '../Resources/AbstractResource_Synced';
-import { AugmentWithMetafieldsFunction } from '../Resources/AbstractResource_Synced_HasMetafields';
+import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AugmentWithMetafieldsFunction } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
 import { ExecuteSyncArgs, SyncTableManagerResult } from './SyncTableManagerRest';
 
@@ -13,8 +13,8 @@ interface ExecuteAugmentedSyncArgs extends ExecuteSyncArgs {
 }
 // #endregion
 
-export class SyncTableRestHasRestMetafields<
-  BaseT extends AbstractResource_Synced
+export class SyncTableManagerRestWithRestMetafields<
+  BaseT extends AbstractSyncedRestResource
 > extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
   // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
 

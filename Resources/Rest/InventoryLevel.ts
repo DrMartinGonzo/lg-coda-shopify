@@ -9,8 +9,13 @@ import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryI
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName, SaveArgs } from '../AbstractResource';
-import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedRestResource,
+  FromRow,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
@@ -50,7 +55,7 @@ interface SetArgs {
   body?: { [key: string]: unknown } | null;
 }
 
-export class InventoryLevel extends AbstractResource_Synced {
+export class InventoryLevel extends AbstractSyncedRestResource {
   public apiData: {
     admin_graphql_api_id: string | null;
     available: number | null;

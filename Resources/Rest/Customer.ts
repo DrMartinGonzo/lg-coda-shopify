@@ -16,11 +16,17 @@ import {
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
-import { RestApiDataWithMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../AbstractResource_Synced_HasMetafields_GraphQl';
-import { SyncTableManagerRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasGraphQlMetafields';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -73,7 +79,7 @@ interface SendInviteArgs extends BaseContext {
   body?: { [key: string]: unknown } | null;
 }
 
-export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
+export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     accepts_marketing: boolean | null;
     accepts_marketing_updated_at: string | null;
@@ -161,7 +167,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
   }: MakeSyncFunctionArgs<
     Customer,
     typeof Sync_Customers,
-    SyncTableManagerRestHasRestMetafields<Customer>
+    SyncTableManagerRestWithGraphQlMetafields<Customer>
   >): SyncFunction {
     const [syncMetafields, created_at, updated_at, ids] = codaSyncParams;
 

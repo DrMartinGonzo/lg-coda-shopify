@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Article } from '../../Resources/Rest/Article';
+import { Asset } from '../../Resources/Rest/Asset';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 import { parseOptionId } from '../../utils/helpers';
-import { getTemplateSuffixesFor } from '../../utils/themes-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
@@ -26,7 +26,7 @@ export const Sync_Articles = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return getTemplateSuffixesFor('article', context);
+        return Asset.getTemplateSuffixesFor({ kind: 'article', context });
       }
     },
   },
@@ -129,7 +129,7 @@ export const Action_CreateArticle = coda.makeFormula({
         title,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Article.metafieldRestOwnerType })
       ),
@@ -208,7 +208,7 @@ export const Action_UpdateArticle = coda.makeFormula({
         image_url: imageUrl,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: articleId, owner_resource: Article.metafieldRestOwnerType })
       ),

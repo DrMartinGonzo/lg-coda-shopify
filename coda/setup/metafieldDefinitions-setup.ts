@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
 import { CACHE_DEFAULT, Identity } from '../../constants';
-import { idToGraphQlGid } from '../../utils/graphql-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../coda-parameters';
 import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';

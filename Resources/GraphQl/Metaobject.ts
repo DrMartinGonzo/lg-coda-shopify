@@ -23,7 +23,7 @@ import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { CurrencyCode, MetaobjectStatus } from '../../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import {
   capitalizeFirstChar,
   compareByDisplayKey,
@@ -34,15 +34,15 @@ import {
 } from '../../utils/helpers';
 import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
 import {
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseConstructorArgs, BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { GetSchemaArgs } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseConstructorArgs, BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
@@ -86,7 +86,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class Metaobject extends AbstractGraphQlResource_Synced {
+export class Metaobject extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metaobjectFragment>;
 
   static readonly displayName = 'Metaobject' as ResourceDisplayName;

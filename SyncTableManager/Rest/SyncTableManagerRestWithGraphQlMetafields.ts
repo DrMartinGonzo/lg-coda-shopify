@@ -1,31 +1,29 @@
 // #region Imports
-import { VariablesOf, readFragment } from '../utils/tada-utils';
+import { VariablesOf, readFragment } from '../../utils/tada-utils';
 
-import { GraphQlClient, GraphQlRequestReturn } from '../Clients/GraphQlClient';
-import { CurrentBatchType, SyncTableMixedContinuation } from './SyncTable.types';
-import { stringifyContinuationProperty } from './syncTableManager-utils';
-import { FindAllResponse } from '../Resources/AbstractResource';
-import { AbstractResource_Synced } from '../Resources/AbstractResource_Synced';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../Resources/AbstractResource_Synced_HasMetafields_GraphQl';
-import { Metafield } from '../Resources/Rest/Metafield';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../constants';
-import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../graphql/metafields-graphql';
-import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
-  graphQlGidToId,
-  skipGraphQlSyncTableRun,
-} from '../utils/graphql-utils';
-import { splitMetaFieldFullKey } from '../utils/metafields-utils';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { FieldDependency } from '../schemas/Schema.types';
-import { arrayUnique, handleFieldDependencies, logAdmin } from '../utils/helpers';
+import { GraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlClient';
+import { CurrentBatchType, SyncTableMixedContinuation } from '../types/SyncTable.types';
+import { stringifyContinuationProperty } from '../utils/syncTableManager-utils';
+import { FindAllResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
+import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { Metafield } from '../../Resources/Rest/Metafield';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../graphql/metafields-graphql';
+import { graphQlGidToId } from '../../utils/conversion-utils';
+import { skipGraphQlSyncTableRun } from '../utils/syncTableManager-utils';
+import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/syncTableManager-utils';
+import { splitMetaFieldFullKey } from '../../utils/metafields-utils';
+import { BaseRow } from '../../schemas/CodaRows.types';
+import { FieldDependency } from '../../schemas/Schema.types';
+import { arrayUnique, handleFieldDependencies, logAdmin } from '../../utils/helpers';
 import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
 import { ExecuteSyncArgs, SyncTableManagerResult } from './SyncTableManagerRest';
 
 // #endregion
 
-export class SyncTableManagerRestHasRestMetafields<
-  BaseT extends AbstractResource_Synced
+export class SyncTableManagerRestWithGraphQlMetafields<
+  BaseT extends AbstractSyncedRestResource
 > extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
   protected currentRestLimit: number;
   // ———————————————————————————————————————————————
@@ -98,12 +96,12 @@ export class SyncTableManagerRestHasRestMetafields<
   }
 
   // #region Sync
-  public getMainData(response: FindAllResponse<AbstractResource_Synced>) {
+  public getMainData(response: FindAllResponse<AbstractSyncedRestResource>) {
     return response.data;
   }
 
   public async executeSync({ sync, adjustLimit, getNestedData }: ExecuteSyncArgs): Promise<SyncTableManagerResult> {
-    let mainData: Array<AbstractResource_Synced_HasMetafields_GraphQl> = [];
+    let mainData: Array<AbstractSyncedRestResourceWithGraphQLMetafields> = [];
 
     /** ————————————————————————————————————————————————————————————
      * Check if we have budget to use GraphQL, if not defer the sync.

@@ -12,13 +12,19 @@ import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, parseOptionId } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractResource_Synced_HasMetafields,
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import {
+  AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
-} from '../AbstractResource_Synced_HasMetafields';
-import { SyncTableRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasRestMetafields';
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -55,7 +61,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class Article extends AbstractResource_Synced_HasMetafields {
+export class Article extends AbstractSyncedRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     author: string | null;
     blog_id: number | null;
@@ -118,7 +124,11 @@ export class Article extends AbstractResource_Synced_HasMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Article, typeof Sync_Articles, SyncTableRestHasRestMetafields<Article>>): SyncFunction {
+  }: MakeSyncFunctionArgs<
+    Article,
+    typeof Sync_Articles,
+    SyncTableManagerRestWithRestMetafields<Article>
+  >): SyncFunction {
     const [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag] =
       codaSyncParams;
 

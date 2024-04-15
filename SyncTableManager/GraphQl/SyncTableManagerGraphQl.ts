@@ -1,13 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableGraphQlContinuation } from './SyncTable.types';
-import { stringifyContinuationProperty } from './syncTableManager-utils';
-import { AbstractGraphQlResource, SyncTableManagerSyncFunction } from '../Resources/AbstractGraphQlResource';
-import { GRAPHQL_NODES_LIMIT } from '../constants';
-import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/graphql-utils';
-import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
-import { logAdmin, wait } from '../utils/helpers';
+import { SyncTableGraphQlContinuation } from '../types/SyncTable.types';
+import { stringifyContinuationProperty } from '../utils/syncTableManager-utils';
+import {
+  AbstractGraphQlResource,
+  SyncTableManagerSyncFunction,
+} from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import { GRAPHQL_NODES_LIMIT } from '../../constants';
+import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/syncTableManager-utils';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';
+import { logAdmin } from '../../utils/helpers';
+import { wait } from '../../Clients/utils/client-utils';
 
 // #endregion
 

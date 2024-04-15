@@ -1,7 +1,12 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { AbstractResource, BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
+import {
+  AbstractRestResource,
+  BaseContext,
+  FindAllResponse,
+  ResourceDisplayName,
+} from '../Abstract/Rest/AbstractRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
@@ -18,7 +23,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Theme extends AbstractResource {
+export class Theme extends AbstractRestResource {
   public apiData: {
     created_at: string | null;
     id: number | null;

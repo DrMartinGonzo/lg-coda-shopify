@@ -5,7 +5,7 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { graphQlGidToId } from '../../utils/graphql-utils';
+import { graphQlGidToId } from '../../utils/conversion-utils';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
 import {
   buildOrderTransactionsSearchQuery,
@@ -21,14 +21,14 @@ import {
 import { deepCopy } from '../../utils/helpers';
 import {
   AbstractGraphQlResource,
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { GetSchemaArgs } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
@@ -63,7 +63,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class OrderTransaction extends AbstractGraphQlResource_Synced {
+export class OrderTransaction extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof orderTransactionFieldsFragment> & {
     // Extend with data from parent order
     parentOrder: {

@@ -22,17 +22,17 @@ import {
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
 } from '../../utils/helpers';
-import { SyncTableSyncResult } from '../../SyncTableManager/SyncTable.types';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import {
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { UnsupportedActionError } from '../../Errors';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
@@ -67,7 +67,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class File extends AbstractGraphQlResource_Synced {
+export class File extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof fileFieldsFragment> &
     ResultOf<typeof genericFileFieldsFragment> &
     ResultOf<typeof videoFieldsFragment> &
@@ -127,7 +127,7 @@ export class File extends AbstractGraphQlResource_Synced {
       defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
     });
     return {
-      result: response.data.map((data: AbstractGraphQlResource_Synced) => data.formatToRow(previewSize)),
+      result: response.data.map((data: AbstractSyncedGraphQlResource) => data.formatToRow(previewSize)),
       continuation,
     };
   }

@@ -22,16 +22,22 @@ import { CustomerSyncTableSchema, formatCustomerReference } from '../../schemas/
 import { OrderSyncTableSchema, orderFieldDependencies } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
-import { RestApiDataWithMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../AbstractResource_Synced_HasMetafields_GraphQl';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { SearchParams } from '../../Clients/RestClient';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
 import { Shop } from './Shop';
 import { CustomerCodaData } from './Customer';
-import { SyncTableManagerRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 
 // #endregion
 
@@ -104,7 +110,7 @@ type PriceSet = {
 };
 // #endregion
 
-export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
+export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     // line_items: { [key: string]: unknown }[] | null;
@@ -300,7 +306,7 @@ export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Order, typeof Sync_Orders, SyncTableManagerRestHasRestMetafields<Order>>): SyncFunction {
+  }: MakeSyncFunctionArgs<Order, typeof Sync_Orders, SyncTableManagerRestWithGraphQlMetafields<Order>>): SyncFunction {
     const [
       status = 'any',
       syncMetafields,

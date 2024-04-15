@@ -4,8 +4,13 @@ import { REST_DEFAULT_LIMIT } from '../../constants';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../schemas/syncTable/RedirectSchema';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { AbstractResource_Synced, FromRow, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedRestResource,
+  FromRow,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
@@ -27,7 +32,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Redirect extends AbstractResource_Synced {
+export class Redirect extends AbstractSyncedRestResource {
   public apiData: {
     id: number | null;
     path: string | null;

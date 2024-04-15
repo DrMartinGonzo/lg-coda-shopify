@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Customer } from '../../Resources/Rest/Customer';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
@@ -113,7 +113,7 @@ export const Action_CreateCustomer = coda.makeFormula({
         accepts_sms_marketing,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Customer.metafieldRestOwnerType })
       ),
@@ -190,7 +190,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
         tags: tags ? tags.join(',') : undefined,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: customerId, owner_resource: Customer.metafieldRestOwnerType })
       ),

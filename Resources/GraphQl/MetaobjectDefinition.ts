@@ -9,8 +9,13 @@ import {
   getSingleMetaobjectDefinitionByTypeQuery,
 } from '../../graphql/metaobjectDefinition-graphql';
 import { metaobjectDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
-import { AbstractGraphQlResource, FindAllResponse, GraphQlResourcePath, SaveArgs } from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
+import {
+  AbstractGraphQlResource,
+  FindAllResponse,
+  GraphQlResourcePath,
+  SaveArgs,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 
 // #endregion
 

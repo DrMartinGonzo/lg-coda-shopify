@@ -1,23 +1,23 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SearchParams } from '../Clients/RestClient';
-import { hasMetafieldsInRow, hasMetafieldsInUpdate } from './abstractResource-utils';
+import { SearchParams } from '../../../Clients/RestClient';
+import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
 import {
   SyncTableRestContinuation,
   SyncTableSyncResult,
   SyncTableUpdateResult,
-} from '../SyncTableManager/SyncTable.types';
-import { SyncTableRestHasRestMetafields } from '../SyncTableManager/SyncTableManagerRestHasRestMetafields';
-import { CACHE_DEFAULT, REST_DEFAULT_LIMIT } from '../constants';
-import { graphQlGidToId } from '../utils/graphql-utils';
-import { getMetaFieldFullKey } from '../utils/metafields-utils';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { MetafieldOwnerType } from '../types/admin.types';
-import { FindAllResponse, RestApiData, SaveArgs } from './AbstractResource';
-import { AbstractResource_Synced, SyncFunction } from './AbstractResource_Synced';
-import { MetafieldDefinition } from './GraphQl/MetafieldDefinition';
-import { Metafield, SupportedMetafieldOwnerResource } from './Rest/Metafield';
+} from '../../../SyncTableManager/types/SyncTable.types';
+import { SyncTableManagerRestWithRestMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
+import { CACHE_DEFAULT, REST_DEFAULT_LIMIT } from '../../../constants';
+import { graphQlGidToId } from '../../../utils/conversion-utils';
+import { getMetaFieldFullKey } from '../../../utils/metafields-utils';
+import { BaseRow } from '../../../schemas/CodaRows.types';
+import { MetafieldOwnerType } from '../../../types/admin.types';
+import { FindAllResponse, RestApiData, SaveArgs } from './AbstractRestResource';
+import { AbstractSyncedRestResource, SyncFunction } from './AbstractSyncedRestResource';
+import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
+import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 
 // #endregion
 
@@ -32,11 +32,11 @@ export interface RestApiDataWithMetafields extends RestApiData {
 }
 
 export type AugmentWithMetafieldsFunction = (
-  base: AbstractResource_Synced_HasMetafields
+  base: AbstractSyncedRestResourceWithRestMetafields
 ) => Promise<FindAllResponse<Metafield>>;
 // #endregion
 
-export abstract class AbstractResource_Synced_HasMetafields extends AbstractResource_Synced {
+export abstract class AbstractSyncedRestResourceWithRestMetafields extends AbstractSyncedRestResource {
   public apiData: RestApiDataWithMetafields;
 
   protected static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
@@ -46,7 +46,7 @@ export abstract class AbstractResource_Synced_HasMetafields extends AbstractReso
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {
-    return async (base: AbstractResource_Synced_HasMetafields) => {
+    return async (base: AbstractSyncedRestResourceWithRestMetafields) => {
       return Metafield.all({
         context,
         ['metafield[owner_id]']: base.apiData.id,
@@ -94,7 +94,11 @@ export abstract class AbstractResource_Synced_HasMetafields extends AbstractReso
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ) {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableRestHasRestMetafields<AbstractResource_Synced_HasMetafields>(schema, codaSyncParams, context);
+    return new SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>(
+      schema,
+      codaSyncParams,
+      context
+    );
   }
 
   public static async sync(
@@ -169,7 +173,7 @@ export abstract class AbstractResource_Synced_HasMetafields extends AbstractReso
         metafieldDefinitions,
         ownerResource: this.metafieldRestOwnerType,
       });
-      const instance: AbstractResource_Synced_HasMetafields = new (this as any)({
+      const instance: AbstractSyncedRestResourceWithRestMetafields = new (this as any)({
         context,
         fromRow: { row: newRow, metafields },
       });
@@ -198,7 +202,7 @@ export abstract class AbstractResource_Synced_HasMetafields extends AbstractReso
    *===================================================================================================================== */
   public async save({ update = false }: SaveArgs = {}): Promise<void> {
     if (this.apiData.metafields && this.apiData.metafields.length) {
-      const staticOwnerResource = this.resource<typeof AbstractResource_Synced_HasMetafields>();
+      const staticOwnerResource = this.resource<typeof AbstractSyncedRestResourceWithRestMetafields>();
       const { primaryKey } = staticOwnerResource;
       const method = this.apiData[primaryKey] ? 'put' : 'post';
 

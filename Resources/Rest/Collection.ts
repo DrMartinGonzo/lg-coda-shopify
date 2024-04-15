@@ -11,10 +11,10 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
-import { RestApiDataWithMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../AbstractResource_Synced_HasMetafields_GraphQl';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -29,7 +29,7 @@ interface ProductsArgs extends BaseContext {
   limit?: unknown;
 }
 
-export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
+export class Collection extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     title: string | null;
     body_html: string | null;

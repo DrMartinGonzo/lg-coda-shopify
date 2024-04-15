@@ -4,7 +4,7 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
 import { RequiredParameterMissingVisibleError } from '../../Errors';
-import { SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
+import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
@@ -25,19 +25,19 @@ import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deleteUndefinedInObject, isNullishOrEmpty } from '../../utils/helpers';
 import {
   AbstractGraphQlResource,
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AllMetafieldTypeValue } from '../Mixed/Metafield.types';
 import { Metafield } from '../Rest/Metafield';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
@@ -78,7 +78,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class MetafieldGraphQl extends AbstractGraphQlResource_Synced {
+export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metafieldFieldsFragment> &
     ResultOf<typeof metafieldFieldsFragmentWithDefinition> & {
       owner: {

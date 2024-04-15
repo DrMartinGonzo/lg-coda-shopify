@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { FromMetaobjectRow, Metaobject } from '../../Resources/GraphQl/Metaobject';
 import { Identity } from '../../constants';
-import { idToGraphQlGid } from '../../utils/graphql-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,

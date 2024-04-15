@@ -1,3 +1,4 @@
+import { NOT_FOUND } from '../constants';
 import { CustomerRow, MetafieldRow, ProductRow, ProductVariantRow } from '../schemas/CodaRows.types';
 
 export const expectedRows = {
@@ -16,7 +17,7 @@ export const expectedRows = {
       'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/32b3863554f4686d825d9da18a24cfc6.jpg?v=1709216059',
       'https://cdn.shopify.com/s/files/1/0690/5400/5504/products/044f848776141f1024eae6c610a28d12.jpg?v=1708453334',
     ],
-    options: 'Size, Color',
+    options: 'Size,Color',
     product_type: 'ACCESSORIES',
     published_at: '2024-03-14T08:44:36-04:00' as unknown as Date,
     published_scope: 'global',
@@ -30,7 +31,7 @@ export const expectedRows = {
     'lgs_meta__custom.boolean': true,
     'lgs_meta__custom.date_time': '2024-01-03T01:30:00+01:00',
     'lgs_meta__global.description_tag': 'test description',
-    'lgs_meta__global.title_tag': 'test title',
+    'lgs_meta__global.title_tag': 'vitest',
     // not needed
     // updated_at
   } as ProductRow,
@@ -55,7 +56,7 @@ export const expectedRows = {
     option3: null,
     position: 1,
     price: 50,
-    product: { id: 8406091333888, title: 'Vitest Product' },
+    product: { id: 8406091333888, title: NOT_FOUND },
     sku: 'AD-04\r\n-blue-OS',
     storeUrl: 'https://coda-pack-test.myshopify.com/products/vitest-product?variant=44365639713024',
     taxable: true,
@@ -136,4 +137,15 @@ export const expectedRows = {
     // not needed
     // updated_at
   } as CustomerRow,
+
+  metafield: {
+    id: 25730257289472,
+    label: 'global.title_tag',
+    owner_id: 8406091333888,
+    type: 'single_line_text_field',
+    owner_type: 'PRODUCT',
+    admin_graphql_api_id: 'gid://shopify/Metafield/25730257289472',
+    admin_url: 'https://coda-pack-test.myshopify.com/admin/products/8406091333888/metafields/unstructured',
+    rawValue: 'vitest',
+  } as MetafieldRow,
 };

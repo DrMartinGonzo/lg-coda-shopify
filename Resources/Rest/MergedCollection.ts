@@ -11,16 +11,16 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { SyncTableSyncResult } from '../../SyncTableManager/SyncTable.types';
-import { CodaSyncParams, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
-import { RestApiDataWithMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { AbstractResource_Synced_HasMetafields_GraphQl } from '../AbstractResource_Synced_HasMetafields_GraphQl';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { ResourceDisplayName } from '../AbstractResource';
+import { ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 
 // #endregion
 
-export abstract class MergedCollection extends AbstractResource_Synced_HasMetafields_GraphQl {
+export abstract class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     // Collection —————————————————————————————————————————————————————————————————————————————————
     title: string | null;

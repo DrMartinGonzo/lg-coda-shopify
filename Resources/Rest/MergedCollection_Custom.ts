@@ -2,12 +2,12 @@
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableManagerRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { BaseContext, FindAllResponse, ResourceName } from '../AbstractResource';
-import { MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceName } from '../Abstract/Rest/AbstractRestResource';
+import { MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { MergedCollection } from './MergedCollection';
 
@@ -61,7 +61,7 @@ export class MergedCollection_Custom extends MergedCollection {
   }: MakeSyncFunctionArgs<
     MergedCollection_Custom,
     typeof Sync_Collections,
-    SyncTableManagerRestHasRestMetafields<MergedCollection_Custom>
+    SyncTableManagerRestWithGraphQlMetafields<MergedCollection_Custom>
   >): SyncFunction {
     const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
       codaSyncParams;

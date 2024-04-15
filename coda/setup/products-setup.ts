@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { Asset } from '../../Resources/Rest/Asset';
 import { Product } from '../../Resources/Rest/Product';
 import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, Identity } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { getTemplateSuffixesFor } from '../../utils/themes-utils';
 import { fetchProductTypesGraphQl } from '../../utils/products-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #endregion
 
@@ -32,7 +32,7 @@ export const Sync_Products = coda.makeSyncTable({
         return fetchProductTypesGraphQl(context);
       }
       if (context.propertyName === 'template_suffix') {
-        return getTemplateSuffixesFor('product', context);
+        return Asset.getTemplateSuffixesFor({ kind: 'product', context });
       }
     },
   },
@@ -114,7 +114,7 @@ export const Action_CreateProduct = coda.makeFormula({
         images: imageUrls,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Product.metafieldRestOwnerType })
       ),
@@ -171,7 +171,7 @@ export const Action_UpdateProduct = coda.makeFormula({
         status,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: productId, owner_resource: Product.metafieldRestOwnerType })
       ),

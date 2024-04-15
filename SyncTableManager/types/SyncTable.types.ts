@@ -1,10 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { BaseRow } from '../schemas/CodaRows.types';
-import { ShopifyGraphQlRequestCost } from '../Clients/GraphQLErrors';
-import { SearchParams } from '../Clients/RestClient';
-import { Stringified } from '../types/utilities';
+import { BaseRow } from '../../schemas/CodaRows.types';
+import { ShopifyGraphQlRequestCost } from '../../Clients/GraphQlErrors';
+import { SearchParams } from '../../Clients/RestClient';
+import { Stringified } from '../../types/utilities';
 
 // #endregion
 

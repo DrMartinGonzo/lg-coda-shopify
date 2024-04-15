@@ -2,10 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { CodaMetafieldValueNew } from '../CodaMetafieldValue';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors';
-import { AbstractResource_Synced_HasMetafields } from '../../Resources/AbstractResource_Synced_HasMetafields';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
 import { Shop } from '../../Resources/Rest/Shop';
@@ -13,7 +13,7 @@ import { Article } from '../../Resources/Rest/Article';
 import { Blog } from '../../Resources/Rest/Blog';
 import { Page } from '../../Resources/Rest/Page';
 import { CACHE_DEFAULT, CACHE_DISABLED, Identity } from '../../constants';
-import { idToGraphQlGid } from '../../utils/graphql-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { filters, inputs } from '../coda-parameters';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
@@ -28,12 +28,12 @@ import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../
  * Matches a GraphQl MetafieldOwnerType to the corresponding Rest owner Resource class.
  *
  * @param {MetafieldOwnerType} ownerType - the MetafieldOwnerType to match
- * @return {AbstractResource_Synced_HasMetafields} the corresponding Rest owner Resource class
+ * @return {AbstractSyncedRestResourceWithRestMetafields} the corresponding Rest owner Resource class
  */
 
 function matchOwnerTypeToOwnerResourceClass(
   ownerType: MetafieldOwnerType
-): typeof AbstractResource_Synced_HasMetafields {
+): typeof AbstractSyncedRestResourceWithRestMetafields {
   switch (ownerType) {
     case MetafieldOwnerType.Article:
       return Article;
@@ -80,7 +80,7 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
           throw new UnsupportedValueError('MetafieldTypeValue', type);
       }
 
-      return new CodaMetafieldValueNew({
+      return new CodaMetafieldValue({
         type: METAFIELD_TYPES[type],
         value: idToGraphQlGid(resource, value),
       }).toJSON();
@@ -171,7 +171,7 @@ export const Action_SetMetafield = coda.makeFormula({
   schema: MetafieldSyncTableSchema,
   execute: async ([ownerType, metafieldParam, ownerId], context) => {
     const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
-    const metafieldSet = CodaMetafieldKeyValueSetNew.createFromCodaParameter(metafieldParam);
+    const metafieldSet = CodaMetafieldSet.createFromCodaParameter(metafieldParam);
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && ownerId === undefined) {
       throw new RequiredParameterMissingVisibleError(
@@ -513,8 +513,7 @@ export const Formula_FormatMetafield = coda.makeFormula({
   parameters: [inputs.metafield.fullKey, inputs.metafield.value],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([fullKey, value]) =>
-    CodaMetafieldKeyValueSetNew.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+  execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatListMetafield = coda.makeFormula({
@@ -525,7 +524,7 @@ export const Formula_FormatListMetafield = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, ...varargs]) =>
-    CodaMetafieldKeyValueSetNew.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
+    CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
 });
 
 export const Formula_MetaBoolean = coda.makeFormula({
@@ -534,7 +533,7 @@ export const Formula_MetaBoolean = coda.makeFormula({
   parameters: [{ ...inputs.metafield.boolean, description: 'True or false ?' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.boolean, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.boolean, value }).toJSON(),
 });
 
 export const Formula_MetaColor = coda.makeFormula({
@@ -548,7 +547,7 @@ export const Formula_MetaColor = coda.makeFormula({
   ],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.color, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.color, value }).toJSON(),
 });
 
 export const Formula_MetaDate = coda.makeFormula({
@@ -557,7 +556,7 @@ export const Formula_MetaDate = coda.makeFormula({
   parameters: [{ ...inputs.metafield.date, description: 'The date value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.date, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.date, value }).toJSON(),
 });
 
 export const Formula_MetaDateTime = coda.makeFormula({
@@ -566,7 +565,7 @@ export const Formula_MetaDateTime = coda.makeFormula({
   parameters: [{ ...inputs.metafield.date, description: 'The date_time value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.date_time, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.date_time, value }).toJSON(),
 });
 
 export const Formula_MetaDimension = coda.makeFormula({
@@ -579,7 +578,7 @@ export const Formula_MetaDimension = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.dimension, value: { value, unit } }).toJSON(),
+    new CodaMetafieldValue({ type: METAFIELD_TYPES.dimension, value: { value, unit } }).toJSON(),
 });
 
 // TODO: support all file types, we need a function MetafieldFileImageValue, MetafieldFileVideoValue etc ?
@@ -593,7 +592,7 @@ export const Formula_MetaJson = coda.makeFormula({
   parameters: [{ ...inputs.metafield.string, description: 'The JSON content.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.json, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.json, value }).toJSON(),
 });
 
 export const Formula_MetaMetaobjectReference = makeMetafieldReferenceValueFormulaDefinition(
@@ -610,7 +609,7 @@ export const Formula_MetaMoney = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([amount, currency_code]: [number, CurrencyCode], context) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.money, value: { amount, currency_code } }).toJSON(),
+    new CodaMetafieldValue({ type: METAFIELD_TYPES.money, value: { amount, currency_code } }).toJSON(),
 });
 
 export const Formula_MetaMultiLineText = coda.makeFormula({
@@ -619,8 +618,7 @@ export const Formula_MetaMultiLineText = coda.makeFormula({
   parameters: [{ ...inputs.metafield.string, description: 'The text content.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.multi_line_text_field, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.multi_line_text_field, value }).toJSON(),
 });
 
 export const Formula_MetaNumberDecimal = coda.makeFormula({
@@ -629,7 +627,7 @@ export const Formula_MetaNumberDecimal = coda.makeFormula({
   parameters: [{ ...inputs.metafield.number, description: 'The decimal number value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.number_decimal, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.number_decimal, value }).toJSON(),
 });
 
 export const Formula_MetaNumberInteger = coda.makeFormula({
@@ -638,7 +636,7 @@ export const Formula_MetaNumberInteger = coda.makeFormula({
   parameters: [{ ...inputs.metafield.number, description: 'The integer value.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.number_integer, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.number_integer, value }).toJSON(),
 });
 
 export const Formula_MetaPageReference = makeMetafieldReferenceValueFormulaDefinition(METAFIELD_TYPES.page_reference);
@@ -658,7 +656,7 @@ export const Formula_MetaRating = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, scale_min, scale_max]) =>
-    new CodaMetafieldValueNew({
+    new CodaMetafieldValue({
       type: METAFIELD_TYPES.rating,
       value: {
         value,
@@ -674,8 +672,7 @@ export const Formula_MetaSingleLineText = coda.makeFormula({
   parameters: [{ ...inputs.metafield.string, description: 'The text content.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.single_line_text_field, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.single_line_text_field, value }).toJSON(),
 });
 
 export const Formula_MetaUrl = coda.makeFormula({
@@ -684,7 +681,7 @@ export const Formula_MetaUrl = coda.makeFormula({
   parameters: [{ ...inputs.metafield.string, description: 'The url.' }],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([value]) => new CodaMetafieldValueNew({ type: METAFIELD_TYPES.url, value }).toJSON(),
+  execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.url, value }).toJSON(),
 });
 
 export const Formula_MetaVariantReference = makeMetafieldReferenceValueFormulaDefinition(
@@ -698,7 +695,7 @@ export const Formula_MetaVolume = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.volume, value: { value, unit } }).toJSON(),
+    new CodaMetafieldValue({ type: METAFIELD_TYPES.volume, value: { value, unit } }).toJSON(),
 });
 
 export const Formula_MetaWeight = coda.makeFormula({
@@ -708,7 +705,7 @@ export const Formula_MetaWeight = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
-    new CodaMetafieldValueNew({ type: METAFIELD_TYPES.weight, value: { value, unit } }).toJSON(),
+    new CodaMetafieldValue({ type: METAFIELD_TYPES.weight, value: { value, unit } }).toJSON(),
 });
 
 export const Formula_MetaCollectionReference = makeMetafieldReferenceValueFormulaDefinition(

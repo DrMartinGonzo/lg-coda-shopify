@@ -1,49 +1,50 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../Clients/GraphQLErrors.js';
-import { GraphQlClient } from '../Clients/GraphQlClient.js';
-import { FormattingError, InvalidValueError } from '../Errors.js';
-import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types.js';
-import { SyncTableGraphQlContinuation, SyncTableMixedContinuation } from '../SyncTableManager/SyncTable.types.js';
-import { parseContinuationProperty } from '../SyncTableManager/syncTableManager-utils.js';
-import { GRAPHQL_BUDGET__MAX } from '../config.js';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../constants.js';
-import { throttleStatusQuery } from '../graphql/shop-graphql.js';
-import { logAdmin, wait } from './helpers.js';
+import { GraphQlClient } from '../../Clients/GraphQlClient';
+import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Clients/GraphQlErrors';
+import { wait } from '../../Clients/utils/client-utils';
+import { GRAPHQL_BUDGET__MAX } from '../../config';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { throttleStatusQuery } from '../../graphql/shop-graphql';
+import { Stringified } from '../../types/utilities';
+import { logAdmin } from '../../utils/helpers';
+import { SyncTableGraphQlContinuation, SyncTableMixedContinuation } from '../types/SyncTable.types';
+
 // #endregion
 
-// #region GID functions
-function isGraphQlGid(gid: string) {
-  if (gid.startsWith('gid://shopify/')) return true;
-  return false;
+// #region Continuation
+/**
+ * Serializes a value to a JSON string with a special type to ensure that the
+ * resulting string can be used to recreate the original value.
+ *
+ * @param value The value to serialize.
+ * @param replacer An optional function used to transform values before they
+ * are serialized.
+ * @param space An optional string or number used to add indentation,
+ * white space, and line breaks to the resulting JSON.
+ * @returns A string that contains the JSON representation of the given value
+ * with a special type to ensure it can be used to recreate the original value.
+ */
+
+export function stringifyContinuationProperty<T>(
+  value: T,
+  replacer?: (key: string, value: any) => any,
+  space?: string | number
+): string & Stringified<T> {
+  return JSON.stringify(value, replacer, space) as string & Stringified<T>;
 }
-
-// TODO: these functions should return undefined when no id is provided, only throw error is the stuff is invalid
-export function idToGraphQlGid(resourceName: GraphQlResourceName, id: number | string) {
-  if (typeof id === 'string' && isGraphQlGid(id)) {
-    return id as string;
-  }
-  if (resourceName === undefined || id === undefined || typeof id !== 'number') {
-    throw new FormattingError('GraphQlGid', resourceName, id);
-  }
-  return `gid://shopify/${resourceName}/${id}`;
-}
-
-export function graphQlGidToId(gid: string): number {
-  if (!gid || !isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
-  if (!Number.isNaN(parseInt(gid))) return Number(gid);
-
-  const maybeNum = gid.split('/').at(-1)?.split('?').at(0);
-  if (maybeNum) {
-    return Number(maybeNum);
-  }
-  throw new InvalidValueError('GID', gid);
-}
-
-function graphQlGidToResourceName(gid: string): GraphQlResourceName {
-  if (!gid || !isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
-  return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
+/**
+ * Parses a JSON string with a special type created by
+ * `stringifyContinuationProperty` to recreate the original value.
+ *
+ * @param text The string to parse.
+ * @param reviver An optional function used to transform values after they
+ * are parsed.
+ * @returns The original value recreated from the parsed string.
+ */
+export function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
+  return JSON.parse(text);
 }
 // #endregion
 

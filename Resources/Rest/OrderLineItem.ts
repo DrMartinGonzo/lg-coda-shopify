@@ -9,8 +9,13 @@ import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineI
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { AbstractResource_Synced, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedRestResource,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { SearchParams } from '../../Clients/RestClient';
 import { Shop } from './Shop';
 import { Order } from './Order';
@@ -42,7 +47,7 @@ export type LineItem = {
 };
 // #endregion
 
-export class OrderLineItem extends AbstractResource_Synced {
+export class OrderLineItem extends AbstractSyncedRestResource {
   public apiData: (LineItem & { order_id: number; order_name: string }) | null;
 
   static readonly displayName = 'Order LineItem' as ResourceDisplayName;

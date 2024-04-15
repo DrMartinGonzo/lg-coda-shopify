@@ -2,13 +2,19 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
-import { SearchParams } from '../Clients/RestClient';
-import { SyncTableParamValues, SyncTableSyncResult, SyncTableUpdateResult } from '../SyncTableManager/SyncTable.types';
-import { SyncTableManagerRest } from '../SyncTableManager/SyncTableManagerRest';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { arrayUnique, getObjectSchemaEffectiveKey, transformToArraySchema } from '../utils/helpers';
-import { AbstractResource, BaseConstructorArgs, FindAllResponse } from './AbstractResource';
-import { Metafield } from './Rest/Metafield';
+import { SearchParams } from '../../../Clients/RestClient';
+import {
+  SyncTableParamValues,
+  SyncTableSyncResult,
+  SyncTableUpdateResult,
+} from '../../../SyncTableManager/types/SyncTable.types';
+import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
+import { BaseRow } from '../../../schemas/CodaRows.types';
+import { arrayUnique } from '../../../utils/helpers';
+import { getObjectSchemaEffectiveKey } from '../../../utils/coda-utils';
+import { transformToArraySchema } from '../../../utils/coda-utils';
+import { AbstractRestResource, BaseConstructorArgs, FindAllResponse } from './AbstractRestResource';
+import { Metafield } from '../../Rest/Metafield';
 
 // #endregion
 
@@ -18,7 +24,7 @@ export interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
 }
 
 export type MakeSyncFunctionArgs<
-  BaseT extends AbstractResource_Synced = AbstractResource_Synced,
+  BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource,
   SyncTableDefT extends SyncTableDefinition = never,
   SyncTableManagerT extends SyncTableManagerRest<BaseT> = SyncTableManagerRest<BaseT>
 > = {
@@ -30,7 +36,7 @@ export type MakeSyncFunctionArgs<
 export type SyncFunction = (
   nextPageQuery: SearchParams,
   adjustLimit?: number
-) => Promise<FindAllResponse<AbstractResource_Synced>>;
+) => Promise<FindAllResponse<AbstractSyncedRestResource>>;
 
 export interface FromRow<RowT extends BaseRow = BaseRow> {
   row: Partial<RowT> | null;
@@ -53,7 +59,7 @@ export interface GetSchemaArgs {
 
 // #endregion
 
-export abstract class AbstractResource_Synced extends AbstractResource {
+export abstract class AbstractSyncedRestResource extends AbstractRestResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
 
@@ -92,7 +98,7 @@ export abstract class AbstractResource_Synced extends AbstractResource {
    */
   protected static makeSyncTableManagerSyncFunction({
     context,
-  }: MakeSyncFunctionArgs<AbstractResource_Synced, any>): SyncFunction {
+  }: MakeSyncFunctionArgs<AbstractSyncedRestResource, any>): SyncFunction {
     return (nextPageQuery: SearchParams = {}) =>
       this.baseFind({
         context,
@@ -104,9 +110,9 @@ export abstract class AbstractResource_Synced extends AbstractResource {
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerRest<AbstractResource_Synced>> {
+  ): Promise<SyncTableManagerRest<AbstractSyncedRestResource>> {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRest<AbstractResource_Synced>(schema, codaSyncParams, context);
+    return new SyncTableManagerRest<AbstractSyncedRestResource>(schema, codaSyncParams, context);
   }
 
   public static async sync(
@@ -124,7 +130,7 @@ export abstract class AbstractResource_Synced extends AbstractResource {
   }
 
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    const instance: AbstractResource_Synced = new (this as any)({ context, fromRow: { row: newRow } });
+    const instance: AbstractSyncedRestResource = new (this as any)({ context, fromRow: { row: newRow } });
     await instance.saveAndUpdate();
     return { ...prevRow, ...instance.formatToRow() };
   }

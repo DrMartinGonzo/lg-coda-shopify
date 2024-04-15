@@ -1,17 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from './SyncTable.types';
-import { parseContinuationProperty, stringifyContinuationProperty } from './syncTableManager-utils';
-import { FindAllResponse } from '../Resources/AbstractResource';
-import { AbstractResource_Synced, SyncFunction } from '../Resources/AbstractResource_Synced';
-import { FieldDependency } from '../schemas/Schema.types';
-import { handleFieldDependencies, logAdmin } from '../utils/helpers';
+import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/SyncTable.types';
+import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/syncTableManager-utils';
+import { FindAllResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
+import { AbstractSyncedRestResource, SyncFunction } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FieldDependency } from '../../schemas/Schema.types';
+import { handleFieldDependencies, logAdmin } from '../../utils/helpers';
 
 // #endregion
 
 // #region Types
-export interface SyncTableManagerResult<BaseT extends AbstractResource_Synced = AbstractResource_Synced> {
+export interface SyncTableManagerResult<BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource> {
   response: FindAllResponse<BaseT>;
   continuation?: any;
 }
@@ -20,13 +20,13 @@ export interface ExecuteSyncArgs {
   sync: SyncFunction;
   adjustLimit?: number;
   getNestedData?: (
-    response: FindAllResponse<AbstractResource_Synced>,
+    response: FindAllResponse<AbstractSyncedRestResource>,
     context: coda.SyncExecutionContext
-  ) => Array<AbstractResource_Synced>;
+  ) => Array<AbstractSyncedRestResource>;
 }
 // #endregion
 
-export class SyncTableManagerRest<BaseT extends AbstractResource_Synced> {
+export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
   protected readonly context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */
   protected readonly codaParams: coda.ParamValues<coda.ParamDefs>;

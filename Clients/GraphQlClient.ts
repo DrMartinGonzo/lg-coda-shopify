@@ -6,7 +6,10 @@ import { ResultOf, VariablesOf } from '../utils/tada-utils';
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { GRAPHQL_NODES_LIMIT } from '../constants';
 import { PageInfo } from '../types/admin.types';
-import { arrayUnique, getShopifyRequestHeaders, isCodaCached, logAdmin, wait } from '../utils/helpers';
+import { arrayUnique, logAdmin } from '../utils/helpers';
+import { wait } from './utils/client-utils';
+import { getShopifyRequestHeaders } from './utils/client-utils';
+import { isCodaCached } from './utils/client-utils';
 import { FetchRequestOptions } from '../Fetchers/Fetcher.types';
 import {
   GraphQLMaxCostExceededError,
@@ -18,7 +21,7 @@ import {
   ShopifyGraphQlThrottledError,
   ShopifyGraphQlUserError,
   ShopifyThrottledErrorCode,
-} from './GraphQLErrors';
+} from './GraphQlErrors';
 
 // #region Types
 interface GraphQlData<TadaT extends TadaDocumentNode> {

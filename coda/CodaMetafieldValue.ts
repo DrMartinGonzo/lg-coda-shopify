@@ -24,7 +24,7 @@ interface ParsedMetafieldValueFormula {
  * Represents a metafield value constructed from one of the`Meta{…}` helper formulas
  * The value can also be blank, in that case, this metafield value will be marked as to be deleted.
  */
-export class CodaMetafieldValueNew {
+export class CodaMetafieldValue {
   public type: MetafieldTypeValue;
   public value: any;
 
@@ -57,7 +57,7 @@ export class CodaMetafieldValueNew {
    * Create instance from a Coda string parameter based on the output of one of
    * the`Meta{…}` helper formulas.
    */
-  public static createFromCodaParameter(param: string): CodaMetafieldValueNew {
+  public static createFromCodaParameter(param: string): CodaMetafieldValue {
     let type: MetafieldTypeValue;
     let value = null;
     try {
@@ -73,7 +73,7 @@ export class CodaMetafieldValueNew {
       throw new InvalidValueVisibleError('You must use one of the`Meta{…}` helper formulas.');
     }
 
-    return new CodaMetafieldValueNew({ type, value });
+    return new CodaMetafieldValue({ type, value });
   }
 
   public toJSON() {

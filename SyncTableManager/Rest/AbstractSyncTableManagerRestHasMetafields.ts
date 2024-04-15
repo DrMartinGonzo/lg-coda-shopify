@@ -1,14 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
-import { AbstractResource_Synced } from '../Resources/AbstractResource_Synced';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';
+import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { SyncTableManagerRest } from './SyncTableManagerRest';
 
 // #endregion
 
 export abstract class AbstractSyncTableManagerRestHasMetafields<
-  BaseT extends AbstractResource_Synced
+  BaseT extends AbstractSyncedRestResource
 > extends SyncTableManagerRest<BaseT> {
   public effectiveStandardFromKeys: string[];
   public effectiveMetafieldKeys: string[];

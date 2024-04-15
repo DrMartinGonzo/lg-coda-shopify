@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { DraftOrder } from '../../Resources/Rest/DraftOrder';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
@@ -101,7 +101,7 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
         tags: tags ? tags.join(',') : undefined,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: draftOrderId, owner_resource: DraftOrder.metafieldRestOwnerType })
       ),

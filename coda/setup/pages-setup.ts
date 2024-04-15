@@ -1,14 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { Asset } from '../../Resources/Rest/Asset';
 import { Page } from '../../Resources/Rest/Page';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { getTemplateSuffixesFor } from '../../utils/themes-utils';
 
 // #endregion
 
@@ -27,7 +27,7 @@ export const Sync_Pages = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return getTemplateSuffixesFor('page', context);
+        return Asset.getTemplateSuffixesFor({ kind: 'page', context });
       }
     },
   },
@@ -105,7 +105,7 @@ export const Action_CreatePage = coda.makeFormula({
         template_suffix,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Page.metafieldRestOwnerType })
       ),
@@ -159,7 +159,7 @@ export const Action_UpdatePage = coda.makeFormula({
         template_suffix,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: pageId, owner_resource: Page.metafieldRestOwnerType })
       ),

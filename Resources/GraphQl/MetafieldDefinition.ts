@@ -13,13 +13,13 @@ import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../types/admin.types';
 import {
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 import { Metafield } from '../Rest/Metafield';
 import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
 
@@ -75,7 +75,7 @@ const FAKE_METADEFINITION__SEO_TITLE = {
   visibleToStorefrontApi: true,
 };
 
-export class MetafieldDefinition extends AbstractGraphQlResource_Synced {
+export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metafieldDefinitionFragment>;
 
   static readonly displayName = 'MetafieldDefinition' as ResourceDisplayName;

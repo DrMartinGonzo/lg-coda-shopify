@@ -50,7 +50,7 @@ const defaultExecuteOptions = {
   manifestPath: require.resolve('../pack.ts'),
 };
 
-describe('Metafields Formula', () => {
+describe.concurrent('Metafields Formula', () => {
   test('MetaBoolean', async () => {
     const result = await executeFormulaFromPackDef(pack, 'MetaBoolean', [true]);
     expect(result).toEqual(JSON.stringify({ type: METAFIELD_TYPES.boolean, value: true }));
@@ -163,7 +163,7 @@ describe('Metafields Formula', () => {
   });
 });
 
-describe('Format Metafields Formula', () => {
+describe.concurrent('Format Metafields Formula', () => {
   test('FormatMetafield with empty value', async () => {
     const result = await executeFormulaFromPackDef(pack, 'FormatMetafield', ['global.title_tag', '']);
     expect(result).toEqual(JSON.stringify({ key: 'global.title_tag', type: null, value: null }));
@@ -259,7 +259,7 @@ describe('Format Metafields Formula', () => {
 });
 });
 
-describe('Customer', () => {
+describe.concurrent('Customer', () => {
   test('Fetch', async () => {
     const expected = normalizeExpectedRowKeys(expectedRows.customer);
     const result = await executeFormulaFromPackDef(
@@ -296,7 +296,47 @@ describe('Customer', () => {
   });
 });
 
-describe('Product', () => {
+describe.concurrent('Metafield', () => {
+  test('Update', async () => {
+    const expected = normalizeExpectedRowKeys(expectedRows.metafield);
+    const input = await executeFormulaFromPackDef(
+      pack,
+      'FormatMetafield',
+      [
+        'global.title_tag', // fullKey
+        await executeFormulaFromPackDef(
+          pack,
+          'MetaSingleLineText',
+          [
+            'vitest', // string
+          ],
+          undefined,
+          undefined,
+          defaultExecuteOptions
+        ), // value
+      ],
+      undefined,
+      undefined,
+      defaultExecuteOptions
+    );
+
+    const result = await executeFormulaFromPackDef(
+      pack,
+      'SetMetafield',
+      [
+        expected.OwnerType, // string
+        input, // metafieldValue
+        expected.OwnerId, // ownerID
+      ],
+      undefined,
+      undefined,
+      defaultExecuteOptions
+    );
+    compareToExpectedRow(result, expected);
+  });
+});
+
+describe.concurrent('Product', () => {
   test('Fetch', async () => {
     const expected = normalizeExpectedRowKeys(expectedRows.product);
     const result = await executeFormulaFromPackDef(
@@ -339,7 +379,7 @@ describe('Product', () => {
   });
 });
 
-describe('ProductVariant', () => {
+describe.concurrent('ProductVariant', () => {
   test('Fetch', async () => {
     const expected = normalizeExpectedRowKeys(expectedRows.productVariant);
     const result = await executeFormulaFromPackDef(

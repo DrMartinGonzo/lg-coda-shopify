@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Product } from '../../Resources/Rest/Product';
 import { Variant } from '../../Resources/Rest/Variant';
 import { CACHE_DEFAULT, Identity } from '../../constants';
@@ -135,7 +135,7 @@ export const Action_CreateProductVariant = coda.makeFormula({
         weight_unit,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_resource: Variant.metafieldRestOwnerType })
       ),
@@ -210,7 +210,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
         weight_unit,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: productVariantId, owner_resource: Variant.metafieldRestOwnerType })
       ),

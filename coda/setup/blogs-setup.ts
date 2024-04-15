@@ -1,14 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldKeyValueSetNew } from '../CodaMetafieldKeyValueSet';
-import { FromRow } from '../../Resources/AbstractResource_Synced';
+import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { Asset } from '../../Resources/Rest/Asset';
 import { Blog } from '../../Resources/Rest/Blog';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { getTemplateSuffixesFor } from '../../utils/themes-utils';
 
 // #endregion
 
@@ -27,7 +27,7 @@ export const Sync_Blogs = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return getTemplateSuffixesFor('blog', context);
+        return Asset.getTemplateSuffixesFor({ kind: 'blog', context });
       }
     },
   },
@@ -92,7 +92,7 @@ export const Action_UpdateBlog = coda.makeFormula({
         template_suffix,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context, owner_id: blogId, owner_resource: Blog.metafieldRestOwnerType })
       ),
@@ -132,7 +132,7 @@ export const Action_CreateBlog = coda.makeFormula({
         template_suffix,
       },
       // prettier-ignore
-      metafields: CodaMetafieldKeyValueSetNew
+      metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
         .map((s) => s.toMetafield({ context,  owner_resource: Blog.metafieldRestOwnerType })
       ),

@@ -2,7 +2,7 @@
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
 import {
@@ -17,15 +17,15 @@ import { formatProductVariantReference } from '../../schemas/syncTable/ProductVa
 import { CountryCode } from '../../types/admin.types';
 import { deepCopy, deleteUndefinedInObject, isDefinedEmpty } from '../../utils/helpers';
 import {
-  AbstractGraphQlResource_Synced,
   FindAllResponse,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../AbstractGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../AbstractResource';
-import { FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Shop } from '../Rest/Shop';
 
 // #endregion
@@ -51,7 +51,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class InventoryItem extends AbstractGraphQlResource_Synced {
+export class InventoryItem extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof inventoryItemFieldsFragment>;
 
   static readonly displayName = 'InventoryItem' as ResourceDisplayName;

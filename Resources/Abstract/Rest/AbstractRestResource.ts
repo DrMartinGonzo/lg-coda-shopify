@@ -2,15 +2,15 @@ import * as coda from '@codahq/packs-sdk';
 
 import { PageInfo, RestRequestReturn } from '@shopify/shopify-api/lib/clients/types';
 import { Body, IdSet, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { RestClient } from '../Clients/RestClient';
-import { FetchRequestOptions } from '../Fetchers/Fetcher.types';
-import { REST_DEFAULT_API_VERSION } from '../config';
-import { idToGraphQlGid } from '../utils/graphql-utils';
-import { filterObjectKeys } from '../utils/helpers';
-import { AbstractResource_Synced_HasMetafields } from './AbstractResource_Synced_HasMetafields';
-import { MergedCollection_Custom } from './Rest/MergedCollection_Custom';
-import { GraphQlResourceName } from './types/GraphQlResource.types';
-import { handleDeleteNotFound } from './abstractResource-utils';
+import { RestClient } from '../../../Clients/RestClient';
+import { FetchRequestOptions } from '../../../Fetchers/Fetcher.types';
+import { REST_DEFAULT_API_VERSION } from '../../../config';
+import { idToGraphQlGid } from '../../../utils/conversion-utils';
+import { filterObjectKeys } from '../../../utils/helpers';
+import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithRestMetafields';
+import { MergedCollection_Custom } from '../../Rest/MergedCollection_Custom';
+import { GraphQlResourceName } from '../../types/GraphQlResource.types';
+import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
 // import { RestResourceError } from '@shopify/shopify-api';
 
 // #region Types
@@ -87,7 +87,7 @@ interface RequestArgs extends BaseFindArgs {
   http_method: string;
   operation: string;
   body?: Body | null;
-  entity?: AbstractResource | null;
+  entity?: AbstractRestResource | null;
 }
 
 export interface SaveArgs {
@@ -98,17 +98,17 @@ interface GetPathArgs {
   http_method: string;
   operation: string;
   urlIds: IdSet;
-  entity?: AbstractResource | null;
+  entity?: AbstractRestResource | null;
 }
 
-export interface FindAllResponse<T = AbstractResource> {
+export interface FindAllResponse<T = AbstractRestResource> {
   data: T[];
   headers: coda.FetchResponse['headers'];
   pageInfo?: PageInfo;
 }
 // #endregion
 
-export abstract class AbstractResource {
+export abstract class AbstractRestResource {
   static readonly displayName: ResourceDisplayName;
 
   protected static Client = RestClient;
@@ -182,7 +182,7 @@ export abstract class AbstractResource {
     return match;
   }
 
-  protected static async baseFind<T extends AbstractResource = AbstractResource>({
+  protected static async baseFind<T extends AbstractRestResource = AbstractRestResource>({
     urlIds,
     params,
     context,
@@ -277,7 +277,7 @@ export abstract class AbstractResource {
     return this.jsonBodyName ?? this.name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   }
 
-  protected static createInstancesFromResponse<T extends AbstractResource = AbstractResource>(
+  protected static createInstancesFromResponse<T extends AbstractRestResource = AbstractRestResource>(
     context: coda.ExecutionContext,
     data: Body
   ): T[] {
@@ -300,7 +300,7 @@ export abstract class AbstractResource {
     return instances;
   }
 
-  protected static create<T extends AbstractResource = AbstractResource>(
+  protected static create<T extends AbstractRestResource = AbstractRestResource>(
     context: coda.ExecutionContext,
     data: Body,
     prevInstance?: T
@@ -336,7 +336,7 @@ export abstract class AbstractResource {
    * Returns the current class's constructor as a type BaseT, which defaults to the class itself.
    * This allows accessing the constructor type of the current class.
    */
-  protected resource<BaseT extends typeof AbstractResource = typeof AbstractResource>(): BaseT {
+  protected resource<BaseT extends typeof AbstractRestResource = typeof AbstractRestResource>(): BaseT {
     return this.constructor as unknown as BaseT;
   }
 
@@ -357,7 +357,7 @@ export abstract class AbstractResource {
       urlIds: {},
       // TODO: try not to have to filter metafields from apiData
       /** When performing a PUT request, we must create/update/delete metafields
-       * individually. This will be done by {@link AbstractResource_Synced_HasMetafields} class */
+       * individually. This will be done by {@link AbstractSyncedRestResourceWithRestMetafields} class */
       body: {
         [staticResource.getJsonBodyName()]:
           method === 'put' ? filterObjectKeys(this.apiData, ['metafields']) : this.apiData,

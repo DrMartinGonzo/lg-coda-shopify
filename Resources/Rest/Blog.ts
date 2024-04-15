@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableRestHasRestMetafields } from '../../SyncTableManager/SyncTableManagerRestHasRestMetafields';
+import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
@@ -11,12 +11,18 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs, MakeSyncFunctionArgs, SyncFunction } from '../AbstractResource_Synced';
+import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractResource_Synced_HasMetafields,
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  MakeSyncFunctionArgs,
+  SyncFunction,
+} from '../Abstract/Rest/AbstractSyncedRestResource';
+import {
+  AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
-} from '../AbstractResource_Synced_HasMetafields';
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -39,7 +45,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Blog extends AbstractResource_Synced_HasMetafields {
+export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     commentable: string | null;
@@ -94,7 +100,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Blog, typeof Sync_Blogs, SyncTableRestHasRestMetafields<Blog>>): SyncFunction {
+  }: MakeSyncFunctionArgs<Blog, typeof Sync_Blogs, SyncTableManagerRestWithRestMetafields<Blog>>): SyncFunction {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,

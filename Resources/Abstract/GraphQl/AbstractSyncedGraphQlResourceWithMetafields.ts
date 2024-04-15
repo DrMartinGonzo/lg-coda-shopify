@@ -1,16 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { FragmentOf } from '../utils/tada-utils';
+import { FragmentOf } from '../../../utils/tada-utils';
 
-import { CACHE_DEFAULT } from '../constants';
-import { metafieldFieldsFragment } from '../graphql/metafields-graphql';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { MetafieldInput, MetafieldOwnerType } from '../types/admin.types';
-import { AbstractGraphQlResource_Synced, BaseSaveArgs, GraphQlApiData } from './AbstractGraphQlResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Rest/Metafield';
-import { MetafieldDefinition } from './GraphQl/MetafieldDefinition';
-import { hasMetafieldsInRow } from './abstractResource-utils';
+import { CACHE_DEFAULT } from '../../../constants';
+import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
+import { BaseRow } from '../../../schemas/CodaRows.types';
+import { MetafieldInput, MetafieldOwnerType } from '../../../types/admin.types';
+import { BaseSaveArgs, GraphQlApiData } from './AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
+import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
+import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
+import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
 // import { RestResourceError } from '@shopify/shopify-api';
 
 // #endregion
@@ -22,7 +23,7 @@ export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
 }
 // #endregion
 
-export abstract class AbstractGraphQlResource_Synced_HasMetafields extends AbstractGraphQlResource_Synced {
+export abstract class AbstractSyncedGraphQlResourceWithMetafields extends AbstractSyncedGraphQlResource {
   public apiData: GraphQlApiDataWithMetafields;
 
   protected static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
@@ -59,7 +60,7 @@ export abstract class AbstractGraphQlResource_Synced_HasMetafields extends Abstr
         ownerResource: this.metafieldRestOwnerType,
       });
 
-      const instance: AbstractGraphQlResource_Synced_HasMetafields = new (this as any)({
+      const instance: AbstractSyncedGraphQlResourceWithMetafields = new (this as any)({
         context,
         fromRow: { row: newRow, metafields },
       });
@@ -95,7 +96,7 @@ export abstract class AbstractGraphQlResource_Synced_HasMetafields extends Abstr
     const { restMetafieldInstances } = this.apiData;
 
     if (restMetafieldInstances && restMetafieldInstances.length) {
-      const staticOwnerResource = this.resource<typeof AbstractGraphQlResource_Synced_HasMetafields>();
+      const staticOwnerResource = this.resource<typeof AbstractSyncedGraphQlResourceWithMetafields>();
       const { primaryKey } = staticOwnerResource;
       const isUpdate = this.apiData[primaryKey];
 
