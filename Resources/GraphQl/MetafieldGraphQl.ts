@@ -4,11 +4,9 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
 import { RequiredParameterMissingVisibleError } from '../../Errors';
-import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { AllMetafieldTypeValue } from '../Mixed/Metafield.types';
+import { SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
+import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   deleteMetafieldMutation,
   getResourceMetafieldsByKeysQueryFromOwnerType,
@@ -24,15 +22,17 @@ import {
   matchOwnerTypeToResourceName,
   shouldDeleteMetafield,
 } from '../../resourcesOld/metafields/utils/metafields-utils';
-import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-formatToApi';
-import { formatMetaFieldValueForSchema } from '../../resourcesOld/metafields/utils/metafields-utils-formatToRow';
+import {
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+} from '../../resourcesOld/metafields/utils/metafields-utils-format';
 import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../../resourcesOld/metafields/utils/metafields-utils-keys';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
 import { deleteUndefinedInObject, isNullishOrEmpty } from '../../utils/helpers';
-import { SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
 import {
   AbstractGraphQlResource,
   AbstractGraphQlResource_Synced,
@@ -44,7 +44,9 @@ import {
 } from '../AbstractGraphQlResource';
 import { BaseContext, ResourceDisplayName } from '../AbstractResource';
 import { FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
+import { AllMetafieldTypeValue } from '../Mixed/Metafield.types';
 import { Metafield } from '../Rest/Metafield';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
 // #endregion
 

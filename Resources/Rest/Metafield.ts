@@ -4,20 +4,19 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { FragmentOf, readFragment } from '../../utils/tada-utils';
 
 import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors';
+import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
 import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
-import { graphQlGidToId } from '../../utils/graphql-utils';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { requireMatchingMetafieldDefinition } from '../../utils/metafieldDefinitions-utils';
-import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
 import {
   matchOwnerResourceToMetafieldOwnerType,
   matchOwnerTypeToOwnerResource,
   shouldDeleteMetafield,
 } from '../../resourcesOld/metafields/utils/metafields-utils';
-import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-formatToApi';
-import { formatMetaFieldValueForSchema } from '../../resourcesOld/metafields/utils/metafields-utils-formatToRow';
+import {
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+} from '../../resourcesOld/metafields/utils/metafields-utils-format';
 import {
   getMetaFieldFullKey,
   removePrefixFromMetaFieldKey,
@@ -41,14 +40,17 @@ import { PageReference, formatPageReference } from '../../schemas/syncTable/Page
 import { ProductReference, formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantReference, formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
+import { graphQlGidToId } from '../../utils/graphql-utils';
 import { compareByDisplayKey, deepCopy, isNullishOrEmpty } from '../../utils/helpers';
-import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/SyncTable.types';
+import { requireMatchingMetafieldDefinition } from '../../utils/metafieldDefinitions-utils';
 import { BaseContext, FindAllResponse, ResourceDisplayName, ResourceName } from '../AbstractResource';
 import { AbstractResource_Synced, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
 import { AbstractResource_Synced_HasMetafields } from '../AbstractResource_Synced_HasMetafields';
-import { getCurrentShopActiveCurrency } from '../abstractResource-utils';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
+import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
+import { getCurrentShopActiveCurrency } from '../abstractResource-utils';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
 

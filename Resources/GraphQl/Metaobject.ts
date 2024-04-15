@@ -3,15 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
-import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, OPTIONS_METAOBJECT_STATUS } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
-import { shouldUpdateSyncTableMetafieldValue } from '../../resourcesOld/metafields/utils/metafields-utils';
-import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-formatToApi';
-import { formatMetaFieldValueForSchema } from '../../resourcesOld/metafields/utils/metafields-utils-formatToRow';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
-import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
+import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, OPTIONS_METAOBJECT_STATUS } from '../../constants';
+import {
+  metaobjectDefinitionFragment,
+  metaobjectFieldDefinitionFragment,
+} from '../../graphql/metaobjectDefinition-graphql';
 import {
   createMetaobjectMutation,
   deleteMetaobjectMutation,
@@ -20,12 +17,16 @@ import {
   metaobjectFragment,
   updateMetaObjectMutation,
 } from '../../graphql/metaobjects-graphql';
-import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
-import { metaobjectDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
+import { shouldUpdateSyncTableMetafieldValue } from '../../resourcesOld/metafields/utils/metafields-utils';
+import {
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+} from '../../resourcesOld/metafields/utils/metafields-utils-format';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { CurrencyCode, MetaobjectStatus } from '../../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/graphql-utils';
 import {
   capitalizeFirstChar,
   compareByDisplayKey,
@@ -34,6 +35,7 @@ import {
   isNullishOrEmpty,
   isString,
 } from '../../utils/helpers';
+import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
 import {
   AbstractGraphQlResource_Synced,
   FindAllResponse,
@@ -44,8 +46,10 @@ import {
 } from '../AbstractGraphQlResource';
 import { BaseConstructorArgs, BaseContext, ResourceDisplayName } from '../AbstractResource';
 import { GetSchemaArgs } from '../AbstractResource_Synced';
-import { MetaobjectDefinition } from './MetaobjectDefinition';
+import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { MetaobjectDefinition } from './MetaobjectDefinition';
 
 // #endregion
 

@@ -1,26 +1,15 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { UnsupportedValueError } from '../../../Errors';
 import { ResourceName } from '../../../Resources/AbstractResource';
-import { SupportedMetafieldOwnerResource } from '../../../Resources/Rest/Metafield';
 import { SupportedMetafieldOwnerType } from '../../../Resources/GraphQl/MetafieldGraphQl';
+import { METAFIELD_TYPES_RAW_REFERENCE } from '../../../Resources/Mixed/Metafield.types';
+import { SupportedMetafieldOwnerResource } from '../../../Resources/Rest/Metafield';
+import { GraphQlResourceName } from '../../../Resources/types/GraphQlResource.types';
 import { MetafieldOwnerType } from '../../../types/admin.types';
 import { isNullishOrEmpty } from '../../../utils/helpers';
-import { GraphQlResourceName } from '../../../Resources/types/GraphQlResource.types';
-import { METAFIELD_TYPES_RAW_REFERENCE } from '../../../Resources/Mixed/Metafield.types';
-import { hasMetafieldsInUpdate } from '../../../Resources/abstractResource-utils';
 
 // #region Helpers
-/**
- * Wether an update triggered by a 2-way sync table has metafields in it.
- */
-function hasMetafieldsInUpdates(
-  updates: Array<coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>>
-) {
-  return updates.map((update) => hasMetafieldsInUpdate(update)).some(Boolean);
-}
-
 /**
  * Metafields should be deleted if their string value is empty of contains an empty JSON.stringified array
  */

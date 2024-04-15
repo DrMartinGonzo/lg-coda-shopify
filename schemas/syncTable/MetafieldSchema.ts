@@ -5,7 +5,7 @@ import { CollectionReference } from './CollectionSchema';
 import { PageReference } from './PageSchema';
 import { FileReference } from './FileSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
-import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-formatToApi';
+import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-format';
 import { FieldDependency } from '../Schema.types';
 
 export const MetafieldSyncTableSchema = coda.makeObjectSchema({

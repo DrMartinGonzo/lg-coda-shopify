@@ -31,19 +31,6 @@ export abstract class AbstractGraphQlResource_Synced_HasMetafields extends Abstr
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields
-  // protected static async getMetafieldDefinitions(
-  //   context: coda.ExecutionContext,
-  //   includeFakeExtraDefinitions?: boolean
-  // ) {
-  //   if (this.metafieldDefinitions) return this.metafieldDefinitions;
-  //   this.metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-  //     { ownerType: this.metafieldGraphQlOwnerType, includeFakeExtraDefinitions },
-  //     context
-  //   );
-  //   return this.metafieldDefinitions;
-  // }
-
-  // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields
   protected static async getMetafieldDefinitions(
     context: coda.ExecutionContext,
     includeFakeExtraDefinitions: boolean = true
