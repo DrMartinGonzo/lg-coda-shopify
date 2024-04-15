@@ -1,10 +1,10 @@
-import { GRAPHQL_DEFAULT_API_VERSION } from './config/config';
+import { GRAPHQL_DEFAULT_API_VERSION } from './config';
 
 export default {
   projects: {
     default: {
       schema: `https://shopify.dev/admin-graphql-direct-proxy/${GRAPHQL_DEFAULT_API_VERSION}`,
-      documents: ['./**/*-graphql.ts'],
+      // documents: ['./**/*-graphql.ts'],
       extensions: {
         codegen: {
           generates: {

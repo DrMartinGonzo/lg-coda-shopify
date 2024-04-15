@@ -1,11 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
-import { METAFIELD_TYPES } from '../../resources/metafields/Metafield.types';
+import { METAFIELD_TYPES } from '../../Resources/Mixed/Metafield.types';
 import { ProductReference } from './ProductSchemaRest';
 import { CollectionReference } from './CollectionSchema';
 import { PageReference } from './PageSchema';
 import { FileReference } from './FileSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
-import { formatMetafieldValueForApi } from '../../resources/metafields/utils/metafields-utils-formatToApi';
+import { formatMetafieldValueForApi } from '../../resourcesOld/metafields/utils/metafields-utils-formatToApi';
 import { FieldDependency } from '../Schema.types';
 
 export const MetafieldSyncTableSchema = coda.makeObjectSchema({

@@ -12,8 +12,8 @@ import { expectedRows } from './expectedRows';
 import { untransformKeys } from '@codahq/packs-sdk/dist/handler_templates';
 import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
 import { getUnitMap, isObject } from '../utils/helpers';
-import { Action_UpdateArticle } from '../resources/articles/articles-coda';
-import { METAFIELD_TYPES } from '../resources/metafields/Metafield.types';
+import { Action_UpdateArticle } from '../coda/setup/articles-setup';
+import { METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({
