@@ -2,9 +2,8 @@ import * as coda from '@codahq/packs-sdk';
 
 import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
-import { ResourceWithMetafieldDefinitions } from '../../resources/Resource.types';
-import { ValidationSchema } from '../basic/ValidationSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { ValidationSchema } from '../basic/ValidationSchema';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {

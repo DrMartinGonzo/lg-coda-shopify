@@ -7,7 +7,7 @@ import { idToGraphQlGid } from '../../helpers-graphql';
 import { GraphQlResourceName } from '../../resources/ShopifyResource.types';
 import { filterObjectKeys } from '../../utils/helpers';
 import { FetchRequestOptions } from '../Fetcher.types';
-import { handleDeleteNotFoundNEW } from '../fetcher-helpers';
+import { handleDeleteNotFound } from '../fetcher-helpers';
 import { AbstractResource_Synced_HasMetafields } from './AbstractResource_Synced_HasMetafields';
 import { MergedCollection_Custom } from './Resources/WithGraphQlMetafields/MergedCollection_Custom';
 import { RestClientNEW } from './RestClientNEW';
@@ -15,6 +15,26 @@ import { RestClientNEW } from './RestClientNEW';
 
 // #region Types
 // export type ResourceName = keyof typeof MetafieldOwnerType;
+export type ResourceName =
+  | 'article'
+  | 'asset'
+  | 'blog'
+  | 'collect'
+  | 'collection'
+  | 'custom_collection'
+  | 'smart_collection'
+  | 'customer'
+  | 'draft_order'
+  | 'location'
+  | 'order'
+  | 'page'
+  | 'product_image'
+  | 'product'
+  | 'variant'
+  | 'redirect'
+  | 'shop'
+  | 'theme';
+
 export type ResourceDisplayName =
   | 'Article'
   | 'Asset'
@@ -100,7 +120,7 @@ export abstract class AbstractResource {
    * Normally, the JSON body name is derived from the class name, but in some cases,
    * we need to hardcode the value, e.g. {@link MergedCollection_Custom}
    */
-  protected static jsonBodyName: string;
+  protected static jsonBodyName: ResourceName;
   protected static graphQlName: GraphQlResourceName | undefined;
   protected static readOnlyAttributes: string[] = [];
 

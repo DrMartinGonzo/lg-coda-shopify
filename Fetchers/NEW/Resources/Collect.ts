@@ -57,7 +57,7 @@ export class Collect extends AbstractResource_Synced {
     return CollectSyncTableSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -125,8 +125,6 @@ export class Collect extends AbstractResource_Synced {
     const { apiData } = this;
     let obj: CollectRow = {
       ...apiData,
-      created_at: new Date(apiData.created_at),
-      updated_at: new Date(apiData.updated_at),
     };
 
     if (apiData.collection_id) {

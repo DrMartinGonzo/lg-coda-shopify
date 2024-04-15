@@ -54,7 +54,7 @@ export class Redirect extends AbstractResource_Synced {
     return RedirectSyncTableSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,

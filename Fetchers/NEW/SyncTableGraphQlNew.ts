@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { GRAPHQL_NODES_LIMIT } from '../../constants';
-import { getGraphQlSyncTableMaxEntriesAndDeferWaitNew } from '../../helpers-graphql';
+import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../../helpers-graphql';
 import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
@@ -10,13 +10,13 @@ import {
 import { logAdmin, wait } from '../../utils/helpers';
 import { SyncTableGraphQlContinuation } from '../SyncTable/SyncTable.types';
 import { stringifyContinuationProperty } from '../fetcher-helpers';
-import { AbstractGraphQlResource, SyncFunctionGraphQl } from './AbstractGraphQlResource';
+import { AbstractGraphQlResource, SyncTableManagerSyncFunction } from './AbstractGraphQlResource';
 
 // #endregion
 
 // #region Types
 interface ExecuteSyncArgs {
-  sync: SyncFunctionGraphQl;
+  sync: SyncTableManagerSyncFunction;
   defaultMaxEntriesPerRun?: number;
 }
 
@@ -81,7 +81,7 @@ export class SyncTableGraphQlNew<BaseT extends AbstractGraphQlResource> {
     // de synctable avec les temps d'attendes pour repayer le cout graphql, mais
     // comme la requete graphql est elle mê:e rapide, ça devrait passer ?
 
-    const { maxEntriesPerRun, shouldDeferBy, throttleStatus } = await getGraphQlSyncTableMaxEntriesAndDeferWaitNew(
+    const { maxEntriesPerRun, shouldDeferBy, throttleStatus } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
       defaultMaxEntriesPerRun,
       this.prevContinuation,
       this.context

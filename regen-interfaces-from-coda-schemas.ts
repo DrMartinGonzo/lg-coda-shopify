@@ -41,10 +41,10 @@ function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false)
         switch (codaType) {
           case coda.ValueHintType.Date:
           case coda.ValueHintType.DateTime:
-            ret = 'Date';
+            ret = 'string | number | Date';
             break;
           case coda.ValueHintType.Time:
-            ret = 'Date';
+            ret = 'string | number | Date';
             break;
           default:
             ret = 'string';

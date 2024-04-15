@@ -2,9 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { BaseRow } from '../../schemas/CodaRows.types';
-import type { ShopifyGraphQlRequestCost } from '../Fetcher.types';
-import { Stringified } from '../fetcher-helpers';
+import { ShopifyGraphQlRequestCost } from '../NEW/GraphQLError';
 import { SearchParams } from '../NEW/RestClientNEW';
+import { Stringified } from '../fetcher-helpers';
 
 // #endregion
 
@@ -55,7 +55,7 @@ export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> exte
   };
 }
 
-export type SyncTableGraphQlExtraContinuationData = {
+type SyncTableGraphQlExtraContinuationData = {
   [key: string]: any;
 };
 export interface SyncTableGraphQlContinuation extends coda.Continuation {

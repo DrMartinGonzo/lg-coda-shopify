@@ -17,8 +17,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
   schema: OrderLineItemSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return OrderLineItem.getDynamicSchema({ context, codaSyncParams });
+      return OrderLineItem.getDynamicSchema({ context, codaSyncParams: [] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -27,7 +26,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link OrderLineItem.makeSyncFunction}
+     *  - {@link OrderLineItem.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.order.status, name: 'orderStatus' },

@@ -1,16 +1,11 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../../utils/graphql';
 
+import { UnsupportedValueError } from '../../../Errors';
 import { DEFAULT_CURRENCY_CODE } from '../../../config/config';
 import { idToGraphQlGid } from '../../../helpers-graphql';
-import { CodaMetafieldKeyValueSet } from '../../../helpers-setup';
-import {
-  MetafieldSyncTableSchema,
-  metafieldSyncTableHelperEditColumns,
-} from '../../../schemas/syncTable/MetafieldSchema';
-import { CurrencyCode, MetafieldsSetInput } from '../../../types/admin.types';
-import { extractValueAndUnitFromMeasurementString, isNullOrEmpty, isString } from '../../../utils/helpers';
+import { CurrencyCode } from '../../../types/admin.types';
+import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty } from '../../../utils/helpers';
 import { GraphQlResourceName } from '../../ShopifyResource.types';
 import { metafieldDefinitionFragment } from '../../metafieldDefinitions/metafieldDefinitions-graphql';
 import {
@@ -20,40 +15,8 @@ import {
   METAFIELD_TYPES,
   MetafieldTypeValue,
 } from '../Metafield.types';
-import { MetafieldRestInput } from '../metafieldResource';
-import { splitMetaFieldFullKey } from './metafields-utils-keys';
 
 // #endregion
-
-/**
- * Formate un objet MetafieldRestInput pour Rest Admin API ou un objet
- * MetafieldsSetInput pour GraphQL Admin API (si l'argument ownerGid est fourni)
- * à partir d'un paramètre Coda utilisant une formule `MetafieldKeyValueSet(…)`
- */
-// prettier-ignore
-export function formatMetafieldInput(metafieldSet: CodaMetafieldKeyValueSet): MetafieldRestInput;
-// prettier-ignore
-export function formatMetafieldInput(metafieldSet: CodaMetafieldKeyValueSet, ownerGid: string): MetafieldsSetInput;
-export function formatMetafieldInput(metafieldSet: CodaMetafieldKeyValueSet, ownerGid?: string) {
-  const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldSet.key);
-  let input: MetafieldRestInput | MetafieldsSetInput;
-  if (metafieldSet.value !== null) {
-    input = {
-      namespace: metaNamespace,
-      key: metaKey,
-      type: metafieldSet.type,
-      value: isString(metafieldSet.value) ? metafieldSet.value : JSON.stringify(metafieldSet.value),
-    } as MetafieldRestInput;
-
-    if (ownerGid !== undefined) {
-      input = {
-        ...input,
-        ownerId: ownerGid,
-      } as MetafieldsSetInput;
-    }
-  }
-  return input;
-}
 
 /**
  * Format a Rating cell value for GraphQL Api
@@ -108,7 +71,7 @@ export function formatMetafieldValueForApi(
   validations?: ResultOf<typeof metafieldDefinitionFragment>['validations'],
   currencyCode?: CurrencyCode
 ): string | null {
-  if (isNullOrEmpty(value)) {
+  if (isNullishOrEmpty(value)) {
     return null;
   }
 
@@ -203,41 +166,5 @@ export function formatMetafieldValueForApi(
       break;
   }
 
-  throw new Error(`Unknown metafield type: ${type}`);
-}
-
-/**
- * We use rawValue as default, but if any helper edit column is set and has
- * matching type, we use its value
- */
-export function formatMetafieldSyncTableValueForApi(
-  update: coda.SyncUpdate<string, string, typeof MetafieldSyncTableSchema>
-) {
-  const { updatedFields } = update;
-  const { type } = update.previousValue;
-
-  let value: string | null = update.newValue.rawValue as string;
-  for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
-    const item = metafieldSyncTableHelperEditColumns[i];
-    if (updatedFields.includes(item.key)) {
-      if (type === item.type) {
-        /**
-         *? Si jamais on implémente une colonne pour les currencies,
-         *? il faudra veiller a bien passer le currencyCode a {@link formatMetafieldValueForApi}
-         */
-        value = formatMetafieldValueForApi(update.newValue[item.key], type);
-      } else {
-        const goodColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === type);
-        let errorMsg = `Metafield type mismatch. You tried to update using an helper column that doesn't match the metafield type.`;
-        if (goodColumn) {
-          errorMsg += ` The correct column for type '${type}' is: '${goodColumn.key}'.`;
-        } else {
-          errorMsg += ` You can only update this metafield by directly editing the 'Raw Value' column.`;
-        }
-        throw new coda.UserVisibleError(errorMsg);
-      }
-    }
-  }
-
-  return value;
+  throw new UnsupportedValueError('MetafieldType', type);
 }

@@ -2,17 +2,15 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf } from '../utils/graphql';
 
-import { wrapGetSchema, wrapMetadataFunction } from '@codahq/packs-sdk/dist/api';
-import { normalizeSchema } from '@codahq/packs-sdk/dist/schema';
+import { UnsupportedValueError } from '../Errors';
+import { MetafieldDefinition } from '../Fetchers/NEW/Resources/MetafieldDefinition';
 import { Shop } from '../Fetchers/NEW/Resources/Shop';
 import { DEFAULT_CURRENCY_CODE } from '../config/config';
-import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
-import { fetchMetafieldDefinitionsGraphQl } from '../resources/metafieldDefinitions/metafieldDefinitions-functions';
 import { metafieldDefinitionFragment } from '../resources/metafieldDefinitions/metafieldDefinitions-graphql';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../resources/metafields/Metafield.types';
-import { getMetaFieldFullKey } from '../resources/metafields/utils/metafields-utils-keys';
-import { metaobjectFieldDefinitionFragment } from '../resources/metaobjects/metaobjects-graphql';
-import { MetafieldDefinition, MetafieldOwnerType } from '../types/admin.types';
+import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../resources/metafields/utils/metafields-utils-keys';
+import { metaobjectFieldDefinitionFragment } from '../resources/metaobjectDefinitions/metaobjectDefinition-graphql';
+import { MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { CollectionReference } from './syncTable/CollectionSchema';
 import { FileReference } from './syncTable/FileSchema';
@@ -33,6 +31,7 @@ async function wrapDynamicSchemaForCli(
   const schema = await getSchema.execute([search, serializedFormulaContext], context);
   return normalizeSchema(schema);
 }
+*/
 /**
  * Handles dynamic schema in CLI context.
  * It calls the provided `getSchemaFunction` if `context.sync.schema` is falsy.
@@ -43,6 +42,7 @@ async function wrapDynamicSchemaForCli(
  * @param formulaContext - The formula metadata context.
  * @returns The schema
  */
+/*
 export async function resolveSchemaFromContext(
   getSchemaFunction: coda.MetadataFormulaDef,
   context: coda.SyncExecutionContext,
@@ -50,6 +50,7 @@ export async function resolveSchemaFromContext(
 ): Promise<coda.ArraySchema<coda.Schema>> {
   return context.sync.schema ?? (await wrapDynamicSchemaForCli(getSchemaFunction, context, formulaContext));
 }
+*/
 
 // #region Metafields in schema
 export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSchemaDefinition<string, string>>(
@@ -60,9 +61,13 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
   const schema: SchemaT = { ...baseSchema };
   schema.featuredProperties = schema.featuredProperties ?? [];
 
-  const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl({ ownerType }, context);
+  const metafieldDefinitions = await MetafieldDefinition.allForOwner({
+    context,
+    ownerType,
+  });
+
   const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
-    return metafieldDefinition.type.name === METAFIELD_TYPES.money;
+    return metafieldDefinition.apiData.type.name === METAFIELD_TYPES.money;
   });
 
   let shopCurrencyCode = DEFAULT_CURRENCY_CODE;
@@ -71,16 +76,16 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
   }
 
   metafieldDefinitions.forEach((metafieldDefinition) => {
-    const property = mapMetaFieldToSchemaProperty(metafieldDefinition);
+    const property = mapMetaFieldToSchemaProperty(metafieldDefinition.apiData);
     if (property) {
       // TODO: write a generic function for setting Shop currency code in schema
       if ('codaType' in property && property.codaType === coda.ValueHintType.Currency) {
         property['currencyCode'] = shopCurrencyCode;
       }
-      const fullKey = getMetaFieldFullKey(metafieldDefinition);
-      const name = accents.remove(metafieldDefinition.name);
+
+      const name = accents.remove(metafieldDefinition.apiData.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
-      property.displayName = `${metafieldDefinition.name} [${fullKey}]`;
+      property.displayName = `${metafieldDefinition.apiData.name} [${metafieldDefinition.fullKey}]`;
       schema.properties[propName] = property;
       // always feature metafields properties so that the user know they are synced
       schema.featuredProperties.push(propName);
@@ -104,10 +109,10 @@ export function mapMetaFieldToSchemaProperty(
    * We prefix fromKey to be able to determine later wich columns are metafield values
    */
   if (!isMetaobjectFieldDefinition) {
-    const fullKey = getMetaFieldFullKey(fieldDefinition as MetafieldDefinition);
+    const fullKey = getMetaFieldFullKey(fieldDefinition as MetafieldDefinitionType);
     description += (description ? '\n' : '') + `field key: [${fullKey}]`;
 
-    schemaKey = CUSTOM_FIELD_PREFIX_KEY + fullKey;
+    schemaKey = preprendPrefixToMetaFieldKey(fullKey);
   }
 
   const baseProperty = {
@@ -386,5 +391,5 @@ export function mapMetaFieldToSchemaProperty(
       break;
   }
 
-  throw new Error(`Unknown metafield type: ${type}`);
+  throw new UnsupportedValueError('MetafieldType', type);
 }

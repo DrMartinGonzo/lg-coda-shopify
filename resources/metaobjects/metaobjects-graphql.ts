@@ -1,49 +1,7 @@
 import { graphql } from '../../utils/graphql';
+import { metaobjectDefinitionFragment } from '../metaobjectDefinitions/metaobjectDefinition-graphql';
 
 // #region Fragments
-export const metaobjectFieldDefinitionFragment = graphql(`
-  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {
-    key
-    description
-    name
-    required
-    type {
-      category
-      name
-      supportedValidations {
-        name
-        type
-      }
-      supportsDefinitionMigrations
-    }
-    validations {
-      name
-      type
-      value
-    }
-  }
-`);
-
-export const metaobjectDefinitionFragment = graphql(
-  `
-    fragment MetaobjectDefinition on MetaobjectDefinition {
-      id
-      name
-      displayNameKey
-      type
-      capabilities @include(if: $includeCapabilities) {
-        publishable {
-          enabled
-        }
-      }
-      fieldDefinitions @include(if: $includeFieldDefinitions) {
-        ...MetaobjectFieldDefinition
-      }
-    }
-  `,
-  [metaobjectFieldDefinitionFragment]
-);
-
 export const metaobjectFragment = graphql(
   `
     fragment MetaobjectFragment on Metaobject {
@@ -71,54 +29,6 @@ export const metaobjectFragment = graphql(
 // #endregion
 
 // #region Queries
-export const getMetaobjectDefinitionsQuery = graphql(
-  `
-    query GetMetaobjectDefinitions(
-      $maxEntriesPerRun: Int!
-      $cursor: String
-      $includeCapabilities: Boolean!
-      $includeFieldDefinitions: Boolean!
-    ) {
-      metaobjectDefinitions(first: $maxEntriesPerRun, after: $cursor) {
-        nodes {
-          ...MetaobjectDefinition
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  `,
-  [metaobjectDefinitionFragment]
-);
-
-export const getSingleMetaObjectDefinitionQuery = graphql(
-  `
-    query GetSingleMetaObjectDefinition($id: ID!, $includeCapabilities: Boolean!, $includeFieldDefinitions: Boolean!) {
-      metaobjectDefinition(id: $id) {
-        ...MetaobjectDefinition
-      }
-    }
-  `,
-  [metaobjectDefinitionFragment]
-);
-
-export const getSingleMetaobjectDefinitionByTypeQuery = graphql(
-  `
-    query GetSingleMetaObjectDefinitionByType(
-      $type: String!
-      $includeCapabilities: Boolean!
-      $includeFieldDefinitions: Boolean!
-    ) {
-      metaobjectDefinitionByType(type: $type) {
-        ...MetaobjectDefinition
-      }
-    }
-  `,
-  [metaobjectDefinitionFragment]
-);
-
 export const getMetaObjectsWithFieldsQuery = graphql(
   `
     query GetMetaobjects(

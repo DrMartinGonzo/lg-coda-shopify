@@ -12,8 +12,5 @@ export interface FetchRequestOptions {
    * will then be set to true as it is a POST request).
    */
   cacheTtlSecs?: number;
-  /** setting this will force Fetcher to apply the provided cacheTtlSecs value, regardless if we're in a synctable or not */
-  forceSyncContextCache?: boolean;
 }
-
-
+// #endregion

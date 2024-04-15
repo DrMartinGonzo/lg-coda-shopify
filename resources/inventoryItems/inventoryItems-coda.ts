@@ -1,16 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
+import { InventoryItem } from '../../Fetchers/NEW/Resources/InventoryItem';
 import { Shop } from '../../Fetchers/NEW/Resources/Shop';
 import { Identity } from '../../constants';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
-import { resolveSchemaFromContext } from '../../schemas/schema-helpers';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { filters, inputs } from '../../shared-parameters';
 import { deepCopy } from '../../utils/helpers';
-import { InventoryItemGraphQlFetcher } from './InventoryItemGraphQlFetcher';
-import { InventoryItemSyncTable } from './InventoryItemSyncTable';
-import { handleInventoryItemUpdateJob } from './inventoryItems-functions';
 
 // #endregion
 
@@ -31,7 +29,9 @@ export const Sync_InventoryItems = coda.makeSyncTable({
   identityName: Identity.InventoryItem,
   schema: InventoryItemSyncTableSchema,
   dynamicOptions: {
-    getSchema: getInventoryItemSchema,
+    getSchema: async function (context, _, formulaContext) {
+      return InventoryItem.getDynamicSchema({ context, codaSyncParams: [] });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -43,31 +43,11 @@ export const Sync_InventoryItems = coda.makeSyncTable({
       { ...filters.productVariant.skuArray, optional: true },
     ],
     execute: async function (params, context) {
-      const schema = await resolveSchemaFromContext(getInventoryItemSchema, context, {});
-      const inventoryItemFetcher = new InventoryItemGraphQlFetcher(context);
-      const inventoryItemSynctable = new InventoryItemSyncTable(inventoryItemFetcher, schema, params);
-      return inventoryItemSynctable.executeSync();
+      return InventoryItem.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const jobs = updates.map((update) =>
-        handleInventoryItemUpdateJob(
-          {
-            original: update.previousValue as unknown as InventoryItemRow,
-            updated: Object.fromEntries(
-              Object.entries(update.newValue).filter(([key]) => update.updatedFields.includes(key) || key == 'id')
-            ) as InventoryItemRow,
-          },
-          context
-        )
-      );
-      const completed = await Promise.allSettled(jobs);
-      return {
-        result: completed.map((job) => {
-          if (job.status === 'fulfilled') return job.value;
-          else return job.reason;
-        }),
-      };
+      return InventoryItem.syncUpdate(params, updates, context);
     },
   },
 });
@@ -108,24 +88,21 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],
     context
   ) {
-    const originalRow = {
-      id: inventoryItemId,
-    };
-    const updatedRow = {
-      id: inventoryItemId,
-      cost,
-      country_code_of_origin,
-      harmonized_system_code,
-      province_code_of_origin,
-      tracked,
-    };
-    return handleInventoryItemUpdateJob(
-      {
-        original: originalRow,
-        updated: updatedRow,
+    const fromRow: FromRow<InventoryItemRow> = {
+      row: {
+        id: inventoryItemId,
+        /* Edge case for cost. Setting it to 0 should delete the value. */
+        cost: cost === 0 ? null : cost,
+        country_code_of_origin,
+        harmonized_system_code,
+        province_code_of_origin,
+        tracked,
       },
-      context
-    );
+    };
+
+    const updatedInventoryItem = new InventoryItem({ context, fromRow });
+    await updatedInventoryItem.saveAndUpdate();
+    return updatedInventoryItem.formatToRow();
   },
 });
 // #endregion

@@ -22,7 +22,7 @@ export const Sync_Redirects = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Redirect.makeSyncFunction}
+     *  - {@link Redirect.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.redirect.path, optional: true },

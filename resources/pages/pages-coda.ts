@@ -1,14 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { Page } from '../../Fetchers/NEW/Resources/WithRestMetafields/Page';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 
 // #endregion
@@ -23,8 +22,7 @@ export const Sync_Pages = coda.makeSyncTable({
   schema: PageSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Page.getDynamicSchema({ context, codaSyncParams });
+      return Page.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -38,8 +36,9 @@ export const Sync_Pages = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Page.getDynamicSchema}
-     *  - {@link Page.makeSyncFunction}
+     *  - {@link Page.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       {
@@ -95,7 +94,6 @@ export const Action_CreatePage = coda.makeFormula({
     context
   ) {
     const defaultPublishedStatus = false;
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<PageRow> = {
       row: {
         title,
@@ -106,7 +104,11 @@ export const Action_CreatePage = coda.makeFormula({
         published: published ?? defaultPublishedStatus,
         template_suffix,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Page.metafieldRestOwnerType })
+      ),
     };
 
     const newPage = new Page({ context, fromRow });
@@ -145,7 +147,6 @@ export const Action_UpdatePage = coda.makeFormula({
     [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<PageRow> = {
       row: {
         id: pageId,
@@ -157,7 +158,11 @@ export const Action_UpdatePage = coda.makeFormula({
         title,
         template_suffix,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: pageId, owner_resource: Page.metafieldRestOwnerType })
+      ),
     };
 
     const updatedPage = new Page({ context, fromRow });

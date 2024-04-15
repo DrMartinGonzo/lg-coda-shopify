@@ -30,7 +30,7 @@ import {
 } from '../../AbstractResource_Synced_HasMetafields';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 
 // #endregion
 
@@ -89,7 +89,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
 
   static readonly displayName = 'Article' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStoreArticle;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'article';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'article';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
   static readonly supportsDefinitions = true;
 
@@ -123,7 +123,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -262,11 +262,7 @@ export class Article extends AbstractResource_Synced_HasMetafields {
     }
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Article.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -281,11 +277,8 @@ export class Article extends AbstractResource_Synced_HasMetafields {
       ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/articles/${apiData.id}`,
       body: striptags(apiData.body_html),
-      created_at: new Date(apiData.created_at),
-      published_at: new Date(apiData.published_at),
       published: !!apiData.published_at,
       summary: striptags(apiData.summary_html),
-      updated_at: new Date(apiData.updated_at),
     };
 
     if (apiData.blog_id) {

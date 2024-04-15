@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import { GraphQlClientNEW } from '../../Fetchers/NEW/GraphQlClientNEW';
+import { VariablesOf, graphql } from '../../utils/graphql';
 
 export const translateResource = async ([resourceId, ...varargs], context) => {
   const translations = [];
@@ -13,32 +16,35 @@ export const translateResource = async ([resourceId, ...varargs], context) => {
     });
   }
 
-  const mutationQuery = `
-    mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
-      translationsRegister(resourceId: $resourceId, translations: $translations) {
-        userErrors {
-          field
-          message
-        }
+  const mutationQuery = graphql(
+    `
+      mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
+        translationsRegister(resourceId: $resourceId, translations: $translations) {
+          userErrors {
+            field
+            message
+          }
 
-        translations {
-          key
-          value
+          translations {
+            key
+            value
+          }
         }
       }
-    }
-  `;
+    `
+  );
 
-  const payload = {
-    query: mutationQuery,
+  const documentNode = mutationQuery;
+  const variables = {
+    resourceId: resourceId,
+    translations,
+  } as VariablesOf<typeof documentNode>;
 
-    variables: {
-      resourceId: resourceId,
-      translations,
-    },
-  };
-
-  const { response } = await makeGraphQlRequest({ payload }, context);
+  const graphQlClient = new GraphQlClientNEW({ context });
+  const response = await graphQlClient.request<typeof documentNode>({
+    documentNode,
+    variables,
+  });
 
   const { body } = response;
   console.log('body', body);
@@ -47,7 +53,7 @@ export const translateResource = async ([resourceId, ...varargs], context) => {
 };
 
 export const getTranslatableResource = async ([resourceId, locale], context) => {
-  const mutationQuery = `
+  const query = `
     query translatableResource($resourceId: ID!) {
       translatableResource(resourceId: $resourceId) {
         resourceId
@@ -66,14 +72,35 @@ export const getTranslatableResource = async ([resourceId, locale], context) => 
     }
   `;
 
-  const payload = {
-    query: mutationQuery,
-    variables: {
-      resourceId: resourceId,
-    },
-  };
+  const documentNode = graphql(
+    `
+    query translatableResource($resourceId: ID!) {
+      translatableResource(resourceId: $resourceId) {
+        resourceId
+        translations(locale: "${locale}") {
+            locale
+            key
+            value
+        }
+        translatableContent {
+          key
+          value
+          digest
+          locale
+        }
+      }
+    }`
+  );
 
-  const { response } = await makeGraphQlRequest<{ translatableResource: any }>({ payload }, context);
+  const variables = {
+    resourceId: resourceId,
+  } as VariablesOf<typeof documentNode>;
+
+  const graphQlClient = new GraphQlClientNEW({ context });
+  const response = await graphQlClient.request<typeof documentNode>({
+    documentNode,
+    variables,
+  });
 
   const { body } = response;
   return body.data.translatableResource;

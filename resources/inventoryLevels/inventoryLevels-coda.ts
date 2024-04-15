@@ -21,7 +21,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link InventoryLevel.makeSyncFunction}
+     *  - {@link InventoryLevel.makeSyncTableManagerSyncFunction}
      */
     parameters: [filters.location.idOptionNameArray, { ...filters.general.updatedAtMin, optional: true }],
     execute: async function (params, context) {

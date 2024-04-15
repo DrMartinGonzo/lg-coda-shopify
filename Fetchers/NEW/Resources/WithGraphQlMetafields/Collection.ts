@@ -18,7 +18,7 @@ import { BaseContext, ResourceDisplayName } from '../../AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
 import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
-import { RestMetafieldOwnerType } from '../Metafield';
+import { SupportedMetafieldOwnerResource } from '../Metafield';
 
 // #endregion
 
@@ -49,7 +49,7 @@ export class Collection extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Collection' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Collection;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'collection';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
   static readonly supportsDefinitions = true;
 

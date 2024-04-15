@@ -1,12 +1,10 @@
 // #region Imports
-import { print as printGql } from '@0no-co/graphql.web';
 import { VariablesOf, readFragment } from '../../utils/graphql';
 
-import { GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   getGraphQlSyncTableMaxEntriesAndDeferWait,
   graphQlGidToId,
-  makeGraphQlRequest,
   skipGraphQlSyncTableRun,
 } from '../../helpers-graphql';
 import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../resources/metafields/metafields-graphql';
@@ -14,13 +12,13 @@ import { splitMetaFieldFullKey } from '../../resources/metafields/utils/metafiel
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { arrayUnique, handleFieldDependencies, logAdmin } from '../../utils/helpers';
-import { GraphQlFetchTadaResponse } from '../Client/GraphQl/GraphQlClient';
 import { CurrentBatchType, SyncTableMixedContinuation } from '../SyncTable/SyncTable.types';
 import { stringifyContinuationProperty } from '../fetcher-helpers';
 import { FindAllResponse } from './AbstractResource';
 import { AbstractResource_Synced } from './AbstractResource_Synced';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from './AbstractResource_Synced_HasMetafields_GraphQl';
 import { AbstractSyncTableRestHasMetafields } from './AbstractSyncTableRestHasMetafields';
+import { GraphQlClientNEW, GraphQlRequestReturn } from './GraphQlClientNEW';
 import { Metafield } from './Resources/Metafield';
 import { ExecuteSyncArgs, SyncTableManagerResult } from './SyncTableRestNew';
 
@@ -61,7 +59,7 @@ export class SyncTableRestHasGraphQlMetafields<
   }
 
   private buildGraphQlMetafieldsContinuation(
-    response: GraphQlFetchTadaResponse<typeof getNodesMetafieldsByKeyQuery>,
+    response: GraphQlRequestReturn<typeof getNodesMetafieldsByKeyQuery>,
     retries: number,
     currentBatch: CurrentBatchType
   ) {
@@ -147,21 +145,22 @@ export class SyncTableRestHasGraphQlMetafields<
       const currentBatch = this.extractCurrentBatch(items);
 
       // TODO: implement cost adjustment (Mais le coût semble négligeable en utilisant une query par node)
-      const payload = {
-        query: printGql(getNodesMetafieldsByKeyQuery),
-        variables: {
-          metafieldKeys: this.effectiveMetafieldKeys,
-          countMetafields: this.effectiveMetafieldKeys.length,
-          ids: arrayUnique(currentBatch.processing.map((c) => c.admin_graphql_api_id)).sort(),
-        } as VariablesOf<typeof getNodesMetafieldsByKeyQuery>,
-      };
+      const documentNode = getNodesMetafieldsByKeyQuery;
+      const variables = {
+        metafieldKeys: this.effectiveMetafieldKeys,
+        countMetafields: this.effectiveMetafieldKeys.length,
+        ids: arrayUnique(currentBatch.processing.map((c) => c.admin_graphql_api_id)).sort(),
+      } as VariablesOf<typeof documentNode>;
 
-      const { response: metafieldsResponse, retries } = await makeGraphQlRequest<typeof getNodesMetafieldsByKeyQuery>(
-        { payload, retries: this.prevContinuation?.retries ?? 0 },
-        this.context
-      );
+      const graphQlClient = new GraphQlClientNEW({ context: this.context });
+      const metafieldsResponse = await graphQlClient.request<typeof documentNode>({
+        documentNode,
+        variables,
+        retries: this.prevContinuation?.retries ?? 0,
+        options: { cacheTtlSecs: CACHE_DISABLED },
+      });
 
-      if (metafieldsResponse?.body?.data?.nodes.length) {
+      if (metafieldsResponse.body?.data?.nodes.length) {
         metafieldsResponse.body.data.nodes.forEach((node) => {
           const resourceMatch = mainData.find((instance) => graphQlGidToId(node.id) === instance.apiData.id);
           // Not included in the current response, ignored for now and it should be fetched thanks to GraphQL cursor in the next runs
@@ -183,7 +182,7 @@ export class SyncTableRestHasGraphQlMetafields<
 
         const metaFieldscontinuation = this.buildGraphQlMetafieldsContinuation(
           metafieldsResponse,
-          retries,
+          metafieldsResponse.retries,
           currentBatch
         );
         if (metaFieldscontinuation) {

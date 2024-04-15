@@ -3,22 +3,31 @@ import * as coda from '@codahq/packs-sdk';
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { FragmentOf, readFragment } from '../../../utils/graphql';
 
-import { RequiredParameterMissingVisibleError } from '../../../Errors';
-import { CUSTOM_FIELD_PREFIX_KEY } from '../../../constants';
+import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../../Errors';
+import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY } from '../../../constants';
 import { graphQlGidToId } from '../../../helpers-graphql';
-import { CodaMetafieldKeyValueSet } from '../../../helpers-setup';
 import {
   GraphQlResourceName,
   RestResourcePlural,
   RestResourceSingular,
 } from '../../../resources/ShopifyResource.types';
-import { AllMetafieldTypeValue } from '../../../resources/metafields/Metafield.types';
+import { requireMatchingMetafieldDefinition } from '../../../resources/metafieldDefinitions/metafieldDefinitions-functions';
+import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../../../resources/metafields/Metafield.types';
 import { metafieldFieldsFragment } from '../../../resources/metafields/metafields-graphql';
-import { shouldDeleteMetafield } from '../../../resources/metafields/utils/metafields-utils';
+import {
+  matchOwnerResourceToMetafieldOwnerType,
+  matchOwnerTypeToOwnerResource,
+  shouldDeleteMetafield,
+} from '../../../resources/metafields/utils/metafields-utils';
 import { formatMetafieldValueForApi } from '../../../resources/metafields/utils/metafields-utils-formatToApi';
 import { formatMetaFieldValueForSchema } from '../../../resources/metafields/utils/metafields-utils-formatToRow';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../../../resources/metafields/utils/metafields-utils-keys';
-import { MetafieldRow } from '../../../schemas/CodaRows.types';
+import {
+  getMetaFieldFullKey,
+  removePrefixFromMetaFieldKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+  splitMetaFieldFullKey,
+} from '../../../resources/metafields/utils/metafields-utils-keys';
+import { BaseRow, MetafieldRow } from '../../../schemas/CodaRows.types';
 import { ArticleReference, formatArticleReference } from '../../../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../../../schemas/syncTable/BlogSchema';
 import { CollectionReference, formatCollectionReference } from '../../../schemas/syncTable/CollectionSchema';
@@ -40,13 +49,15 @@ import {
   ProductVariantReference,
   formatProductVariantReference,
 } from '../../../schemas/syncTable/ProductVariantSchema';
-import { formatShopReference } from '../../../schemas/syncTable/ShopSchema';
-import { MetafieldOwnerType } from '../../../types/admin.types';
-import { deepCopy, isNullOrEmpty, isString } from '../../../utils/helpers';
+import { CurrencyCode, MetafieldOwnerType } from '../../../types/admin.types';
+import { compareByDisplayKey, deepCopy, isNullishOrEmpty } from '../../../utils/helpers';
+import { FetchRequestOptions } from '../../Fetcher.types';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTable/SyncTable.types';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceDisplayName, ResourceName } from '../AbstractResource';
 import { AbstractResource_Synced, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
 import { AbstractResource_Synced_HasMetafields } from '../AbstractResource_Synced_HasMetafields';
+import { getCurrentShopActiveCurrency } from '../abstractResource-utils';
+import { MetafieldDefinition } from './MetafieldDefinition';
 
 // #endregion
 
@@ -71,7 +82,8 @@ interface OwnerInfo {
   syncWith: 'rest' | 'graphQl';
 }
 
-export type RestMetafieldOwnerType =
+export type SupportedMetafieldOwnerResource = Extract<
+  ResourceName,
   | 'article'
   | 'blog'
   | 'collection'
@@ -80,28 +92,11 @@ export type RestMetafieldOwnerType =
   | 'location'
   | 'order'
   | 'page'
-  // | 'product_image'
   | 'product'
+  // | 'product_image'
   | 'variant'
-  | 'shop';
-
-const restToGraphQLMap: Record<RestMetafieldOwnerType, MetafieldOwnerType> = {
-  article: MetafieldOwnerType.Article,
-  blog: MetafieldOwnerType.Blog,
-  collection: MetafieldOwnerType.Collection,
-  customer: MetafieldOwnerType.Customer,
-  draft_order: MetafieldOwnerType.Draftorder,
-  location: MetafieldOwnerType.Location,
-  order: MetafieldOwnerType.Order,
-  page: MetafieldOwnerType.Page,
-  product: MetafieldOwnerType.Product,
-  variant: MetafieldOwnerType.Productvariant,
-  shop: MetafieldOwnerType.Shop,
-};
-export const graphQLToRestMap = {};
-Object.keys(restToGraphQLMap).forEach((key) => {
-  graphQLToRestMap[restToGraphQLMap[key]] = key;
-});
+  | 'shop'
+>;
 
 interface FindArgs extends BaseContext {
   id: number | string;
@@ -115,20 +110,24 @@ interface FindArgs extends BaseContext {
   product_image_id?: number | string | null;
   product_id?: number | string | null;
   variant_id?: number | string | null;
-  fields?: unknown;
+  fields?: string | null;
+}
+interface FindByKeyArgs extends BaseContext {
+  fullKey: string;
+  owner_id: number;
+  owner_resource: SupportedMetafieldOwnerResource;
+  fields?: string | null;
 }
 interface DeleteArgs extends BaseContext {
   id: number | string;
-  article_id?: number | string | null;
-  blog_id?: number | string | null;
-  collection_id?: number | string | null;
-  customer_id?: number | string | null;
-  draft_order_id?: number | string | null;
-  order_id?: number | string | null;
-  page_id?: number | string | null;
-  product_image_id?: number | string | null;
-  product_id?: number | string | null;
-  variant_id?: number | string | null;
+}
+interface DeleteByKeyArgs extends BaseContext {
+  fullKey: string;
+  owner_id: number;
+  owner_resource: SupportedMetafieldOwnerResource;
+}
+interface RefreshDataArgs {
+  fields?: string | null;
 }
 interface SetArgs extends BaseContext {
   id: number;
@@ -158,8 +157,15 @@ interface AllArgs extends BaseContext {
   namespace?: unknown;
   key?: unknown;
   type?: unknown;
-  fields?: unknown;
+  fields?: string | null;
   metafield?: { [key: string]: unknown } | null;
+}
+
+interface CreateInstancesFromRowArgs {
+  row: BaseRow;
+  ownerResource: SupportedMetafieldOwnerResource;
+  metafieldDefinitions?: Array<MetafieldDefinition>;
+  context: coda.ExecutionContext;
 }
 // #endregion
 
@@ -234,7 +240,7 @@ export class Metafield extends AbstractResource_Synced {
     admin_graphql_api_id: string | null;
     order_id: number | null;
     owner_id: number | null;
-    owner_resource: RestMetafieldOwnerType | null;
+    owner_resource: SupportedMetafieldOwnerResource | null;
     page_id: number | null;
     product_id: number | null;
     product_image_id: number | null;
@@ -242,7 +248,7 @@ export class Metafield extends AbstractResource_Synced {
     updated_at: string | null;
     variant_id: number | null;
     definition_id: number | null;
-
+  } & {
     /** un flag special pour savoir si un metafield a deja été supprimé, utile
      * dans le cas du'une sync table de metafields, où l'on peut supprimer un
      * metafield mais où celui-ci reste visible jusqu'a la prochaine synchronisation.
@@ -251,7 +257,7 @@ export class Metafield extends AbstractResource_Synced {
   };
 
   static readonly displayName = 'Metafield' as ResourceDisplayName;
-  protected static DELETED_SUFFIX = ' [deleted]';
+  static readonly DELETED_SUFFIX = ' [deleted]';
 
   protected static graphQlName = GraphQlResourceName.Metafield;
 
@@ -264,7 +270,7 @@ export class Metafield extends AbstractResource_Synced {
     },
   ];
 
-  protected static supportedSyncTables: Array<SupportedSyncTable> = [
+  public static supportedSyncTables: Array<SupportedSyncTable> = [
     {
       display: 'Article',
       singular: RestResourceSingular.Article,
@@ -354,10 +360,10 @@ export class Metafield extends AbstractResource_Synced {
   }
 
   // TODO: maybe put in our supported Synctables ?
-  protected static getMetafieldAdminUrl(
+  static getMetafieldAdminUrl(
     endpoint: string,
-    definition_id: number,
-    owner_resource: RestMetafieldOwnerType,
+    hasMetafieldDefinition: boolean,
+    owner_resource: SupportedMetafieldOwnerResource,
     owner_id: number,
     parentOwnerId?: number
   ): string | undefined {
@@ -376,7 +382,6 @@ export class Metafield extends AbstractResource_Synced {
 
     if (pathPart) {
       let admin_url = `${endpoint}/admin/${pathPart}/metafields`;
-      const hasMetafieldDefinition = !!definition_id;
       if (!hasMetafieldDefinition) {
         admin_url += `/unstructured`;
       }
@@ -397,14 +402,25 @@ export class Metafield extends AbstractResource_Synced {
       };
     }
 
-    throw new Error('Unknown MetafieldOwnerType: ' + MetafieldOwnerType);
+    throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
   }
 
   public static listSupportedSyncTables() {
-    return this.supportedSyncTables.map((r) => ({
-      display: r.display,
-      value: r.ownerType,
-    }));
+    return this.supportedSyncTables
+      .map((r) => ({
+        display: r.display,
+        value: r.ownerType,
+      }))
+      .sort(compareByDisplayKey);
+  }
+  public static listSupportedSyncTablesWithDefinitions() {
+    return this.supportedSyncTables
+      .filter((r) => !r.noDefinitions)
+      .map((r) => ({
+        display: r.display,
+        value: r.ownerType,
+      }))
+      .sort(compareByDisplayKey);
   }
 
   public static getStaticSchema() {
@@ -482,6 +498,7 @@ export class Metafield extends AbstractResource_Synced {
     product_id = null,
     variant_id = null,
     fields = null,
+    options,
   }: FindArgs): Promise<Metafield | null> {
     const result = await this.baseFind<Metafield>({
       context,
@@ -499,87 +516,92 @@ export class Metafield extends AbstractResource_Synced {
         variant_id,
       },
       params: { fields },
+      options,
     });
     return result.data ? result.data[0] : null;
   }
 
-  public static async delete({
+  public static async findByKey({
     context,
-    id,
-    article_id = null,
-    blog_id = null,
-    collection_id = null,
-    customer_id = null,
-    draft_order_id = null,
-    order_id = null,
-    page_id = null,
-    product_image_id = null,
-    product_id = null,
-    variant_id = null,
-  }: DeleteArgs): Promise<unknown> {
+    fullKey,
+    owner_id,
+    owner_resource,
+    fields = null,
+    options,
+  }: FindByKeyArgs): Promise<Metafield | null> {
+    const metafields = await this.all({
+      context,
+      ['metafield[owner_id]']: owner_id,
+      ['metafield[owner_resource]']: owner_resource,
+      fields,
+      options,
+    });
+    return metafields.data.find((metafield) => metafield.fullKey === fullKey) ?? null;
+  }
+
+  public static async delete({ context, id }: DeleteArgs): Promise<unknown> {
     const response = await this.baseDelete<Metafield>({
-      urlIds: {
-        id,
-        article_id,
-        blog_id,
-        collection_id,
-        customer_id,
-        draft_order_id,
-        order_id,
-        page_id,
-        product_image_id,
-        product_id,
-        variant_id,
-      },
+      urlIds: { id },
       params: {},
       context,
     });
     return response ? response.body : null;
   }
 
-  public static async createOrUpdate({
-    context,
-    metafields,
-    owner_id,
-    owner_resource,
-  }: {
-    context: coda.ExecutionContext;
-    metafields: Array<Metafield>;
-    owner_id: number;
-    owner_resource: RestMetafieldOwnerType;
-  }) {
-    const existingMetafields = await Metafield.all({
-      context,
-      ['metafield[owner_id]']: owner_id,
-      ['metafield[owner_resource]']: owner_resource,
-      options: { cacheTtlSecs: CACHE_DISABLED },
-    });
+  public static async syncUpdate(
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+    updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
+    context: coda.SyncExecutionContext
+  ): Promise<SyncTableUpdateResult> {
+    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
 
-    const setsToDelete = metafields.filter((set) => shouldDeleteMetafield(set.apiData.value as string));
-    console.log('———————————————————setsToDelete', setsToDelete);
-    const metafieldsToDelete = existingMetafields.data.filter((m) => {
-      return setsToDelete.some((set) => {
-        return m.apiData.key === set.apiData.key && m.apiData.namespace === set.apiData.namespace;
-      });
-    });
-    // const metafieldsToDelete = existingMetafields.data.filter((m) => {
-    //   return setsToDelete.some((set) => {
-    //     // const { metaKey, metaNamespace } = splitMetaFieldFullKey(set.key);
-    //     return m.apiData.key === set.key && m.apiData.namespace === set.namespace;
-    //   });
-    // });
+    const completed = await Promise.allSettled(
+      updates.map(async (update) => {
+        const { updatedFields, previousValue, newValue } = update;
+        const { type } = previousValue;
+        const { rawValue } = newValue;
 
-    const metafieldsToUpdate = metafields.filter((set) => !shouldDeleteMetafield(set.apiData.value as string));
-    // .map((m) => new Metafield({ context, fromData: m }));
+        // Utilisation de rawValue ou de la valeur de l'helper column adaptée si elle a été utilisée
+        let value: string | null = rawValue as string;
+        for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
+          const column = metafieldSyncTableHelperEditColumns[i];
+          if (updatedFields.includes(column.key)) {
+            if (type === column.type) {
+              /**
+               *? Si jamais on implémente une colonne pour les currencies,
+               *? il faudra veiller a bien passer le currencyCode a {@link formatMetafieldValueForApi}
+               */
+              value = formatMetafieldValueForApi(newValue[column.key], type as AllMetafieldTypeValue);
+            } else {
+              const goodColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === type);
+              let errorMsg = `Metafield type mismatch. You tried to update using an helper column that doesn't match the metafield type.`;
+              if (goodColumn) {
+                errorMsg += ` The correct column for type '${type}' is: '${goodColumn.key}'.`;
+              } else {
+                errorMsg += ` You can only update this metafield by directly editing the 'Raw Value' column.`;
+              }
+              throw new coda.UserVisibleError(errorMsg);
+            }
+          }
+        }
 
-    await Promise.all([
-      ...metafieldsToDelete.map((m) => m.delete()),
-      ...metafieldsToUpdate.map((m) => m.saveAndUpdate()),
-    ]);
+        const metafield = new Metafield({
+          context,
+          fromRow: {
+            row: { ...update.newValue, owner_type: metafieldOwnerType, rawValue: value },
+          },
+        });
+        await metafield.saveAndUpdate();
+        return metafield.formatToRow();
+      })
+    );
 
     return {
-      deletedMetafields: metafieldsToDelete,
-      updatedMetafields: metafieldsToUpdate,
+      result: completed.map((job) => {
+        if (job.status === 'fulfilled') {
+          return job.value;
+        } else return job.reason;
+      }),
     };
   }
 
@@ -643,32 +665,124 @@ export class Metafield extends AbstractResource_Synced {
     return response;
   }
 
-  static createInstancesFromMetafieldSet(
+  static createInstanceFromGraphQlMetafield(
     context: coda.ExecutionContext,
-    metafieldSet: CodaMetafieldKeyValueSet,
-    owner_id?: string | number
+    metafieldNode: FragmentOf<typeof metafieldFieldsFragment>,
+    owner_gid?: string
   ): Metafield {
-    const { metaKey, metaNamespace } = splitMetaFieldFullKey(metafieldSet.key);
+    const fragment = readFragment(metafieldFieldsFragment, metafieldNode);
+
     return new Metafield({
       context,
       fromData: {
-        namespace: metaNamespace,
-        key: metaKey,
-        type: metafieldSet.type,
-        owner_id: owner_id ?? null,
-        value:
-          metafieldSet.value === null
-            ? ''
-            : isString(metafieldSet.value)
-            ? metafieldSet.value
-            : JSON.stringify(metafieldSet.value),
+        id: graphQlGidToId(fragment.id),
+        admin_graphql_api_id: fragment.id,
+
+        key: fragment.key,
+        namespace: fragment.namespace,
+        value: fragment.value,
+        type: fragment.type,
+
+        owner_id: graphQlGidToId(owner_gid),
+        owner_resource: matchOwnerTypeToOwnerResource(fragment.ownerType as MetafieldOwnerType),
+
+        updated_at: fragment.updatedAt,
+        created_at: fragment.createdAt,
       } as Metafield['apiData'],
     });
+  }
+
+  static async createInstancesFromRow({
+    context,
+    row,
+    ownerResource,
+    metafieldDefinitions = [],
+  }: CreateInstancesFromRowArgs): Promise<Metafield[]> {
+    const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(row));
+    let currencyCode: CurrencyCode;
+
+    const promises = prefixedMetafieldFromKeys.map(async (fromKey) => {
+      const value = row[fromKey] as any;
+      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
+      const metafieldDefinition = requireMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+
+      const { key, namespace, type, validations } = metafieldDefinition.apiData;
+      let formattedValue: string | null;
+
+      if (type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
+        currencyCode = await getCurrentShopActiveCurrency(context);
+      }
+
+      try {
+        formattedValue = formatMetafieldValueForApi(
+          value,
+          type.name as AllMetafieldTypeValue,
+          validations,
+          currencyCode
+        );
+      } catch (error) {
+        throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+      }
+
+      return new Metafield({
+        context,
+        fromData: {
+          namespace,
+          key,
+          type: type.name,
+          value: formattedValue,
+          owner_id: row.id,
+          owner_resource: ownerResource,
+        } as Metafield['apiData'],
+      });
+    });
+
+    return Promise.all(promises);
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
+  protected setData(data: any): void {
+    this.apiData = data;
+
+    // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
+    const fullkey = getMetaFieldFullKey({ key: this.apiData.key, namespace: this.apiData.namespace });
+    const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
+
+    this.apiData.key = metaKey;
+    this.apiData.namespace = metaNamespace;
+  }
+
+  public async refreshData(fields: string = null): Promise<void> {
+    let metafield: Metafield;
+    const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
+
+    if (this.apiData.id) {
+      metafield = await Metafield.find({
+        context: this.context,
+        id: this.apiData.id,
+        fields,
+        options,
+      });
+    } else {
+      metafield = await Metafield.findByKey({
+        context: this.context,
+        fullKey: this.fullKey,
+        owner_id: this.apiData.owner_id,
+        owner_resource: this.apiData.owner_resource,
+        fields,
+        options,
+      });
+    }
+
+    if (metafield) {
+      this.apiData = {
+        ...metafield.apiData,
+        ...this.apiData,
+      };
+    }
+  }
 
   get fullKey() {
     const { namespace, key } = this.apiData;
@@ -679,25 +793,111 @@ export class Metafield extends AbstractResource_Synced {
   }
 
   public async delete(): Promise<void> {
-    await super.delete();
+    /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
+    if (!this.apiData.id) await this.refreshData();
+
+    /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
+    if (this.apiData.id) await super.delete();
+
     // make sure to nullify metafield value
     this.apiData.value = null;
+    this.apiData.isDeletedFlag = true;
   }
 
-  // #region Formatting
+  public async saveAndUpdate(): Promise<void> {
+    if (shouldDeleteMetafield(this.apiData.value as string)) {
+      await this.delete();
+    } else {
+      await super.saveAndUpdate();
+    }
+  }
+
   public formatToApi({ row }: FromRow<MetafieldRow>) {
-    // let apiData: UpdateArgs | CreateArgs = {};
-    let apiData: Partial<typeof this.apiData> = {};
+    if (!row.label) throw new RequiredParameterMissingVisibleError('label');
+    if (!row.type) throw new RequiredParameterMissingVisibleError('type');
+
+    const { DELETED_SUFFIX } = Metafield;
+
+    const isDeletedFlag = row.label.includes(DELETED_SUFFIX);
+    const fullkey = row.label.split(DELETED_SUFFIX)[0];
+    const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
+
+    let apiData: Partial<typeof this.apiData> = {
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      id: isDeletedFlag ? null : row.id,
+      key: metaKey,
+      namespace: metaNamespace,
+      owner_id: row.owner_id,
+      type: row.type,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      // TODO: maybe all these checks are unecessary now. Check
+      value: isNullishOrEmpty(row.rawValue)
+        ? null
+        : typeof row.rawValue === 'string'
+        ? row.rawValue
+        : JSON.stringify(row.rawValue),
+      owner_resource: matchOwnerTypeToOwnerResource(row.owner_type as MetafieldOwnerType),
+      isDeletedFlag,
+    };
+
+    if (row.definition_id || row.definition) {
+      apiData.definition_id = row.definition_id || row.definition?.id;
+    }
 
     return apiData;
   }
 
   public formatToRow(): MetafieldRow {
-    const { apiData } = this;
-    // @ts-ignore
+    const { apiData: data } = this;
+    const ownerType = matchOwnerResourceToMetafieldOwnerType(data.owner_resource);
+
     let obj: MetafieldRow = {
-      ...apiData,
+      label: this.fullKey + (data.isDeletedFlag ? Metafield.DELETED_SUFFIX : ''),
+      admin_graphql_api_id: data.admin_graphql_api_id,
+      id: data.id,
+      key: data.key,
+      namespace: data.namespace,
+      type: data.type,
+      rawValue: data.value,
+      owner_id: data.owner_id,
+      updated_at: data.updated_at,
+      created_at: data.created_at,
+      owner_type: ownerType,
     };
+
+    const supportedSynctable = Metafield.supportedSyncTables.find((r) => r.ownerType === ownerType);
+    if (supportedSynctable && supportedSynctable.formatOwnerReference) {
+      obj.owner = supportedSynctable.formatOwnerReference(data.owner_id);
+    }
+
+    if (data.definition_id) {
+      obj.definition_id = data.definition_id;
+      obj.definition = formatMetafieldDefinitionReference(data.definition_id);
+    }
+
+    /**
+     * We don't set it at once because parentOwnerId can be necessary but
+     * undefined when formatting from a two way sync update (ex: ProductVariants).
+     * Since this value is static, we return nothing to prevent erasing the
+     * previous value. We could also retrieve the owner ID value directly in the
+     * graphQl mutation result but doing it this way reduce the GraphQL query costs.
+     */
+    const maybeAdminUrl = Metafield.getMetafieldAdminUrl(
+      this.context.endpoint,
+      !!data.definition_id,
+      data.owner_resource,
+      data.owner_id
+      // parentOwnerId
+    );
+    if (maybeAdminUrl) {
+      obj.admin_url = maybeAdminUrl;
+    }
+
+    const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
+    if (helperColumn) {
+      obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
+    }
 
     return obj;
   }

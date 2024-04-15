@@ -1,7 +1,10 @@
+// #region Imports
 import { graphql } from '../../utils/graphql';
 
+// #endregion
+
 // #region Queries
-export const getOnlineStorePublicationQuery = graphql(
+const getOnlineStorePublicationQuery = graphql(
   `
     query GetOnlineStorePublication {
       appByHandle(handle: "online_store") {
@@ -17,4 +20,12 @@ export const getOnlineStorePublicationQuery = graphql(
     }
   `
 );
+
+export const throttleStatusQuery = graphql(`
+  query ThrottleStatus {
+    shop {
+      id
+    }
+  }
+`);
 // #endregion

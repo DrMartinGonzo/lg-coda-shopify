@@ -90,7 +90,9 @@ export abstract class AbstractResource_Synced extends AbstractResource {
   /**
    * Generate a sync function to be used by a SyncTableManager
    */
-  protected static makeSyncFunction({ context }: MakeSyncFunctionArgs<AbstractResource_Synced, any>): SyncFunction {
+  protected static makeSyncTableManagerSyncFunction({
+    context,
+  }: MakeSyncFunctionArgs<AbstractResource_Synced, any>): SyncFunction {
     return (nextPageQuery: SearchParams = {}) =>
       this.baseFind({
         context,
@@ -112,7 +114,7 @@ export abstract class AbstractResource_Synced extends AbstractResource {
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
     const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncFunction({ codaSyncParams, context, syncTableManager });
+    const syncFunction = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
 
     const { response, continuation } = await syncTableManager.executeSync({ sync: syncFunction });
     return {

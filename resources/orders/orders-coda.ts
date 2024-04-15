@@ -20,8 +20,7 @@ export const Sync_Orders = coda.makeSyncTable({
   schema: OrderSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Order.getDynamicSchema({ context, codaSyncParams });
+      return Order.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -30,8 +29,9 @@ export const Sync_Orders = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Order.getDynamicSchema}
-     *  - {@link Order.makeSyncFunction}
+     *  - {@link Order.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       filters.order.status,

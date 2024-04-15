@@ -1,16 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 import { Location } from '../../Fetchers/NEW/Resources/Location';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { idToGraphQlGid } from '../../helpers-graphql';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
 import { GraphQlResourceName } from '../ShopifyResource.types';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 
 // #endregion
 
@@ -24,8 +23,7 @@ export const Sync_Locations = coda.makeSyncTable({
   schema: LocationSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Location.getDynamicSchema({ context, codaSyncParams });
+      return Location.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -34,6 +32,7 @@ export const Sync_Locations = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Location.getDynamicSchema}
      */
     parameters: [{ ...filters.general.syncMetafields, optional: true }],
@@ -80,7 +79,6 @@ export const Action_UpdateLocation = coda.makeFormula({
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<LocationRow> = {
       row: {
         id: locationId,
@@ -93,7 +91,11 @@ export const Action_UpdateLocation = coda.makeFormula({
         province_code: provinceCode,
         zip,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: locationId, owner_resource: Location.metafieldRestOwnerType })
+      ),
     };
 
     const updatedLocation = new Location({ context, fromRow });

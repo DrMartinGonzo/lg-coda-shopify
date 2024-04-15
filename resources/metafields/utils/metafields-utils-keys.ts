@@ -1,3 +1,4 @@
+import { InvalidValueError } from '../../../Errors';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../../../constants';
 
 /**
@@ -22,7 +23,7 @@ export function getMetaFieldFullKey(m: { namespace: string; key: string }): stri
 export const splitMetaFieldFullKey = (fullKey: string) => {
   const lastDotIndex = fullKey.lastIndexOf('.');
   if (lastDotIndex === -1) {
-    throw new Error(`Not a metafield full key: ${fullKey}`);
+    throw new InvalidValueError('Metafield full key', fullKey);
   }
 
   return {

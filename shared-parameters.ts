@@ -17,19 +17,13 @@ import {
 } from './constants';
 import { Location } from './Fetchers/NEW/Resources/Location';
 import { Metafield } from './Fetchers/NEW/Resources/Metafield';
+import { MetafieldDefinition } from './Fetchers/NEW/Resources/MetafieldDefinition';
 import { Metaobject } from './Fetchers/NEW/Resources/Metaobject';
+import { MetaobjectDefinition } from './Fetchers/NEW/Resources/MetaobjectDefinition';
 import { Blog } from './Fetchers/NEW/Resources/WithRestMetafields/Blog';
 import { idToGraphQlGid } from './helpers-graphql';
-import { fetchMetafieldDefinitionsGraphQl } from './resources/metafieldDefinitions/metafieldDefinitions-functions';
-import { getMetaFieldFullKey } from './resources/metafields/utils/metafields-utils-keys';
-import {
-  fetchAllMetaObjectDefinitions,
-  fetchSingleMetaObjectDefinitionByType,
-} from './resources/metaobjects/metaobjects-functions';
-import {
-  metaobjectDefinitionFragment,
-  metaobjectFieldDefinitionFragment,
-} from './resources/metaobjects/metaobjects-graphql';
+import { metaobjectFieldDefinitionFragment } from './resources/metaobjectDefinitions/metaobjectDefinition-graphql';
+import { metaobjectDefinitionFragment } from './resources/metaobjectDefinitions/metaobjectDefinition-graphql';
 import { fetchProductTypesGraphQl } from './resources/products/products-functions';
 import { GraphQlResourceName } from './resources/ShopifyResource.types';
 import { getTemplateSuffixesFor } from './resources/themes/themes-functions';
@@ -83,13 +77,33 @@ async function autocompleteLocationsWithName(context: coda.ExecutionContext, sea
   return response.data.map((location) => formatOptionNameId(location.apiData.name, location.restId));
 }
 
+function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
+  return async function (context: coda.ExecutionContext, search: string, args: any) {
+    const metafieldDefinitions = await MetafieldDefinition.allForOwner({
+      context,
+      ownerType,
+      includeFakeExtraDefinitions: true,
+      // options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+    const searchObjects = metafieldDefinitions.map((metafield) => {
+      return {
+        name: metafield.apiData.name,
+        fullKey: metafield.fullKey,
+      };
+    });
+    return coda.autocompleteSearchObjects(search, searchObjects, 'name', 'fullKey');
+  };
+}
+
 function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-      { ownerType, includeFakeExtraDefinitions: true },
-      context
-    );
-    const keys = metafieldDefinitions.map(getMetaFieldFullKey);
+    const metafieldDefinitions = await MetafieldDefinition.allForOwner({
+      context,
+      ownerType,
+      includeFakeExtraDefinitions: true,
+      // options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+    const keys = metafieldDefinitions.map((m) => m.fullKey);
     return coda.simpleAutocomplete(search, keys);
   };
 }
@@ -138,17 +152,30 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   if (!args.type || args.type === '') {
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
-  const metaObjectDefinition = await fetchSingleMetaObjectDefinitionByType(
-    { type: args.type, includeCapabilities: false, includeFieldDefinitions: true },
-    context
+  const metaObjectDefinition = await MetaobjectDefinition.findByType({
+    context,
+    type: args.type,
+    fields: { fieldDefinitions: true },
+    options: { cacheTtlSecs: CACHE_DEFAULT },
+  });
+  const fieldDefinitions = readFragmentArray(
+    metaobjectFieldDefinitionFragment,
+    metaObjectDefinition.apiData.fieldDefinitions
   );
-  const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, metaObjectDefinition.fieldDefinitions);
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 
 export async function autocompleteMetaobjectType(context: coda.ExecutionContext, search: string, args: any) {
-  const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
-  return coda.autocompleteSearchObjects(search, metaobjectDefinitions, 'name', 'type');
+  const metaobjectDefinitions = await MetaobjectDefinition.allDataLoop<MetaobjectDefinition>({
+    context,
+    options: { cacheTtlSecs: CACHE_DEFAULT },
+  });
+  return coda.autocompleteSearchObjects(
+    search,
+    metaobjectDefinitions.map((p) => p.apiData),
+    'name',
+    'type'
+  );
 }
 
 async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {

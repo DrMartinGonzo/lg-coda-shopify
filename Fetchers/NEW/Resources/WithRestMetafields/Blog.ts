@@ -32,7 +32,7 @@ import {
 } from '../../AbstractResource_Synced_HasMetafields';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 
 // #endregion
 
@@ -69,7 +69,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
 
   static readonly displayName = 'Blog' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStoreBlog;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'blog';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'blog';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
   static readonly supportsDefinitions = true;
 
@@ -103,7 +103,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -177,11 +177,7 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     });
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Blog.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -195,8 +191,6 @@ export class Blog extends AbstractResource_Synced_HasMetafields {
     let obj: BlogRow = {
       ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/blogs/${apiData.id}`,
-      created_at: new Date(apiData.created_at),
-      updated_at: new Date(apiData.updated_at),
     };
 
     if (apiData.metafields) {

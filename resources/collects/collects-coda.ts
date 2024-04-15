@@ -20,7 +20,7 @@ export const Sync_Collects = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Collect.makeSyncFunction}
+     *  - {@link Collect.makeSyncTableManagerSyncFunction}
      */
     parameters: [{ ...filters.collection.id, optional: true }],
     execute: async (params, context: coda.SyncExecutionContext) => {

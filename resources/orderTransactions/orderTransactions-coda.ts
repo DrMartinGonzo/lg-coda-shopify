@@ -1,31 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Shop } from '../../Fetchers/NEW/Resources/Shop';
+import { OrderTransaction } from '../../Fetchers/NEW/Resources/OrderTransaction';
 import { Identity } from '../../constants';
 import { OrderTransactionSyncTableSchema } from '../../schemas/syncTable/OrderTransactionSchema';
 import { filters } from '../../shared-parameters';
-import { deepCopy } from '../../utils/helpers';
-import { OrderTransactionGraphQlFetcher } from './OrderTransactionGraphQlFetcher';
-import { OrderTransactionSyncTable } from './OrderTransactionSyncTable';
-import { handleDynamicSchemaForCli } from '../../schemas/schema-helpers';
 
 // #endregion
-
-async function getOrderTransactionSchema(
-  context: coda.ExecutionContext,
-  _: string,
-  formulaContext: coda.MetadataContext
-) {
-  let augmentedSchema = deepCopy(OrderTransactionSyncTableSchema);
-
-  const shopCurrencyCode = await Shop.activeCurrency({ context });
-  // Main props
-  augmentedSchema.properties.amount['currencyCode'] = shopCurrencyCode;
-  augmentedSchema.properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
-
-  return augmentedSchema;
-}
 
 // #region Sync tables
 export const Sync_OrderTransactions = coda.makeSyncTable({
@@ -35,12 +16,18 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
   identityName: Identity.OrderTransaction,
   schema: OrderTransactionSyncTableSchema,
   dynamicOptions: {
-    getSchema: getOrderTransactionSchema,
+    getSchema: async function (context, _, formulaContext) {
+      return OrderTransaction.getDynamicSchema({ context, codaSyncParams: [] });
+    },
     defaultAddDynamicColumns: false,
   },
   formula: {
     name: 'SyncOrderTransactions',
     description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - {@link OrderTransaction.makeSyncTableManagerSyncFunction}
+     */
     parameters: [
       { ...filters.general.createdAtRange, name: 'orderCreatedAt', optional: true },
       { ...filters.general.updatedAtRange, name: 'orderUpdatedAt', optional: true },
@@ -56,10 +43,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
       }),
     ],
     execute: async function (params, context) {
-      const schema = await handleDynamicSchemaForCli(getOrderTransactionSchema, context, {});
-      const orderTransactionFetcher = new OrderTransactionGraphQlFetcher(context);
-      const orderTransactionSyncTable = new OrderTransactionSyncTable(orderTransactionFetcher, params);
-      return orderTransactionSyncTable.executeSync(schema);
+      return OrderTransaction.sync(params, context);
     },
   },
 });

@@ -20,7 +20,7 @@ import {
   deleteUndefinedInObject,
   extractNameFromFileUrl,
   getThumbnailUrlFromFullUrl,
-  isNullOrEmpty,
+  isNullishOrEmpty,
 } from '../../../utils/helpers';
 import { SyncTableSyncResult } from '../../SyncTable/SyncTable.types';
 import {
@@ -29,10 +29,12 @@ import {
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
-  SyncFunctionGraphQl,
+  SyncTableManagerSyncFunction,
 } from '../AbstractGraphQlResource';
 import { BaseContext, ResourceDisplayName } from '../AbstractResource';
 import { CodaSyncParams, FromRow } from '../AbstractResource_Synced';
+import { UnsupportedActionError } from '../../../Errors';
+import { GraphQlResourceName } from '../../../resources/ShopifyResource.types';
 
 // #endregion
 
@@ -72,18 +74,19 @@ export class File extends AbstractGraphQlResource_Synced {
     ResultOf<typeof mediaImageFieldsFragment>;
 
   static readonly displayName = 'File' as ResourceDisplayName;
-  protected static paths: Array<GraphQlResourcePath> = ['node', 'files.nodes', 'fileUpdate.files'];
+
   protected static defaultMaxEntriesPerRun: number = 50;
+  protected static paths: Array<GraphQlResourcePath> = ['node', 'files.nodes', 'fileUpdate.files'];
 
   public static getStaticSchema() {
     return FileSyncTableSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<File, typeof Sync_Files>): SyncFunctionGraphQl {
+  }: MakeSyncFunctionArgsGraphQl<File, typeof Sync_Files>): SyncTableManagerSyncFunction {
     const [type] = codaSyncParams;
 
     const fields = {};
@@ -111,7 +114,7 @@ export class File extends AbstractGraphQlResource_Synced {
   ): Promise<SyncTableSyncResult> {
     const [type, previewSize] = codaSyncParams;
     const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncFunction({
+    const syncFunction = this.makeSyncTableManagerSyncFunction({
       codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_Files>,
       context,
       syncTableManager,
@@ -122,7 +125,7 @@ export class File extends AbstractGraphQlResource_Synced {
       defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
     });
     return {
-      result: response.data.map((data) => data.formatToRow(previewSize)),
+      result: response.data.map((data: AbstractGraphQlResource_Synced) => data.formatToRow(previewSize)),
       continuation,
     };
   }
@@ -247,7 +250,7 @@ export class File extends AbstractGraphQlResource_Synced {
         this.apiData = this.apiData[0];
       }
     } else {
-      throw new Error('Creating File is not supported');
+      throw new UnsupportedActionError('Creating Files');
     }
   }
 
@@ -290,7 +293,7 @@ export class File extends AbstractGraphQlResource_Synced {
     }
 
     if (row.name !== undefined) {
-      if (isNullOrEmpty(row.name)) {
+      if (isNullishOrEmpty(row.name)) {
         throw new coda.UserVisibleError("File name can't be empty");
       }
       apiData.filename = row.name;

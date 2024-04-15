@@ -45,7 +45,7 @@ export type LineItem = {
 export class OrderLineItem extends AbstractResource_Synced {
   public apiData: (LineItem & { order_id: number; order_name: string }) | null;
 
-  static readonly displayName = 'Order Line Item' as ResourceDisplayName;
+  static readonly displayName = 'Order LineItem' as ResourceDisplayName;
 
   public static getStaticSchema() {
     return OrderLineItemSyncTableSchema;
@@ -64,7 +64,7 @@ export class OrderLineItem extends AbstractResource_Synced {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
   }: MakeSyncFunctionArgs<OrderLineItem, typeof Sync_OrderLineItems>): SyncFunction {

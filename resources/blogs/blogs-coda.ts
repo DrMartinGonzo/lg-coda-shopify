@@ -1,15 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 import { Blog } from '../../Fetchers/NEW/Resources/WithRestMetafields/Blog';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 
 // #endregion
 
@@ -23,8 +22,7 @@ export const Sync_Blogs = coda.makeSyncTable({
   schema: BlogSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Blog.getDynamicSchema({ context, codaSyncParams });
+      return Blog.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -38,8 +36,9 @@ export const Sync_Blogs = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Blog.getDynamicSchema}
-     *  - {@link Blog.makeSyncFunction}
+     *  - {@link Blog.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       {
@@ -84,7 +83,6 @@ export const Action_UpdateBlog = coda.makeFormula({
   // schema: coda.withIdentity(BlogSchema, Identity.Blog),
   schema: BlogSyncTableSchema,
   execute: async function ([blogId, title, handle, commentable, template_suffix, metafields], context) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<BlogRow> = {
       row: {
         id: blogId,
@@ -93,7 +91,11 @@ export const Action_UpdateBlog = coda.makeFormula({
         commentable,
         template_suffix,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: blogId, owner_resource: Blog.metafieldRestOwnerType })
+      ),
     };
 
     const updatedBlog = new Blog({ context, fromRow });
@@ -122,7 +124,6 @@ export const Action_CreateBlog = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([title, handle, commentable, template_suffix, metafields], context) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<BlogRow> = {
       row: {
         title,
@@ -130,7 +131,11 @@ export const Action_CreateBlog = coda.makeFormula({
         handle,
         template_suffix,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context,  owner_resource: Blog.metafieldRestOwnerType })
+      ),
     };
 
     const newBlog = new Blog({ context, fromRow });

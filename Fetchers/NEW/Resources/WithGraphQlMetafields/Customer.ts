@@ -37,7 +37,7 @@ import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMeta
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 
 // #endregion
 
@@ -122,7 +122,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Customer' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Customer;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'customer';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'customer';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
   static readonly supportsDefinitions = true;
 
@@ -168,7 +168,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -352,11 +352,7 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
       };
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Customer.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -371,7 +367,6 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
     let obj: CustomerRow = {
       ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/customers/${apiData.id}`,
-      created_at: new Date(apiData.created_at),
       display: formatPersonDisplayValue({
         id: apiData.id,
         firstName: apiData.first_name,
@@ -379,7 +374,6 @@ export class Customer extends AbstractResource_Synced_HasMetafields_GraphQl {
         email: apiData.email,
       }),
       total_spent: parseFloat(apiData.total_spent),
-      updated_at: new Date(apiData.updated_at),
 
       // keep typescript happy
       addresses: undefined,

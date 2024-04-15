@@ -33,7 +33,7 @@ import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMeta
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { LineItem } from '../OrderLineItem';
 import { Shop } from '../Shop';
 import { CustomerCodaData } from './Customer';
@@ -110,7 +110,7 @@ export class DraftOrder extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Draft Order' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.DraftOrder;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'draft_order';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'draft_order';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
   static readonly supportsDefinitions = true;
 
@@ -170,7 +170,7 @@ export class DraftOrder extends AbstractResource_Synced_HasMetafields_GraphQl {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -349,11 +349,7 @@ export class DraftOrder extends AbstractResource_Synced_HasMetafields_GraphQl {
     });
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = DraftOrder.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this

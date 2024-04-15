@@ -35,7 +35,7 @@ import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMeta
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { Variant } from './Variant';
 
 // #endregion
@@ -100,7 +100,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Product' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Product;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'product';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'product';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
   static readonly supportsDefinitions = true;
 
@@ -123,7 +123,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
   }
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [product_type, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Products>;
+    const [, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Products>;
     let augmentedSchema = deepCopy(ProductSyncTableSchemaRest);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(
@@ -186,7 +186,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
       });
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -433,11 +433,7 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
     }
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Product.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -465,11 +461,8 @@ export class Product extends AbstractResource_Synced_HasMetafields_GraphQl {
       ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/products/${apiData.id}`,
       body: striptags(apiData.body_html),
-      created_at: new Date(apiData.created_at),
-      published_at: new Date(apiData.published_at),
       published: !!apiData.published_at,
       storeUrl: apiData.status === 'active' ? `${this.context.endpoint}/products/${apiData.handle}` : '',
-      updated_at: new Date(apiData.updated_at),
 
       // keep typescript happy
       // TODO: fix

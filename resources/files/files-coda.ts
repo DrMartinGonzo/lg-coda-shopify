@@ -21,7 +21,7 @@ export const Sync_Files = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - {@link File.sync}
-     *  - {@link File.makeSyncFunction}
+     *  - {@link File.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       coda.makeParameter({

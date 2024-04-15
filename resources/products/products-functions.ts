@@ -1,11 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, VariablesOf, FragmentOf, readFragment } from '../../utils/graphql';
 
-import { CACHE_DEFAULT } from '../../constants';
-import { makeGraphQlRequest } from '../../helpers-graphql';
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlClientNEW } from '../../Fetchers/NEW/GraphQlClientNEW';
+import { CACHE_DEFAULT } from '../../constants';
 import { getProductTypesQuery } from './products-graphql';
 
 // #region GraphQL Requests
@@ -13,11 +11,16 @@ export async function fetchProductTypesGraphQl(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ): Promise<string[]> {
-  const payload = { query: printGql(getProductTypesQuery) };
-  const { response } = await makeGraphQlRequest<typeof getProductTypesQuery>(
-    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
-    context
-  );
+  const documentNode = getProductTypesQuery;
+
+  const graphQlClient = new GraphQlClientNEW({ context });
+  const response = await graphQlClient.request<typeof documentNode>({
+    documentNode,
+    variables: {},
+    retries: this.prevContinuation?.retries ?? 0,
+    options: { cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
+  });
+
   if (response?.body?.data?.shop?.productTypes?.edges) {
     return response.body.data.shop.productTypes.edges.map((edge) => edge.node);
   }

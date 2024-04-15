@@ -6,6 +6,7 @@ import { PageReference } from './PageSchema';
 import { FileReference } from './FileSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
 import { formatMetafieldValueForApi } from '../../resources/metafields/utils/metafields-utils-formatToApi';
+import { FieldDependency } from '../Schema.types';
 
 export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -172,6 +173,13 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   snippetProperty: 'rawValue',
   linkProperty: 'admin_url',
 });
+
+export const metafieldFieldDependencies: FieldDependency<typeof MetafieldSyncTableSchema.properties>[] = [
+  {
+    field: 'admin_url',
+    dependencies: ['owner_id'],
+  },
+];
 
 /**
  *? Si jamais on implémente une colonne pour les currencies,

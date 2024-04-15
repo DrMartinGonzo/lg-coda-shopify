@@ -4,8 +4,9 @@ import { ResultOf } from '../../utils/graphql';
 import { Identity, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { metafieldDefinitionFragment } from '../../resources/metafieldDefinitions/metafieldDefinitions-graphql';
-import { metaobjectFieldDefinitionFragment } from '../../resources/metaobjects/metaobjects-graphql';
+import { metaobjectFieldDefinitionFragment } from '../../resources/metaobjectDefinitions/metaobjectDefinition-graphql';
 import { graphQlGidToId } from '../../helpers-graphql';
+import { NotFoundError } from '../../Errors';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -46,8 +47,7 @@ export function getMetaobjectReferenceSchema(
   const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
     (v) => v.name === 'metaobject_definition_id'
   )?.value;
-  if (!metaobjectReferenceDefinitionId)
-    throw new Error('MetaobjectDefinitionId not found in fieldDefinition.validations');
+  if (!metaobjectReferenceDefinitionId) throw new NotFoundError('MetaobjectDefinitionId');
 
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,

@@ -4,7 +4,7 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { REST_DEFAULT_LIMIT } from '../../../../constants';
 import { Sync_Collections } from '../../../../resources/collections/collections-coda';
 import { collectionFieldDependencies } from '../../../../schemas/syncTable/CollectionSchema';
-import { BaseContext, FindAllResponse } from '../../AbstractResource';
+import { BaseContext, FindAllResponse, ResourceName } from '../../AbstractResource';
 import { MakeSyncFunctionArgs, SyncFunction } from '../../AbstractResource_Synced';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
@@ -43,7 +43,7 @@ interface OrderArgs extends BaseContext {
 }
 
 export class MergedCollection_Smart extends MergedCollection {
-  protected static jsonBodyName = 'smart_collection';
+  protected static jsonBodyName: ResourceName = 'smart_collection';
 
   protected static paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'smart_collections/<id>.json' },
@@ -61,7 +61,7 @@ export class MergedCollection_Smart extends MergedCollection {
     },
   ];
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,

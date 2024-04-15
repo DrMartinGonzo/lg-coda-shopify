@@ -20,7 +20,7 @@ export const Sync_Shops = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Shop.makeSyncFunction}
+     *  - {@link Shop.makeSyncTableManagerSyncFunction}
      */
     parameters: [],
     execute: async function (params, context) {

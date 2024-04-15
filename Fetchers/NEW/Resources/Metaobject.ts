@@ -5,27 +5,23 @@ import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../..
 
 import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, OPTIONS_METAOBJECT_STATUS } from '../../../constants';
 import { graphQlGidToId, idToGraphQlGid } from '../../../helpers-graphql';
-import { GraphQlResourceName, RestResourceSingular } from '../../../resources/ShopifyResource.types';
+import { GraphQlResourceName } from '../../../resources/ShopifyResource.types';
 import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../../../resources/metafields/Metafield.types';
 import { shouldUpdateSyncTableMetafieldValue } from '../../../resources/metafields/utils/metafields-utils';
 import { formatMetafieldValueForApi } from '../../../resources/metafields/utils/metafields-utils-formatToApi';
 import { formatMetaFieldValueForSchema } from '../../../resources/metafields/utils/metafields-utils-formatToRow';
 import { Sync_Metaobjects } from '../../../resources/metaobjects/metaobjects-coda';
-import {
-  fetchAllMetaObjectDefinitions,
-  fetchSingleMetaObjectDefinition,
-  requireMatchingMetaobjectFieldDefinition,
-} from '../../../resources/metaobjects/metaobjects-functions';
+import { requireMatchingMetaobjectFieldDefinition } from '../../../resources/metaobjects/metaobjects-functions';
 import {
   createMetaobjectMutation,
   deleteMetaobjectMutation,
   getMetaObjectsWithFieldsQuery,
   getSingleMetaObjectWithFieldsQuery,
-  metaobjectDefinitionFragment,
-  metaobjectFieldDefinitionFragment,
   metaobjectFragment,
   updateMetaObjectMutation,
 } from '../../../resources/metaobjects/metaobjects-graphql';
+import { metaobjectFieldDefinitionFragment } from '../../../resources/metaobjectDefinitions/metaobjectDefinition-graphql';
+import { metaobjectDefinitionFragment } from '../../../resources/metaobjectDefinitions/metaobjectDefinition-graphql';
 import { MetaobjectRow } from '../../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../../schemas/schema-helpers';
 import { MetaObjectSyncTableBaseSchema } from '../../../schemas/syncTable/MetaObjectSchema';
@@ -35,7 +31,7 @@ import {
   compareByDisplayKey,
   deepCopy,
   deleteUndefinedInObject,
-  isNullOrEmpty,
+  isNullishOrEmpty,
   isString,
 } from '../../../utils/helpers';
 import {
@@ -44,10 +40,11 @@ import {
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
-  SyncFunctionGraphQl,
+  SyncTableManagerSyncFunction,
 } from '../AbstractGraphQlResource';
 import { BaseConstructorArgs, BaseContext, ResourceDisplayName } from '../AbstractResource';
 import { GetSchemaArgs } from '../AbstractResource_Synced';
+import { MetaobjectDefinition } from './MetaobjectDefinition';
 import { Shop } from './Shop';
 
 // #endregion
@@ -86,20 +83,21 @@ interface AllArgs extends BaseContext {
   cursor?: string;
   fields?: FieldsArgs;
 }
-
 // #endregion
 
 export class Metaobject extends AbstractGraphQlResource_Synced {
   public apiData: ResultOf<typeof metaobjectFragment>;
 
   static readonly displayName = 'Metaobject' as ResourceDisplayName;
+  protected static graphQlName = GraphQlResourceName.Metaobject;
+
+  protected static defaultMaxEntriesPerRun: number = 50;
   protected static paths: Array<GraphQlResourcePath> = [
     'metaobject',
     'metaobjects.nodes',
     'metaobjectCreate.metaobject',
     'metaobjectUpdate.metaobject',
   ];
-  protected static defaultMaxEntriesPerRun: number = 50;
 
   public static encodeDynamicUrl(metaobjectDefinition: ResultOf<typeof metaobjectDefinitionFragment>): string {
     return graphQlGidToId(metaobjectDefinition.id).toString();
@@ -117,17 +115,21 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
 
   public static async getDynamicSchema({ context }: GetSchemaArgs) {
     const { id: metaobjectDefinitionId } = Metaobject.decodeDynamicUrl(context.sync.dynamicUrl);
-    const metaobjectDefinition = await fetchSingleMetaObjectDefinition(
-      {
-        gid: metaobjectDefinitionId,
-        includeCapabilities: true,
-        includeFieldDefinitions: true,
+    const metaobjectDefinition = await MetaobjectDefinition.find({
+      context,
+      id: metaobjectDefinitionId,
+      fields: {
+        fieldDefinitions: true,
+        capabilities: true,
       },
-      context
+      options: { cacheTtlSecs: CACHE_DISABLED },
+    });
+    const { displayNameKey, capabilities } = metaobjectDefinition.apiData;
+    const fieldDefinitions = readFragment(
+      metaobjectFieldDefinitionFragment,
+      metaobjectDefinition.apiData.fieldDefinitions
     );
-    const { displayNameKey } = metaobjectDefinition;
-    const fieldDefinitions = readFragment(metaobjectFieldDefinitionFragment, metaobjectDefinition.fieldDefinitions);
-    const isPublishable = metaobjectDefinition.capabilities?.publishable?.enabled;
+    const isPublishable = capabilities?.publishable?.enabled;
     let defaultDisplayProperty = 'handle';
 
     let augmentedSchema = deepCopy(this.getStaticSchema());
@@ -166,10 +168,10 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<Metaobject, typeof Sync_Metaobjects>): SyncFunctionGraphQl {
+  }: MakeSyncFunctionArgsGraphQl<Metaobject, typeof Sync_Metaobjects>): SyncTableManagerSyncFunction {
     const fields: AllArgs['fields'] = {
       capabilities: syncTableManager.effectiveStandardFromKeys.includes('status'),
       definition: false,
@@ -181,10 +183,12 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
       const type =
         syncTableManager.prevContinuation?.extraContinuationData?.type ??
         (
-          await fetchSingleMetaObjectDefinition({ gid: metaobjectDefinitionId }, context, {
-            cacheTtlSecs: CACHE_DEFAULT,
+          await MetaobjectDefinition.find({
+            context,
+            id: metaobjectDefinitionId,
+            options: { cacheTtlSecs: CACHE_DEFAULT },
           })
-        ).type;
+        ).apiData?.type;
 
       syncTableManager.extraContinuationData = {
         type,
@@ -232,6 +236,7 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
     maxEntriesPerRun = null,
     cursor = null,
     fields = {},
+    type = null,
     options,
     ...otherArgs
   }: AllArgs): Promise<FindAllResponse<Metaobject>> {
@@ -244,7 +249,7 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
         cursor,
         searchQuery,
 
-        type: undefined, // will be set at executeSync()
+        type,
         includeCapabilities: fields?.capabilities ?? true,
         includeDefinition: fields?.definition ?? true,
         includeFieldDefinitions: fields?.fieldDefinitions ?? true,
@@ -304,14 +309,18 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
     context: coda.SyncExecutionContext
   ) {
     const { id: metaObjectDefinitionId } = this.decodeDynamicUrl(context.sync.dynamicUrl);
-    const definition = await fetchSingleMetaObjectDefinition(
-      { gid: metaObjectDefinitionId, includeFieldDefinitions: true },
+    const metaobjectDefinition = await MetaobjectDefinition.find({
       context,
-      { cacheTtlSecs: CACHE_DEFAULT }
+      id: metaObjectDefinitionId,
+      fields: { fieldDefinitions: true },
+      options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+
+    const fieldDefinitions = readFragmentArray(
+      metaobjectFieldDefinitionFragment,
+      metaobjectDefinition.apiData.fieldDefinitions
     );
-    const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, definition.fieldDefinitions);
     const metaobjectFields = await this.formatMetaobjectFieldsFromRow(newRow, fieldDefinitions, context);
-    // const metaobjectFields = await this.formatMetaobjectFieldsFromRow(newRow, fieldDefinitions, context);
     const instance = new Metaobject({
       context,
       fromRow: {
@@ -323,44 +332,6 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
     await instance.saveAndUpdate();
     return { ...prevRow, ...instance.formatToRow() };
   }
-
-  // public static async syncUpdate(
-  //   codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-  //   updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
-  //   context: coda.SyncExecutionContext
-  // ): Promise<SyncTableUpdateResult> {
-  //   const schema = await this.getArraySchema({ context, codaSyncParams });
-  //   const { id: metaObjectDefinitionId } = this.decodeDynamicUrl(context.sync.dynamicUrl);
-  //   const definition = await fetchSingleMetaObjectDefinition(
-  //     { gid: metaObjectDefinitionId, includeFieldDefinitions: true },
-  //     context,
-  //     { cacheTtlSecs: CACHE_DEFAULT }
-  //   );
-
-  //   const completed = await Promise.allSettled(
-  //     updates.map(async (update) => {
-  //       const includedProperties = arrayUnique(
-  //         update.updatedFields.concat(this.getRequiredPropertiesForUpdate(schema))
-  //       );
-
-  //       const prevRow = update.previousValue as MetaobjectRow;
-  //       const newRow = Object.fromEntries(
-  //         Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
-  //       ) as MetaobjectRow;
-
-  //       newRow._definitionCache = definition;
-
-  //       return this.handleRowUpdate(prevRow, newRow, context);
-  //     })
-  //   );
-
-  //   return {
-  //     result: completed.map((job) => {
-  //       if (job.status === 'fulfilled') return job.value;
-  //       else return job.reason;
-  //     }),
-  //   };
-  // }
 
   public static parseMetaobjectFieldsFromVarArgs(varargs: Array<any>) {
     const fields: Array<MetaobjectField> = [];
@@ -383,30 +354,39 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
   }
 
   static async listDynamicSyncTableUrls(context) {
-    const metaobjectDefinitions = await fetchAllMetaObjectDefinitions({}, context);
+    const metaobjectDefinitions = await MetaobjectDefinition.allDataLoop<MetaobjectDefinition>({
+      context,
+      options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+
     return metaobjectDefinitions.length
       ? metaobjectDefinitions
           .map((definition) => ({
-            display: definition.name,
+            display: definition.apiData.name,
             /** Use id instead of type as an identifier because
              * its easier to link back to the metaobject dynamic sync table while using {@link getMetaobjectReferenceSchema} */
-            // value: definition.id,
-            value: Metaobject.encodeDynamicUrl(definition),
+            value: Metaobject.encodeDynamicUrl(definition.apiData),
           }))
           .sort(compareByDisplayKey)
       : [];
   }
 
   static async getDynamicSyncTableName(context: coda.SyncExecutionContext) {
-    const { id } = Metaobject.decodeDynamicUrl(context.sync.dynamicUrl);
-    const { type } = await fetchSingleMetaObjectDefinition({ gid: id }, context);
-    return `${capitalizeFirstChar(type)} Metaobjects`;
+    const metaobjectDefinition = await MetaobjectDefinition.find({
+      context,
+      id: Metaobject.decodeDynamicUrl(context.sync.dynamicUrl).id,
+      options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+    return `${capitalizeFirstChar(metaobjectDefinition.apiData.type)} Metaobjects`;
   }
 
   static async getDynamicSyncTableDisplayUrl(context: coda.SyncExecutionContext) {
-    const { id } = Metaobject.decodeDynamicUrl(context.sync.dynamicUrl);
-    const { type } = await fetchSingleMetaObjectDefinition({ gid: id }, context);
-    return `${context.endpoint}/admin/content/entries/${type}`;
+    const metaobjectDefinition = await MetaobjectDefinition.find({
+      context,
+      id: Metaobject.decodeDynamicUrl(context.sync.dynamicUrl).id,
+      options: { cacheTtlSecs: CACHE_DEFAULT },
+    });
+    return `${context.endpoint}/admin/content/entries/${metaobjectDefinition.apiData.type}`;
   }
 
   /**====================================================================================================================
@@ -415,23 +395,6 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
   constructor(params: MetaobjectConstructorArgs) {
     super(params);
   }
-
-  // public async activate(): Promise<void> {
-  //   const documentNode = activateMetaobjectMutation;
-  //   const variables = {
-  //     locationId: this.graphQlGid,
-  //   } as VariablesOf<typeof documentNode>;
-
-  //   const response = await this.request<typeof documentNode>({
-  //     context: this.context,
-  //     documentNode: documentNode,
-  //     variables: variables,
-  //   });
-
-  //   if (response.body.data.locationActivate?.location) {
-  //     this.apiData = { ...this.apiData, ...response.body.data.locationActivate.location };
-  //   }
-  // }
 
   public async save({ update = false }: SaveArgs): Promise<void> {
     const { primaryKey } = Metaobject;
@@ -489,11 +452,12 @@ export class Metaobject extends AbstractGraphQlResource_Synced {
       fields: metaobjectFields,
       type: row.type,
 
-      handle: isNullOrEmpty(row.handle) ? undefined : row.handle,
-      capabilities: isNullOrEmpty(row.status) ? undefined : { publishable: { status: row.status as MetaobjectStatus } },
+      handle: isNullishOrEmpty(row.handle) ? undefined : row.handle,
+      capabilities: isNullishOrEmpty(row.status)
+        ? undefined
+        : { publishable: { status: row.status as MetaobjectStatus } },
     };
 
-    console.log('apiData', apiData);
     return apiData;
   }
 

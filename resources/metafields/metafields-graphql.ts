@@ -1,6 +1,12 @@
-import { print as printGql } from '@0no-co/graphql.web';
-import { ResultOf, graphql } from '../../utils/graphql';
+// #region Imports
+
+import { TadaDocumentNode } from 'gql.tada';
+import { UnsupportedValueError } from '../../Errors';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { graphql } from '../../utils/graphql';
 import { capitalizeFirstChar } from '../../utils/helpers';
+
+// #endregion
 
 // #region Fragments
 export const metafieldFieldsFragment = graphql(`
@@ -35,40 +41,54 @@ export const metafieldFieldsFragmentWithDefinition = graphql(
     }
   `
 );
+
+const resourceWithMetafieldsFragment = graphql(
+  `
+    fragment ResourceWithMetafields on Node {
+      id
+      ... on HasMetafields {
+        metafields(keys: $metafieldKeys, first: $countMetafields) {
+          nodes {
+            ...MetafieldWithDefinitionFields
+          }
+        }
+      }
+    }
+  `,
+  [metafieldFieldsFragmentWithDefinition]
+);
+
+const ProductVariantWithMetafieldsFragment = graphql(
+  `
+    fragment ProductVariantWithMetafields on ProductVariant {
+      id
+      parentOwner: product {
+        id
+      }
+      metafields(keys: $metafieldKeys, first: $countMetafields) {
+        nodes {
+          ...MetafieldWithDefinitionFields
+        }
+      }
+    }
+  `,
+  [metafieldFieldsFragmentWithDefinition]
+);
 // #endregion
 
 // #region Queries
-/**
- * Create a GraphQl query to get all or some metafields from a specific ressource (except Shop)
- */
-// export const makeQuerySingleResourceMetafieldsByKeys = (graphQlQueryOperation: string) => {
-//   const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
-//   /* Ca nous sert à récupérer l'ID de la ressource parente
-//   (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
-//   let parentOwnerQuery = '';
-//   if (graphQlQueryOperation === 'productVariant') {
-//     parentOwnerQuery = 'parentOwner : product { id }';
-//   }
-
-//   return `
-//     ${MetafieldFieldsFragment}
-
-//     query ${queryName}($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
-//       ${graphQlQueryOperation}(id: $ownerGid) {
-//         id
-//         ${parentOwnerQuery}
-//         metafields(keys: $metafieldKeys, first: $countMetafields) {
-//           nodes {
-//             ...MetafieldFields
-//             definition {
-//               id
-//             }
-//           }
-//         }
-//       }
-//     }
-//   `;
-// };
+export const getSingleMetafieldQuery = graphql(
+  `
+    query GetSingleMetafield($id: ID!) {
+      node(id: $id) {
+        ... on Metafield {
+          ...MetafieldWithDefinitionFields
+        }
+      }
+    }
+  `,
+  [metafieldFieldsFragmentWithDefinition]
+);
 
 /**
  * Get Metafields from multiple nodes by their keys.
@@ -120,7 +140,6 @@ export const getSingleNodeMetafieldsByKeyQuery = graphql(
   `,
   [metafieldFieldsFragmentWithDefinition]
 );
-export type SingleNodeMetafieldsByKeyResult = ResultOf<typeof getSingleNodeMetafieldsByKeyQuery>;
 
 /**
  * Edge case: Same as querySingleNodeMetafieldsByKey but for Shop, which don't require a Gid.
@@ -141,42 +160,95 @@ export const getShopMetafieldsByKeysQuery = graphql(
   `,
   [metafieldFieldsFragmentWithDefinition]
 );
-export type ShopMetafieldsByKeysResult = ResultOf<typeof getShopMetafieldsByKeysQuery>;
 
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
  */
-export const buildQueryResourceMetafieldsByKeys = (graphQlQueryOperation: string, requestAllMetafields = false) => {
-  const queryName = `Get${capitalizeFirstChar(graphQlQueryOperation)}Metafields`;
-  /* Ca nous sert à récupérer l'ID de la ressource parente
-  (exemple: le produit parent d'une variante) pour pouvoir générer l'admin url */
-  let parentOwnerQuery = '';
-  if (graphQlQueryOperation === 'productVariants') {
-    parentOwnerQuery = 'parentOwner : product { id }';
-  }
-
-  return `
-    ${printGql(metafieldFieldsFragmentWithDefinition)}
-
-    query ${queryName}($metafieldKeys: [String!], $countMetafields: Int!, $maxEntriesPerRun: Int!, $cursor: String) {
-      ${graphQlQueryOperation}(first: $maxEntriesPerRun, after: $cursor) {
-        nodes {
-          id
-          ${parentOwnerQuery}
-          metafields(keys: $metafieldKeys, first: $countMetafields) {
-            nodes {
-              ...MetafieldWithDefinitionFields
-            }
+function makeResourceMetafieldsByKeysQuery<T extends string, K extends TadaDocumentNode>(graphQlOperation: T, lol?: K) {
+  const queryName = `Get${capitalizeFirstChar(graphQlOperation)}MetafieldsByKeys`;
+  return graphql(
+    `
+      query GetResourceMetafieldsByKeys(
+        $metafieldKeys: [String!]
+        $countMetafields: Int!
+        $maxEntriesPerRun: Int!
+        $cursor: String
+      ) {
+        ${graphQlOperation}(first: $maxEntriesPerRun, after: $cursor) {
+          nodes {
+            ...ResourceWithMetafields
+          }
+          pageInfo {
+            ...PageInfoFields
           }
         }
+      }
+    `,
+    [resourceWithMetafieldsFragment, pageInfoFragment]
+  );
+}
+
+const queryFileMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('files');
+const queryCollectionMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('collections');
+const queryCustomerMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('customers');
+const queryDraftOrderMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('draftOrders');
+const queryLocationMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('locations');
+const queryOrderMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('orders');
+const queryProductVariantMetafieldsByKeys = graphql(
+  `
+    query GetProductVariantsMetafieldsByKeys(
+      $metafieldKeys: [String!]
+      $countMetafields: Int!
+      $maxEntriesPerRun: Int!
+      $cursor: String
+    ) {
+      productVariants(first: $maxEntriesPerRun, after: $cursor) {
+        nodes {
+          ...ProductVariantWithMetafields
+        }
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
-  `;
-};
+  `,
+  [ProductVariantWithMetafieldsFragment, pageInfoFragment]
+);
+const queryProductMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('products');
+
+/**
+ * Returns the appropriate GraphQL DocumentNode based on the given MetafieldOwnerType.
+ *
+ * @param {MetafieldOwnerType} metafieldOwnerType - The type of the metafield owner.
+ * @return {TadaDocumentNode} The DocumentNode query corresponding to the owner type.
+ * @throws {Error} If there is no matching DocumentNode for the given MetafieldOwnerType.
+ */
+export function getResourceMetafieldsByKeysQueryFromOwnerType(
+  metafieldOwnerType: MetafieldOwnerType
+): TadaDocumentNode {
+  switch (metafieldOwnerType) {
+    case MetafieldOwnerType.Shop:
+      return getShopMetafieldsByKeysQuery;
+    case MetafieldOwnerType.Collection:
+      return queryCollectionMetafieldsByKeys;
+    case MetafieldOwnerType.Customer:
+      return queryCustomerMetafieldsByKeys;
+    case MetafieldOwnerType.Draftorder:
+      return queryDraftOrderMetafieldsByKeys;
+    case MetafieldOwnerType.Location:
+      return queryLocationMetafieldsByKeys;
+    case MetafieldOwnerType.MediaImage:
+      return queryFileMetafieldsByKeys;
+    case MetafieldOwnerType.Order:
+      return queryOrderMetafieldsByKeys;
+    case MetafieldOwnerType.Product:
+      return queryProductMetafieldsByKeys;
+    case MetafieldOwnerType.Productvariant:
+      return queryProductVariantMetafieldsByKeys;
+  }
+
+  throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
+}
 // #endregion
 
 // #region Mutations
@@ -185,6 +257,11 @@ export const setMetafieldsMutation = graphql(
     mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $inputs) {
         metafields {
+          owner {
+            ... on Node {
+              id
+            }
+          }
           ...MetafieldWithDefinitionFields
         }
         userErrors {

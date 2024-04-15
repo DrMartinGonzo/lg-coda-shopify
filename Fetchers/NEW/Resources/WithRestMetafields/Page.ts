@@ -22,7 +22,7 @@ import {
   AbstractResource_Synced_HasMetafields,
   RestApiDataWithMetafields,
 } from '../../AbstractResource_Synced_HasMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { SyncTableRestHasRestMetafields } from '../../SyncTableRestHasRestMetafields';
 import { SearchParams } from '../../RestClientNEW';
 
@@ -69,7 +69,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
 
   static readonly displayName = 'Page' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.OnlineStorePage;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'page';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'page';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
   static readonly supportsDefinitions = true;
 
@@ -102,7 +102,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -217,11 +217,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
     });
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Page.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -236,10 +232,7 @@ export class Page extends AbstractResource_Synced_HasMetafields {
       ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/pages/${apiData.id}`,
       body: striptags(apiData.body_html),
-      created_at: new Date(apiData.created_at),
-      published_at: new Date(apiData.published_at),
       published: !!apiData.published_at,
-      updated_at: new Date(apiData.updated_at),
     };
 
     if (!!apiData.published_at && apiData.handle) {

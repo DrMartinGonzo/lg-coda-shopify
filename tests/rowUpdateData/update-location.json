@@ -12,6 +12,6 @@
       "phone": "+33154748433",
       "lgs_meta__custom.test_metafield": "un-test-encore NEW NEW"
     },
-    "updatedFields": ["phone"]
+    "updatedFields": ["phone", "lgs_meta__custom.test_metafield"]
   }
 ]

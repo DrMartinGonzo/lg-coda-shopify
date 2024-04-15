@@ -1,14 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { DraftOrder } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/DraftOrder';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 
 // #endregion
 
@@ -22,8 +21,7 @@ export const Sync_DraftOrders = coda.makeSyncTable({
   schema: DraftOrderSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return DraftOrder.getDynamicSchema({ context, codaSyncParams });
+      return DraftOrder.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -32,8 +30,9 @@ export const Sync_DraftOrders = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link DraftOrder.getDynamicSchema}
-     *  - {@link DraftOrder.makeSyncFunction}
+     *  - {@link DraftOrder.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -93,7 +92,6 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
   // schema: coda.withIdentity(ArticleSchema, Identity.Article),
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId, email, note, tags, metafields], context) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<DraftOrderRow> = {
       row: {
         // name: undefined, // shut up the typescript error
@@ -102,7 +100,11 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
         note,
         tags: tags ? tags.join(',') : undefined,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: draftOrderId, owner_resource: DraftOrder.metafieldRestOwnerType })
+      ),
     };
 
     const updatedDraftOrder = new DraftOrder({ context, fromRow });

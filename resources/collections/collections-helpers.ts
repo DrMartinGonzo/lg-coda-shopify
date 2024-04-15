@@ -1,10 +1,9 @@
-import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { VariablesOf } from '../../utils/graphql';
 
 import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { GraphQlClientNEW } from '../../Fetchers/NEW/GraphQlClientNEW';
 import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../../constants';
-import { makeGraphQlRequest } from '../../helpers-graphql';
 import { collectionTypeQuery, collectionTypesQuery } from './collections-graphql';
 
 /**
@@ -19,17 +18,22 @@ export async function getCollectionType(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const payload = {
-    query: printGql(collectionTypeQuery),
-    variables: {
-      collectionGid,
-    } as VariablesOf<typeof collectionTypeQuery>,
-  };
-  // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest<typeof collectionTypeQuery>(
-    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
-    context
-  );
+  const documentNode = collectionTypeQuery;
+  const variables = {
+    collectionGid,
+  } as VariablesOf<typeof documentNode>;
+
+  const graphQlClient = new GraphQlClientNEW({ context });
+  const response = await graphQlClient.request<typeof documentNode>({
+    documentNode,
+    variables,
+    retries: this.prevContinuation?.retries ?? 0,
+    options: {
+      // Cache max if unspecified because the collection type cannot be changed after creation
+      cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX,
+    },
+  });
+
   // TODO: return 'better' values, rest resources ones or GraphQl ones
   return response.body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
 }
@@ -46,17 +50,22 @@ export async function getCollectionTypes(
   context: coda.ExecutionContext,
   requestOptions: FetchRequestOptions = {}
 ) {
-  const payload = {
-    query: printGql(collectionTypesQuery),
-    variables: {
-      ids: collectionGids,
-    } as VariablesOf<typeof collectionTypesQuery>,
-  };
-  // Cache max if unspecified because the collection type cannot be changed after creation
-  const { response } = await makeGraphQlRequest<typeof collectionTypesQuery>(
-    { ...requestOptions, payload, cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX },
-    context
-  );
+  const documentNode = collectionTypesQuery;
+  const variables = {
+    ids: collectionGids,
+  } as VariablesOf<typeof documentNode>;
+
+  const graphQlClient = new GraphQlClientNEW({ context });
+  const response = await graphQlClient.request<typeof documentNode>({
+    documentNode,
+    variables,
+    retries: this.prevContinuation?.retries ?? 0,
+    options: {
+      // Cache max if unspecified because the collection type cannot be changed after creation
+      cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX,
+    },
+  });
+
   // TODO: return 'better' values, rest resources ones or GraphQl ones
   return response?.body?.data?.nodes
     .map((node) => {

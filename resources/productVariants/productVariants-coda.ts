@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { Product } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Product';
 import { Variant } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Variant';
 import { CACHE_DEFAULT, Identity } from '../../constants';
@@ -10,7 +10,6 @@ import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 
 // #endregion
 
@@ -24,8 +23,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Variant.getDynamicSchema({ context, codaSyncParams });
+      return Variant.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -34,6 +32,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Variant.getDynamicSchema}
      *  - {@link Product.generateSharedSyncFunction}
      */
@@ -120,7 +119,6 @@ export const Action_CreateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ProductVariantRow> = {
       row: {
         product: formatProductReference(product_id),
@@ -136,7 +134,11 @@ export const Action_CreateProductVariant = coda.makeFormula({
         weight,
         weight_unit,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Variant.metafieldRestOwnerType })
+      ),
     };
 
     const newVariant = new Variant({ context, fromRow });
@@ -192,7 +194,6 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ProductVariantRow> = {
       row: {
         id: productVariantId,
@@ -208,7 +209,11 @@ export const Action_UpdateProductVariant = coda.makeFormula({
         weight,
         weight_unit,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: productVariantId, owner_resource: Variant.metafieldRestOwnerType })
+      ),
     };
 
     const updatedVariant = new Variant({ context, fromRow });

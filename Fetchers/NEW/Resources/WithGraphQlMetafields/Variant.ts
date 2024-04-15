@@ -16,7 +16,7 @@ import { BaseContext, FindAllResponse, ResourceDisplayName } from '../../Abstrac
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
 import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { Shop } from '../Shop';
 import { Product } from './Product';
 
@@ -76,7 +76,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Product Variant' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.ProductVariant;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'variant';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'variant';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
   static readonly supportsDefinitions = true;
 
@@ -109,7 +109,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
   }
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [product_type, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    const [, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
     let augmentedSchema = deepCopy(ProductVariantSyncTableSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(
@@ -197,11 +197,7 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
     }
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Variant.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -219,8 +215,6 @@ export class Variant extends AbstractResource_Synced_HasMetafields_GraphQl {
       product: formatProductReference(apiData.product_id),
       price: apiData.price ? parseFloat(apiData.price) : undefined,
       compare_at_price: apiData.compare_at_price ? parseFloat(apiData.compare_at_price) : undefined,
-      created_at: new Date(apiData.created_at),
-      updated_at: new Date(apiData.updated_at),
     };
 
     // throw new Error('d');

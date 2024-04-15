@@ -1,25 +1,9 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
-import { ResourceUnion } from '../resources/Resource.types';
 
 // #endregion
 
-export function handleDeleteNotFound(resource: ResourceUnion, identifier: number | string) {
-  console.error(`${resource.display} \`${identifier}\` not found. Possibly already deleted.`);
-}
-export function handleDeleteNotFoundNEW(name: string, identifier: number | string) {
+export function handleDeleteNotFound(name: string, identifier: number | string) {
   console.error(`${name} \`${identifier}\` not found. Possibly already deleted.`);
-}
-export function handleDeleteError(error: any, resource: ResourceUnion, id: number | string) {
-  // If the request failed because the server returned a 300+ status code.
-  if (coda.StatusCodeError.isStatusCodeError(error)) {
-    const statusError = error as coda.StatusCodeError;
-    if (statusError.statusCode === 404) {
-      handleDeleteNotFound(resource, id);
-    }
-  }
-  // The request failed for some other reason. Re-throw the error so that it bubbles up.
-  throw error;
 }
 
 export type Stringified<T> = string & {

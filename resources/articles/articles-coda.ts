@@ -1,16 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 import { Article } from '../../Fetchers/NEW/Resources/WithRestMetafields/Article';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
 import { parseOptionId } from '../../utils/helpers';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
-import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
@@ -22,8 +21,7 @@ export const Sync_Articles = coda.makeSyncTable({
   schema: ArticleSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Article.getDynamicSchema({ context, codaSyncParams });
+      return Article.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -37,8 +35,9 @@ export const Sync_Articles = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Article.getDynamicSchema}
-     *  - {@link Article.makeSyncFunction}
+     *  - {@link Article.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       {
@@ -114,7 +113,6 @@ export const Action_CreateArticle = coda.makeFormula({
     context
   ) => {
     const defaultPublishedStatus = false;
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ArticleRow> = {
       row: {
         author,
@@ -130,7 +128,11 @@ export const Action_CreateArticle = coda.makeFormula({
         template_suffix,
         title,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Article.metafieldRestOwnerType })
+      ),
     };
 
     const newArticle = new Article({ context, fromRow });
@@ -189,7 +191,6 @@ export const Action_UpdateArticle = coda.makeFormula({
     ],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ArticleRow> = {
       row: {
         id: articleId,
@@ -206,7 +207,11 @@ export const Action_UpdateArticle = coda.makeFormula({
         image_alt_text: imageAlt,
         image_url: imageUrl,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: articleId, owner_resource: Article.metafieldRestOwnerType })
+      ),
     };
 
     const updatedArticle = new Article({ context, fromRow });

@@ -1,16 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
+import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 import { Product } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Product';
 import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, Identity } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { fetchProductTypesGraphQl } from './products-functions';
-import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
 
 // #endregion
 
@@ -25,8 +24,7 @@ export const Sync_Products = coda.makeSyncTable({
   schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Product.getDynamicSchema({ context, codaSyncParams });
+      return Product.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -44,6 +42,7 @@ export const Sync_Products = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Product.getDynamicSchema}
      *  - {@link Product.generateSharedSyncFunction}
      */
@@ -101,7 +100,6 @@ export const Action_CreateProduct = coda.makeFormula({
     [title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, options, imageUrls, metafields],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ProductRow> = {
       row: {
         title,
@@ -115,7 +113,11 @@ export const Action_CreateProduct = coda.makeFormula({
         options: options.join(','),
         images: imageUrls,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Product.metafieldRestOwnerType })
+      ),
     };
 
     const newProduct = new Product({ context, fromRow });
@@ -156,7 +158,6 @@ export const Action_UpdateProduct = coda.makeFormula({
     [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<ProductRow> = {
       row: {
         id: productId,
@@ -169,7 +170,11 @@ export const Action_UpdateProduct = coda.makeFormula({
         vendor,
         status,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: productId, owner_resource: Product.metafieldRestOwnerType })
+      ),
     };
 
     const updatedProduct = new Product({ context, fromRow });

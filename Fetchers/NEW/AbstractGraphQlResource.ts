@@ -3,25 +3,16 @@ import * as coda from '@codahq/packs-sdk';
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { Body } from '@shopify/shopify-api/rest/types';
 import { TadaDocumentNode } from 'gql.tada';
-import { FragmentOf, ResultOf, VariablesOf, readFragment } from '../../utils/graphql';
+import { FragmentOf, ResultOf, VariablesOf } from '../../utils/graphql';
 
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../config/config';
+import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { graphQlGidToId } from '../../helpers-graphql';
-import { GraphQlResourceName, RestResourceSingular } from '../../resources/ShopifyResource.types';
-import { fetchMetafieldDefinitionsGraphQl } from '../../resources/metafieldDefinitions/metafieldDefinitions-functions';
-import { metafieldDefinitionFragment } from '../../resources/metafieldDefinitions/metafieldDefinitions-graphql';
+import { GraphQlResourceName } from '../../resources/ShopifyResource.types';
 import { metafieldFieldsFragment } from '../../resources/metafields/metafields-graphql';
-import { hasMetafieldsInRow } from '../../resources/metafields/utils/metafields-utils';
-import { formatMetaFieldValueForSchema } from '../../resources/metafields/utils/metafields-utils-formatToRow';
-import { getMetafieldKeyValueSetsFromUpdate } from '../../resources/metafields/utils/metafields-utils-keyValueSets';
-import {
-  getMetaFieldFullKey,
-  preprendPrefixToMetaFieldKey,
-} from '../../resources/metafields/utils/metafields-utils-keys';
 import { BaseRow } from '../../schemas/CodaRows.types';
-import { MetafieldInput, MetafieldOwnerType, PageInfo } from '../../types/admin.types';
+import { PageInfo } from '../../types/admin.types';
 import { arrayUnique, getObjectSchemaEffectiveKey, transformToArraySchema } from '../../utils/helpers';
-import { FetchRequestOptions } from '../Fetcher.types';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../SyncTable/SyncTable.types';
 import { BaseContext, ResourceDisplayName } from './AbstractResource';
 import {
@@ -35,7 +26,6 @@ import { ShopifyGraphQlRequestCost } from './GraphQLError';
 import { GraphQlClientNEW, GraphQlRequestReturn } from './GraphQlClientNEW';
 import { Metafield } from './Resources/Metafield';
 import { SyncTableGraphQlNew } from './SyncTableGraphQlNew';
-import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../constants';
 // import { RestResourceError } from '@shopify/shopify-api';
 
 // #endregion
@@ -48,13 +38,9 @@ interface BaseConstructorArgs {
   fromData?: Body | null;
 }
 
-interface GraphQlApiData {
+export interface GraphQlApiData {
   id: string | null;
   [key: string]: any;
-}
-export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
-  metafields: { nodes: Array<FragmentOf<typeof metafieldFieldsFragment>> };
-  restMetafieldInstances?: Array<Metafield>;
 }
 
 interface BaseArgs<NodeT extends TadaDocumentNode> {
@@ -71,7 +57,7 @@ interface RequestArgs<NodeT extends TadaDocumentNode> extends BaseArgs<NodeT>, B
 export interface SaveArgs {
   update?: boolean;
 }
-interface BaseSaveArgs<NodeT extends TadaDocumentNode> extends SaveArgs, BaseArgs<NodeT> {}
+export interface BaseSaveArgs<NodeT extends TadaDocumentNode> extends SaveArgs, BaseArgs<NodeT> {}
 
 export interface FindAllResponse<T = AbstractGraphQlResource> {
   data: T[];
@@ -91,7 +77,7 @@ export type MakeSyncFunctionArgsGraphQl<
   syncTableManager?: SyncTableManagerT;
 };
 
-export type SyncFunctionGraphQl = ({
+export type SyncTableManagerSyncFunction = ({
   cursor,
   maxEntriesPerRun,
 }: {
@@ -101,19 +87,16 @@ export type SyncFunctionGraphQl = ({
 // #endregion
 
 export abstract class AbstractGraphQlResource {
-  // TODO: remove ?
-  // For instance attributes
-  [key: string]: any;
-
-  protected static resourceName: ResourceDisplayName;
-  protected static paths: Array<GraphQlResourcePath> = [];
-  protected static defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
+  static readonly displayName: ResourceDisplayName;
 
   protected static Client = GraphQlClientNEW;
   protected static apiVersion = GRAPHQL_DEFAULT_API_VERSION;
 
   protected static primaryKey = 'id';
   protected static graphQlName: GraphQlResourceName | undefined;
+  protected static defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
+  protected static paths: Array<GraphQlResourcePath> = [];
+
   protected static readOnlyAttributes: string[] = [];
 
   /** The effective schema for the sync. Can be an augmented schema with metafields */
@@ -239,6 +222,36 @@ export abstract class AbstractGraphQlResource {
     return instance;
   }
 
+  /**
+   * To be implemented by child class
+   */
+  public static async all(params: any): Promise<FindAllResponse<AbstractGraphQlResource>> {
+    return;
+  }
+
+  public static async allDataLoop<T extends AbstractGraphQlResource>({ context, ...otherArgs }): Promise<Array<T>> {
+    let items: Array<T> = [];
+    let nextCursor: string;
+    let run = true;
+
+    while (run) {
+      const response = await this.all({ context, cursor: nextCursor, ...otherArgs });
+      const { pageInfo } = response;
+      response.data;
+
+      items = items.concat(response.data as unknown as T);
+      if (pageInfo?.hasNextPage) {
+        nextCursor = pageInfo.endCursor;
+      } else {
+        nextCursor = undefined;
+      }
+
+      if (nextCursor === undefined) run = false;
+    }
+
+    return items;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -339,22 +352,22 @@ export abstract class AbstractGraphQlResource_Synced extends AbstractGraphQlReso
     return this._schemaCache;
   }
 
-  /**
-   * Generate a sync function to be used by a SyncTableManager.
-   * Must be implemented by child class
-   */
-  protected static makeSyncFunction(
-    params: MakeSyncFunctionArgsGraphQl<AbstractGraphQlResource_Synced, any>
-  ): SyncFunctionGraphQl {
-    return;
-  }
-
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableGraphQlNew<AbstractGraphQlResource>> {
+  ): Promise<SyncTableGraphQlNew<AbstractGraphQlResource_Synced>> {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableGraphQlNew<AbstractGraphQlResource>(schema, codaSyncParams, context);
+    return new SyncTableGraphQlNew<AbstractGraphQlResource_Synced>(schema, codaSyncParams, context);
+  }
+
+  /**
+   * Generate a sync function to be used by a SyncTableManager.
+   * Should be overridden by subclasses
+   */
+  protected static makeSyncTableManagerSyncFunction(
+    params: MakeSyncFunctionArgsGraphQl<AbstractGraphQlResource_Synced, any>
+  ): SyncTableManagerSyncFunction {
+    return ({ cursor = null, maxEntriesPerRun }) => this.all({ cursor, maxEntriesPerRun, ...params });
   }
 
   public static async sync(
@@ -362,14 +375,14 @@ export abstract class AbstractGraphQlResource_Synced extends AbstractGraphQlReso
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
     const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncFunction({ codaSyncParams, context, syncTableManager });
+    const syncFunction = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
 
     const { response, continuation } = await syncTableManager.executeSync({
       sync: syncFunction,
       defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
     });
     return {
-      result: response.data.map((data) => data.formatToRow()),
+      result: response.data.map((data: AbstractGraphQlResource_Synced) => data.formatToRow()),
       continuation,
     };
   }
@@ -430,127 +443,5 @@ export abstract class AbstractGraphQlResource_Synced extends AbstractGraphQlReso
 
   protected setDataFromRow(fromRow: FromRow): void {
     this.setData(this.formatToApi(fromRow));
-  }
-}
-
-export abstract class AbstractGraphQlResource_Synced_HasMetafields extends AbstractGraphQlResource_Synced {
-  public apiData: GraphQlApiDataWithMetafields;
-
-  protected static readonly metafieldGraphQlOwnerType: MetafieldOwnerType | undefined;
-  protected static metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>;
-
-  // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields
-  protected static async getMetafieldDefinitions(
-    context: coda.ExecutionContext,
-    includeFakeExtraDefinitions?: boolean
-  ) {
-    if (this.metafieldDefinitions) return this.metafieldDefinitions;
-    this.metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-      { ownerType: this.metafieldGraphQlOwnerType, includeFakeExtraDefinitions },
-      context
-    );
-    return this.metafieldDefinitions;
-  }
-
-  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    if (hasMetafieldsInRow(newRow)) {
-      const metafieldDefinitions = await this.getMetafieldDefinitions(context);
-      const metafieldSets = await getMetafieldKeyValueSetsFromUpdate(newRow, metafieldDefinitions, context);
-      const instance: AbstractGraphQlResource_Synced_HasMetafields = new (this as any)({
-        context,
-        fromRow: {
-          row: newRow,
-          metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set, newRow.id)),
-        },
-      });
-      await instance.saveAndUpdate();
-      return { ...prevRow, ...instance.formatToRow() };
-    }
-
-    return super.handleRowUpdate(prevRow, newRow, context);
-  }
-
-  /**====================================================================================================================
-   *    Instance Methods
-   *===================================================================================================================== */
-  // TODO: fix any
-  protected setData(data: typeof this.apiData): void {
-    this.apiData = data;
-
-    /**
-     * Convert GraphQl Metafields to Rest Metafields
-     */
-    if (data.metafields?.nodes && data.metafields.nodes.length) {
-      this.apiData.restMetafieldInstances = data.metafields.nodes.map((m) =>
-        Metafield.createInstanceFromGraphQlMetafield(this.context, m, data.id)
-      );
-    }
-  }
-
-  protected async _baseSave<NodeT extends TadaDocumentNode>({
-    update = false,
-    documentNode,
-    variables,
-  }: BaseSaveArgs<NodeT> & { variables: { metafields?: Array<MetafieldInput> } }): Promise<void> {
-    const { restMetafieldInstances } = this.apiData;
-
-    if (restMetafieldInstances && restMetafieldInstances.length) {
-      const staticOwnerResource = this.resource<typeof AbstractGraphQlResource_Synced_HasMetafields>();
-      const { primaryKey } = staticOwnerResource;
-      const isUpdate = this.apiData[primaryKey];
-
-      /**
-       * When performing an update on a GraphQl resource, we must
-       * create/update/delete metafields individually using Rest, as its easier
-       * since it doesn't require to know the metafield ID in advance
-       */
-      if (isUpdate) {
-        const newMetafields = await Promise.all(
-          restMetafieldInstances.map(async (m: Metafield) => {
-            await m.saveAndUpdate();
-            return m;
-          })
-        );
-
-        await super._baseSave({ update, documentNode, variables });
-        if (update) this.apiData.restMetafieldInstances = newMetafields;
-        return;
-      }
-      //
-      /**
-       * When creating a resource, we can create the metafields in bulk directly
-       * on the main request. We have to use the metafields data and not the
-       * Metafield instances themselves.
-       * */
-      else {
-        variables.metafields = this.apiData.restMetafieldInstances.map((metafield: Metafield) => {
-          const { key, namespace, type, value } = metafield.apiData;
-          return {
-            key,
-            namespace,
-            type,
-            value,
-          };
-        });
-      }
-    }
-
-    await super._baseSave({ update, documentNode, variables });
-  }
-
-  // TODO: remove ?
-  protected formatMetafields() {
-    const formattedMetafields: Record<string, any> = {};
-    if (this.apiData.metafields?.nodes) {
-      const metafields = readFragment(
-        metafieldFieldsFragment,
-        this.apiData.metafields.nodes as Array<FragmentOf<typeof metafieldFieldsFragment>>
-      );
-      metafields.forEach((metafield) => {
-        const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-        formattedMetafields[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-      });
-    }
-    return formattedMetafields;
   }
 }

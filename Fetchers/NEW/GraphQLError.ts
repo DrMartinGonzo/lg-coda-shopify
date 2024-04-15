@@ -37,17 +37,21 @@ interface ShopifyGraphQlGenericError {
   path: Array<string | number>;
 }
 
+export type ShopifyThrottledErrorCode = 'THROTTLED';
+export type ShopifyMaxCostExceededErrorCode = 'MAX_COST_EXCEEDED';
+export type ShopifyGraphQlErrorCode = ShopifyThrottledErrorCode | ShopifyMaxCostExceededErrorCode;
+
 export interface ShopifyGraphQlThrottledError {
   message: string;
   extensions: {
-    code: 'THROTTLED';
+    code: ShopifyThrottledErrorCode;
     documentation: string;
   };
 }
 export interface ShopifyGraphQlMaxCostExceededError {
   message: string;
   extensions: {
-    code: 'MAX_COST_EXCEEDED';
+    code: ShopifyMaxCostExceededErrorCode;
     cost: number;
     maxCost: number;
     documentation: string;

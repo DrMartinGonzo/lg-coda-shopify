@@ -1,15 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
 import { Customer } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Customer';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
 import { formatPersonDisplayValue } from '../../utils/helpers';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 
 // #endregion
 
@@ -23,8 +22,7 @@ export const Sync_Customers = coda.makeSyncTable({
   schema: CustomerSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return Customer.getDynamicSchema({ context, codaSyncParams });
+      return Customer.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -33,8 +31,9 @@ export const Sync_Customers = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link Customer.getDynamicSchema}
-     *  - {@link Customer.makeSyncFunction}
+     *  - {@link Customer.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -102,7 +101,6 @@ export const Action_CreateCustomer = coda.makeFormula({
       throw new coda.UserVisibleError('Customer must have a name, phone number or email address.');
     }
 
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<CustomerRow> = {
       row: {
         email,
@@ -114,7 +112,11 @@ export const Action_CreateCustomer = coda.makeFormula({
         accepts_email_marketing,
         accepts_sms_marketing,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Customer.metafieldRestOwnerType })
+      ),
     };
 
     const newCustomer = new Customer({ context, fromRow });
@@ -174,7 +176,6 @@ export const Action_UpdateCustomer = coda.makeFormula({
     ],
     context
   ) {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<CustomerRow> = {
       row: {
         id: customerId,
@@ -188,7 +189,11 @@ export const Action_UpdateCustomer = coda.makeFormula({
         phone,
         tags: tags ? tags.join(',') : undefined,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: customerId, owner_resource: Customer.metafieldRestOwnerType })
+      ),
     };
 
     const updatedCustomer = new Customer({ context, fromRow });

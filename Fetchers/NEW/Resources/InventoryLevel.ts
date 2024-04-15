@@ -79,7 +79,7 @@ export class InventoryLevel extends AbstractResource_Synced {
     return InventoryLevelSyncTableSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
   }: MakeSyncFunctionArgs<InventoryLevel, typeof Sync_InventoryLevels>): SyncFunction {
@@ -247,7 +247,6 @@ export class InventoryLevel extends AbstractResource_Synced {
       ...apiData,
       id: [apiData.inventory_item_id, apiData.location_id].join(','),
       inventory_history_url: `${this.context.endpoint}/admin/products/inventory/${apiData.inventory_item_id}/inventory_history?location_id=${apiData.location_id}`,
-      updated_at: new Date(apiData.updated_at),
     };
     if (apiData.inventory_item_id) {
       obj.inventory_item = formatInventoryItemReference(apiData.inventory_item_id);

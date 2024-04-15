@@ -42,7 +42,7 @@ import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMeta
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
 import { SearchParams } from '../../RestClientNEW';
 import { SyncTableRestHasGraphQlMetafields } from '../../SyncTableRestHasGraphQlMetafields';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { LineItem } from '../OrderLineItem';
 import { Shop } from '../Shop';
 import { CustomerCodaData } from './Customer';
@@ -211,7 +211,7 @@ export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
 
   static readonly displayName = 'Order' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Order;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'order';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'order';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Order;
   static readonly supportsDefinitions = true;
 
@@ -237,7 +237,7 @@ export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
   }
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [status, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Orders>;
+    const [, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Orders>;
 
     let augmentedSchema = deepCopy(this.getStaticSchema());
     if (syncMetafields) {
@@ -310,7 +310,7 @@ export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
@@ -554,11 +554,7 @@ export class Order extends AbstractResource_Synced_HasMetafields_GraphQl {
     //   };
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Order.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this

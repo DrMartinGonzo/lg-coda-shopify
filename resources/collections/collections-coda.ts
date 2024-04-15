@@ -1,8 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CodaMetafieldKeyValueSetNew } from '../../CodaMetafieldKeyValueSet';
 import { FromRow } from '../../Fetchers/NEW/AbstractResource_Synced';
-import { Metafield } from '../../Fetchers/NEW/Resources/Metafield';
+import { Collection } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/Collection';
 import { MergedCollection } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection';
 import { MergedCollection_Custom } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection_Custom';
 import { MergedCollection_Smart } from '../../Fetchers/NEW/Resources/WithGraphQlMetafields/MergedCollection_Smart';
@@ -13,7 +14,6 @@ import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../../shared-parameters';
 import { GraphQlResourceName } from '../ShopifyResource.types';
-import { parseMetafieldsCodaInput } from '../metafields/utils/metafields-utils-keyValueSets';
 import { getTemplateSuffixesFor } from '../themes/themes-functions';
 import { getCollectionType, getCollectionTypes } from './collections-helpers';
 
@@ -27,8 +27,7 @@ export const Sync_Collections = coda.makeSyncTable({
   schema: CollectionSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      const codaSyncParams = Object.values(formulaContext) as coda.ParamValues<coda.ParamDefs>;
-      return MergedCollection.getDynamicSchema({ context, codaSyncParams });
+      return MergedCollection.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -42,9 +41,10 @@ export const Sync_Collections = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
      *  - {@link MergedCollection.getDynamicSchema}
-     *  - {@link MergedCollection_Custom.makeSyncFunction}
-     *  - {@link MergedCollection_Smart.makeSyncFunction}
+     *  - {@link MergedCollection_Custom.makeSyncTableManagerSyncFunction}
+     *  - {@link MergedCollection_Smart.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -135,7 +135,6 @@ export const Action_CreateCollection = coda.makeFormula({
     context
   ) {
     const defaultPublishedStatus = false;
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<CollectionRow> = {
       row: {
         title,
@@ -146,7 +145,11 @@ export const Action_CreateCollection = coda.makeFormula({
         image_url,
         image_alt_text,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_resource: Collection.metafieldRestOwnerType })
+      ),
     };
 
     const newCustomCollection = new MergedCollection_Custom({ context, fromRow });
@@ -185,7 +188,6 @@ export const Action_UpdateCollection = coda.makeFormula({
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
     context
   ) => {
-    const metafieldSets = parseMetafieldsCodaInput(metafields);
     const fromRow: FromRow<CollectionRow> = {
       row: {
         id: collectionId,
@@ -197,7 +199,11 @@ export const Action_UpdateCollection = coda.makeFormula({
         image_alt_text: imageAlt,
         image_url: imageUrl,
       },
-      metafields: metafieldSets.map((set) => Metafield.createInstancesFromMetafieldSet(context, set)),
+      // prettier-ignore
+      metafields: CodaMetafieldKeyValueSetNew
+        .createFromCodaParameterArray(metafields)
+        .map((s) => s.toMetafield({ context, owner_id: collectionId, owner_resource: Collection.metafieldRestOwnerType })
+      ),
     };
 
     const collectionType = await getCollectionType(

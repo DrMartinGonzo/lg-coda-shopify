@@ -1,21 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { GraphQlResourceName } from '../ShopifyResource.types';
+import { MetafieldDefinition } from '../../Fetchers/NEW/Resources/MetafieldDefinition';
 import { CACHE_DEFAULT, Identity } from '../../constants';
 import { idToGraphQlGid } from '../../helpers-graphql';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../../shared-parameters';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { getResourcesWithMetaFieldDefinitions, requireResourceWithMetaFieldsByOwnerType } from '../resources';
-import { MetafieldDefinitionGraphQlFetcher } from './MetafieldDefinitionGraphQlFetcher';
-import { MetafieldDefinitionSyncTable } from './MetafieldDefinitionSyncTable';
-import {
-  fetchSingleMetafieldDefinitionGraphQl,
-  formatMetafieldDefinitionForSchemaFromGraphQlApi,
-} from './metafieldDefinitions-functions';
-import { resolveSchemaFromContext } from '../../schemas/schema-helpers';
-import { transformToArraySchema } from '../../utils/helpers';
+import { GraphQlResourceName } from '../ShopifyResource.types';
 
 // #endregion
 
@@ -25,43 +16,18 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   description: 'Return Metafield Definitions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: Identity.MetafieldDefinition,
-  listDynamicUrls: async function (context, docUrl: String) {
-    return getResourcesWithMetaFieldDefinitions().map((v) => ({
-      display: v.display,
-      value: v.metafields.ownerType,
-      hasChildren: false,
-    }));
-  },
-  getName: async function (context) {
-    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-    return `${ownerResource.display} MetafieldDefinitions`;
-  },
-  /* Direct access to the metafield definition settings page for the resource */
-  getDisplayUrl: async function (context) {
-    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const ownerResource = requireResourceWithMetaFieldsByOwnerType(metafieldOwnerType);
-    const metafieldDefinitionsUrlPart = ownerResource.rest.singular;
-    return `${context.endpoint}/admin/settings/custom_data/${metafieldDefinitionsUrlPart}/metafields`;
-  },
-  getSchema: async (context, _, formulaContext) => MetafieldDefinitionSyncTableSchema,
+  listDynamicUrls: MetafieldDefinition.listDynamicSyncTableUrls,
+  getName: MetafieldDefinition.getDynamicSyncTableName,
+  getDisplayUrl: MetafieldDefinition.getDynamicSyncTableDisplayUrl,
+  getSchema: async () => MetafieldDefinition.getDynamicSchema(),
   defaultAddDynamicColumns: false,
   formula: {
     name: 'SyncMetafieldDefinitions',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
-    execute: async function (params, context) {
-      const schema = context.sync.schema ?? transformToArraySchema(MetafieldDefinitionSyncTableSchema);
-      const metafieldDefinitionFetcher = new MetafieldDefinitionGraphQlFetcher(context);
-      const metafieldDefinitionSyncTable = new MetafieldDefinitionSyncTable(metafieldDefinitionFetcher, schema, params);
-      return metafieldDefinitionSyncTable.executeSync();
-    },
+    execute: async (params, context) => MetafieldDefinition.sync(params, context),
   },
 });
-// #endregion
-
-// #region Actions
-
 // #endregion
 
 // #region Formulas
@@ -74,14 +40,11 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   schema: MetafieldDefinitionSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
   execute: async function ([metafieldDefinitionID], context) {
-    const metafieldDefinitionNode = await fetchSingleMetafieldDefinitionGraphQl(
-      idToGraphQlGid(GraphQlResourceName.MetafieldDefinition, metafieldDefinitionID),
-      context
-    );
-
-    if (metafieldDefinitionNode) {
-      return formatMetafieldDefinitionForSchemaFromGraphQlApi(metafieldDefinitionNode, context);
-    }
+    const metafieldDefinition = await MetafieldDefinition.find({
+      context,
+      id: idToGraphQlGid(GraphQlResourceName.MetafieldDefinition, metafieldDefinitionID),
+    });
+    return metafieldDefinition.formatToRow();
   },
 });
 

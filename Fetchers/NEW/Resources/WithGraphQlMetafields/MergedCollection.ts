@@ -14,7 +14,7 @@ import { SyncTableSyncResult } from '../../../SyncTable/SyncTable.types';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../../AbstractResource_Synced';
 import { RestApiDataWithMetafields } from '../../AbstractResource_Synced_HasMetafields';
 import { AbstractResource_Synced_HasMetafields_GraphQl } from '../../AbstractResource_Synced_HasMetafields_GraphQl';
-import { Metafield, RestMetafieldOwnerType } from '../Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from '../Metafield';
 import { ResourceDisplayName } from '../../AbstractResource';
 
 // #endregion
@@ -87,7 +87,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
 
   static readonly displayName = 'Collection' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Collection;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'collection';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
   static readonly supportsDefinitions = true;
 
@@ -118,7 +118,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
       context,
       codaSyncParams as CodaSyncParams<typeof Sync_Collections>
     );
-    const syncFunction = this.makeSyncFunction({
+    const syncFunction = this.makeSyncTableManagerSyncFunction({
       codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_Collections>,
       context,
       syncTableManager,
@@ -186,11 +186,7 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
     }
 
     if (metafields.length) {
-      apiData.metafields = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = MergedCollection.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.metafields = metafields;
     }
 
     // TODO: not sure we need to keep this
@@ -207,8 +203,6 @@ export abstract class MergedCollection extends AbstractResource_Synced_HasMetafi
       body: striptags(apiData.body_html),
       published: !!apiData.published_at,
       disjunctive: apiData.disjunctive ?? false,
-      published_at: new Date(apiData.published_at),
-      updated_at: new Date(apiData.updated_at),
     };
 
     // console.log('apiData', apiData);

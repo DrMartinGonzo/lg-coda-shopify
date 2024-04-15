@@ -3,7 +3,7 @@ import { ResultOf, VariablesOf } from '../../../utils/graphql';
 
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../helpers-graphql';
-import { GraphQlResourceName, RestResourceSingular } from '../../../resources/ShopifyResource.types';
+import { GraphQlResourceName } from '../../../resources/ShopifyResource.types';
 import { Sync_Locations } from '../../../resources/locations/locations-coda';
 import {
   activateLocationMutation,
@@ -19,17 +19,19 @@ import { LocationSyncTableSchema } from '../../../schemas/syncTable/LocationSche
 import { MetafieldOwnerType } from '../../../types/admin.types';
 import { deepCopy, deleteUndefinedInObject } from '../../../utils/helpers';
 import {
-  AbstractGraphQlResource_Synced_HasMetafields,
   FindAllResponse,
-  GraphQlApiDataWithMetafields,
   GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
   SaveArgs,
-  SyncFunctionGraphQl,
+  SyncTableManagerSyncFunction,
 } from '../AbstractGraphQlResource';
+import {
+  AbstractGraphQlResource_Synced_HasMetafields,
+  GraphQlApiDataWithMetafields,
+} from '../AbstractGraphQlResource_Synced_HasMetafields';
 import { BaseContext, ResourceDisplayName } from '../AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../AbstractResource_Synced';
-import { Metafield, RestMetafieldOwnerType } from './Metafield';
+import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -60,9 +62,11 @@ export class Location extends AbstractGraphQlResource_Synced_HasMetafields {
   public apiData: ResultOf<typeof locationFragment> & GraphQlApiDataWithMetafields;
 
   static readonly displayName = 'Location' as ResourceDisplayName;
-  protected static paths: Array<GraphQlResourcePath> = ['node', 'location', 'locations.nodes', 'locationEdit.location'];
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'location';
+  protected static graphQlName = GraphQlResourceName.Location;
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'location';
   protected static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Location;
+
+  protected static paths: Array<GraphQlResourcePath> = ['node', 'location', 'locations.nodes', 'locationEdit.location'];
 
   public static getStaticSchema() {
     return LocationSyncTableSchema;
@@ -79,10 +83,10 @@ export class Location extends AbstractGraphQlResource_Synced_HasMetafields {
     return augmentedSchema;
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<Location, typeof Sync_Locations>): SyncFunctionGraphQl {
+  }: MakeSyncFunctionArgsGraphQl<Location, typeof Sync_Locations>): SyncTableManagerSyncFunction {
     const fields: AllArgs['fields'] = {
       metafields: syncTableManager.shouldSyncMetafields,
     };
@@ -252,11 +256,7 @@ export class Location extends AbstractGraphQlResource_Synced_HasMetafields {
     };
 
     if (metafields.length) {
-      apiData.restMetafieldInstances = metafields.map((m) => {
-        m.apiData.owner_id = row.id;
-        m.apiData.owner_resource = Location.metafieldRestOwnerType;
-        return m;
-      });
+      apiData.restMetafieldInstances = metafields;
     }
 
     return apiData;

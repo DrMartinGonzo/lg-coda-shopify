@@ -23,6 +23,7 @@ import {
 } from '../AbstractResource_Synced_HasMetafields';
 import { SearchParams } from '../RestClientNEW';
 import { Metafield, RestMetafieldOwnerType } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -92,7 +93,7 @@ export class Shop extends AbstractResource_Synced_HasMetafields {
 
   static readonly displayName = 'Shop' as ResourceDisplayName;
   protected static graphQlName = GraphQlResourceName.Shop;
-  static readonly metafieldRestOwnerType: RestMetafieldOwnerType = 'shop';
+  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'shop';
   static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
   static readonly supportsDefinitions = true;
 
@@ -113,7 +114,7 @@ export class Shop extends AbstractResource_Synced_HasMetafields {
     return async () => Metafield.all({ context });
   }
 
-  protected static makeSyncFunction({
+  protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
   }: MakeSyncFunctionArgs<Shop, typeof Sync_Shops>): SyncFunction {
@@ -185,10 +186,8 @@ export class Shop extends AbstractResource_Synced_HasMetafields {
   public formatToRow(): ShopRow {
     const { apiData } = this;
     let obj: ShopRow = {
-      ...apiData,
+      ...filterObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin`,
-      created_at: new Date(apiData.created_at),
-      updated_at: new Date(apiData.updated_at),
     };
 
     return obj;
