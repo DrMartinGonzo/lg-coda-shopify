@@ -2,8 +2,8 @@
 import { ResultOf } from './tada-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
-import { InvalidValueError, UnsupportedValueError } from '../Errors';
-import { ResourceName } from '../Resources/Abstract/Rest/AbstractRestResource';
+import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
+import { ResourceName } from '../Resources/Abstract/AbstractResource';
 import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
   AllMetafieldTypeValue,

@@ -1,16 +1,11 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import {
-  AbstractRestResource,
-  BaseContext,
-  FindAllResponse,
-  ResourceDisplayName,
-  ResourceName,
-} from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext, FetchRequestOptions } from '../../Clients/Client.types';
+import { CACHE_DEFAULT } from '../../constants';
+import { ResourceDisplayName, ResourceName } from '../Abstract/AbstractResource';
+import { AbstractRestResource, FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Theme } from './Theme';
-import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
-import { CACHE_DEFAULT } from '../../constants';
 
 // #endregion
 
@@ -42,15 +37,15 @@ export class Asset extends AbstractRestResource {
     value: string | null;
   };
 
-  static readonly displayName = 'Asset' as ResourceDisplayName;
-  protected static paths: ResourcePath[] = [
+  public static readonly displayName = 'Asset' as ResourceDisplayName;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
     { http_method: 'get', operation: 'get', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
     { http_method: 'get', operation: 'get', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
     { http_method: 'put', operation: 'put', ids: ['theme_id'], path: 'themes/<theme_id>/assets.json' },
   ];
-  protected static primaryKey: string = 'key';
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly primaryKey: string = 'key';
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Asset,
       plural: RestResourcePlural.Asset,

@@ -3,20 +3,11 @@ import * as coda from '@codahq/packs-sdk';
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { FragmentOf, readFragment } from '../../utils/tada-utils';
 
-import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors';
-import { FetchRequestOptions } from '../../Fetchers/Fetcher.types';
+import { BaseContext, FetchRequestOptions } from '../../Clients/Client.types';
+import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
-import { shouldDeleteMetafield } from '../../utils/metafields-utils';
-import { matchOwnerResourceToMetafieldOwnerType, matchOwnerTypeToOwnerResource } from '../../utils/metafields-utils';
-import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
-import {
-  getMetaFieldFullKey,
-  removePrefixFromMetaFieldKey,
-  separatePrefixedMetafieldsKeysFromKeys,
-  splitMetaFieldFullKey,
-} from '../../utils/metafields-utils';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { ArticleReference, formatArticleReference } from '../../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../../schemas/syncTable/BlogSchema';
@@ -37,14 +28,26 @@ import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { graphQlGidToId } from '../../utils/conversion-utils';
 import { compareByDisplayKey, deepCopy, isNullishOrEmpty } from '../../utils/helpers';
 import { requireMatchingMetafieldDefinition } from '../../utils/metafieldDefinitions-utils';
-import { BaseContext, FindAllResponse, ResourceDisplayName, ResourceName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+  getMetaFieldFullKey,
+  matchOwnerResourceToMetafieldOwnerType,
+  matchOwnerTypeToOwnerResource,
+  removePrefixFromMetaFieldKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+  shouldDeleteMetafield,
+  splitMetaFieldFullKey,
+} from '../../utils/metafields-utils';
+import { ResourceDisplayName, ResourceName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { AbstractSyncedRestResource, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
-import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
 
 // #endregion
 
@@ -243,20 +246,8 @@ export class Metafield extends AbstractSyncedRestResource {
     isDeletedFlag: boolean;
   };
 
-  static readonly displayName = 'Metafield' as ResourceDisplayName;
-  static readonly DELETED_SUFFIX = ' [deleted]';
-
-  protected static graphQlName = GraphQlResourceName.Metafield;
-
-  protected static paths: ResourcePath[] = buildMetafieldResourcePaths();
-
-  protected static resourceNames: ResourceNames[] = [
-    {
-      singular: RestResourceSingular.Metafield,
-      plural: RestResourcePlural.Metafield,
-    },
-  ];
-
+  public static readonly displayName = 'Metafield' as ResourceDisplayName;
+  public static readonly DELETED_SUFFIX = ' [deleted]';
   public static supportedSyncTables: Array<SupportedSyncTable> = [
     {
       display: 'Article',
@@ -339,6 +330,15 @@ export class Metafield extends AbstractSyncedRestResource {
       // formatOwnerReference:formatShopReference,
       noDefinitions: true,
       useRest: true,
+    },
+  ];
+
+  protected static readonly graphQlName = GraphQlResourceName.Metafield;
+  protected static readonly paths: ResourcePath[] = buildMetafieldResourcePaths();
+  protected static readonly resourceNames: ResourceNames[] = [
+    {
+      singular: RestResourceSingular.Metafield,
+      plural: RestResourcePlural.Metafield,
     },
   ];
 

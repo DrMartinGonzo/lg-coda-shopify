@@ -1,19 +1,21 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
+import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
+import { REST_DEFAULT_LIMIT } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
@@ -43,15 +45,15 @@ export class Collect extends AbstractSyncedRestResource {
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Collect' as ResourceDisplayName;
+  public static readonly displayName = 'Collect' as ResourceDisplayName;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'collects/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'collects.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'collects/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'collects.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Collect,
       plural: RestResourcePlural.Collect,

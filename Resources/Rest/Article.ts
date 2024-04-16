@@ -3,7 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
+import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
@@ -12,7 +14,8 @@ import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, parseOptionId } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -24,7 +27,6 @@ import {
   AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -84,13 +86,13 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     user_id: number | null;
   };
 
-  static readonly displayName = 'Article' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.OnlineStoreArticle;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'article';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Article' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'article';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.OnlineStoreArticle;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'articles/<id>.json' },
     { http_method: 'get', operation: 'get', ids: ['blog_id'], path: 'blogs/<blog_id>/articles.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'articles.json' },
@@ -98,7 +100,7 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     { http_method: 'post', operation: 'post', ids: ['blog_id'], path: 'blogs/<blog_id>/articles.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'articles/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Article,
       plural: RestResourcePlural.Article,

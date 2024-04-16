@@ -4,7 +4,7 @@ import UrlParse from 'url-parse';
 import { PageInfo, PageInfoParams } from '@shopify/shopify-api/lib/clients/types';
 import { REST_DEFAULT_API_VERSION } from '../config';
 import { getShopifyRequestHeaders } from './utils/client-utils';
-import { FetchRequestOptions } from '../Fetchers/Fetcher.types';
+import { FetchRequestOptions } from './Client.types';
 
 function generateApiUrlFormatter(defaultApiVersion: string, formatPaths = true) {
   return (context: coda.ExecutionContext, path: string, apiVersion?: string) => {

@@ -1,12 +1,14 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { BaseContext, FindAllResponse, ResourceName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { MergedCollection } from './MergedCollection';
@@ -43,9 +45,8 @@ interface OrderArgs extends BaseContext {
 }
 
 export class MergedCollection_Smart extends MergedCollection {
-  protected static jsonBodyName: ResourceName = 'smart_collection';
-
-  protected static paths: ResourcePath[] = [
+  protected static readonly restName: ResourceName = 'smart_collection';
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'smart_collections/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'smart_collections.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'smart_collections/<id>.json' },
@@ -53,8 +54,7 @@ export class MergedCollection_Smart extends MergedCollection {
     { http_method: 'put', operation: 'order', ids: ['id'], path: 'smart_collections/<id>/order.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'smart_collections/<id>.json' },
   ];
-
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.SmartCollection,
       plural: RestResourcePlural.SmartCollection,

@@ -3,9 +3,10 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import {
@@ -20,7 +21,8 @@ import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../sche
 import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -28,8 +30,8 @@ import {
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -95,20 +97,20 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     vendor: string | null;
   };
 
-  static readonly displayName = 'Product' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Product;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'product';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Product' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'product';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.Product;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'products/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'products.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'products/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'products.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'products/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Product,
       plural: RestResourcePlural.Product,

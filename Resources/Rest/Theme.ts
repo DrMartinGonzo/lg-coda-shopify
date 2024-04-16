@@ -1,12 +1,9 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import {
-  AbstractRestResource,
-  BaseContext,
-  FindAllResponse,
-  ResourceDisplayName,
-} from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext } from '../../Clients/Client.types';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { AbstractRestResource, FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
@@ -36,16 +33,16 @@ export class Theme extends AbstractRestResource {
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Theme' as ResourceDisplayName;
+  public static readonly displayName = 'Theme' as ResourceDisplayName;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'themes/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'themes.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'themes/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'themes.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'themes/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Theme,
       plural: RestResourcePlural.Theme,

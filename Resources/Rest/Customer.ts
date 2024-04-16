@@ -2,7 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
@@ -16,7 +18,8 @@ import {
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -24,9 +27,8 @@ import {
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -112,13 +114,13 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     verified_email: boolean | null;
   };
 
-  static readonly displayName = 'Customer' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Customer;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'customer';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Customer' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'customer';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.Customer;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'customers/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'customers.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'customers/<id>.json' },
@@ -134,7 +136,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     { http_method: 'post', operation: 'send_invite', ids: ['id'], path: 'customers/<id>/send_invite.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'customers/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Customer,
       plural: RestResourcePlural.Customer,

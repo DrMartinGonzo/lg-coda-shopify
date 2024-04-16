@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
@@ -11,7 +12,8 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -60,20 +62,20 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Blog' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.OnlineStoreBlog;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'blog';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Blog' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'blog';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.OnlineStoreBlog;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'blogs/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'blogs.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'blogs/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'blogs.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'blogs/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Blog,
       plural: RestResourcePlural.Blog,

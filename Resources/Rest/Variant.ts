@@ -1,7 +1,6 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
@@ -9,13 +8,16 @@ import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRes
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { Shop } from './Shop';
 import { Product } from './Product';
+import { Shop } from './Shop';
 
 // #endregion
 
@@ -71,13 +73,13 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
     product_title: Product['apiData']['title'];
   };
 
-  static readonly displayName = 'Product Variant' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.ProductVariant;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'variant';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Product Variant' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'variant';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.ProductVariant;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     {
       http_method: 'delete',
       operation: 'delete',
@@ -94,7 +96,7 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'variants/<id>.json' },
   ];
   protected static readOnlyAttributes: string[] = ['inventory_quantity'];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.ProductVariant,
       plural: RestResourcePlural.ProductVariant,

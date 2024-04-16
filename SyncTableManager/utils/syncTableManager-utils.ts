@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { GraphQlClient } from '../../Clients/GraphQlClient';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Clients/GraphQlErrors';
+import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { wait } from '../../Clients/utils/client-utils';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
@@ -26,7 +26,6 @@ import { SyncTableGraphQlContinuation, SyncTableMixedContinuation } from '../typ
  * @returns A string that contains the JSON representation of the given value
  * with a special type to ensure it can be used to recreate the original value.
  */
-
 export function stringifyContinuationProperty<T>(
   value: T,
   replacer?: (key: string, value: any) => any,
@@ -34,6 +33,7 @@ export function stringifyContinuationProperty<T>(
 ): string & Stringified<T> {
   return JSON.stringify(value, replacer, space) as string & Stringified<T>;
 }
+
 /**
  * Parses a JSON string with a special type created by
  * `stringifyContinuationProperty` to recreate the original value.

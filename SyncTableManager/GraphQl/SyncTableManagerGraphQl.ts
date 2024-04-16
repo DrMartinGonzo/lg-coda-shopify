@@ -3,10 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 
 import { SyncTableGraphQlContinuation } from '../types/SyncTable.types';
 import { stringifyContinuationProperty } from '../utils/syncTableManager-utils';
-import {
-  AbstractGraphQlResource,
-  SyncTableManagerSyncFunction,
-} from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import { SyncTableManagerSyncFunction } from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { GRAPHQL_NODES_LIMIT } from '../../constants';
 import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/syncTableManager-utils';
 import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';

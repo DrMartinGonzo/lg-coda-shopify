@@ -4,7 +4,7 @@ import toPascalCase from 'to-pascal-case';
 
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
-import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors';
+import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';

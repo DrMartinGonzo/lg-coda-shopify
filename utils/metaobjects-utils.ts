@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from './tada-utils';
 
-import { NotFoundError } from '../Errors';
+import { NotFoundError } from '../Errors/Errors';
 import { Identity } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';

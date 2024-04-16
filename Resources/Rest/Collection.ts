@@ -2,19 +2,20 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
+import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -44,17 +45,17 @@ export class Collection extends AbstractSyncedRestResourceWithGraphQLMetafields 
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Collection' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Collection;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Collection' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.Collection;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'collections/<id>.json' },
     { http_method: 'get', operation: 'products', ids: ['id'], path: 'collections/<id>/products.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Collection,
       plural: RestResourcePlural.Collection,

@@ -1,17 +1,19 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
+import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
+import { REST_DEFAULT_LIMIT } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../schemas/syncTable/RedirectSchema';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
@@ -39,16 +41,16 @@ export class Redirect extends AbstractSyncedRestResource {
     target: string | null;
   };
 
-  static readonly displayName = 'Redirect' as ResourceDisplayName;
+  public static readonly displayName = 'Redirect' as ResourceDisplayName;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'redirects/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'redirects.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'redirects/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'redirects.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'redirects/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Redirect,
       plural: RestResourcePlural.Redirect,

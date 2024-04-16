@@ -1,10 +1,9 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   buildInventoryItemsSearchQuery,
   getInventoryItemsQuery,
@@ -15,18 +14,18 @@ import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, deleteUndefinedInObject, isDefinedEmpty } from '../../utils/helpers';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
-  FindAllResponse,
-  GraphQlResourcePath,
+  AbstractSyncedGraphQlResource,
   MakeSyncFunctionArgsGraphQl,
-  SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Shop } from '../Rest/Shop';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
 // #endregion
 
@@ -54,11 +53,14 @@ interface AllArgs extends BaseContext {
 export class InventoryItem extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof inventoryItemFieldsFragment>;
 
-  static readonly displayName = 'InventoryItem' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.InventoryItem;
+  public static readonly displayName = 'InventoryItem' as ResourceDisplayName;
+  protected static readonly graphQlName = GraphQlResourceName.InventoryItem;
 
-  // protected static defaultMaxEntriesPerRun: number = 50;
-  protected static paths: Array<GraphQlResourcePath> = ['inventoryItems.nodes', 'inventoryItemUpdate.inventoryItem'];
+  // protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly paths: Array<GraphQlResourcePath> = [
+    'inventoryItems.nodes',
+    'inventoryItemUpdate.inventoryItem',
+  ];
 
   public static getStaticSchema() {
     return InventoryItemSyncTableSchema;

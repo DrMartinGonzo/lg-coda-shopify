@@ -2,24 +2,26 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
+import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, REST_DEFAULT_LIMIT } from '../../constants';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow, MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   AugmentWithMetafieldsFunction,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -88,14 +90,16 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     zip: string | null;
   };
 
-  static readonly displayName = 'Shop' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Shop;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'shop';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Shop' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'shop';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
 
-  protected static paths: ResourcePath[] = [{ http_method: 'get', operation: 'get', ids: [], path: 'shop.json' }];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly graphQlName = GraphQlResourceName.Shop;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
+    { http_method: 'get', operation: 'get', ids: [], path: 'shop.json' },
+  ];
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Shop,
       plural: RestResourcePlural.Shop,

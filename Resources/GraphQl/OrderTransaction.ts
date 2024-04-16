@@ -4,9 +4,9 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { graphQlGidToId } from '../../utils/conversion-utils';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   buildOrderTransactionsSearchQuery,
   getOrderTransactionsQuery,
@@ -18,16 +18,19 @@ import {
   OrderTransactionSyncTableSchema,
   formatOrderTransactionReference,
 } from '../../schemas/syncTable/OrderTransactionSchema';
+import { graphQlGidToId } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import {
   AbstractGraphQlResource,
   FindAllResponse,
   GraphQlResourcePath,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import {
+  AbstractSyncedGraphQlResource,
   MakeSyncFunctionArgsGraphQl,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceName } from '../types/GraphQlResource.types';
@@ -72,11 +75,11 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
     };
   };
 
-  static readonly displayName = 'OrderTransaction' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.OrderTransaction;
+  public static readonly displayName = 'OrderTransaction' as ResourceDisplayName;
+  protected static readonly graphQlName = GraphQlResourceName.OrderTransaction;
 
-  protected static defaultMaxEntriesPerRun: number = 50;
-  protected static paths: Array<GraphQlResourcePath> = ['orders.nodes.transactions'];
+  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly paths: Array<GraphQlResourcePath> = ['orders.nodes.transactions'];
 
   public static getStaticSchema() {
     return OrderTransactionSyncTableSchema;
@@ -225,7 +228,7 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
     orders.forEach((order) => {
       order.transactions.forEach((transaction) => {
         instances.push(
-          this.create<T>(context, {
+          this.createInstance<T>(context, {
             ...transaction,
             parentOrder: {
               id: order.id,

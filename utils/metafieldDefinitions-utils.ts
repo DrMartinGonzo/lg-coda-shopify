@@ -1,5 +1,5 @@
 // #region Imports
-import { NotFoundError } from '../Errors';
+import { NotFoundError } from '../Errors/Errors';
 import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 
 // #endregion

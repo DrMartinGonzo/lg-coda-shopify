@@ -7,11 +7,11 @@ import { CACHE_DEFAULT } from '../../../constants';
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { MetafieldInput, MetafieldOwnerType } from '../../../types/admin.types';
+import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
+import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
+import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
 import { BaseSaveArgs, GraphQlApiData } from './AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
-import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
-import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
-import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
 // import { RestResourceError } from '@shopify/shopify-api';
 
 // #endregion
@@ -26,9 +26,9 @@ export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
 export abstract class AbstractSyncedGraphQlResourceWithMetafields extends AbstractSyncedGraphQlResource {
   public apiData: GraphQlApiDataWithMetafields;
 
-  protected static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
-  protected static readonly metafieldGraphQlOwnerType: MetafieldOwnerType | undefined;
-  // protected static metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
+  public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType | undefined;
+
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields

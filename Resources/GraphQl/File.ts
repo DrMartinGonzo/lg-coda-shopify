@@ -2,8 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { CACHE_DISABLED, DEFAULT_THUMBNAIL_SIZE, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
+import { UnsupportedActionError } from '../../Errors/Errors';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Files } from '../../coda/setup/files-setup';
+import { CACHE_DISABLED, DEFAULT_THUMBNAIL_SIZE, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   deleteFilesMutation,
   fileFieldsFragment,
@@ -22,19 +25,14 @@ import {
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
 } from '../../utils/helpers';
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
-  FindAllResponse,
-  GraphQlResourcePath,
+  AbstractSyncedGraphQlResource,
   MakeSyncFunctionArgsGraphQl,
-  SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { UnsupportedActionError } from '../../Errors';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
 // #endregion
 
@@ -73,12 +71,12 @@ export class File extends AbstractSyncedGraphQlResource {
     ResultOf<typeof videoFieldsFragment> &
     ResultOf<typeof mediaImageFieldsFragment>;
 
-  static readonly displayName = 'File' as ResourceDisplayName;
+  public static readonly displayName = 'File' as ResourceDisplayName;
   // TODO
-  // protected static graphQlName = GraphQlResourceName.GenericFile;
+  // protected static readonly graphQlName = GraphQlResourceName.GenericFile;
 
-  protected static defaultMaxEntriesPerRun: number = 50;
-  protected static paths: Array<GraphQlResourcePath> = ['node', 'files.nodes', 'fileUpdate.files'];
+  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly paths: Array<GraphQlResourcePath> = ['node', 'files.nodes', 'fileUpdate.files'];
 
   public static getStaticSchema() {
     return FileSyncTableSchema;

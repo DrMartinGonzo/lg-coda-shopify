@@ -2,22 +2,22 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../../Clients/RestClient';
-import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
+import { SyncTableManagerRestWithRestMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import {
   SyncTableRestContinuation,
   SyncTableSyncResult,
   SyncTableUpdateResult,
 } from '../../../SyncTableManager/types/SyncTable.types';
-import { SyncTableManagerRestWithRestMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { CACHE_DEFAULT, REST_DEFAULT_LIMIT } from '../../../constants';
-import { graphQlGidToId } from '../../../utils/conversion-utils';
-import { getMetaFieldFullKey } from '../../../utils/metafields-utils';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../../types/admin.types';
-import { FindAllResponse, RestApiData, SaveArgs } from './AbstractRestResource';
-import { AbstractSyncedRestResource, SyncFunction } from './AbstractSyncedRestResource';
+import { graphQlGidToId } from '../../../utils/conversion-utils';
+import { getMetaFieldFullKey } from '../../../utils/metafields-utils';
 import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
+import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
+import { FindAllResponse, RestApiData, SaveArgs } from './AbstractRestResource';
+import { AbstractSyncedRestResource, SyncFunction } from './AbstractSyncedRestResource';
 
 // #endregion
 
@@ -39,10 +39,10 @@ export type AugmentWithMetafieldsFunction = (
 export abstract class AbstractSyncedRestResourceWithRestMetafields extends AbstractSyncedRestResource {
   public apiData: RestApiDataWithMetafields;
 
-  protected static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
-  protected static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
+  public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
+  // TODO: sert à rien pour l'instant
   protected static readonly supportsDefinitions: boolean;
-  // protected static metafieldDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>>;
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {

@@ -2,8 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   getMetafieldDefinitionsQuery,
   getSingleMetafieldDefinitionQuery,
@@ -12,16 +13,15 @@ import {
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../types/admin.types';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
-  FindAllResponse,
-  GraphQlResourcePath,
+  AbstractSyncedGraphQlResource,
   MakeSyncFunctionArgsGraphQl,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
-import { Metafield } from '../Rest/Metafield';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
+import { Metafield } from '../Rest/Metafield';
 
 // #endregion
 
@@ -78,9 +78,9 @@ const FAKE_METADEFINITION__SEO_TITLE = {
 export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metafieldDefinitionFragment>;
 
-  static readonly displayName = 'MetafieldDefinition' as ResourceDisplayName;
-  protected static paths: Array<GraphQlResourcePath> = ['metafieldDefinition', 'metafieldDefinitions.nodes'];
-  protected static defaultMaxEntriesPerRun: number = 50;
+  public static readonly displayName = 'MetafieldDefinition' as ResourceDisplayName;
+  protected static readonly paths: Array<GraphQlResourcePath> = ['metafieldDefinition', 'metafieldDefinitions.nodes'];
+  protected static readonly defaultMaxEntriesPerRun: number = 50;
 
   public static getStaticSchema() {
     return MetafieldDefinitionSyncTableSchema;

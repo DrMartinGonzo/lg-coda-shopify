@@ -1,12 +1,14 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { BaseContext, FindAllResponse, ResourceName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import { MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 import { MergedCollection } from './MergedCollection';
@@ -37,17 +39,15 @@ interface AllArgs extends BaseContext {
 }
 
 export class MergedCollection_Custom extends MergedCollection {
-  protected static jsonBodyName: ResourceName = 'custom_collection';
-
-  protected static paths: ResourcePath[] = [
+  protected static readonly restName: ResourceName = 'custom_collection';
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'custom_collections/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'custom_collections.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'custom_collections/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'custom_collections.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'custom_collections/<id>.json' },
   ];
-
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.CustomCollection,
       plural: RestResourcePlural.CustomCollection,

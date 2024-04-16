@@ -2,10 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { OPTIONS_DRAFT_ORDER_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { BaseContext } from '../../Clients/Client.types';
+import { SearchParams } from '../../Clients/RestClient';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
+import { OPTIONS_DRAFT_ORDER_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
@@ -13,7 +14,8 @@ import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../../sc
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
@@ -21,14 +23,14 @@ import {
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { SearchParams } from '../../Clients/RestClient';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
 import { Shop } from './Shop';
-import { CustomerCodaData } from './Customer';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 
 // #endregion
 
@@ -100,13 +102,13 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Draft Order' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.DraftOrder;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'draft_order';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Draft Order' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'draft_order';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.DraftOrder;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'draft_orders/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'draft_orders.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'draft_orders/<id>.json' },
@@ -115,7 +117,7 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     { http_method: 'put', operation: 'complete', ids: ['id'], path: 'draft_orders/<id>/complete.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'draft_orders/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.DraftOrder,
       plural: RestResourcePlural.DraftOrder,

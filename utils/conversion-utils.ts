@@ -1,5 +1,5 @@
 // #region Imports
-import { FormattingError, InvalidValueError } from '../Errors';
+import { FormattingError, InvalidValueError } from '../Errors/Errors';
 import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types';
 
 // #endregion

@@ -2,21 +2,23 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
+import { SearchParams } from '../../Clients/RestClient';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
+import { REST_DEFAULT_LIMIT } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { SearchParams } from '../../Clients/RestClient';
 import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
 
 // #endregion
@@ -64,16 +66,16 @@ export class InventoryLevel extends AbstractSyncedRestResource {
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Inventory Level' as ResourceDisplayName;
+  public static readonly displayName = 'Inventory Level' as ResourceDisplayName;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: [], path: 'inventory_levels.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'inventory_levels.json' },
     { http_method: 'post', operation: 'adjust', ids: [], path: 'inventory_levels/adjust.json' },
     { http_method: 'post', operation: 'connect', ids: [], path: 'inventory_levels/connect.json' },
     { http_method: 'post', operation: 'set', ids: [], path: 'inventory_levels/set.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.InventoryLevel,
       plural: RestResourcePlural.InventoryLevel,

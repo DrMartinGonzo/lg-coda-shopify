@@ -2,21 +2,20 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../../constants';
-import { RestResourceSingular } from '../types/RestResource.types';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
+import { COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 
 // #endregion
 
@@ -68,29 +67,12 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
     updated_at: string | null;
   };
 
-  // public apiData: ApiDataWithMetafields & {
-  //   title: string | null;
-  //   body_html: string | null;
-  //   handle: string | null;
-  //   id: number | null;
-  //   // image: string | { [key: string]: unknown } | null;
-  //   image: {
-  //     src?: string;
-  //     alt?: string;
-  //   } | null;
-  //   published: boolean | null;
-  //   published_at: string | null;
-  //   published_scope: string | null;
-  //   sort_order: string | null;
-  //   template_suffix: string | null;
-  //   updated_at: string | null;
-  // };
+  public static readonly displayName = 'Collection' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
-  static readonly displayName = 'Collection' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Collection;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
-  static readonly supportsDefinitions = true;
+  protected static readonly graphQlName = GraphQlResourceName.Collection;
+  protected static readonly supportsDefinitions = true;
 
   public static getStaticSchema() {
     return CollectionSyncTableSchema;

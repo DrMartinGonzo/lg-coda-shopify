@@ -3,18 +3,17 @@ import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { SearchParams } from '../../../Clients/RestClient';
+import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
 import {
   SyncTableParamValues,
   SyncTableSyncResult,
   SyncTableUpdateResult,
 } from '../../../SyncTableManager/types/SyncTable.types';
-import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
 import { BaseRow } from '../../../schemas/CodaRows.types';
+import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
-import { getObjectSchemaEffectiveKey } from '../../../utils/coda-utils';
-import { transformToArraySchema } from '../../../utils/coda-utils';
-import { AbstractRestResource, BaseConstructorArgs, FindAllResponse } from './AbstractRestResource';
 import { Metafield } from '../../Rest/Metafield';
+import { AbstractRestResource, BaseConstructorArgs, FindAllResponse } from './AbstractRestResource';
 
 // #endregion
 

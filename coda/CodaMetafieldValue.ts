@@ -1,6 +1,6 @@
 // #region Imports
 
-import { InvalidValueError, InvalidValueVisibleError, RequiredParameterMissingVisibleError } from '../Errors';
+import { InvalidValueError, InvalidValueVisibleError, RequiredParameterMissingVisibleError } from '../Errors/Errors';
 import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
 import { getUnitMap, isNullishOrEmpty } from '../utils/helpers';
 

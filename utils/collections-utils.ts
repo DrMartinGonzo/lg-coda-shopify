@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { VariablesOf } from './tada-utils';
 
-import { FetchRequestOptions } from '../Fetchers/Fetcher.types';
+import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
 import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';

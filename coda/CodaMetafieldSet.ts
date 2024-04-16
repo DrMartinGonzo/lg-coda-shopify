@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CodaMetafieldValue } from './CodaMetafieldValue';
-import { InvalidValueVisibleError } from '../Errors';
+import { InvalidValueVisibleError } from '../Errors/Errors';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
 import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
 import { splitMetaFieldFullKey } from '../utils/metafields-utils';

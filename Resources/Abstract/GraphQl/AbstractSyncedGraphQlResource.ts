@@ -2,22 +2,47 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
-import { SyncTableSyncResult, SyncTableUpdateResult } from '../../../SyncTableManager/types/SyncTable.types';
 import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { SyncTableSyncResult, SyncTableUpdateResult } from '../../../SyncTableManager/types/SyncTable.types';
 import { BaseRow } from '../../../schemas/CodaRows.types';
+import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
-import { getObjectSchemaEffectiveKey } from '../../../utils/coda-utils';
-import { transformToArraySchema } from '../../../utils/coda-utils';
 import {
-  AbstractGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
-} from './AbstractGraphQlResource';
-import { BaseConstructorSyncedArgs, FromRow, GetSchemaArgs } from '../Rest/AbstractSyncedRestResource';
+  BaseConstructorSyncedArgs,
+  CodaSyncParams,
+  FromRow,
+  GetSchemaArgs,
+  SyncTableDefinition,
+} from '../Rest/AbstractSyncedRestResource';
+import { AbstractGraphQlResource, FindAllResponse } from './AbstractGraphQlResource';
+
+// #endregion
+
+// #region Types
+export type MakeSyncFunctionArgsGraphQl<
+  BaseT extends AbstractSyncedGraphQlResource = AbstractSyncedGraphQlResource,
+  SyncTableDefT extends SyncTableDefinition = never,
+  SyncTableManagerT extends SyncTableManagerGraphQl<BaseT> = SyncTableManagerGraphQl<BaseT>
+> = {
+  context: coda.SyncExecutionContext;
+  codaSyncParams: CodaSyncParams<SyncTableDefT>;
+  syncTableManager?: SyncTableManagerT;
+};
+
+export type SyncTableManagerSyncFunction = ({
+  cursor,
+  maxEntriesPerRun,
+}: {
+  cursor: string;
+  maxEntriesPerRun?: number;
+}) => Promise<FindAllResponse<AbstractSyncedGraphQlResource>>;
 
 // #endregion
 
 export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResource {
+  /** The effective schema for the sync. Can be an augmented schema with metafields */
+  protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
+
   /**
    * Get the static Coda schema for the resource
    */

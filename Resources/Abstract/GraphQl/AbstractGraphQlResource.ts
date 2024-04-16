@@ -4,30 +4,31 @@ import { Body } from '@shopify/shopify-api/rest/types';
 import { TadaDocumentNode } from 'gql.tada';
 import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 
-import { ShopifyGraphQlRequestCost } from '../../../Clients/GraphQlErrors';
+import { BaseContext } from '../../../Clients/Client.types';
 import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlClient';
-import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { ShopifyGraphQlRequestCost } from '../../../Errors/GraphQlErrors';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
-import { graphQlGidToId } from '../../../utils/conversion-utils';
 import { PageInfo } from '../../../types/admin.types';
-import { BaseContext, ResourceDisplayName } from '../Rest/AbstractRestResource';
-import { CodaSyncParams, SyncTableDefinition } from '../Rest/AbstractSyncedRestResource';
-import { GraphQlResourceName } from '../../types/GraphQlResource.types';
+import { graphQlGidToId } from '../../../utils/conversion-utils';
+import { AbstractResource } from '../AbstractResource';
 
 // #endregion
 
 // #region Types
 export type GraphQlResourcePath = string;
 
-interface BaseConstructorArgs {
-  context: coda.ExecutionContext;
-  fromData?: Body | null;
-}
-
 export interface GraphQlApiData {
   id: string | null;
   [key: string]: any;
+}
+
+export interface FindAllResponse<T> {
+  data: T[];
+  headers: coda.FetchResponse['headers'];
+  cost: ShopifyGraphQlRequestCost;
+  // lastMaxEntriesPerRun: number;
+  pageInfo?: PageInfo;
 }
 
 interface BaseArgs<NodeT extends TadaDocumentNode> {
@@ -45,52 +46,22 @@ export interface SaveArgs {
   update?: boolean;
 }
 export interface BaseSaveArgs<NodeT extends TadaDocumentNode> extends SaveArgs, BaseArgs<NodeT> {}
-
-export interface FindAllResponse<T = AbstractGraphQlResource> {
-  data: T[];
-  headers: coda.FetchResponse['headers'];
-  cost: ShopifyGraphQlRequestCost;
-  // lastMaxEntriesPerRun: number;
-  pageInfo?: PageInfo;
-}
-
-export type MakeSyncFunctionArgsGraphQl<
-  BaseT extends AbstractGraphQlResource = AbstractGraphQlResource,
-  SyncTableDefT extends SyncTableDefinition = never,
-  SyncTableManagerT extends SyncTableManagerGraphQl<BaseT> = SyncTableManagerGraphQl<BaseT>
-> = {
-  context: coda.SyncExecutionContext;
-  codaSyncParams: CodaSyncParams<SyncTableDefT>;
-  syncTableManager?: SyncTableManagerT;
-};
-
-export type SyncTableManagerSyncFunction = ({
-  cursor,
-  maxEntriesPerRun,
-}: {
-  cursor: string;
-  maxEntriesPerRun?: number;
-}) => Promise<FindAllResponse<AbstractGraphQlResource>>;
 // #endregion
 
-export abstract class AbstractGraphQlResource {
-  static readonly displayName: ResourceDisplayName;
-
+export abstract class AbstractGraphQlResource extends AbstractResource {
   protected static Client = GraphQlClient;
   protected static apiVersion = GRAPHQL_DEFAULT_API_VERSION;
 
-  protected static primaryKey = 'id';
-  protected static graphQlName: GraphQlResourceName | undefined;
-  protected static defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
-  protected static paths: Array<GraphQlResourcePath> = [];
+  protected static readonly defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
+  protected static readonly paths: Array<GraphQlResourcePath> = [];
 
-  protected static readOnlyAttributes: string[] = [];
-
-  /** The effective schema for the sync. Can be an augmented schema with metafields */
-  protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
-  protected context: coda.ExecutionContext;
-
-  public apiData: any;
+  protected static async request<NodeT extends TadaDocumentNode = TadaDocumentNode>({
+    context,
+    ...requestArgs
+  }: RequestArgs<NodeT>): Promise<GraphQlRequestReturn<NodeT>> {
+    const client = new this.Client({ context, apiVersion: this.apiVersion });
+    return client.request<NodeT>(requestArgs);
+  }
 
   protected static async baseFind<T extends AbstractGraphQlResource, NodeT extends TadaDocumentNode>({
     context,
@@ -121,14 +92,6 @@ export abstract class AbstractGraphQlResource {
   }: BaseDeleteArgs<NodeT>): Promise<ResultOf<NodeT> | null> {
     const response = await this.request<NodeT>({ context, ...requestArgs });
     return response?.body?.data ?? null;
-  }
-
-  protected static async request<NodeT extends TadaDocumentNode = TadaDocumentNode>({
-    context,
-    ...requestArgs
-  }: RequestArgs<NodeT>): Promise<GraphQlRequestReturn<NodeT>> {
-    const client = new this.Client({ context, apiVersion: this.apiVersion });
-    return client.request<NodeT>(requestArgs);
   }
 
   protected static extractResourceDataFromRawData<NodeT extends TadaDocumentNode>(
@@ -162,10 +125,10 @@ export abstract class AbstractGraphQlResource {
     this.extractResourceDataFromRawData(rawData).forEach((data) => {
       if (data && Array.isArray(data)) {
         instances = instances.concat(
-          data.reduce((acc: Array<T>, entry: Body) => acc.concat(this.create<T>(context, entry)), [])
+          data.reduce((acc: Array<T>, entry: Body) => acc.concat(this.createInstance<T>(context, entry)), [])
         );
       } else if (data) {
-        instances.push(this.create<T>(context, data));
+        instances.push(this.createInstance<T>(context, data));
       }
     });
 
@@ -195,24 +158,10 @@ export abstract class AbstractGraphQlResource {
     return instances;
   }
 
-  protected static create<T extends AbstractGraphQlResource = AbstractGraphQlResource>(
-    context: coda.ExecutionContext,
-    data: Body,
-    prevInstance?: T
-  ): T {
-    const instance: T = prevInstance ? prevInstance : new (this as any)({ context });
-
-    if (data) {
-      instance.setData(data);
-    }
-
-    return instance;
-  }
-
   /**
    * To be implemented by child class
    */
-  public static async all(params: any): Promise<FindAllResponse<AbstractGraphQlResource>> {
+  public static async all(params: any): Promise<FindAllResponse<any>> {
     return;
   }
 
@@ -242,14 +191,6 @@ export abstract class AbstractGraphQlResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  constructor({ context, fromData }: BaseConstructorArgs) {
-    this.context = context;
-
-    if (fromData) {
-      this.setData(fromData);
-    }
-  }
-
   get graphQlGid(): string {
     return this.apiData.id;
   }
@@ -257,16 +198,8 @@ export abstract class AbstractGraphQlResource {
     return graphQlGidToId(this.apiData.id);
   }
 
-  /**
-   * Returns the current class's constructor as a type BaseT, which defaults to the class itself.
-   * This allows accessing the constructor type of the current class.
-   */
-  protected resource<BaseT extends typeof AbstractGraphQlResource = typeof AbstractGraphQlResource>(): BaseT {
-    return this.constructor as unknown as BaseT;
-  }
-
-  protected setData(data: Body): void {
-    this.apiData = data;
+  public request<NodeT extends TadaDocumentNode = TadaDocumentNode>(args: RequestArgs<NodeT>) {
+    return this.resource<typeof AbstractGraphQlResource>().request<NodeT>(args);
   }
 
   protected async _baseSave<NodeT extends TadaDocumentNode>({
@@ -274,7 +207,7 @@ export abstract class AbstractGraphQlResource {
     documentNode,
     variables,
   }: BaseSaveArgs<NodeT>): Promise<void> {
-    const staticResource = this.resource();
+    const staticResource = this.resource<typeof AbstractGraphQlResource>();
     const response = await this.request<NodeT>({
       context: this.context,
       documentNode: documentNode,
@@ -294,7 +227,7 @@ export abstract class AbstractGraphQlResource {
   }
 
   // public async delete(): Promise<void> {
-  //   await this.resource().request({
+  //   await this.resource<typeof AbstractGraphQlResource>().request({
   //     http_method: 'delete',
   //     operation: 'delete',
   //     context: this.context,
@@ -302,8 +235,4 @@ export abstract class AbstractGraphQlResource {
   //     entity: this,
   //   });
   // }
-
-  public request<NodeT extends TadaDocumentNode = TadaDocumentNode>(args: RequestArgs<NodeT>) {
-    return this.resource().request<NodeT>(args);
-  }
 }

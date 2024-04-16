@@ -3,9 +3,10 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
-import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
+import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
 import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
@@ -13,7 +14,8 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { BaseContext, FindAllResponse, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   FromRow,
   GetSchemaArgs,
@@ -69,20 +71,20 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
     updated_at: string | null;
   };
 
-  static readonly displayName = 'Page' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.OnlineStorePage;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'page';
-  static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
-  static readonly supportsDefinitions = true;
+  public static readonly displayName = 'Page' as ResourceDisplayName;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'page';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
 
-  protected static paths: ResourcePath[] = [
+  protected static readonly graphQlName = GraphQlResourceName.OnlineStorePage;
+  protected static readonly supportsDefinitions = true;
+  protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'pages/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'pages.json' },
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'pages/<id>.json' },
     { http_method: 'post', operation: 'post', ids: [], path: 'pages.json' },
     { http_method: 'put', operation: 'put', ids: ['id'], path: 'pages/<id>.json' },
   ];
-  protected static resourceNames: ResourceNames[] = [
+  protected static readonly resourceNames: ResourceNames[] = [
     {
       singular: RestResourceSingular.Page,
       plural: RestResourcePlural.Page,

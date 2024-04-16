@@ -3,6 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, OPTIONS_METAOBJECT_STATUS } from '../../constants';
 import {
@@ -17,8 +18,6 @@ import {
   metaobjectFragment,
   updateMetaObjectMutation,
 } from '../../graphql/metaobjects-graphql';
-import { shouldUpdateSyncTableMetafieldValue } from '../../utils/metafields-utils';
-import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
@@ -32,16 +31,20 @@ import {
   isNullishOrEmpty,
   isString,
 } from '../../utils/helpers';
-import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
 import {
-  FindAllResponse,
-  GraphQlResourcePath,
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+  shouldUpdateSyncTableMetafieldValue,
+} from '../../utils/metafields-utils';
+import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import {
+  AbstractSyncedGraphQlResource,
   MakeSyncFunctionArgsGraphQl,
-  SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseConstructorArgs, BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { BaseConstructorArgs } from '../Abstract/Rest/AbstractRestResource';
 import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
@@ -89,11 +92,11 @@ interface AllArgs extends BaseContext {
 export class Metaobject extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metaobjectFragment>;
 
-  static readonly displayName = 'Metaobject' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Metaobject;
+  public static readonly displayName = 'Metaobject' as ResourceDisplayName;
+  protected static readonly graphQlName = GraphQlResourceName.Metaobject;
 
-  protected static defaultMaxEntriesPerRun: number = 50;
-  protected static paths: Array<GraphQlResourcePath> = [
+  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly paths: Array<GraphQlResourcePath> = [
     'metaobject',
     'metaobjects.nodes',
     'metaobjectCreate.metaobject',

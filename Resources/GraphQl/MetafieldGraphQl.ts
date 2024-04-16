@@ -3,7 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
-import { RequiredParameterMissingVisibleError } from '../../Errors';
+import { BaseContext } from '../../Clients/Client.types';
+import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY, GRAPHQL_NODES_LIMIT } from '../../constants';
@@ -17,10 +18,6 @@ import {
   metafieldFieldsFragmentWithDefinition,
   setMetafieldsMutation,
 } from '../../graphql/metafields-graphql';
-import { shouldDeleteMetafield } from '../../utils/metafields-utils';
-import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
-import { formatMetaFieldValueForSchema, formatMetafieldValueForApi } from '../../utils/metafields-utils';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../../utils/metafields-utils';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
@@ -28,15 +25,26 @@ import { MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types'
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deleteUndefinedInObject, isNullishOrEmpty } from '../../utils/helpers';
 import {
+  formatMetaFieldValueForSchema,
+  formatMetafieldValueForApi,
+  getMetaFieldFullKey,
+  matchOwnerTypeToOwnerResource,
+  matchOwnerTypeToResourceName,
+  shouldDeleteMetafield,
+  splitMetaFieldFullKey,
+} from '../../utils/metafields-utils';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import {
   AbstractGraphQlResource,
   FindAllResponse,
   GraphQlResourcePath,
-  MakeSyncFunctionArgsGraphQl,
   SaveArgs,
-  SyncTableManagerSyncFunction,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedGraphQlResource,
+  MakeSyncFunctionArgsGraphQl,
+  SyncTableManagerSyncFunction,
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AllMetafieldTypeValue } from '../Mixed/Metafield.types';
 import { Metafield } from '../Rest/Metafield';
@@ -91,11 +99,11 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
       isDeletedFlag: boolean;
     };
 
-  static readonly displayName = 'Metafield' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Metafield;
+  public static readonly displayName = 'Metafield' as ResourceDisplayName;
+  protected static readonly graphQlName = GraphQlResourceName.Metafield;
 
-  protected static defaultMaxEntriesPerRun: number = 50;
-  protected static paths: Array<GraphQlResourcePath> = [
+  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly paths: Array<GraphQlResourcePath> = [
     // TODO: won't work, we should write some sort of parser to identify that the root key is an array ? or just detect it using Array.isArray and flatten everything inside ?
     'nodes.metafields.nodes',
 
@@ -323,7 +331,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
         const metafieldNodes = owner.metafields?.nodes ?? [];
         metafieldNodes.forEach((metafield) => {
           instances.push(
-            this.create<T>(context, {
+            this.createInstance<T>(context, {
               ...metafield,
               owner: { id: owner.id },
             })
@@ -489,7 +497,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
     if (!row.label) throw new RequiredParameterMissingVisibleError('label');
     if (!row.type) throw new RequiredParameterMissingVisibleError('type');
 
-    const staticResource = this.resource();
+    const staticResource = this.resource<typeof MetafieldGraphQl>();
     const { DELETED_SUFFIX } = Metafield;
 
     const isDeletedFlag = row.label.includes(DELETED_SUFFIX);

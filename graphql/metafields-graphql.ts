@@ -1,7 +1,7 @@
 // #region Imports
 
 import { TadaDocumentNode } from 'gql.tada';
-import { UnsupportedValueError } from '../Errors';
+import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { graphql } from '../utils/tada-utils';
 import { capitalizeFirstChar } from '../utils/helpers';

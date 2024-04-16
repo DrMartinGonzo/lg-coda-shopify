@@ -19,7 +19,7 @@ import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
-import { ResourceName } from '../Resources/Abstract/Rest/AbstractRestResource';
+import { ResourceName } from '../Resources/Abstract/AbstractResource';
 import { Location } from '../Resources/GraphQl/Location';
 import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { Metaobject } from '../Resources/GraphQl/Metaobject';

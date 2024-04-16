@@ -1,10 +1,9 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Locations } from '../../coda/setup/locations-setup';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import {
   activateLocationMutation,
   deactivateLocationMutation,
@@ -17,21 +16,21 @@ import { LocationRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
-  FindAllResponse,
-  GraphQlResourcePath,
   MakeSyncFunctionArgsGraphQl,
-  SaveArgs,
   SyncTableManagerSyncFunction,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
+} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import {
   AbstractSyncedGraphQlResourceWithMetafields,
   GraphQlApiDataWithMetafields,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
 import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
+import { GraphQlResourceName } from '../types/GraphQlResource.types';
 
 // #endregion
 
@@ -61,12 +60,17 @@ interface AllArgs extends BaseContext {
 export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
   public apiData: ResultOf<typeof locationFragment> & GraphQlApiDataWithMetafields;
 
-  static readonly displayName = 'Location' as ResourceDisplayName;
-  protected static graphQlName = GraphQlResourceName.Location;
-  static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'location';
-  protected static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Location;
+  public static readonly displayName = 'Location' as ResourceDisplayName;
+  protected static readonly graphQlName = GraphQlResourceName.Location;
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'location';
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Location;
 
-  protected static paths: Array<GraphQlResourcePath> = ['node', 'location', 'locations.nodes', 'locationEdit.location'];
+  protected static readonly paths: Array<GraphQlResourcePath> = [
+    'node',
+    'location',
+    'locations.nodes',
+    'locationEdit.location',
+  ];
 
   public static getStaticSchema() {
     return LocationSyncTableSchema;

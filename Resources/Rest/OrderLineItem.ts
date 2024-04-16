@@ -1,24 +1,25 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { BaseContext } from '../../Clients/Client.types';
+import { SearchParams } from '../../Clients/RestClient';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
+import { REST_DEFAULT_LIMIT } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
-import { BaseContext, ResourceDisplayName } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import {
   AbstractSyncedRestResource,
   GetSchemaArgs,
   MakeSyncFunctionArgs,
   SyncFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { SearchParams } from '../../Clients/RestClient';
-import { Shop } from './Shop';
 import { Order } from './Order';
+import { Shop } from './Shop';
 
 // #endregion
 
@@ -50,7 +51,7 @@ export type LineItem = {
 export class OrderLineItem extends AbstractSyncedRestResource {
   public apiData: (LineItem & { order_id: number; order_name: string }) | null;
 
-  static readonly displayName = 'Order LineItem' as ResourceDisplayName;
+  public static readonly displayName = 'Order LineItem' as ResourceDisplayName;
 
   public static getStaticSchema() {
     return OrderLineItemSyncTableSchema;

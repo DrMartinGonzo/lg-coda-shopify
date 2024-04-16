@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf } from '../utils/tada-utils';
 
-import { UnsupportedValueError } from '../Errors';
+import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
 import { Shop } from '../Resources/Rest/Shop';

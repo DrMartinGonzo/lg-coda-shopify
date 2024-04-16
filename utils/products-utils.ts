@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FetchRequestOptions } from '../Fetchers/Fetcher.types';
+import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
 import { CACHE_DEFAULT } from '../constants';
 import { getProductTypesQuery } from '../graphql/products-graphql';
