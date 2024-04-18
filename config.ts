@@ -6,4 +6,9 @@ export const GRAPHQL_DEFAULT_API_VERSION = '2023-10'; // Don't put this at 1000 
 export const GRAPHQL_BUDGET__MAX = 900;
 export const GRAPHQL_RETRIES__MAX = 5;
 
+/** The default thumbnail size when no size is defined by the user */
+export const DEFAULT_THUMBNAIL_SIZE = 64;
+/** Default currency code to use when we are unable to fetch the one defined in the current shop */
 export const DEFAULT_CURRENCY_CODE = 'USD' as CurrencyCode;
+/** The default product variant option value when creating a product */
+export const DEFAULT_PRODUCTVARIANT_OPTION_VALUE = 'Coda Default';

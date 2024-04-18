@@ -3,19 +3,13 @@
 import { TadaDocumentNode } from 'gql.tada';
 import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { graphql } from '../utils/tada-utils';
 import { capitalizeFirstChar } from '../utils/helpers';
+import { ResultOf, graphql } from '../utils/tada-utils';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #endregion
 
 // #region Fragments
-export const pageInfoFragment = graphql(`
-  fragment PageInfoFields on PageInfo {
-    hasNextPage
-    endCursor
-  }
-`);
-
 export const metafieldFieldsFragment = graphql(`
   fragment MetafieldFields on Metafield {
     __typename
@@ -31,7 +25,7 @@ export const metafieldFieldsFragment = graphql(`
 `);
 
 // TODO: j'aimerais faire en sorte de ne pas répéter les champs de MetafieldFieldsFragment mais ça pose trop de problèmes avec gql-tada
-// peut être en faisant une string partagéé entre les deux définie comme 'as const' dans Typescript ?
+// peut être en faisant une string partagée entre les deux définie comme 'as const' dans Typescript ?
 export const metafieldFieldsFragmentWithDefinition = graphql(
   `
     fragment MetafieldWithDefinitionFields on Metafield {
@@ -50,6 +44,12 @@ export const metafieldFieldsFragmentWithDefinition = graphql(
     }
   `
 );
+
+export type MetafieldFragmentWithDefinition = Omit<
+  ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
+  'fragmentRefs'
+> &
+  Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;
 
 const resourceWithMetafieldsFragment = graphql(
   `

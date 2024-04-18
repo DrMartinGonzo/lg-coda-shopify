@@ -1,7 +1,7 @@
 const fs = require('fs');
 import * as coda from '@codahq/packs-sdk';
 
-import { Identity } from '../constants';
+import { PACK_IDENTITIES } from '../constants';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
 import { CollectSyncTableSchema } from '../schemas/syncTable/CollectSchema';
@@ -23,6 +23,7 @@ import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRe
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
+import { arrayUnique } from '../utils/helpers';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -117,6 +118,7 @@ function formatProperty(key: string, property, indentation = 1, wrapArray = fals
   }
 }
 
+const usedDisplayProperties = [];
 function generateCodaRowInterface(schema: ReturnType<typeof coda.makeObjectSchema>, identity: string) {
   // const idEffectivePropertyKey = getObjectSchemaEffectiveKey(schema, schema.idProperty);
   const interfaceName = `${identity}Row`;
@@ -124,6 +126,9 @@ function generateCodaRowInterface(schema: ReturnType<typeof coda.makeObjectSchem
   lines.push(`/**
  * Coda Row Interface for ${identity}s Sync Table
  */`);
+
+  usedDisplayProperties.push(schema.displayProperty);
+
   lines.push(`export interface ${interfaceName} extends BaseRow {`);
   Object.keys(schema.properties).forEach((key) => {
     lines.push(formatProperty(key, schema.properties[key], 1));
@@ -137,27 +142,27 @@ function generateCodaRowInterface(schema: ReturnType<typeof coda.makeObjectSchem
 }
 
 const definitions = [
-  [ArticleSyncTableSchema, Identity.Article],
-  [BlogSyncTableSchema, Identity.Blog],
-  [CollectSyncTableSchema, Identity.Collect],
-  [CollectionSyncTableSchema, Identity.Collection],
-  [DraftOrderSyncTableSchema, Identity.DraftOrder],
-  [CustomerSyncTableSchema, Identity.Customer],
-  [FileSyncTableSchema, Identity.File],
-  [InventoryItemSyncTableSchema, Identity.InventoryItem],
-  [InventoryLevelSyncTableSchema, Identity.InventoryLevel],
-  [LocationSyncTableSchema, Identity.Location],
-  [MetafieldSyncTableSchema, Identity.Metafield],
-  [MetafieldDefinitionSyncTableSchema, Identity.MetafieldDefinition],
-  [MetaObjectSyncTableBaseSchema, Identity.Metaobject],
-  [OrderSyncTableSchema, Identity.Order],
-  [OrderLineItemSyncTableSchema, Identity.OrderLineItem],
-  [OrderTransactionSyncTableSchema, Identity.OrderTransaction],
-  [PageSyncTableSchema, Identity.Page],
-  [ProductSyncTableSchemaRest, Identity.Product],
-  [ProductVariantSyncTableSchema, Identity.ProductVariant],
-  [RedirectSyncTableSchema, Identity.Redirect],
-  [ShopSyncTableSchema, Identity.Shop],
+  [ArticleSyncTableSchema, PACK_IDENTITIES.Article],
+  [BlogSyncTableSchema, PACK_IDENTITIES.Blog],
+  [CollectSyncTableSchema, PACK_IDENTITIES.Collect],
+  [CollectionSyncTableSchema, PACK_IDENTITIES.Collection],
+  [DraftOrderSyncTableSchema, PACK_IDENTITIES.DraftOrder],
+  [CustomerSyncTableSchema, PACK_IDENTITIES.Customer],
+  [FileSyncTableSchema, PACK_IDENTITIES.File],
+  [InventoryItemSyncTableSchema, PACK_IDENTITIES.InventoryItem],
+  [InventoryLevelSyncTableSchema, PACK_IDENTITIES.InventoryLevel],
+  [LocationSyncTableSchema, PACK_IDENTITIES.Location],
+  [MetafieldSyncTableSchema, PACK_IDENTITIES.Metafield],
+  [MetafieldDefinitionSyncTableSchema, PACK_IDENTITIES.MetafieldDefinition],
+  [MetaObjectSyncTableBaseSchema, PACK_IDENTITIES.Metaobject],
+  [OrderSyncTableSchema, PACK_IDENTITIES.Order],
+  [OrderLineItemSyncTableSchema, PACK_IDENTITIES.OrderLineItem],
+  [OrderTransactionSyncTableSchema, PACK_IDENTITIES.OrderTransaction],
+  [PageSyncTableSchema, PACK_IDENTITIES.Page],
+  [ProductSyncTableSchemaRest, PACK_IDENTITIES.Product],
+  [ProductVariantSyncTableSchema, PACK_IDENTITIES.ProductVariant],
+  [RedirectSyncTableSchema, PACK_IDENTITIES.Redirect],
+  [ShopSyncTableSchema, PACK_IDENTITIES.Shop],
 ];
 
 const blocks = definitions.map((def) => {
@@ -179,6 +184,21 @@ fs.writeFileSync(
  * Last generated: ${new Date().toISOString()}
  *
  */
+
+type UsedDisplayProperties = ${arrayUnique(usedDisplayProperties)
+    .map((prop) => `'${prop}'`)
+    .join(' | ')};
+
+export type FormatRowReferenceFn<T, displayPropT extends string = never> = (
+  id: T,
+  displayProp?: string
+) => {
+  /** The row idProperty. */
+  id: T;
+} & {
+  /** For the row displayProperty. Could be name, title… anything */
+  [k in displayPropT]: string;
+};
 
 export interface BaseRow extends Record<string, any> {
   id: number | string;

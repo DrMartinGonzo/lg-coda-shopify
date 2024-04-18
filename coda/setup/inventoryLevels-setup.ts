@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { InventoryLevel } from '../../Resources/Rest/InventoryLevel';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { filters, inputs } from '../coda-parameters';
 import { parseOptionId } from '../../utils/helpers';
@@ -14,7 +14,7 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
   name: 'InventoryLevels',
   description: 'Return Inventory Levels from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.InventoryLevel,
+  identityName: PACK_IDENTITIES.InventoryLevel,
   schema: InventoryLevelSyncTableSchema,
   formula: {
     name: 'SyncInventoryLevels',
@@ -51,7 +51,7 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(InventoryLevelSchema, Identity.InventoryLevel),
+  // schema: coda.withIdentity(InventoryLevelSchema, IdentitiesNew.inventoryLevel),
   schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available], context) {
     const inventoryLevel = new InventoryLevel({
@@ -84,7 +84,7 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(InventoryLevelSchema, Identity.InventoryLevel),
+  // schema: coda.withIdentity(InventoryLevelSchema, IdentitiesNew.inventoryLevel),
   schema: InventoryLevelSyncTableSchema,
   execute: async function ([inventory_item_id, location_id, available_adjustment], context) {
     const inventoryLevel = new InventoryLevel({

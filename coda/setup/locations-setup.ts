@@ -4,12 +4,12 @@ import * as coda from '@codahq/packs-sdk';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Location } from '../../Resources/GraphQl/Location';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
 
 // #endregion
 
@@ -19,7 +19,7 @@ export const Sync_Locations = coda.makeSyncTable({
   description:
     'Return Locations from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Location,
+  identityName: PACK_IDENTITIES.Location,
   schema: LocationSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -73,7 +73,7 @@ export const Action_UpdateLocation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, Identity.Location),
+  // schema: coda.withIdentity(LocationSchema, IdentitiesNew.location),
   schema: LocationSyncTableSchema,
   execute: async function (
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
@@ -112,7 +112,7 @@ export const Action_ActivateLocation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, Identity.Location),
+  // schema: coda.withIdentity(LocationSchema, IdentitiesNew.location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID], context) {
     const fromRow: FromRow<LocationRow> = { row: { id: locationID } };
@@ -134,7 +134,7 @@ export const Action_DeactivateLocation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(LocationSchema, Identity.Location),
+  // schema: coda.withIdentity(LocationSchema, IdentitiesNew.location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID, destinationLocationID], context) {
     const location = new Location({
@@ -142,7 +142,7 @@ export const Action_DeactivateLocation = coda.makeFormula({
       fromRow: { row: { id: locationID } },
     });
     const destinationGid = destinationLocationID
-      ? idToGraphQlGid(GraphQlResourceName.Location, destinationLocationID)
+      ? idToGraphQlGid(GraphQlResourceNames.Location, destinationLocationID)
       : undefined;
 
     await location.deActivate(destinationGid);
@@ -161,7 +161,7 @@ export const Formula_Location = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: LocationSyncTableSchema,
   execute: async ([location_id], context) => {
-    const location = await Location.find({ context, id: idToGraphQlGid(GraphQlResourceName.Location, location_id) });
+    const location = await Location.find({ context, id: idToGraphQlGid(GraphQlResourceNames.Location, location_id) });
     return location.formatToRow();
   },
 });

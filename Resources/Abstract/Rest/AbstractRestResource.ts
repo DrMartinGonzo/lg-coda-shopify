@@ -1,17 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { PageInfo, RestRequestReturn } from '@shopify/shopify-api/lib/clients/types';
+import { PageInfo } from '@shopify/shopify-api/lib/clients/types';
 import { Body, IdSet, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../../Clients/Client.types';
-import { RestClient } from '../../../Clients/RestClient';
+import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
 import { REST_DEFAULT_API_VERSION } from '../../../config';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
 import { filterObjectKeys } from '../../../utils/helpers';
 import { MergedCollection_Custom } from '../../Rest/MergedCollection_Custom';
+import { GraphQlResourceName, RestResourceSingular } from '../../types/Resource.types';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
 import { AbstractResource } from '../AbstractResource';
 import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithRestMetafields';
+import { Shop } from '../../Rest/Shop';
 
 // #region Types
 export interface BaseConstructorArgs {
@@ -32,7 +34,7 @@ interface GetPathArgs {
 }
 
 export interface FindAllResponse<T> {
-  data: Array<T>;
+  data: T[];
   headers: coda.FetchResponse['headers'];
   pageInfo?: PageInfo;
 }
@@ -62,6 +64,8 @@ export interface SaveArgs {
 export abstract class AbstractRestResource extends AbstractResource {
   protected static Client = RestClient;
   protected static apiVersion = REST_DEFAULT_API_VERSION;
+  protected static readonly restName: RestResourceSingular;
+  protected static readonly graphQlName: GraphQlResourceName | undefined;
   protected static readonly resourceNames: ResourceNames[] = [];
   protected static readonly paths: ResourcePath[] = [];
 
@@ -124,7 +128,7 @@ export abstract class AbstractRestResource extends AbstractResource {
     return this.restName ?? this.name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   }
 
-  protected static async request<T = unknown>({
+  protected static async request<T extends AbstractRestResource = AbstractRestResource>({
     context,
     http_method,
     operation,
@@ -205,7 +209,11 @@ export abstract class AbstractRestResource extends AbstractResource {
     };
   }
 
-  protected static async baseDelete<T = unknown>({ urlIds, params, context }: BaseDeleteArgs) {
+  protected static async baseDelete<T extends AbstractRestResource = AbstractRestResource>({
+    urlIds,
+    params,
+    context,
+  }: BaseDeleteArgs) {
     return this.request<T>({
       http_method: 'delete',
       operation: 'delete',
@@ -248,7 +256,7 @@ export abstract class AbstractRestResource extends AbstractResource {
     return idToGraphQlGid(this.resource<typeof AbstractRestResource>().graphQlName, this.apiData.id);
   }
 
-  public request<T = unknown>(args: RequestArgs) {
+  public request<T extends AbstractRestResource = AbstractRestResource>(args: RequestArgs) {
     return this.resource<typeof AbstractRestResource>().request<T>(args);
   }
 

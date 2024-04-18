@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderTransaction } from '../../Resources/GraphQl/OrderTransaction';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { OrderTransactionSyncTableSchema } from '../../schemas/syncTable/OrderTransactionSchema';
 import { filters } from '../coda-parameters';
 
@@ -13,7 +13,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
   name: 'OrderTransactions',
   description: 'Return Order Transactions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.OrderTransaction,
+  identityName: PACK_IDENTITIES.OrderTransaction,
   schema: OrderTransactionSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {

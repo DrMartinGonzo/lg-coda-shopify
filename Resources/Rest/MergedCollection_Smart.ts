@@ -7,10 +7,9 @@ import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManage
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { ResourceName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { MergedCollection } from './MergedCollection';
 
 // #endregion
@@ -45,7 +44,7 @@ interface OrderArgs extends BaseContext {
 }
 
 export class MergedCollection_Smart extends MergedCollection {
-  protected static readonly restName: ResourceName = 'smart_collection';
+  protected static readonly restName: RestResourceSingular = RestResourcesSingular.SmartCollection;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'smart_collections/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'smart_collections.json' },
@@ -56,8 +55,8 @@ export class MergedCollection_Smart extends MergedCollection {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.SmartCollection,
-      plural: RestResourcePlural.SmartCollection,
+      singular: RestResourcesSingular.SmartCollection,
+      plural: RestResourcesPlural.SmartCollection,
     },
   ];
 
@@ -65,11 +64,11 @@ export class MergedCollection_Smart extends MergedCollection {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     MergedCollection_Smart,
     typeof Sync_Collections,
     SyncTableManagerRestWithGraphQlMetafields<MergedCollection_Smart>
-  >): SyncFunction {
+  >): SyncRestFunction<MergedCollection_Smart> {
     const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
       codaSyncParams;
 

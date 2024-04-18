@@ -3,21 +3,20 @@ import { ResultOf } from './tada-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
-import { ResourceName } from '../Resources/Abstract/AbstractResource';
 import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
-  AllMetafieldTypeValue,
   Fields,
   METAFIELD_LEGACY_TYPES,
   METAFIELD_TYPES,
-  METAFIELD_TYPES_RAW_REFERENCE,
-  MetafieldTypeValue,
+  MetafieldLegacyType,
+  MetafieldType,
 } from '../Resources/Mixed/Metafield.types';
 import { SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
-import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types';
+import { GraphQlResourceName, GraphQlResourceNames, RestResourceSingular } from '../Resources/types/Resource.types';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
+import { FormatRowReferenceFn } from '../schemas/CodaRows.types';
 import { formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
 import { formatFileReference } from '../schemas/syncTable/FileSchema';
 import { formatMetaobjectReference } from '../schemas/syncTable/MetaObjectSchema';
@@ -34,7 +33,7 @@ import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty, maybeParseJ
 /**
  * Format a Rating cell value for GraphQL Api
  */
-function formatRatingFieldForApi(
+function formatRatingField(
   value: number,
   validations: ResultOf<typeof metafieldDefinitionFragment>['validations']
 ): Fields.Rating {
@@ -49,22 +48,39 @@ function formatRatingFieldForApi(
 }
 
 /**
- * Format a Money cell value for GraphQL Api
+ * Format a Rating or list of rating cell values for GraphQL Api
  */
-function formatMoneyFieldForApi(amount: number, currency_code: CurrencyCode): Fields.Money {
+function formatRatingFieldsForApi(
+  value: number | number[],
+  validations: ResultOf<typeof metafieldDefinitionFragment>['validations']
+): string {
+  return Array.isArray(value)
+    ? JSON.stringify(value.map((v) => formatRatingFieldsForApi(v, validations)))
+    : JSON.stringify(formatRatingField(value, validations));
+}
+
+/**
+ * Format a Money cell value
+ */
+function formatMoneyField(amount: number, currency_code: CurrencyCode): Fields.Money {
   return { amount, currency_code: currency_code ?? DEFAULT_CURRENCY_CODE };
 }
+
 /**
- * Format a Measurement cell value for GraphQL Api
- * @param measurementString the string entered by user in format "{value}{unit}" with eventual spaces between
+ * Format a Money cell value for GraphQL Api
+ */
+function formatMoneyFieldsForApi(amount: number, currency_code: CurrencyCode): string {
+  return JSON.stringify(formatMoneyField(amount, currency_code));
+}
+
+/**
+ * Format a Measurement cell value
+ * @param measurementValue the string entered by user in format "{value}{unit}" with eventual spaces between
  * @param metafieldType the type of metafield
  */
-function formatMeasurementFieldForApi(
-  measurementString: string,
-  metafieldType: MetafieldTypeValue
-): Fields.Measurement {
+function formatMeasurementField(measurementValue: string, metafieldType: MetafieldType): Fields.Measurement {
   const measurementType = metafieldType.replace('list.', '');
-  const { value, unit, unitFull } = extractValueAndUnitFromMeasurementString(measurementString, measurementType);
+  const { value, unitFull } = extractValueAndUnitFromMeasurementString(measurementValue, measurementType);
   return {
     value,
     unit: unitFull,
@@ -72,15 +88,42 @@ function formatMeasurementFieldForApi(
 }
 
 /**
+ * Format a Measurement or list of Measurement cell value for GraphQL Api
+ * @param measurementValue the string or list of strings entered by user in format "{value}{unit}" with eventual spaces between
+ * @param metafieldType the type of metafield
+ */
+function formatMeasurementFieldsForApi(measurementValue: string | string[], metafieldType: MetafieldType): string {
+  return Array.isArray(measurementValue)
+    ? JSON.stringify(measurementValue.map((v) => formatMeasurementFieldsForApi(v, metafieldType)))
+    : JSON.stringify(formatMeasurementField(measurementValue, metafieldType));
+}
+
+/**
+ * Format a Reference or list of Reference cell value for GraphQL Api
+ * @param value
+ * @param graphQlResourceName
+ */
+function formatReferenceFieldsForApi(
+  value: { id: string } | { id: string }[],
+  graphQlResourceName?: GraphQlResourceName
+) {
+  return Array.isArray(value)
+    ? JSON.stringify(value.map((v) => formatReferenceFieldsForApi(v, graphQlResourceName)))
+    : graphQlResourceName === undefined
+    ? value?.id
+    : idToGraphQlGid(graphQlResourceName, value?.id);
+}
+
+/**
  * This function is the same for a metaobject field and a metafield
  * @param value the Coda column cell value
  * @param type the type of field
  * @param validations possible validations from the field definition
- * @param codaSchema
+ * @param currencyCode the current Shop currency code
  */
 export function formatMetafieldValueForApi(
   value: any,
-  type: AllMetafieldTypeValue,
+  type: MetafieldType | MetafieldLegacyType,
   validations?: ResultOf<typeof metafieldDefinitionFragment>['validations'],
   currencyCode?: CurrencyCode
 ): string | null {
@@ -119,29 +162,25 @@ export function formatMetafieldValueForApi(
 
     // RATING
     case METAFIELD_TYPES.rating:
-      return JSON.stringify(formatRatingFieldForApi(value, validations));
     case METAFIELD_TYPES.list_rating:
-      return JSON.stringify(value.map((v) => formatRatingFieldForApi(v, validations)));
+      return formatRatingFieldsForApi(value, validations);
 
     // MONEY
     case METAFIELD_TYPES.money:
-      return JSON.stringify(formatMoneyFieldForApi(value, currencyCode));
+      return formatMoneyFieldsForApi(value, currencyCode);
 
     // REFERENCE
     case METAFIELD_TYPES.page_reference:
-      return idToGraphQlGid(GraphQlResourceName.OnlineStorePage, value?.id);
     case METAFIELD_TYPES.list_page_reference:
-      return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResourceName.OnlineStorePage, v?.id)));
+      return formatReferenceFieldsForApi(value, GraphQlResourceNames.Page);
 
     case METAFIELD_TYPES.file_reference:
-      return value?.id;
     case METAFIELD_TYPES.list_file_reference:
-      return JSON.stringify(value.map((v) => v?.id));
+      return formatReferenceFieldsForApi(value);
 
     case METAFIELD_TYPES.metaobject_reference:
-      return idToGraphQlGid(GraphQlResourceName.Metaobject, value?.id);
     case METAFIELD_TYPES.list_metaobject_reference:
-      return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResourceName.Metaobject, v?.id)));
+      return formatReferenceFieldsForApi(value, GraphQlResourceNames.Metaobject);
 
     // We only support raw value for mixed references
     case METAFIELD_TYPES.mixed_reference:
@@ -151,29 +190,25 @@ export function formatMetafieldValueForApi(
       return JSON.stringify(Array.isArray(value) ? value : value.split(',').map((v: string) => v.trim()));
 
     case METAFIELD_TYPES.collection_reference:
-      return idToGraphQlGid(GraphQlResourceName.Collection, value?.id);
     case METAFIELD_TYPES.list_collection_reference:
-      return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResourceName.Collection, v?.id)));
+      return formatReferenceFieldsForApi(value, GraphQlResourceNames.Collection);
 
     case METAFIELD_TYPES.product_reference:
-      return idToGraphQlGid(GraphQlResourceName.Product, value?.id);
     case METAFIELD_TYPES.list_product_reference:
-      return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResourceName.Product, v?.id)));
+      return formatReferenceFieldsForApi(value, GraphQlResourceNames.Product);
 
     case METAFIELD_TYPES.variant_reference:
-      return idToGraphQlGid(GraphQlResourceName.ProductVariant, value?.id);
     case METAFIELD_TYPES.list_variant_reference:
-      return JSON.stringify(value.map((v) => idToGraphQlGid(GraphQlResourceName.ProductVariant, v?.id)));
+      return formatReferenceFieldsForApi(value, GraphQlResourceNames.ProductVariant);
 
     // MEASUREMENT
-    case METAFIELD_TYPES.weight:
     case METAFIELD_TYPES.dimension:
     case METAFIELD_TYPES.volume:
-      return JSON.stringify(formatMeasurementFieldForApi(value, type));
-    case METAFIELD_TYPES.list_weight:
+    case METAFIELD_TYPES.weight:
     case METAFIELD_TYPES.list_dimension:
     case METAFIELD_TYPES.list_volume:
-      return JSON.stringify(value.map((v) => JSON.stringify(formatMeasurementFieldForApi(v, type))));
+    case METAFIELD_TYPES.list_weight:
+      return formatMeasurementFieldsForApi(value, type);
 
     default:
       break;
@@ -184,6 +219,42 @@ export function formatMetafieldValueForApi(
 // #endregion
 
 // #region Format for Schema
+function formatReferenceFieldsForSchema(
+  parsedValue: string | string[],
+  formatReference: FormatRowReferenceFn<string | number, any>,
+  useRawGid = false
+) {
+  return Array.isArray(parsedValue)
+    ? parsedValue.map((id: string) => formatReferenceFieldsForSchema(id, formatReference, useRawGid))
+    : formatReference(useRawGid ? parsedValue : graphQlGidToId(parsedValue));
+}
+
+function formatIntegerFieldsForSchema(parsedValue: string | string[]) {
+  return Array.isArray(parsedValue) ? parsedValue.map((v) => formatIntegerFieldsForSchema(v)) : parseInt(parsedValue);
+}
+
+function formatDecimalFieldsForSchema(parsedValue: string | string[]) {
+  return Array.isArray(parsedValue) ? parsedValue.map((v) => formatDecimalFieldsForSchema(v)) : parseFloat(parsedValue);
+}
+
+function formatMeasurementFieldsForSchema(
+  parsedValue: { value: string; unit: string } | { value: string; unit: string }[]
+) {
+  return Array.isArray(parsedValue)
+    ? parsedValue.map((v) => formatMeasurementFieldsForSchema(v))
+    : `${parsedValue.value}${unitToShortName(parsedValue.unit)}`;
+}
+
+function formatRatingFieldsForSchema(parsedValue: { value: string } | { value: string }[]) {
+  return Array.isArray(parsedValue)
+    ? parsedValue.map((v) => formatRatingFieldsForSchema(v))
+    : parseFloat(parsedValue.value);
+}
+
+function formatMoneyFieldForSchema(parsedValue: { amount: string }) {
+  return parseFloat(parsedValue.amount);
+}
+
 // TODO: maybe we could return string arrays as a single string with delimiter, like '\n;;;\n' for easier editing inside Coda ?
 /**
  * Format a metafield for a Resource schema that includes metafields
@@ -208,18 +279,14 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
     case METAFIELD_TYPES.list_date_time:
       return parsedValue;
 
-    case METAFIELD_TYPES.number_integer:
     case METAFIELD_LEGACY_TYPES.integer:
-      return parseInt(parsedValue);
+    case METAFIELD_TYPES.number_integer:
+    case METAFIELD_TYPES.list_number_integer:
+      return formatIntegerFieldsForSchema(parsedValue);
 
     case METAFIELD_TYPES.number_decimal:
-      return parseFloat(parsedValue);
-
-    case METAFIELD_TYPES.list_number_integer:
-      return parsedValue.map((v) => parseInt(v));
-
     case METAFIELD_TYPES.list_number_decimal:
-      return parsedValue.map((v) => parseFloat(v));
+      return formatDecimalFieldsForSchema(parsedValue);
 
     case METAFIELD_TYPES.rich_text_field:
       return convertSchemaToHtml(parsedValue);
@@ -230,29 +297,26 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
 
     // RATING
     case METAFIELD_TYPES.rating:
-      return parsedValue.value;
     case METAFIELD_TYPES.list_rating:
-      return parsedValue.map((v) => v.value);
+      return formatRatingFieldsForSchema(parsedValue);
 
     // MONEY
     case METAFIELD_TYPES.money:
-      return parseFloat(parsedValue.amount);
+      return formatMoneyFieldForSchema(parsedValue);
 
     // REFERENCES
     case METAFIELD_TYPES.collection_reference:
-      return formatCollectionReference(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_collection_reference:
-      return parsedValue.map((v) => formatCollectionReference(graphQlGidToId(v)));
+      return formatReferenceFieldsForSchema(parsedValue, formatCollectionReference);
 
+    // Files are the only resources that use GraphQL GID
     case METAFIELD_TYPES.file_reference:
-      return formatFileReference(parsedValue);
     case METAFIELD_TYPES.list_file_reference:
-      return parsedValue.map(formatFileReference);
+      return formatReferenceFieldsForSchema(parsedValue, formatFileReference, true);
 
     case METAFIELD_TYPES.metaobject_reference:
-      return formatMetaobjectReference(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_metaobject_reference:
-      return parsedValue.map((v) => formatMetaobjectReference(graphQlGidToId(v)));
+      return formatReferenceFieldsForSchema(parsedValue, formatMetaobjectReference);
 
     // We only support raw value for mixed references
     case METAFIELD_TYPES.mixed_reference:
@@ -260,29 +324,25 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
       return parsedValue;
 
     case METAFIELD_TYPES.page_reference:
-      return formatPageReference(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_page_reference:
-      return parsedValue.map((v) => formatPageReference(graphQlGidToId(v)));
+      return formatReferenceFieldsForSchema(parsedValue, formatPageReference);
 
     case METAFIELD_TYPES.product_reference:
-      return formatProductReference(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_product_reference:
-      return parsedValue.map((v) => formatProductReference(graphQlGidToId(v)));
+      return formatReferenceFieldsForSchema(parsedValue, formatProductReference);
 
     case METAFIELD_TYPES.variant_reference:
-      return formatProductVariantReference(graphQlGidToId(parsedValue));
     case METAFIELD_TYPES.list_variant_reference:
-      return parsedValue.map((v) => formatProductVariantReference(graphQlGidToId(v)));
+      return formatReferenceFieldsForSchema(parsedValue, formatProductVariantReference);
 
     // MEASUREMENT
-    case METAFIELD_TYPES.weight:
     case METAFIELD_TYPES.dimension:
     case METAFIELD_TYPES.volume:
-      return `${parsedValue.value}${unitToShortName(parsedValue.unit)}`;
-    case METAFIELD_TYPES.list_weight:
+    case METAFIELD_TYPES.weight:
     case METAFIELD_TYPES.list_dimension:
     case METAFIELD_TYPES.list_volume:
-      return parsedValue.map((v) => `${v.value}${unitToShortName(v.unit)}`);
+    case METAFIELD_TYPES.list_weight:
+      return formatMeasurementFieldsForSchema(parsedValue);
 
     default: {
       throw new UnsupportedValueError('MetafieldType', type);
@@ -320,8 +380,9 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
  * This function checks if a given metafield key is the 'full' one or not.
  * When querying metafields via their keys, GraphQl returns the 'full' key, i.e. `${namespace}.${key}`.
  */
-const hasMetafieldFullKey = (metafield: { namespace: string; key: string }) =>
-  metafield.key.indexOf(metafield.namespace) === 0;
+function hasMetafieldFullKey(metafield: { namespace: string; key: string }) {
+  return metafield.key.indexOf(metafield.namespace) === 0;
+}
 
 /**
  * A naive way to check if any of the keys might be a metafield key
@@ -351,15 +412,22 @@ export const splitMetaFieldFullKey = (fullKey: string) => {
  * Prepend a custom prefix to the metafield key
  * This allows us to detect if a coda column key is a metafield column to handle updates
  */
-export function preprendPrefixToMetaFieldKey(fullKey: string) {
+export function preprendPrefixToMetaFieldKey(fullKey: string): string {
   return CUSTOM_FIELD_PREFIX_KEY + fullKey;
 }
 
 /**
  * Remove our custom prefix from the metafield key
  */
-export function removePrefixFromMetaFieldKey(fromKey: string) {
+export function removePrefixFromMetaFieldKey(fromKey: string): string {
   return fromKey.replace(CUSTOM_FIELD_PREFIX_KEY, '');
+}
+
+/**
+ * Check if the given key is a prefixed metafield key.
+ */
+export function isPrefixedMetaFieldKey(fromKey: string): boolean {
+  return fromKey.startsWith(CUSTOM_FIELD_PREFIX_KEY);
 }
 
 /**
@@ -368,7 +436,7 @@ export function removePrefixFromMetaFieldKey(fromKey: string) {
  * perform a sync table request.
  */
 export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
-  const prefixedMetafieldFromKeys = fromKeys.filter((fromKey) => fromKey.startsWith(CUSTOM_FIELD_PREFIX_KEY));
+  const prefixedMetafieldFromKeys = fromKeys.filter((fromKey) => isPrefixedMetaFieldKey(fromKey));
   const standardFromKeys = fromKeys.filter((fromKey) => prefixedMetafieldFromKeys.indexOf(fromKey) === -1);
 
   return { prefixedMetafieldFromKeys, standardFromKeys };
@@ -385,27 +453,27 @@ export function separatePrefixedMetafieldsKeysFromKeys(fromKeys: string[]) {
 export function matchOwnerTypeToResourceName(ownerType: MetafieldOwnerType): GraphQlResourceName {
   switch (ownerType) {
     case MetafieldOwnerType.Article:
-      return GraphQlResourceName.OnlineStoreArticle;
+      return GraphQlResourceNames.Article;
     case MetafieldOwnerType.Blog:
-      return GraphQlResourceName.OnlineStoreBlog;
+      return GraphQlResourceNames.Blog;
     case MetafieldOwnerType.Collection:
-      return GraphQlResourceName.Collection;
+      return GraphQlResourceNames.Collection;
     case MetafieldOwnerType.Customer:
-      return GraphQlResourceName.Customer;
+      return GraphQlResourceNames.Customer;
     case MetafieldOwnerType.Draftorder:
-      return GraphQlResourceName.DraftOrder;
+      return GraphQlResourceNames.DraftOrder;
     case MetafieldOwnerType.Location:
-      return GraphQlResourceName.Location;
+      return GraphQlResourceNames.Location;
     case MetafieldOwnerType.Order:
-      return GraphQlResourceName.Order;
+      return GraphQlResourceNames.Order;
     case MetafieldOwnerType.Page:
-      return GraphQlResourceName.OnlineStorePage;
+      return GraphQlResourceNames.Page;
     case MetafieldOwnerType.Product:
-      return GraphQlResourceName.Product;
+      return GraphQlResourceNames.Product;
     case MetafieldOwnerType.Productvariant:
-      return GraphQlResourceName.ProductVariant;
+      return GraphQlResourceNames.ProductVariant;
     case MetafieldOwnerType.Shop:
-      return GraphQlResourceName.Shop;
+      return GraphQlResourceNames.Shop;
 
     default:
       throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
@@ -416,7 +484,7 @@ export function matchOwnerTypeToResourceName(ownerType: MetafieldOwnerType): Gra
  * Matches a GraphQl MetafieldOwnerType to the corresponding Rest owner resource name.
  *
  * @param {MetafieldOwnerType} ownerType - the MetafieldOwnerType to match
- * @return {GraphQlResourceName} the corresponding Rest owner resource name
+ * @return {GraphQlResourceNames} the corresponding Rest owner resource name
  */
 export function matchOwnerTypeToOwnerResource(ownerType: MetafieldOwnerType): SupportedMetafieldOwnerResource {
   switch (ownerType) {
@@ -451,10 +519,12 @@ export function matchOwnerTypeToOwnerResource(ownerType: MetafieldOwnerType): Su
 /**
  * Matches a Rest owner resource name to the corresponding GraphQl MetafieldOwnerType.
  *
- * @param {ResourceName} ownerResource - the Rest owner resource name
+ * @param {RestResourceSingular} ownerResource - the Rest owner resource name
  * @return {SupportedMetafieldOwnerType} the corresponding GraphQl MetafieldOwnerType
  */
-export function matchOwnerResourceToMetafieldOwnerType(ownerResource: ResourceName): SupportedMetafieldOwnerType {
+export function matchOwnerResourceToMetafieldOwnerType(
+  ownerResource: RestResourceSingular
+): SupportedMetafieldOwnerType {
   switch (ownerResource) {
     case 'article':
       return MetafieldOwnerType.Article;
@@ -496,7 +566,7 @@ export function shouldDeleteMetafield(string: string) {
  * Determine if a table cell value derived from a metafield ot metaobject field
  * value should be updated or not.
  * They are updatable if the value is not a reference to another resource
- * (except for references in METAFIELD_TYPES_RAW_REFERENCE, wich uses raw text
+ * (except for mixed_reference and list_mixed_reference, wich use raw text
  * columns), or if is, it should not come from an action using `coda.withIdentity`
  * This is to prevent breaking existing relations when using `coda.withIdentity`.
  *
@@ -507,7 +577,9 @@ export function shouldDeleteMetafield(string: string) {
 export function shouldUpdateSyncTableMetafieldValue(fieldType: string, schemaWithIdentity = false): boolean {
   const isReference = fieldType.indexOf('_reference') !== -1;
   const shouldUpdateReference =
-    !schemaWithIdentity || (schemaWithIdentity && METAFIELD_TYPES_RAW_REFERENCE.includes(fieldType as any));
+    !schemaWithIdentity ||
+    (schemaWithIdentity &&
+      [METAFIELD_TYPES.mixed_reference, METAFIELD_TYPES.list_mixed_reference].includes(fieldType as any));
 
   return !isReference || (isReference && shouldUpdateReference);
 }

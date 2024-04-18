@@ -7,9 +7,13 @@ import { Collection } from '../../Resources/Rest/Collection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
 import { MergedCollection_Custom } from '../../Resources/Rest/MergedCollection_Custom';
 import { MergedCollection_Smart } from '../../Resources/Rest/MergedCollection_Smart';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
+import {
+  GraphQlResourceNames,
+  RestResourceSingular,
+  RestResourcesSingular,
+} from '../../Resources/types/Resource.types';
 import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
-import { CACHE_DEFAULT, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
@@ -23,7 +27,7 @@ export const Sync_Collections = coda.makeSyncTable({
   description:
     'Return Collections from this shop. A collection is a grouping of products that merchants can create to make their stores easier to browse. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Collection,
+  identityName: PACK_IDENTITIES.Collection,
   schema: CollectionSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -62,27 +66,29 @@ export const Sync_Collections = coda.makeSyncTable({
     ],
     execute: async function (params, context) {
       const prevContinuation = context.sync.continuation as SyncTableMixedContinuation<CollectionRow>;
-      const restType = prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
+      const currentResourceName: RestResourceSingular = prevContinuation?.extraData?.currentResourceName;
 
-      if (restType === COLLECTION_TYPE__SMART) {
+      if (currentResourceName === RestResourcesSingular.SmartCollection) {
         return MergedCollection_Smart.sync(params, context);
       }
       return MergedCollection_Custom.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
-      const gids = updates.map(({ previousValue }) => idToGraphQlGid(GraphQlResourceName.Collection, previousValue.id));
+      const gids = updates.map(({ previousValue }) =>
+        idToGraphQlGid(GraphQlResourceNames.Collection, previousValue.id)
+      );
       const collectionTypes = await getCollectionTypes(gids, context);
 
       const customCollectionIds = collectionTypes
-        .filter(({ type }) => type === COLLECTION_TYPE__CUSTOM)
+        .filter(({ type }) => type === RestResourcesSingular.CustomCollection)
         .map(({ id }) => graphQlGidToId(id));
       const customCollectionsUpdates = updates.filter(({ previousValue }) =>
         customCollectionIds.includes(previousValue.id)
       );
 
       const smartCollectionIds = collectionTypes
-        .filter(({ type }) => type === COLLECTION_TYPE__SMART)
+        .filter(({ type }) => type === RestResourcesSingular.SmartCollection)
         .map(({ id }) => graphQlGidToId(id));
       const smartCollectionsUpdates = updates.filter(({ previousValue }) =>
         smartCollectionIds.includes(previousValue.id)
@@ -182,7 +188,7 @@ export const Action_UpdateCollection = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(CollectionSchema, Identity.Collection),
+  // schema: coda.withIdentity(CollectionSchema, IdentitiesNew.collection),
   schema: CollectionSyncTableSchema,
   execute: async (
     [collectionId, bodyHtml, title, handle, imageUrl, imageAlt, published, templateSuffix, metafields],
@@ -207,11 +213,11 @@ export const Action_UpdateCollection = coda.makeFormula({
     };
 
     const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
       context
     );
     const collectionClass =
-      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
     const updatedCollection = new collectionClass({ context, fromRow });
     await updatedCollection.saveAndUpdate();
     return updatedCollection.formatToRow();
@@ -227,11 +233,11 @@ export const Action_DeleteCollection = coda.makeFormula({
   resultType: coda.ValueType.Boolean,
   execute: async function ([collectionId], context) {
     const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
       context
     );
     const collectionClass =
-      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
     await collectionClass.delete({ context, id: collectionId });
     return true;
   },
@@ -253,11 +259,11 @@ export const Formula_Collection = coda.makeFormula({
   schema: CollectionSyncTableSchema,
   execute: async function ([collectionId], context) {
     const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceName.Collection, collectionId),
+      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
       context
     );
     const collectionClass =
-      collectionType === COLLECTION_TYPE__SMART ? MergedCollection_Smart : MergedCollection_Custom;
+      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
     const collection = await collectionClass.find({ context, id: collectionId });
     return collection.formatToRow();
   },

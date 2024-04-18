@@ -13,9 +13,10 @@ import { DiscountCodeSchema } from '../basic/DiscountCodeSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -709,5 +710,8 @@ export const orderFieldDependencies: FieldDependency<typeof OrderSyncTableSchema
     dependencies: ['admin_url'],
   },
 ];
-export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, Identity.Order);
-export const formatOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, PACK_IDENTITIES.Order);
+export const formatOrderReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
+  id,
+  name,
+});

@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from './tada-utils';
 
 import { NotFoundError } from '../Errors/Errors';
-import { Identity } from '../constants';
+import { PACK_IDENTITIES } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { CODA_PACK_ID } from '../pack-config.json';
@@ -45,7 +45,7 @@ export function getMetaobjectReferenceSchema(
     idProperty: 'id',
     identity: {
       packId: CODA_PACK_ID,
-      name: Identity.Metaobject,
+      name: PACK_IDENTITIES.Metaobject,
       dynamicUrl: graphQlGidToId(metaobjectReferenceDefinitionId).toString(),
     },
   });

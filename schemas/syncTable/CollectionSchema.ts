@@ -2,9 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
 import { CollectionRuleSetSchema } from '../basic/CollectionRuleSetSchema';
 import { SmartCollectionRuleSchema } from '../basic/SmartCollectionRuleSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const CollectionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -175,6 +176,10 @@ export const collectionFieldDependencies: FieldDependency<typeof CollectionSyncT
 
 export const CollectionReference = coda.makeReferenceSchemaFromObjectSchema(
   CollectionSyncTableSchema,
-  Identity.Collection
+  PACK_IDENTITIES.Collection
 );
-export const formatCollectionReference = (id: number, title = NOT_FOUND) => ({ id, title });
+
+export const formatCollectionReference: FormatRowReferenceFn<number, 'title'> = (id: number, title = NOT_FOUND) => ({
+  id,
+  title,
+});

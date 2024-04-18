@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Blog } from '../../Resources/Rest/Blog';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
@@ -18,7 +18,7 @@ export const Sync_Blogs = coda.makeSyncTable({
   description:
     "Return Blogs from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Blog,
+  identityName: PACK_IDENTITIES.Blog,
   schema: BlogSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -80,7 +80,7 @@ export const Action_UpdateBlog = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(BlogSchema, Identity.Blog),
+  // schema: coda.withIdentity(BlogSchema, IdentitiesNew.blog),
   schema: BlogSyncTableSchema,
   execute: async function ([blogId, title, handle, commentable, template_suffix, metafields], context) {
     const fromRow: FromRow<BlogRow> = {

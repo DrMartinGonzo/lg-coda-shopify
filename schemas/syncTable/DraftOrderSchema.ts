@@ -10,9 +10,10 @@ import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { OrderReference } from './OrderSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -268,6 +269,9 @@ export const draftOrderFieldDependencies: FieldDependency<typeof DraftOrderSyncT
 ];
 export const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(
   DraftOrderSyncTableSchema,
-  Identity.DraftOrder
+  PACK_IDENTITIES.DraftOrder
 );
-export const formatDraftOrderReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatDraftOrderReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
+  id,
+  name,
+});

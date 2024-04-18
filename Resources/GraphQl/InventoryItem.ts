@@ -3,7 +3,7 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { BaseContext } from '../../Clients/Client.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
   buildInventoryItemsSearchQuery,
   getInventoryItemsQuery,
@@ -16,16 +16,16 @@ import { formatProductVariantReference } from '../../schemas/syncTable/ProductVa
 import { CountryCode } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, deleteUndefinedInObject, isDefinedEmpty } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Shop } from '../Rest/Shop';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
 
 // #endregion
 
@@ -53,14 +53,11 @@ interface AllArgs extends BaseContext {
 export class InventoryItem extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof inventoryItemFieldsFragment>;
 
-  public static readonly displayName = 'InventoryItem' as ResourceDisplayName;
-  protected static readonly graphQlName = GraphQlResourceName.InventoryItem;
+  public static readonly displayName: Identity = PACK_IDENTITIES.InventoryItem;
+  protected static readonly graphQlName = GraphQlResourceNames.InventoryItem;
 
   // protected static readonly defaultMaxEntriesPerRun: number = 50;
-  protected static readonly paths: Array<GraphQlResourcePath> = [
-    'inventoryItems.nodes',
-    'inventoryItemUpdate.inventoryItem',
-  ];
+  protected static readonly paths: Array<GraphQlResourcePath> = ['inventoryItems', 'inventoryItemUpdate.inventoryItem'];
 
   public static getStaticSchema() {
     return InventoryItemSyncTableSchema;
@@ -78,7 +75,7 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncFunctionArgsGraphQl<InventoryItem, typeof Sync_InventoryItems>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<InventoryItem, typeof Sync_InventoryItems>): SyncGraphQlFunction<InventoryItem> {
     const [createdAtRange, updatedAtRange, skus] = codaSyncParams;
 
     return async ({ cursor = null, maxEntriesPerRun }) => {
@@ -236,11 +233,11 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
     };
 
     if (row.id !== undefined) {
-      apiData.id = idToGraphQlGid(GraphQlResourceName.InventoryItem, row.id);
+      apiData.id = idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id);
     }
 
     if (row.variant_id !== undefined) {
-      apiData.variant = { id: idToGraphQlGid(GraphQlResourceName.ProductVariant, row.variant_id) };
+      apiData.variant = { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) };
     }
 
     // TODO: Apparemment Coda renvoit une string et pas un nombre lors d'une update, du coup cost peut être égal à '' !

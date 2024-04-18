@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { NOT_FOUND } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -35,4 +36,7 @@ export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   featuredProperties: ['id', 'handle'],
 });
 
-export const formatMetaobjectReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatMetaobjectReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
+  id,
+  name,
+});

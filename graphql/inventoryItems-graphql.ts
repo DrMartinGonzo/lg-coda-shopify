@@ -1,4 +1,5 @@
 import { graphql } from '../utils/tada-utils';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
 export function buildInventoryItemsSearchQuery(filters: { [key: string]: any }) {
@@ -59,13 +60,12 @@ export const getInventoryItemsQuery = graphql(
         }
 
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [inventoryItemFieldsFragment]
+  [inventoryItemFieldsFragment, pageInfoFragment]
 );
 // #endregion
 

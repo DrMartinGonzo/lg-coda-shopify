@@ -3,20 +3,19 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -45,7 +44,7 @@ export class Collect extends AbstractSyncedRestResource {
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Collect' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Collect;
 
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'collects/<id>.json' },
@@ -55,8 +54,8 @@ export class Collect extends AbstractSyncedRestResource {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Collect,
-      plural: RestResourcePlural.Collect,
+      singular: RestResourcesSingular.Collect,
+      plural: RestResourcesPlural.Collect,
     },
   ];
 
@@ -68,7 +67,7 @@ export class Collect extends AbstractSyncedRestResource {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Collect, typeof Sync_Collects>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<Collect, typeof Sync_Collects>): SyncRestFunction<Collect> {
     const [collectionId] = codaSyncParams;
 
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>

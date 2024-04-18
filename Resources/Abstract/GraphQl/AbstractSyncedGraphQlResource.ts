@@ -11,15 +11,15 @@ import {
   BaseConstructorSyncedArgs,
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
   SyncTableDefinition,
 } from '../Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../AbstractResource';
 import { AbstractGraphQlResource, FindAllResponse } from './AbstractGraphQlResource';
 
 // #endregion
 
 // #region Types
-export type MakeSyncFunctionArgsGraphQl<
+export type MakeSyncGraphQlFunctionArgs<
   BaseT extends AbstractSyncedGraphQlResource = AbstractSyncedGraphQlResource,
   SyncTableDefT extends SyncTableDefinition = never,
   SyncTableManagerT extends SyncTableManagerGraphQl<BaseT> = SyncTableManagerGraphQl<BaseT>
@@ -29,13 +29,13 @@ export type MakeSyncFunctionArgsGraphQl<
   syncTableManager?: SyncTableManagerT;
 };
 
-export type SyncTableManagerSyncFunction = ({
+export type SyncGraphQlFunction<T> = ({
   cursor,
   maxEntriesPerRun,
 }: {
   cursor: string;
   maxEntriesPerRun?: number;
-}) => Promise<FindAllResponse<AbstractSyncedGraphQlResource>>;
+}) => Promise<FindAllResponse<T>>;
 
 // #endregion
 
@@ -86,8 +86,8 @@ export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResou
    * Should be overridden by subclasses
    */
   protected static makeSyncTableManagerSyncFunction(
-    params: MakeSyncFunctionArgsGraphQl<AbstractSyncedGraphQlResource, any>
-  ): SyncTableManagerSyncFunction {
+    params: MakeSyncGraphQlFunctionArgs<AbstractSyncedGraphQlResource, any>
+  ): SyncGraphQlFunction<AbstractSyncedGraphQlResource> {
     return ({ cursor = null, maxEntriesPerRun }) => this.all({ cursor, maxEntriesPerRun, ...params });
   }
 

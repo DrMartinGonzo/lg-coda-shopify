@@ -14,6 +14,7 @@ import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../ut
 import { arrayUnique } from '../../../utils/helpers';
 import { Metafield } from '../../Rest/Metafield';
 import { AbstractRestResource, BaseConstructorArgs, FindAllResponse } from './AbstractRestResource';
+import { GetSchemaArgs } from '../AbstractResource';
 
 // #endregion
 
@@ -22,7 +23,7 @@ export interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
   fromRow?: FromRow;
 }
 
-export type MakeSyncFunctionArgs<
+export type MakeSyncRestFunctionArgs<
   BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource,
   SyncTableDefT extends SyncTableDefinition = never,
   SyncTableManagerT extends SyncTableManagerRest<BaseT> = SyncTableManagerRest<BaseT>
@@ -32,10 +33,7 @@ export type MakeSyncFunctionArgs<
   syncTableManager?: SyncTableManagerT;
 };
 
-export type SyncFunction = (
-  nextPageQuery: SearchParams,
-  adjustLimit?: number
-) => Promise<FindAllResponse<AbstractSyncedRestResource>>;
+export type SyncRestFunction<T> = (nextPageQuery: SearchParams, adjustLimit?: number) => Promise<FindAllResponse<T>>;
 
 export interface FromRow<RowT extends BaseRow = BaseRow> {
   row: Partial<RowT> | null;
@@ -49,13 +47,6 @@ export type SyncTableDefinition =
 export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = SyncTableDefT extends never
   ? coda.ParamValues<coda.ParamDefs>
   : SyncTableParamValues<SyncTableDefT>;
-
-export interface GetSchemaArgs {
-  context: coda.ExecutionContext;
-  codaSyncParams?: coda.ParamValues<coda.ParamDefs>;
-  normalized?: boolean;
-}
-
 // #endregion
 
 export abstract class AbstractSyncedRestResource extends AbstractRestResource {
@@ -97,7 +88,7 @@ export abstract class AbstractSyncedRestResource extends AbstractRestResource {
    */
   protected static makeSyncTableManagerSyncFunction({
     context,
-  }: MakeSyncFunctionArgs<AbstractSyncedRestResource, any>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<AbstractSyncedRestResource, any>): SyncRestFunction<AbstractSyncedRestResource> {
     return (nextPageQuery: SearchParams = {}) =>
       this.baseFind({
         context,

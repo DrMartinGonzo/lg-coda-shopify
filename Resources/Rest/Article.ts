@@ -7,28 +7,27 @@ import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, parseOptionId } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -86,11 +85,11 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     user_id: number | null;
   };
 
-  public static readonly displayName = 'Article' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Article;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'article';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
 
-  protected static readonly graphQlName = GraphQlResourceName.OnlineStoreArticle;
+  protected static readonly graphQlName = GraphQlResourceNames.Article;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'articles/<id>.json' },
@@ -102,8 +101,8 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Article,
-      plural: RestResourcePlural.Article,
+      singular: RestResourcesSingular.Article,
+      plural: RestResourcesPlural.Article,
     },
   ];
 
@@ -126,17 +125,17 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     Article,
     typeof Sync_Articles,
     SyncTableManagerRestWithRestMetafields<Article>
-  >): SyncFunction {
+  >): SyncRestFunction<Article> {
     const [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag] =
       codaSyncParams;
 
     let blogIdsLeft: number[] = [];
     if (syncTableManager.prevContinuation) {
-      blogIdsLeft = syncTableManager.prevContinuation.extraContinuationData?.blogIdsLeft ?? [];
+      blogIdsLeft = syncTableManager.prevContinuation.extraData?.blogIdsLeft ?? [];
     }
     // Should trigger only on first run when user
     // has specified the blogs he wants to sync articles from

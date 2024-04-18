@@ -6,7 +6,7 @@ import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import {
@@ -18,19 +18,18 @@ import {
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -114,11 +113,11 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     verified_email: boolean | null;
   };
 
-  public static readonly displayName = 'Customer' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Customer;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'customer';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
 
-  protected static readonly graphQlName = GraphQlResourceName.Customer;
+  protected static readonly graphQlName = GraphQlResourceNames.Customer;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'customers/<id>.json' },
@@ -138,8 +137,8 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Customer,
-      plural: RestResourcePlural.Customer,
+      singular: RestResourcesSingular.Customer,
+      plural: RestResourcesPlural.Customer,
     },
   ];
 
@@ -166,11 +165,11 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     Customer,
     typeof Sync_Customers,
     SyncTableManagerRestWithGraphQlMetafields<Customer>
-  >): SyncFunction {
+  >): SyncRestFunction<Customer> {
     const [syncMetafields, created_at, updated_at, ids] = codaSyncParams;
 
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>

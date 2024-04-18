@@ -2,19 +2,20 @@
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../Clients/Client.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
+import { PACK_IDENTITIES, Identity } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Product } from './Product';
 import { Shop } from './Shop';
@@ -73,11 +74,11 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
     product_title: Product['apiData']['title'];
   };
 
-  public static readonly displayName = 'Product Variant' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.ProductVariant;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'variant';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
 
-  protected static readonly graphQlName = GraphQlResourceName.ProductVariant;
+  protected static readonly graphQlName = GraphQlResourceNames.ProductVariant;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     {
@@ -98,8 +99,8 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
   protected static readOnlyAttributes: string[] = ['inventory_quantity'];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.ProductVariant,
-      plural: RestResourcePlural.ProductVariant,
+      singular: RestResourcesSingular.ProductVariant,
+      plural: RestResourcesPlural.ProductVariant,
     },
   ];
 

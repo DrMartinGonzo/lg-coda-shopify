@@ -2,24 +2,25 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { Metafield } from '../../Resources/Rest/Metafield';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
-import { Shop } from '../../Resources/Rest/Shop';
+import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/Metafield.types';
+import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
 import { Article } from '../../Resources/Rest/Article';
 import { Blog } from '../../Resources/Rest/Blog';
+import { Metafield } from '../../Resources/Rest/Metafield';
 import { Page } from '../../Resources/Rest/Page';
-import { CACHE_DEFAULT, CACHE_DISABLED, Identity } from '../../constants';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { Shop } from '../../Resources/Rest/Shop';
+import { GraphQlResourceName, GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
-import { filters, inputs } from '../coda-parameters';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
-import { METAFIELD_TYPES, MetafieldTypeValue } from '../../Resources/Mixed/Metafield.types';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldValue } from '../CodaMetafieldValue';
+import { filters, inputs } from '../coda-parameters';
 
 // #endregion
 
@@ -49,7 +50,7 @@ function matchOwnerTypeToOwnerResourceClass(
   }
 }
 
-function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) {
+function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldType) {
   return coda.makeFormula({
     name: `Meta${toPascalCase(type)}`,
     description: `Helper function to build a \`${type}\` metafield value.`,
@@ -60,20 +61,20 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldTypeValue) 
       let resource: GraphQlResourceName;
       switch (type) {
         case METAFIELD_TYPES.collection_reference:
-          resource = GraphQlResourceName.Collection;
+          resource = GraphQlResourceNames.Collection;
           break;
         case METAFIELD_TYPES.metaobject_reference:
         case METAFIELD_TYPES.mixed_reference:
-          resource = GraphQlResourceName.Metaobject;
+          resource = GraphQlResourceNames.Metaobject;
           break;
         case METAFIELD_TYPES.page_reference:
-          resource = GraphQlResourceName.OnlineStorePage;
+          resource = GraphQlResourceNames.Page;
           break;
         case METAFIELD_TYPES.product_reference:
-          resource = GraphQlResourceName.Product;
+          resource = GraphQlResourceNames.Product;
           break;
         case METAFIELD_TYPES.variant_reference:
-          resource = GraphQlResourceName.ProductVariant;
+          resource = GraphQlResourceNames.ProductVariant;
           break;
 
         default:
@@ -94,18 +95,18 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   name: 'Metafields',
   description: 'Return Metafields from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Metafield,
+  identityName: PACK_IDENTITIES.Metafield,
   listDynamicUrls: async (context) => Metafield.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false })),
   getName: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
-    const { display } = Metafield.getOwnerInfo(metafieldOwnerType, context);
-    return `${display} Metafields`;
+    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
+    return `${supportedSyncTable.display} Metafields`;
   },
   /* Direct access to the metafield definition settings page for the resource */
   getDisplayUrl: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
-    const { adminDefinitionUrl: adminUrl } = Metafield.getOwnerInfo(metafieldOwnerType, context);
-    return adminUrl;
+    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
+    return supportedSyncTable.getAdminUrl(context);
   },
   getSchema: async function (context, _, formulaContext) {
     return Metafield.getDynamicSchema({ context, codaSyncParams: [] });
@@ -121,9 +122,9 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
     parameters: [{ ...filters.metafield.metafieldKeys, optional: true }],
     execute: async function (params, context) {
       const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
-      const { syncWith } = Metafield.getOwnerInfo(metafieldOwnerType, context);
+      const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
 
-      if (syncWith === 'rest') {
+      if (supportedSyncTable.syncWith === 'rest') {
         // TODO: need helper function
         return Metafield.sync(params, context, matchOwnerTypeToOwnerResourceClass(metafieldOwnerType));
       } else {
@@ -478,16 +479,16 @@ export const Formula_Metafields = coda.makeFormula({
         `The ownerID is required when requesting metafields from resources other than Shop.`
       );
     }
-    const cacheTtlSecs = CACHE_DISABLED; // Cache is disabled intentionally
 
     // TODO: need a helper function. @see augmentWithMetafieldsFunction methods
+    const fetchOptions = { cacheTtlSecs: CACHE_DISABLED }; // Cache is disabled intentionally
     const response = isShopQuery
-      ? await Metafield.all({ context, options: { cacheTtlSecs } })
+      ? await Metafield.all({ context, options: fetchOptions })
       : await Metafield.all({
           context,
-          options: { cacheTtlSecs },
-          ['metafield[owner_id]']: ownerId,
-          ['metafield[owner_resource]']: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
+          options: fetchOptions,
+          owner_id: ownerId,
+          owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
         });
 
     return response.data.map((m) => m.formatToRow()) as any[]; //! keep typescript happy

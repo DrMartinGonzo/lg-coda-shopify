@@ -8,26 +8,21 @@ import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
-import { OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow, MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -71,11 +66,11 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Page' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Page;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'page';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
 
-  protected static readonly graphQlName = GraphQlResourceName.OnlineStorePage;
+  protected static readonly graphQlName = GraphQlResourceNames.Page;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'pages/<id>.json' },
@@ -86,8 +81,8 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Page,
-      plural: RestResourcePlural.Page,
+      singular: RestResourcesSingular.Page,
+      plural: RestResourcesPlural.Page,
     },
   ];
 
@@ -110,7 +105,11 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Page, typeof Sync_Pages, SyncTableManagerRestWithRestMetafields<Page>>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<
+    Page,
+    typeof Sync_Pages,
+    SyncTableManagerRestWithRestMetafields<Page>
+  >): SyncRestFunction<Page> {
     const [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title] =
       codaSyncParams;
 

@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const FileSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -96,5 +97,8 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'url',
 });
 
-export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSyncTableSchema, Identity.File);
-export const formatFileReference = (id: string, name = NOT_FOUND) => ({ id, name });
+export const FileReference = coda.makeReferenceSchemaFromObjectSchema(FileSyncTableSchema, PACK_IDENTITIES.File);
+export const formatFileReference: FormatRowReferenceFn<string, 'name'> = (id: string, name = NOT_FOUND) => ({
+  id,
+  name,
+});

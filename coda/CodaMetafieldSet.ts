@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors/Errors';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
-import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
+import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/Metafield.types';
 import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
 
@@ -16,7 +16,7 @@ interface ConstructorArgs {
   /**  metafield key (not full) */
   key: string;
   value: any;
-  type: MetafieldTypeValue;
+  type: MetafieldType;
 }
 
 interface ToMetafieldArgs {
@@ -32,7 +32,7 @@ interface ParsedFormatMetafieldFormula {
   /** a metafield value */
   value: any;
   /** a metafield type */
-  type: MetafieldTypeValue;
+  type: MetafieldType;
 }
 
 interface FormatMetafieldFormulaParams {
@@ -52,7 +52,7 @@ export class CodaMetafieldSet {
   public value: any | Array<any>;
   /** The Metafield type. Can be null when we creating a set whose sole purpose
    * will be to delete the metafield */
-  public type: MetafieldTypeValue | null;
+  public type: MetafieldType | null;
 
   // public valueNew: CodaMetafieldValueNew;
   public constructor({ namespace, key, value, type }: ConstructorArgs) {
@@ -91,7 +91,7 @@ export class CodaMetafieldSet {
   }: FormatListMetafieldFormulaParams): CodaMetafieldSet {
     try {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
-      let type: MetafieldTypeValue;
+      let type: MetafieldType;
       let value = null;
 
       if (varargs.length) {
@@ -107,7 +107,7 @@ export class CodaMetafieldSet {
           value = null;
           type = null;
         } else {
-          type = ('list.' + uniqueTypes[0]) as MetafieldTypeValue;
+          type = ('list.' + uniqueTypes[0]) as MetafieldType;
           if (!Object.values(METAFIELD_TYPES).includes(type)) {
             throw new coda.UserVisibleError(`Shopify doesn't support metafields of type: \`${type}\`.`);
           }

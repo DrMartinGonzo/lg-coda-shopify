@@ -2,21 +2,20 @@
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { BaseContext } from '../../Clients/Client.types';
-import { GRAPHQL_NODES_LIMIT } from '../../constants';
+import { GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
   getMetaobjectDefinitionsQuery,
   getSingleMetaObjectDefinitionQuery,
   getSingleMetaobjectDefinitionByTypeQuery,
   metaobjectDefinitionFragment,
 } from '../../graphql/metaobjectDefinition-graphql';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import {
   AbstractGraphQlResource,
   FindAllResponse,
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
 
 // #endregion
 
@@ -46,12 +45,12 @@ interface AllArgs extends BaseContext {
 export class MetaobjectDefinition extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof metaobjectDefinitionFragment>;
 
-  public static readonly displayName = 'Metaobject Definition' as ResourceDisplayName;
-  protected static readonly graphQlName = GraphQlResourceName.MetaobjectDefinition;
+  public static readonly displayName: Identity = PACK_IDENTITIES.MetaobjectDefinition;
+  protected static readonly graphQlName = GraphQlResourceNames.MetaobjectDefinition;
 
   protected static readonly paths: Array<GraphQlResourcePath> = [
     'metaobjectDefinition',
-    'metaobjectDefinitions.nodes',
+    'metaobjectDefinitions',
     'metaobjectDefinitionByType',
   ];
 

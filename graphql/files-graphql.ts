@@ -1,4 +1,5 @@
 import { ResultOf, graphql } from '../utils/tada-utils';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Fragments
 export const genericFileFieldsFragment = graphql(`
@@ -84,13 +85,12 @@ export const getFilesQuery = graphql(
         }
 
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [fileFieldsFragment]
+  [fileFieldsFragment, pageInfoFragment]
 );
 
 export const getSingleFileQuery = graphql(

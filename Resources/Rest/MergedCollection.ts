@@ -4,17 +4,17 @@ import striptags from 'striptags';
 
 import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART, OPTIONS_PUBLISHED_STATUS } from '../../constants';
+import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
-import { CodaSyncParams, FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -67,11 +67,11 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Collection' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Collection;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
-  protected static readonly graphQlName = GraphQlResourceName.Collection;
+  protected static readonly graphQlName = GraphQlResourceNames.Collection;
   protected static readonly supportsDefinitions = true;
 
   public static getStaticSchema() {
@@ -106,23 +106,21 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
       context,
       syncTableManager,
     });
+    const currentResourceName: RestResourceSingular =
+      syncTableManager.prevContinuation?.extraData?.currentResourceName ?? RestResourcesSingular.CustomCollection;
 
     let { response, continuation } = await syncTableManager.executeSync({ sync: syncFunction });
-    // console.log('response', response);
 
-    const restType = syncTableManager.prevContinuation?.extraContinuationData?.restType ?? COLLECTION_TYPE__CUSTOM;
-
-    if (!response.pageInfo?.nextPage && restType === COLLECTION_TYPE__CUSTOM) {
+    if (!response.pageInfo?.nextPage && currentResourceName === RestResourcesSingular.CustomCollection) {
       continuation = {
-        // ...continuation,
-        extraContinuationData: {
-          restType: COLLECTION_TYPE__SMART,
+        ...continuation,
+        extraData: {
+          currentResourceName: RestResourcesSingular.SmartCollection,
         },
       };
     }
 
     return {
-      // result: response.data.map((data) => new MergedCollection({ context, fromData: data.apiData }).formatToRow()),
       result: response.data.map((data) => data.formatToRow()),
       continuation,
     };

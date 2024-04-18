@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
-import { countryNameAutocompleteValues } from '../../constants';
+import { OPTIONS_COUNTRY_NAMES } from '../../constants';
 import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const LocationSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -46,7 +47,7 @@ export const LocationSyncTableSchema = coda.makeObjectSchema({
     country_code: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.SelectList,
-      options: countryNameAutocompleteValues,
+      options: OPTIONS_COUNTRY_NAMES,
       fixedId: 'country_code',
       mutable: true,
       requireForUpdates: false,
@@ -143,5 +144,11 @@ export const LocationSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(LocationSyncTableSchema, Identity.Location);
-export const formatLocationReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const LocationReference = coda.makeReferenceSchemaFromObjectSchema(
+  LocationSyncTableSchema,
+  PACK_IDENTITIES.Location
+);
+export const formatLocationReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
+  id,
+  name,
+});

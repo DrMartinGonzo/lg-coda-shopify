@@ -1,11 +1,19 @@
 import * as coda from '@codahq/packs-sdk';
 import { readFragment, readFragmentArray } from '../utils/tada-utils';
 
+import { Location } from '../Resources/GraphQl/Location';
+import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
+import { Metaobject } from '../Resources/GraphQl/Metaobject';
+import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
+import { Asset } from '../Resources/Rest/Asset';
+import { Blog } from '../Resources/Rest/Blog';
+import { Metafield } from '../Resources/Rest/Metafield';
+import { GraphQlResourceNames, RestResourceSingular } from '../Resources/types/Resource.types';
+import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import {
   CACHE_DEFAULT,
-  countryNameAutocompleteValues,
-  DEFAULT_THUMBNAIL_SIZE,
   GRAPHQL_NODES_LIMIT,
+  OPTIONS_COUNTRY_NAMES,
   OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
   OPTIONS_ORDER_FINANCIAL_STATUS,
@@ -19,15 +27,6 @@ import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
-import { ResourceName } from '../Resources/Abstract/AbstractResource';
-import { Location } from '../Resources/GraphQl/Location';
-import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
-import { Metaobject } from '../Resources/GraphQl/Metaobject';
-import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
-import { Asset } from '../Resources/Rest/Asset';
-import { Blog } from '../Resources/Rest/Blog';
-import { Metafield } from '../Resources/Rest/Metafield';
-import { GraphQlResourceName } from '../Resources/types/GraphQlResource.types';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
 import { validShopFields } from '../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
@@ -136,7 +135,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
   }
   const metaobject = await Metaobject.find({
     context,
-    id: idToGraphQlGid(GraphQlResourceName.Metaobject, args.metaobjectId),
+    id: idToGraphQlGid(GraphQlResourceNames.Metaobject, args.metaobjectId),
     fields: { definition: true, fieldDefinitions: true },
     options: { cacheTtlSecs: CACHE_DEFAULT },
   });
@@ -189,7 +188,7 @@ async function autocompleteProductTypes(context: coda.ExecutionContext, search: 
   return coda.simpleAutocomplete(search, productTypes);
 }
 
-function makeAutocompleteTemplateSuffixesFor(kind: ResourceName) {
+function makeAutocompleteTemplateSuffixesFor(kind: RestResourceSingular) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
     return Asset.getTemplateSuffixesFor({ kind, context });
   };
@@ -529,7 +528,7 @@ const locationInputs = {
   countryCode: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'countryCode',
-    autocomplete: countryNameAutocompleteValues,
+    autocomplete: OPTIONS_COUNTRY_NAMES,
     description: 'The two-letter code (ISO 3166-1 alpha-2 format) corresponding to the country.',
   }),
   deactivateDestinationId: coda.makeParameter({

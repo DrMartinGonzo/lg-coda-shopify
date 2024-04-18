@@ -12,6 +12,7 @@ import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
 import { PageInfo } from '../../../types/admin.types';
 import { graphQlGidToId } from '../../../utils/conversion-utils';
 import { AbstractResource } from '../AbstractResource';
+import { GraphQlResourceName } from '../../types/Resource.types';
 
 // #endregion
 
@@ -52,6 +53,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
   protected static Client = GraphQlClient;
   protected static apiVersion = GRAPHQL_DEFAULT_API_VERSION;
 
+  protected static readonly graphQlName: GraphQlResourceName | undefined;
   protected static readonly defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
   protected static readonly paths: Array<GraphQlResourcePath> = [];
 

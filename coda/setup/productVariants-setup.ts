@@ -5,7 +5,7 @@ import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Product } from '../../Resources/Rest/Product';
 import { Variant } from '../../Resources/Rest/Variant';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
@@ -19,7 +19,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   description:
     'Return ProductVariants from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.ProductVariant,
+  identityName: PACK_IDENTITIES.ProductVariant,
   schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -174,7 +174,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ProductVariantSchema, Identity.ProductVariant),
+  // schema: coda.withIdentity(ProductVariantSchema, IdentitiesNew.productVariant),
   schema: ProductVariantSyncTableSchema,
   execute: async function (
     [

@@ -7,10 +7,9 @@ import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManage
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { ResourceName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { MergedCollection } from './MergedCollection';
 
 // #endregion
@@ -39,7 +38,7 @@ interface AllArgs extends BaseContext {
 }
 
 export class MergedCollection_Custom extends MergedCollection {
-  protected static readonly restName: ResourceName = 'custom_collection';
+  protected static readonly restName: RestResourceSingular = RestResourcesSingular.CustomCollection;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'custom_collections/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'custom_collections.json' },
@@ -49,8 +48,8 @@ export class MergedCollection_Custom extends MergedCollection {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.CustomCollection,
-      plural: RestResourcePlural.CustomCollection,
+      singular: RestResourcesSingular.CustomCollection,
+      plural: RestResourcesPlural.CustomCollection,
     },
   ];
 
@@ -58,11 +57,11 @@ export class MergedCollection_Custom extends MergedCollection {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     MergedCollection_Custom,
     typeof Sync_Collections,
     SyncTableManagerRestWithGraphQlMetafields<MergedCollection_Custom>
-  >): SyncFunction {
+  >): SyncRestFunction<MergedCollection_Custom> {
     const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
       codaSyncParams;
 

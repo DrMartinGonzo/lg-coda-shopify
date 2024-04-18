@@ -175,7 +175,14 @@ export class GraphQlClient {
     }
     console.log('cacheTtlSecs', cacheTtlSecs);
     console.log('forceCache', forceCache);
-    console.log('—————————————————————————', printGql(documentNode));
+
+    logAdmin('');
+    logAdmin('—————————— GRAPHQL REQUEST ————————————————');
+    logAdmin(printGql(documentNode));
+    logAdmin('');
+    logAdmin(variables);
+    logAdmin('———————————————————————————————————————————');
+    logAdmin('');
 
     return {
       method: 'POST',
@@ -294,7 +301,6 @@ export class GraphQlClient {
       this.validateAndLogRetries(currRetries);
 
       response = await context.fetcher.fetch(this.getFetchRequest(documentNode, variables, options));
-      console.log('variables', variables);
 
       console.log('——————— isCodaCached', isCodaCached(response));
 

@@ -17,7 +17,7 @@ import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
 import { FindAllResponse, RestApiData, SaveArgs } from './AbstractRestResource';
-import { AbstractSyncedRestResource, SyncFunction } from './AbstractSyncedRestResource';
+import { AbstractSyncedRestResource, SyncRestFunction } from './AbstractSyncedRestResource';
 
 // #endregion
 
@@ -46,13 +46,8 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {
-    return async (base: AbstractSyncedRestResourceWithRestMetafields) => {
-      return Metafield.all({
-        context,
-        ['metafield[owner_id]']: base.apiData.id,
-        ['metafield[owner_resource]']: this.metafieldRestOwnerType,
-      });
-    };
+    return async (base: AbstractSyncedRestResourceWithRestMetafields) =>
+      Metafield.all({ context, owner_id: base.apiData.id, owner_resource: this.metafieldRestOwnerType });
   }
 
   protected static async getMetafieldDefinitions(
@@ -127,10 +122,13 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
     syncTableManager.shouldSyncMetafields = true;
 
     const metafieldDefinitions =
-      syncTableManager.prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+      syncTableManager.prevContinuation?.extraData?.metafieldDefinitions ??
       (await this.getMetafieldDefinitions(context, false)).map((m) => m.apiData);
 
-    const sync: SyncFunction = (nextPageQuery: SearchParams = {}, adjustLimit?: number) => {
+    const sync: SyncRestFunction<AbstractSyncedRestResourceWithRestMetafields> = (
+      nextPageQuery: SearchParams = {},
+      adjustLimit?: number
+    ) => {
       return this.baseFind({
         context,
         urlIds: {},
@@ -147,7 +145,7 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
     if (continuation) {
       continuation = {
         ...continuation,
-        extraContinuationData: {
+        extraData: {
           metafieldDefinitions,
         },
       } as SyncTableRestContinuation;

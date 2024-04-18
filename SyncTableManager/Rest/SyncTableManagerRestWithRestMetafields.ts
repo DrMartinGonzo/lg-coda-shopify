@@ -1,20 +1,24 @@
 // #region Imports
 
-import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
-import { AugmentWithMetafieldsFunction } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import {
+  AbstractSyncedRestResourceWithRestMetafields,
+  AugmentWithMetafieldsFunction,
+} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
 import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
-import { ExecuteSyncArgs, SyncTableManagerResult } from './SyncTableManagerRest';
+import { ExecuteSyncArgs, SyncTableManagerRestResult } from './SyncTableManagerRest';
 
 // #endregion
 
 // #region Types
-interface ExecuteAugmentedSyncArgs extends ExecuteSyncArgs {
+interface ExecuteAugmentedSyncArgs<
+  BaseT extends AbstractSyncedRestResourceWithRestMetafields = AbstractSyncedRestResourceWithRestMetafields
+> extends ExecuteSyncArgs<BaseT> {
   syncMetafields: AugmentWithMetafieldsFunction;
 }
 // #endregion
 
 export class SyncTableManagerRestWithRestMetafields<
-  BaseT extends AbstractSyncedRestResource
+  BaseT extends AbstractSyncedRestResourceWithRestMetafields
 > extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
   // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
 
@@ -23,7 +27,7 @@ export class SyncTableManagerRestWithRestMetafields<
     sync,
     syncMetafields,
     adjustLimit,
-  }: ExecuteAugmentedSyncArgs): Promise<SyncTableManagerResult> {
+  }: ExecuteAugmentedSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>> {
     /** ————————————————————————————————————————————————————————————
      * Perform the main Rest Sync
      */

@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { DraftOrder } from '../../Resources/Rest/DraftOrder';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
@@ -17,7 +17,7 @@ export const Sync_DraftOrders = coda.makeSyncTable({
   description:
     'Return DraftOrders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.DraftOrder,
+  identityName: PACK_IDENTITIES.DraftOrder,
   schema: DraftOrderSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -89,7 +89,7 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ArticleSchema, Identity.Article),
+  // schema: coda.withIdentity(ArticleSchema, IdentitiesNew.article),
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId, email, note, tags, metafields], context) {
     const fromRow: FromRow<DraftOrderRow> = {

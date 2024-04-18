@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 // import slugify from 'slugify';
 
-import { DEFAULT_THUMBNAIL_SIZE } from '../constants';
+import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
 import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';
@@ -159,7 +159,7 @@ export function arrayUnique(array: any[]) {
   return Array.from(new Set(array));
 }
 
-export function logAdmin(msg: string) {
+export function logAdmin(msg: any) {
   if (IS_ADMIN_RELEASE) {
     console.log(msg);
   }
@@ -278,6 +278,15 @@ export function formatAddressDisplayName(address, withName = true, withCompany =
 
 export function isObject(value: any) {
   return (typeof value === 'object' && value !== null) || typeof value === 'function';
+}
+
+/**
+ * Takes an object and returns the key associated with the given value in the object
+ * @param obj
+ * @param value
+ */
+export function getKeyFromValue<T extends object>(obj: T, value: T[keyof T]): keyof T {
+  return Object.keys(obj).find((key) => obj[key] === value) as keyof T;
 }
 
 // #region @shopify/hydrogen-react

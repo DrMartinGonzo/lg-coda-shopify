@@ -9,10 +9,12 @@ import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManage
 import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Sync_Products } from '../../coda/setup/products-setup';
+import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import {
-  DEFAULT_PRODUCT_OPTION_NAME,
+  Identity,
   OPTIONS_PRODUCT_STATUS_REST,
   OPTIONS_PUBLISHED_STATUS,
+  PACK_IDENTITIES,
   REST_DEFAULT_LIMIT,
 } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
@@ -21,19 +23,18 @@ import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../sche
 import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Variant } from './Variant';
 
@@ -97,11 +98,11 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     vendor: string | null;
   };
 
-  public static readonly displayName = 'Product' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Product;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'product';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
 
-  protected static readonly graphQlName = GraphQlResourceName.Product;
+  protected static readonly graphQlName = GraphQlResourceNames.Product;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'products/<id>.json' },
@@ -112,8 +113,8 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Product,
-      plural: RestResourcePlural.Product,
+      singular: RestResourcesSingular.Product,
+      plural: RestResourcesPlural.Product,
     },
   ];
 
@@ -146,9 +147,9 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     context,
     codaSyncParams,
     fields,
-  }: MakeSyncFunctionArgs<ResourceT, CodaSyncT, SyncTableManagerRestWithGraphQlMetafields<ResourceT>> & {
+  }: MakeSyncRestFunctionArgs<ResourceT, CodaSyncT, SyncTableManagerRestWithGraphQlMetafields<ResourceT>> & {
     fields: Array<string>;
-  }): SyncFunction {
+  }): SyncRestFunction<Product> {
     const [
       product_type,
       syncMetafields,
@@ -189,11 +190,11 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     Product,
     typeof Sync_Products,
     SyncTableManagerRestWithGraphQlMetafields<Product>
-  >): SyncFunction {
+  >): SyncRestFunction<Product> {
     return this.generateSharedSyncFunction({
       context,
       codaSyncParams,
@@ -208,11 +209,11 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
-    Variant,
+  }: MakeSyncRestFunctionArgs<
+    Product,
     typeof Sync_ProductVariants,
-    SyncTableManagerRestWithGraphQlMetafields<Variant>
-  >): SyncFunction {
+    SyncTableManagerRestWithGraphQlMetafields<Product>
+  >): SyncRestFunction<Product> {
     const requiredProductFields = ['id', 'variants'];
     const allowedProductFields = ['handle', 'id', 'images', 'status', 'title', 'variants'];
 
@@ -232,7 +233,10 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     codaSyncParams: coda.ParamValues<coda.ParamDefs>,
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
-    const syncTableManager = await Variant.getSyncTableManager(context, codaSyncParams);
+    const syncTableManager = (await Variant.getSyncTableManager(
+      context,
+      codaSyncParams
+    )) as SyncTableManagerRestWithGraphQlMetafields<Product>;
     const sync = this.makeVariantsSyncFunction({
       codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>,
       context,
@@ -418,15 +422,15 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
       apiData.options = row.options
         .split(',')
         .map((str) => str.trim())
-        .map((option) => ({ name: option, values: [DEFAULT_PRODUCT_OPTION_NAME] }));
+        .map((option) => ({ name: option, values: [DEFAULT_PRODUCTVARIANT_OPTION_VALUE] }));
 
       // We need to add a default variant to the product if some options are defined
       if (apiData.options.length) {
         apiData.variants = [
           {
-            option1: DEFAULT_PRODUCT_OPTION_NAME,
-            option2: DEFAULT_PRODUCT_OPTION_NAME,
-            option3: DEFAULT_PRODUCT_OPTION_NAME,
+            option1: DEFAULT_PRODUCTVARIANT_OPTION_VALUE,
+            option2: DEFAULT_PRODUCTVARIANT_OPTION_VALUE,
+            option3: DEFAULT_PRODUCTVARIANT_OPTION_VALUE,
           },
         ];
       }

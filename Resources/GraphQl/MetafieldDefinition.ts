@@ -3,8 +3,10 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { BaseContext } from '../../Clients/Client.types';
+import { UnsupportedValueError } from '../../Errors/Errors';
+import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
 import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
   getMetafieldDefinitionsQuery,
   getSingleMetafieldDefinitionQuery,
@@ -13,15 +15,15 @@ import {
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../types/admin.types';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { compareByDisplayKey } from '../../utils/helpers';
 import { FindAllResponse, GraphQlResourcePath } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
-import { Metafield } from '../Rest/Metafield';
+import { SupportedMetafieldOwnerType } from './MetafieldGraphQl';
 
 // #endregion
 
@@ -78,8 +80,8 @@ const FAKE_METADEFINITION__SEO_TITLE = {
 export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metafieldDefinitionFragment>;
 
-  public static readonly displayName = 'MetafieldDefinition' as ResourceDisplayName;
-  protected static readonly paths: Array<GraphQlResourcePath> = ['metafieldDefinition', 'metafieldDefinitions.nodes'];
+  public static readonly displayName: Identity = PACK_IDENTITIES.MetafieldDefinition;
+  protected static readonly paths: Array<GraphQlResourcePath> = ['metafieldDefinition', 'metafieldDefinitions'];
   protected static readonly defaultMaxEntriesPerRun: number = 50;
 
   public static getStaticSchema() {
@@ -93,7 +95,10 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<MetafieldDefinition, typeof Sync_MetafieldDefinitions>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<
+    MetafieldDefinition,
+    typeof Sync_MetafieldDefinitions
+  >): SyncGraphQlFunction<MetafieldDefinition> {
     return async ({ cursor = null, maxEntriesPerRun }) => {
       const ownerType = context.sync.dynamicUrl as MetafieldOwnerType;
 
@@ -184,23 +189,38 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
     return metafieldDefinitions.concat(extraDefinitionsNew);
   }
 
+  public static getAllSupportedSyncTables(): Array<SupportedMetafieldSyncTable> {
+    return supportedMetafieldSyncTables.filter((r) => r.supportDefinition);
+  }
+  public static getSupportedSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
+    const found = MetafieldDefinition.getAllSupportedSyncTables().find((r) => r.ownerType === ownerType);
+    if (found) return found;
+    throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+  }
+
+  public static listSupportedSyncTables() {
+    return MetafieldDefinition.getAllSupportedSyncTables()
+      .map((r) => ({
+        display: r.display,
+        value: r.ownerType,
+      }))
+      .sort(compareByDisplayKey);
+  }
+
   static async listDynamicSyncTableUrls(context: coda.SyncExecutionContext) {
-    return Metafield.listSupportedSyncTablesWithDefinitions().map((r) => ({
-      ...r,
-      hasChildren: false,
-    }));
+    return MetafieldDefinition.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false }));
   }
 
   static async getDynamicSyncTableName(context: coda.SyncExecutionContext) {
-    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const { display } = Metafield.getOwnerInfo(metafieldOwnerType, context);
-    return `${display} MetafieldDefinitions`;
+    const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
+    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
+    return `${supportedSyncTable.display} MetafieldDefinitions`;
   }
 
   static async getDynamicSyncTableDisplayUrl(context: coda.SyncExecutionContext) {
-    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-    const { adminDefinitionUrl } = Metafield.getOwnerInfo(metafieldOwnerType, context);
-    return adminDefinitionUrl;
+    const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
+    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
+    return supportedSyncTable.getAdminUrl(context);
   }
 
   /**====================================================================================================================
@@ -209,6 +229,12 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
   get fullKey() {
     const { namespace, key } = this.apiData;
     return `${namespace}.${key}`;
+  }
+
+  get adminUrl() {
+    const supportedSyncTable = MetafieldDefinition.getSupportedSyncTable(this.apiData.ownerType as MetafieldOwnerType);
+    if (!supportedSyncTable.supportDefinition) return;
+    return coda.joinUrl(supportedSyncTable.getAdminUrl(this.context), this.restId.toString());
   }
 
   public async save(): Promise<void> {}
@@ -221,10 +247,7 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
       ...data,
       admin_graphql_api_id: data.id,
       id: this.restId,
-      admin_url: `${this.context.endpoint}/admin/settings/custom_data/${data.ownerType.toLowerCase()}/metafields/${
-        this.restId
-      }`,
-      // ownerType: data.ownerType,
+      admin_url: this.adminUrl,
       type: data.type?.name,
     };
 

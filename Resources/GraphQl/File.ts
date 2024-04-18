@@ -4,9 +4,11 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { BaseContext } from '../../Clients/Client.types';
 import { UnsupportedActionError } from '../../Errors/Errors';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
 import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Files } from '../../coda/setup/files-setup';
-import { CACHE_DISABLED, DEFAULT_THUMBNAIL_SIZE, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   deleteFilesMutation,
   fileFieldsFragment,
@@ -25,12 +27,11 @@ import {
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
 } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 
@@ -71,12 +72,12 @@ export class File extends AbstractSyncedGraphQlResource {
     ResultOf<typeof videoFieldsFragment> &
     ResultOf<typeof mediaImageFieldsFragment>;
 
-  public static readonly displayName = 'File' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.File;
   // TODO
   // protected static readonly graphQlName = GraphQlResourceName.GenericFile;
 
   protected static readonly defaultMaxEntriesPerRun: number = 50;
-  protected static readonly paths: Array<GraphQlResourcePath> = ['node', 'files.nodes', 'fileUpdate.files'];
+  protected static readonly paths: Array<GraphQlResourcePath> = ['node', 'files', 'fileUpdate.files'];
 
   public static getStaticSchema() {
     return FileSyncTableSchema;
@@ -86,7 +87,7 @@ export class File extends AbstractSyncedGraphQlResource {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<File, typeof Sync_Files>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<File, typeof Sync_Files>): SyncGraphQlFunction<File> {
     const [type] = codaSyncParams;
 
     const fields = {};
@@ -113,7 +114,7 @@ export class File extends AbstractSyncedGraphQlResource {
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
     const [type, previewSize] = codaSyncParams;
-    const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
+    const syncTableManager = (await this.getSyncTableManager(context, codaSyncParams)) as SyncTableManagerGraphQl<File>;
     const syncFunction = this.makeSyncTableManagerSyncFunction({
       codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_Files>,
       context,

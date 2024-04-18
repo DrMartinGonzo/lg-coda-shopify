@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Redirect } from '../../Resources/Rest/Redirect';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import { filters, inputs } from '../coda-parameters';
@@ -15,7 +15,7 @@ export const Sync_Redirects = coda.makeSyncTable({
   name: 'Redirects',
   description: 'Return Redirects from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Redirect,
+  identityName: PACK_IDENTITIES.Redirect,
   schema: RedirectSyncTableSchema,
   formula: {
     name: 'SyncRedirects',
@@ -51,7 +51,7 @@ export const Action_UpdateRedirect = coda.makeFormula({
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
-  schema: coda.withIdentity(RedirectSyncTableSchema, Identity.Redirect),
+  schema: coda.withIdentity(RedirectSyncTableSchema, PACK_IDENTITIES.Redirect),
   execute: async function ([redirect_id, path, target], context) {
     if (path === undefined && target === undefined) {
       throw new coda.UserVisibleError('Either path or target must be provided');

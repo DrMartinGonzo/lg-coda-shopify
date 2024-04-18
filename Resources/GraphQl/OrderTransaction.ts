@@ -6,7 +6,7 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 import { TadaDocumentNode } from 'gql.tada';
 import { BaseContext } from '../../Clients/Client.types';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
   buildOrderTransactionsSearchQuery,
   getOrderTransactionsQuery,
@@ -20,7 +20,6 @@ import {
 } from '../../schemas/syncTable/OrderTransactionSchema';
 import { graphQlGidToId } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import {
   AbstractGraphQlResource,
   FindAllResponse,
@@ -28,12 +27,12 @@ import {
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Shop } from '../Rest/Shop';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
 
 // #endregion
 
@@ -75,11 +74,11 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
     };
   };
 
-  public static readonly displayName = 'OrderTransaction' as ResourceDisplayName;
-  protected static readonly graphQlName = GraphQlResourceName.OrderTransaction;
+  public static readonly displayName: Identity = PACK_IDENTITIES.OrderTransaction;
+  protected static readonly graphQlName = GraphQlResourceNames.OrderTransaction;
 
   protected static readonly defaultMaxEntriesPerRun: number = 50;
-  protected static readonly paths: Array<GraphQlResourcePath> = ['orders.nodes.transactions'];
+  protected static readonly paths: Array<GraphQlResourcePath> = ['orders.transactions'];
 
   public static getStaticSchema() {
     return OrderTransactionSyncTableSchema;
@@ -100,7 +99,10 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<OrderTransaction, typeof Sync_OrderTransactions>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<
+    OrderTransaction,
+    typeof Sync_OrderTransactions
+  >): SyncGraphQlFunction<OrderTransaction> {
     const effectiveKeys = syncTableManager.effectiveStandardFromKeys;
     const [
       orderCreatedAt,

@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Product } from '../../Resources/Rest/Product';
-import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, Identity } from '../../constants';
+import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
 import { fetchProductTypesGraphQl } from '../../utils/products-utils';
@@ -20,7 +20,7 @@ export const Sync_Products = coda.makeSyncTable({
   description:
     'Return Products from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Product,
+  identityName: PACK_IDENTITIES.Product,
   schema: ProductSyncTableSchemaRest,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -152,7 +152,7 @@ export const Action_UpdateProduct = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ProductSchemaRest, Identity.Product),
+  // schema: coda.withIdentity(ProductSchemaRest, IdentitiesNew.product),
   schema: ProductSyncTableSchemaRest,
   execute: async function (
     [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
@@ -228,7 +228,7 @@ export const Format_Product: coda.Format = {
     name: 'ProductsGraphQL',
     description:
       'Return Products from this shop.',
-    identityName: Identity.Product + '_GRAPHQL',
+    identityName: IdentitiesNew.product + '_GRAPHQL',
     schema: ProductSyncTableSchemaGraphQl,
     dynamicOptions: {
       getSchema: async function (context, _, { syncMetafields }) {
@@ -327,7 +327,7 @@ export const Format_Product: coda.Format = {
         let metafieldDefinitions: MetafieldDefinition[] = [];
         if (shouldSyncMetafields) {
           metafieldDefinitions =
-            prevContinuation?.extraContinuationData?.metafieldDefinitions ??
+            prevContinuation?.extraData?.metafieldDefinitions ??
             (await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context));
           optionalNestedFields.push('metafields');
         }
@@ -370,7 +370,7 @@ export const Format_Product: coda.Format = {
             payload,
             maxEntriesPerRun,
             prevContinuation,
-            extraContinuationData: { metafieldDefinitions },
+            extraData: { metafieldDefinitions },
             getPageInfo: (data: any) => data.products?.pageInfo,
           },
           context

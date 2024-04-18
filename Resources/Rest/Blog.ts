@@ -6,27 +6,26 @@ import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -62,11 +61,11 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Blog' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Blog;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'blog';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
 
-  protected static readonly graphQlName = GraphQlResourceName.OnlineStoreBlog;
+  protected static readonly graphQlName = GraphQlResourceNames.Blog;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'blogs/<id>.json' },
@@ -77,8 +76,8 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Blog,
-      plural: RestResourcePlural.Blog,
+      singular: RestResourcesSingular.Blog,
+      plural: RestResourcesPlural.Blog,
     },
   ];
 
@@ -102,7 +101,11 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Blog, typeof Sync_Blogs, SyncTableManagerRestWithRestMetafields<Blog>>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<
+    Blog,
+    typeof Sync_Blogs,
+    SyncTableManagerRestWithRestMetafields<Blog>
+  >): SyncRestFunction<Blog> {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,

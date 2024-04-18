@@ -4,7 +4,8 @@ import { OrderReference } from './OrderSchema';
 import { NOT_FOUND } from '../../constants';
 import { OrderTransactionSchema } from '../basic/OrderTransactionSchema';
 import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -43,7 +44,10 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
       useThousandsSeparator: false,
       description: 'The associated order ID.',
     },
-    parentTransaction: coda.makeReferenceSchemaFromObjectSchema(OrderTransactionSchema, Identity.OrderTransaction),
+    parentTransaction: coda.makeReferenceSchemaFromObjectSchema(
+      OrderTransactionSchema,
+      PACK_IDENTITIES.OrderTransaction
+    ),
     paymentDetails: {
       ...PaymentDetailsSchema,
       fromKey: 'paymentDetails',
@@ -107,4 +111,7 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   featuredProperties: ['id', 'amount'],
 });
 
-export const formatOrderTransactionReference = (id: number, label = NOT_FOUND) => ({ id, label });
+export const formatOrderTransactionReference: FormatRowReferenceFn<number, 'label'> = (
+  id: number,
+  label = NOT_FOUND
+) => ({ id, label });

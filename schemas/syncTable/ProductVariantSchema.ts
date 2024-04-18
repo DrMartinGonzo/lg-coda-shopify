@@ -3,9 +3,10 @@ import * as coda from '@codahq/packs-sdk';
 import { ProductReference } from './ProductSchemaRest';
 import { NOT_FOUND } from '../../constants';
 import { getUnitMap } from '../../utils/helpers';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -243,6 +244,9 @@ export const productVariantFieldDependencies: FieldDependency<typeof ProductVari
 
 export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(
   ProductVariantSyncTableSchema,
-  Identity.ProductVariant
+  PACK_IDENTITIES.ProductVariant
 );
-export const formatProductVariantReference = (id: number, title = NOT_FOUND) => ({ id, title });
+export const formatProductVariantReference: FormatRowReferenceFn<number, 'title'> = (
+  id: number,
+  title = NOT_FOUND
+) => ({ id, title });

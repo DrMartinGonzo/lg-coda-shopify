@@ -1,5 +1,6 @@
 import { graphql } from '../utils/tada-utils';
 import { metafieldFieldsFragment } from './metafields-graphql';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
 function buildLocationsSearchQuery(filters: { [key: string]: any }) {
@@ -69,13 +70,12 @@ export const getLocationsQuery = graphql(
           ...Location
         }
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [locationFragment]
+  [locationFragment, pageInfoFragment]
 );
 
 export const getSingleLocationQuery = graphql(

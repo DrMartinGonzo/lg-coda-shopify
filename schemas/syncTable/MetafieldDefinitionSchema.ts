@@ -1,9 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { Identity, NOT_FOUND } from '../../constants';
+import { PACK_IDENTITIES, NOT_FOUND } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { ValidationSchema } from '../basic/ValidationSchema';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -116,10 +117,16 @@ export function getMetafieldDefinitionReferenceSchema(metafieldOwnerType: Metafi
     idProperty: 'id',
     identity: {
       packId: CODA_PACK_ID,
-      name: Identity.MetafieldDefinition,
+      name: PACK_IDENTITIES.MetafieldDefinition,
       dynamicUrl: metafieldOwnerType,
     },
   });
 }
 
-export const formatMetafieldDefinitionReference = (id: number, name = NOT_FOUND) => ({ id, name });
+export const formatMetafieldDefinitionReference: FormatRowReferenceFn<number, 'name'> = (
+  id: number,
+  name = NOT_FOUND
+) => ({
+  id,
+  name,
+});

@@ -1,5 +1,6 @@
 import { graphql } from '../utils/tada-utils';
 import { metafieldFieldsFragment } from './metafields-graphql';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
 function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
@@ -77,13 +78,12 @@ const collectionsAdminQuery = graphql(
           ...CollectionFields
         }
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [collectionFieldsFragmentAdmin]
+  [collectionFieldsFragmentAdmin, pageInfoFragment]
 );
 
 export const collectionTypeQuery = graphql(

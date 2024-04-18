@@ -1,4 +1,5 @@
 import { graphql } from '../utils/tada-utils';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
 export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any }) {
@@ -116,12 +117,11 @@ export const getOrderTransactionsQuery = graphql(
           }
         }
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [orderTransactionFieldsFragment]
+  [orderTransactionFieldsFragment, pageInfoFragment]
 );
 // #endregion

@@ -1,33 +1,40 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableGraphQlContinuation } from '../types/SyncTable.types';
-import { stringifyContinuationProperty } from '../utils/syncTableManager-utils';
-import { AbstractGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
-import { SyncTableManagerSyncFunction } from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { GRAPHQL_NODES_LIMIT } from '../../constants';
-import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/syncTableManager-utils';
-import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';
-import { logAdmin } from '../../utils/helpers';
 import { wait } from '../../Clients/utils/client-utils';
+import { FindAllResponse } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import {
+  AbstractSyncedGraphQlResource,
+  SyncGraphQlFunction,
+} from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { GRAPHQL_NODES_LIMIT } from '../../constants';
+import { logAdmin } from '../../utils/helpers';
+import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';
+import { SyncTableGraphQlContinuation } from '../types/SyncTable.types';
+import {
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  stringifyContinuationProperty,
+} from '../utils/syncTableManager-utils';
 
 // #endregion
 
 // #region Types
-interface ExecuteSyncArgs {
-  sync: SyncTableManagerSyncFunction;
+interface SyncTableManagerGraphQlResult<
+  continuationT extends coda.Continuation,
+  BaseT extends AbstractSyncedGraphQlResource = AbstractSyncedGraphQlResource
+> {
+  response: FindAllResponse<BaseT>;
+  continuation?: continuationT;
+}
+
+interface ExecuteSyncArgs<BaseT extends AbstractSyncedGraphQlResource = AbstractSyncedGraphQlResource> {
+  sync: SyncGraphQlFunction<BaseT>;
   defaultMaxEntriesPerRun?: number;
 }
 
-interface SyncTableManagerResult<BaseT extends AbstractGraphQlResource = AbstractGraphQlResource> {
-  response: {
-    data: BaseT[];
-  };
-  continuation?: any;
-}
 // #endregion
 
-export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
+export class SyncTableManagerGraphQl<BaseT extends AbstractSyncedGraphQlResource> {
   protected readonly context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */
   protected readonly codaParams: coda.ParamValues<coda.ParamDefs>;
@@ -74,7 +81,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
   public async executeSync({
     sync,
     defaultMaxEntriesPerRun = GRAPHQL_NODES_LIMIT,
-  }: ExecuteSyncArgs): Promise<SyncTableManagerResult> {
+  }: ExecuteSyncArgs<BaseT>): Promise<SyncTableManagerGraphQlResult<typeof this.continuation, BaseT>> {
     // TODO: maybe synctable should never handle retries, but only GraphQLClient for simplicity
     // Le seul probleme serait de dépasser le seuil de temps d'execution pour un run
     // de synctable avec les temps d'attendes pour repayer le cout graphql, mais
@@ -91,7 +98,8 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
       return {
         response: {
           data: [],
-          // lastMaxEntriesPerRun: maxEntriesPerRun,
+          headers: null,
+          cost: null,
         },
         continuation: { ...this.prevContinuation, graphQlLock: 'false' },
       };
@@ -114,7 +122,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
     //     graphQlLock: 'true',
     //     // TODO: remove ?
     //     retries: 0,
-    //     extraContinuationData: this.extraContinuationData,
+    //     extraData: this.extraContinuationData,
     //   };
     // }
 
@@ -128,7 +136,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
         graphQlLock: 'true',
         // TODO: remove ?
         retries: 0,
-        extraContinuationData: this.extraContinuationData,
+        extraData: this.extraContinuationData,
       };
 
       if (pageInfo && pageInfo.hasNextPage) {
@@ -148,10 +156,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> {
     }
 
     return {
-      response: {
-        data: response.data,
-        // lastMaxEntriesPerRun: maxEntriesPerRun,
-      },
+      response,
       continuation: this.continuation,
     };
   }

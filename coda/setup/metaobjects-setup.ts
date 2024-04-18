@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { FromMetaobjectRow, Metaobject } from '../../Resources/GraphQl/Metaobject';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import {
@@ -11,7 +11,7 @@ import {
   autocompleteMetaobjectType,
   inputs,
 } from '../coda-parameters';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
 
 // #endregion
 
@@ -20,7 +20,7 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
   name: 'Metaobjects',
   description: 'Return Metaobjects with specified type from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Metaobject,
+  identityName: PACK_IDENTITIES.Metaobject,
   defaultAddDynamicColumns: false,
   listDynamicUrls: Metaobject.listDynamicSyncTableUrls,
   getName: Metaobject.getDynamicSyncTableName,
@@ -124,7 +124,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(MetaObjectBaseSchema, Identity.Metaobject),
+  // schema: coda.withIdentity(MetaObjectBaseSchema, IdentitiesNew.metaobject),
   schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
     const metaobjectFields = Metaobject.parseMetaobjectFieldsFromVarArgs(varargs);
@@ -151,7 +151,7 @@ export const Action_DeleteMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async function ([metaobjectId], context) {
-    await Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceName.Metaobject, metaobjectId) });
+    await Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Metaobject, metaobjectId) });
     return true;
   },
 });

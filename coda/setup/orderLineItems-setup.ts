@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderLineItem } from '../../Resources/Rest/OrderLineItem';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { filters } from '../coda-parameters';
 
@@ -13,7 +13,7 @@ export const Sync_OrderLineItems = coda.makeSyncTable({
   name: 'OrderLineItems',
   description: 'Return OrderLineItems from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.OrderLineItem,
+  identityName: PACK_IDENTITIES.OrderLineItem,
   schema: OrderLineItemSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {

@@ -1,28 +1,28 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/SyncTable.types';
-import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/syncTableManager-utils';
 import { FindAllResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource, SyncFunction } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractSyncedRestResource, SyncRestFunction } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { handleFieldDependencies, logAdmin } from '../../utils/helpers';
+import { SyncTableRestContinuation } from '../types/SyncTable.types';
+import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/syncTableManager-utils';
 
 // #endregion
 
 // #region Types
-export interface SyncTableManagerResult<BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource> {
+export interface SyncTableManagerRestResult<
+  continuationT extends coda.Continuation,
+  BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource
+> {
   response: FindAllResponse<BaseT>;
-  continuation?: any;
+  continuation?: continuationT;
 }
 
-export interface ExecuteSyncArgs {
-  sync: SyncFunction;
+export interface ExecuteSyncArgs<BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource> {
+  sync: SyncRestFunction<BaseT>;
   adjustLimit?: number;
-  getNestedData?: (
-    response: FindAllResponse<AbstractSyncedRestResource>,
-    context: coda.SyncExecutionContext
-  ) => Array<AbstractSyncedRestResource>;
+  getNestedData?: (response: FindAllResponse<BaseT>, context: coda.SyncExecutionContext) => Array<BaseT>;
 }
 // #endregion
 
@@ -36,7 +36,7 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
   public effectiveStandardFromKeys: string[];
 
   /** The continuation from the previous sync */
-  public prevContinuation: SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>;
+  public prevContinuation: SyncTableRestContinuation;
   /** The continuation from the current sync. This will become prevContinuation in the next sync */
   public continuation: SyncTableRestContinuation;
   public extraContinuationData: any;
@@ -50,7 +50,7 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
     this.codaParams = codaParams;
 
     this.continuation = null;
-    this.prevContinuation = context.sync.continuation as SyncTableMixedContinuation;
+    this.prevContinuation = context.sync.continuation as SyncTableRestContinuation;
 
     this.schema = schema;
 
@@ -64,7 +64,10 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
   // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
 
   // #region Sync
-  public async executeSync({ sync, adjustLimit }: ExecuteSyncArgs): Promise<SyncTableManagerResult> {
+  public async executeSync({
+    sync,
+    adjustLimit,
+  }: ExecuteSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>> {
     const skipNextRestSync = this.prevContinuation?.skipNextRestSync === 'true';
     // Rest Admin API Sync
     if (!skipNextRestSync) {
@@ -75,14 +78,13 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
         : {};
 
       const response = await sync(nextQuery, adjustLimit);
-      const data = response.data;
 
       // TODO: Don't set continuation if there's no next page, except for smart collections
       /** Always set continuation if extraContinuationData is set */
       if (this.extraContinuationData) {
         this.continuation = {
           skipNextRestSync: 'false',
-          extraContinuationData: this.extraContinuationData,
+          extraData: this.extraContinuationData,
         };
       }
       /** Set continuation if a next page exists */
@@ -90,7 +92,7 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
         this.continuation = {
           nextQuery: stringifyContinuationProperty(response.pageInfo.nextPage.query),
           skipNextRestSync: 'false',
-          extraContinuationData: this.extraContinuationData ?? {},
+          extraData: this.extraContinuationData ?? {},
         };
       }
 
@@ -101,8 +103,8 @@ export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource> {
     }
 
     return {
-      response: { data: [], headers: {} },
-      continuation: this.prevContinuation ?? {},
+      response: { data: [], headers: null },
+      continuation: this.prevContinuation ?? null,
     };
   }
   // #endregion

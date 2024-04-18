@@ -51,6 +51,7 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.Number,
       required: true,
       useThousandsSeparator: false,
+      fromKey: 'owner_id',
       fixedId: 'owner_id',
       description: 'The ID of the resource that the metafield is attached to.',
     },

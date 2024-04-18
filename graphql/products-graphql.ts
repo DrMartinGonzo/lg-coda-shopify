@@ -1,5 +1,6 @@
 import { graphql } from '../utils/tada-utils';
 import { metafieldFieldsFragment } from './metafields-graphql';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
 function buildProductsSearchQuery(filters: { [key: string]: any }) {
@@ -117,13 +118,12 @@ const getProductsAdminQuery = graphql(
           ...ProductFields
         }
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [productFieldsFragment]
+  [productFieldsFragment, pageInfoFragment]
 );
 
 // export const QueryProductsMetafieldsAdmin = /* GraphQL */ `

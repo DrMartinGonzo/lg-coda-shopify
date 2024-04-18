@@ -29,7 +29,7 @@ export interface SyncTableRestContinuation extends coda.Continuation {
   nextQuery?: Stringified<SearchParams>;
   scheduledNextRestUrl?: string;
   skipNextRestSync: string;
-  extraContinuationData: {
+  extraData: {
     [key: string]: any;
   };
 }
@@ -48,9 +48,9 @@ export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> exte
   lastMaxEntriesPerRun?: number;
   reducedMaxEntriesPerRun?: number;
 
-  // TODO: currentBatch on le met pas dans extraContinuationData
-  extraContinuationData: {
-    currentBatch: CurrentBatchType<CodaRowT>;
+  // TODO: currentBatch on le met pas dans extraData
+  extraData: {
+    currentBatch?: CurrentBatchType<CodaRowT>;
     [key: string]: any;
   };
 }
@@ -67,5 +67,5 @@ export interface SyncTableGraphQlContinuation extends coda.Continuation {
   lastMaxEntriesPerRun?: number;
   reducedMaxEntriesPerRun?: number;
 
-  extraContinuationData: SyncTableGraphQlExtraContinuationData;
+  extraData: SyncTableGraphQlExtraContinuationData;
 }

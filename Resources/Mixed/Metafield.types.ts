@@ -1,8 +1,6 @@
 // #region Imports
-import { ResultOf } from '../../utils/tada-utils';
 
 import { CurrencyCode } from '../../types/admin.types';
-import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from '../../graphql/metafields-graphql';
 
 // #endregion
 
@@ -22,13 +20,6 @@ export declare namespace Fields {
   }
 }
 
-export type MetafieldFragmentWithDefinition = Omit<
-  ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
-  'fragmentRefs'
-> &
-  Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;
-
-// TODO: switch to enum ?
 // TODO: move elsewhere
 export const METAFIELD_TYPES = {
   boolean: 'boolean',
@@ -88,13 +79,8 @@ export const METAFIELD_TYPES_RAW_REFERENCE = [
   METAFIELD_TYPES.list_mixed_reference,
 ] as const;
 
-type MetafieldTypes = typeof METAFIELD_TYPES;
-/** A union of all the supported `metafield.type`s */
-export type MetafieldTypeValue = MetafieldTypes[keyof MetafieldTypes];
+/** All supported modern `metafield.type`s */
+export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPES];
 
-type MetafieldLegacyTypes = typeof METAFIELD_LEGACY_TYPES;
-/** A union of all the supported legacy `metafield.type`s */
-type MetafieldLegacyTypeValue = MetafieldLegacyTypes[keyof MetafieldLegacyTypes];
-
-/** A union of all the supported modern and legacy `metafield.type`s */
-export type AllMetafieldTypeValue = MetafieldTypeValue | MetafieldLegacyTypeValue;
+/** All supported legacy `metafield.type`s */
+export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];

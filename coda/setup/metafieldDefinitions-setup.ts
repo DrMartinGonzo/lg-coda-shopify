@@ -2,11 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../coda-parameters';
-import { GraphQlResourceName } from '../../Resources/types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
 
 // #endregion
 
@@ -15,7 +15,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   name: 'MetafieldDefinitions',
   description: 'Return Metafield Definitions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.MetafieldDefinition,
+  identityName: PACK_IDENTITIES.MetafieldDefinition,
   listDynamicUrls: MetafieldDefinition.listDynamicSyncTableUrls,
   getName: MetafieldDefinition.getDynamicSyncTableName,
   getDisplayUrl: MetafieldDefinition.getDynamicSyncTableDisplayUrl,
@@ -42,7 +42,7 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
   execute: async function ([metafieldDefinitionID], context) {
     const metafieldDefinition = await MetafieldDefinition.find({
       context,
-      id: idToGraphQlGid(GraphQlResourceName.MetafieldDefinition, metafieldDefinitionID),
+      id: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, metafieldDefinitionID),
     });
     return metafieldDefinition.formatToRow();
   },

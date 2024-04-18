@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const COMMENTABLE_OPTIONS = [
   { display: 'No', value: 'no' },
@@ -101,8 +102,11 @@ export const BlogSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSyncTableSchema, Identity.Blog);
-export const formatBlogReference = (id: number, title = NOT_FOUND) => ({ id, title });
+export const BlogReference = coda.makeReferenceSchemaFromObjectSchema(BlogSyncTableSchema, PACK_IDENTITIES.Blog);
+export const formatBlogReference: FormatRowReferenceFn<number, 'title'> = (id: number, title = NOT_FOUND) => ({
+  id,
+  title,
+});
 export const blogFieldDependencies: FieldDependency<typeof BlogSyncTableSchema.properties>[] = [
   {
     field: 'id',

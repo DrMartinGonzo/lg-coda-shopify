@@ -3,9 +3,22 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-04-11T07:11:46.783Z
+ * Last generated: 2024-04-18T09:54:25.330Z
  *
  */
+
+type UsedDisplayProperties = 'title' | 'id' | 'name' | 'display' | 'unique_id' | 'label' | 'handle' | 'path';
+
+export type FormatRowReferenceFn<T, displayPropT extends string = never> = (
+  id: T,
+  displayProp?: string
+) => {
+  /** The row idProperty. */
+  id: T;
+} & {
+  /** For the row displayProperty. Could be name, title… anything */
+  [k in displayPropT]: string;
+};
 
 export interface BaseRow extends Record<string, any> {
   id: number | string;

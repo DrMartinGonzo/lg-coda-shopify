@@ -114,7 +114,10 @@ export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
   };
 }
 
-export async function skipGraphQlSyncTableRun(prevContinuation: SyncTableGraphQlContinuation, waitms: number) {
+export async function skipGraphQlSyncTableRun<ContinuationT extends coda.Continuation>(
+  prevContinuation: ContinuationT,
+  waitms: number
+) {
   await wait(waitms);
   return {
     response: {

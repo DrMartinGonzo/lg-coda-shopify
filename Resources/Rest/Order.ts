@@ -7,6 +7,8 @@ import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Orders } from '../../coda/setup/orders-setup';
 import {
+  PACK_IDENTITIES,
+  Identity,
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
@@ -23,19 +25,18 @@ import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema'
 import { OrderSyncTableSchema, orderFieldDependencies } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
@@ -203,11 +204,11 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     user_id: number | null;
   };
 
-  public static readonly displayName = 'Order' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Order;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'order';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Order;
 
-  protected static readonly graphQlName = GraphQlResourceName.Order;
+  protected static readonly graphQlName = GraphQlResourceNames.Order;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'orders/<id>.json' },
@@ -221,8 +222,8 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Order,
-      plural: RestResourcePlural.Order,
+      singular: RestResourcesSingular.Order,
+      plural: RestResourcesPlural.Order,
     },
   ];
 
@@ -308,7 +309,11 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Order, typeof Sync_Orders, SyncTableManagerRestWithGraphQlMetafields<Order>>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<
+    Order,
+    typeof Sync_Orders,
+    SyncTableManagerRestWithGraphQlMetafields<Order>
+  >): SyncRestFunction<Order> {
     const [
       status = 'any',
       syncMetafields,

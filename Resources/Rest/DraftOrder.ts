@@ -6,7 +6,7 @@ import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
-import { OPTIONS_DRAFT_ORDER_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, OPTIONS_DRAFT_ORDER_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
@@ -14,19 +14,18 @@ import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../../sc
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   CodaSyncParams,
   FromRow,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
@@ -102,11 +101,11 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Draft Order' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.DraftOrder;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'draft_order';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
 
-  protected static readonly graphQlName = GraphQlResourceName.DraftOrder;
+  protected static readonly graphQlName = GraphQlResourceNames.DraftOrder;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'draft_orders/<id>.json' },
@@ -119,8 +118,8 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.DraftOrder,
-      plural: RestResourcePlural.DraftOrder,
+      singular: RestResourcesSingular.DraftOrder,
+      plural: RestResourcesPlural.DraftOrder,
     },
   ];
 
@@ -168,11 +167,11 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<
+  }: MakeSyncRestFunctionArgs<
     DraftOrder,
     typeof Sync_DraftOrders,
     SyncTableManagerRestWithGraphQlMetafields<DraftOrder>
-  >): SyncFunction {
+  >): SyncRestFunction<DraftOrder> {
     const [syncMetafields, status, updated_at, ids, since_id] = codaSyncParams;
 
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) => {

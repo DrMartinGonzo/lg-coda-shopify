@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { Shop } from '../../Resources/Rest/Shop';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { filters } from '../coda-parameters';
 
@@ -13,7 +13,7 @@ export const Sync_Shops = coda.makeSyncTable({
   name: 'Shops',
   description: 'Return Shop from specified account.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Shop,
+  identityName: PACK_IDENTITIES.Shop,
   schema: ShopSyncTableSchema,
   formula: {
     name: 'SyncShops',

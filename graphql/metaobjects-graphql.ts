@@ -1,4 +1,5 @@
 import { graphql } from '../utils/tada-utils';
+import { pageInfoFragment } from './sharedFragments-graphql';
 import { metaobjectDefinitionFragment } from './metaobjectDefinition-graphql';
 
 // #region Fragments
@@ -45,13 +46,12 @@ export const getMetaObjectsWithFieldsQuery = graphql(
         }
 
         pageInfo {
-          hasNextPage
-          endCursor
+          ...PageInfoFields
         }
       }
     }
   `,
-  [metaobjectFragment]
+  [metaobjectFragment, pageInfoFragment]
 );
 
 export const getSingleMetaObjectWithFieldsQuery = graphql(

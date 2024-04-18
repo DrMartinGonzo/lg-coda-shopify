@@ -2,9 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 import UrlParse from 'url-parse';
 
 import { PageInfo, PageInfoParams } from '@shopify/shopify-api/lib/clients/types';
+import { AbstractRestResource } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { REST_DEFAULT_API_VERSION } from '../config';
-import { getShopifyRequestHeaders } from './utils/client-utils';
 import { FetchRequestOptions } from './Client.types';
+import { getShopifyRequestHeaders } from './utils/client-utils';
 
 function generateApiUrlFormatter(defaultApiVersion: string, formatPaths = true) {
   return (context: coda.ExecutionContext, path: string, apiVersion?: string) => {
@@ -49,8 +50,10 @@ const apiUrlFormatter = generateApiUrlFormatter(REST_DEFAULT_API_VERSION);
 //   nextPageUrl?: string;
 // }
 
-interface RestRequestReturn<T = any> {
-  body: T;
+export interface RestRequestReturn<T extends AbstractRestResource = AbstractRestResource> {
+  body: {
+    [key: string]: T['apiData'];
+  };
   headers: coda.FetchResponse['headers'];
   pageInfo?: PageInfo;
 }
@@ -169,7 +172,7 @@ export class RestClient {
    *    Instance Methods
    *===================================================================================================================== */
   // #region Requests
-  protected async request<T = any>(params: RequestParams) {
+  protected async request<T extends AbstractRestResource = AbstractRestResource>(params: RequestParams) {
     const url = coda.withQueryParams(
       apiUrlFormatter(this.context, params.path, REST_DEFAULT_API_VERSION),
       RestClient.cleanQueryParams(params.query ?? {})
@@ -188,7 +191,7 @@ export class RestClient {
       fetcherOptions.cacheTtlSecs = params.options.cacheTtlSecs;
     }
 
-    const response = await this.context.fetcher.fetch<T>(fetcherOptions);
+    const response = await this.context.fetcher.fetch<T['apiData']>(fetcherOptions);
 
     const requestReturn: RestRequestReturn<T> = {
       body: response.body,
@@ -205,28 +208,28 @@ export class RestClient {
   /**
    * Performs a GET request on the given path.
    */
-  public async get<T = any>(params: GetRequestParams) {
+  public async get<T extends AbstractRestResource = AbstractRestResource>(params: GetRequestParams) {
     return this.request<T>({ method: 'GET', ...params });
   }
 
   /**
    * Performs a POST request on the given path.
    */
-  public async post<T = any>(params: PostRequestParams) {
+  public async post<T extends AbstractRestResource = AbstractRestResource>(params: PostRequestParams) {
     return this.request<T>({ method: 'POST', ...params });
   }
 
   /**
    * Performs a PUT request on the given path.
    */
-  public async put<T = any>(params: PutRequestParams) {
+  public async put<T extends AbstractRestResource = AbstractRestResource>(params: PutRequestParams) {
     return this.request<T>({ method: 'PUT', ...params });
   }
 
   /**
    * Performs a DELETE request on the given path.
    */
-  public async delete<T = any>(params: DeleteRequestParams) {
+  public async delete<T extends AbstractRestResource = AbstractRestResource>(params: DeleteRequestParams) {
     return this.request<T>({ method: 'DELETE', ...params });
   }
   // #endregion

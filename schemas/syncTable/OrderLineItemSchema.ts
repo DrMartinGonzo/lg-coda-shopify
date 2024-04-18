@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ProductVariantReference } from './ProductVariantSchema';
 import { OrderReference } from './OrderSchema';
 import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -50,5 +50,5 @@ export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
 
 const OrderLineItemReference = coda.makeReferenceSchemaFromObjectSchema(
   OrderLineItemSyncTableSchema,
-  Identity.OrderLineItem
+  PACK_IDENTITIES.OrderLineItem
 );

@@ -1,18 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { FragmentOf } from '../../../utils/tada-utils';
+import { FragmentOf, readFragment } from '../../../utils/tada-utils';
 
 import { CACHE_DEFAULT } from '../../../constants';
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { MetafieldInput, MetafieldOwnerType } from '../../../types/admin.types';
 import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
+import { MetafieldGraphQl } from '../../GraphQl/MetafieldGraphQl';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
+import { Node } from '../../types/Resource.types';
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
 import { BaseSaveArgs, GraphQlApiData } from './AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
-// import { RestResourceError } from '@shopify/shopify-api';
 
 // #endregion
 
@@ -20,6 +21,9 @@ import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
 export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
   metafields: { nodes: Array<FragmentOf<typeof metafieldFieldsFragment>> };
   restMetafieldInstances?: Array<Metafield>;
+}
+export interface GraphQlApiDataWithParentNode extends GraphQlApiData {
+  parentNode: Node;
 }
 // #endregion
 
@@ -83,7 +87,11 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
      */
     if (data.metafields?.nodes && data.metafields.nodes.length) {
       this.apiData.restMetafieldInstances = data.metafields.nodes.map((m) =>
-        Metafield.createInstanceFromGraphQlMetafield(this.context, m, data.id)
+        Metafield.createInstanceFromGraphQlMetafield(
+          this.context,
+          readFragment(metafieldFieldsFragment, m) as MetafieldGraphQl['apiData'],
+          data.id
+        )
       );
     }
   }

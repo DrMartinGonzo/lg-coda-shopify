@@ -6,22 +6,27 @@ import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
-import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, REST_DEFAULT_LIMIT } from '../../constants';
+import {
+  CACHE_TEN_MINUTES,
+  CODA_SUPPORTED_CURRENCIES,
+  PACK_IDENTITIES,
+  Identity,
+  REST_DEFAULT_LIMIT,
+} from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow, MakeSyncFunctionArgs, SyncFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow, MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   AugmentWithMetafieldsFunction,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -90,19 +95,19 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     zip: string | null;
   };
 
-  public static readonly displayName = 'Shop' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Shop;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'shop';
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
 
-  protected static readonly graphQlName = GraphQlResourceName.Shop;
+  protected static readonly graphQlName = GraphQlResourceNames.Shop;
   protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'get', operation: 'get', ids: [], path: 'shop.json' },
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Shop,
-      plural: RestResourcePlural.Shop,
+      singular: RestResourcesSingular.Shop,
+      plural: RestResourcesPlural.Shop,
     },
   ];
 
@@ -117,7 +122,7 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
   protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Shop, typeof Sync_Shops>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<Shop, typeof Sync_Shops>): SyncRestFunction<Shop> {
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
       this.all({
         context,

@@ -3,18 +3,17 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../schemas/syncTable/RedirectSchema';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -41,7 +40,7 @@ export class Redirect extends AbstractSyncedRestResource {
     target: string | null;
   };
 
-  public static readonly displayName = 'Redirect' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Redirect;
 
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'redirects/<id>.json' },
@@ -52,8 +51,8 @@ export class Redirect extends AbstractSyncedRestResource {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Redirect,
-      plural: RestResourcePlural.Redirect,
+      singular: RestResourcesSingular.Redirect,
+      plural: RestResourcesPlural.Redirect,
     },
   ];
 
@@ -65,7 +64,7 @@ export class Redirect extends AbstractSyncedRestResource {
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncFunctionArgs<Redirect, typeof Sync_Redirects>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<Redirect, typeof Sync_Redirects>): SyncRestFunction<Redirect> {
     const [path, target] = codaSyncParams;
 
     return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>

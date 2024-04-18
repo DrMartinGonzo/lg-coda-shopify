@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { File } from '../../Resources/GraphQl/File';
-import { CACHE_DEFAULT, Identity, OPTIONS_FILE_TYPE } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES, OPTIONS_FILE_TYPE } from '../../constants';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { inputs } from '../coda-parameters';
 
@@ -13,7 +13,7 @@ export const Sync_Files = coda.makeSyncTable({
   name: 'Files',
   description: 'Return Files from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.File,
+  identityName: PACK_IDENTITIES.File,
   schema: FileSyncTableSchema,
   formula: {
     name: 'SyncFiles',

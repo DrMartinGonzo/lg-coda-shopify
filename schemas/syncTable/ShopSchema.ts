@@ -1,7 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { NOT_FOUND } from '../../constants';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const ShopSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -337,8 +338,11 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, Identity.Shop);
-export const formatShopReference = (id: number, name = NOT_FOUND) => ({ id, name });
+const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, PACK_IDENTITIES.Shop);
+export const formatShopReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
+  id,
+  name,
+});
 
 export const validShopFields = Object.keys(ShopSyncTableSchema.properties)
   .map((key) => ShopSyncTableSchema.properties[key].fromKey)

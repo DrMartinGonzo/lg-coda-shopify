@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { InventoryItem } from '../../Resources/GraphQl/InventoryItem';
 import { Shop } from '../../Resources/Rest/Shop';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { filters, inputs } from '../coda-parameters';
@@ -26,7 +26,7 @@ export const Sync_InventoryItems = coda.makeSyncTable({
   name: 'InventoryItems',
   description: 'Return Inventory Items from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.InventoryItem,
+  identityName: PACK_IDENTITIES.InventoryItem,
   schema: InventoryItemSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -82,7 +82,7 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(InventoryItemSchema, Identity.InventoryItem),
+  // schema: coda.withIdentity(InventoryItemSchema, IdentitiesNew.inventoryItem),
   schema: InventoryItemSyncTableSchema,
   execute: async function (
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],

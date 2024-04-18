@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Article } from '../../Resources/Rest/Article';
 import { Asset } from '../../Resources/Rest/Asset';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { parseOptionId } from '../../utils/helpers';
@@ -17,7 +17,7 @@ export const Sync_Articles = coda.makeSyncTable({
   description:
     "Return Articles from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each article to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Article,
+  identityName: PACK_IDENTITIES.Article,
   schema: ArticleSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -170,7 +170,7 @@ export const Action_UpdateArticle = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(ArticleSyncTableSchema, Identity.Article),
+  // schema: coda.withIdentity(ArticleSyncTableSchema, IdentitiesNew.article),
   schema: ArticleSyncTableSchema,
   execute: async function (
     [

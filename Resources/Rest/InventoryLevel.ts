@@ -5,21 +5,20 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractSyncedRestResource,
   FromRow,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -66,7 +65,7 @@ export class InventoryLevel extends AbstractSyncedRestResource {
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Inventory Level' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.InventoryLevel;
 
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: [], path: 'inventory_levels.json' },
@@ -77,8 +76,8 @@ export class InventoryLevel extends AbstractSyncedRestResource {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.InventoryLevel,
-      plural: RestResourcePlural.InventoryLevel,
+      singular: RestResourcesSingular.InventoryLevel,
+      plural: RestResourcesPlural.InventoryLevel,
     },
   ];
 
@@ -89,7 +88,7 @@ export class InventoryLevel extends AbstractSyncedRestResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncFunctionArgs<InventoryLevel, typeof Sync_InventoryLevels>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<InventoryLevel, typeof Sync_InventoryLevels>): SyncRestFunction<InventoryLevel> {
     const [location_ids, updated_at_min] = codaSyncParams;
     if (!location_ids || !location_ids.length) {
       throw new coda.UserVisibleError('At least one location is required.');

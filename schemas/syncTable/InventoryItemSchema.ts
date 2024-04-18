@@ -1,9 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 import { ProductVariantReference } from './ProductVariantSchema';
-import { countryNameAutocompleteValues } from '../../constants';
-import { Identity } from '../../constants';
+import { OPTIONS_COUNTRY_NAMES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -35,7 +36,7 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
     country_code_of_origin: {
       type: coda.ValueType.String,
       codaType: coda.ValueHintType.SelectList,
-      options: countryNameAutocompleteValues,
+      options: OPTIONS_COUNTRY_NAMES,
       fixedId: 'country_code_of_origin',
       fromKey: 'country_code_of_origin',
       mutable: true,
@@ -122,6 +123,6 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
 
 export const InventoryItemReference = coda.makeReferenceSchemaFromObjectSchema(
   InventoryItemSyncTableSchema,
-  Identity.InventoryItem
+  PACK_IDENTITIES.InventoryItem
 );
-export const formatInventoryItemReference = (id: number) => ({ id });
+export const formatInventoryItemReference: FormatRowReferenceFn<number> = (id: number) => ({ id });

@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { Collect } from '../../Resources/Rest/Collect';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 import { CollectSyncTableSchema } from '../../schemas/syncTable/CollectSchema';
 import { filters } from '../coda-parameters';
 
@@ -13,7 +13,7 @@ export const Sync_Collects = coda.makeSyncTable({
   name: 'Collects',
   description: 'Return Collects from this shop. The Collect resource connects a product to a custom collection.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Collect,
+  identityName: PACK_IDENTITIES.Collect,
   schema: CollectSyncTableSchema,
   formula: {
     name: 'SyncCollects',

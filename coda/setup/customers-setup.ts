@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Customer } from '../../Resources/Rest/Customer';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
@@ -18,7 +18,7 @@ export const Sync_Customers = coda.makeSyncTable({
   description:
     'Return Customers from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Customer,
+  identityName: PACK_IDENTITIES.Customer,
   schema: CustomerSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -159,7 +159,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(CustomerSchema, Identity.Customer),
+  // schema: coda.withIdentity(CustomerSchema, IdentitiesNew.customer),
   schema: CustomerSyncTableSchema,
   execute: async function (
     [

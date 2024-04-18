@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Page } from '../../Resources/Rest/Page';
-import { CACHE_DEFAULT, Identity } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
@@ -18,7 +18,7 @@ export const Sync_Pages = coda.makeSyncTable({
   description:
     "Return Pages from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for pages, we have to do a separate Rest call for each page to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Page,
+  identityName: PACK_IDENTITIES.Page,
   schema: PageSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
@@ -141,7 +141,7 @@ export const Action_UpdatePage = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
-  // schema: coda.withIdentity(PageSchema, Identity.Page),
+  // schema: coda.withIdentity(PageSchema, IdentitiesNew.page),
   schema: PageSyncTableSchema,
   execute: async function (
     [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],

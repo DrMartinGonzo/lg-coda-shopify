@@ -1,8 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
-import { Identity } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants';
 
 import type { FieldDependency } from '../Schema.types';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const PageSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -138,5 +139,8 @@ export const pageFieldDependencies: FieldDependency<typeof PageSyncTableSchema.p
   },
 ];
 
-export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSyncTableSchema, Identity.Page);
-export const formatPageReference = (id: number, title = NOT_FOUND) => ({ id, title });
+export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSyncTableSchema, PACK_IDENTITIES.Page);
+export const formatPageReference: FormatRowReferenceFn<number, 'title'> = (id: number, title = NOT_FOUND) => ({
+  id,
+  title,
+});

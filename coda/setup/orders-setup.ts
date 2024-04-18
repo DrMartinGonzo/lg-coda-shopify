@@ -2,11 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { AllArgs, Order } from '../../Resources/Rest/Order';
-import { CACHE_DEFAULT, CACHE_DISABLED, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
-import { filters, inputs } from '../coda-parameters';
 import { formatOrderForDocExport } from '../../utils/orders-utils';
+import { filters, inputs } from '../coda-parameters';
 
 // #endregion
 
@@ -16,7 +16,7 @@ export const Sync_Orders = coda.makeSyncTable({
   description:
     'Return Orders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  identityName: Identity.Order,
+  identityName: PACK_IDENTITIES.Order,
   schema: OrderSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {

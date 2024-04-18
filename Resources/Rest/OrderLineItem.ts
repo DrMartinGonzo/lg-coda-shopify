@@ -4,20 +4,19 @@ import * as coda from '@codahq/packs-sdk';
 import { BaseContext } from '../../Clients/Client.types';
 import { SearchParams } from '../../Clients/RestClient';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
+import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import {
   AbstractSyncedRestResource,
-  GetSchemaArgs,
-  MakeSyncFunctionArgs,
-  SyncFunction,
+  MakeSyncRestFunctionArgs,
+  SyncRestFunction,
 } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Order } from './Order';
 import { Shop } from './Shop';
 
@@ -51,7 +50,7 @@ export type LineItem = {
 export class OrderLineItem extends AbstractSyncedRestResource {
   public apiData: (LineItem & { order_id: number; order_name: string }) | null;
 
-  public static readonly displayName = 'Order LineItem' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.OrderLineItem;
 
   public static getStaticSchema() {
     return OrderLineItemSyncTableSchema;
@@ -73,7 +72,7 @@ export class OrderLineItem extends AbstractSyncedRestResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncFunctionArgs<OrderLineItem, typeof Sync_OrderLineItems>): SyncFunction {
+  }: MakeSyncRestFunctionArgs<OrderLineItem, typeof Sync_OrderLineItems>): SyncRestFunction<OrderLineItem> {
     const [
       orderStatus = 'any',
       orderCreatedAt,

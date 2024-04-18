@@ -1,7 +1,7 @@
 // #region Imports
 
 import { InvalidValueError, InvalidValueVisibleError, RequiredParameterMissingVisibleError } from '../Errors/Errors';
-import { METAFIELD_TYPES, MetafieldTypeValue } from '../Resources/Mixed/Metafield.types';
+import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/Metafield.types';
 import { getUnitMap, isNullishOrEmpty } from '../utils/helpers';
 
 // #endregion
@@ -9,14 +9,14 @@ import { getUnitMap, isNullishOrEmpty } from '../utils/helpers';
 // #region Types
 interface CodaMetafieldValueConstructorArgs {
   value: any;
-  type: MetafieldTypeValue;
+  type: MetafieldType;
 }
 
 interface ParsedMetafieldValueFormula {
   /** a metafield value */
   value: any;
   /** a metafield type */
-  type: MetafieldTypeValue;
+  type: MetafieldType;
 }
 // #endregion
 
@@ -25,7 +25,7 @@ interface ParsedMetafieldValueFormula {
  * The value can also be blank, in that case, this metafield value will be marked as to be deleted.
  */
 export class CodaMetafieldValue {
-  public type: MetafieldTypeValue;
+  public type: MetafieldType;
   public value: any;
 
   public constructor({ value, type }: CodaMetafieldValueConstructorArgs) {
@@ -58,7 +58,7 @@ export class CodaMetafieldValue {
    * the`Meta{…}` helper formulas.
    */
   public static createFromCodaParameter(param: string): CodaMetafieldValue {
-    let type: MetafieldTypeValue;
+    let type: MetafieldType;
     let value = null;
     try {
       if (param !== '') {

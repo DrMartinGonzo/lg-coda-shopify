@@ -2,30 +2,35 @@
 import { VariablesOf, readFragment } from '../../utils/tada-utils';
 
 import { GraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlClient';
-import { CurrentBatchType, SyncTableMixedContinuation } from '../types/SyncTable.types';
-import { stringifyContinuationProperty } from '../utils/syncTableManager-utils';
-import { FindAllResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../graphql/metafields-graphql';
-import { graphQlGidToId } from '../../utils/conversion-utils';
-import { skipGraphQlSyncTableRun } from '../utils/syncTableManager-utils';
-import { getGraphQlSyncTableMaxEntriesAndDeferWait } from '../utils/syncTableManager-utils';
-import { splitMetaFieldFullKey } from '../../utils/metafields-utils';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
+import { graphQlGidToId } from '../../utils/conversion-utils';
 import { arrayUnique, handleFieldDependencies, logAdmin } from '../../utils/helpers';
+import { splitMetaFieldFullKey } from '../../utils/metafields-utils';
+import { CurrentBatchType, SyncTableMixedContinuation } from '../types/SyncTable.types';
+import {
+  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  skipGraphQlSyncTableRun,
+  stringifyContinuationProperty,
+} from '../utils/syncTableManager-utils';
 import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
-import { ExecuteSyncArgs, SyncTableManagerResult } from './SyncTableManagerRest';
+import { ExecuteSyncArgs, SyncTableManagerRestResult } from './SyncTableManagerRest';
+import { AbstractGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
 
 // #endregion
 
 export class SyncTableManagerRestWithGraphQlMetafields<
-  BaseT extends AbstractSyncedRestResource
+  BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields
 > extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
+  public prevContinuation: SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>;
+  public continuation: SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>;
+
   protected currentRestLimit: number;
+
   // ———————————————————————————————————————————————
 
   public getSyncedStandardFields(dependencies: Array<FieldDependency<any>>): string[] {
@@ -36,13 +41,13 @@ export class SyncTableManagerRestWithGraphQlMetafields<
   private extractCurrentBatch(items: Array<BaseRow>): CurrentBatchType {
     if (this.prevContinuation?.cursor || this.prevContinuation?.retries) {
       logAdmin(`🔁 Fetching remaining graphQL results from current batch`);
-      return this.prevContinuation?.extraContinuationData?.currentBatch;
+      return this.prevContinuation?.extraData?.currentBatch;
     }
 
-    const stillProcessingRestItems = this.prevContinuation?.extraContinuationData?.currentBatch?.remaining.length > 0;
+    const stillProcessingRestItems = this.prevContinuation?.extraData?.currentBatch?.remaining.length > 0;
     let currentItems: Array<BaseRow> = [];
     if (stillProcessingRestItems) {
-      currentItems = [...this.prevContinuation.extraContinuationData.currentBatch.remaining];
+      currentItems = [...this.prevContinuation.extraData.currentBatch.remaining];
       logAdmin(`🔁 Fetching next batch of ${currentItems.length} items`);
     } else {
       currentItems = [...items];
@@ -61,7 +66,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<
     retries: number,
     currentBatch: CurrentBatchType
   ) {
-    let continuation: SyncTableMixedContinuation | null = null;
+    let continuation: typeof this.continuation | null = null;
     const unfinishedGraphQl = retries > 0 || currentBatch.remaining.length > 0;
     const unfinishedRest =
       !retries &&
@@ -72,7 +77,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<
         // ...(continuation ?? {}),
         graphQlLock: 'true',
         retries,
-        extraContinuationData: {
+        extraData: {
           ...this.extraContinuationData,
           currentBatch,
         },
@@ -96,12 +101,12 @@ export class SyncTableManagerRestWithGraphQlMetafields<
   }
 
   // #region Sync
-  public getMainData(response: FindAllResponse<AbstractSyncedRestResource>) {
-    return response.data;
-  }
-
-  public async executeSync({ sync, adjustLimit, getNestedData }: ExecuteSyncArgs): Promise<SyncTableManagerResult> {
-    let mainData: Array<AbstractSyncedRestResourceWithGraphQLMetafields> = [];
+  public async executeSync({
+    sync,
+    adjustLimit,
+    getNestedData,
+  }: ExecuteSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>> {
+    let mainData: BaseT[] = [];
 
     /** ————————————————————————————————————————————————————————————
      * Check if we have budget to use GraphQL, if not defer the sync.
@@ -115,7 +120,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<
       );
       const { shouldDeferBy, maxEntriesPerRun } = syncTableMaxEntriesAndDeferWait;
       if (shouldDeferBy > 0) {
-        return skipGraphQlSyncTableRun(this.prevContinuation as any, shouldDeferBy);
+        return skipGraphQlSyncTableRun(this.prevContinuation, shouldDeferBy);
       }
       this.currentRestLimit = adjustLimit ?? maxEntriesPerRun;
     }
@@ -123,10 +128,10 @@ export class SyncTableManagerRestWithGraphQlMetafields<
     /** ————————————————————————————————————————————————————————————
      * Perform the main Rest Sync
      */
-    const { response: mainResponse, continuation: mainContinuation } = await super.executeSync({
+    const { response: mainResponse, continuation: mainContinuation } = (await super.executeSync({
       sync,
       adjustLimit: this.currentRestLimit,
-    });
+    })) as SyncTableManagerRestResult<typeof this.continuation, BaseT>;
     mainData = getNestedData ? getNestedData(mainResponse, this.context) : mainResponse.data;
     this.continuation = mainContinuation;
 

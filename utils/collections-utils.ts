@@ -3,8 +3,9 @@ import { VariablesOf } from './tada-utils';
 
 import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
-import { CACHE_MAX, COLLECTION_TYPE__CUSTOM, COLLECTION_TYPE__SMART } from '../constants';
+import { CACHE_MAX } from '../constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
+import { RestResourcesSingular } from '../Resources/types/Resource.types';
 
 /**
  * Get Collection type via a GraphQL Admin API query
@@ -27,7 +28,6 @@ export async function getCollectionType(
   const response = await graphQlClient.request<typeof documentNode>({
     documentNode,
     variables,
-    retries: this.prevContinuation?.retries ?? 0,
     options: {
       // Cache max if unspecified because the collection type cannot be changed after creation
       cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX,
@@ -35,7 +35,9 @@ export async function getCollectionType(
   });
 
   // TODO: return 'better' values, rest resources ones or GraphQl ones
-  return response.body.data.collection.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM;
+  return response.body.data.collection.isSmartCollection
+    ? RestResourcesSingular.SmartCollection
+    : RestResourcesSingular.CustomCollection;
 }
 
 /**
@@ -59,20 +61,18 @@ export async function getCollectionTypes(
   const response = await graphQlClient.request<typeof documentNode>({
     documentNode,
     variables,
-    retries: this.prevContinuation?.retries ?? 0,
     options: {
       // Cache max if unspecified because the collection type cannot be changed after creation
       cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_MAX,
     },
   });
 
-  // TODO: return 'better' values, rest resources ones or GraphQl ones
   return response?.body?.data?.nodes
     .map((node) => {
       if (node.__typename === 'Collection') {
         return {
           id: node.id,
-          type: node.isSmartCollection ? COLLECTION_TYPE__SMART : COLLECTION_TYPE__CUSTOM,
+          type: node.isSmartCollection ? RestResourcesSingular.SmartCollection : RestResourcesSingular.CustomCollection,
         };
       }
     })

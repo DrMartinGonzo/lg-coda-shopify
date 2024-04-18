@@ -5,9 +5,8 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 import { TadaDocumentNode } from 'gql.tada';
 import { BaseContext } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
-import { CACHE_DISABLED, CUSTOM_FIELD_PREFIX_KEY, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   deleteMetafieldMutation,
   getResourceMetafieldsByKeysQueryFromOwnerType,
@@ -26,29 +25,24 @@ import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deleteUndefinedInObject, isNullishOrEmpty } from '../../utils/helpers';
 import {
   formatMetaFieldValueForSchema,
-  formatMetafieldValueForApi,
-  getMetaFieldFullKey,
   matchOwnerTypeToOwnerResource,
   matchOwnerTypeToResourceName,
+  preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
   splitMetaFieldFullKey,
 } from '../../utils/metafields-utils';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
-import {
-  AbstractGraphQlResource,
-  FindAllResponse,
-  GraphQlResourcePath,
-  SaveArgs,
-} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { FromRow, GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { AllMetafieldTypeValue } from '../Mixed/Metafield.types';
+import { GraphQlApiDataWithParentNode } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MetafieldMixed } from '../Mixed/MetafieldMixed';
 import { Metafield } from '../Rest/Metafield';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames, Node } from '../types/Resource.types';
 
 // #endregion
 
@@ -88,10 +82,15 @@ interface AllArgs extends BaseContext {
 
 export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metafieldFieldsFragment> &
-    ResultOf<typeof metafieldFieldsFragmentWithDefinition> & {
-      owner: {
-        id: string;
+    ResultOf<typeof metafieldFieldsFragmentWithDefinition> &
+    GraphQlApiDataWithParentNode & {
+      parentNode: Node & {
+        /**
+         * Used to reference Product Variant parent Product
+         */
+        parentOwner?: Node;
       };
+    } & {
       /** un flag special pour savoir si un metafield a deja été supprimé, utile
        * dans le cas du'une sync table de metafields, où l'on peut supprimer un
        * metafield mais où celui-ci reste visible jusqu'a la prochaine synchronisation.
@@ -99,46 +98,41 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
       isDeletedFlag: boolean;
     };
 
-  public static readonly displayName = 'Metafield' as ResourceDisplayName;
-  protected static readonly graphQlName = GraphQlResourceName.Metafield;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
+  protected static readonly graphQlName = GraphQlResourceNames.Metafield;
 
   protected static readonly defaultMaxEntriesPerRun: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = [
-    // TODO: won't work, we should write some sort of parser to identify that the root key is an array ? or just detect it using Array.isArray and flatten everything inside ?
-    'nodes.metafields.nodes',
+    'collections.metafields',
+    'customers.metafields',
+    'draftOrders.metafields',
+    'files.metafields',
+    'locations.metafields',
+    'orders.metafields',
+    'products.metafields',
+    'productVariants.metafields',
+    'shop.metafields',
 
-    // TODO: this one should work
-    'node.metafields.nodes',
-    'shop.metafields.nodes',
+    'metafields',
+    'node.metafields',
+    'nodes.metafields',
 
-    // TODO: these won't
-    'productVariants.nodes.metafields.nodes',
-    'files.nodes.metafields.nodes',
-    'collections.nodes.metafields.nodes',
-    'customers.nodes.metafields.nodes',
-    'draftOrders.nodes.metafields.nodes',
-    'locations.nodes.metafields.nodes',
-    'orders.nodes.metafields.nodes',
-    'products.nodes.metafields.nodes',
-
-    // TODO: these ones should work
-    'metafields.nodes',
-    'metafieldsSet.metafields',
     'metafieldDelete',
+    'metafieldsSet.metafields',
   ];
 
   public static getStaticSchema() {
-    return Metafield.getStaticSchema();
+    return MetafieldMixed.getStaticSchema();
   }
 
   public static async getDynamicSchema(args: GetSchemaArgs) {
-    return Metafield.getDynamicSchema(args);
+    return MetafieldMixed.getDynamicSchema(args);
   }
 
   protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncFunctionArgsGraphQl<MetafieldGraphQl, typeof Sync_Metafields>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<MetafieldGraphQl, typeof Sync_Metafields>): SyncGraphQlFunction<MetafieldGraphQl> {
     const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
     const [metafieldKeys] = codaSyncParams;
     const filteredMetafieldKeys = Array.isArray(metafieldKeys)
@@ -243,186 +237,32 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
     return response;
   }
 
-  // TODO: merge with function from Rest Metafield as it's mostly the same
-  public static async syncUpdate(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableUpdateResult> {
-    const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
-
-    const completed = await Promise.allSettled(
-      updates.map(async (update) => {
-        const { updatedFields, previousValue, newValue } = update;
-        const { type } = previousValue;
-        const { rawValue } = newValue;
-
-        // Utilisation de rawValue ou de la valeur de l'helper column adaptée si elle a été utilisée
-        let value: string | null = rawValue as string;
-        for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
-          const column = metafieldSyncTableHelperEditColumns[i];
-          if (updatedFields.includes(column.key)) {
-            if (type === column.type) {
-              /**
-               *? Si jamais on implémente une colonne pour les currencies,
-               *? il faudra veiller a bien passer le currencyCode a {@link formatMetafieldValueForApi}
-               */
-              value = formatMetafieldValueForApi(newValue[column.key], type as AllMetafieldTypeValue);
-            } else {
-              const goodColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === type);
-              let errorMsg = `Metafield type mismatch. You tried to update using an helper column that doesn't match the metafield type.`;
-              if (goodColumn) {
-                errorMsg += ` The correct column for type '${type}' is: '${goodColumn.key}'.`;
-              } else {
-                errorMsg += ` You can only update this metafield by directly editing the 'Raw Value' column.`;
-              }
-              throw new coda.UserVisibleError(errorMsg);
-            }
-          }
-        }
-
-        const metafield = new MetafieldGraphQl({
-          context,
-          fromRow: {
-            row: { ...update.previousValue, ...update.newValue, owner_type: metafieldOwnerType, rawValue: value },
-          },
-        });
-        await metafield.saveAndUpdate();
-        return metafield.formatToRow();
-      })
-    );
-
-    return {
-      result: completed.map((job) => {
-        if (job.status === 'fulfilled') {
-          return job.value;
-        } else return job.reason;
-      }),
-    };
-  }
-
   /**
-   * Custom createInstancesFromResponse ilmplementation for OrderTransaction.
-   * Only works for the result of getOrderTransactionsQuery
+   * {@link MetafieldGraphQl} has some additional required properties :
+   * - label: The label will give us the namespace and key
+   * - type
+   * - owner_id: required for GraphQl
    */
-  protected static createInstancesFromResponse<T extends AbstractGraphQlResource, NodeT extends TadaDocumentNode>(
-    context: coda.ExecutionContext,
-    rawData: ResultOf<NodeT>
-  ): Array<T> {
-    let instances: Array<T> = [];
-
-    const maybeOwnerNodes =
-      rawData?.productVariants?.nodes ||
-      rawData?.files?.nodes ||
-      rawData?.collections?.nodes ||
-      rawData?.customers?.nodes ||
-      rawData?.draftOrders?.nodes ||
-      rawData?.locations?.nodes ||
-      rawData?.orders?.nodes ||
-      rawData?.products?.nodes ||
-      rawData?.nodes ||
-      rawData?.shop ||
-      rawData?.node;
-
-    if (maybeOwnerNodes) {
-      const ownerNodes = Array.isArray(maybeOwnerNodes) ? maybeOwnerNodes : [maybeOwnerNodes];
-      // const orders = (rawData as ResultOf<typeof getOrderTransactionsQuery>).orders.nodes;
-      ownerNodes.forEach((owner) => {
-        const metafieldNodes = owner.metafields?.nodes ?? [];
-        metafieldNodes.forEach((metafield) => {
-          instances.push(
-            this.createInstance<T>(context, {
-              ...metafield,
-              owner: { id: owner.id },
-            })
-          );
-        });
-      });
-    }
-
-    return instances;
+  public static getRequiredPropertiesForUpdate(schema: coda.ArraySchema<coda.ObjectSchema<string, string>>) {
+    const { properties } = MetafieldMixed.getStaticSchema();
+    return super
+      .getRequiredPropertiesForUpdate(schema)
+      .concat([properties.label.fromKey, properties.type.fromKey, properties.owner_id.fromKey]);
   }
 
-  // TODO: try to not make it async by prefetching and caching shop currency before ?
-  /*
-  protected static async formatMetafieldGraphQlFieldsFromRow(
-    row: MetafieldRow,
-    metaobjectFieldDefinitions: Array<ResultOf<typeof metaobjectFieldDefinitionFragment>>,
+  protected static async handleRowUpdate(
+    prevRow: MetafieldRow,
+    newRow: MetafieldRow,
     context: coda.SyncExecutionContext
-  ): Promise<Array<MetafieldGraphQlField>> {
-    const metaobjectFieldFromKeys = Object.keys(row).filter((key) => !['id', 'handle', 'status'].includes(key));
-    let currencyCode: CurrencyCode;
-
-    return Promise.all(
-      metaobjectFieldFromKeys.map(async (fromKey): Promise<MetafieldGraphQlField> => {
-        const value = row[fromKey] as string;
-        const fieldDefinition = requireMatchingMetafieldGraphQlFieldDefinition(fromKey, metaobjectFieldDefinitions);
-
-        if (fieldDefinition.type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
-          currencyCode = await Shop.activeCurrency({ context });
-        }
-
-        let formattedValue: string;
-        try {
-          formattedValue = formatMetafieldValueForApi(
-            value,
-            fieldDefinition.type.name as AllMetafieldTypeValue,
-            fieldDefinition.validations,
-            currencyCode
-          );
-        } catch (error) {
-          throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
-        }
-
-        return {
-          key: fromKey,
-          value: formattedValue ?? '',
-          type: fieldDefinition.type.name,
-        };
-      })
-    );
+  ) {
+    return MetafieldMixed.handleRowUpdate(prevRow, newRow, context, MetafieldGraphQl);
   }
-  */
-
-  // TODO: improve this
-  // protected static async handleRowUpdate(
-  //   prevRow: MetafieldRow,
-  //   newRow: MetafieldRow,
-  //   context: coda.SyncExecutionContext
-  // ) {
-  //   const { id: metaObjectDefinitionId } = this.decodeDynamicUrl(context.sync.dynamicUrl);
-  //   const definition = await fetchSingleMetaObjectDefinition(
-  //     { gid: metaObjectDefinitionId, includeFieldDefinitions: true },
-  //     context,
-  //     { cacheTtlSecs: CACHE_DEFAULT }
-  //   );
-  //   const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, definition.fieldDefinitions);
-  //   const metaobjectFields = await this.formatMetafieldGraphQlFieldsFromRow(newRow, fieldDefinitions, context);
-  //   // const metaobjectFields = await this.formatMetafieldGraphQlFieldsFromRow(newRow, fieldDefinitions, context);
-  //   const instance = new MetafieldGraphQl({
-  //     context,
-  //     fromRow: {
-  //       row: newRow,
-  //       metaobjectFields,
-  //     },
-  //   });
-
-  //   await instance.saveAndUpdate();
-  //   return { ...prevRow, ...instance.formatToRow() };
-  // }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    this.apiData = data;
-
-    // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
-    const fullkey = getMetaFieldFullKey({ key: this.apiData.key, namespace: this.apiData.namespace });
-    const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
-
-    this.apiData.key = metaKey;
-    this.apiData.namespace = metaNamespace;
+    this.apiData = MetafieldMixed.setData(data);
   }
 
   get fullKey() {
@@ -430,7 +270,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
     return `${namespace}.${key}`;
   }
   get prefixedFullKey() {
-    return CUSTOM_FIELD_PREFIX_KEY + this.fullKey;
+    return preprendPrefixToMetaFieldKey(this.fullKey);
   }
 
   // Only supports saving a single Metafield in one call for now
@@ -450,7 +290,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
         variables: variables,
       });
 
-      const body = MetafieldGraphQl.extractResourceDataFromRawData(response.body.data)[0];
+      const body = MetafieldGraphQl.extractDataFromAllPossiblePaths(response.body.data)[0];
       if (update && body.length) {
         this.setData(body[0]);
       }
@@ -483,7 +323,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
       namespace: this.apiData.namespace,
       key: this.apiData.key,
       value: this.apiData.value,
-      ownerId: this.apiData.owner?.id,
+      ownerId: this.apiData.parentNode?.id,
     };
 
     // input.fields = deleteUndefinedInObject(input.fields);
@@ -498,7 +338,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
     if (!row.type) throw new RequiredParameterMissingVisibleError('type');
 
     const staticResource = this.resource<typeof MetafieldGraphQl>();
-    const { DELETED_SUFFIX } = Metafield;
+    const { DELETED_SUFFIX } = MetafieldMixed;
 
     const isDeletedFlag = row.label.includes(DELETED_SUFFIX);
     const fullkey = row.label.split(DELETED_SUFFIX)[0];
@@ -514,7 +354,8 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
       isDeletedFlag,
       key: metaKey,
       namespace: metaNamespace,
-      owner: row.owner_id && ownerResourceName ? { id: idToGraphQlGid(ownerResourceName, row.owner_id) } : undefined,
+      parentNode:
+        row.owner_id && ownerResourceName ? { id: idToGraphQlGid(ownerResourceName, row.owner_id) } : undefined,
       ownerType: row.owner_type as MetafieldOwnerType,
       type: row.type,
       updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
@@ -527,7 +368,7 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
 
     if (row.definition_id || row.definition) {
       apiData.definition = {
-        id: idToGraphQlGid(GraphQlResourceName.MetafieldDefinition, row.definition_id || row.definition?.id),
+        id: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, row.definition_id || row.definition?.id),
       };
     }
 
@@ -537,10 +378,11 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
   public formatToRow(): MetafieldRow {
     const { apiData: data } = this;
 
-    const { DELETED_SUFFIX } = Metafield;
+    const { DELETED_SUFFIX } = MetafieldMixed;
 
-    // Should throw error if ownerId is missing
-    const ownerId = graphQlGidToId(data.owner?.id);
+    const ownerId = graphQlGidToId(data.parentNode.id); // Should throw error if ownerId is missing
+    const parentOwnerId = data.parentNode.parentOwner?.id ? graphQlGidToId(data.parentNode.parentOwner.id) : undefined;
+
     let obj: MetafieldRow = {
       label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.id,
@@ -555,9 +397,9 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
       owner_type: data.ownerType,
     };
 
-    const supportedSynctable = Metafield.supportedSyncTables.find((r) => r.ownerType === data.ownerType);
-    if (supportedSynctable && supportedSynctable.formatOwnerReference) {
-      obj.owner = supportedSynctable.formatOwnerReference(ownerId);
+    const { formatOwnerReference } = Metafield.getSupportedSyncTable(data.ownerType as MetafieldOwnerType);
+    if (formatOwnerReference) {
+      obj.owner = formatOwnerReference(ownerId);
     }
 
     if (data.definition?.id) {
@@ -573,24 +415,22 @@ export class MetafieldGraphQl extends AbstractSyncedGraphQlResource {
      * previous value. We could also retrieve the owner ID value directly in the
      * graphQl mutation result but doing it this way reduce the GraphQL query costs.
      */
-    const maybeAdminUrl = Metafield.getMetafieldAdminUrl(
+    const maybeAdminUrl = MetafieldMixed.getMetafieldAdminUrl(
       this.context.endpoint,
       !!data.definition?.id,
       matchOwnerTypeToOwnerResource(data.ownerType as MetafieldOwnerType),
-      ownerId
-      // TODO
-      // parentOwnerId
+      ownerId,
+      parentOwnerId
     );
+
     if (maybeAdminUrl) {
       obj.admin_url = maybeAdminUrl;
     }
 
-    // if (includeHelperColumns) {
     const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
     if (helperColumn) {
       obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
     }
-    // }
 
     return obj;
   }

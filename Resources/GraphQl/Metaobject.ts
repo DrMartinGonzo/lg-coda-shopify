@@ -5,7 +5,14 @@ import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../ut
 
 import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
-import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, OPTIONS_METAOBJECT_STATUS } from '../../constants';
+import {
+  CACHE_DEFAULT,
+  CACHE_DISABLED,
+  GRAPHQL_NODES_LIMIT,
+  PACK_IDENTITIES,
+  Identity,
+  OPTIONS_METAOBJECT_STATUS,
+} from '../../constants';
 import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
@@ -37,18 +44,17 @@ import {
   shouldUpdateSyncTableMetafieldValue,
 } from '../../utils/metafields-utils';
 import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
 import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import {
   AbstractSyncedGraphQlResource,
-  MakeSyncFunctionArgsGraphQl,
-  SyncTableManagerSyncFunction,
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { BaseConstructorArgs } from '../Abstract/Rest/AbstractRestResource';
-import { GetSchemaArgs } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { AllMetafieldTypeValue, METAFIELD_TYPES } from '../Mixed/Metafield.types';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { METAFIELD_TYPES, MetafieldType } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
-import { GraphQlResourceName } from '../types/GraphQlResource.types';
+import { GraphQlResourceNames } from '../types/Resource.types';
 import { MetaobjectDefinition } from './MetaobjectDefinition';
 
 // #endregion
@@ -92,13 +98,13 @@ interface AllArgs extends BaseContext {
 export class Metaobject extends AbstractSyncedGraphQlResource {
   public apiData: ResultOf<typeof metaobjectFragment>;
 
-  public static readonly displayName = 'Metaobject' as ResourceDisplayName;
-  protected static readonly graphQlName = GraphQlResourceName.Metaobject;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Metaobject;
+  protected static readonly graphQlName = GraphQlResourceNames.Metaobject;
 
   protected static readonly defaultMaxEntriesPerRun: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = [
     'metaobject',
-    'metaobjects.nodes',
+    'metaobjects',
     'metaobjectCreate.metaobject',
     'metaobjectUpdate.metaobject',
   ];
@@ -109,7 +115,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
 
   public static decodeDynamicUrl(dynamicUrl: string) {
     return {
-      id: idToGraphQlGid(GraphQlResourceName.MetaobjectDefinition, parseInt(dynamicUrl, 10)),
+      id: idToGraphQlGid(GraphQlResourceNames.MetaobjectDefinition, parseInt(dynamicUrl, 10)),
     };
   }
 
@@ -175,7 +181,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncFunctionArgsGraphQl<Metaobject, typeof Sync_Metaobjects>): SyncTableManagerSyncFunction {
+  }: MakeSyncGraphQlFunctionArgs<Metaobject, typeof Sync_Metaobjects>): SyncGraphQlFunction<Metaobject> {
     const fields: AllArgs['fields'] = {
       capabilities: syncTableManager.effectiveStandardFromKeys.includes('status'),
       definition: false,
@@ -185,7 +191,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
     return async ({ cursor = null, maxEntriesPerRun }) => {
       const { id: metaobjectDefinitionId } = Metaobject.decodeDynamicUrl(context.sync.dynamicUrl);
       const type =
-        syncTableManager.prevContinuation?.extraContinuationData?.type ??
+        syncTableManager.prevContinuation?.extraData?.type ??
         (
           await MetaobjectDefinition.find({
             context,
@@ -289,7 +295,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
         try {
           formattedValue = formatMetafieldValueForApi(
             value,
-            fieldDefinition.type.name as AllMetafieldTypeValue,
+            fieldDefinition.type.name as MetafieldType,
             fieldDefinition.validations,
             currencyCode
           );
@@ -452,7 +458,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
 
   protected formatToApi({ row, metaobjectFields = [] }: FromMetaobjectRow) {
     let apiData: Partial<typeof this.apiData> = {
-      id: row.id ? idToGraphQlGid(GraphQlResourceName.Metaobject, row.id) : undefined,
+      id: row.id ? idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id) : undefined,
       fields: metaobjectFields,
       type: row.type,
 

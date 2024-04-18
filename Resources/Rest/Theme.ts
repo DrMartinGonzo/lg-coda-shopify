@@ -2,9 +2,9 @@
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../../Clients/Client.types';
-import { ResourceDisplayName } from '../Abstract/AbstractResource';
+import { PACK_IDENTITIES, Identity } from '../../constants';
 import { AbstractRestResource, FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { RestResourcePlural, RestResourceSingular } from '../types/RestResource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -33,7 +33,7 @@ export class Theme extends AbstractRestResource {
     updated_at: string | null;
   };
 
-  public static readonly displayName = 'Theme' as ResourceDisplayName;
+  public static readonly displayName: Identity = PACK_IDENTITIES.Theme;
 
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'themes/<id>.json' },
@@ -44,8 +44,8 @@ export class Theme extends AbstractRestResource {
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourceSingular.Theme,
-      plural: RestResourcePlural.Theme,
+      singular: RestResourcesSingular.Theme,
+      plural: RestResourcesPlural.Theme,
     },
   ];
 
