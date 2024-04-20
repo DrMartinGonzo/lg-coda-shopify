@@ -18,13 +18,13 @@ function buildProductVariantsSearchQuery(filters: { [key: string]: any }) {
 //   ${MetafieldFieldsFragment}
 
 //   query getProductVariantsMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     productVariants(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     productVariants(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 

@@ -1,16 +1,10 @@
+// #region Imports
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
 import { ResultOf, VariablesOf } from '../utils/tada-utils';
 
-import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
-import { GRAPHQL_NODES_LIMIT } from '../constants';
-import { PageInfo } from '../types/admin.types';
-import { arrayUnique, logAdmin } from '../utils/helpers';
-import { wait } from './utils/client-utils';
-import { getShopifyRequestHeaders } from './utils/client-utils';
-import { isCodaCached } from './utils/client-utils';
-import { FetchRequestOptions } from './Client.types';
+import { InvalidValueError } from '../Errors/Errors';
 import {
   GraphQLMaxCostExceededError,
   GraphQLThrottledError,
@@ -22,6 +16,14 @@ import {
   ShopifyGraphQlUserError,
   ShopifyThrottledErrorCode,
 } from '../Errors/GraphQlErrors';
+import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
+import { GRAPHQL_NODES_LIMIT } from '../constants';
+import { PageInfo } from '../types/admin.types';
+import { arrayUnique, logAdmin } from '../utils/helpers';
+import { FetchRequestOptions } from './Client.types';
+import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-utils';
+
+// #endregion
 
 // #region Types
 interface GraphQlData<TadaT extends TadaDocumentNode> {
@@ -39,7 +41,6 @@ export interface GraphQlRequestReturn<TadaT extends TadaDocumentNode> {
   headers: GraphQlCodaFetchResponse<TadaT>['headers'];
   retries: number;
   cost: ShopifyGraphQlRequestCost;
-  // lastMaxEntriesPerRun?: number;
   pageInfo?: PageInfo;
 }
 
@@ -52,12 +53,11 @@ interface GraphQlRequestParams<NodeT extends TadaDocumentNode> {
   options?: Omit<FetchRequestOptions, 'url'>;
 }
 
-// #endregion
-
 interface GraphQlClientParams {
   context: coda.ExecutionContext;
   apiVersion?: string;
 }
+// #endregion
 
 export class GraphQlClient {
   private static DEFAULT_LIMIT = '250';
@@ -238,19 +238,23 @@ export class GraphQlClient {
     }
   }
 
-  private adjustMaxEntriesInVariables<VarT extends VariablesOf<TadaDocumentNode>>(
+  private adjustLimitInVariables<VariablesT extends VariablesOf<TadaDocumentNode>>(
     maxCostError: GraphQLMaxCostExceededError,
-    variables: VarT
-  ): VarT {
+    variables: VariablesT
+  ): VariablesT {
+    if (!('limit' in variables)) {
+      throw new InvalidValueError('variables (has no limit) when trying to adjustLimitInVariables', variables);
+    }
     const { maxCost, cost } = maxCostError;
     const diminishingFactor = 0.75;
-    const reducedMaxEntriesPerRun = Math.min(
+    const reducedLimit = Math.min(
       GRAPHQL_NODES_LIMIT,
-      Math.max(1, Math.floor((maxCost / cost) * variables.maxEntriesPerRun * diminishingFactor))
+      Math.max(1, Math.floor((maxCost / cost) * variables.limit * diminishingFactor))
     );
+
     return {
       ...variables,
-      maxEntriesPerRun: reducedMaxEntriesPerRun,
+      limit: reducedLimit,
     };
   }
 
@@ -261,30 +265,28 @@ export class GraphQlClient {
   ): Promise<GraphQlRequestReturn<NodeT>> {
     const { retries = 0 } = params;
     const isCachedResponse = isCodaCached(response);
-    const isSyncContext = !!this.context.sync;
+    // const isSyncContext = !!this.context.sync; // pas fiable
 
     /* Repay cost for non cached responses */
     if (!isCachedResponse) {
       await GraphQlClient.repayCost(throttledError.cost, true);
     }
 
-    // TODO: ça pose un probleme avec le cursor
-    // if (isSyncContext) {
-    //   /* Signal the end of the current sync in a Sync Table context to avoid timeout */
-    //   return { body: response.body, headers: response.headers, retries: retries + 1, pageInfo: response.pageInfo };
-    // } else {
-    /* We are doing a normal request. Retry immediately */
+    /**
+     * We are doing a normal request. Retry immediately
+     *
+     * We could also signal the end of the sync if we are in a SyncContext, but detecting this is unreliable from my tests.
+     */
     return this.request({ ...params, retries: retries + 1 });
-    // }
   }
   private async handleRetryForMaxCostExceededError<NodeT extends TadaDocumentNode>(
     maxCosterror: GraphQLMaxCostExceededError,
     params: GraphQlRequestParams<NodeT>
   ): Promise<GraphQlRequestReturn<NodeT>> {
     const { retries = 0, variables } = params;
-    const adjustedVariables = this.adjustMaxEntriesInVariables(maxCosterror, variables);
+    const adjustedVariables = this.adjustLimitInVariables(maxCosterror, variables);
     console.log(
-      `⛔️ ${maxCosterror.message} maxCost is ${maxCosterror.maxCost} while cost is ${maxCosterror.cost}. Adjusting next query to run with ${adjustedVariables.maxEntriesPerRun} max entries.`
+      `⛔️ ${maxCosterror.message} maxCost is ${maxCosterror.maxCost} while cost is ${maxCosterror.cost}. Adjusting next query to run with ${adjustedVariables.limit} max entries.`
     );
     return this.request({ ...params, variables: adjustedVariables, retries: retries + 1 });
   }
@@ -316,15 +318,13 @@ export class GraphQlClient {
         pageInfo: GraphQlClient.getPageInfo(response.body),
         retries: 0, // reset retries counter because we just got a full response
         cost: response.body.extensions.cost,
-        // lastMaxEntriesPerRun: variables.maxEntriesPerRun ?? 1,
       };
     } catch (error) {
       if (error instanceof GraphQLThrottledError) {
         return this.handleRetryForThrottledError<NodeT>(error, response, params);
       }
 
-      // TODO: check all requests use maxEntriesPerRun variable
-      if (error instanceof GraphQLMaxCostExceededError && variables?.maxEntriesPerRun) {
+      if (error instanceof GraphQLMaxCostExceededError && variables?.limit) {
         return this.handleRetryForMaxCostExceededError<NodeT>(error, params);
       }
 

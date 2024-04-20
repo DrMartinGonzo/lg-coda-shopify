@@ -10,6 +10,7 @@ import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -284,7 +285,10 @@ export const Formula_ProductVariant = coda.makeFormula({
       variant.apiData.product_status = product.apiData.status;
       variant.apiData.product_title = product.apiData.title;
 
-      return variant.formatToRow();
+      if (variant) {
+        return variant.formatToRow();
+      }
+      throw new NotFoundVisibleError(PACK_IDENTITIES.ProductVariant);
     }
   },
 });

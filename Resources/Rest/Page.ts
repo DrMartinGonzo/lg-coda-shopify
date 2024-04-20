@@ -3,26 +3,22 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
-import { PACK_IDENTITIES, Identity, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow, MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import {
-  AbstractSyncedRestResourceWithRestMetafields,
-  RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -67,7 +63,7 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Page;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'page';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Page;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
 
   protected static readonly graphQlName = GraphQlResourceNames.Page;
@@ -113,26 +109,30 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
     const [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title] =
       codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        fields: syncTableManager.getSyncedStandardFields(pageFieldDependencies).join(','),
+        nextPageQuery,
         // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
         // TODO: calculate best possible value based on effectiveMetafieldKeys.length
-        limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-        created_at_min: created_at ? created_at[0] : undefined,
-        created_at_max: created_at ? created_at[1] : undefined,
-        updated_at_min: updated_at ? updated_at[0] : undefined,
-        updated_at_max: updated_at ? updated_at[1] : undefined,
-        published_at_min: published_at ? published_at[0] : undefined,
-        published_at_max: published_at ? published_at[1] : undefined,
-        handle,
-        published_status,
-        since_id,
-        title,
-
-        ...nextPageQuery,
+        limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(pageFieldDependencies).join(','),
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          published_at_min: published_at ? published_at[0] : undefined,
+          published_at_max: published_at ? published_at[1] : undefined,
+          handle,
+          published_status,
+          since_id,
+          title,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ context, options, id, fields = null }: FindArgs): Promise<Page | null> {
@@ -170,23 +170,23 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
     published_status = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Page>> {
+  }: AllArgs): Promise<FindAllRestResponse<Page>> {
     const response = await this.baseFind<Page>({
       context,
       urlIds: {},
       params: {
-        limit: limit,
-        since_id: since_id,
-        title: title,
-        handle: handle,
-        created_at_min: created_at_min,
-        created_at_max: created_at_max,
-        updated_at_min: updated_at_min,
-        updated_at_max: updated_at_max,
-        published_at_min: published_at_min,
-        published_at_max: published_at_max,
-        fields: fields,
-        published_status: published_status,
+        limit,
+        since_id,
+        title,
+        handle,
+        created_at_min,
+        created_at_max,
+        updated_at_min,
+        updated_at_max,
+        published_at_min,
+        published_at_max,
+        fields,
+        published_status,
         ...otherArgs,
       },
       options,

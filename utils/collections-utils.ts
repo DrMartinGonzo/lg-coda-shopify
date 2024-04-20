@@ -34,7 +34,6 @@ export async function getCollectionType(
     },
   });
 
-  // TODO: return 'better' values, rest resources ones or GraphQl ones
   return response.body.data.collection.isSmartCollection
     ? RestResourcesSingular.SmartCollection
     : RestResourcesSingular.CustomCollection;

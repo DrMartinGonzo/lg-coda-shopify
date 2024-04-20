@@ -1,19 +1,22 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { PageInfo } from '@shopify/shopify-api/lib/clients/types';
+import { PageInfo as PageInfoRest } from '@shopify/shopify-api/lib/clients/types';
 import { Body, IdSet, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../../Clients/Client.types';
+import { SearchParams } from '../../../Clients/Client.types';
 import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
+import { NotFoundError } from '../../../Errors/Errors';
 import { REST_DEFAULT_API_VERSION } from '../../../config';
+import { CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
 import { filterObjectKeys } from '../../../utils/helpers';
 import { MergedCollection_Custom } from '../../Rest/MergedCollection_Custom';
-import { GraphQlResourceName, RestResourceSingular } from '../../types/Resource.types';
+import { BaseContext, GraphQlResourceName, RestResourceSingular } from '../../types/Resource.types';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
-import { AbstractResource } from '../AbstractResource';
+import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithRestMetafields';
-import { Shop } from '../../Rest/Shop';
+
+// #endregion
 
 // #region Types
 export interface BaseConstructorArgs {
@@ -33,10 +36,8 @@ interface GetPathArgs {
   entity?: AbstractRestResource | null;
 }
 
-export interface FindAllResponse<T> {
-  data: T[];
-  headers: coda.FetchResponse['headers'];
-  pageInfo?: PageInfo;
+export interface FindAllRestResponse<T> extends FindAllResponseBase<T> {
+  pageInfo?: PageInfoRest;
 }
 
 interface BaseFindArgs extends BaseContext {
@@ -107,11 +108,9 @@ export abstract class AbstractRestResource extends AbstractResource {
 
     if (!match) {
       const pathOptions = potentialPaths.map((path) => path.path);
-
-      // throw new RestResourceError(
-      // TODO: fix
-      throw new Error(
-        `Could not find a path for request. If you are trying to make a request to one of the following paths, ensure all relevant IDs are set. :\n - ${pathOptions.join(
+      throw new NotFoundError(
+        'path for request',
+        `If you are trying to make a request to one of the following paths, ensure all relevant IDs are set. :\n - ${pathOptions.join(
           '\n - '
         )}`
       );
@@ -192,7 +191,7 @@ export abstract class AbstractRestResource extends AbstractResource {
     params,
     context,
     options,
-  }: BaseFindArgs): Promise<FindAllResponse<T>> {
+  }: BaseFindArgs): Promise<FindAllRestResponse<T>> {
     const response = await this.request<T>({
       http_method: 'get',
       operation: 'get',
@@ -246,6 +245,77 @@ export abstract class AbstractRestResource extends AbstractResource {
     return instances;
   }
 
+  /**
+   * To be implemented by child class
+   */
+  public static async all(params: any): Promise<FindAllRestResponse<any>> {
+    return;
+  }
+
+  public static allIterationParams<T>({
+    nextPageQuery = {},
+    context,
+    limit,
+    firstPageParams = {},
+  }: {
+    nextPageQuery: SearchParams;
+    context: coda.ExecutionContext;
+    limit?: number;
+    firstPageParams?: {};
+  }): T {
+    /**
+     * Because the request URL contains the page_info parameter, you can't add
+     * any other parameters to the request, except for limit. Including other
+     * parameters can cause the request to fail.
+     * @see https://shopify.dev/api/usage/pagination-rest
+     */
+    let params = {
+      context,
+      limit: limit ?? REST_DEFAULT_LIMIT,
+    };
+    if ('page_info' in nextPageQuery) {
+      params = {
+        ...params,
+        ...nextPageQuery,
+      };
+    } else {
+      params = {
+        ...params,
+        ...firstPageParams,
+      };
+    }
+
+    return params as T;
+  }
+  public static async allDataLoop<T extends AbstractRestResource>({ context, ...otherArgs }): Promise<Array<T>> {
+    let items: Array<T> = [];
+    let nextPageQuery: any = {};
+    let run = true;
+
+    while (run) {
+      const params = this.allIterationParams<any>({
+        context,
+        nextPageQuery,
+        limit: REST_DEFAULT_LIMIT,
+        firstPageParams: {
+          ...otherArgs,
+        },
+      });
+
+      const response = await this.all({
+        ...params,
+        options: { cacheTtlSecs: CACHE_DISABLED },
+      });
+
+      items = items.concat(response.data as unknown as T);
+      nextPageQuery = response.pageInfo?.nextPage?.query ?? {};
+
+      if (Object.keys(nextPageQuery).length === 0) run = false;
+    }
+
+    return items;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -270,7 +340,6 @@ export abstract class AbstractRestResource extends AbstractResource {
       operation: method,
       context: this.context,
       urlIds: {},
-      // TODO: try not to have to filter metafields from apiData
       /** When performing a PUT request, we must create/update/delete metafields
        * individually. This will be done by {@link AbstractSyncedRestResourceWithRestMetafields} class */
       body: {

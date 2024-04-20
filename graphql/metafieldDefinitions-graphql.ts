@@ -28,8 +28,8 @@ export const metafieldDefinitionFragment = graphql(`
 // #region Queries
 export const getMetafieldDefinitionsQuery = graphql(
   `
-    query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $maxEntriesPerRun: Int!, $cursor: String) {
-      metafieldDefinitions(ownerType: $ownerType, first: $maxEntriesPerRun, after: $cursor) {
+    query GetMetafieldDefinitions($ownerType: MetafieldOwnerType!, $limit: Int!, $cursor: String) {
+      metafieldDefinitions(ownerType: $ownerType, first: $limit, after: $cursor) {
         nodes {
           ...MetafieldDefinition
         }

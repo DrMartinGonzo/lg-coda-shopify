@@ -1,10 +1,8 @@
 const fs = require('fs');
-// TODO: use https://github.com/jonschlinkert/pascalcase like @codahq does
 const toPascalCase = require('to-pascal-case');
 
 import { GraphQLClient, gql } from 'graphql-request';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../config';
-import toPascalCase from 'to-pascal-case';
 import { join } from 'path';
 
 async function fetchSchema(url: string) {

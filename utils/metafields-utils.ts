@@ -12,7 +12,12 @@ import {
   MetafieldType,
 } from '../Resources/Mixed/Metafield.types';
 import { SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
-import { GraphQlResourceName, GraphQlResourceNames, RestResourceSingular } from '../Resources/types/Resource.types';
+import {
+  GraphQlResourceName,
+  GraphQlResourceNames,
+  RestResourceSingular,
+  RestResourcesSingular,
+} from '../Resources/types/Resource.types';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
@@ -489,27 +494,27 @@ export function matchOwnerTypeToResourceName(ownerType: MetafieldOwnerType): Gra
 export function matchOwnerTypeToOwnerResource(ownerType: MetafieldOwnerType): SupportedMetafieldOwnerResource {
   switch (ownerType) {
     case MetafieldOwnerType.Article:
-      return 'article';
+      return RestResourcesSingular.Article;
     case MetafieldOwnerType.Blog:
-      return 'blog';
+      return RestResourcesSingular.Blog;
     case MetafieldOwnerType.Collection:
-      return 'collection';
+      return RestResourcesSingular.Collection;
     case MetafieldOwnerType.Customer:
-      return 'customer';
+      return RestResourcesSingular.Customer;
     case MetafieldOwnerType.Draftorder:
-      return 'draft_order';
+      return RestResourcesSingular.DraftOrder;
     case MetafieldOwnerType.Location:
-      return 'location';
+      return RestResourcesSingular.Location;
     case MetafieldOwnerType.Order:
-      return 'order';
+      return RestResourcesSingular.Order;
     case MetafieldOwnerType.Page:
-      return 'page';
+      return RestResourcesSingular.Page;
     case MetafieldOwnerType.Product:
-      return 'product';
+      return RestResourcesSingular.Product;
     case MetafieldOwnerType.Productvariant:
-      return 'variant';
+      return RestResourcesSingular.ProductVariant;
     case MetafieldOwnerType.Shop:
-      return 'shop';
+      return RestResourcesSingular.Shop;
 
     default:
       throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
@@ -526,27 +531,27 @@ export function matchOwnerResourceToMetafieldOwnerType(
   ownerResource: RestResourceSingular
 ): SupportedMetafieldOwnerType {
   switch (ownerResource) {
-    case 'article':
+    case RestResourcesSingular.Article:
       return MetafieldOwnerType.Article;
-    case 'blog':
+    case RestResourcesSingular.Blog:
       return MetafieldOwnerType.Blog;
-    case 'collection':
+    case RestResourcesSingular.Collection:
       return MetafieldOwnerType.Collection;
-    case 'customer':
+    case RestResourcesSingular.Customer:
       return MetafieldOwnerType.Customer;
-    case 'draft_order':
+    case RestResourcesSingular.DraftOrder:
       return MetafieldOwnerType.Draftorder;
-    case 'location':
+    case RestResourcesSingular.Location:
       return MetafieldOwnerType.Location;
-    case 'order':
+    case RestResourcesSingular.Order:
       return MetafieldOwnerType.Order;
-    case 'page':
+    case RestResourcesSingular.Page:
       return MetafieldOwnerType.Page;
-    case 'product':
+    case RestResourcesSingular.Product:
       return MetafieldOwnerType.Product;
-    case 'variant':
+    case RestResourcesSingular.ProductVariant:
       return MetafieldOwnerType.Productvariant;
-    case 'shop':
+    case RestResourcesSingular.Shop:
       return MetafieldOwnerType.Shop;
 
     default:

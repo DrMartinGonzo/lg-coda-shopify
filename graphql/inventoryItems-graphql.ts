@@ -53,8 +53,8 @@ export const inventoryItemFieldsFragment = graphql(`
 // #region Queries
 export const getInventoryItemsQuery = graphql(
   `
-    query GetInventoryItems($maxEntriesPerRun: Int!, $cursor: String, $searchQuery: String) {
-      inventoryItems(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+    query GetInventoryItems($limit: Int!, $cursor: String, $searchQuery: String) {
+      inventoryItems(first: $limit, after: $cursor, query: $searchQuery) {
         nodes {
           ...InventoryItemFields
         }

@@ -1,22 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
-import {
-  AbstractSyncedRestResource,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { BaseContext } from '../types/Resource.types';
 import { Order } from './Order';
 import { Shop } from './Shop';
 
@@ -84,28 +80,12 @@ export class OrderLineItem extends AbstractSyncedRestResource {
       ordersSinceId,
     ] = codaSyncParams;
 
-    return async (nextPageQuery: SearchParams = {}, adjustLimit?: number) => {
-      // FIXME: !!!!!!!
-      // TODO: do a helper function for this
-      let params: AllArgs = {
+    return async ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-      };
-
-      /**
-       * Because the request URL contains the page_info parameter, you can't add
-       * any other parameters to the request, except for limit. Including other
-       * parameters can cause the request to fail.
-       * @see https://shopify.dev/api/usage/pagination-rest
-       */
-      if ('page_info' in nextPageQuery) {
-        params = {
-          ...params,
-          ...nextPageQuery,
-        };
-      } else {
-        params = {
-          ...params,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
           fields: ['id', 'name', 'line_items'].join(','),
           ids: orderIds && orderIds.length ? orderIds.join(',') : undefined,
           financial_status: orderFinancialStatus,
@@ -118,10 +98,8 @@ export class OrderLineItem extends AbstractSyncedRestResource {
           updated_at_max: orderUpdatedAt ? orderUpdatedAt[1] : undefined,
           processed_at_min: orderProcessedAt ? orderProcessedAt[0] : undefined,
           processed_at_max: orderProcessedAt ? orderProcessedAt[1] : undefined,
-
-          ...nextPageQuery,
-        };
-      }
+        },
+      });
 
       const orders = await Order.all(params);
       const orderLineItems = orders.data.flatMap((order) => {

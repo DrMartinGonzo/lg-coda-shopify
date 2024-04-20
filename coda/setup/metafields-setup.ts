@@ -21,6 +21,7 @@ import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { filters, inputs } from '../coda-parameters';
+import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 
 // #endregion
 
@@ -96,7 +97,8 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   description: 'Return Metafields from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Metafield,
-  listDynamicUrls: async (context) => Metafield.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false })),
+  listDynamicUrls: async (context) =>
+    MetafieldHelper.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false })),
   getName: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
     const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
@@ -176,7 +178,7 @@ export const Action_SetMetafield = coda.makeFormula({
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && ownerId === undefined) {
       throw new RequiredParameterMissingVisibleError(
-        `The ownerID is required when setting metafields from resources other than Shop.`
+        `ownerID is required when setting metafields from resources other than Shop.`
       );
     }
 
@@ -195,211 +197,67 @@ export const Action_SetMetafield = coda.makeFormula({
  * Alternative version of SetMetafield Action. Main benefit is having autocomplete
  * on key, but we have to manually specify if the metafield is a `list`.
  */
-// export const Action_SetMetafieldAltVersion = coda.makeFormula({
-//   name: 'SetMetafieldAltVersion',
-//   description:
-//     'Set a metafield of the `list`variant. If the metafield does not exist, it will be created. If it exists and you input an empty string, it will be deleted. Return the metafield data.',
-//   connectionRequirement: coda.ConnectionRequirement.Required,
-//   parameters: [
-//     inputs.metafield.ownerType,
-//     inputs.metafield.ownerID,
-//     inputs.metafield.fullKeyAutocomplete,
-//     coda.makeParameter({
-//       type: coda.ParameterType.Boolean,
-//       name: 'isListMetafield',
-//       description: 'Wether the metafield is a `list` metafield. For example `list.color`, `list.number_decimal`, etc…',
-//       suggestedValue: false,
-//     }),
-//     coda.makeParameter({
-//       type: coda.ParameterType.StringArray,
-//       name: 'value',
-//       description:
-//         'A single metafield value or a list of metafield values inside a List() formula. Use one of the `Meta{…}` helper formulas for values.',
-//       optional: true,
-//       suggestedValue: [],
-//     }),
-//     coda.makeParameter({
-//       type: coda.ParameterType.StringArray,
-//       name: 'values',
-//       description:
-//         'A list of metafield values inside a List() formula. Use one of the `Meta{…}` helper formulas for values.',
-//       optional: true,
-//       suggestedValue: [],
-//     }),
-//   ],
-//   isAction: true,
-//   resultType: coda.ValueType.Object,
-//   schema: MetafieldSyncTableSchema,
-//   execute: async ([ownerType, ownerId, fullKey, list, values], context) => {
-//     let isList = !!list;
-//     const parsedValues: Array<CodaMetafieldValue> =
-//       values && values.length ? values.map((v: string) => parseAndValidateMetaValueFormulaOutput(v)) : [];
-//     const filteredValues = parsedValues.map((v) => (shouldDeleteMetafield(v.value) ? null : v.value)).filter(Boolean);
+export const Action_SetMetafieldAltVersion = coda.makeFormula({
+  name: 'SetMetafieldAltVersion',
+  description:
+    'Set a metafield. If the metafield does not exist, it will be created. If it exists and you input an empty value, it will be deleted. Return the metafield data.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [
+    inputs.metafield.ownerType,
+    inputs.metafield.fullKeyAutocomplete,
+    coda.makeParameter({
+      type: coda.ParameterType.StringArray,
+      name: 'value',
+      description:
+        'A single metafield value or a list of metafield values inside a List() formula. Use one of the `Meta{…}` helper formulas for values. You have to check the `isListMetafield` parameter if the metafield is a list.',
+      suggestedValue: [],
+    }),
+    {
+      ...inputs.metafield.ownerID,
+      description: inputs.metafield.ownerID.description + ' Not needed if setting a Shop metafield.',
+      // empty string to force Coda to show the field
+      suggestedValue: '',
+      optional: true,
+    },
+    coda.makeParameter({
+      type: coda.ParameterType.Boolean,
+      name: 'isListMetafield',
+      description: 'Wether the metafield is a `list` metafield. For example `list.color`, `list.number_decimal`, etc…',
+      suggestedValue: false,
+      optional: true,
+    }),
+  ],
+  isAction: true,
+  resultType: coda.ValueType.Object,
+  schema: MetafieldSyncTableSchema,
+  execute: async ([ownerType, fullKey, values, ownerId, list = false], context) => {
+    const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
+    let isList = !!list;
 
-//     const schemaEffectiveKeys = retrieveObjectSchemaEffectiveKeys(MetafieldSyncTableSchema);
-//     const ownerResource = requireResourceWithMetaFieldsByOwnerType(ownerType as MetafieldOwnerType);
-//     const ownerGid = idToGraphQlGid(ownerType, ownerId);
+    const codaMetafieldSet = isList
+      ? CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs: values })
+      : CodaMetafieldSet.createFromFormatMetafieldFormula({
+          fullKey,
+          value: Array.isArray(values) ? values[0] : values,
+        });
 
-//     // Check if the metafield already exists.
-//     const ownerMetafields = await Metafield.all({
-//       context,
-//       ['metafield[owner_id]']: ownerId,
-//       ['metafield[owner_resource]']: graphQLToRestMap[ownerType],
-//     });
-//     const existingMetafield = ownerMetafields.data.find((metafield) => metafield.fullKey === fullKey);
+    const isShopQuery = ownerType === MetafieldOwnerType.Shop;
+    if (!isShopQuery && ownerId === undefined) {
+      throw new RequiredParameterMissingVisibleError(
+        `ownerID is required when setting metafields from resources other than Shop.`
+      );
+    }
 
-//        const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
-//        const metafieldInstance = new Metafield({
-//          context,
-//          fromRow: {
-//            row: {
-//              id: existingMetafield?.apiData?.id ?? null,
-//              label: fullKey,
-//              key: metaKey,
-//              namespace: metaNamespace,
-//              owner_id: ownerId,
-//              owner_type: ownerType,
-//              // TODO: fix this
-//              /** Si type n'est pas défini, c'est que le user cherche à supprimer le
-//               * metafield, du coup on peut mettre n'importe quoi pour contourner
-//               * RequiredParameterMissingVisibleError */
-//              type: type ?? existingMetafield?.apiData?.type ?? '_',
-//              rawValue: value,
-//            } as MetafieldRow,
-//          },
-//        });
-//        await metafieldInstance.saveAndUpdate();
-//        return metafieldInstance.formatToRow() as any;
+    const metafieldInstance = codaMetafieldSet.toMetafield({
+      context,
+      owner_id: isShopQuery ? undefined : ownerId,
+      owner_resource: ownerResource,
+    });
 
-//     // Check if the metafield already exists.
-//     // const singleMetafieldResponse = await fetchSingleMetafieldGraphQlByKey({ fullKey, ownerGid }, context, {
-//     //   cacheTtlSecs: CACHE_DISABLED,
-//     // });
-//     const findMetafieldsResponse = await fetchMetafieldsGraphQlByKey({ keys: [fullKey], ownerGid }, context, {
-//       cacheTtlSecs: CACHE_DISABLED,
-//     });
-//     const singleMetafieldOwner = findMetafieldsResponse.ownerNode;
-//     const singleMetafield = findMetafieldsResponse.metafieldNodes[0];
-
-//     let action: string;
-//     if (!filteredValues.length && singleMetafield) {
-//       action = 'delete';
-//     } else if (singleMetafield) {
-//       action = 'update';
-//     } else if (filteredValues.length) {
-//       action = 'create';
-//     }
-
-//     /* ───────────────────────────────────────────────────────────────────────────────
-//        A metafield already exists, and the value is empty, we delete the metafield
-//     ┌───────────────────────────────────────────────────────────────────────────────── */
-//     if (action === 'delete') {
-//       const metafieldId = graphQlGidToId(singleMetafield.id);
-//       // const metafieldFetcher = new MetafieldRestFetcher(ownerResource, ownerId, context);
-//       // await metafieldFetcher.delete(metafieldId);
-//       await Metafield.delete({ context, id: metafieldId });
-//       // await deleteMetafieldRest(metafieldId, context);
-
-//       // we keep these keys so that we can later recreate the metafield without having to use a button
-//       const deletedObj = {
-//         id: metafieldId,
-//         label: fullKey,
-//         owner_id: ownerId,
-//         owner_type: ownerResource.graphQl.name,
-//         type: singleMetafield.type,
-//       };
-//       // add all other missing properties and set them to undefined
-//       schemaEffectiveKeys.forEach((key) => {
-//         if (!deletedObj.hasOwnProperty(key)) {
-//           deletedObj[key] = undefined;
-//         }
-//       });
-
-//       return deletedObj;
-//     }
-
-//     if (action === 'update' || action === 'create') {
-//       const uniqueTypes = arrayUnique(parsedValues.map((v) => v.type));
-//       if (uniqueTypes.length > 1) throw new coda.UserVisibleError('All metafield values must be of the same type.');
-//       let finalType: MetafieldTypeValue;
-//       if (isList || (action === 'update' && singleMetafield.type.startsWith('list.'))) {
-//         isList = true;
-//         finalType = `list.${uniqueTypes[0]}` as MetafieldTypeValue;
-//       } else {
-//         finalType = uniqueTypes[0] as MetafieldTypeValue;
-//       }
-
-//       if (!Object.values(METAFIELD_TYPES).includes(finalType)) {
-//         throw new coda.UserVisibleError(`Shopify doesn't support metafields of type: \`${finalType}\`.`);
-//       }
-
-//       const metafieldFetcher = new MetafieldGraphQlFetcher(ownerResource, context);
-
-//       /* ─────────────────────────────────────────
-//          A metafield already exists, we update
-//       ┌─────────────────────────────────────────── */
-//       if (action === 'update') {
-//         if (singleMetafield.type !== finalType) {
-//           throw new coda.UserVisibleError(
-//             `Type mismatch between the existing metafield you are trying to update (\`${singleMetafield.type}\`) and the provided one (\`${finalType}\`).`
-//           );
-//         }
-
-//         const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
-//         const metafieldsSetInputs: Array<MetafieldsSetInput> = [
-//           {
-//             key: metaKey,
-//             namespace: metaNamespace,
-//             ownerId: singleMetafieldOwner.id,
-//             type: singleMetafield.type,
-//             value: isList || typeof filteredValues[0] !== 'string' ? JSON.stringify(filteredValues) : filteredValues[0],
-//           },
-//         ];
-//         const { response } = await metafieldFetcher.set(metafieldsSetInputs);
-//         const metafield = readFragment(
-//           metafieldFieldsFragmentWithDefinition,
-//           response.body.data.metafieldsSet.metafields[0]
-//         ) as MetafieldFragmentWithDefinition;
-//         return metafieldFetcher.formatApiToRow(metafield, singleMetafieldOwner);
-//       }
-
-//       /* ───────────────────────────
-//          We create the metafield
-//       ┌───────────────────────────── */
-//       if (action === 'create') {
-//         const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
-//         const metafieldsSetInputs: Array<MetafieldsSetInput> = [
-//           {
-//             key: metaKey,
-//             namespace: metaNamespace,
-//             ownerId: ownerGid,
-//             type: finalType,
-//             value: isList || typeof filteredValues[0] !== 'string' ? JSON.stringify(filteredValues) : filteredValues[0],
-//           },
-//         ];
-//         const { response } = await metafieldFetcher.set(metafieldsSetInputs);
-//         const metafield = readFragment(
-//           metafieldFieldsFragmentWithDefinition,
-//           response.body.data.metafieldsSet.metafields[0]
-//         ) as MetafieldFragmentWithDefinition;
-//         return metafieldFetcher.formatApiToRow(metafield, singleMetafieldOwner);
-//       }
-//     }
-
-//     // Do nothing and return empty object
-//     const emptyObj = {
-//       id: undefined,
-//       label: undefined,
-//       owner_id: undefined,
-//       owner_type: undefined,
-//       type: undefined,
-//     };
-//     schemaEffectiveKeys.forEach((key) => {
-//       emptyObj[key] = undefined;
-//     });
-//     return emptyObj;
-//   },
-// });
+    await metafieldInstance.saveAndUpdate();
+    return metafieldInstance.formatToRow() as any;
+  },
+});
 
 export const Action_DeleteMetafield = coda.makeFormula({
   name: 'DeleteMetafield',
@@ -437,21 +295,20 @@ export const Formula_Metafield = coda.makeFormula({
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && ownerId === undefined) {
       throw new RequiredParameterMissingVisibleError(
-        `The ownerID is required when requesting metafields from resources other than Shop.`
+        `ownerID is required when requesting metafields from resources other than Shop.`
       );
     }
-    const metafield = await MetafieldGraphQl.find({
+    const metafield = await MetafieldGraphQl.findByKeys({
       context,
       ownerId: isShopQuery ? undefined : idToGraphQlGid(graphQlResourceName, ownerId),
       metafieldKeys: [fullKey],
       options: { cacheTtlSecs: CACHE_DEFAULT },
     });
+
     if (metafield) {
       return metafield.formatToRow() as any; //! keep typescript happy
     }
-
-    // TODO: add this error everywhere
-    throw new NotFoundVisibleError('Metafield');
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Metafield);
   },
 });
 
@@ -470,26 +327,21 @@ export const Formula_Metafields = coda.makeFormula({
   cacheTtlSecs: CACHE_DISABLED, // Cache is disabled intentionally
   resultType: coda.ValueType.Array,
   items: MetafieldSyncTableSchema,
-  execute: async function ([ownerType, ownerId], context) {
+  execute: async function ([ownerType, owner_id], context) {
     // TODO: maybe use graphql ? Notamment pour avoir parentOwnerId pour les variants
-    const metafieldOwnerType = ownerType as SupportedMetafieldOwnerType;
-    const isShopQuery = metafieldOwnerType === MetafieldOwnerType.Shop;
-    if (!isShopQuery && ownerId === undefined) {
+    const isShopQuery = ownerType === MetafieldOwnerType.Shop;
+    if (!isShopQuery && owner_id === undefined) {
       throw new RequiredParameterMissingVisibleError(
-        `The ownerID is required when requesting metafields from resources other than Shop.`
+        `ownerID is required when requesting metafields from resources other than Shop.`
       );
     }
 
-    // TODO: need a helper function. @see augmentWithMetafieldsFunction methods
-    const fetchOptions = { cacheTtlSecs: CACHE_DISABLED }; // Cache is disabled intentionally
-    const response = isShopQuery
-      ? await Metafield.all({ context, options: fetchOptions })
-      : await Metafield.all({
-          context,
-          options: fetchOptions,
-          owner_id: ownerId,
-          owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
-        });
+    const response = await Metafield.all({
+      owner_id,
+      owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
+      context,
+      options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
+    });
 
     return response.data.map((m) => m.formatToRow()) as any[]; //! keep typescript happy
   },

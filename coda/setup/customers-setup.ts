@@ -9,6 +9,7 @@ import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 import { formatPersonDisplayValue } from '../../utils/helpers';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -227,7 +228,10 @@ export const Formula_Customer = coda.makeFormula({
   schema: CustomerSyncTableSchema,
   execute: async ([customerId], context) => {
     const customer = await Customer.find({ id: customerId, context });
-    return customer.formatToRow();
+    if (customer) {
+      return customer.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Customer);
   },
 });
 

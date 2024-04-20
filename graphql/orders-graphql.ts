@@ -13,13 +13,13 @@ function buildOrdersSearchQuery(filters: { [key: string]: any }) {
 //   ${MetafieldFieldsFragment}
 
 //   query getOrdersMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     orders(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 //         metafields(keys: $metafieldKeys, first: $countMetafields) {

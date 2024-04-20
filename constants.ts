@@ -78,8 +78,10 @@ export const OPTIONS_PUBLISHED_STATUS = [
 // #endregion
 
 // #region Pack
-const PACK_PREFIX_KEY = 'lgs_';
+export const PREFIX_FAKE = 'FAKE_';
+export const FULL_SIZE = 'Full size';
 
+const PACK_PREFIX_KEY = 'lgs_';
 export const CUSTOM_FIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
 
 /**

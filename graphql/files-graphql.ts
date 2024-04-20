@@ -65,7 +65,7 @@ export const fileFieldsFragment = graphql(
 export const getFilesQuery = graphql(
   `
     query GetFiles(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $searchQuery: String
       $includeAlt: Boolean!
@@ -79,7 +79,7 @@ export const getFilesQuery = graphql(
       $includeUrl: Boolean!
       $includeWidth: Boolean!
     ) {
-      files(first: $maxEntriesPerRun, after: $cursor, reverse: true, sortKey: CREATED_AT, query: $searchQuery) {
+      files(first: $limit, after: $cursor, reverse: true, sortKey: CREATED_AT, query: $searchQuery) {
         nodes {
           ...FileFields
         }

@@ -5,13 +5,14 @@ import { Location } from '../Resources/GraphQl/Location';
 import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { Metaobject } from '../Resources/GraphQl/Metaobject';
 import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
+import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { Asset } from '../Resources/Rest/Asset';
 import { Blog } from '../Resources/Rest/Blog';
-import { Metafield } from '../Resources/Rest/Metafield';
 import { GraphQlResourceNames, RestResourceSingular } from '../Resources/types/Resource.types';
 import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import {
   CACHE_DEFAULT,
+  FULL_SIZE,
   GRAPHQL_NODES_LIMIT,
   OPTIONS_COUNTRY_NAMES,
   OPTIONS_DRAFT_ORDER_STATUS,
@@ -67,7 +68,7 @@ async function autocompleteBlogParameterWithName(context: coda.ExecutionContext,
 async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string): Promise<Array<string>> {
   const response = await Location.all({
     context,
-    maxEntriesPerRun: GRAPHQL_NODES_LIMIT,
+    limit: GRAPHQL_NODES_LIMIT,
     fields: {
       fulfillment_service: false,
       local_pickup_settings: false,
@@ -84,10 +85,8 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
     const metafieldDefinitions = await MetafieldDefinition.allForOwner({
       context,
       ownerType,
-      // TODO: check if FakeExtraDefinitions needed
       includeFakeExtraDefinitions: true,
-      // TODO: maybe adjust cache ?
-      // options: { cacheTtlSecs: CACHE_DEFAULT },
+      options: { cacheTtlSecs: CACHE_DEFAULT },
     });
     const searchObjects = metafieldDefinitions.map((metafield) => {
       return {
@@ -105,10 +104,9 @@ function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerT
       context,
       ownerType,
       includeFakeExtraDefinitions: true,
-      // TODO: maybe adjust cache ?
-      // options: { cacheTtlSecs: CACHE_DEFAULT },
+      options: { cacheTtlSecs: CACHE_DEFAULT },
     });
-    const keys = metafieldDefinitions.map((m) => m.fullKey);
+    const keys = metafieldDefinitions.map((m) => m.fullKey).sort();
     return coda.simpleAutocomplete(search, keys);
   };
 }
@@ -283,11 +281,12 @@ const generalInputs = {
     description: 'The phone number (E.164 format).',
   }),
   previewSize: coda.makeParameter({
-    type: coda.ParameterType.Number,
+    type: coda.ParameterType.String,
     name: 'previewSize',
-    suggestedValue: DEFAULT_THUMBNAIL_SIZE,
+    suggestedValue: `${DEFAULT_THUMBNAIL_SIZE}`,
+    autocomplete: ['32', '48', `${DEFAULT_THUMBNAIL_SIZE}`, '128', '256', FULL_SIZE],
     description:
-      'The maximum width of the thumbnail. Smaller values can increase display performance of the table if you have lots of entries.',
+      'Maximum width (in pixels) of the preview image. Smaller values can increase display performance of the table if you have lots of entries.',
   }),
   published: coda.makeParameter({
     type: coda.ParameterType.Boolean,
@@ -595,7 +594,7 @@ const metafieldInputs = {
     type: coda.ParameterType.String,
     name: 'ownerType',
     description: 'The type of the resource owning the metafield.',
-    autocomplete: Metafield.listSupportedSyncTables(),
+    autocomplete: MetafieldHelper.listSupportedSyncTables(),
   }),
   value: coda.makeParameter({
     type: coda.ParameterType.String,

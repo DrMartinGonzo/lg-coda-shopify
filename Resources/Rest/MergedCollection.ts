@@ -10,10 +10,10 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
@@ -68,7 +68,7 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collection;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
   protected static readonly graphQlName = GraphQlResourceNames.Collection;

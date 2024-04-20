@@ -1,55 +1,16 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import UrlParse from 'url-parse';
 
 import { PageInfo, PageInfoParams } from '@shopify/shopify-api/lib/clients/types';
 import { AbstractRestResource } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { REST_DEFAULT_API_VERSION } from '../config';
-import { FetchRequestOptions } from './Client.types';
+import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
-function generateApiUrlFormatter(defaultApiVersion: string, formatPaths = true) {
-  return (context: coda.ExecutionContext, path: string, apiVersion?: string) => {
-    // if (apiVersion) {
-    //   validateApiVersion({
-    //     ...baseApiVersionValidationParams,
-    //     apiVersion,
-    //   });
-    // }
-
-    const storeUrl = context.endpoint;
-
-    const urlApiVersion = (apiVersion ?? defaultApiVersion).trim();
-    let cleanPath = path.replace(/^\//, '');
-    if (formatPaths) {
-      if (!cleanPath.startsWith('admin')) {
-        cleanPath = `admin/api/${urlApiVersion}/${cleanPath}`;
-      }
-      if (!cleanPath.endsWith('.json')) {
-        cleanPath = `${cleanPath}.json`;
-      }
-    }
-
-    // const params = new URLSearchParams();
-    // if (searchParams) {
-    //   for (const [key, value] of Object.entries(searchParams)) {
-    //     convertValue(params, key, value);
-    //   }
-    // }
-    // const queryString = params.toString() ? `?${params.toString()}` : '';
-
-    return `${storeUrl}/${cleanPath}`;
-  };
-}
-
-const apiUrlFormatter = generateApiUrlFormatter(REST_DEFAULT_API_VERSION);
+// #endregion
 
 // #region Types
-// export interface PageInfo {
-//   limit: string;
-//   previousPageUrl?: string;
-//   nextPageUrl?: string;
-// }
-
 export interface RestRequestReturn<T extends AbstractRestResource = AbstractRestResource> {
   body: {
     [key: string]: T['apiData'];
@@ -57,10 +18,6 @@ export interface RestRequestReturn<T extends AbstractRestResource = AbstractRest
   headers: coda.FetchResponse['headers'];
   pageInfo?: PageInfo;
 }
-
-type SearchParamField = string | number;
-type SearchParamFields = SearchParamField | SearchParamField[] | Record<string, SearchParamField | SearchParamField[]>;
-export type SearchParams = Record<string, SearchParamFields>;
 
 interface GetRequestParams {
   /** The path to the resource, relative to the API version root. */
@@ -83,12 +40,12 @@ type DeleteRequestParams = GetRequestParams;
 type RequestParams = (GetRequestParams | PostRequestParams) & {
   method: coda.FetchMethodType;
 };
-// #endregion
 
 interface RestClientParams {
   context: coda.ExecutionContext;
   apiVersion?: string;
 }
+// #endregion
 
 export class RestClient {
   private static LINK_HEADER_REGEXP = /<([^<]+)>; rel="([^"]+)"/;
@@ -101,7 +58,7 @@ export class RestClient {
 
   readonly apiVersion: string;
 
-  constructor({ context, apiVersion }: RestClientParams) {
+  constructor({ context, apiVersion = REST_DEFAULT_API_VERSION }: RestClientParams) {
     this.context = context;
     this.apiVersion = apiVersion;
   }
@@ -172,9 +129,20 @@ export class RestClient {
    *    Instance Methods
    *===================================================================================================================== */
   // #region Requests
+  private apiUrlFormatter(path: string) {
+    let cleanPath = path.replace(/^\//, '');
+    if (!cleanPath.startsWith('admin')) {
+      cleanPath = `admin/api/${this.apiVersion}/${cleanPath}`;
+    }
+    if (!cleanPath.endsWith('.json')) {
+      cleanPath = `${cleanPath}.json`;
+    }
+    return `${this.context.endpoint}/${cleanPath}`;
+  }
+
   protected async request<T extends AbstractRestResource = AbstractRestResource>(params: RequestParams) {
     const url = coda.withQueryParams(
-      apiUrlFormatter(this.context, params.path, REST_DEFAULT_API_VERSION),
+      this.apiUrlFormatter(params.path),
       RestClient.cleanQueryParams(params.query ?? {})
     );
 

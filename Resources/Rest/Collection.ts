@@ -2,20 +2,18 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { PACK_IDENTITIES, Identity, OPTIONS_PUBLISHED_STATUS } from '../../constants';
+import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -46,7 +44,7 @@ export class Collection extends AbstractSyncedRestResourceWithGraphQLMetafields 
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collection;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'collection';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
@@ -98,7 +96,7 @@ export class Collection extends AbstractSyncedRestResourceWithGraphQLMetafields 
       operation: 'products',
       context: context,
       urlIds: { id: id },
-      params: { limit: limit, ...otherArgs },
+      params: { limit, ...otherArgs },
       body: {},
       entity: null,
       options,

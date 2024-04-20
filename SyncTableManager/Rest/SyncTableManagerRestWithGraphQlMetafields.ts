@@ -9,33 +9,37 @@ import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../gra
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { graphQlGidToId } from '../../utils/conversion-utils';
-import { arrayUnique, handleFieldDependencies, logAdmin } from '../../utils/helpers';
+import { arrayUnique, logAdmin } from '../../utils/helpers';
 import { splitMetaFieldFullKey } from '../../utils/metafields-utils';
+import { AbstractSyncTableManagerRestWithMetafields } from '../Abstract/Rest/AbstractSyncTableManagerRestWithMetafields';
 import { CurrentBatchType, SyncTableMixedContinuation } from '../types/SyncTable.types';
 import {
-  getGraphQlSyncTableMaxEntriesAndDeferWait,
+  ExecuteRestSyncWithGraphQlMetafieldsArgs,
+  ISyncTableManagerWithMetafields,
+  SyncTableManagerRestResult,
+} from '../types/SyncTableManager.types';
+import {
+  getGraphQlSyncTableMaxLimitAndDeferWait,
   skipGraphQlSyncTableRun,
   stringifyContinuationProperty,
 } from '../utils/syncTableManager-utils';
-import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
-import { ExecuteSyncArgs, SyncTableManagerRestResult } from './SyncTableManagerRest';
-import { AbstractGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
 
 // #endregion
 
-export class SyncTableManagerRestWithGraphQlMetafields<
-  BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields
-> extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
-  public prevContinuation: SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>;
-  public continuation: SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>;
-
+export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields>
+  extends AbstractSyncTableManagerRestWithMetafields<
+    BaseT,
+    SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>
+  >
+  implements ISyncTableManagerWithMetafields
+{
   protected currentRestLimit: number;
 
   // ———————————————————————————————————————————————
 
   public getSyncedStandardFields(dependencies: Array<FieldDependency<any>>): string[] {
     // admin_graphql_api_id is necessary for metafield sync
-    return handleFieldDependencies(this.effectiveStandardFromKeys, dependencies, ['admin_graphql_api_id']);
+    return arrayUnique<string>(super.getSyncedStandardFields(dependencies).concat(['admin_graphql_api_id']));
   }
 
   private extractCurrentBatch(items: Array<BaseRow>): CurrentBatchType {
@@ -93,7 +97,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<
 
       if (response.body.extensions?.cost) {
         continuation.lastCost = stringifyContinuationProperty(response.body.extensions.cost);
-        continuation.lastMaxEntriesPerRun = this.currentRestLimit;
+        continuation.lastLimit = this.currentRestLimit;
       }
     }
 
@@ -103,9 +107,11 @@ export class SyncTableManagerRestWithGraphQlMetafields<
   // #region Sync
   public async executeSync({
     sync,
-    adjustLimit,
+    defaultLimit,
     getNestedData,
-  }: ExecuteSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>> {
+  }: ExecuteRestSyncWithGraphQlMetafieldsArgs<BaseT>): Promise<
+    SyncTableManagerRestResult<typeof this.continuation, BaseT>
+  > {
     let mainData: BaseT[] = [];
 
     /** ————————————————————————————————————————————————————————————
@@ -113,24 +119,24 @@ export class SyncTableManagerRestWithGraphQlMetafields<
      * + adjust Rest sync limit
      */
     if (this.shouldSyncMetafields) {
-      const syncTableMaxEntriesAndDeferWait = await getGraphQlSyncTableMaxEntriesAndDeferWait(
+      const syncTableMaxLimitAndDeferWait = await getGraphQlSyncTableMaxLimitAndDeferWait(
         GRAPHQL_NODES_LIMIT,
         this.prevContinuation,
         this.context
       );
-      const { shouldDeferBy, maxEntriesPerRun } = syncTableMaxEntriesAndDeferWait;
+      const { shouldDeferBy, limit } = syncTableMaxLimitAndDeferWait;
       if (shouldDeferBy > 0) {
         return skipGraphQlSyncTableRun(this.prevContinuation, shouldDeferBy);
       }
-      this.currentRestLimit = adjustLimit ?? maxEntriesPerRun;
+      this.currentRestLimit = defaultLimit ?? limit;
     }
 
     /** ————————————————————————————————————————————————————————————
      * Perform the main Rest Sync
      */
-    const { response: mainResponse, continuation: mainContinuation } = (await super.executeSync({
+    const { response: mainResponse, continuation: mainContinuation } = (await this.parentSyncTableManager.executeSync({
       sync,
-      adjustLimit: this.currentRestLimit,
+      defaultLimit: this.currentRestLimit,
     })) as SyncTableManagerRestResult<typeof this.continuation, BaseT>;
     mainData = getNestedData ? getNestedData(mainResponse, this.context) : mainResponse.data;
     this.continuation = mainContinuation;
@@ -198,12 +204,9 @@ export class SyncTableManagerRestWithGraphQlMetafields<
     }
 
     return {
-      // TODO: make it better
       response: {
         ...mainResponse,
         data: mainData,
-        headers: mainResponse.headers,
-        pageInfo: mainResponse.pageInfo,
       },
       continuation: this.continuation,
     };

@@ -24,8 +24,6 @@ export const metafieldFieldsFragment = graphql(`
   }
 `);
 
-// TODO: j'aimerais faire en sorte de ne pas répéter les champs de MetafieldFieldsFragment mais ça pose trop de problèmes avec gql-tada
-// peut être en faisant une string partagée entre les deux définie comme 'as const' dans Typescript ?
 export const metafieldFieldsFragmentWithDefinition = graphql(
   `
     fragment MetafieldWithDefinitionFields on Metafield {
@@ -180,10 +178,10 @@ function makeResourceMetafieldsByKeysQuery<T extends string, K extends TadaDocum
       query GetResourceMetafieldsByKeys(
         $metafieldKeys: [String!]
         $countMetafields: Int!
-        $maxEntriesPerRun: Int!
+        $limit: Int!
         $cursor: String
       ) {
-        ${graphQlOperation}(first: $maxEntriesPerRun, after: $cursor) {
+        ${graphQlOperation}(first: $limit, after: $cursor) {
           nodes {
             ...ResourceWithMetafields
           }
@@ -208,10 +206,10 @@ const queryProductVariantMetafieldsByKeys = graphql(
     query GetProductVariantsMetafieldsByKeys(
       $metafieldKeys: [String!]
       $countMetafields: Int!
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
     ) {
-      productVariants(first: $maxEntriesPerRun, after: $cursor) {
+      productVariants(first: $limit, after: $cursor) {
         nodes {
           ...ProductVariantWithMetafields
         }

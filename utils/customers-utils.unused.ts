@@ -71,9 +71,9 @@ export const syncCustomersGraphQlAdmin = async (
 ) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
   // TODO: get an approximation for first run by using count of relation columns ?
-  const defaultMaxEntriesPerRun = 50;
-  const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-    defaultMaxEntriesPerRun,
+  const defaultLimit = 50;
+  const { limit, shouldDeferBy } = await getGraphQlSyncTableMaxLimitAndDeferWait(
+    defaultLimit,
     prevContinuation,
     context
   );
@@ -105,7 +105,7 @@ export const syncCustomersGraphQlAdmin = async (
   const payload = {
     query: QueryCustomersAdmin,
     variables: {
-      maxEntriesPerRun,
+      limit,
       cursor: prevContinuation?.cursor ?? null,
       metafieldKeys: effectiveMetafieldKeys,
       countMetafields: effectiveMetafieldKeys.length,
@@ -117,7 +117,7 @@ export const syncCustomersGraphQlAdmin = async (
   const { response, continuation } = await makeSyncTableGraphQlRequest(
     {
       payload,
-      maxEntriesPerRun,
+      limit,
       prevContinuation,
       getPageInfo: (data: any) => data.customers?.pageInfo,
     },

@@ -2,11 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { UnsupportedValueError } from '../../Errors/Errors';
-import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
 import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import {
   getMetafieldDefinitionsQuery,
   getSingleMetafieldDefinitionQuery,
@@ -16,13 +15,11 @@ import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../types/admin.types';
 import { compareByDisplayKey } from '../../utils/helpers';
-import { FindAllResponse, GraphQlResourcePath } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import {
-  AbstractSyncedGraphQlResource,
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { FindAllGraphQlResponse, GraphQlResourcePath } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
+import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
 import { SupportedMetafieldOwnerType } from './MetafieldGraphQl';
 
 // #endregion
@@ -34,7 +31,7 @@ interface FindArgs extends BaseContext {
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
   ownerType: MetafieldOwnerType;
-  maxEntriesPerRun?: number;
+  limit?: number;
   cursor?: string;
 }
 interface AllForOwnerArgs extends BaseContext {
@@ -45,7 +42,7 @@ interface AllForOwnerArgs extends BaseContext {
 // #endregion
 
 const FAKE_METADEFINITION__SEO_DESCRIPTION = {
-  id: 'FAKE_SEO_DESCRIPTION_ID',
+  id: `${PREFIX_FAKE}SEO_DESCRIPTION_ID`,
   name: 'SEO Description',
   namespace: 'global',
   key: 'description_tag',
@@ -61,7 +58,7 @@ const FAKE_METADEFINITION__SEO_DESCRIPTION = {
   visibleToStorefrontApi: true,
 };
 const FAKE_METADEFINITION__SEO_TITLE = {
-  id: 'FAKE_SEO_TITLE_ID',
+  id: `${PREFIX_FAKE}SEO_TITLE_ID`,
   name: 'SEO Title',
   namespace: 'global',
   key: 'title_tag',
@@ -82,7 +79,7 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
 
   public static readonly displayName: Identity = PACK_IDENTITIES.MetafieldDefinition;
   protected static readonly paths: Array<GraphQlResourcePath> = ['metafieldDefinition', 'metafieldDefinitions'];
-  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly defaultLimit: number = 50;
 
   public static getStaticSchema() {
     return MetafieldDefinitionSyncTableSchema;
@@ -99,13 +96,13 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
     MetafieldDefinition,
     typeof Sync_MetafieldDefinitions
   >): SyncGraphQlFunction<MetafieldDefinition> {
-    return async ({ cursor = null, maxEntriesPerRun }) => {
+    return async ({ cursor = null, limit }) => {
       const ownerType = context.sync.dynamicUrl as MetafieldOwnerType;
 
       return this.all({
         context,
         cursor,
-        maxEntriesPerRun,
+        limit,
         ownerType,
         options: { cacheTtlSecs: CACHE_DISABLED },
       });
@@ -124,17 +121,17 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     fields = {},
     ownerType = null,
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<MetafieldDefinition>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<MetafieldDefinition>> {
     const response = await this.baseFind<MetafieldDefinition, typeof getMetafieldDefinitionsQuery>({
       documentNode: getMetafieldDefinitionsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         ownerType,
 
@@ -166,27 +163,18 @@ export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
     const metafieldDefinitions = await MetafieldDefinition.allDataLoop<MetafieldDefinition>({
       context,
       ownerType: ownerType,
-      maxEntriesPerRun: 200,
+      limit: 200,
       options,
     });
 
     /* Add 'Fake' metafield definitions for SEO metafields */
-    // const extraDefinitions: Array<ResultOf<typeof metafieldDefinitionFragment>> = [];
-    const extraDefinitionsNew: Array<MetafieldDefinition> = [];
     if (includeFakeExtraDefinitions && this.shouldIncludeFakeExtraDefinitions(ownerType)) {
-      // extraDefinitions.push({ ...FAKE_METADEFINITION__SEO_DESCRIPTION, ownerType });
-      // extraDefinitions.push({ ...FAKE_METADEFINITION__SEO_TITLE, ownerType });
-
-      extraDefinitionsNew.push(
-        new MetafieldDefinition({ context, fromData: { ...FAKE_METADEFINITION__SEO_DESCRIPTION, ownerType } })
-      );
-      extraDefinitionsNew.push(
-        new MetafieldDefinition({ context, fromData: { ...FAKE_METADEFINITION__SEO_TITLE, ownerType } })
-      );
+      return metafieldDefinitions.concat([
+        new MetafieldDefinition({ context, fromData: { ...FAKE_METADEFINITION__SEO_DESCRIPTION, ownerType } }),
+        new MetafieldDefinition({ context, fromData: { ...FAKE_METADEFINITION__SEO_TITLE, ownerType } }),
+      ]);
     }
-
-    // return metafieldDefinitions.map((m) => m.apiData).concat(extraDefinitions);
-    return metafieldDefinitions.concat(extraDefinitionsNew);
+    return metafieldDefinitions;
   }
 
   public static getAllSupportedSyncTables(): Array<SupportedMetafieldSyncTable> {

@@ -1,15 +1,12 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { REST_DEFAULT_LIMIT } from '../../constants';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { BaseContext, RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { MergedCollection } from './MergedCollection';
 
 // #endregion
@@ -65,26 +62,29 @@ export class MergedCollection_Custom extends MergedCollection {
     const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
       codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      MergedCollection_Custom.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-
-        fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        ids: ids && ids.length ? ids.join(',') : undefined,
-        handle,
-        product_id,
-        title,
-        published_status,
-        created_at_min: created_at ? created_at[0] : undefined,
-        created_at_max: created_at ? created_at[1] : undefined,
-        updated_at_min: updated_at ? updated_at[0] : undefined,
-        updated_at_max: updated_at ? updated_at[1] : undefined,
-        published_at_min: published_at ? published_at[0] : undefined,
-        published_at_max: published_at ? published_at[1] : undefined,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(collectionFieldDependencies).join(','),
+          ids: ids && ids.length ? ids.join(',') : undefined,
+          handle,
+          product_id,
+          title,
+          published_status,
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          published_at_min: published_at ? published_at[0] : undefined,
+          published_at_max: published_at ? published_at[1] : undefined,
+        },
       });
+
+      return MergedCollection_Custom.all(params);
+    };
   }
 
   public static async find({ context, options, id, fields = null }: FindArgs): Promise<MergedCollection_Custom | null> {
@@ -122,12 +122,12 @@ export class MergedCollection_Custom extends MergedCollection {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<MergedCollection_Custom>> {
+  }: AllArgs): Promise<FindAllRestResponse<MergedCollection_Custom>> {
     const response = await this.baseFind<MergedCollection_Custom>({
       context,
       urlIds: {},
       params: {
-        limit: limit,
+        limit,
         ids: ids,
         since_id: since_id,
         title: title,

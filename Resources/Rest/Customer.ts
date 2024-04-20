@@ -2,11 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import {
@@ -18,18 +16,13 @@ import {
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  CodaSyncParams,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -114,7 +107,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Customer;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'customer';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Customer;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
 
   protected static readonly graphQlName = GraphQlResourceNames.Customer;
@@ -172,20 +165,23 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
   >): SyncRestFunction<Customer> {
     const [syncMetafields, created_at, updated_at, ids] = codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-
-        fields: syncTableManager.getSyncedStandardFields(customerFieldDependencies).join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        ids: ids && ids.length ? ids.join(',') : undefined,
-        created_at_min: created_at ? created_at[0] : undefined,
-        created_at_max: created_at ? created_at[1] : undefined,
-        updated_at_min: updated_at ? updated_at[0] : undefined,
-        updated_at_max: updated_at ? updated_at[1] : undefined,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(customerFieldDependencies).join(','),
+          ids: ids && ids.length ? ids.join(',') : undefined,
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ context, options, id, fields = null }: FindArgs): Promise<Customer | null> {
@@ -219,7 +215,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Customer>> {
+  }: AllArgs): Promise<FindAllRestResponse<Customer>> {
     const response = await this.baseFind<Customer>({
       context,
       urlIds: {},
@@ -247,7 +243,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
       operation: 'orders',
       context,
       urlIds: { id: id },
-      params: { status: status, ...otherArgs },
+      params: { status, ...otherArgs },
       body: {},
       entity: null,
       options,
@@ -273,7 +269,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
       operation: 'search',
       context,
       urlIds: {},
-      params: { order: order, query: query, limit: limit, fields: fields, ...otherArgs },
+      params: { order, query, limit, fields, ...otherArgs },
       body: {},
       entity: null,
       options,

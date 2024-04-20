@@ -3,18 +3,18 @@ import * as accents from 'remove-accents';
 import { ResultOf } from '../utils/tada-utils';
 
 import { UnsupportedValueError } from '../Errors/Errors';
-import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
+import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { Shop } from '../Resources/Rest/Shop';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
-import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
 import { MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
+import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
+import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
 import { CollectionReference } from './syncTable/CollectionSchema';
 import { FileReference } from './syncTable/FileSchema';
-import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
 import { PageReference } from './syncTable/PageSchema';
 import { ProductReference } from './syncTable/ProductSchemaRest';
 import { ProductVariantReference } from './syncTable/ProductVariantSchema';
@@ -69,12 +69,7 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
   const schema: SchemaT = { ...baseSchema };
   schema.featuredProperties = schema.featuredProperties ?? [];
 
-  const metafieldDefinitions = await MetafieldDefinition.allForOwner({
-    context,
-    ownerType,
-    // TODO: maybe adjust cache ?
-    // options: { cacheTtlSecs: CACHE_DEFAULT },
-  });
+  const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
 
   const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
     return metafieldDefinition.apiData.type.name === METAFIELD_TYPES.money;
@@ -109,7 +104,8 @@ export function mapMetaFieldToSchemaProperty(
   fieldDefinition: ResultOf<typeof metafieldDefinitionFragment> | ResultOf<typeof metaobjectFieldDefinitionFragment>
 ): coda.Schema & coda.ObjectSchemaProperty {
   const type = fieldDefinition.type.name;
-  let description = fieldDefinition.description;
+  /** description can be null for metaobjects and coda will complain the schema is invalid. I fnull we must set it to undefined */
+  let description = fieldDefinition.description ?? undefined;
   const isMetaobjectFieldDefinition = !fieldDefinition.hasOwnProperty('namespace');
 
   let schemaKey = fieldDefinition.key;

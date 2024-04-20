@@ -3,38 +3,25 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
-import {
-  Identity,
-  OPTIONS_PRODUCT_STATUS_REST,
-  OPTIONS_PUBLISHED_STATUS,
-  PACK_IDENTITIES,
-  REST_DEFAULT_LIMIT,
-} from '../../constants';
+import { Identity, OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../schemas/syncTable/ProductSchemaRest';
 import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  CodaSyncParams,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Variant } from './Variant';
 
@@ -99,7 +86,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Product;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'product';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Product;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
 
   protected static readonly graphQlName = GraphQlResourceNames.Product;
@@ -163,27 +150,30 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
       ids,
     ] = codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-
-        fields: fields.join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        handle: handles && handles.length ? handles.join(',') : undefined,
-        ids: ids && ids.length ? ids.join(',') : undefined,
-        product_type,
-        published_status,
-        status: status && status.length ? status.join(',') : undefined,
-        vendor,
-        created_at_min: created_at ? created_at[0] : undefined,
-        created_at_max: created_at ? created_at[1] : undefined,
-        updated_at_min: updated_at ? updated_at[0] : undefined,
-        updated_at_max: updated_at ? updated_at[1] : undefined,
-        published_at_min: published_at ? published_at[0] : undefined,
-        published_at_max: published_at ? published_at[1] : undefined,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: fields.join(','),
+          handle: handles && handles.length ? handles.join(',') : undefined,
+          ids: ids && ids.length ? ids.join(',') : undefined,
+          product_type,
+          published_status,
+          status: status && status.length ? status.join(',') : undefined,
+          vendor,
+          created_at_min: created_at ? created_at[0] : undefined,
+          created_at_max: created_at ? created_at[1] : undefined,
+          updated_at_min: updated_at ? updated_at[0] : undefined,
+          updated_at_max: updated_at ? updated_at[1] : undefined,
+          published_at_min: published_at ? published_at[0] : undefined,
+          published_at_max: published_at ? published_at[1] : undefined,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   protected static makeSyncTableManagerSyncFunction({
@@ -245,6 +235,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
 
     const { response, continuation } = await syncTableManager.executeSync({
       sync,
+      defaultLimit: this.defaultLimit,
       getNestedData(response, context) {
         return response.data.flatMap((product) =>
           product.apiData.variants.map(
@@ -345,7 +336,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     presentment_currencies = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Product>> {
+  }: AllArgs): Promise<FindAllRestResponse<Product>> {
     const response = await this.baseFind<Product>({
       context,
       urlIds: {},

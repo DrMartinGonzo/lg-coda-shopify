@@ -1,15 +1,17 @@
 [
   {
     "previousValue": {
-      "id": 8406091235584,
-      "title": "ADIDAS | CLASSIC BACKPACK",
-      "lgs_meta__custom.number_decimal": 145.121
+      "id": 8433407262976,
+      "title": "@testMARTIN22222",
+      "lgs_meta__custom.number_decimal": 145.121,
+      "lgs_meta__custom.money": null
     },
     "newValue": {
-      "id": 8406091235584,
-      "title": "ADIDAS | CLASSIC BACKPACK NEW",
-      "lgs_meta__custom.number_decimal": 0.999
+      "id": 8433407262976,
+      "title": "@testMARTIN22222 NEW",
+      "lgs_meta__custom.number_decimal": 0.999,
+      "lgs_meta__custom.money": 994.54
     },
-    "updatedFields": ["title", "lgs_meta__custom.number_decimal"]
+    "updatedFields": ["title", "lgs_meta__custom.money"]
   }
 ]

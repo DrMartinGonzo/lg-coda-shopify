@@ -86,13 +86,13 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
       description:
         'Whether a customer needs to provide a shipping address when placing an order containing the inventory item.',
     },
-    // TODO: not needed? Already in ProductVariant
-    sku: {
-      type: coda.ValueType.String,
-      fixedId: 'sku',
-      fromKey: 'sku',
-      description: 'The unique SKU (stock keeping unit) of the inventory item.',
-    },
+    // Not needed : already in ProductVariant
+    // sku: {
+    //   type: coda.ValueType.String,
+    //   fixedId: 'sku',
+    //   fromKey: 'sku',
+    //   description: 'The unique SKU (stock keeping unit) of the inventory item.',
+    // },
     variant: {
       ...ProductVariantReference,
       fixedId: 'variant',

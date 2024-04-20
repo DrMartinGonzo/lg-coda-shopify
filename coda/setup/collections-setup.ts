@@ -20,6 +20,7 @@ import { getCollectionType, getCollectionTypes } from '../../utils/collections-u
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #region Sync tables
 export const Sync_Collections = coda.makeSyncTable({
@@ -265,7 +266,10 @@ export const Formula_Collection = coda.makeFormula({
     const collectionClass =
       collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
     const collection = await collectionClass.find({ context, id: collectionId });
-    return collection.formatToRow();
+    if (collection) {
+      return collection.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Collection);
   },
 });
 

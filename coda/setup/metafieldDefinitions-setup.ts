@@ -7,6 +7,7 @@ import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../coda-parameters';
 import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -44,7 +45,11 @@ export const Formula_MetafieldDefinition = coda.makeFormula({
       context,
       id: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, metafieldDefinitionID),
     });
-    return metafieldDefinition.formatToRow();
+
+    if (metafieldDefinition) {
+      return metafieldDefinition.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.MetafieldDefinition);
   },
 });
 

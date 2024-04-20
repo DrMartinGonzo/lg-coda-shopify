@@ -2,12 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { UnsupportedActionError } from '../../Errors/Errors';
-import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Files } from '../../coda/setup/files-setup';
-import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   deleteFilesMutation,
@@ -27,13 +24,10 @@ import {
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
 } from '../../utils/helpers';
-import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import {
-  AbstractSyncedGraphQlResource,
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 
 // #endregion
 
@@ -59,7 +53,7 @@ interface DeleteArgs extends BaseContext {
 }
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
-  maxEntriesPerRun?: number;
+  limit?: number;
   cursor?: string;
   type?: string;
   fields?: FieldsArgs;
@@ -76,11 +70,16 @@ export class File extends AbstractSyncedGraphQlResource {
   // TODO
   // protected static readonly graphQlName = GraphQlResourceName.GenericFile;
 
-  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly defaultLimit: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = ['node', 'files', 'fileUpdate.files'];
+  protected static previewSize: string;
 
   public static getStaticSchema() {
     return FileSyncTableSchema;
+  }
+
+  public static setPreviewSize(previewSize: string) {
+    this.previewSize = previewSize;
   }
 
   protected static makeSyncTableManagerSyncFunction({
@@ -90,45 +89,21 @@ export class File extends AbstractSyncedGraphQlResource {
   }: MakeSyncGraphQlFunctionArgs<File, typeof Sync_Files>): SyncGraphQlFunction<File> {
     const [type] = codaSyncParams;
 
-    const fields = {};
-    ['alt', 'createdAt', 'duration', 'fileSize', 'height', 'mimeType', 'preview', 'updatedAt', 'url', 'width'].forEach(
-      (key) => {
-        fields[key] = syncTableManager.effectiveStandardFromKeys.includes(key);
-      }
+    const fields = Object.fromEntries(
+      ['alt', 'createdAt', 'duration', 'fileSize', 'height', 'mimeType', 'preview', 'updatedAt', 'url', 'width'].map(
+        (key) => [key, syncTableManager.effectiveStandardFromKeys.includes(key)]
+      )
     );
 
-    return ({ cursor = null, maxEntriesPerRun }) =>
+    return ({ cursor = null, limit }) =>
       this.all({
         context,
         fields,
         type,
         cursor,
-        maxEntriesPerRun,
+        limit,
         options: { cacheTtlSecs: CACHE_DISABLED },
       });
-  }
-
-  // TODO: rewriting the whole function shouldn't be necessary
-  public static async sync(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableSyncResult> {
-    const [type, previewSize] = codaSyncParams;
-    const syncTableManager = (await this.getSyncTableManager(context, codaSyncParams)) as SyncTableManagerGraphQl<File>;
-    const syncFunction = this.makeSyncTableManagerSyncFunction({
-      codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_Files>,
-      context,
-      syncTableManager,
-    });
-
-    const { response, continuation } = await syncTableManager.executeSync({
-      sync: syncFunction,
-      defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
-    });
-    return {
-      result: response.data.map((data: AbstractSyncedGraphQlResource) => data.formatToRow(previewSize)),
-      continuation,
-    };
   }
 
   public static async find({ id, fields = {}, context, options }: FindArgs): Promise<File | null> {
@@ -167,13 +142,13 @@ export class File extends AbstractSyncedGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     type = null,
     fields = {},
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<File>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<File>> {
     let searchQuery = 'status:READY';
     if (type && type !== '') {
       searchQuery += ` AND media_type:${type}`;
@@ -182,7 +157,7 @@ export class File extends AbstractSyncedGraphQlResource {
     const response = await this.baseFind<File, typeof getFilesQuery>({
       documentNode: getFilesQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         searchQuery,
 
@@ -247,8 +222,6 @@ export class File extends AbstractSyncedGraphQlResource {
         } as VariablesOf<typeof updateFilesMutation>;
 
         await this._baseSave<typeof documentNode>({ documentNode, variables, update });
-        // We are only updating a single file
-        this.apiData = this.apiData[0];
       }
     } else {
       throw new UnsupportedActionError('Creating Files');
@@ -303,9 +276,9 @@ export class File extends AbstractSyncedGraphQlResource {
     return apiData;
   }
 
-  // TODO: handle thumbnailSize config
-  public formatToRow(thumbnailSize = DEFAULT_THUMBNAIL_SIZE): FileRow {
+  public formatToRow(): FileRow {
     const { apiData } = this;
+    const staticResource = this.resource<typeof File>();
 
     let obj: FileRow = {
       id: apiData.id,
@@ -313,9 +286,7 @@ export class File extends AbstractSyncedGraphQlResource {
       createdAt: apiData.createdAt,
       name: '',
       preview: apiData.preview?.image.url
-        ? thumbnailSize !== undefined
-          ? getThumbnailUrlFromFullUrl(apiData.preview.image.url, thumbnailSize)
-          : apiData.preview.image.url
+        ? getThumbnailUrlFromFullUrl(apiData.preview.image.url, staticResource.previewSize)
         : undefined,
       type: apiData.__typename,
       updatedAt: apiData.updatedAt,

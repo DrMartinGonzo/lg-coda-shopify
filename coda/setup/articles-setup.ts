@@ -10,6 +10,7 @@ import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
@@ -245,7 +246,10 @@ export const Formula_Article = coda.makeFormula({
   schema: ArticleSyncTableSchema,
   execute: async ([articleId], context) => {
     const article = await Article.find({ context, id: articleId });
-    return article.formatToRow();
+    if (article) {
+      return article.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Article);
   },
 });
 

@@ -3,19 +3,21 @@ import * as coda from '@codahq/packs-sdk';
 
 import { Body } from '@shopify/shopify-api/rest/types';
 import { Identity } from '../../constants';
+import { isDefinedEmpty } from '../../utils/helpers';
 
 // #endregion
 
 // #region Types
-interface BaseConstructorArgs {
-  context: coda.ExecutionContext;
-  fromData?: Body | null;
-}
-
 export interface GetSchemaArgs {
   context: coda.ExecutionContext;
   codaSyncParams?: coda.ParamValues<coda.ParamDefs>;
   normalized?: boolean;
+}
+
+export interface FindAllResponseBase<T> {
+  data: T[];
+  headers: coda.FetchResponse['headers'];
+  pageInfo?: any;
 }
 // #endregion
 
@@ -42,10 +44,34 @@ export abstract class AbstractResource {
     return instance;
   }
 
+  /**
+   * Soit la valeur est undefined et elle ne sera pas présente dans apiData,
+   * donc dans les updates, soit elle a une valeur mais considérée comme "vide"
+   * est on la force en `null`
+   * @param data Les données à nettoyer
+   */
+  protected static removeUndefinedData(data: any) {
+    for (let key in data) {
+      if (data[key] === undefined) {
+        delete data[key];
+        /**
+         * Apparemment Coda renvoit une string et pas un nombre lors d'une update, du coup cetaines valeurs peuvent être égales à '' !
+         * Dans ce cas on les force comme null
+         */
+        // TODO: isDefinedEmpty n'est pas adapté ici quand c'est une array… Par exemple, refunds dans Order doit rester à '[]'. Pour l'instant on n'applique pas aux arrays
+      } else if (!Array.isArray(data[key]) && isDefinedEmpty(data[key])) {
+        data[key] = null;
+      } else if (typeof data[key] === 'object') {
+        this.removeUndefinedData(data[key]);
+      }
+    }
+    return data;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  constructor({ context, fromData }: BaseConstructorArgs) {
+  constructor({ context, fromData }: { context: coda.ExecutionContext; fromData?: Body | null }) {
     this.context = context;
 
     if (fromData) {
@@ -54,7 +80,7 @@ export abstract class AbstractResource {
   }
 
   protected setData(data: Body): void {
-    this.apiData = data;
+    this.apiData = this.resource().removeUndefinedData(data);
   }
 
   /**

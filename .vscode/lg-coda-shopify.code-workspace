@@ -31,6 +31,8 @@
       "statusBarItem.remoteForeground": "#15202b",
       "commandCenter.border": "#15202b99"
     },
-    "todo-tree.tree.scanMode": "workspace"
+    "todo-tree.tree.scanMode": "workspace",
+    "todo-tree.filtering.ignoreGitSubmodules": true,
+    "todo-tree.filtering.useBuiltInExcludes": "file and search excludes"
   }
 }

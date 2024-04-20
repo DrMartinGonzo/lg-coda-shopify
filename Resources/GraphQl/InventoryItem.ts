@@ -1,9 +1,9 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   buildInventoryItemsSearchQuery,
   getInventoryItemsQuery,
@@ -15,15 +15,12 @@ import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryI
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { deepCopy, deleteUndefinedInObject, isDefinedEmpty } from '../../utils/helpers';
-import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import {
-  AbstractSyncedGraphQlResource,
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceNames } from '../types/Resource.types';
 
@@ -40,7 +37,7 @@ type InventoryItemUpdateInput = VariablesOf<typeof updateInventoryItemMutation>[
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
   cursor?: string;
-  maxEntriesPerRun?: number;
+  limit?: number;
   createdAtMin?: Date;
   createdAtMax?: Date;
   updatedAtMin?: Date;
@@ -56,7 +53,7 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryItem;
   protected static readonly graphQlName = GraphQlResourceNames.InventoryItem;
 
-  // protected static readonly defaultMaxEntriesPerRun: number = 50;
+  // protected static readonly defaultLimit: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = ['inventoryItems', 'inventoryItemUpdate.inventoryItem'];
 
   public static getStaticSchema() {
@@ -78,11 +75,11 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
   }: MakeSyncGraphQlFunctionArgs<InventoryItem, typeof Sync_InventoryItems>): SyncGraphQlFunction<InventoryItem> {
     const [createdAtRange, updatedAtRange, skus] = codaSyncParams;
 
-    return async ({ cursor = null, maxEntriesPerRun }) => {
+    return async ({ cursor = null, limit }) => {
       return this.all({
         context,
         cursor,
-        maxEntriesPerRun,
+        limit,
         options: { cacheTtlSecs: CACHE_DISABLED },
 
         createdAtMin: createdAtRange ? createdAtRange[0] : undefined,
@@ -122,7 +119,7 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     createdAtMin,
     createdAtMax,
@@ -131,7 +128,7 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
     updatedAtMin,
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<InventoryItem>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<InventoryItem>> {
     const queryFilters = {
       created_at_min: createdAtMin,
       created_at_max: createdAtMax,
@@ -148,7 +145,7 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
     const response = await this.baseFind<InventoryItem, typeof getInventoryItemsQuery>({
       documentNode: getInventoryItemsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         searchQuery,
 
@@ -200,23 +197,9 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
     return Object.keys(input).length === 0 ? undefined : input;
   }
 
-  // TODO: move to parent abstract class
-  removeUndefined(data: any) {
-    for (let key in data) {
-      if (data[key] === undefined) {
-        delete data[key];
-      } else if (isDefinedEmpty(data[key])) {
-        data[key] = null;
-      } else if (typeof data[key] === 'object') {
-        this.removeUndefined(data[key]);
-      }
-    }
-    return data;
-  }
-
-  // TODO: convert to a setter for apiData ?
   protected formatToApi({ row }: FromRow<InventoryItemRow>) {
     let apiData: Partial<typeof this.apiData> = {
+      id: row.id !== undefined ? idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id) : undefined,
       createdAt: row.created_at,
       inventoryHistoryUrl: row.inventory_history_url,
       requiresShipping: row.requires_shipping,
@@ -230,36 +213,13 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
         amount: row.cost,
         currencyCode: undefined,
       },
+      variant:
+        row.variant_id !== undefined
+          ? { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) }
+          : undefined,
     };
 
-    if (row.id !== undefined) {
-      apiData.id = idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id);
-    }
-
-    if (row.variant_id !== undefined) {
-      apiData.variant = { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) };
-    }
-
-    // TODO: Apparemment Coda renvoit une string et pas un nombre lors d'une update, du coup cost peut être égal à '' !
-    // TODO: Il va falloir vérifier un peu partout que ça n'affecte pas les updates, on a un risque de supprimer des valeurs que l'on ne voulait pas supprimer !!
-    // Donc pour résumer soit la valeur est undefined et elle n'est pas dans l'update, donc on ne la set pas, soit elle a une valeur mais qui peut être "vide"
-
-    // if (row.cost !== undefined) {
-    //   apiData.unitCost = {
-    //     amount: row.cost,
-    //     currencyCode: undefined,
-    //   };
-    //   /* Edge case for cost. Setting it to 0 should delete the value. It can
-    //   also incorrectly be set to an empty string when updating. */
-    //   console.log('typeof row.cost', typeof row.cost);
-    //   console.log('row.cost', row.cost);
-    //   if (row.cost === 0 || isEmpty(row.cost)) {
-    //     apiData.unitCost.amount = null;
-    //   }
-    // }
-
-    return this.removeUndefined(apiData);
-    // return apiData;
+    return apiData;
   }
 
   public formatToRow(): InventoryItemRow {

@@ -16,7 +16,6 @@
         "name": "@0no-co/graphqlsp",
         // We will have to keep this in sync whenever we update GRAPHQL_DEFAULT_API_VERSION
         "schema": "https://shopify.dev/admin-graphql-direct-proxy/2023-10",
-        // TODO: maybe move it outside of workspace for avoid vs code slowdowns ?
         "tadaOutputLocation": "./types/graphql-env.d.ts",
         "shouldCheckForColocatedFragments": false,
         "trackFieldUsage": false,

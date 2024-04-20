@@ -1,7 +1,7 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
   getMetaobjectDefinitionsQuery,
@@ -11,7 +11,7 @@ import {
 } from '../../graphql/metaobjectDefinition-graphql';
 import {
   AbstractGraphQlResource,
-  FindAllResponse,
+  FindAllGraphQlResponse,
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
@@ -35,7 +35,7 @@ interface FindByTypeArgs extends BaseContext {
 
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
-  maxEntriesPerRun?: number;
+  limit?: number;
   cursor?: string;
   fields?: FieldsArgs;
 }
@@ -89,16 +89,16 @@ export class MetaobjectDefinition extends AbstractGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     fields = {},
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<MetaobjectDefinition>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<MetaobjectDefinition>> {
     const response = await this.baseFind<MetaobjectDefinition, typeof getMetaobjectDefinitionsQuery>({
       documentNode: getMetaobjectDefinitionsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         includeCapabilities: fields?.capabilities ?? false,
         includeFieldDefinitions: fields?.fieldDefinitions ?? false,

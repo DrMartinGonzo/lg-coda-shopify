@@ -3,31 +3,22 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
-import { PACK_IDENTITIES, Identity, OPTIONS_PUBLISHED_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, parseOptionId } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  CodaSyncParams,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import {
-  AbstractSyncedRestResourceWithRestMetafields,
-  RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -86,7 +77,7 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Article;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'article';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Article;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
 
   protected static readonly graphQlName = GraphQlResourceNames.Article;
@@ -148,25 +139,29 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
       syncTableManager.extraContinuationData = { blogIdsLeft };
     }
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        blog_id: currentBlogId,
-        fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(','),
-        limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-        author,
-        tag,
-        handle,
-        published_status: publishedStatus,
-        created_at_min: createdAt ? createdAt[0] : undefined,
-        created_at_max: createdAt ? createdAt[1] : undefined,
-        updated_at_min: updatedAt ? updatedAt[0] : undefined,
-        updated_at_max: updatedAt ? updatedAt[1] : undefined,
-        published_at_min: publishedAt ? publishedAt[0] : undefined,
-        published_at_max: publishedAt ? publishedAt[1] : undefined,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
+        firstPageParams: {
+          blog_id: currentBlogId,
+          fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(','),
+          author,
+          tag,
+          handle,
+          published_status: publishedStatus,
+          created_at_min: createdAt ? createdAt[0] : undefined,
+          created_at_max: createdAt ? createdAt[1] : undefined,
+          updated_at_min: updatedAt ? updatedAt[0] : undefined,
+          updated_at_max: updatedAt ? updatedAt[1] : undefined,
+          published_at_min: publishedAt ? publishedAt[0] : undefined,
+          published_at_max: publishedAt ? publishedAt[1] : undefined,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ id, blog_id = null, fields = null, context, options }: FindArgs): Promise<Article | null> {
@@ -207,10 +202,10 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Article>> {
+  }: AllArgs): Promise<FindAllRestResponse<Article>> {
     const response = await this.baseFind<Article>({
       context,
-      urlIds: { blog_id: blog_id },
+      urlIds: { blog_id },
       params: {
         limit,
         since_id,

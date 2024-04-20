@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 // #region User Visible Errors
 export class RequiredParameterMissingVisibleError extends coda.UserVisibleError {
   constructor(message?: string) {
-    super(`Required parameter missing: ${message}.`);
+    super(`Required parameter missing: ${message}`);
   }
 }
 
@@ -35,13 +35,13 @@ export class UnsupportedActionError extends Error {
 
 export class InvalidValueError extends Error {
   constructor(name: string, value: any) {
-    super(`Invalid ${name} provided with value: ${JSON.stringify(value)}`);
+    super(`Invalid ${name}. Value: ${JSON.stringify(value)}`);
   }
 }
 
 export class NotFoundError extends Error {
-  constructor(name: string) {
-    super(`${name} not found`);
+  constructor(name: string, msg?: string) {
+    super(`${name} not found.${msg !== undefined ? ' ' + msg : ''}`);
   }
 }
 

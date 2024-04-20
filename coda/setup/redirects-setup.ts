@@ -7,6 +7,7 @@ import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import { filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -117,7 +118,10 @@ export const Formula_Redirect = coda.makeFormula({
   schema: RedirectSyncTableSchema,
   execute: async ([redirectId], context) => {
     const redirect = await Redirect.find({ context, id: redirectId });
-    return redirect.formatToRow();
+    if (redirect) {
+      return redirect.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Redirect);
   },
 });
 

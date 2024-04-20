@@ -1,5 +1,16 @@
+// #region Imports
+import * as coda from '@codahq/packs-sdk';
+
+import { FetchRequestOptions } from '../../Clients/Client.types';
 import { NotFoundError } from '../../Errors/Errors';
 import { getKeyFromValue } from '../../utils/helpers';
+
+// #endregion
+
+export interface BaseContext {
+  context: coda.ExecutionContext;
+  options?: FetchRequestOptions;
+}
 
 export type SupportedResource =
   | 'Article'

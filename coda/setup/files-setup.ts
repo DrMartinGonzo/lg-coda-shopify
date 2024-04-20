@@ -2,9 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { File } from '../../Resources/GraphQl/File';
-import { CACHE_DEFAULT, PACK_IDENTITIES, OPTIONS_FILE_TYPE } from '../../constants';
+import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
+import { CACHE_DEFAULT, OPTIONS_FILE_TYPE, PACK_IDENTITIES } from '../../constants';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -20,7 +22,6 @@ export const Sync_Files = coda.makeSyncTable({
     description: '<Help text for the sync formula, not shown to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link File.sync}
      *  - {@link File.makeSyncTableManagerSyncFunction}
      */
     parameters: [
@@ -34,10 +35,14 @@ export const Sync_Files = coda.makeSyncTable({
       { ...inputs.general.previewSize, optional: true },
     ],
     execute: async function (params, context) {
+      const [type, previewSize] = params;
+      File.setPreviewSize(previewSize);
       return File.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {
+      const [type, previewSize] = params;
+      File.setPreviewSize(previewSize);
       return File.syncUpdate(params, updates, context);
     },
   },
@@ -65,13 +70,20 @@ export const Formula_File = coda.makeFormula({
   name: 'File',
   description: 'Get a single file by its graphQL GID.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.file.gid],
+  parameters: [
+    inputs.file.gid,
+    { ...inputs.general.previewSize, suggestedValue: `${DEFAULT_THUMBNAIL_SIZE}`, optional: true },
+  ],
   resultType: coda.ValueType.Object,
   schema: FileSyncTableSchema,
   cacheTtlSecs: CACHE_DEFAULT,
-  execute: async function ([fileGid], context) {
+  execute: async function ([fileGid, previewSize = `${DEFAULT_THUMBNAIL_SIZE}`], context) {
+    File.setPreviewSize(previewSize);
     const file = await File.find({ context, id: fileGid });
-    return file.formatToRow();
+    if (file) {
+      return file.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.File);
   },
 });
 

@@ -6,6 +6,7 @@ import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
 import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';
+import { FULL_SIZE } from '../constants';
 
 // #endregion
 
@@ -111,7 +112,18 @@ export function extractValueAndUnitFromMeasurementString(
   }
 }
 
-export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize = DEFAULT_THUMBNAIL_SIZE) {
+export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize: string | number) {
+  const parsedPreviewSize =
+    typeof thumbnailSize === 'number'
+      ? Math.floor(thumbnailSize)
+      : thumbnailSize === FULL_SIZE
+      ? undefined
+      : parseInt(thumbnailSize, 10);
+
+  if (parsedPreviewSize === undefined) {
+    return url;
+  }
+
   return coda.withQueryParams(url, {
     width: thumbnailSize,
     height: thumbnailSize,
@@ -127,8 +139,7 @@ export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize = DEFAULT_
  */
 export function handleFieldDependencies(
   effectivePropertyKeys: Array<string>,
-  fieldDependencies: Array<FieldDependency<any>> = [],
-  forcedFields: Array<string> = []
+  fieldDependencies: Array<FieldDependency<any>> = []
 ) {
   fieldDependencies.forEach((def) => {
     if (
@@ -140,7 +151,7 @@ export function handleFieldDependencies(
     }
   });
 
-  return arrayUnique(effectivePropertyKeys.concat(forcedFields));
+  return arrayUnique<string>(effectivePropertyKeys);
 }
 
 /**
@@ -155,7 +166,7 @@ export function maybeParseJson(value: any) {
   }
 }
 
-export function arrayUnique(array: any[]) {
+export function arrayUnique<T = any>(array: T[]) {
   return Array.from(new Set(array));
 }
 

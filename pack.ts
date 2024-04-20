@@ -1,5 +1,3 @@
-// TODO: trouver un moyen d'importer les types Shopify Rest depuis la bonne version de l'API de façon dynamique, en suivant la valeur de 'REST_DEFAULT_API_VERSION'
-
 /// <reference path="./node_modules/gas-coda-export-bills/Interfaces.d.ts"/>
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
@@ -74,6 +72,7 @@ import {
   Action_DeleteMetafield,
   // Action_TEST_TRANSLATION,
   Action_SetMetafield,
+  Action_SetMetafieldAltVersion,
   Formula_FormatListMetafield,
   Formula_FormatMetafield,
   Formula_MetaBoolean,

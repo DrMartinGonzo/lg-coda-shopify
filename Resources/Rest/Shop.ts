@@ -1,33 +1,21 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
-import {
-  CACHE_TEN_MINUTES,
-  CODA_SUPPORTED_CURRENCIES,
-  PACK_IDENTITIES,
-  Identity,
-  REST_DEFAULT_LIMIT,
-} from '../../constants';
+import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, Identity, PACK_IDENTITIES } from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow, MakeSyncRestFunctionArgs, SyncRestFunction } from '../Abstract/Rest/AbstractSyncedRestResource';
-import {
-  AbstractSyncedRestResourceWithRestMetafields,
-  AugmentWithMetafieldsFunction,
-  RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -96,7 +84,7 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Shop;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'shop';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Shop;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
 
   protected static readonly graphQlName = GraphQlResourceNames.Shop;
@@ -115,25 +103,25 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     return ShopSyncTableSchema;
   }
 
-  protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {
-    return async () => Metafield.all({ context });
-  }
-
   protected static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
   }: MakeSyncRestFunctionArgs<Shop, typeof Sync_Shops>): SyncRestFunction<Shop> {
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        fields: syncTableManager
-          .getSyncedStandardFields(collectFieldDependencies)
-          .filter((key) => !['admin_url'].includes(key))
-          .join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: syncTableManager
+            .getSyncedStandardFields(collectFieldDependencies)
+            .filter((key) => !['admin_url'].includes(key))
+            .join(','),
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   private static async _find({
@@ -141,7 +129,7 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     fields = null,
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Shop>> {
+  }: AllArgs): Promise<FindAllRestResponse<Shop>> {
     return this.baseFind<Shop>({
       urlIds: {},
       params: { fields, ...otherArgs },
@@ -175,7 +163,7 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     return currencyCode;
   }
 
-  public static async all(params: AllArgs): Promise<FindAllResponse<Shop>> {
+  public static async all(params: AllArgs): Promise<FindAllRestResponse<Shop>> {
     return this._find(params);
   }
 

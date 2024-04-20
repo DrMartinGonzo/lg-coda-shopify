@@ -8,6 +8,7 @@ import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -182,7 +183,10 @@ export const Formula_DraftOrder = coda.makeFormula({
   schema: DraftOrderSyncTableSchema,
   execute: async function ([draftOrderId], context) {
     const draftOrder = await DraftOrder.find({ context, id: draftOrderId });
-    return draftOrder.formatToRow();
+    if (draftOrder) {
+      return draftOrder.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.DraftOrder);
   },
 });
 

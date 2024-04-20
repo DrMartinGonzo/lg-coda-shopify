@@ -118,13 +118,13 @@ const CustomerFieldsFragment = graphql(
 //   ${MetafieldFieldsFragment}
 
 //   query getCustomersMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     customers(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     customers(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 

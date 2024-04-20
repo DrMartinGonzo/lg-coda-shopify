@@ -1,11 +1,11 @@
 [
   {
     "previousValue": {
-      "id": "gid://shopify/Video/33100330893568",
+      "id": "gid://shopify/MediaImage/32761427198208",
       "alt": "drfeffefe"
     },
     "newValue": {
-      "id": "gid://shopify/Video/33100330893568",
+      "id": "gid://shopify/MediaImage/32761427198208",
       "alt": "NEW"
     },
     "updatedFields": ["alt"]

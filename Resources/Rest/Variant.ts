@@ -1,21 +1,19 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
-import { PACK_IDENTITIES, Identity } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Product } from './Product';
 import { Shop } from './Shop';
@@ -75,7 +73,7 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.ProductVariant;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'variant';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.ProductVariant;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
 
   protected static readonly graphQlName = GraphQlResourceNames.ProductVariant;
@@ -161,15 +159,15 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Variant>> {
+  }: AllArgs): Promise<FindAllRestResponse<Variant>> {
     const response = await this.baseFind<Variant>({
       context,
       urlIds: { product_id: product_id },
       params: {
-        limit: limit,
-        presentment_currencies: presentment_currencies,
-        since_id: since_id,
-        fields: fields,
+        limit,
+        presentment_currencies,
+        since_id,
+        fields,
         ...otherArgs,
       },
       options,

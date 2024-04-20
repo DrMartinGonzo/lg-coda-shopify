@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import {
   CACHE_DEFAULT,
@@ -44,12 +44,9 @@ import {
   shouldUpdateSyncTableMetafieldValue,
 } from '../../utils/metafields-utils';
 import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
-import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import {
-  AbstractSyncedGraphQlResource,
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { BaseConstructorArgs } from '../Abstract/Rest/AbstractRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { METAFIELD_TYPES, MetafieldType } from '../Mixed/Metafield.types';
@@ -89,7 +86,7 @@ interface DeleteArgs extends BaseContext {
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
   type: string;
-  maxEntriesPerRun?: number;
+  limit?: number;
   cursor?: string;
   fields?: FieldsArgs;
 }
@@ -101,7 +98,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
   public static readonly displayName: Identity = PACK_IDENTITIES.Metaobject;
   protected static readonly graphQlName = GraphQlResourceNames.Metaobject;
 
-  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly defaultLimit: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = [
     'metaobject',
     'metaobjects',
@@ -188,7 +185,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
       fieldDefinitions: false,
     };
 
-    return async ({ cursor = null, maxEntriesPerRun }) => {
+    return async ({ cursor = null, limit }) => {
       const { id: metaobjectDefinitionId } = Metaobject.decodeDynamicUrl(context.sync.dynamicUrl);
       const type =
         syncTableManager.prevContinuation?.extraData?.type ??
@@ -209,7 +206,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
         type,
         fields,
         cursor,
-        maxEntriesPerRun,
+        limit,
         options: { cacheTtlSecs: CACHE_DISABLED },
       });
     };
@@ -243,19 +240,19 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     fields = {},
     type = null,
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Metaobject>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<Metaobject>> {
     let searchQuery = '';
 
     const response = await this.baseFind<Metaobject, typeof getMetaObjectsWithFieldsQuery>({
       documentNode: getMetaObjectsWithFieldsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         searchQuery,
 
@@ -355,7 +352,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
         /**
          * We dont' care about the type since
          * parseMetaobjectFieldInputsFromVarArgs is only used for
-         * creating/updating and typ is not needed for these mutations
+         * creating/updating and type is not needed for these mutations
          */
         type: undefined,
       });
@@ -436,7 +433,6 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
       input.type = this.apiData.type;
     }
     input = deleteUndefinedInObject(input);
-    console.log('input', input);
 
     // If no input, we have nothing to update.
     return Object.keys(input).length === 0 ? undefined : input;

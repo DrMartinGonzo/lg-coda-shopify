@@ -1,6 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+import { InvalidValueError } from '../Errors/Errors';
 
 // #endregion
 
@@ -19,26 +20,33 @@ export function transformToArraySchema(schema?: any) {
 }
 
 /**
+ * Make it easier if the caller simply passed in the full sync schema.
+ * @param schema
+ */
+function requireObjectSchema(schema: coda.Schema): coda.GenericObjectSchema {
+  let objectSchema = schema;
+  if (objectSchema.type === coda.ValueType.Array) objectSchema = objectSchema.items;
+  if (objectSchema.type !== coda.ValueType.Object) {
+    throw new InvalidValueError('ObjectSchema', objectSchema);
+  }
+  return objectSchema;
+}
+
+/**
  * Retrieve all object schema keys or fromKeys if present
  */
 export function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
-  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(schema, key));
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(objectSchema, key));
 }
 
 /**
  * Get a single object schema keys or fromKey if present
  */
 export function getObjectSchemaEffectiveKey(schema: coda.Schema, key: string) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
   if (properties.hasOwnProperty(key)) {
     const property = properties[key];
     const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
@@ -48,11 +56,8 @@ export function getObjectSchemaEffectiveKey(schema: coda.Schema, key: string) {
 }
 
 export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: string) {
-  // make it easier if the caller simply passed in the full sync schema.
-  if (schema.type === coda.ValueType.Array) schema = schema.items;
-  if (schema.type !== coda.ValueType.Object) return;
-
-  const properties = schema.properties;
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
   let found = fromKey;
   Object.keys(properties).forEach((propKey) => {
     const property = properties[propKey];

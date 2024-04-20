@@ -4,7 +4,7 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
-import { BaseContext } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
 import {
@@ -22,14 +22,11 @@ import { graphQlGidToId } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
 import {
   AbstractGraphQlResource,
-  FindAllResponse,
+  FindAllGraphQlResponse,
   GraphQlResourcePath,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import {
-  AbstractSyncedGraphQlResource,
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceNames } from '../types/Resource.types';
@@ -49,7 +46,7 @@ interface FieldsArgs {
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
   cursor?: string;
-  maxEntriesPerRun?: number;
+  limit?: number;
   fields?: FieldsArgs;
   gateways?: string[];
   orderFinancialStatus?: string;
@@ -77,7 +74,7 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
   public static readonly displayName: Identity = PACK_IDENTITIES.OrderTransaction;
   protected static readonly graphQlName = GraphQlResourceNames.OrderTransaction;
 
-  protected static readonly defaultMaxEntriesPerRun: number = 50;
+  protected static readonly defaultLimit: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = ['orders.transactions'];
 
   public static getStaticSchema() {
@@ -114,11 +111,11 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
       gateways,
     ] = codaSyncParams;
 
-    return async ({ cursor = null, maxEntriesPerRun }) => {
+    return async ({ cursor = null, limit }) => {
       return this.all({
         context,
         cursor,
-        maxEntriesPerRun,
+        limit,
         options: { cacheTtlSecs: CACHE_DISABLED },
 
         fields: {
@@ -146,7 +143,7 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     fields = {},
     gateways,
@@ -162,7 +159,7 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
 
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<OrderTransaction>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<OrderTransaction>> {
     const queryFilters = {
       gateways,
       financial_status: orderFinancialStatus,
@@ -184,7 +181,7 @@ export class OrderTransaction extends AbstractSyncedGraphQlResource {
     const response = await this.baseFind<OrderTransaction, typeof getOrderTransactionsQuery>({
       documentNode: getOrderTransactionsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         searchQuery,
 

@@ -1,37 +1,34 @@
 // #region Imports
 
+import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncTableManagerRestWithMetafields } from '../Abstract/Rest/AbstractSyncTableManagerRestWithMetafields';
+import { SyncTableRestContinuation } from '../types/SyncTable.types';
 import {
-  AbstractSyncedRestResourceWithRestMetafields,
-  AugmentWithMetafieldsFunction,
-} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { AbstractSyncTableManagerRestHasMetafields } from './AbstractSyncTableManagerRestHasMetafields';
-import { ExecuteSyncArgs, SyncTableManagerRestResult } from './SyncTableManagerRest';
+  ExecuteRestSyncWithRestMetafieldsArgs,
+  ISyncTableManagerWithMetafields,
+  SyncTableManagerRestResult,
+} from '../types/SyncTableManager.types';
 
 // #endregion
 
-// #region Types
-interface ExecuteAugmentedSyncArgs<
-  BaseT extends AbstractSyncedRestResourceWithRestMetafields = AbstractSyncedRestResourceWithRestMetafields
-> extends ExecuteSyncArgs<BaseT> {
-  syncMetafields: AugmentWithMetafieldsFunction;
-}
-// #endregion
-
-export class SyncTableManagerRestWithRestMetafields<
-  BaseT extends AbstractSyncedRestResourceWithRestMetafields
-> extends AbstractSyncTableManagerRestHasMetafields<BaseT> {
-  // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
-
-  // #region Sync
+export class SyncTableManagerRestWithRestMetafields<BaseT extends AbstractSyncedRestResourceWithRestMetafields>
+  extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableRestContinuation>
+  implements ISyncTableManagerWithMetafields
+{
   public async executeSync({
     sync,
     syncMetafields,
-    adjustLimit,
-  }: ExecuteAugmentedSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>> {
+    defaultLimit,
+  }: ExecuteRestSyncWithRestMetafieldsArgs<BaseT>): Promise<
+    SyncTableManagerRestResult<typeof this.continuation, BaseT>
+  > {
     /** ————————————————————————————————————————————————————————————
      * Perform the main Rest Sync
      */
-    const { response, continuation } = await super.executeSync({ sync, adjustLimit });
+    const { response, continuation } = await this.parentSyncTableManager.executeSync({
+      sync,
+      defaultLimit: defaultLimit,
+    });
 
     /** ————————————————————————————————————————————————————————————
      * Augment Rest sync with metafields fetched via Rest for each resource
@@ -50,5 +47,4 @@ export class SyncTableManagerRestWithRestMetafields<
       continuation,
     };
   }
-  // #endregion
 }

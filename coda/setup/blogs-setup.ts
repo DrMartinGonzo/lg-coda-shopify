@@ -9,6 +9,7 @@ import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -169,7 +170,10 @@ export const Formula_Blog = coda.makeFormula({
   schema: BlogSyncTableSchema,
   execute: async ([blogId], context) => {
     const blog = await Blog.find({ context, id: blogId });
-    return blog.formatToRow();
+    if (blog) {
+      return blog.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Blog);
   },
 });
 

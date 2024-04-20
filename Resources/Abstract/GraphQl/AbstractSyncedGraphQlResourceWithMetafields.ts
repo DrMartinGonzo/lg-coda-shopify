@@ -3,12 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
 import { FragmentOf, readFragment } from '../../../utils/tada-utils';
 
-import { CACHE_DEFAULT } from '../../../constants';
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { MetafieldInput, MetafieldOwnerType } from '../../../types/admin.types';
 import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl } from '../../GraphQl/MetafieldGraphQl';
+import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { Node } from '../../types/Resource.types';
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
@@ -36,21 +36,15 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields
-  protected static async getMetafieldDefinitions(
-    context: coda.ExecutionContext,
-    includeFakeExtraDefinitions: boolean = true
-  ): Promise<Array<MetafieldDefinition>> {
+  protected static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
     if (this.metafieldDefinitions) return this.metafieldDefinitions;
 
-    console.log('🍏🍏🍏🍏🍏🍏🍏🍏🍏🍏 FETCH');
-    return MetafieldDefinition.allForOwner({
+    this.metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({
       context,
       ownerType: this.metafieldGraphQlOwnerType,
-      includeFakeExtraDefinitions,
-      options: { cacheTtlSecs: CACHE_DEFAULT },
     });
 
-    // return metafieldDefinitions.map((m) => m.apiData);
+    return this.metafieldDefinitions;
   }
 
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
@@ -78,7 +72,6 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO: fix any
   protected setData(data: typeof this.apiData): void {
     this.apiData = data;
 
@@ -146,20 +139,4 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
 
     await super._baseSave({ update, documentNode, variables });
   }
-
-  // TODO: remove ?
-  // protected formatMetafields() {
-  //   const formattedMetafields: Record<string, any> = {};
-  //   if (this.apiData.metafields?.nodes) {
-  //     const metafields = readFragment(
-  //       metafieldFieldsFragment,
-  //       this.apiData.metafields.nodes as Array<FragmentOf<typeof metafieldFieldsFragment>>
-  //     );
-  //     metafields.forEach((metafield) => {
-  //       const matchingSchemaKey = preprendPrefixToMetaFieldKey(getMetaFieldFullKey(metafield));
-  //       formattedMetafields[matchingSchemaKey] = formatMetaFieldValueForSchema(metafield);
-  //     });
-  //   }
-  //   return formattedMetafields;
-  // }
 }

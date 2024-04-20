@@ -4,15 +4,15 @@ import { Body } from '@shopify/shopify-api/rest/types';
 import { TadaDocumentNode } from 'gql.tada';
 import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 
-import { BaseContext } from '../../../Clients/Client.types';
 import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlClient';
 import { ShopifyGraphQlRequestCost } from '../../../Errors/GraphQlErrors';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
-import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
-import { PageInfo } from '../../../types/admin.types';
+import { CACHE_DEFAULT } from '../../../constants';
+import { PageInfo as PageInfoGraphQl } from '../../../types/admin.types';
 import { graphQlGidToId } from '../../../utils/conversion-utils';
-import { AbstractResource } from '../AbstractResource';
-import { GraphQlResourceName } from '../../types/Resource.types';
+import { flattenConnection } from '../../../utils/helpers';
+import { BaseContext, GraphQlResourceName } from '../../types/Resource.types';
+import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 
 // #endregion
 
@@ -24,12 +24,9 @@ export interface GraphQlApiData {
   [key: string]: any;
 }
 
-export interface FindAllResponse<T> {
-  data: T[];
-  headers: coda.FetchResponse['headers'];
+export interface FindAllGraphQlResponse<T> extends FindAllResponseBase<T> {
   cost: ShopifyGraphQlRequestCost;
-  // lastMaxEntriesPerRun: number;
-  pageInfo?: PageInfo;
+  pageInfo?: PageInfoGraphQl;
 }
 
 interface BaseArgs<NodeT extends TadaDocumentNode> {
@@ -54,7 +51,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
   protected static apiVersion = GRAPHQL_DEFAULT_API_VERSION;
 
   protected static readonly graphQlName: GraphQlResourceName | undefined;
-  protected static readonly defaultMaxEntriesPerRun: number = GRAPHQL_NODES_LIMIT;
+  /** These paths should not includes nodes or edges keys, except for the root one */
   protected static readonly paths: Array<GraphQlResourcePath> = [];
 
   protected static async request<NodeT extends TadaDocumentNode = TadaDocumentNode>({
@@ -69,7 +66,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     context,
     options = {},
     ...requestArgs
-  }: BaseFindArgs<NodeT>): Promise<FindAllResponse<T>> {
+  }: BaseFindArgs<NodeT>): Promise<FindAllGraphQlResponse<T>> {
     const response = await this.request({
       context,
       options: {
@@ -84,7 +81,6 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
       headers: response.headers,
       pageInfo: response.pageInfo,
       cost: response.cost,
-      // lastMaxEntriesPerRun: response.lastMaxEntriesPerRun,
     };
   }
 
@@ -96,27 +92,50 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     return response?.body?.data ?? null;
   }
 
-  protected static extractResourceDataFromRawData<NodeT extends TadaDocumentNode>(
+  protected static extractDataFromAllPossiblePaths<NodeT extends TadaDocumentNode>(
     rawData: ResultOf<NodeT>
-  ): Array<Body> {
-    return this.paths
-      .map((resourceName) => {
-        // access nested data using dot notation
-        const keys = resourceName.split('.');
-        let data: Body;
-        let maybeFound = rawData;
-        for (let key of keys) {
-          if (maybeFound.hasOwnProperty(key)) {
-            maybeFound = maybeFound[key];
-            data = maybeFound;
-          } else {
-            break;
-          }
+  ): Array<any> {
+    return this.paths.map((path) => this.extractDataAtPath(path, rawData)).filter(Boolean);
+  }
+
+  protected static extractDataAtPath<NodeT extends TadaDocumentNode>(currentPath: string, rawData: ResultOf<NodeT>) {
+    const parts = currentPath.split('.');
+    let data: Body;
+    let pointer = rawData as any;
+
+    function extract(part: string, parentNode: any): any | any[] {
+      const rootNode = parentNode === rawData;
+      if (parentNode && parentNode.hasOwnProperty(part)) {
+        const isConnection = 'nodes' in parentNode[part] || 'edges' in parentNode[part];
+        if (isConnection) {
+          return flattenConnection(parentNode[part]).map((data: any) => (rootNode ? data : { ...data, parentNode }));
         }
 
-        return data;
-      })
-      .filter(Boolean);
+        return rootNode
+          ? parentNode[part]
+          : Array.isArray(parentNode[part])
+          ? parentNode[part].map((node: any) => ({
+              ...node,
+              parentNode,
+            }))
+          : {
+              ...parentNode[part],
+              parentNode,
+            };
+      }
+    }
+
+    for (let part of parts) {
+      if (Array.isArray(pointer)) {
+        pointer = pointer.map((node) => extract(part, node));
+      } else {
+        pointer = extract(part, pointer);
+      }
+
+      data = pointer;
+    }
+
+    return data ? (Array.isArray(data) ? data.flat().filter(Boolean) : data) : undefined;
   }
 
   protected static createInstancesFromResponse<T extends AbstractGraphQlResource, NodeT extends TadaDocumentNode>(
@@ -124,7 +143,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     rawData: ResultOf<NodeT>
   ): Array<T> {
     let instances: Array<T> = [];
-    this.extractResourceDataFromRawData(rawData).forEach((data) => {
+    this.extractDataFromAllPossiblePaths(rawData).forEach((data) => {
       if (data && Array.isArray(data)) {
         instances = instances.concat(
           data.reduce((acc: Array<T>, entry: Body) => acc.concat(this.createInstance<T>(context, entry)), [])
@@ -134,36 +153,13 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
       }
     });
 
-    // this.paths.forEach((resourceName) => {
-    //   // access nested data using dot notation
-    //   const keys = resourceName.split('.');
-    //   let data: Body;
-    //   let foundData = rawData;
-    //   for (let key of keys) {
-    //     if (foundData.hasOwnProperty(key)) {
-    //       foundData = foundData[key];
-    //       data = foundData;
-    //     } else {
-    //       break;
-    //     }
-    //   }
-
-    //   if (data && Array.isArray(data)) {
-    //     instances = instances.concat(
-    //       data.reduce((acc: Array<T>, entry: Body) => acc.concat(this.createInstance<T>(context, entry)), [])
-    //     );
-    //   } else if (data) {
-    //     instances.push(this.createInstance<T>(context, data));
-    //   }
-    // });
-
     return instances;
   }
 
   /**
    * To be implemented by child class
    */
-  public static async all(params: any): Promise<FindAllResponse<any>> {
+  public static async all(params: any): Promise<FindAllGraphQlResponse<any>> {
     return;
   }
 
@@ -175,7 +171,6 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     while (run) {
       const response = await this.all({ context, cursor: nextCursor, ...otherArgs });
       const { pageInfo } = response;
-      response.data;
 
       items = items.concat(response.data as unknown as T);
       if (pageInfo?.hasNextPage) {
@@ -216,9 +211,14 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
       variables: variables,
     });
 
-    const body = staticResource.extractResourceDataFromRawData(response.body.data)[0];
-    if (update && body) {
-      this.setData(body);
+    const body = staticResource.extractDataFromAllPossiblePaths(response.body.data)[0];
+    /**
+     * Some mutations can udate multipe resources in one go,
+     * but we are only interested in a single update here
+     */
+    const singleBody = Array.isArray(body) ? body[0] : body;
+    if (update && singleBody) {
+      this.setData(singleBody);
     }
   }
 

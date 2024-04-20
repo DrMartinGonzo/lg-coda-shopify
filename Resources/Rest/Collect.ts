@@ -1,21 +1,15 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  AbstractSyncedRestResource,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { BaseContext, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -70,15 +64,19 @@ export class Collect extends AbstractSyncedRestResource {
   }: MakeSyncRestFunctionArgs<Collect, typeof Sync_Collects>): SyncRestFunction<Collect> {
     const [collectionId] = codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        fields: syncTableManager.getSyncedStandardFields(collectFieldDependencies).join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        collection_id: collectionId,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(collectFieldDependencies).join(','),
+          collection_id: collectionId,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ context, id, fields = null, options }: FindArgs): Promise<Collect | null> {
@@ -107,7 +105,7 @@ export class Collect extends AbstractSyncedRestResource {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Collect>> {
+  }: AllArgs): Promise<FindAllRestResponse<Collect>> {
     const response = await this.baseFind<Collect>({
       context,
       urlIds: {},

@@ -1,19 +1,13 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../schemas/syncTable/RedirectSchema';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  AbstractSyncedRestResource,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { BaseContext, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -67,16 +61,20 @@ export class Redirect extends AbstractSyncedRestResource {
   }: MakeSyncRestFunctionArgs<Redirect, typeof Sync_Redirects>): SyncRestFunction<Redirect> {
     const [path, target] = codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        fields: syncTableManager.getSyncedStandardFields(redirectFieldDependencies).join(','),
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        path,
-        target,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(redirectFieldDependencies).join(','),
+          path,
+          target,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ context, id, fields = null, options }: FindArgs): Promise<Redirect | null> {
@@ -107,7 +105,7 @@ export class Redirect extends AbstractSyncedRestResource {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Redirect>> {
+  }: AllArgs): Promise<FindAllRestResponse<Redirect>> {
     const response = await this.baseFind<Redirect>({
       context: context,
       urlIds: {},

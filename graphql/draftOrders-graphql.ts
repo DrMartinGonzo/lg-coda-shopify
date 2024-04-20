@@ -13,13 +13,13 @@ function buildDraftOrdersSearchQuery(filters: { [key: string]: any }) {
 //   ${MetafieldFieldsFragment}
 
 //   query getDraftOrdersMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     draftOrders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     draftOrders(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 //         metafields(keys: $metafieldKeys, first: $countMetafields) {

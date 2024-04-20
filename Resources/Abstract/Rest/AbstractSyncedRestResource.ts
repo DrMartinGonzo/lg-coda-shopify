@@ -2,19 +2,20 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
-import { SearchParams } from '../../../Clients/RestClient';
 import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
 import {
   SyncTableParamValues,
   SyncTableSyncResult,
   SyncTableUpdateResult,
 } from '../../../SyncTableManager/types/SyncTable.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
+import { REST_DEFAULT_LIMIT } from '../../../constants';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
 import { Metafield } from '../../Rest/Metafield';
-import { AbstractRestResource, BaseConstructorArgs, FindAllResponse } from './AbstractRestResource';
 import { GetSchemaArgs } from '../AbstractResource';
+import { AbstractRestResource, BaseConstructorArgs } from './AbstractRestResource';
 
 // #endregion
 
@@ -22,18 +23,6 @@ import { GetSchemaArgs } from '../AbstractResource';
 export interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
   fromRow?: FromRow;
 }
-
-export type MakeSyncRestFunctionArgs<
-  BaseT extends AbstractSyncedRestResource = AbstractSyncedRestResource,
-  SyncTableDefT extends SyncTableDefinition = never,
-  SyncTableManagerT extends SyncTableManagerRest<BaseT> = SyncTableManagerRest<BaseT>
-> = {
-  context: coda.SyncExecutionContext;
-  codaSyncParams: CodaSyncParams<SyncTableDefT>;
-  syncTableManager?: SyncTableManagerT;
-};
-
-export type SyncRestFunction<T> = (nextPageQuery: SearchParams, adjustLimit?: number) => Promise<FindAllResponse<T>>;
 
 export interface FromRow<RowT extends BaseRow = BaseRow> {
   row: Partial<RowT> | null;
@@ -52,6 +41,7 @@ export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = 
 export abstract class AbstractSyncedRestResource extends AbstractRestResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
+  protected static readonly defaultLimit: number = REST_DEFAULT_LIMIT;
 
   /**
    * Get the static Coda schema for the resource
@@ -89,7 +79,7 @@ export abstract class AbstractSyncedRestResource extends AbstractRestResource {
   protected static makeSyncTableManagerSyncFunction({
     context,
   }: MakeSyncRestFunctionArgs<AbstractSyncedRestResource, any>): SyncRestFunction<AbstractSyncedRestResource> {
-    return (nextPageQuery: SearchParams = {}) =>
+    return ({ nextPageQuery = {} }) =>
       this.baseFind({
         context,
         urlIds: {},
@@ -102,7 +92,7 @@ export abstract class AbstractSyncedRestResource extends AbstractRestResource {
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ): Promise<SyncTableManagerRest<AbstractSyncedRestResource>> {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRest<AbstractSyncedRestResource>(schema, codaSyncParams, context);
+    return new SyncTableManagerRest<AbstractSyncedRestResource>({ schema, codaSyncParams, context });
   }
 
   public static async sync(
@@ -110,9 +100,12 @@ export abstract class AbstractSyncedRestResource extends AbstractRestResource {
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
     const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
+    const sync = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
 
-    const { response, continuation } = await syncTableManager.executeSync({ sync: syncFunction });
+    const { response, continuation } = await syncTableManager.executeSync({
+      sync: sync,
+      defaultLimit: this.defaultLimit,
+    });
     return {
       result: response.data.map((data) => data.formatToRow()),
       continuation,

@@ -2,30 +2,21 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  CodaSyncParams,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import {
-  AbstractSyncedRestResourceWithRestMetafields,
-  RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -62,7 +53,7 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Blog;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'blog';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Blog;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
 
   protected static readonly graphQlName = GraphQlResourceNames.Blog;
@@ -106,20 +97,24 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     typeof Sync_Blogs,
     SyncTableManagerRestWithRestMetafields<Blog>
   >): SyncRestFunction<Blog> {
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        fields: syncTableManager.getSyncedStandardFields(blogFieldDependencies).join(','),
-        limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
+        firstPageParams: {
+          fields: syncTableManager.getSyncedStandardFields(blogFieldDependencies).join(','),
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async find({ context, options, id, fields = null }: FindArgs): Promise<Blog | null> {
     const result = await this.baseFind<Blog>({
-      urlIds: { id: id },
-      params: { fields: fields },
+      urlIds: { id },
+      params: { fields },
       context,
       options,
     });
@@ -143,11 +138,11 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Blog>> {
+  }: AllArgs): Promise<FindAllRestResponse<Blog>> {
     const response = await this.baseFind<Blog>({
       context,
       urlIds: {},
-      params: { limit: limit, since_id: since_id, handle: handle, fields: fields, ...otherArgs },
+      params: { limit, since_id, handle, fields, ...otherArgs },
       options,
     });
 

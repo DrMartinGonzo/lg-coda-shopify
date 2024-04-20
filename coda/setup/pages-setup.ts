@@ -9,6 +9,7 @@ import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -195,8 +196,11 @@ export const Formula_Page = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   schema: PageSyncTableSchema,
   execute: async ([pageId], context) => {
-    const article = await Page.find({ context, id: pageId });
-    return article.formatToRow();
+    const page = await Page.find({ context, id: pageId });
+    if (page) {
+      return page.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Page);
   },
 });
 

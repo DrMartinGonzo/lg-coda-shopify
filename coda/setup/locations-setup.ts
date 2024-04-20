@@ -10,6 +10,7 @@ import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -162,7 +163,10 @@ export const Formula_Location = coda.makeFormula({
   schema: LocationSyncTableSchema,
   execute: async ([location_id], context) => {
     const location = await Location.find({ context, id: idToGraphQlGid(GraphQlResourceNames.Location, location_id) });
-    return location.formatToRow();
+    if (location) {
+      return location.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Location);
   },
 });
 

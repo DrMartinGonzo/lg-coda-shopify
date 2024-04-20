@@ -1,8 +1,9 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext, FetchRequestOptions } from '../../Clients/Client.types';
+import { FetchRequestOptions } from '../../Clients/Client.types';
+import { BaseContext } from '../types/Resource.types';
 import { CACHE_DEFAULT, Identity, PACK_IDENTITIES } from '../../constants';
-import { AbstractRestResource, FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
+import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { Theme } from './Theme';
 
@@ -69,7 +70,7 @@ export class Asset extends AbstractRestResource {
     asset = null,
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Asset>> {
+  }: AllArgs): Promise<FindAllRestResponse<Asset>> {
     const response = await this.baseFind<Asset>({
       urlIds: { theme_id: theme_id },
       params: { fields: fields, asset: asset, ...otherArgs },

@@ -12,7 +12,7 @@ import { formatMetafieldValueForApi, getMetaFieldFullKey, splitMetaFieldFullKey 
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
-import { MetafieldLegacyType, MetafieldType } from '../Mixed/Metafield.types';
+import { MetafieldLegacyType, MetafieldType } from './Metafield.types';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
 import { RestResourcesPlural, RestResourcesSingular, singularToPlural } from '../types/Resource.types';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './SupportedMetafieldSyncTable';
@@ -23,7 +23,7 @@ import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './Sup
  * This class contains functions shared between
  * {@link Metafield} and {@link  MetafieldGraphQl} resources
  */
-export class MetafieldMixed {
+export class MetafieldHelper {
   public static readonly DELETED_SUFFIX = ' [deleted]';
 
   public static getStaticSchema() {
@@ -32,7 +32,7 @@ export class MetafieldMixed {
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(MetafieldSyncTableSchema);
-    const metafieldOwnerType = context.sync?.dynamicUrl as SupportedMetafieldOwnerType;
+    const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
     const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
 
     const { ownerReference, supportDefinition } = supportedSyncTable;
@@ -96,13 +96,13 @@ export class MetafieldMixed {
   }
 
   public static getSupportedSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
-    const found = MetafieldMixed.getAllSupportedSyncTables().find((r) => r.ownerType === ownerType);
+    const found = MetafieldHelper.getAllSupportedSyncTables().find((r) => r.ownerType === ownerType);
     if (found) return found;
     throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
   }
 
   public static listSupportedSyncTables() {
-    return MetafieldMixed.getAllSupportedSyncTables()
+    return MetafieldHelper.getAllSupportedSyncTables()
       .map((r) => ({ display: r.display, value: r.ownerType }))
       .sort(compareByDisplayKey);
   }

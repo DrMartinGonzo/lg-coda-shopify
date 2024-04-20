@@ -4,44 +4,25 @@ import * as coda from '@codahq/packs-sdk';
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../../SyncTableManager/types/SyncTable.types';
+import {
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
+} from '../../../SyncTableManager/types/SyncTableManager.types';
+import { GRAPHQL_NODES_LIMIT } from '../../../constants';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
-import {
-  BaseConstructorSyncedArgs,
-  CodaSyncParams,
-  FromRow,
-  SyncTableDefinition,
-} from '../Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../AbstractResource';
-import { AbstractGraphQlResource, FindAllResponse } from './AbstractGraphQlResource';
-
-// #endregion
-
-// #region Types
-export type MakeSyncGraphQlFunctionArgs<
-  BaseT extends AbstractSyncedGraphQlResource = AbstractSyncedGraphQlResource,
-  SyncTableDefT extends SyncTableDefinition = never,
-  SyncTableManagerT extends SyncTableManagerGraphQl<BaseT> = SyncTableManagerGraphQl<BaseT>
-> = {
-  context: coda.SyncExecutionContext;
-  codaSyncParams: CodaSyncParams<SyncTableDefT>;
-  syncTableManager?: SyncTableManagerT;
-};
-
-export type SyncGraphQlFunction<T> = ({
-  cursor,
-  maxEntriesPerRun,
-}: {
-  cursor: string;
-  maxEntriesPerRun?: number;
-}) => Promise<FindAllResponse<T>>;
+import { BaseConstructorSyncedArgs, FromRow } from '../Rest/AbstractSyncedRestResource';
+import { AbstractGraphQlResource } from './AbstractGraphQlResource';
 
 // #endregion
 
 export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
+
+  protected static readonly defaultLimit: number = GRAPHQL_NODES_LIMIT;
 
   /**
    * Get the static Coda schema for the resource
@@ -73,14 +54,6 @@ export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResou
     return this._schemaCache;
   }
 
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerGraphQl<AbstractSyncedGraphQlResource>> {
-    const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerGraphQl<AbstractSyncedGraphQlResource>(schema, codaSyncParams, context);
-  }
-
   /**
    * Generate a sync function to be used by a SyncTableManager.
    * Should be overridden by subclasses
@@ -88,7 +61,15 @@ export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResou
   protected static makeSyncTableManagerSyncFunction(
     params: MakeSyncGraphQlFunctionArgs<AbstractSyncedGraphQlResource, any>
   ): SyncGraphQlFunction<AbstractSyncedGraphQlResource> {
-    return ({ cursor = null, maxEntriesPerRun }) => this.all({ cursor, maxEntriesPerRun, ...params });
+    return ({ cursor = null, limit }) => this.all({ cursor, limit, ...params });
+  }
+
+  public static async getSyncTableManager(
+    context: coda.SyncExecutionContext,
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>
+  ): Promise<SyncTableManagerGraphQl<AbstractSyncedGraphQlResource>> {
+    const schema = await this.getArraySchema({ codaSyncParams, context });
+    return new SyncTableManagerGraphQl<AbstractSyncedGraphQlResource>({ schema, codaSyncParams, context });
   }
 
   public static async sync(
@@ -100,7 +81,7 @@ export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResou
 
     const { response, continuation } = await syncTableManager.executeSync({
       sync: syncFunction,
-      defaultMaxEntriesPerRun: this.defaultMaxEntriesPerRun,
+      defaultLimit: this.defaultLimit,
     });
     return {
       result: response.data.map((data: AbstractSyncedGraphQlResource) => data.formatToRow()),

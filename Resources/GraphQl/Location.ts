@@ -1,9 +1,8 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../../Clients/Client.types';
 import { Sync_Locations } from '../../coda/setup/locations-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   activateLocationMutation,
   deactivateLocationMutation,
@@ -18,16 +17,16 @@ import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema'
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
-import { FindAllResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import {
   AbstractSyncedGraphQlResourceWithMetafields,
   GraphQlApiDataWithMetafields,
 } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
 import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
-import { GraphQlResourceNames } from '../types/Resource.types';
+import { BaseContext, GraphQlResourceNames, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -47,7 +46,7 @@ interface DeleteArgs extends BaseContext {
 }
 interface AllArgs extends BaseContext {
   [key: string]: unknown;
-  maxEntriesPerRun?: number;
+  limit?: number;
   cursor?: string;
   fields?: FieldsArgs;
   metafieldKeys?: Array<string>;
@@ -59,7 +58,7 @@ export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Location;
   protected static readonly graphQlName = GraphQlResourceNames.Location;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'location';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Location;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Location;
 
   protected static readonly paths: Array<GraphQlResourcePath> = [
@@ -96,13 +95,13 @@ export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
       fields[key] = syncTableManager.effectiveStandardFromKeys.includes(key);
     });
 
-    return ({ cursor = null, maxEntriesPerRun }) =>
+    return ({ cursor = null, limit }) =>
       this.all({
         context,
         fields,
         metafieldKeys: syncTableManager.effectiveMetafieldKeys,
         cursor,
-        maxEntriesPerRun,
+        limit,
         options: { cacheTtlSecs: CACHE_DISABLED },
       });
   }
@@ -138,19 +137,19 @@ export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
 
   public static async all({
     context,
-    maxEntriesPerRun = null,
+    limit = null,
     cursor = null,
     fields = {},
     metafieldKeys = [],
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<Location>> {
+  }: AllArgs): Promise<FindAllGraphQlResponse<Location>> {
     let searchQuery = '';
 
     const response = await this.baseFind<Location, typeof getLocationsQuery>({
       documentNode: getLocationsQuery,
       variables: {
-        maxEntriesPerRun: maxEntriesPerRun ?? GRAPHQL_NODES_LIMIT,
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
         cursor,
         searchQuery,
 
@@ -208,10 +207,10 @@ export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
   }
 
   public async save({ update = false }: SaveArgs): Promise<void> {
-    const documentNode = editLocationMutation;
     const input = this.formatLocationEditInput();
 
     if (input) {
+      const documentNode = editLocationMutation;
       const variables = {
         id: this.graphQlGid,
         input,

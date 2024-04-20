@@ -1,9 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { BaseRow } from '../../schemas/CodaRows.types';
+import { SearchParams } from '../../Clients/Client.types';
 import { ShopifyGraphQlRequestCost } from '../../Errors/GraphQlErrors';
-import { SearchParams } from '../../Clients/RestClient';
+import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
 
 // #endregion
@@ -39,15 +39,20 @@ export type CurrentBatchType<CodaRowT extends BaseRow = BaseRow> = {
   remaining: CodaRowT[];
 };
 
-export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> extends SyncTableRestContinuation {
+export interface SyncTableGraphQlContinuation extends coda.Continuation {
   cursor?: string;
   retries: number;
   graphQlLock: string;
 
   lastCost?: Stringified<ShopifyGraphQlRequestCost>;
-  lastMaxEntriesPerRun?: number;
-  reducedMaxEntriesPerRun?: number;
+  lastLimit?: number;
 
+  extraData: SyncTableGraphQlExtraContinuationData;
+}
+
+export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any>
+  extends SyncTableRestContinuation,
+    SyncTableGraphQlContinuation {
   // TODO: currentBatch on le met pas dans extraData
   extraData: {
     currentBatch?: CurrentBatchType<CodaRowT>;
@@ -58,14 +63,3 @@ export interface SyncTableMixedContinuation<CodaRowT extends BaseRow = any> exte
 type SyncTableGraphQlExtraContinuationData = {
   [key: string]: any;
 };
-export interface SyncTableGraphQlContinuation extends coda.Continuation {
-  cursor?: string;
-  retries: number;
-  graphQlLock: string;
-
-  lastCost?: Stringified<ShopifyGraphQlRequestCost>;
-  lastMaxEntriesPerRun?: number;
-  reducedMaxEntriesPerRun?: number;
-
-  extraData: SyncTableGraphQlExtraContinuationData;
-}

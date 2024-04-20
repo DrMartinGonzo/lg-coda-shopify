@@ -2,23 +2,17 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
-import { PACK_IDENTITIES, Identity, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../utils/helpers';
-import { FindAllResponse, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
-import {
-  AbstractSyncedRestResource,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { FindAllRestResponse, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
+import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { BaseContext, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 
 // #endregion
 
@@ -95,15 +89,19 @@ export class InventoryLevel extends AbstractSyncedRestResource {
     }
     const parsedLocationIds = location_ids.map(parseOptionId);
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) =>
-      this.all({
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-        location_ids: parsedLocationIds.join(','),
-        updated_at_min,
-
-        ...nextPageQuery,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
+          location_ids: parsedLocationIds.join(','),
+          updated_at_min,
+        },
       });
+
+      return this.all(params);
+    };
   }
 
   public static async delete({ inventory_item_id = null, location_id = null, context }: DeleteArgs): Promise<unknown> {
@@ -123,14 +121,14 @@ export class InventoryLevel extends AbstractSyncedRestResource {
     updated_at_min = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<InventoryLevel>> {
+  }: AllArgs): Promise<FindAllRestResponse<InventoryLevel>> {
     const response = await this.baseFind<InventoryLevel>({
       context,
       urlIds: {},
       params: {
         inventory_item_ids: inventory_item_ids,
         location_ids: location_ids,
-        limit: limit,
+        limit,
         updated_at_min: updated_at_min,
         ...otherArgs,
       },

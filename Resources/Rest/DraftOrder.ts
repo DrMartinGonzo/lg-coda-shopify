@@ -2,11 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../../Clients/Client.types';
-import { SearchParams } from '../../Clients/RestClient';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
-import { PACK_IDENTITIES, Identity, OPTIONS_DRAFT_ORDER_STATUS, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
@@ -14,18 +12,13 @@ import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../../sc
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
-import { FindAllResponse } from '../Abstract/Rest/AbstractRestResource';
-import {
-  CodaSyncParams,
-  FromRow,
-  MakeSyncRestFunctionArgs,
-  SyncRestFunction,
-} from '../Abstract/Rest/AbstractSyncedRestResource';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
-import { GraphQlResourceNames } from '../types/Resource.types';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
 import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
@@ -102,7 +95,7 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
   };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.DraftOrder;
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = 'draft_order';
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.DraftOrder;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
 
   protected static readonly graphQlName = GraphQlResourceNames.DraftOrder;
@@ -174,38 +167,20 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
   >): SyncRestFunction<DraftOrder> {
     const [syncMetafields, status, updated_at, ids, since_id] = codaSyncParams;
 
-    return (nextPageQuery: SearchParams = {}, adjustLimit?: number) => {
-      // FIXME: !!!!!!!
-      // TODO: do a helper function for this
-      let params: AllArgs = {
+    return ({ nextPageQuery = {}, limit }) => {
+      const params = this.allIterationParams<AllArgs>({
         context,
-        limit: adjustLimit ?? REST_DEFAULT_LIMIT,
-      };
-
-      /**
-       * Because the request URL contains the page_info parameter, you can't add
-       * any other parameters to the request, except for limit. Including other
-       * parameters can cause the request to fail.
-       * @see https://shopify.dev/api/usage/pagination-rest
-       */
-      if ('page_info' in nextPageQuery) {
-        params = {
-          ...params,
-          ...nextPageQuery,
-        };
-      } else {
-        params = {
-          ...params,
+        nextPageQuery,
+        limit,
+        firstPageParams: {
           fields: syncTableManager.getSyncedStandardFields(draftOrderFieldDependencies).join(','),
           ids: ids && ids.length ? ids.join(',') : undefined,
           status,
           since_id,
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
-
-          ...nextPageQuery,
-        };
-      }
+        },
+      });
 
       return this.all(params);
     };
@@ -241,7 +216,7 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     status = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllResponse<DraftOrder>> {
+  }: AllArgs): Promise<FindAllRestResponse<DraftOrder>> {
     const response = await this.baseFind<DraftOrder>({
       context,
       urlIds: {},

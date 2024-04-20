@@ -1,99 +1,40 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SearchParams } from '../../../Clients/RestClient';
 import { SyncTableManagerRestWithRestMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
-import {
-  SyncTableRestContinuation,
-  SyncTableSyncResult,
-  SyncTableUpdateResult,
-} from '../../../SyncTableManager/types/SyncTable.types';
-import { CACHE_DEFAULT, REST_DEFAULT_LIMIT } from '../../../constants';
-import { BaseRow } from '../../../schemas/CodaRows.types';
-import { MetafieldOwnerType } from '../../../types/admin.types';
+import { SyncTableRestContinuation, SyncTableSyncResult } from '../../../SyncTableManager/types/SyncTable.types';
+import { SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
+import { PREFIX_FAKE } from '../../../constants';
 import { graphQlGidToId } from '../../../utils/conversion-utils';
 import { getMetaFieldFullKey } from '../../../utils/metafields-utils';
-import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
-import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
-import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
-import { FindAllResponse, RestApiData, SaveArgs } from './AbstractRestResource';
-import { AbstractSyncedRestResource, SyncRestFunction } from './AbstractSyncedRestResource';
+import { Metafield } from '../../Rest/Metafield';
+import { FindAllRestResponse } from './AbstractRestResource';
+import { AbstractSyncedRestResourceWithMetafields } from './AbstractSyncedRestResourceWithMetafields';
 
 // #endregion
 
 // #region Types
-export interface RestApiDataWithMetafields extends RestApiData {
-  metafields:
-    | Metafield[]
-    | null
-    | {
-        [key: string]: any;
-      };
-}
-
 export type AugmentWithMetafieldsFunction = (
   base: AbstractSyncedRestResourceWithRestMetafields
-) => Promise<FindAllResponse<Metafield>>;
+) => Promise<FindAllRestResponse<Metafield>>;
 // #endregion
 
-export abstract class AbstractSyncedRestResourceWithRestMetafields extends AbstractSyncedRestResource {
-  public apiData: RestApiDataWithMetafields;
-
-  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
-  public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
-  // TODO: sert à rien pour l'instant
-  protected static readonly supportsDefinitions: boolean;
-  protected static metafieldDefinitions: Array<MetafieldDefinition>;
-
+export abstract class AbstractSyncedRestResourceWithRestMetafields extends AbstractSyncedRestResourceWithMetafields {
   protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {
     return async (base: AbstractSyncedRestResourceWithRestMetafields) =>
       Metafield.all({ context, owner_id: base.apiData.id, owner_resource: this.metafieldRestOwnerType });
   }
 
-  protected static async getMetafieldDefinitions(
-    context: coda.ExecutionContext,
-    includeFakeExtraDefinitions?: boolean
-  ): Promise<Array<MetafieldDefinition>> {
-    if (this.metafieldDefinitions) return this.metafieldDefinitions;
-
-    console.log('🍏🍏🍏🍏🍏🍏🍏🍏🍏🍏 FETCH');
-    return MetafieldDefinition.allForOwner({
-      context,
-      ownerType: this.metafieldGraphQlOwnerType,
-      includeFakeExtraDefinitions,
-      options: { cacheTtlSecs: CACHE_DEFAULT },
-    });
-    // const metafieldDefinitions = await MetafieldDefinition.allForOwner({
-    //   context,
-    //   ownerType: this.metafieldGraphQlOwnerType,
-    //   includeFakeExtraDefinitions,
-    //   options: { cacheTtlSecs: CACHE_DEFAULT },
-    // });
-
-    // return metafieldDefinitions.map((m) => m.apiData);
-  }
-  // protected static async getMetafieldDefinitions(
-  //   context: coda.ExecutionContext,
-  //   includeFakeExtraDefinitions?: boolean
-  // ) {
-  //   if (this.metafieldDefinitions) return this.metafieldDefinitions;
-  //   this.metafieldDefinitions = await fetchMetafieldDefinitionsGraphQl(
-  //     { ownerType: this.metafieldGraphQlOwnerType, includeFakeExtraDefinitions },
-  //     context
-  //   );
-  //   return this.metafieldDefinitions;
-  // }
-
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ) {
+  ): Promise<SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>> {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>(
+    return new SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>({
       schema,
       codaSyncParams,
-      context
-    );
+      context,
+    });
   }
 
   public static async sync(
@@ -104,7 +45,11 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
     const sync = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
     const syncMetafields = this.augmentWithMetafieldsFunction(context);
 
-    const { response, continuation } = await syncTableManager.executeSync({ sync, syncMetafields });
+    const { response, continuation } = await syncTableManager.executeSync({
+      sync,
+      syncMetafields,
+      defaultLimit: this.defaultLimit,
+    });
     return {
       result: response.data.map((data) => data.formatToRow()),
       continuation,
@@ -123,18 +68,15 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
 
     const metafieldDefinitions =
       syncTableManager.prevContinuation?.extraData?.metafieldDefinitions ??
-      (await this.getMetafieldDefinitions(context, false)).map((m) => m.apiData);
+      (await this.getMetafieldDefinitions(context)).map((m) => m.apiData);
 
-    const sync: SyncRestFunction<AbstractSyncedRestResourceWithRestMetafields> = (
-      nextPageQuery: SearchParams = {},
-      adjustLimit?: number
-    ) => {
+    const sync: SyncRestFunction<AbstractSyncedRestResourceWithRestMetafields> = ({ nextPageQuery = {}, limit }) => {
       return this.baseFind({
         context,
         urlIds: {},
         params: {
           fields: ['id'].join(','),
-          limit: adjustLimit ?? syncTableManager.shouldSyncMetafields ? 30 : REST_DEFAULT_LIMIT,
+          limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
           ...nextPageQuery,
         },
       });
@@ -146,7 +88,7 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
       continuation = {
         ...continuation,
         extraData: {
-          metafieldDefinitions,
+          metafieldDefinitions: metafieldDefinitions.map((def) => ({ id: def.id })),
         },
       } as SyncTableRestContinuation;
     }
@@ -154,80 +96,16 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
       result: response.data.flatMap((resource) =>
         resource.apiData.metafields?.map((m: Metafield) => {
           const matchDefinition = metafieldDefinitions.find((f) => f && getMetaFieldFullKey(f) === m.fullKey);
-          m.apiData.definition_id = matchDefinition ? graphQlGidToId(matchDefinition?.id) : undefined;
+          if (matchDefinition && matchDefinition.id) {
+            // Edge case, definition id can be a fake id
+            if (!(typeof matchDefinition.id === 'string' && matchDefinition.id.startsWith(PREFIX_FAKE))) {
+              m.apiData.definition_id = graphQlGidToId(matchDefinition.id);
+            }
+          }
           return m.formatToRow();
         })
       ),
       continuation,
     };
-  }
-
-  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    if (hasMetafieldsInRow(newRow)) {
-      const metafieldDefinitions = await this.getMetafieldDefinitions(context);
-      const metafields = await Metafield.createInstancesFromRow({
-        context,
-        row: newRow,
-        metafieldDefinitions,
-        ownerResource: this.metafieldRestOwnerType,
-      });
-      const instance: AbstractSyncedRestResourceWithRestMetafields = new (this as any)({
-        context,
-        fromRow: { row: newRow, metafields },
-      });
-
-      await instance.saveAndUpdate();
-      return { ...prevRow, ...instance.formatToRow() };
-    }
-
-    return super.handleRowUpdate(prevRow, newRow, context);
-  }
-
-  public static async syncUpdate(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableUpdateResult> {
-    // Warm up metafield definitions cache
-    if (updates.map(hasMetafieldsInUpdate).some(Boolean)) {
-      await this.getMetafieldDefinitions(context);
-    }
-    return super.syncUpdate(codaSyncParams, updates, context);
-  }
-
-  /**====================================================================================================================
-   *    Instance Methods
-   *===================================================================================================================== */
-  public async save({ update = false }: SaveArgs = {}): Promise<void> {
-    if (this.apiData.metafields && this.apiData.metafields.length) {
-      const staticOwnerResource = this.resource<typeof AbstractSyncedRestResourceWithRestMetafields>();
-      const { primaryKey } = staticOwnerResource;
-      const method = this.apiData[primaryKey] ? 'put' : 'post';
-
-      /** When performing a PUT request, we must create/update/delete metafields individually */
-      if (method === 'put') {
-        const newMetafields = await Promise.all(
-          this.apiData.metafields.map(async (metafield: Metafield) => {
-            await metafield.saveAndUpdate();
-            return metafield;
-          })
-        );
-
-        await super.save({ update });
-        if (update) this.apiData.metafields = newMetafields;
-
-        return;
-      }
-      //
-      /** When performing a POST request, we can create the metafields in bulk directly on the main request.
-       * We have to use the metafields data and not the Metafield instances themselves.  */
-      else {
-        this.apiData.metafields = this.apiData.metafields.map((metafield: Metafield) => {
-          return metafield.apiData;
-        });
-      }
-    }
-
-    await super.save({ update });
   }
 }

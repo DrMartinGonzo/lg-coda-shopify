@@ -97,7 +97,7 @@ export const orderTransactionFieldsFragment = graphql(`
 export const getOrderTransactionsQuery = graphql(
   `
     query getOrderTransactions(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $searchQuery: String
       $includeAmount: Boolean!
@@ -108,7 +108,7 @@ export const getOrderTransactionsQuery = graphql(
       $includeTotalUnsettled: Boolean!
       $includeTransactionCurrency: Boolean!
     ) {
-      orders(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+      orders(first: $limit, after: $cursor, query: $searchQuery) {
         nodes {
           id
           name

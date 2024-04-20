@@ -53,12 +53,12 @@ export const metaobjectDefinitionFragment = graphql(
 export const getMetaobjectDefinitionsQuery = graphql(
   `
     query GetMetaobjectDefinitions(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $includeCapabilities: Boolean!
       $includeFieldDefinitions: Boolean!
     ) {
-      metaobjectDefinitions(first: $maxEntriesPerRun, after: $cursor) {
+      metaobjectDefinitions(first: $limit, after: $cursor) {
         nodes {
           ...MetaobjectDefinition
         }

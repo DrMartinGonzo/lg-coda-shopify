@@ -10,6 +10,7 @@ import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchem
 import { fetchProductTypesGraphQl } from '../../utils/products-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -208,16 +209,22 @@ export const Formula_Product = coda.makeFormula({
   schema: ProductSyncTableSchemaRest,
   execute: async ([productId], context) => {
     const product = await Product.find({ id: productId, context });
-    return product.formatToRow();
+    if (product) {
+      return product.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Product);
   },
 });
 
-// TODO: add link regex ?
 export const Format_Product: coda.Format = {
   name: 'Product',
   instructions: 'Paste the ID of the product into the column.',
   formulaName: 'Product',
-  // matchers: [new RegExp('^https://.*myshopify.com/admin/products/([0-9]+)$')],
+  /**
+  // TODO: regex won't work for now as it uses a different network domain.
+   * {@see https://coda.io/packs/build/latest/guides/blocks/column-formats/#matchers}
+   */
+  // matchers: [new RegExp('^https://admin.shopify.com/store/.*/products/([0-9]+)$')],
 };
 // #endregion
 
@@ -303,9 +310,9 @@ export const Format_Product: coda.Format = {
 
         const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
         // TODO: get an approximation for first run by using count of relation columns ?
-        const defaultMaxEntriesPerRun = 50;
-        const { maxEntriesPerRun, shouldDeferBy } = await getGraphQlSyncTableMaxEntriesAndDeferWait(
-          defaultMaxEntriesPerRun,
+        const defaultLimit = 50;
+        const { limit, shouldDeferBy } = await getGraphQlSyncTableMaxLimitAndDeferWait(
+          defaultLimit,
           prevContinuation,
           context
         );
@@ -353,7 +360,7 @@ export const Format_Product: coda.Format = {
         const payload = {
           query: QueryProductsAdmin,
           variables: {
-            maxEntriesPerRun,
+            limit,
             cursor: prevContinuation?.cursor ?? null,
             metafieldKeys: effectiveMetafieldKeys,
             countMetafields: effectiveMetafieldKeys.length,
@@ -368,7 +375,7 @@ export const Format_Product: coda.Format = {
         const { response, continuation } = await makeSyncTableGraphQlRequest(
           {
             payload,
-            maxEntriesPerRun,
+            limit,
             prevContinuation,
             extraData: { metafieldDefinitions },
             getPageInfo: (data: any) => data.products?.pageInfo,

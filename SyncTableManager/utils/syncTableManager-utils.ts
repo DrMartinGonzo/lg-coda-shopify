@@ -59,28 +59,27 @@ async function checkThrottleStatus(context: coda.ExecutionContext): Promise<Shop
   return extensions.cost.throttleStatus;
 }
 
-// TODO: don't pass the whole prevContinuation object ?
-function calcSyncTableMaxEntriesPerRun(
+function calcSyncTableMaxLimit(
   prevContinuation: SyncTableMixedContinuation | SyncTableGraphQlContinuation,
   currentThrottleStatus: ShopifyGraphQlThrottleStatus,
-  defaultMaxEntriesPerRun: number
+  defaultLimit: number
 ) {
   const lastCost = parseContinuationProperty<ShopifyGraphQlRequestCost>(prevContinuation.lastCost);
-  const lastMaxEntriesPerRun = prevContinuation.lastMaxEntriesPerRun;
+  const { lastLimit } = prevContinuation;
 
-  if (!lastMaxEntriesPerRun || !lastCost) {
-    console.error(`calcSyncTableMaxEntriesPerRun: No lastMaxEntriesPerRun or lastCost in prevContinuation`);
-    return defaultMaxEntriesPerRun;
+  if (!lastLimit || !lastCost) {
+    console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
+    return defaultLimit;
   }
 
-  const costOneEntry = lastCost.requestedQueryCost / lastMaxEntriesPerRun;
+  const costOneEntry = lastCost.requestedQueryCost / lastLimit;
   const maxCost = Math.min(GRAPHQL_BUDGET__MAX, currentThrottleStatus.currentlyAvailable);
-  const maxEntries = Math.floor(maxCost / costOneEntry);
-  return Math.min(GRAPHQL_NODES_LIMIT, maxEntries);
+  const maxLimit = Math.floor(maxCost / costOneEntry);
+  return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
 }
 
-export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
-  defaultMaxEntriesPerRun: number,
+export async function getGraphQlSyncTableMaxLimitAndDeferWait(
+  defaultLimit: number,
   prevContinuation: SyncTableGraphQlContinuation,
   context: coda.ExecutionContext
 ) {
@@ -90,15 +89,15 @@ export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
   console.log('maximumAvailable', maximumAvailable);
   console.log('currentlyAvailable', currentlyAvailable);
 
-  let maxEntriesPerRun: number;
+  let limit: number;
   let shouldDeferBy = 0;
 
   if (previousLockAcquired) {
-    maxEntriesPerRun = calcSyncTableMaxEntriesPerRun(prevContinuation, throttleStatus, defaultMaxEntriesPerRun);
+    limit = calcSyncTableMaxLimit(prevContinuation, throttleStatus, defaultLimit);
   } else {
     const minPointsNeeded = maximumAvailable - 1;
     shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
-    maxEntriesPerRun = defaultMaxEntriesPerRun;
+    limit = defaultLimit;
 
     if (shouldDeferBy > 0) {
       logAdmin(
@@ -108,7 +107,7 @@ export async function getGraphQlSyncTableMaxEntriesAndDeferWait(
   }
 
   return {
-    maxEntriesPerRun,
+    limit,
     shouldDeferBy,
     throttleStatus,
   };
@@ -122,7 +121,8 @@ export async function skipGraphQlSyncTableRun<ContinuationT extends coda.Continu
   return {
     response: {
       data: [],
-      headers: {},
+      headers: null,
+      cost: null,
     },
     continuation: { ...prevContinuation, graphQlLock: 'false' },
   };

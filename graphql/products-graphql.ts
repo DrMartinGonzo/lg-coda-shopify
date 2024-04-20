@@ -103,7 +103,7 @@ export const getProductTypesQuery = graphql(
 const getProductsAdminQuery = graphql(
   `
     query getProductsWithMetafields(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $metafieldKeys: [String!]
       $countMetafields: Int
@@ -113,7 +113,7 @@ const getProductsAdminQuery = graphql(
       $includeFeaturedImage: Boolean!
       $includeMetafields: Boolean!
     ) {
-      products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+      products(first: $limit, after: $cursor, query: $searchQuery) {
         nodes {
           ...ProductFields
         }
@@ -130,13 +130,13 @@ const getProductsAdminQuery = graphql(
 //   ${MetafieldFieldsFragment}
 
 //   query getProductsMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     products(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     products(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 //         metafields(keys: $metafieldKeys, first: $countMetafields) {

@@ -7,6 +7,7 @@ import { OrderRow } from '../../schemas/CodaRows.types';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderForDocExport } from '../../utils/orders-utils';
 import { filters, inputs } from '../coda-parameters';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -68,7 +69,10 @@ export const Formula_Order = coda.makeFormula({
   schema: OrderSyncTableSchema,
   execute: async function ([orderId], context) {
     const order = await Order.find({ id: orderId, context });
-    return order.formatToRow();
+    if (order) {
+      return order.formatToRow();
+    }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.Order);
   },
 });
 
@@ -93,58 +97,21 @@ export const Formula_Orders = coda.makeFormula({
     [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
     context
   ) {
-    let items: Array<OrderRow> = [];
-    let nextPageQuery: any = {};
-    let run = true;
-
-    while (run) {
-      // FIXME: !!!!!!!
-      // TODO: do a helper function for this
-      let params: AllArgs = {
-        context,
-        limit: REST_DEFAULT_LIMIT,
-        options: { cacheTtlSecs: CACHE_DISABLED },
-      };
-
-      /**
-       * Because the request URL contains the page_info parameter, you can't add
-       * any other parameters to the request, except for limit. Including other
-       * parameters can cause the request to fail.
-       * @see https://shopify.dev/api/usage/pagination-rest
-       */
-      if ('page_info' in nextPageQuery) {
-        params = {
-          ...params,
-          ...nextPageQuery,
-        };
-      } else {
-        params = {
-          ...params,
-
-          fields,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          processed_at_min: processed_at ? processed_at[0] : undefined,
-          processed_at_max: processed_at ? processed_at[1] : undefined,
-          financial_status,
-          fulfillment_status,
-          status,
-
-          ...nextPageQuery,
-        };
-      }
-
-      const response = await Order.all(params);
-
-      items = items.concat(response.data.map((data) => data.formatToRow()));
-      nextPageQuery = response.pageInfo?.nextPage?.query ?? {};
-
-      if (Object.keys(nextPageQuery).length === 0) run = false;
-    }
-
-    return items;
+    const allDataLoopArgs: AllArgs = {
+      context,
+      fields,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      processed_at_min: processed_at ? processed_at[0] : undefined,
+      processed_at_max: processed_at ? processed_at[1] : undefined,
+      financial_status,
+      fulfillment_status,
+      status,
+    };
+    const items = await Order.allDataLoop<Order>(allDataLoopArgs);
+    return items.map((i) => i.formatToRow());
   },
 });
 

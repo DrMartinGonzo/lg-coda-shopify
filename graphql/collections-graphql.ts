@@ -63,7 +63,7 @@ const collectionFieldsFragmentAdmin = graphql(
 const collectionsAdminQuery = graphql(
   `
     query GetCollections(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $metafieldKeys: [String!]
       $countMetafields: Int
@@ -73,7 +73,7 @@ const collectionsAdminQuery = graphql(
       $includeSortOrder: Boolean!
       $includeRuleSet: Boolean!
     ) {
-      collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery) {
+      collections(first: $limit, after: $cursor, query: $searchQuery) {
         nodes {
           ...CollectionFields
         }
@@ -120,13 +120,13 @@ export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
   ${metafieldFieldsFragment}
 
   query getCollectionsMetafields(
-    $maxEntriesPerRun: Int!
+    $limit: Int!
     $cursor: String
     $metafieldKeys: [String!]
     $countMetafields: Int
     $searchQuery: String
   ) {
-    collections(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+    collections(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
       nodes {
         id
 

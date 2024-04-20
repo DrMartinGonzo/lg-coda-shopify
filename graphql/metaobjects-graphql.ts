@@ -34,13 +34,13 @@ export const getMetaObjectsWithFieldsQuery = graphql(
   `
     query GetMetaobjects(
       $type: String!
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $includeDefinition: Boolean!
       $includeCapabilities: Boolean!
       $includeFieldDefinitions: Boolean!
     ) {
-      metaobjects(type: $type, first: $maxEntriesPerRun, after: $cursor, reverse: true) {
+      metaobjects(type: $type, first: $limit, after: $cursor, reverse: true) {
         nodes {
           ...MetaobjectFragment
         }

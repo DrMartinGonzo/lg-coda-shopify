@@ -56,7 +56,7 @@ export const locationFragment = graphql(
 export const getLocationsQuery = graphql(
   `
     query GetLocations(
-      $maxEntriesPerRun: Int!
+      $limit: Int!
       $cursor: String
       $metafieldKeys: [String!]
       $countMetafields: Int
@@ -65,7 +65,7 @@ export const getLocationsQuery = graphql(
       $includeLocalPickupSettings: Boolean!
       $searchQuery: String
     ) {
-      locations(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID, includeInactive: true) {
+      locations(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID, includeInactive: true) {
         nodes {
           ...Location
         }
@@ -165,13 +165,13 @@ export const deactivateLocationMutation = graphql(
 //   ${MetafieldFieldsFragment}
 
 //   query getLocationsMetafields(
-//     $maxEntriesPerRun: Int!
+//     $limit: Int!
 //     $cursor: String
 //     $metafieldKeys: [String!]
 //     $countMetafields: Int
 //     $searchQuery: String
 //   ) {
-//     locations(first: $maxEntriesPerRun, after: $cursor, query: $searchQuery, sortKey: ID) {
+//     locations(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
 //       nodes {
 //         id
 
