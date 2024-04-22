@@ -257,7 +257,6 @@ describe.concurrent('Format Metafields Formula', () => {
     );
   });
 });
-});
 
 describe.concurrent('Customer', () => {
   test('Fetch', async () => {

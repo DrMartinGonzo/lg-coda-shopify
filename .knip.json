@@ -1,11 +1,23 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "pack.ts",
-    "test/pack_test.test.ts",
+    "pack.ts!",
+    "codegen.ts",
     "regen-constants-from-admin-types.ts",
-    "regen-interfaces-from-coda-schemas.ts"
+    "regen-interfaces-from-coda-schemas.ts",
+    "test/pack_test.test.ts"
   ],
-  "project": ["**/*.{js,ts}"],
-  "ignore": ["types/generated/**"]
+
+  "project": ["**/*.{js,ts}!", "test/**/*.{js,ts}", "_buildScripts/**/*.{js,ts}"],
+  "ignore": ["types/admin.types.ts", "types/graphql-env.d.ts"],
+
+  "graphql-codegen": {
+    "config": [
+      "codegen.{json,yml,yaml,js,ts,mjs,cts}",
+      ".codegenrc.{json,yml,yaml,js,ts}",
+      ".graphqlrc.ts",
+      "codegen.config.js",
+      "package.json"
+    ]
+  }
 }

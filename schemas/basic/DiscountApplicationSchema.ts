@@ -5,13 +5,10 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
   properties: {
     allocation_method: {
       type: coda.ValueType.String,
-      description:
-        'The method by which the discount application value has been allocated to entitled lines. Valid values\n:' +
-        [
-          '- across: The value is spread across all entitled lines.',
-          '- each: The value is applied onto every entitled line.',
-          '- one: The value is applied onto a single line.',
-        ].join('\n'),
+      description: `The method by which the discount application value has been allocated to entitled lines. Valid values:
+- across: The value is spread across all entitled lines.
+- each: The value is applied onto every entitled line.
+- one: The value is applied onto a single line.`,
     },
     amount: {
       ...PROPS.CURRENCY,
@@ -29,22 +26,16 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     },
     target_selection: {
       type: coda.ValueType.String,
-      description:
-        'The lines on the order, of the type defined by target_type, that the discount is allocated over. Valid values:\n' +
-        [
-          '- all: The discount is allocated onto all lines.',
-          '- entitled: The discount is allocated only onto lines it is entitled for.',
-          '- explicit: The discount is allocated onto explicitly selected lines.',
-        ].join('\n'),
+      description: `The lines on the order, of the type defined by target_type, that the discount is allocated over. Valid values:
+- all: The discount is allocated onto all lines.
+- entitled: The discount is allocated only onto lines it is entitled for.
+- explicit: The discount is allocated onto explicitly selected lines.`,
     },
     target_type: {
       type: coda.ValueType.String,
-      description:
-        'The type of line on the order that the discount is applicable on. Valid values:\n' +
-        [
-          '- line_item: The discount applies to line items.',
-          '- shipping_line: The discount applies to shipping lines.',
-        ].join('\n'),
+      description: `The type of line on the order that the discount is applicable on. Valid values:
+- line_item: The discount applies to line items.
+- shipping_line: The discount applies to shipping lines.`,
     },
     title: {
       type: coda.ValueType.String,
@@ -53,14 +44,11 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     },
     type: {
       type: coda.ValueType.String,
-      description:
-        'The discount application type. Valid values:\n' +
-        [
-          '- automatic: The discount was applied automatically, such as by a Buy X Get Y automatic discount.',
-          '- discount_code: The discount was applied by a discount code.',
-          '- manual: The discount was manually applied by the merchant (for example, by using an app or creating a draft order).',
-          '- script: The discount was applied by a Shopify Script.',
-        ].join('\n'),
+      description: `The discount application type. Valid values:
+- automatic: The discount was applied automatically, such as by a Buy X Get Y automatic discount.
+- discount_code: The discount was applied by a discount code.
+- manual: The discount was manually applied by the merchant (for example, by using an app or creating a draft order).
+- script: The discount was applied by a Shopify Script.`,
     },
     value: {
       type: coda.ValueType.Number,
@@ -69,12 +57,9 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     },
     value_type: {
       type: coda.ValueType.String,
-      description:
-        'The type of the value. Valid values:\n' +
-        [
-          '- fixed_amount: A fixed amount discount value in the currency of the order.',
-          '- percentage: A percentage discount value.',
-        ].join('\n'),
+      description: `The type of the value. Valid values:
+- fixed_amount: A fixed amount discount value in the currency of the order.
+- percentage: A percentage discount value.`,
     },
   },
   displayProperty: 'value_type',

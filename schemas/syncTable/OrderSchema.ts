@@ -120,16 +120,13 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'cancel_reason',
       fromKey: 'cancel_reason',
-      description:
-        'The reason why the order was canceled. Valid values:\n' +
-        [
-          '- Hide cancel_reason properties',
-          '- customer: The customer canceled the order.',
-          '- fraud: The order was fraudulent.',
-          '- inventory: Items in the order were not in inventory.',
-          '- declined: The payment was declined.',
-          '- other: A reason not in this list.',
-        ].join('\n'),
+      description: `The reason why the order was canceled. Valid values:
+- Hide cancel_reason properties
+- customer: The customer canceled the order.
+- fraud: The order was fraudulent.
+- inventory: Items in the order were not in inventory.
+- declined: The payment was declined.
+- other: A reason not in this list.`,
     },
     cancelled_at: {
       ...PROPS.DATETIME_STRING,
@@ -252,17 +249,14 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'financial_status',
       fromKey: 'financial_status',
-      description:
-        'The status of payments associated with the order. Can only be set when the order is created. Valid values:\n' +
-        [
-          '- pending: The payments are pending. Payment might fail in this state. Check again to confirm whether the payments have been paid successfully.',
-          '- authorized: The payments have been authorized.',
-          '- partially_paid: The order has been partially paid',
-          '- paid: The payments have been paid.',
-          '- partially_refunded: The payments have been partially refunded',
-          '- refunded: The payments have been refunded.',
-          '- voided: The payments have been voided.',
-        ].join('\n'),
+      description: `The status of payments associated with the order. Can only be set when the order is created. Valid values:
+- pending: The payments are pending. Payment might fail in this state. Check again to confirm whether the payments have been paid successfully.
+- authorized: The payments have been authorized.
+- partially_paid: The order has been partially paid
+- paid: The payments have been paid.
+- partially_refunded: The payments have been partially refunded
+- refunded: The payments have been refunded.
+- voided: The payments have been voided.`,
     },
     fulfillments: {
       type: coda.ValueType.Array,
@@ -274,14 +268,11 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'fulfillment_status',
       fromKey: 'fulfillment_status',
-      description:
-        "The order's status in terms of fulfilled line items. Valid values:\n" +
-        [
-          '- fulfilled: Every line item in the order has been fulfilled.',
-          '- null: None of the line items in the order have been fulfilled.',
-          '- partial: At least one line item in the order has been fulfilled.',
-          '- restocked: Every line item in the order has been restocked and the order canceled.',
-        ].join('\n'),
+      description: `The order's status in terms of fulfilled line items. Valid values:
+- fulfilled: Every line item in the order has been fulfilled.
+- null: None of the line items in the order have been fulfilled.
+- partial: At least one line item in the order has been fulfilled.
+- restocked: Every line item in the order has been restocked and the order canceled.`,
     },
     landing_site: {
       type: coda.ValueType.String,

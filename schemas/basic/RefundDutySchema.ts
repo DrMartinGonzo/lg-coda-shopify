@@ -13,12 +13,9 @@ export const RefundDutySchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'refund_type',
       fromKey: 'refund_type',
-      description:
-        'Specifies how you want the duty refunded.Valid values:\n' +
-        [
-          '- FULL: Refunds all the duties associated with a duty ID. You do not need to include refund line items if you are using the full refund type.',
-          '- PROPORTIONAL: Refunds duties in proportion to the line item quantity that you want to refund. If you choose the proportional refund type, then you must also pass the refund line items to calculate the portion of duties to refund.',
-        ].join('\n'),
+      description: `Specifies how you want the duty refunded.Valid values:
+- FULL: Refunds all the duties associated with a duty ID. You do not need to include refund line items if you are using the full refund type.
+- PROPORTIONAL: Refunds duties in proportion to the line item quantity that you want to refund. If you choose the proportional refund type, then you must also pass the refund line items to calculate the portion of duties to refund.`,
     },
   },
   displayProperty: 'duty_id',

@@ -84,34 +84,28 @@ export const FulfillmentSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'shipment_status',
       fromKey: 'shipment_status',
-      description:
-        'The current shipment status of the fulfillment. Valid values:\n' +
-        [
-          '- label_printed: A label for the shipment was purchased and printed.',
-          '- label_purchased: A label for the shipment was purchased, but not printed.',
-          '- attempted_delivery: Delivery of the shipment was attempted, but unable to be completed.',
-          '- ready_for_pickup: The shipment is ready for pickup at a shipping depot.',
-          "- confirmed: The carrier is aware of the shipment, but hasn't received it yet.",
-          '- in_transit: The shipment is being transported between shipping facilities on the way to its destination.',
-          '- out_for_delivery: The shipment is being delivered to its final destination.',
-          '- delivered: The shipment was succesfully delivered.',
-          '- failure: Something went wrong when pulling tracking information for the shipment, such as the tracking number was invalid or the shipment was canceled.',
-        ].join('\n'),
+      description: `The current shipment status of the fulfillment. Valid values:
+- label_printed: A label for the shipment was purchased and printed.
+- label_purchased: A label for the shipment was purchased, but not printed.
+- attempted_delivery: Delivery of the shipment was attempted, but unable to be completed.
+- ready_for_pickup: The shipment is ready for pickup at a shipping depot.
+- confirmed: The carrier is aware of the shipment, but hasn't received it yet.
+- in_transit: The shipment is being transported between shipping facilities on the way to its destination.
+- out_for_delivery: The shipment is being delivered to its final destination.
+- delivered: The shipment was succesfully delivered.
+- failure: Something went wrong when pulling tracking information for the shipment, such as the tracking number was invalid or the shipment was canceled.`,
     },
     status: {
       type: coda.ValueType.String,
       fixedId: 'status',
       fromKey: 'status',
-      description:
-        'The status of the fulfillment. Valid values:\n' +
-        [
-          "- pending: Shopify has created the fulfillment and is waiting for the third-party fulfillment service to transition it to 'open' or 'success'.",
-          '- open: The fulfillment has been acknowledged by the service and is in processing.',
-          '- success: The fulfillment was successful.',
-          '- cancelled: The fulfillment was cancelled.',
-          '- error: There was an error with the fulfillment request.',
-          '- failure: The fulfillment request failed.',
-        ].join('\n'),
+      description: `The status of the fulfillment. Valid values:
+- pending: Shopify has created the fulfillment and is waiting for the third-party fulfillment service to transition it to 'open' or 'success'.
+- open: The fulfillment has been acknowledged by the service and is in processing.
+- success: The fulfillment was successful.
+- cancelled: The fulfillment was cancelled.
+- error: There was an error with the fulfillment request.
+- failure: The fulfillment request failed.`,
     },
     tracking_company: {
       type: coda.ValueType.String,

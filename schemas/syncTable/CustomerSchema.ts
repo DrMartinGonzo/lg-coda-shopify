@@ -4,6 +4,7 @@ import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
 import { PACK_IDENTITIES } from '../../constants';
 import * as PROPS from '../../coda/coda-properties';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { addressPersonFirstNameProp, addressPersonLastNameProp, addressPhoneProp } from '../basic/AddressSchema';
 
 // #region Constants and Helpers
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
@@ -133,18 +134,14 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
     },
     */
     first_name: {
-      type: coda.ValueType.String,
+      ...addressPersonFirstNameProp,
       mutable: true,
-      fixedId: 'first_name',
-      fromKey: 'first_name',
       description: "The customer's first name.",
     },
     last_name: {
-      type: coda.ValueType.String,
+      ...addressPersonLastNameProp,
       mutable: true,
-      fixedId: 'last_name',
-      fromKey: 'last_name',
-      description: "The customer's first last.",
+      description: "The customer's last name.",
     },
     last_order_id: {
       ...PROPS.ID_NUMBER,
@@ -178,10 +175,8 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       description: 'The number of orders associated with the customer.',
     },
     phone: {
-      type: coda.ValueType.String,
+      ...addressPhoneProp,
       mutable: true,
-      fixedId: 'phone',
-      fromKey: 'phone',
       description:
         'The unique phone number (E.164 format) for this customer.\nAttempting to assign the same phone number to multiple customers returns an error. The property can be set using different formats, but each format must represent a number that can be dialed from anywhere in the world.',
     },
@@ -189,14 +184,11 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'state',
       fromKey: 'state',
-      description:
-        "The state of the customer's account with a shop. Default value: disabled. Valid values:\n" +
-        [
-          "- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.",
-          '- invited: The customer has received an email invite to create an account.',
-          '- enabled: The customer has created an account.',
-          '- declined: The customer declined the email invite to create an account.',
-        ].join('\n'),
+      description: `The state of the customer's account with a shop. Default value: disabled. Valid values:
+- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.
+- invited: The customer has received an email invite to create an account.
+- enabled: The customer has created an account.
+- declined: The customer declined the email invite to create an account.`,
     },
     tags: {
       ...PROPS.makeTagsProp('customer'),

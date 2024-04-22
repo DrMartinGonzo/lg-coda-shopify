@@ -20,8 +20,9 @@ export const OrderAdjustmentSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'kind',
       fromKey: 'kind',
-      description:
-        'The order adjustment type. Valid values:\n' + ['- shipping_refund', '- refund_discrepancy.'].join('\n'),
+      description: `The order adjustment type. Valid values:
+- shipping_refund
+- refund_discrepancy`,
     },
     reason: {
       type: coda.ValueType.String,

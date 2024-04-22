@@ -1,4 +1,4 @@
-import { GRAPHQL_DEFAULT_API_VERSION } from './config/config';
+import { GRAPHQL_DEFAULT_API_VERSION } from './config';
 
 export default {
   // global defaults for all projects

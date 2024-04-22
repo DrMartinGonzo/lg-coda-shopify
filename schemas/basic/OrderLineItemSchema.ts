@@ -57,9 +57,11 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'fulfillment_status',
       fromKey: 'fulfillment_status',
-      description:
-        'How far along an order is in terms of line items fulfilled. Valid values:\n' +
-        ['- null', '- fulfilled', '- partial', '- not_eligible.'].join('\n'),
+      description: `How far along an order is in terms of line items fulfilled. Valid values:
+- null
+- fulfilled
+- partial
+- not_eligible`,
     },
     grams: itemGramsProp,
     price: {

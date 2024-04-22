@@ -71,12 +71,9 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       ...PROPS.STRING,
       fixedId: 'published_scope',
       fromKey: 'published_scope',
-      description:
-        'Whether the product is published to the Point of Sale channel. Valid values:\n' +
-        [
-          "- web: The product isn't published to the Point of Sale channel.",
-          '- global: The product is published to the Point of Sale channel.',
-        ].join('\n'),
+      description: `Whether the product is published to the Point of Sale channel. Valid values:
+- web: The product isn't published to the Point of Sale channel.
+- global: The product is published to the Point of Sale channel.`,
     },
     status: {
       ...PROPS.SELECT_LIST,
