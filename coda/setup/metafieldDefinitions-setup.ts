@@ -6,7 +6,7 @@ import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { inputs } from '../coda-parameters';
-import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion

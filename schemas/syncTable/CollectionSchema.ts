@@ -1,11 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
-import { NOT_FOUND } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
+import { FieldDependency } from '../Schema.types';
 import { CollectionRuleSetSchema } from '../basic/CollectionRuleSetSchema';
 import { SmartCollectionRuleSchema } from '../basic/SmartCollectionRuleSchema';
-import { PACK_IDENTITIES } from '../../constants';
-
-import type { FieldDependency } from '../Schema.types';
-import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const CollectionSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -15,58 +14,22 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
     /**
      * Disabled
      */
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID of the collection.',
-    },
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the collection in the Shopify admin.',
-    },
-
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The ID for the collection.',
-    },
-
-    body: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Html,
-      fixedId: 'body',
-      description:
-        'Text-only description of the collection, stripped of any HTML tags and formatting that were included.',
-    },
-    body_html: {
-      type: coda.ValueType.String,
-      fixedId: 'body_html',
-      fromKey: 'body_html',
-      mutable: true,
-      description: 'The description of the collection, including any HTML tags and formatting.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('collection'),
+    admin_url: PROPS.makeAdminUrlProp('collection'),
+    id: PROPS.makeRequiredIdNumberProp('collection'),
+    body: PROPS.makeBodyProp('collection', 'description'),
+    body_html: { ...PROPS.makeBodyHtmlProp('collection', 'description'), mutable: true },
     handle: {
-      type: coda.ValueType.String,
+      ...PROPS.makeHandleProp('collection'),
       mutable: true,
-      fixedId: 'handle',
-      fromKey: 'handle',
-      description: 'A unique string that identifies the collection.',
     },
     // image: {
-    //   type: coda.ValueType.String,
-    //   codaType: coda.ValueHintType.ImageReference,
+    //   ...PROPS.IMAGE_REF,
     //   description: 'The image associated with the collection.',
     //   fixedId: 'image',
     // },
     image_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fixedId: 'image_url',
       mutable: true,
       description: 'The image associated with the collection.',
@@ -78,20 +41,10 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
       description: `Alternative text that describes the image associated with the collection.`,
     },
     published: {
-      type: coda.ValueType.Boolean,
-      codaType: coda.ValueHintType.Toggle,
+      ...PROPS.makePublishedProp('collection'),
       mutable: true,
-      fixedId: 'published',
-      fromKey: 'published',
-      description: 'Whether the collection is visible.',
     },
-    published_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'published_at',
-      fromKey: 'published_at',
-      description: 'The time and date when the collection was made visible',
-    },
+    published_at: PROPS.makePublishedAtProp('collection'),
     published_scope: {
       type: coda.ValueType.String,
       fixedId: 'published_scope',
@@ -121,30 +74,15 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
       description: 'The order in which products in the collection appear',
     },
     template_suffix: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
-      fixedId: 'template_suffix',
-      fromKey: 'template_suffix',
+      ...PROPS.makeTemplateSuffixProp('collection'),
       mutable: true,
-      requireForUpdates: false,
-      options: coda.OptionsType.Dynamic,
-      description: 'The suffix of the Liquid template being used to show the collection in an online store.',
     },
     title: {
-      type: coda.ValueType.String,
-      mutable: true,
+      ...PROPS.makeTitleProp('collection'),
       required: true,
-      fixedId: 'title',
-      fromKey: 'title',
-      description: 'The name of the collection.',
+      mutable: true,
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the collection was last modified.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('collection'),
   },
   displayProperty: 'title',
   idProperty: 'id',

@@ -20,13 +20,13 @@ import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import {
-  AbstractSyncedGraphQlResourceWithMetafields,
-  GraphQlApiDataWithMetafields,
-} from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractSyncedGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
+import { GraphQlApiDataWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { FromRow } from '../types/Resource.types';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
-import { BaseContext, GraphQlResourceNames, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 
@@ -267,7 +267,7 @@ export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
 
     let obj: LocationRow = {
       id: this.restId,
-      graphql_gid: this.graphQlGid,
+      admin_graphql_api_id: this.graphQlGid,
       active: data.isActive,
       admin_url: `${this.context.endpoint}/admin/settings/locations/${this.restId}`,
       stock_url: `${this.context.endpoint}/admin/products/inventory?location_id=${this.restId}`,

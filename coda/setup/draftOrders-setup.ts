@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { DraftOrder } from '../../Resources/Rest/DraftOrder';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';

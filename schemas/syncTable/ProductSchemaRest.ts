@@ -1,10 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
-import { PACK_IDENTITIES } from '../../constants';
-
-import type { FieldDependency } from '../Schema.types';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { FieldDependency } from '../Schema.types';
+
+const publishedAtProp = PROPS.makePublishedAtProp('product');
 
 export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
   properties: {
@@ -19,67 +19,22 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
      */
     /*
      */
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product in the Shopify admin.',
-      fixedId: 'admin_url',
-    },
-    storeUrl: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product in the online shop.',
-      fixedId: 'storeUrl',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fixedId: 'id',
-      fromKey: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'unique identifier for the product',
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fixedId: 'graphql_gid',
-      fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the product.',
-    },
-    body: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Html,
-      fixedId: 'body',
-      description:
-        'Text-only content of the description of the product, stripped of any HTML tags and formatting that were included.',
-    },
-    body_html: {
-      type: coda.ValueType.String,
-      description: 'The description of the product, complete with HTML markup.',
-      fixedId: 'body_html',
-      fromKey: 'body_html',
-      mutable: true,
-    },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the product was created.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('product'),
+    storeUrl: PROPS.makeStoreUrlProp('product'),
+    id: PROPS.makeRequiredIdNumberProp('product'),
+    graphql_gid: PROPS.makeGraphQlGidProp('product'),
+    body: PROPS.makeBodyProp('product', 'description'),
+    body_html: { ...PROPS.makeBodyHtmlProp('product', 'description'), mutable: true },
+    created_at: PROPS.makeCreatedAtProp('product'),
     handle: {
-      type: coda.ValueType.String,
-      fixedId: 'handle',
-      fromKey: 'handle',
+      ...PROPS.makeHandleProp('product'),
       mutable: true,
-      description:
-        "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
     },
     images: {
       type: coda.ValueType.Array,
       // items: ProductImageSchema,
       items: {
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Url,
+        ...PROPS.LINK,
         // codaType: coda.ValueHintType.ImageReference
       },
       fixedId: 'images',
@@ -87,20 +42,18 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       description: 'A list of product image urls.',
     },
     featuredImage: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fixedId: 'featuredImage',
       description: 'Featured image of the product.',
     },
     options: {
-      type: coda.ValueType.String,
+      ...PROPS.STRING,
       fixedId: 'options',
       fromKey: 'options',
       description: 'The custom product properties. Product variants are made of up combinations of option values.',
     },
     product_type: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'product_type',
       fromKey: 'product_type',
       mutable: true,
@@ -110,23 +63,23 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       description: 'A categorization for the product.',
     },
     published_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'published_at',
-      fromKey: 'published_at',
+      ...publishedAtProp,
       description:
-        "The date and time when the product was published. Use product status to unpublish the product by setting it to 'DRAFT'.",
+        publishedAtProp.description + "\nUse product status to unpublish the product by setting it to 'DRAFT'.",
     },
     published_scope: {
-      type: coda.ValueType.String,
+      ...PROPS.STRING,
       fixedId: 'published_scope',
       fromKey: 'published_scope',
       description:
-        "Whether the product is published to the Point of Sale channel. Valid values:\n- web: The product isn't published to the Point of Sale channel.\n- global: The product is published to the Point of Sale channel.",
+        'Whether the product is published to the Point of Sale channel. Valid values:\n' +
+        [
+          "- web: The product isn't published to the Point of Sale channel.",
+          '- global: The product is published to the Point of Sale channel.',
+        ].join('\n'),
     },
     status: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'status',
       fromKey: 'status',
       mutable: true,
@@ -135,41 +88,21 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       description: `The status of the product. Can be ${OPTIONS_PRODUCT_STATUS_REST.map((s) => s.display).join(', ')}`,
     },
     tags: {
-      type: coda.ValueType.String,
-      fixedId: 'tags',
-      fromKey: 'tags',
+      ...PROPS.makeTagsProp('product'),
       mutable: true,
-      description: 'A string of comma-separated tags that are used for filtering and search.',
     },
     template_suffix: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
-      fixedId: 'template_suffix',
-      fromKey: 'template_suffix',
+      ...PROPS.makeTemplateSuffixProp('product page'),
       mutable: true,
-      requireForUpdates: false,
-      options: coda.OptionsType.Dynamic,
-      description:
-        'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
     },
     title: {
-      type: coda.ValueType.String,
+      ...PROPS.makeTitleProp('product'),
       required: true,
-      fixedId: 'title',
-      fromKey: 'title',
       mutable: true,
-      description: 'The name of the product.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the product was last modified.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('product'),
     vendor: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'vendor',
       fromKey: 'vendor',
       mutable: true,

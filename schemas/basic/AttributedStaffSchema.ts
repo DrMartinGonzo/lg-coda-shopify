@@ -1,16 +1,12 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 /**====================================================================================================================
  *    Exported schemas
  *===================================================================================================================== */
 export const AttributedStaffSchema = coda.makeObjectSchema({
   properties: {
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fixedId: 'graphql_gid',
-      fromKey: 'id',
-      description: 'The ID of the staff member.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('staff member', 'id'),
     quantity: {
       type: coda.ValueType.Number,
       fixedId: 'quantity',

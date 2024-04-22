@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 // missing props from Rest TransactionSchema :
 // - device_id
@@ -8,14 +9,7 @@ import * as coda from '@codahq/packs-sdk';
 
 export const OrderTransactionSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The ID of the order transaction.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('order transaction'),
     label: {
       type: coda.ValueType.String,
       fromKey: 'label',
@@ -23,8 +17,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       required: true,
     },
     amount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fromKey: 'amount',
       fixedId: 'amount',
       description: 'The amount of the transaction in shop currency.',
@@ -35,8 +28,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       description: 'The three-letter code (ISO 4217 format) for the currency used for the payment.',
     },
     createdAt: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fromKey: 'createdAt',
       fixedId: 'createdAt',
       description: 'Date and time when the transaction was created.',
@@ -60,8 +52,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       description: 'The kind of transaction.',
     },
     parentTransactionId: {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
+      ...PROPS.ID_NUMBER,
       fromKey: 'parentTransactionId',
       fixedId: 'parentTransactionId',
       description: 'The associated parent transaction ID.',
@@ -73,8 +64,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       description: 'The payment ID associated with the transaction.',
     },
     processedAt: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fromKey: 'processedAt',
       fixedId: 'processedAt',
       description: 'Date and time when the transaction was processed.',
@@ -92,8 +82,7 @@ export const OrderTransactionSchema = coda.makeObjectSchema({
       description: 'Whether the transaction is a test transaction.',
     },
     totalUnsettled: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fromKey: 'totalUnsettled',
       fixedId: 'totalUnsettled',
       description:

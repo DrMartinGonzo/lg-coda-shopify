@@ -1,5 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 import * as accents from 'remove-accents';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
@@ -47,17 +48,17 @@ import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobject
 import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseConstructorArgs } from '../Abstract/Rest/AbstractRestResource';
+import { ResourceConstructorArgs } from '../types/Resource.types';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { METAFIELD_TYPES, MetafieldType } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
-import { GraphQlResourceNames } from '../types/Resource.types';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { MetaobjectDefinition } from './MetaobjectDefinition';
 
 // #endregion
 
 // #region Types
-interface MetaobjectConstructorArgs extends BaseConstructorArgs {
+interface MetaobjectConstructorArgs extends ResourceConstructorArgs {
   fromRow?: FromMetaobjectRow;
 }
 
@@ -143,8 +144,7 @@ export class Metaobject extends AbstractSyncedGraphQlResource {
 
     if (isPublishable) {
       augmentedSchema.properties['status'] = {
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.SelectList,
+        ...PROPS.SELECT_LIST,
         fixedId: 'status',
         description: `The status of the metaobject`,
         mutable: true,

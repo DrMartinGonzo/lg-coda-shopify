@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { UnsupportedValueError } from '../../Errors/Errors';
 import { SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
-import { RestResourcesSingular } from '../types/Resource.types';
+import { RestResourcesSingular } from '../types/SupportedResource';
 import { ArticleReference, formatArticleReference } from '../../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { CollectionReference, formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
@@ -19,7 +19,7 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 // #endregion
 
 // #region Types
-export type OwnerReference = coda.GenericObjectSchema & coda.ObjectSchemaProperty;
+type OwnerReference = coda.GenericObjectSchema & coda.ObjectSchemaProperty;
 // #endregion
 
 export class SupportedMetafieldSyncTable {

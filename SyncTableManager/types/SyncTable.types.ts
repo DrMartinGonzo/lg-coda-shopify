@@ -8,12 +8,20 @@ import { Stringified } from '../../types/utilities';
 
 // #endregion
 
+export type SyncTableDefinition =
+  | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
+  | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>;
+
 /** Helper type to extract the parameter values from a SyncTableDef. */
 export type SyncTableParamValues<
   T extends
     | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
     | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
 > = coda.ParamValues<T['getter']['parameters']>;
+
+export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = SyncTableDefT extends never
+  ? coda.ParamValues<coda.ParamDefs>
+  : SyncTableParamValues<SyncTableDefT>;
 
 export interface SyncTableSyncResult {
   result: Array<any>;

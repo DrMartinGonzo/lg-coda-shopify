@@ -2,14 +2,14 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { Location } from '../../Resources/GraphQl/Location';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion

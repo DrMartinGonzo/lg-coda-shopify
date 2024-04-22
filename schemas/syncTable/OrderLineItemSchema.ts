@@ -1,18 +1,17 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { ProductVariantReference } from './ProductVariantSchema';
-import { OrderReference } from './OrderSchema';
-import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
+import * as PROPS from '../../coda/coda-properties';
 import { PACK_IDENTITIES } from '../../constants';
+import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
+import { OrderReference } from './OrderSchema';
+import { ProductVariantReference } from './ProductVariantSchema';
 
 export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
     ...OrderLineItemBasicSchema.properties,
     order_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fromKey: 'order_id',
       fixedId: 'order_id',
-      useThousandsSeparator: false,
       description: 'The associated order ID.',
     },
     order: {
@@ -26,12 +25,7 @@ export const OrderLineItemSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'variant',
       description: 'The product variant',
     },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID for the Line Item.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('order line item'),
   },
   displayProperty: 'name',
   idProperty: 'id',

@@ -1,27 +1,15 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const RedirectSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the redirect in the Shopify admin.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('redirect'),
     test_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'test_url',
       description: 'A link to test the redirect. Uses the value in `path` and should land you in `target`.',
     },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The ID for the redirect.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('redirect'),
     path: {
       type: coda.ValueType.String,
       fixedId: 'path',

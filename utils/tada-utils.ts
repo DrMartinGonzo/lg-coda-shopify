@@ -1,6 +1,6 @@
 // #region Imports
 import { FragmentOf, initGraphQLTada, readFragment } from 'gql.tada';
-import type { introspection } from '../types/graphql-env.js';
+import { introspection } from '../types/graphql-env.js';
 
 // #endregion
 

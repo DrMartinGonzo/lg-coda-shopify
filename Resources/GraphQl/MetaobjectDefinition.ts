@@ -15,7 +15,7 @@ import {
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { GraphQlResourceNames } from '../types/Resource.types';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 
 // #endregion
 

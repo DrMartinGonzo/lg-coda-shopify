@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/Metafield.types';
 import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
@@ -12,7 +12,7 @@ import { Blog } from '../../Resources/Rest/Blog';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { Page } from '../../Resources/Rest/Page';
 import { Shop } from '../../Resources/Rest/Shop';
-import { GraphQlResourceName, GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { GraphQlResourceName, GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';

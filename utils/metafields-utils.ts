@@ -17,7 +17,7 @@ import {
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesSingular,
-} from '../Resources/types/Resource.types';
+} from '../Resources/types/SupportedResource';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';

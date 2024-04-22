@@ -111,7 +111,8 @@ export const Formula_Orders = coda.makeFormula({
       status,
     };
     const items = await Order.allDataLoop<Order>(allDataLoopArgs);
-    return items.map((i) => i.formatToRow());
+    const croute = items.map((i) => i.formatToRow());
+    return items.map((i) => i.formatToRow()) as any[];
   },
 });
 

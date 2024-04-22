@@ -1,33 +1,36 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { ProductReference } from './ProductSchemaRest';
-import { NOT_FOUND } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { getUnitMap } from '../../utils/helpers';
-import { PACK_IDENTITIES } from '../../constants';
-
-import type { FieldDependency } from '../Schema.types';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { FieldDependency } from '../Schema.types';
+import { ProductReference } from './ProductSchemaRest';
+
+const titleProp = PROPS.makeTitleProp('product variant');
+export const itemGramsProp = {
+  ...PROPS.NUMBER,
+  fixedId: 'grams',
+  fromKey: 'grams',
+  description: 'The weight of the item in grams.',
+};
+export const itemSkuProp = {
+  ...PROPS.STRING,
+  fixedId: 'sku',
+  fromKey: 'sku',
+  description: 'A unique identifier for the item in the shop. Required in order to connect to a FulfillmentService.',
+};
+export const itemTaxableProp = {
+  ...PROPS.BOOLEAN,
+  fixedId: 'taxable',
+  fromKey: 'taxable',
+  description: 'Whether a tax is charged when the item is sold.',
+};
 
 export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product variant in the Shopify admin.',
-      fixedId: 'admin_url',
-    },
-    storeUrl: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product variant in the online shop.',
-      fixedId: 'storeUrl',
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the product variant.',
-      fixedId: 'graphql_gid',
-    },
+    admin_url: PROPS.makeAdminUrlProp('product variant'),
+    storeUrl: PROPS.makeStoreUrlProp('product variant'),
+    graphql_gid: PROPS.makeGraphQlGidProp('product variant'),
     barcode: {
       type: coda.ValueType.String,
       description: 'The barcode, UPC, or ISBN number for the product.',
@@ -36,47 +39,25 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
     },
     compare_at_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'compare_at_price',
       fromKey: 'compare_at_price',
       mutable: true,
       description: 'The original price of the item before an adjustment or a sale.',
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the product variant was created.',
-    },
-    grams: {
-      type: coda.ValueType.Number,
-      fixedId: 'grams',
-      fromKey: 'grams',
-      description: 'The weight of the product variant in grams.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fixedId: 'id',
-      fromKey: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The unique numeric identifier for the product variant.',
-    },
+    created_at: PROPS.makeCreatedAtProp('product variant'),
+    grams: itemGramsProp,
+    id: PROPS.makeRequiredIdNumberProp('product variant'),
     image: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fixedId: 'image',
       description: 'The image of the product variant.',
     },
     inventory_item_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'inventory_item_id',
       fromKey: 'inventory_item_id',
-      useThousandsSeparator: false,
-      description:
-        'The unique identifier for the inventory item, which is used in the Inventory API to query for inventory information.',
+      description: 'The ID of the inventory item associated with the product variant.',
     },
     inventory_management: {
       type: coda.ValueType.String,
@@ -132,8 +113,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
     },
     */
     price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'price',
       fromKey: 'price',
       mutable: true,
@@ -148,21 +128,8 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
         'The order of the product variant in the list of product variants. The first position in the list is 1. The position of variants is indicated by the order in which they are listed.',
     },
     product: { ...ProductReference, fixedId: 'product', description: 'The product this variant belongs to.' },
-    sku: {
-      type: coda.ValueType.String,
-      fixedId: 'sku',
-      fromKey: 'sku',
-      mutable: true,
-      description:
-        'A unique identifier for the product variant in the shop. Required in order to connect to a FulfillmentService.',
-    },
-    taxable: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'taxable',
-      fromKey: 'taxable',
-      mutable: true,
-      description: 'Whether a tax is charged when the product variant is sold.',
-    },
+    sku: { ...itemSkuProp, mutable: true },
+    taxable: { ...itemTaxableProp, mutable: true },
     tax_code: {
       type: coda.ValueType.String,
       fixedId: 'tax_code',
@@ -171,12 +138,11 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
         'This parameter applies only to the stores that have the Avalara AvaTax app installed. Specifies the Avalara tax code for the product variant.',
     },
     title: {
-      type: coda.ValueType.String,
-      fixedId: 'title',
-      fromKey: 'title',
+      ...titleProp,
       required: true,
       description:
-        'The title of the product variant. The title field is a concatenation of the option1, option2, and option3 fields. You can only update title indirectly using the option fields.',
+        titleProp.description +
+        ' The title field is a concatenation of the option1, option2, and option3 fields. You can only update title indirectly using the option fields.',
     },
     displayTitle: {
       type: coda.ValueType.String,
@@ -184,13 +150,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       description:
         'A generated title for the product variant, composed of the product title followed by the actual title of the product variant.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the product variant was last modified.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('product variant'),
     weight: {
       type: coda.ValueType.Number,
       fixedId: 'weight',
@@ -199,8 +159,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       description: 'The weight of the product variant in the unit system specified with weight_unit.',
     },
     weight_unit: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'weight_unit',
       fromKey: 'weight_unit',
       mutable: true,

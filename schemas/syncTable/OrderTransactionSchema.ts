@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-
+import * as PROPS from '../../coda/coda-properties';
 import { OrderReference } from './OrderSchema';
 import { NOT_FOUND } from '../../constants';
 import { OrderTransactionSchema } from '../basic/OrderTransactionSchema';
@@ -24,8 +24,7 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
       description: 'Authorization code associated with the transaction.',
     },
     authorizationExpiresAt: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fromKey: 'authorizationExpiresAt',
       fixedId: 'authorizationExpiresAt',
       description:
@@ -38,10 +37,9 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
       description: 'A relation to the associated order.',
     },
     orderId: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fromKey: 'orderId',
       fixedId: 'orderId',
-      useThousandsSeparator: false,
       description: 'The associated order ID.',
     },
     parentTransaction: coda.makeReferenceSchemaFromObjectSchema(
@@ -55,8 +53,7 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
       description: 'Payment details related to a transaction.',
     },
     paymentIcon: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fromKey: 'paymentIcon',
       fixedId: 'paymentIcon',
       description: 'The payment icon to display for the transaction.',
@@ -96,10 +93,9 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
      */
     /*
     userId: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fromKey: 'userId',
       fixedId: 'userId',
-      useThousandsSeparator: false,
       description:
         'The ID for the user who was logged into the Shopify POS device when the order was processed, if applicable.',
     },

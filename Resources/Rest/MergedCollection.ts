@@ -11,10 +11,11 @@ import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSch
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { FromRow } from '../types/Resource.types';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion

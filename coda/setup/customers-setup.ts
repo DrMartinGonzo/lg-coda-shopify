@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { Customer } from '../../Resources/Rest/Customer';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
@@ -199,7 +199,7 @@ export const Action_UpdateCustomer = coda.makeFormula({
 
     const updatedCustomer = new Customer({ context, fromRow });
     await updatedCustomer.saveAndUpdate();
-    return updatedCustomer.formatToRow();
+    return updatedCustomer.formatToRow() as any;
   },
 });
 
@@ -229,7 +229,7 @@ export const Formula_Customer = coda.makeFormula({
   execute: async ([customerId], context) => {
     const customer = await Customer.find({ id: customerId, context });
     if (customer) {
-      return customer.formatToRow();
+      return customer.formatToRow() as any;
     }
     throw new NotFoundVisibleError(PACK_IDENTITIES.Customer);
   },

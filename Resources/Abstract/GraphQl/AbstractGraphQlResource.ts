@@ -8,10 +8,15 @@ import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlCli
 import { ShopifyGraphQlRequestCost } from '../../../Errors/GraphQlErrors';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DEFAULT } from '../../../constants';
+import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
 import { PageInfo as PageInfoGraphQl } from '../../../types/admin.types';
 import { graphQlGidToId } from '../../../utils/conversion-utils';
 import { flattenConnection } from '../../../utils/helpers';
-import { BaseContext, GraphQlResourceName } from '../../types/Resource.types';
+import { FragmentOf } from '../../../utils/tada-utils';
+import { Metafield } from '../../Rest/Metafield';
+import { BaseContext } from '../../types/Resource.types';
+import { Node } from '../../../graphql/types/graphql.types.';
+import { GraphQlResourceName } from '../../types/SupportedResource';
 import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 
 // #endregion
@@ -19,9 +24,16 @@ import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 // #region Types
 export type GraphQlResourcePath = string;
 
-export interface GraphQlApiData {
+interface GraphQlApiData {
   id: string | null;
   [key: string]: any;
+}
+export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
+  metafields: { nodes: Array<FragmentOf<typeof metafieldFieldsFragment>> };
+  restMetafieldInstances?: Array<Metafield>;
+}
+export interface GraphQlApiDataWithParentNode extends GraphQlApiData {
+  parentNode: Node;
 }
 
 export interface FindAllGraphQlResponse<T> extends FindAllResponseBase<T> {

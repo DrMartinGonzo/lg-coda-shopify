@@ -1,32 +1,16 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { PACK_IDENTITIES, NOT_FOUND } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { ValidationSchema } from '../basic/ValidationSchema';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { ValidationSchema } from '../basic/ValidationSchema';
 
 export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the metafield in the Shopify admin.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      required: true,
-      useThousandsSeparator: false,
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fixedId: 'graphql_gid',
-      fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the metafield definition.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('metafield definition'),
+    id: PROPS.makeRequiredIdNumberProp('metafield definition'),
+    graphql_gid: PROPS.makeGraphQlGidProp('metafield definition'),
     description: {
       type: coda.ValueType.String,
       fixedId: 'description',
@@ -76,8 +60,7 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
       description: 'The validation status for the metafields that belong to the metafield definition.',
     },
     validationStatus: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fromKey: 'validationStatus',
       fixedId: 'validationStatus',
       description: 'The validation status for the metafields that belong to the metafield definition.',

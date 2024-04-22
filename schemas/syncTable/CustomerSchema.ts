@@ -2,8 +2,10 @@ import * as coda from '@codahq/packs-sdk';
 import { NOT_FOUND } from '../../constants';
 import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
 import { PACK_IDENTITIES } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 
+// #region Constants and Helpers
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
 const CONSENT_STATE__NOT_SUBSCRIBED = { display: 'Not subscribed', value: 'not_subscribed' };
 export const CONSENT_STATE__UNSUBSCRIBED = { display: 'Unsubscribed', value: 'unsubscribed' };
@@ -45,28 +47,26 @@ const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.filter(
     option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value
 );
 
+export const customerTaxExemptionsProp = {
+  type: coda.ValueType.Array,
+  items: PROPS.STRING,
+  fixedId: 'tax_exemptions',
+  fromKey: 'tax_exemptions',
+  description: 'Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.',
+} as coda.ArraySchema<typeof PROPS.STRING> & coda.ObjectSchemaProperty;
+export const customerTaxExemptProp = {
+  ...PROPS.BOOLEAN,
+  fixedId: 'tax_exempt',
+  fromKey: 'tax_exempt',
+  description: 'Whether the customer is exempt from paying taxes on their order.',
+};
+// #endregion
+
 export const CustomerSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the customer in the Shopify admin.',
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID of the customer.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      required: true,
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description: 'A unique identifier for the customer.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('customer'),
+    graphql_gid: PROPS.makeGraphQlGidProp('customer'),
+    id: PROPS.makeRequiredIdNumberProp('customer'),
     // @See formatCustomer function
     display: {
       type: coda.ValueType.String,
@@ -81,13 +81,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'addresses',
       description: 'A list of the ten most recently updated addresses for the customer.',
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the customer was created.',
-    },
+    created_at: PROPS.makeCreatedAtProp('customer'),
     default_address: {
       ...CustomerAddressSchema,
       fixedId: 'default_address',
@@ -95,8 +89,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       description: 'The default address for the customer.',
     },
     email: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Email,
+      ...PROPS.EMAIL,
       mutable: true,
       fixedId: 'email',
       fromKey: 'email',
@@ -119,8 +112,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
     // Disabled for now, prefer to use simple checkboxes
     /*
     email_marketing_consent: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       description:
         'The marketing consent information when the customer consented to receiving marketing material by email.',
       fixedId: 'email_marketing_consent',
@@ -132,8 +124,7 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
     /*
     sms_marketing_consent: {
       // ...SmsMarketingConsentSchema,
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       description:
         'The marketing consent information when the customer consented to receiving marketing material by SMS. The customer must have a unique phone number associated to the record to be able to update.',
       fixedId: 'sms_marketing_consent',
@@ -156,10 +147,9 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       description: "The customer's first last.",
     },
     last_order_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'last_order_id',
       fromKey: 'last_order_id',
-      useThousandsSeparator: false,
       description: 'The ID of the customer’s last order.',
     },
     last_order_name: {
@@ -200,43 +190,27 @@ export const CustomerSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'state',
       fromKey: 'state',
       description:
-        "The state of the customer's account with a shop. Default value: disabled. Valid values:\n- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.\n- invited: The customer has received an email invite to create an account.\n- enabled: The customer has created an account.\n- declined: The customer declined the email invite to create an account.",
+        "The state of the customer's account with a shop. Default value: disabled. Valid values:\n" +
+        [
+          "- disabled: The customer doesn't have an active account. Customer accounts can be disabled from the Shopify admin at any time.",
+          '- invited: The customer has received an email invite to create an account.',
+          '- enabled: The customer has created an account.',
+          '- declined: The customer declined the email invite to create an account.',
+        ].join('\n'),
     },
     tags: {
-      type: coda.ValueType.String,
+      ...PROPS.makeTagsProp('customer'),
       mutable: true,
-      fixedId: 'tags',
-      fromKey: 'tags',
-      description:
-        'Tags that the shop owner has attached to the customer, formatted as a string of comma-separated values.\nA customer can have up to 250 tags. Each tag can have up to 255 characters.',
     },
-    tax_exempt: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'tax_exempt',
-      fromKey: 'tax_exempt',
-      description: 'Whether the customer is exempt from paying taxes on their order.',
-    },
-    tax_exemptions: {
-      type: coda.ValueType.Array,
-      items: { type: coda.ValueType.String },
-      fixedId: 'tax_exemptions',
-      fromKey: 'tax_exemptions',
-      description: 'Whether the customer is exempt from paying specific taxes on their order. Canadian taxes only.',
-    },
+    tax_exempt: customerTaxExemptProp,
+    tax_exemptions: customerTaxExemptionsProp,
     total_spent: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_spent',
       fromKey: 'total_spent',
       description: 'The total amount of money that the customer has spent across their order history.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the customer information was last updated.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('customer'),
     verified_email: {
       type: coda.ValueType.Boolean,
       fixedId: 'verified_email',

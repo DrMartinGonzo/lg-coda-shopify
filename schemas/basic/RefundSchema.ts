@@ -1,32 +1,17 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { DutySchema } from './DutySchema';
+import * as PROPS from '../../coda/coda-properties';
 import { OrderAdjustmentSchema } from './OrderAdjustmentSchema';
+import { orderLineItemDutiesProp } from './OrderLineItemSchema';
+import { OrderTransactionSchema } from './OrderTransactionSchema';
 import { RefundDutySchema } from './RefundDutySchema';
 import { RefundLineItemSchema } from './RefundLineItemSchema';
-import { OrderTransactionSchema } from './OrderTransactionSchema';
 
 export const RefundSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description: 'The unique identifier for the refund.',
-    },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the refund was created.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('refund'),
+    created_at: PROPS.makeCreatedAtProp('refund'),
     duties: {
-      type: coda.ValueType.Array,
-      items: DutySchema,
-      fixedId: 'duties',
-      fromKey: 'duties',
+      ...orderLineItemDutiesProp,
       description: 'A list of duties that have been reimbursed as part of the refund.',
     },
     note: {
@@ -44,8 +29,7 @@ export const RefundSchema = coda.makeObjectSchema({
         'A list of order adjustments attached to the refund. Order adjustments are generated to account for refunded shipping costs and differences between calculated and actual refund amounts.',
     },
     processed_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'processed_at',
       fromKey: 'processed_at',
       description: 'The date and time when the refund was imported.',
@@ -73,10 +57,9 @@ export const RefundSchema = coda.makeObjectSchema({
         'A list of transactions involved in the refund. A single order can have multiple transactions associated with it.',
     },
     user_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'user_id',
       fromKey: 'user_id',
-      useThousandsSeparator: false,
       description: 'The unique identifier of the user who performed the refund.',
     },
   },

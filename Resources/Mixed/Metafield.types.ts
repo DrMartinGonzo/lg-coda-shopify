@@ -73,12 +73,6 @@ export const METAFIELD_LEGACY_TYPES = {
   json_string: 'json_string',
 } as const;
 
-// these are simple strings, not using Coda relation type columns
-export const METAFIELD_TYPES_RAW_REFERENCE = [
-  METAFIELD_TYPES.mixed_reference,
-  METAFIELD_TYPES.list_mixed_reference,
-] as const;
-
 /** All supported modern `metafield.type`s */
 export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPES];
 

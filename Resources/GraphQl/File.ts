@@ -27,7 +27,7 @@ import {
 import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
 
 // #endregion
 

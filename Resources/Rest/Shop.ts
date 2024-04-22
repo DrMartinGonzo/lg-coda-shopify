@@ -10,11 +10,12 @@ import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion

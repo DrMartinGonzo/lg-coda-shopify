@@ -1,60 +1,114 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { NOT_FOUND } from '../../constants';
-import { CustomerReference } from './CustomerSchema';
-import { NameValueSchema } from '../basic/NameValueSchema';
-import { TaxLineSchema } from '../basic/TaxLineSchema';
-import { FulfillmentSchema } from '../basic/FulfillmentSchema';
-import { OrderLineItemSchema } from '../basic/OrderLineItemSchema';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
+import { FieldDependency } from '../Schema.types';
 import { AddressSchema } from '../basic/AddressSchema';
 import { CompanySchema } from '../basic/CompanySchema';
 import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
 import { DiscountCodeSchema } from '../basic/DiscountCodeSchema';
-import { ShippingLineSchema } from '../basic/ShippingLineSchema';
+import { FulfillmentSchema } from '../basic/FulfillmentSchema';
+import { NameValueSchema } from '../basic/NameValueSchema';
+import { OrderLineItemSchema } from '../basic/OrderLineItemSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
-import { PACK_IDENTITIES } from '../../constants';
+import { ShippingLineSchema } from '../basic/ShippingLineSchema';
+import { CustomerReference } from './CustomerSchema';
+import { orderLineItemTaxLinesProp } from '../basic/OrderLineItemSchema';
 
-import type { FieldDependency } from '../Schema.types';
-import { FormatRowReferenceFn } from '../CodaRows.types';
+// #region helpers
+export function orderCurrentPriceDescription(name: string) {
+  return `The current ${name} of the order in the shop currency. The value of this field reflects order edits, returns, and refunds.`;
+}
+function orderPriceDescription(name: string, extra = '') {
+  return `The ${name} of the order${extra} in shop currency.`;
+}
+
+export const orderBillingAddressProp = {
+  ...AddressSchema,
+  fixedId: 'billing_address',
+  fromKey: 'billing_address',
+  description:
+    "The mailing address associated with the payment method. This address is an optional field that won't be available on orders that do not require a payment method.",
+};
+export const orderShippingAddressProp = {
+  ...AddressSchema,
+  fixedId: 'shipping_address',
+  fromKey: 'shipping_address',
+  description:
+    'The mailing address to where the order will be shipped. This address is optional and will not be available on orders that do not require shipping.',
+};
+export const orderCurrencyProp = {
+  ...PROPS.STRING,
+  fixedId: 'currency',
+  fromKey: 'currency',
+  description: 'The three-letter code (ISO 4217 format) for the shop currency.',
+};
+export const orderCustomerProp = {
+  ...CustomerReference,
+  fixedId: 'customer',
+  fromKey: 'customer',
+  description:
+    'A relation to the customer. The order might not have a customer and apps should not depend on the existence of a customer object. This value might be null if the order was created through Shopify POS.',
+};
+export const orderEmailProp = {
+  ...PROPS.EMAIL,
+  fixedId: 'email',
+  fromKey: 'email',
+  description: "The customer's email address.",
+};
+export const orderLineItemsProp = {
+  type: coda.ValueType.Array,
+  items: OrderLineItemSchema,
+  fixedId: 'line_items',
+  fromKey: 'line_items',
+  description: 'A list of line item objects, each containing information about an item in the order.',
+} as coda.ArraySchema<typeof OrderLineItemSchema> & coda.ObjectSchemaProperty;
+export const orderNoteAttributesProp = {
+  type: coda.ValueType.Array,
+  items: NameValueSchema,
+  fixedId: 'note_attributes',
+  fromKey: 'note_attributes',
+  description:
+    'Extra information that is added to the order. Appears in the Additional details section of an order details page. Each array entry must contain a hash with name and value keys.',
+} as coda.ArraySchema<typeof NameValueSchema> & coda.ObjectSchemaProperty;
+export const orderNoteProp = {
+  ...PROPS.STRING,
+  fixedId: 'note',
+  fromKey: 'note',
+  description: 'An optional note that a shop owner can attach to the order.',
+};
+export const orderPaymentTermsProp = {
+  ...PaymentTermsSchema,
+  fixedId: 'payment_terms',
+  fromKey: 'payment_terms',
+  description: 'The terms and conditions under which a payment should be processed.',
+};
+export const orderTagsProp = {
+  ...PROPS.makeTagsProp('order'),
+  description:
+    'Tags attached to the order, formatted as a string of comma-separated values. Each individual tag is limited to 40 characters in length.',
+};
+export const orderTaxesIncludedProp = {
+  ...PROPS.BOOLEAN,
+  fixedId: 'taxes_included',
+  fromKey: 'taxes_included',
+  description: 'Whether taxes are included in the order subtotal.',
+};
+// #endregion
 
 export const OrderSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the order in the Shopify admin.',
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID of the order.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      required: true,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description:
-        'The ID of the order, used for API purposes. This is different from the order_number property, which is the ID used by the shop owner and customer.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('order'),
+    graphql_gid: PROPS.makeGraphQlGidProp('order'),
+    id: PROPS.makeRequiredIdNumberProp('order'),
     app_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'app_id',
       fromKey: 'app_id',
-      useThousandsSeparator: false,
       description: 'The ID of the app that created the order.',
     },
-    billing_address: {
-      ...AddressSchema,
-      fixedId: 'billing_address',
-      fromKey: 'billing_address',
-      description:
-        "The mailing address associated with the payment method. This address is an optional field that won't be available on orders that do not require a payment method.",
-    },
+    billing_address: orderBillingAddressProp,
     buyer_accepts_marketing: {
       type: coda.ValueType.Boolean,
       fixedId: 'buyer_accepts_marketing',
@@ -67,11 +121,18 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'cancel_reason',
       fromKey: 'cancel_reason',
       description:
-        'The reason why the order was canceled. Valid values:\n- Hide cancel_reason properties\n- customer: The customer canceled the order.\n- fraud: The order was fraudulent.\n- inventory: Items in the order were not in inventory.\n- declined: The payment was declined.\n- other: A reason not in this list.',
+        'The reason why the order was canceled. Valid values:\n' +
+        [
+          '- Hide cancel_reason properties',
+          '- customer: The customer canceled the order.',
+          '- fraud: The order was fraudulent.',
+          '- inventory: Items in the order were not in inventory.',
+          '- declined: The payment was declined.',
+          '- other: A reason not in this list.',
+        ].join('\n'),
     },
     cancelled_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'cancelled_at',
       fromKey: 'cancelled_at',
       description: "The date and time when the order was canceled. Returns null if the order isn't canceled.",
@@ -102,8 +163,7 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       description: 'The languages and locales that the browser understands.',
     },
     closed_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'closed_at',
       fromKey: 'closed_at',
       description: "The date and time when the order was closed. Returns null if the order isn't closed.",
@@ -122,126 +182,44 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       description:
         "A randomly generated alpha-numeric identifier for the order that may be shown to the customer instead of the sequential order name. This value isn't guaranteed to be unique.",
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The autogenerated date and time when the order was created in Shopify. ',
-    },
-    currency: {
-      type: coda.ValueType.String,
-      fixedId: 'currency',
-      fromKey: 'currency',
-      description: 'The three-letter code (ISO 4217 format) for the shop currency.',
-    },
+    created_at: PROPS.makeCreatedAtProp('order'),
+    currency: orderCurrencyProp,
     current_total_additional_fees: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_total_additional_fees',
-      description:
-        'The current total additional fees on the order in shop currency. The amount values associated with this field reflect order edits, returns, and refunds.',
+      description: orderCurrentPriceDescription('total additional fees'),
     },
-    /*
-    current_total_additional_fees_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_total_additional_fees_set',
-      fromKey: 'current_total_additional_fees_set',
-      description:
-        'The current total additional fees on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.',
-    },
-    */
     current_total_discounts: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_total_discounts',
       fromKey: 'current_total_discounts',
-      description:
-        'The current total discounts on the order in the shop currency. The value of this field reflects order edits, returns, and refunds.',
+      description: orderCurrentPriceDescription('total discounts'),
     },
-    /*
-    current_total_discounts_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_total_discounts_set',
-      fromKey: 'current_total_discounts_set',
-      description:
-        'The current total discounts on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.',
-    },
-    */
     current_total_duties: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_total_duties',
-      description:
-        'The current total duties charged on the order in shop currency. The amount values associated with this field reflect order edits, returns, and refunds.',
+      description: orderCurrentPriceDescription('total duties'),
     },
-    /*
-    current_total_duties_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_total_duties_set',
-      fromKey: 'current_total_duties_set',
-      description:
-        'The current total duties charged on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.',
-    },
-    */
     current_total_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_total_price',
       fromKey: 'current_total_price',
-      description:
-        'The current total price of the order in the shop currency. The value of this field reflects order edits, returns, and refunds.',
+      description: orderCurrentPriceDescription('total price'),
     },
-    /*
-    current_total_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_total_price_set',
-      fromKey: 'current_total_price_set',
-      description:
-        'The current total price of the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds',
-    },
-    */
+
     current_subtotal_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_subtotal_price',
       fromKey: 'current_subtotal_price',
-      description:
-        'The current subtotal price of the order in the shop currency. The value of this field reflects order edits, returns, and refunds.',
+      description: orderCurrentPriceDescription('subtotal price'),
     },
-    /*
-    current_subtotal_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_subtotal_price_set',
-      fromKey: 'current_subtotal_price_set',
-      description:
-        'The current subtotal price of the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.',
-    },
-    */
     current_total_tax: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'current_total_tax',
       fromKey: 'current_total_tax',
-      description:
-        'The current total taxes charged on the order in the shop currency. The value of this field reflects order edits, returns, or refunds.',
+      description: orderCurrentPriceDescription('total taxes'),
     },
-    /*
-    current_total_tax_set: {
-      ...PriceSetSchema,
-      fixedId: 'current_total_tax_set',
-      fromKey: 'current_total_tax_set',
-      description:
-        'The current total taxes charged on the order in shop and presentment currencies. The amount values associated with this field reflect order edits, returns, and refunds.',
-    },
-    */
-    customer: {
-      ...CustomerReference,
-      fixedId: 'customer',
-      fromKey: 'customer',
-      description:
-        'Information about the customer. The order might not have a customer and apps should not depend on the existence of a customer object. This value might be null if the order was created through Shopify POS.',
-    },
+    customer: orderCustomerProp,
     customer_locale: {
       type: coda.ValueType.String,
       fixedId: 'customer_locale',
@@ -262,14 +240,7 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'discount_codes',
       description: 'A list of discounts applied to the order.',
     },
-    email: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Email,
-      fixedId: 'email',
-      fromKey: 'email',
-      mutable: true,
-      description: "The customer's email address.",
-    },
+    email: { ...orderEmailProp, mutable: true },
     estimated_taxes: {
       type: coda.ValueType.Boolean,
       fixedId: 'estimated_taxes',
@@ -282,20 +253,35 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'financial_status',
       fromKey: 'financial_status',
       description:
-        'The status of payments associated with the order. Can only be set when the order is created. Valid values:\n- pending: The payments are pending. Payment might fail in this state. Check again to confirm whether the payments have been paid successfully.\n- authorized: The payments have been authorized.\n- partially_paid: The order has been partially paid.\n- paid: The payments have been paid.\n- partially_refunded: The payments have been partially refunded.\n- refunded: The payments have been refunded.\n- voided: The payments have been voided.',
+        'The status of payments associated with the order. Can only be set when the order is created. Valid values:\n' +
+        [
+          '- pending: The payments are pending. Payment might fail in this state. Check again to confirm whether the payments have been paid successfully.',
+          '- authorized: The payments have been authorized.',
+          '- partially_paid: The order has been partially paid',
+          '- paid: The payments have been paid.',
+          '- partially_refunded: The payments have been partially refunded',
+          '- refunded: The payments have been refunded.',
+          '- voided: The payments have been voided.',
+        ].join('\n'),
     },
     fulfillments: {
       type: coda.ValueType.Array,
       items: FulfillmentSchema,
       fixedId: 'fulfillments',
-      description: 'An array of fulfillments associated with the order.',
+      description: 'An list of fulfillments associated with the order.',
     },
     fulfillment_status: {
       type: coda.ValueType.String,
       fixedId: 'fulfillment_status',
       fromKey: 'fulfillment_status',
       description:
-        "The order's status in terms of fulfilled line items. Valid values:\n- fulfilled: Every line item in the order has been fulfilled.\n- null: None of the line items in the order have been fulfilled.\n- partial: At least one line item in the order has been fulfilled.\n- restocked: Every line item in the order has been restocked and the order canceled.",
+        "The order's status in terms of fulfilled line items. Valid values:\n" +
+        [
+          '- fulfilled: Every line item in the order has been fulfilled.',
+          '- null: None of the line items in the order have been fulfilled.',
+          '- partial: At least one line item in the order has been fulfilled.',
+          '- restocked: Every line item in the order has been restocked and the order canceled.',
+        ].join('\n'),
     },
     landing_site: {
       type: coda.ValueType.String,
@@ -303,26 +289,18 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'landing_site',
       description: 'The URL for the page where the buyer landed when they entered the shop.',
     },
-    line_items: {
-      type: coda.ValueType.Array,
-      items: OrderLineItemSchema,
-      fixedId: 'line_items',
-      fromKey: 'line_items',
-      description: 'A list of line item objects, each containing information about an item in the order.',
-    },
+    line_items: orderLineItemsProp,
     location_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'location_id',
       fromKey: 'location_id',
-      useThousandsSeparator: false,
       description:
         'The ID of one of the locations that was assigned to fulfill the order when the order was created. Orders can have multiple fulfillment orders. These fulfillment orders can each be assigned to a different location which is responsible for fulfilling a subset of the items in an order. This field will only point to one of these locations.',
     },
     merchant_of_record_app_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'merchant_of_record_app_id',
       fromKey: 'merchant_of_record_app_id',
-      useThousandsSeparator: false,
       description: 'The application acting as Merchant of Record for the order.',
     },
     name: {
@@ -334,20 +312,10 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
         "The order name, generated by combining the order_number property with the order prefix and suffix that are set in the merchant's general settings.",
     },
     note: {
-      type: coda.ValueType.String,
-      fixedId: 'note',
-      fromKey: 'note',
+      ...orderNoteProp,
       mutable: true,
-      description: 'An optional note that a shop owner can attach to the order.',
     },
-    note_attributes: {
-      type: coda.ValueType.Array,
-      items: NameValueSchema,
-      fixedId: 'note_attributes',
-      fromKey: 'note_attributes',
-      description:
-        'Extra information that is added to the order. Appears in the Additional details section of an order details page. Each array entry must contain a hash with name and value keys.',
-    },
+    note_attributes: orderNoteAttributesProp,
     number: {
       type: coda.ValueType.Number,
       fixedId: 'number',
@@ -364,39 +332,16 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
         "The order's position in the shop's count of orders starting at 1001. Order numbers are sequential and start at 1001.",
     },
     original_total_additional_fees: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'original_total_additional_fees',
-      description: 'The original total additional fees on the order in shop currency.',
+      description: orderPriceDescription('additional fees'),
     },
-    /*
-    original_total_additional_fees_set: {
-      ...PriceSetSchema,
-      fixedId: 'original_total_additional_fees_set',
-      fromKey: 'original_total_additional_fees_set',
-      description: 'The original total additional fees on the order in shop and presentment currencies.',
-    },
-    */
     original_total_duties: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'original_total_duties',
-      description: 'The original total duties charged on the order in shop currency.',
+      description: orderPriceDescription('total duties'),
     },
-    /*
-    original_total_duties_set: {
-      ...PriceSetSchema,
-      fixedId: 'original_total_duties_set',
-      fromKey: 'original_total_duties_set',
-      description: 'The original total duties charged on the order in shop and presentment currencies.',
-    },
-    */
-    payment_terms: {
-      ...PaymentTermsSchema,
-      fixedId: 'payment_terms',
-      fromKey: 'payment_terms',
-      description: 'The terms and conditions under which a payment should be processed.',
-    },
+    payment_terms: orderPaymentTermsProp,
     payment_gateway_names: {
       type: coda.ValueType.Array,
       items: { type: coda.ValueType.String },
@@ -424,8 +369,7 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       description: 'The presentment currency that was used to display prices to the customer.',
     },
     processed_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'processed_at',
       fromKey: 'processed_at',
       description: 'The date and time when an order was processed.',
@@ -443,13 +387,7 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'refunds',
       description: 'A list of refunds applied to the order.',
     },
-    shipping_address: {
-      ...AddressSchema,
-      fixedId: 'shipping_address',
-      fromKey: 'shipping_address',
-      description:
-        'The mailing address to where the order will be shipped. This address is optional and will not be available on orders that do not require shipping.',
-    },
+    shipping_address: orderShippingAddressProp,
     shipping_lines: {
       type: coda.ValueType.Array,
       items: ShippingLineSchema,
@@ -471,51 +409,25 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
         "The ID of the order placed on the originating platform. This value doesn't correspond to the Shopify ID that's generated from a completed draft.",
     },
     source_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'source_url',
       fromKey: 'source_url',
       description:
         "A valid URL to the original order on the originating surface. This URL is displayed to merchants on the Order Details page. If the URL is invalid, then it won't be displayed.",
     },
     subtotal_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'subtotal_price',
       fromKey: 'subtotal_price',
       description:
         'The price of the order in the shop currency after discounts but before shipping, duties, taxes, and tips.',
     },
-    /*
-    subtotal_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'subtotal_price_set',
-      fromKey: 'subtotal_price_set',
-      description:
-        'The subtotal of the order in shop and presentment currencies after discounts but before shipping, duties, taxes, and tips.',
-    },
-    */
     tags: {
-      type: coda.ValueType.String,
-      fixedId: 'tags',
-      fromKey: 'tags',
+      ...orderTagsProp,
       mutable: true,
-      description:
-        'Tags attached to the order, formatted as a string of comma-separated values. Each individual tag is limited to 40 characters in length.',
     },
-    tax_lines: {
-      type: coda.ValueType.Array,
-      items: TaxLineSchema,
-      fixedId: 'tax_lines',
-      fromKey: 'tax_lines',
-      description: 'An array of tax line objects, each of which details a tax applicable to the order.',
-    },
-    taxes_included: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'taxes_included',
-      fromKey: 'taxes_included',
-      description: 'Whether taxes are included in the order subtotal.',
-    },
+    tax_lines: orderLineItemTaxLinesProp,
+    taxes_included: orderTaxesIncludedProp,
     test: {
       type: coda.ValueType.Boolean,
       fixedId: 'test',
@@ -523,95 +435,46 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       description: 'Whether this is a test order.',
     },
     total_discounts: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_discounts',
       fromKey: 'total_discounts',
-      description: 'The total discounts applied to the price of the order in the shop currency.',
+      description: orderPriceDescription('total discounts applied to the price'),
     },
-    /*
-    total_discounts_set: {
-      ...PriceSetSchema,
-      fixedId: 'total_discounts_set',
-      fromKey: 'total_discounts_set',
-      description: 'The total discounts applied to the price of the order in shop and presentment currencies.',
-    },
-    */
 
     total_line_items_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_line_items_price',
       fromKey: 'total_line_items_price',
-      description: 'The sum of all line item prices in the shop currency.',
+      description: orderPriceDescription('sum of all line item prices'),
     },
-    /*
-    total_line_items_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'total_line_items_price_set',
-      fromKey: 'total_line_items_price_set',
-      description: 'The total of all line item prices in shop and presentment currencies.',
-    },
-    */
     total_outstanding: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_outstanding',
       fromKey: 'total_outstanding',
-      description: 'The total outstanding amount of the order in the shop currency.',
+      description: orderPriceDescription('total outstanding amount'),
     },
     total_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_price',
       fromKey: 'total_price',
-      description:
-        'The sum of all line item prices, discounts, shipping, taxes, and tips in the shop currency. Must be positive.',
+      description: orderPriceDescription('sum of all line item prices, discounts, shipping, taxes, and tips'),
     },
-    /*
-    total_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'total_price_set',
-      fromKey: 'total_price_set',
-      description: 'The total price of the order in shop and presentment currencies.',
-    },
-    */
     total_shipping_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_shipping_price',
-      description: 'The total shipping price of the order, excluding discounts and returns in shop currency.',
+      description: orderPriceDescription('total shipping price', ', excluding discounts and returns,'),
     },
-    /*
-    total_shipping_price_set: {
-      ...PriceSetSchema,
-      fixedId: 'total_shipping_price_set',
-      fromKey: 'total_shipping_price_set',
-      description:
-        'The total shipping price of the order, excluding discounts and returns, in shop and presentment currencies. If taxes_included is set to true, then total_shipping_price_set includes taxes.',
-    },
-    */
     total_tax: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_tax',
       fromKey: 'total_tax',
-      description: 'The sum of all the taxes applied to the order in the shop currency. Must be positive.',
+      description: orderPriceDescription('sum of all the taxes'),
     },
-    /*
-    total_tax_set: {
-      ...PriceSetSchema,
-      fixedId: 'total_tax_set',
-      fromKey: 'total_tax_set',
-      description: 'The total tax applied to the order in shop and presentment currencies.',
-    },
-    */
     total_tip_received: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_tip_received',
       fromKey: 'total_tip_received',
-      description: 'The sum of all the tips in the order in the shop currency.',
+      description: orderPriceDescription('sum of all the tips'),
     },
     total_weight: {
       type: coda.ValueType.Number,
@@ -620,24 +483,15 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
       description:
         'The sum of all line item weights in grams. The sum is not adjusted as items are removed from the order.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description:
-        'The date and time when the order was last modified. Filtering orders by updated_at is not an effective method for fetching orders because its value can change when no visible fields of an order have been updated.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('order'),
     user_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'user_id',
       fromKey: 'user_id',
-      useThousandsSeparator: false,
       description: 'The ID of the user logged into Shopify POS who processed the order, if applicable.',
     },
     order_status_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'order_status_url',
       fromKey: 'order_status_url',
       description: 'The URL pointing to the order status web page, if applicable.',
@@ -651,15 +505,13 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
 
     /*
     checkout_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'checkout_id',
-      useThousandsSeparator: false,
     },
     */
     /*
     contact_email: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Email,
+      ...PROPS.EMAIL,
       fixedId: 'contact_email',
     },
     */

@@ -1,19 +1,25 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { NOT_FOUND } from '../../constants';
-import { PACK_IDENTITIES } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import {
+  addressAddress1,
+  addressAddress2,
+  addressCityProp,
+  addressCountryCodeProp,
+  addressCountryNameProp,
+  addressCountryProp,
+  addressLatitudeProp,
+  addressLongitudeProp,
+  addressPhoneProp,
+  addressProvinceCodeProp,
+  addressProvinceProp,
+  addressZipProp,
+} from '../basic/AddressSchema';
 
 export const ShopSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fixedId: 'id',
-      fromKey: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The ID for the shop.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('shop'),
     name: {
       type: coda.ValueType.String,
       fixedId: 'name',
@@ -21,42 +27,18 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       required: true,
       description: 'The name of the shop.',
     },
-    address1: {
-      type: coda.ValueType.String,
-      fixedId: 'address1',
-      fromKey: 'address1',
-      description: "The shop's street address.",
-    },
-    address2: {
-      type: coda.ValueType.String,
-      fixedId: 'address2',
-      fromKey: 'address2',
-      description: "The optional second line of the shop's street address.",
-    },
+    address1: addressAddress1,
+    address2: addressAddress2,
     checkout_api_supported: {
       type: coda.ValueType.Boolean,
       fixedId: 'checkout_api_supported',
       fromKey: 'checkout_api_supported',
       description: 'Whether the shop is capable of accepting payments directly through the Checkout API.',
     },
-    city: {
-      type: coda.ValueType.String,
-      fixedId: 'city',
-      fromKey: 'city',
-      description: 'The shop city.',
-    },
-    country_code: {
-      type: coda.ValueType.String,
-      fixedId: 'country_code',
-      fromKey: 'country_code',
-      description: "The two-letter country code corresponding to the shop's country.",
-    },
-    country_name: {
-      type: coda.ValueType.String,
-      fixedId: 'country_name',
-      fromKey: 'country_name',
-      description: "The shop's normalized country name.",
-    },
+    city: addressCityProp,
+    country: addressCountryProp,
+    country_code: addressCountryCodeProp,
+    country_name: addressCountryNameProp,
     county_taxes: {
       type: coda.ValueType.Boolean,
       fixedId: 'county_taxes',
@@ -64,16 +46,9 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       description:
         'Whether the shop is applying taxes on a per-county basis. Only applicable to shops based in the US.',
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the shop was created.',
-    },
+    created_at: PROPS.makeCreatedAtProp('shop'),
     customer_email: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Email,
+      ...PROPS.EMAIL,
       fixedId: 'customer_email',
       fromKey: 'customer_email',
       description: 'The contact email used for communication between the shop owner and the customer.',
@@ -105,15 +80,13 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       description: 'Whether the shop is eligible to use Shopify Payments.',
     },
     email: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Email,
+      ...PROPS.EMAIL,
       fixedId: 'email',
       fromKey: 'email',
       description: 'The contact email used for communication between Shopify and the shop owner.',
     },
     google_apps_domain: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'google_apps_domain',
       fromKey: 'google_apps_domain',
       description: 'The GSuite URL for the store, if applicable.',
@@ -142,18 +115,8 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'iana_timezone',
       description: 'The name of the timezone assigned by the IANA.',
     },
-    latitude: {
-      type: coda.ValueType.Number,
-      fixedId: 'latitude',
-      fromKey: 'latitude',
-      description: "The latitude of the shop's location.",
-    },
-    longitude: {
-      type: coda.ValueType.Number,
-      fixedId: 'longitude',
-      fromKey: 'longitude',
-      description: "The longitude of the shop's location.",
-    },
+    latitude: addressLongitudeProp,
+    longitude: addressLatitudeProp,
     money_format: {
       type: coda.ValueType.String,
       fixedId: 'money_format',
@@ -192,12 +155,7 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'password_enabled',
       description: "Whether the password protection page is enabled on the shop's online store.",
     },
-    phone: {
-      type: coda.ValueType.String,
-      fixedId: 'phone',
-      fromKey: 'phone',
-      description: 'The contact phone number for the shop.',
-    },
+    phone: addressPhoneProp,
     plan_display_name: {
       type: coda.ValueType.String,
       fixedId: 'plan_display_name',
@@ -222,18 +180,8 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'primary_locale',
       description: "The shop's primary locale, as configured in the language settings of the shop's theme.",
     },
-    province: {
-      type: coda.ValueType.String,
-      fixedId: 'province',
-      fromKey: 'province',
-      description: "The shop's normalized province or state name.",
-    },
-    province_code: {
-      type: coda.ValueType.String,
-      fixedId: 'province_code',
-      fromKey: 'province_code',
-      description: "The two- or three-letter code for the shop's province or state.",
-    },
+    province: addressProvinceProp,
+    province_code: addressProvinceCodeProp,
     requires_extra_payments_agreement: {
       type: coda.ValueType.Boolean,
       fixedId: 'requires_extra_payments_agreement',
@@ -276,38 +224,21 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'transactional_sms_disabled',
       description: "Whether transactional SMS sent by Shopify are disabled on the shop's online store.",
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the shop was last updated.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('shop'),
     weight_unit: {
       type: coda.ValueType.String,
       fixedId: 'weight_unit',
       fromKey: 'weight_unit',
       description: 'The default unit of weight measurement for the shop.',
     },
-    zip: {
-      type: coda.ValueType.String,
-      fixedId: 'zip',
-      fromKey: 'zip',
-      description: "The shop's zip or postal code.",
-    },
+    zip: addressZipProp,
     marketing_sms_consent_enabled_at_checkout: {
       type: coda.ValueType.Boolean,
       fixedId: 'marketing_sms_consent_enabled_at_checkout',
       fromKey: 'marketing_sms_consent_enabled_at_checkout',
       description: "Whether SMS marketing has been enabled on the shop's checkout configuration settings.",
     },
-
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product in the online shop.',
-      fixedId: 'admin_url',
-    },
+    admin_url: PROPS.makeAdminUrlProp('shop'),
   },
   displayProperty: 'name',
   idProperty: 'id',

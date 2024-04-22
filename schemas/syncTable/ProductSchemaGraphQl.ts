@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-
+import * as PROPS from '../../coda/coda-properties';
 import { OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants';
 
 export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
@@ -15,36 +15,12 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
      */
     /*
      */
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product in the Shopify admin.',
-      fixedId: 'admin_url',
-    },
-    storeUrl: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      description: 'A link to the product in the online shop.',
-      fixedId: 'onlineStoreUrl',
-      fromKey: 'onlineStoreUrl',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      required: true,
-      description: 'unique identifier for the product',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-    },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the product.',
-      fixedId: 'graphql_gid',
-    },
+    admin_url: PROPS.makeAdminUrlProp('product'),
+    storeUrl: PROPS.makeStoreUrlProp('product', 'onlineStoreUrl', 'storeUrl'),
+    id: PROPS.makeRequiredIdNumberProp('product'),
+    graphql_gid: PROPS.makeGraphQlGidProp('product'),
     description: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Html,
+      ...PROPS.HTML,
       fixedId: 'description',
       description:
         'Text-only content of the description of the product, stripped of any HTML tags and formatting that were included.',
@@ -57,17 +33,13 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
       mutable: true,
     },
     created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'created_at',
       description: 'The date and time when the product was created.',
     },
     handle: {
-      type: coda.ValueType.String,
-      fixedId: 'handle',
+      ...PROPS.makeHandleProp('product'),
       mutable: true,
-      description:
-        "A unique human-friendly string for the product. If you update the handle, the old handle won't be redirected to the new one automatically.",
     },
     /*
     images: {
@@ -78,8 +50,7 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
     },
     */
     featuredImage: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fixedId: 'featuredImage',
       description: 'Featured image of the product.',
     },
@@ -89,8 +60,7 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
       description: 'The custom product properties. Product variants are made of up combinations of option values.',
     },
     product_type: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'product_type',
       mutable: true,
       options: coda.OptionsType.Dynamic,
@@ -99,10 +69,9 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
       description: 'A categorization for the product.',
     },
     published_at: {
-      type: coda.ValueType.String,
+      ...PROPS.DATETIME_STRING,
       description:
         "The date and time when the product was published. Use product status to unpublish the product by setting it to 'DRAFT'.",
-      codaType: coda.ValueHintType.DateTime,
       fixedId: 'published_at',
     },
     // Whether the product is published to the Point of Sale channel. Valid values:
@@ -113,8 +82,7 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
       fixedId: 'published_scope',
     },
     status: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'status',
       description: `The status of the product. Can be ${OPTIONS_PRODUCT_STATUS_GRAPHQL.filter((s) => s.value !== '*')
         .map((s) => s.display)
@@ -124,34 +92,25 @@ export const ProductSyncTableSchemaGraphQl = coda.makeObjectSchema({
       requireForUpdates: true,
     },
     tags: {
-      type: coda.ValueType.String,
-      fixedId: 'tags',
+      ...PROPS.makeTagsProp('product'),
       mutable: true,
-      description: 'A string of comma-separated tags that are used for filtering and search.',
     },
     template_suffix: {
-      type: coda.ValueType.String,
-      fixedId: 'template_suffix',
+      ...PROPS.makeTemplateSuffixProp('product page'),
       mutable: true,
-      description:
-        'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
     },
     title: {
-      type: coda.ValueType.String,
+      ...PROPS.makeTitleProp('product'),
       required: true,
-      fixedId: 'title',
       mutable: true,
-      description: 'The name of the product.',
     },
     updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       fixedId: 'updated_at',
       description: 'The date and time when the product was last modified.',
     },
     vendor: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'vendor',
       mutable: true,
       description: 'The name of the product vendor.',

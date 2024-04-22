@@ -11,19 +11,13 @@ import { CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
 import { filterObjectKeys } from '../../../utils/helpers';
 import { MergedCollection_Custom } from '../../Rest/MergedCollection_Custom';
-import { BaseContext, GraphQlResourceName, RestResourceSingular } from '../../types/Resource.types';
+import { BaseContext } from '../../types/Resource.types';
+import { GraphQlResourceName, RestResourceSingular } from '../../types/SupportedResource';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
 import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
-import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithRestMetafields';
-
-// #endregion
+import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithMetafields';
 
 // #region Types
-export interface BaseConstructorArgs {
-  context: coda.ExecutionContext;
-  fromData?: Body | null;
-}
-
 export interface RestApiData {
   id: number | null;
   [key: string]: any;

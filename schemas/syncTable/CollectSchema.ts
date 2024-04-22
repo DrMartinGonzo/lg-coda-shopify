@@ -1,25 +1,17 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { ProductReference } from './ProductSchemaRest';
+import * as PROPS from '../../coda/coda-properties';
+import { FieldDependency } from '../Schema.types';
 import { CollectionReference } from './CollectionSchema';
-
-import type { FieldDependency } from '../Schema.types';
+import { ProductReference } from './ProductSchemaRest';
 
 export const CollectSyncTableSchema = coda.makeObjectSchema({
   properties: {
     //! admin_graphql_api_id DOES NOT EXIST
-    id: {
-      type: coda.ValueType.Number,
-      required: true,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-    },
+    id: PROPS.makeRequiredIdNumberProp('collect'),
     collection_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fromKey: 'collection_id',
       fixedId: 'collection_id',
-      useThousandsSeparator: false,
       description: 'The ID of the custom collection containing the product.',
     },
     collection: {
@@ -27,13 +19,7 @@ export const CollectSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'collection',
       description: 'Relation to the related collection.',
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the collect was created.',
-    },
+    created_at: PROPS.makeCreatedAtProp('collect'),
     position: {
       type: coda.ValueType.Number,
       fixedId: 'position',
@@ -42,10 +28,9 @@ export const CollectSyncTableSchema = coda.makeObjectSchema({
         'The position of this product in a manually sorted custom collection. The first position is 1. This value is applied only when the custom collection is sorted manually.',
     },
     product_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'product_id',
       fromKey: 'product_id',
-      useThousandsSeparator: false,
       description: 'The unique numeric identifier for the product in the custom collection.',
     },
     product: {
@@ -53,13 +38,7 @@ export const CollectSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'product',
       description: 'Relation to the product in the custom collection.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the collect was last updated.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('collect'),
   },
   displayProperty: 'id',
   idProperty: 'id',

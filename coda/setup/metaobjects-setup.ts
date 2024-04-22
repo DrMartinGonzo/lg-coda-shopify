@@ -11,7 +11,7 @@ import {
   autocompleteMetaobjectType,
   inputs,
 } from '../coda-parameters';
-import { GraphQlResourceNames } from '../../Resources/types/Resource.types';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 
 // #endregion
 

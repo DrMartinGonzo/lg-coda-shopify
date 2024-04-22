@@ -1,15 +1,20 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const DiscountApplicationSchema = coda.makeObjectSchema({
   properties: {
     allocation_method: {
       type: coda.ValueType.String,
       description:
-        'The method by which the discount application value has been allocated to entitled lines. Valid values:\n- across: The value is spread across all entitled lines.\n- each: The value is applied onto every entitled line.\n- one: The value is applied onto a single line.',
+        'The method by which the discount application value has been allocated to entitled lines. Valid values\n:' +
+        [
+          '- across: The value is spread across all entitled lines.',
+          '- each: The value is applied onto every entitled line.',
+          '- one: The value is applied onto a single line.',
+        ].join('\n'),
     },
     amount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       description: 'The applied amount of the discount.',
     },
     code: {
@@ -25,12 +30,21 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     target_selection: {
       type: coda.ValueType.String,
       description:
-        'The lines on the order, of the type defined by target_type, that the discount is allocated over. Valid values:\n- all: The discount is allocated onto all lines,\n- entitled: The discount is allocated only onto lines it is entitled for.\n- explicit: The discount is allocated onto explicitly selected lines.',
+        'The lines on the order, of the type defined by target_type, that the discount is allocated over. Valid values:\n' +
+        [
+          '- all: The discount is allocated onto all lines.',
+          '- entitled: The discount is allocated only onto lines it is entitled for.',
+          '- explicit: The discount is allocated onto explicitly selected lines.',
+        ].join('\n'),
     },
     target_type: {
       type: coda.ValueType.String,
       description:
-        'The type of line on the order that the discount is applicable on. Valid values:\n- line_item: The discount applies to line items.\n- shipping_line: The discount applies to shipping lines.',
+        'The type of line on the order that the discount is applicable on. Valid values:\n' +
+        [
+          '- line_item: The discount applies to line items.',
+          '- shipping_line: The discount applies to shipping lines.',
+        ].join('\n'),
     },
     title: {
       type: coda.ValueType.String,
@@ -40,7 +54,13 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     type: {
       type: coda.ValueType.String,
       description:
-        'The discount application type. Valid values:\n- automatic: The discount was applied automatically, such as by a Buy X Get Y automatic discount.\n- discount_code: The discount was applied by a discount code.\n- manual: The discount was manually applied by the merchant (for example, by using an app or creating a draft order).\n- script: The discount was applied by a Shopify Script.',
+        'The discount application type. Valid values:\n' +
+        [
+          '- automatic: The discount was applied automatically, such as by a Buy X Get Y automatic discount.',
+          '- discount_code: The discount was applied by a discount code.',
+          '- manual: The discount was manually applied by the merchant (for example, by using an app or creating a draft order).',
+          '- script: The discount was applied by a Shopify Script.',
+        ].join('\n'),
     },
     value: {
       type: coda.ValueType.Number,
@@ -50,7 +70,11 @@ export const DiscountApplicationSchema = coda.makeObjectSchema({
     value_type: {
       type: coda.ValueType.String,
       description:
-        'The type of the value. Valid values:\n- fixed_amount: A fixed amount discount value in the currency of the order.\n- percentage: A percentage discount value.',
+        'The type of the value. Valid values:\n' +
+        [
+          '- fixed_amount: A fixed amount discount value in the currency of the order.',
+          '- percentage: A percentage discount value.',
+        ].join('\n'),
     },
   },
   displayProperty: 'value_type',

@@ -4,7 +4,7 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { BaseContext } from '../types/Resource.types';
 import { PACK_IDENTITIES, Identity } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 

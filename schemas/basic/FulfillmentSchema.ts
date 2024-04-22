@@ -1,28 +1,20 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 import { OrderLineItemSchema } from './OrderLineItemSchema';
+import {
+  addressAddress1,
+  addressAddress2,
+  addressCityProp,
+  addressCountryCodeProp,
+  addressProvinceCodeProp,
+  addressZipProp,
+} from './AddressSchema';
 
 export const FulfillmentSchema = coda.makeObjectSchema({
   properties: {
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fixedId: 'graphql_gid',
-      fromKey: 'admin_graphql_api_id',
-      description: 'The GraphQL GID of the fulfillment.',
-    },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the fulfillment was created.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description: 'The ID for the fulfillment.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('fulfillment'),
+    created_at: PROPS.makeCreatedAtProp('fulfillment'),
+    id: PROPS.makeRequiredIdNumberProp('fulfillment'),
     line_items: {
       type: coda.ValueType.Array,
       items: OrderLineItemSchema,
@@ -31,8 +23,7 @@ export const FulfillmentSchema = coda.makeObjectSchema({
       description: "A list of the fulfillment's line items",
     },
     location_id: {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
+      ...PROPS.ID_NUMBER,
       fixedId: 'location_id',
       fromKey: 'location_id',
       description: 'The unique identifier of the location that the fulfillment was processed at.',
@@ -52,8 +43,7 @@ export const FulfillmentSchema = coda.makeObjectSchema({
         'Whether the customer should be notified. If set to true, then an email will be sent when the fulfillment is created or updated. The default value is false.',
     },
     order_id: {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
+      ...PROPS.ID_NUMBER,
       fixedId: 'order_id',
       fromKey: 'order_id',
       description: 'The unique numeric identifier for the order.',
@@ -61,18 +51,12 @@ export const FulfillmentSchema = coda.makeObjectSchema({
     origin_address: {
       type: coda.ValueType.Object,
       properties: {
-        address1: { type: coda.ValueType.String, description: 'The street address of the fulfillment location.' },
-        address2: {
-          type: coda.ValueType.String,
-          description: 'The second line of the address. Typically the number of the apartment, suite, or unit.',
-        },
-        city: { type: coda.ValueType.String, description: 'The city of the fulfillment location.' },
-        country_code: {
-          type: coda.ValueType.String,
-          description: 'The two-letter country code (ISO 3166-1 alpha-2 format) of the fulfillment location.',
-        },
-        province_code: { type: coda.ValueType.String, description: 'The province of the fulfillment location.' },
-        zip: { type: coda.ValueType.String, description: 'The zip code of the fulfillment location.' },
+        address1: addressAddress1,
+        address2: addressAddress2,
+        city: addressCityProp,
+        country_code: addressCountryCodeProp,
+        province_code: addressProvinceCodeProp,
+        zip: addressZipProp,
       },
       fixedId: 'origin_address',
       fromKey: 'origin_address',
@@ -101,14 +85,33 @@ export const FulfillmentSchema = coda.makeObjectSchema({
       fixedId: 'shipment_status',
       fromKey: 'shipment_status',
       description:
-        "The current shipment status of the fulfillment. Valid values:\n- label_printed: A label for the shipment was purchased and printed.\n- label_purchased: A label for the shipment was purchased, but not printed.\n- attempted_delivery: Delivery of the shipment was attempted, but unable to be completed.\n- ready_for_pickup: The shipment is ready for pickup at a shipping depot.\n- confirmed: The carrier is aware of the shipment, but hasn't received it yet.\n- in_transit: The shipment is being transported between shipping facilities on the way to its destination.\n- out_for_delivery: The shipment is being delivered to its final destination.\n- delivered: The shipment was succesfully delivered.\n- failure: Something went wrong when pulling tracking information for the shipment, such as the tracking number was invalid or the shipment was canceled.",
+        'The current shipment status of the fulfillment. Valid values:\n' +
+        [
+          '- label_printed: A label for the shipment was purchased and printed.',
+          '- label_purchased: A label for the shipment was purchased, but not printed.',
+          '- attempted_delivery: Delivery of the shipment was attempted, but unable to be completed.',
+          '- ready_for_pickup: The shipment is ready for pickup at a shipping depot.',
+          "- confirmed: The carrier is aware of the shipment, but hasn't received it yet.",
+          '- in_transit: The shipment is being transported between shipping facilities on the way to its destination.',
+          '- out_for_delivery: The shipment is being delivered to its final destination.',
+          '- delivered: The shipment was succesfully delivered.',
+          '- failure: Something went wrong when pulling tracking information for the shipment, such as the tracking number was invalid or the shipment was canceled.',
+        ].join('\n'),
     },
     status: {
       type: coda.ValueType.String,
       fixedId: 'status',
       fromKey: 'status',
       description:
-        "The status of the fulfillment. Valid values:\n- pending: Shopify has created the fulfillment and is waiting for the third-party fulfillment service to transition it to 'open' or 'success'.\n- open: The fulfillment has been acknowledged by the service and is in processing.\n- success: The fulfillment was successful.\n- cancelled: The fulfillment was cancelled.\n- error: There was an error with the fulfillment request.\n- failure: The fulfillment request failed.",
+        'The status of the fulfillment. Valid values:\n' +
+        [
+          "- pending: Shopify has created the fulfillment and is waiting for the third-party fulfillment service to transition it to 'open' or 'success'.",
+          '- open: The fulfillment has been acknowledged by the service and is in processing.',
+          '- success: The fulfillment was successful.',
+          '- cancelled: The fulfillment was cancelled.',
+          '- error: There was an error with the fulfillment request.',
+          '- failure: The fulfillment request failed.',
+        ].join('\n'),
     },
     tracking_company: {
       type: coda.ValueType.String,
@@ -132,27 +135,19 @@ export const FulfillmentSchema = coda.makeObjectSchema({
     },
     tracking_urls: {
       type: coda.ValueType.Array,
-      items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+      items: PROPS.LINK,
       fixedId: 'tracking_urls',
       fromKey: 'tracking_urls',
       description: 'The URLs of tracking pages for the fulfillment.',
     },
     tracking_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'tracking_url',
       fromKey: 'tracking_url',
       description:
         'The URL to track the fulfillment. If multiple tracking urls are set on this fulfillment, only the first one will be returned in the tracking_url field. Use the tracking_urls array field for accessing all tracking URLs associated with this fulfillment.',
     },
-    // The URLs of tracking pages for the fulfillment.
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the fulfillment was last modified.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('fulfillment'),
   },
   displayProperty: 'name',
 });

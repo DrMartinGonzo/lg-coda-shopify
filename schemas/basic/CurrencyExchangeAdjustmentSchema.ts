@@ -1,14 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const CurrencyExchangeAdjustmentSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fixedId: 'id',
-      fromKey: 'id',
-      useThousandsSeparator: false,
-      description: 'The ID of the adjustment.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('adjustment'),
     adjustment: {
       type: coda.ValueType.Number,
       fixedId: 'adjustment',

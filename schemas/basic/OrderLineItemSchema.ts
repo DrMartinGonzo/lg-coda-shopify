@@ -1,21 +1,31 @@
 import * as coda from '@codahq/packs-sdk';
-
-import { NameValueSchema } from './NameValueSchema';
-import { DiscountAllocationSchema } from './DiscountAllocationSchema';
-import { TaxLineSchema } from './TaxLineSchema';
-import { DutySchema } from './DutySchema';
+import * as PROPS from '../../coda/coda-properties';
+import { inventoryItemRequiresShippingProp } from '../syncTable/InventoryItemSchema';
 import { AttributedStaffSchema } from './AttributedStaffSchema';
+import { DiscountAllocationSchema } from './DiscountAllocationSchema';
+import { DutySchema } from './DutySchema';
+import { NameValueSchema } from './NameValueSchema';
+import { TaxLineSchema } from '../basic/TaxLineSchema';
+import { itemGramsProp, itemSkuProp, itemTaxableProp } from '../syncTable/ProductVariantSchema';
+
+export const orderLineItemTaxLinesProp = {
+  type: coda.ValueType.Array,
+  items: TaxLineSchema,
+  fixedId: 'tax_lines',
+  fromKey: 'tax_lines',
+  description: 'A list of tax line objects, each of which details a tax applicable to the order.',
+} as coda.ArraySchema<typeof TaxLineSchema> & coda.ObjectSchemaProperty;
+export const orderLineItemDutiesProp = {
+  type: coda.ValueType.Array,
+  items: DutySchema,
+  fixedId: 'duties',
+  fromKey: 'duties',
+  description: 'A list of duty objects, each containing information about a duty on the line item.',
+} as coda.ArraySchema<typeof DutySchema> & coda.ObjectSchemaProperty;
 
 export const OrderLineItemSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      required: true,
-      description: 'The ID of the line item.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('line item'),
     attributed_staffs: {
       type: coda.ValueType.Array,
       items: AttributedStaffSchema,
@@ -23,7 +33,7 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       fixedId: 'attributed_staffs',
       description: 'The staff members attributed to the line item.',
     },
-    // Only exists in draft orders
+    //* Only exists in draft orders
     custom: {
       type: coda.ValueType.Boolean,
       fixedId: 'custom',
@@ -48,26 +58,20 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       fixedId: 'fulfillment_status',
       fromKey: 'fulfillment_status',
       description:
-        'How far along an order is in terms line items fulfilled. Valid values:\n- null\n- fulfilled\n- partial\n- not_eligible.',
+        'How far along an order is in terms of line items fulfilled. Valid values:\n' +
+        ['- null', '- fulfilled', '- partial', '- not_eligible.'].join('\n'),
     },
-    grams: {
-      type: coda.ValueType.Number,
-      fixedId: 'grams',
-      fromKey: 'grams',
-      description: 'The weight of the item in grams.',
-    },
+    grams: itemGramsProp,
     price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'price',
       fromKey: 'price',
       description: 'The price of the item before discounts have been applied in the shop currency.',
     },
     product_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'product_id',
       fromKey: 'product_id',
-      useThousandsSeparator: false,
       description:
         'The ID of the product that the line item belongs to. Can be null if the original product associated with the order is deleted at a later date',
     },
@@ -77,37 +81,16 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       fromKey: 'quantity',
       description: 'The number of items that were purchased.',
     },
-    requires_shipping: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'requires_shipping',
-      fromKey: 'requires_shipping',
-      description: 'Whether the item requires shipping.',
-    },
-    sku: {
-      type: coda.ValueType.String,
-      fixedId: 'sku',
-      fromKey: 'sku',
-      description: "The item's SKU (stock keeping unit).",
-    },
-    product_title: {
-      type: coda.ValueType.String,
-      fixedId: 'title',
-      fromKey: 'title',
-      description: 'The title of the product',
-    },
+    requires_shipping: inventoryItemRequiresShippingProp,
+    sku: itemSkuProp,
+    product_title: PROPS.makeTitleProp('product'),
     variant_id: {
-      type: coda.ValueType.Number,
+      ...PROPS.ID_NUMBER,
       fixedId: 'variant_id',
       fromKey: 'variant_id',
-      useThousandsSeparator: false,
       description: 'The ID of the product variant',
     },
-    variant_title: {
-      type: coda.ValueType.String,
-      fixedId: 'variant_title',
-      fromKey: 'variant_title',
-      description: 'The title of the product variant',
-    },
+    variant_title: PROPS.makeTitleProp('product variant', 'variant_title', 'variant_title'),
     vendor: {
       type: coda.ValueType.String,
       fixedId: 'vendor',
@@ -136,19 +119,8 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       description:
         'An array of custom information for the item that has been added to the cart. Often used to provide product customization options.',
     },
-    taxable: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'taxable',
-      fromKey: 'taxable',
-      description: 'Whether the item was taxable',
-    },
-    tax_lines: {
-      type: coda.ValueType.Array,
-      items: TaxLineSchema,
-      fixedId: 'tax_lines',
-      fromKey: 'tax_lines',
-      description: 'A list of tax line objects, each of which details a tax applied to the item.',
-    },
+    taxable: { ...itemTaxableProp, description: 'Whether the item was taxable' },
+    tax_lines: orderLineItemTaxLinesProp,
     tip_payment_gateway: {
       type: coda.ValueType.String,
       fixedId: 'tip_payment_gateway',
@@ -162,8 +134,7 @@ export const OrderLineItemSchema = coda.makeObjectSchema({
       description: 'The payment method used to tender the tip, such as Visa. Present only on tips.',
     },
     total_discount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'total_discount',
       fromKey: 'total_discount',
       description:

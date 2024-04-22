@@ -1,6 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import { ResultOf } from '../utils/tada-utils';
+import * as PROPS from '../coda/coda-properties';
 
 import { UnsupportedValueError } from '../Errors/Errors';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
@@ -144,7 +145,7 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_LEGACY_TYPES.json_string:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
+        ...PROPS.STRING,
         mutable: true,
       };
     case METAFIELD_TYPES.list_color:
@@ -152,15 +153,14 @@ export function mapMetaFieldToSchemaProperty(
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String },
+        items: PROPS.STRING,
       };
 
     // Rich text
     case METAFIELD_TYPES.rich_text_field:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Html,
+        ...PROPS.HTML,
       };
 
     // MEASUREMENT
@@ -169,7 +169,7 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_TYPES.volume:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
+        ...PROPS.STRING,
         mutable: true,
         description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(getUnitMap(type)).join(
           ', '
@@ -181,7 +181,7 @@ export function mapMetaFieldToSchemaProperty(
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String },
+        items: PROPS.STRING,
         description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
           getUnitMap(type.replace('list.', ''))
         ).join(', ')}.`,
@@ -191,22 +191,21 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_TYPES.url:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Url,
+        ...PROPS.LINK,
         mutable: true,
       };
     case METAFIELD_TYPES.list_url:
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Url },
+        items: PROPS.LINK,
       };
 
     // RATING
     case METAFIELD_TYPES.rating:
       return {
         ...baseProperty,
-        type: coda.ValueType.Number,
+        ...PROPS.NUMBER,
         // codaType: coda.ValueHintType.Scale,
         // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
         mutable: true,
@@ -215,14 +214,14 @@ export function mapMetaFieldToSchemaProperty(
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.Number },
+        items: PROPS.NUMBER,
       };
 
     // NUMBER
     case METAFIELD_TYPES.number_integer:
       return {
         ...baseProperty,
-        type: coda.ValueType.Number,
+        ...PROPS.NUMBER,
         precision: 0,
         mutable: true,
       };
@@ -230,7 +229,7 @@ export function mapMetaFieldToSchemaProperty(
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.Number, precision: 0 },
+        items: { ...PROPS.NUMBER, precision: 0 },
       };
 
     case METAFIELD_TYPES.number_decimal:
@@ -250,8 +249,7 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_TYPES.money:
       return {
         ...baseProperty,
-        type: coda.ValueType.Number,
-        codaType: coda.ValueHintType.Currency,
+        ...PROPS.CURRENCY,
         mutable: true,
       };
 
@@ -259,7 +257,7 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_TYPES.boolean:
       return {
         ...baseProperty,
-        type: coda.ValueType.Boolean,
+        ...PROPS.BOOLEAN,
         mutable: true,
       };
 
@@ -267,29 +265,27 @@ export function mapMetaFieldToSchemaProperty(
     case METAFIELD_TYPES.date:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.Date,
+        ...PROPS.DATE_STRING,
         mutable: true,
       };
     case METAFIELD_TYPES.list_date:
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.Date },
+        items: PROPS.DATE_STRING,
       };
 
     case METAFIELD_TYPES.date_time:
       return {
         ...baseProperty,
-        type: coda.ValueType.String,
-        codaType: coda.ValueHintType.DateTime,
+        ...PROPS.DATETIME_STRING,
         mutable: true,
       };
     case METAFIELD_TYPES.list_date_time:
       return {
         ...baseProperty,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String, codaType: coda.ValueHintType.DateTime },
+        items: PROPS.DATETIME_STRING,
       };
 
     // REFERENCES
@@ -339,7 +335,7 @@ export function mapMetaFieldToSchemaProperty(
       return {
         ...baseProperty,
         description: '⚠️ We only support raw value for mixed references.\n' + baseProperty.description,
-        type: coda.ValueType.String,
+        ...PROPS.STRING,
         mutable: true,
       };
     case METAFIELD_TYPES.list_mixed_reference:
@@ -347,7 +343,7 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         description: '⚠️ We only support raw values for mixed references.\n' + baseProperty.description,
         type: coda.ValueType.Array,
-        items: { type: coda.ValueType.String },
+        items: PROPS.STRING,
         mutable: true,
       };
 

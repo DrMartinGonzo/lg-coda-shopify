@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { NotFoundError, UnsupportedValueError } from '../../Errors/Errors';
+import * as PROPS from '../../coda/coda-properties';
 import { CACHE_DEFAULT } from '../../constants';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
@@ -14,7 +15,7 @@ import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
 import { MetafieldLegacyType, MetafieldType } from '../Mixed/Metafield.types';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
-import { RestResourcesPlural, RestResourcesSingular, singularToPlural } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular, singularToPlural } from '../types/SupportedResource';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './SupportedMetafieldSyncTable';
 
 // #region Types
@@ -51,8 +52,7 @@ export class MetafieldMixed {
 
     if (supportDefinition) {
       augmentedSchema.properties['definition_id'] = {
-        type: coda.ValueType.Number,
-        useThousandsSeparator: false,
+        ...PROPS.ID_NUMBER,
         fixedId: 'definition_id',
         fromKey: 'definition_id',
         description: 'The ID of the metafield definition of the metafield, if it exists.',

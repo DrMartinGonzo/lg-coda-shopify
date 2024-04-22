@@ -5,7 +5,7 @@ import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
 import { CACHE_MAX } from '../constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
-import { RestResourcesSingular } from '../Resources/types/Resource.types';
+import { RestResourcesSingular } from '../Resources/types/SupportedResource';
 
 /**
  * Get Collection type via a GraphQL Admin API query

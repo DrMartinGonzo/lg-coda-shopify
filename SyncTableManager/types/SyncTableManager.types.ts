@@ -6,16 +6,14 @@ import { AbstractResource, FindAllResponseBase } from '../../Resources/Abstract/
 import { FindAllGraphQlResponse } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { FindAllRestResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
-import {
-  AbstractSyncedRestResource,
-  CodaSyncParams,
-  SyncTableDefinition,
-} from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { CodaSyncParams } from './SyncTable.types';
+import { SyncTableDefinition } from './SyncTable.types';
+import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import {
   AbstractSyncedRestResourceWithRestMetafields,
   AugmentWithMetafieldsFunction,
-} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { AbstractSyncTableManager } from '../Abstract/AbstractSyncTableManager';
 import { SyncTableManagerGraphQl } from '../GraphQl/SyncTableManagerGraphQl';

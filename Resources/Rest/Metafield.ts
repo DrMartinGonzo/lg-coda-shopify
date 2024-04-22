@@ -25,19 +25,20 @@ import {
 } from '../../utils/metafields-utils';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl } from '../GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from '../Mixed/Metafield.types';
 import { MetafieldHelper } from '../Mixed/MetafieldHelper';
+import { BaseContext } from '../types/Resource.types';
 import {
-  BaseContext,
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesPlural,
   RestResourcesSingular,
-} from '../types/Resource.types';
+} from '../types/SupportedResource';
 import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
 
 // #endregion

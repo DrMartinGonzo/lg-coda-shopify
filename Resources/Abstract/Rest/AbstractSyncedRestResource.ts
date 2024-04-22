@@ -3,42 +3,19 @@ import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
-import {
-  SyncTableParamValues,
-  SyncTableSyncResult,
-  SyncTableUpdateResult,
-} from '../../../SyncTableManager/types/SyncTable.types';
+import { SyncTableSyncResult, SyncTableUpdateResult } from '../../../SyncTableManager/types/SyncTable.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
 import { REST_DEFAULT_LIMIT } from '../../../constants';
 import { BaseRow } from '../../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
-import { Metafield } from '../../Rest/Metafield';
+import { FromRow, ISyncedResource, SyncedResourceConstructorArgs } from '../../types/Resource.types';
 import { GetSchemaArgs } from '../AbstractResource';
-import { AbstractRestResource, BaseConstructorArgs } from './AbstractRestResource';
+import { AbstractRestResource } from './AbstractRestResource';
 
 // #endregion
 
-// #region Types
-export interface BaseConstructorSyncedArgs extends BaseConstructorArgs {
-  fromRow?: FromRow;
-}
-
-export interface FromRow<RowT extends BaseRow = BaseRow> {
-  row: Partial<RowT> | null;
-  metafields?: Array<Metafield>;
-}
-
-export type SyncTableDefinition =
-  | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
-  | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>;
-
-export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = SyncTableDefT extends never
-  ? coda.ParamValues<coda.ParamDefs>
-  : SyncTableParamValues<SyncTableDefT>;
-// #endregion
-
-export abstract class AbstractSyncedRestResource extends AbstractRestResource {
+export abstract class AbstractSyncedRestResource extends AbstractRestResource implements ISyncedResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
   protected static readonly defaultLimit: number = REST_DEFAULT_LIMIT;
@@ -156,7 +133,7 @@ export abstract class AbstractSyncedRestResource extends AbstractRestResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  constructor({ context, fromData, fromRow }: BaseConstructorSyncedArgs) {
+  constructor({ context, fromData, fromRow }: SyncedResourceConstructorArgs) {
     super({ context, fromData });
     if (fromRow) {
       this.setDataFromRow(fromRow);

@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithRestMetafields';
+import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
 import { Identity, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
@@ -12,11 +12,13 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithRestMetafields';
+import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion

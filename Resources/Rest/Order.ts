@@ -2,7 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Orders } from '../../coda/setup/orders-setup';
 import {
   Identity,
@@ -12,11 +14,16 @@ import {
   PACK_IDENTITIES,
 } from '../../constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
+import { CompanySchema } from '../../schemas/basic/CompanySchema';
 import { DiscountCodeSchema } from '../../schemas/basic/DiscountCodeSchema';
+import { DutySchema } from '../../schemas/basic/DutySchema';
 import { FulfillmentSchema } from '../../schemas/basic/FulfillmentSchema';
+import { OrderAdjustmentSchema } from '../../schemas/basic/OrderAdjustmentSchema';
 import { OrderTransactionSchema } from '../../schemas/basic/OrderTransactionSchema';
 import { PriceSetSchema } from '../../schemas/basic/PriceSetSchema';
+import { RefundLineItemSchema } from '../../schemas/basic/RefundLineItemSchema';
 import { RefundSchema } from '../../schemas/basic/RefundSchema';
+import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { OrderSyncTableSchema, orderFieldDependencies } from '../../schemas/syncTable/OrderSchema';
@@ -24,11 +31,12 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import {
+  AbstractSyncedRestResourceWithGraphQLMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
@@ -93,15 +101,38 @@ type Transaction = {
 type DiscountCode = {
   [K in keyof (typeof DiscountCodeSchema)['properties']]: coda.SchemaType<(typeof DiscountCodeSchema)['properties'][K]>;
 };
-type Refund = {
-  [K in keyof (typeof RefundSchema)['properties']]: coda.SchemaType<(typeof RefundSchema)['properties'][K]>;
-} & {
-  transactions: Transaction[] | null;
-};
 type PriceSet = {
   [K in keyof (typeof PriceSetSchema)['properties']]: coda.SchemaType<(typeof PriceSetSchema)['properties'][K]>;
 } & {
   transactions: Transaction[] | null;
+};
+export type ShippingLine = {
+  [K in keyof (typeof ShippingLineSchema)['properties']]: coda.SchemaType<(typeof ShippingLineSchema)['properties'][K]>;
+};
+type Company = {
+  [K in keyof (typeof CompanySchema)['properties']]: coda.SchemaType<(typeof CompanySchema)['properties'][K]>;
+};
+export type Duty = {
+  [K in keyof (typeof DutySchema)['properties']]: coda.SchemaType<(typeof DutySchema)['properties'][K]>;
+};
+type OrderAdjustment = {
+  [K in keyof (typeof OrderAdjustmentSchema)['properties']]: coda.SchemaType<
+    (typeof OrderAdjustmentSchema)['properties'][K]
+  >;
+};
+type RefundLineItem = {
+  [K in keyof (typeof RefundLineItemSchema)['properties']]: coda.SchemaType<
+    (typeof RefundLineItemSchema)['properties'][K]
+  >;
+};
+// TODO: can we make this more recursive to avoid adding manually the coda.SchemaType of subproperties?
+type Refund = {
+  [K in keyof (typeof RefundSchema)['properties']]: coda.SchemaType<(typeof RefundSchema)['properties'][K]>;
+} & {
+  duties: Duty[] | null;
+  transactions: Transaction[] | null;
+  order_adjustments: OrderAdjustment[] | null;
+  refund_line_items: RefundLineItem[] | null;
 };
 // #endregion
 
@@ -120,7 +151,7 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     checkout_token: string | null;
     client_details: { [key: string]: unknown } | null;
     closed_at: string | null;
-    company: { [key: string]: unknown } | null;
+    company: Company | null;
     confirmation_number: string | null;
     created_at: string | null;
     currency: string | null;
@@ -168,7 +199,7 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     // refunds: Refund[] | null | { [key: string]: any };
     refunds: Refund[] | null;
     shipping_address: { [key: string]: unknown } | null;
-    shipping_lines: { [key: string]: unknown }[] | null;
+    shipping_lines: ShippingLine[] | null;
     source_identifier: string | null;
     source_name: string | null;
     source_url: string | null;

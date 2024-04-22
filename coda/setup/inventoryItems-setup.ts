@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { InventoryItem } from '../../Resources/GraphQl/InventoryItem';
 import { Shop } from '../../Resources/Rest/Shop';
 import { PACK_IDENTITIES } from '../../constants';

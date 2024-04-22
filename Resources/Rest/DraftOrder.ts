@@ -2,7 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
 import { Identity, OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
@@ -14,13 +16,15 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { CodaSyncParams, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext, GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import {
+  AbstractSyncedRestResourceWithGraphQLMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { ShippingLine } from './Order';
 import { LineItem } from './OrderLineItem';
 import { Shop } from './Shop';
 
@@ -80,7 +84,7 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     order_id: number | null;
     payment_terms: { [key: string]: unknown } | null;
     shipping_address: { [key: string]: unknown } | null;
-    shipping_line: { [key: string]: unknown } | null;
+    shipping_line: ShippingLine | null;
     source_name: string | null;
     status: string | null;
     subtotal_price: string | null;

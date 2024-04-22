@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 import { TaxLineSchema } from './TaxLineSchema';
 
 /**
@@ -6,13 +7,7 @@ import { TaxLineSchema } from './TaxLineSchema';
  */
 export const ShippingLineSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description: 'The ID of the shipping line.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('shipping line'),
     code: {
       type: coda.ValueType.String,
       fixedId: 'code',
@@ -20,8 +15,7 @@ export const ShippingLineSchema = coda.makeObjectSchema({
       description: 'A reference to the shipping method.',
     },
     discounted_price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'discounted_price',
       fromKey: 'discounted_price',
       description:
@@ -37,8 +31,7 @@ export const ShippingLineSchema = coda.makeObjectSchema({
     },
     */
     price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'price',
       fromKey: 'price',
       description: "The price of this shipping method in the shop currency. Can't be negative.",
@@ -57,12 +50,7 @@ export const ShippingLineSchema = coda.makeObjectSchema({
       fromKey: 'source',
       description: 'The source of the shipping method.',
     },
-    title: {
-      type: coda.ValueType.String,
-      fixedId: 'title',
-      fromKey: 'title',
-      description: 'The title of the shipping method.',
-    },
+    title: PROPS.makeTitleProp('shipping method'),
     tax_lines: {
       type: coda.ValueType.Array,
       items: TaxLineSchema,

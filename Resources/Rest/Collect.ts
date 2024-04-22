@@ -8,8 +8,10 @@ import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { BaseContext, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 

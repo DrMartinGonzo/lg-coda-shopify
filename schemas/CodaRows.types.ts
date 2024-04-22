@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-04-18T09:54:25.330Z
+ * Last generated: 2024-04-22T08:24:41.435Z
  *
  */
 
@@ -62,8 +62,8 @@ export interface ArticleRow extends BaseRow {
  * Coda Row Interface for Blogs Sync Table
  */
 export interface BlogRow extends BaseRow {
-  admin_url?: string;
   id: number;
+  admin_url?: string;
   admin_graphql_api_id?: string;
   commentable?: string;
   created_at?: string | number | Date;
@@ -219,7 +219,7 @@ export interface DraftOrderRow extends BaseRow {
       discount_application_index?: number;
     }[];
     duties?: {
-      id?: number;
+      id: number;
       tax_lines?: {
         title?: string;
         price?: number;
@@ -278,7 +278,7 @@ export interface DraftOrderRow extends BaseRow {
     zip?: string;
   };
   shipping_line?: {
-    id?: number;
+    id: number;
     code?: string;
     discounted_price?: number;
     price?: number;
@@ -415,7 +415,6 @@ export interface InventoryItemRow extends BaseRow {
   created_at?: string | number | Date;
   tracked?: boolean;
   requires_shipping?: boolean;
-  sku?: string;
   variant?: {
     id: number;
     title: string;
@@ -461,7 +460,7 @@ export interface LocationRow extends BaseRow {
   zip?: string;
   admin_url?: string;
   stock_url?: string;
-  graphql_gid?: string;
+  admin_graphql_api_id?: string;
   local_pickup_settings?: {
     instructions?: string;
     pickupTime?: string;
@@ -600,7 +599,7 @@ export interface OrderRow extends BaseRow {
   browser_accept_language?: string;
   closed_at?: string | number | Date;
   company?: {
-    id?: number;
+    id: number;
     location_id?: number;
   };
   confirmation_number?: string;
@@ -640,7 +639,7 @@ export interface OrderRow extends BaseRow {
   fulfillments?: {
     admin_graphql_api_id?: string;
     created_at?: string | number | Date;
-    id?: number;
+    id: number;
     line_items?: {
       id: number;
       attributed_staffs?: {
@@ -682,7 +681,7 @@ export interface OrderRow extends BaseRow {
         discount_application_index?: number;
       }[];
       duties?: {
-        id?: number;
+        id: number;
         tax_lines?: {
           title?: string;
           price?: number;
@@ -764,7 +763,7 @@ export interface OrderRow extends BaseRow {
       discount_application_index?: number;
     }[];
     duties?: {
-      id?: number;
+      id: number;
       tax_lines?: {
         title?: string;
         price?: number;
@@ -811,10 +810,10 @@ export interface OrderRow extends BaseRow {
   processed_at?: string | number | Date;
   referring_site?: string;
   refunds?: {
-    id?: number;
+    id: number;
     created_at?: string | number | Date;
     duties?: {
-      id?: number;
+      id: number;
       tax_lines?: {
         title?: string;
         price?: number;
@@ -826,7 +825,7 @@ export interface OrderRow extends BaseRow {
     }[];
     note?: string;
     order_adjustments?: {
-      id?: number;
+      id: number;
       order_id?: number;
       refund_id?: number;
       kind?: string;
@@ -840,7 +839,7 @@ export interface OrderRow extends BaseRow {
       refund_type?: string;
     }[];
     refund_line_items?: {
-      id?: number;
+      id: number;
       line_item_id?: number;
       quantity?: number;
       restock_type?: string;
@@ -886,7 +885,7 @@ export interface OrderRow extends BaseRow {
     zip?: string;
   };
   shipping_lines?: {
-    id?: number;
+    id: number;
     code?: string;
     discounted_price?: number;
     price?: number;
@@ -972,7 +971,7 @@ export interface OrderLineItemRow extends BaseRow {
     discount_application_index?: number;
   }[];
   duties?: {
-    id?: number;
+    id: number;
     tax_lines?: {
       title?: string;
       price?: number;

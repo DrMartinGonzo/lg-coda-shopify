@@ -1,4 +1,4 @@
-import { SupportedResource } from './Resources/types/Resource.types';
+import { SupportedResource } from './Resources/types/SupportedResource';
 import { countryNames } from './contants--generated';
 
 // #region Cache

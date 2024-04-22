@@ -35,10 +35,11 @@ import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
 import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { GraphQlApiDataWithParentNode } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
-import { FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { GraphQlApiDataWithParentNode } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { FromRow } from '../types/Resource.types';
 import { MetafieldHelper } from '../Mixed/MetafieldHelper';
-import { GraphQlResourceNames, Node } from '../types/Resource.types';
+import { Node } from '../../graphql/types/graphql.types.';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 
 // #endregion
 

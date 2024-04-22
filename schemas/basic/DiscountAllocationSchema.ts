@@ -1,10 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const DiscountAllocationSchema = coda.makeObjectSchema({
   properties: {
     amount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'amount',
       fromKey: 'amount',
     },

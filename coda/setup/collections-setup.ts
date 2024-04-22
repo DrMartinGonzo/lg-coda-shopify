@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Collection } from '../../Resources/Rest/Collection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
@@ -11,7 +11,7 @@ import {
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesSingular,
-} from '../../Resources/types/Resource.types';
+} from '../../Resources/types/SupportedResource';
 import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';

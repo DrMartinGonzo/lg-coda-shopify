@@ -1,14 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const OrderAdjustmentSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fixedId: 'id',
-      fromKey: 'id',
-      useThousandsSeparator: false,
-      description: 'The unique identifier for the order adjustment',
-    },
+    id: PROPS.makeRequiredIdNumberProp('order adjustment'),
     order_id: {
       type: coda.ValueType.Number,
       fixedId: 'order_id',
@@ -25,7 +20,8 @@ export const OrderAdjustmentSchema = coda.makeObjectSchema({
       type: coda.ValueType.String,
       fixedId: 'kind',
       fromKey: 'kind',
-      description: 'The order adjustment type. Valid values:\n- shipping_refund\n- refund_discrepancy.',
+      description:
+        'The order adjustment type. Valid values:\n' + ['- shipping_refund', '- refund_discrepancy.'].join('\n'),
     },
     reason: {
       type: coda.ValueType.String,
@@ -35,8 +31,7 @@ export const OrderAdjustmentSchema = coda.makeObjectSchema({
         'The reason for the order adjustment. To set this value, include discrepancy_reason when you create a refund.',
     },
     amount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'amount',
       fromKey: 'amount',
       description:
@@ -51,8 +46,7 @@ export const OrderAdjustmentSchema = coda.makeObjectSchema({
     },
     */
     tax_amount: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'tax_amount',
       fromKey: 'tax_amount',
       description: 'The taxes that are added to amount, such as applicable shipping taxes added to a shipping refund.',

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { Article } from '../../Resources/Rest/Article';
 import { Asset } from '../../Resources/Rest/Asset';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';

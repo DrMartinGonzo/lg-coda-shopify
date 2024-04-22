@@ -1,12 +1,13 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseContext, RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { MergedCollection } from './MergedCollection';
 
 // #endregion
@@ -96,8 +97,8 @@ export class MergedCollection_Smart extends MergedCollection {
 
   public static async find({ context, options, id, fields = null }: FindArgs): Promise<MergedCollection_Smart | null> {
     const result = await this.baseFind<MergedCollection_Smart>({
-      urlIds: { id: id },
-      params: { fields: fields },
+      urlIds: { id },
+      params: { fields },
       context,
       options,
     });
@@ -169,8 +170,8 @@ export class MergedCollection_Smart extends MergedCollection {
       operation: 'order',
       context: this.context,
       urlIds: { id: this.apiData.id },
-      params: { products: products, sort_order: sort_order, ...otherArgs },
-      body: body,
+      params: { products, sort_order, ...otherArgs },
+      body,
       entity: this,
       options,
     });

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { FragmentOf, readFragment } from '../../../utils/tada-utils';
+import { readFragment } from '../../../utils/tada-utils';
 
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
 import { BaseRow } from '../../../schemas/CodaRows.types';
@@ -10,21 +10,10 @@ import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl } from '../../GraphQl/MetafieldGraphQl';
 import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
-import { Node } from '../../types/Resource.types';
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
-import { BaseSaveArgs, GraphQlApiData } from './AbstractGraphQlResource';
+import { BaseSaveArgs, GraphQlApiDataWithMetafields } from './AbstractGraphQlResource';
 import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
 
-// #endregion
-
-// #region Types
-export interface GraphQlApiDataWithMetafields extends GraphQlApiData {
-  metafields: { nodes: Array<FragmentOf<typeof metafieldFieldsFragment>> };
-  restMetafieldInstances?: Array<Metafield>;
-}
-export interface GraphQlApiDataWithParentNode extends GraphQlApiData {
-  parentNode: Node;
-}
 // #endregion
 
 export abstract class AbstractSyncedGraphQlResourceWithMetafields extends AbstractSyncedGraphQlResource {

@@ -1,41 +1,35 @@
 import * as coda from '@codahq/packs-sdk';
-import { ProductVariantReference } from './ProductVariantSchema';
-import { OPTIONS_COUNTRY_NAMES } from '../../constants';
-import { PACK_IDENTITIES } from '../../constants';
-
-import type { FieldDependency } from '../Schema.types';
+import * as PROPS from '../../coda/coda-properties';
+import { OPTIONS_COUNTRY_NAMES, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { ProductVariantReference } from './ProductVariantSchema';
+
+// #region Helpers
+export const inventoryItemRequiresShippingProp = {
+  ...PROPS.BOOLEAN,
+  fixedId: 'requires_shipping',
+  fromKey: 'requires_shipping',
+  description: 'Whether the item requires shipping.',
+};
+// #endregion
 
 export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
-      required: true,
-      fixedId: 'id',
-      fromKey: 'id',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('inventory item'),
+    id: PROPS.makeRequiredIdNumberProp('inventory item'),
     inventory_history_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'inventory_history_url',
     },
     cost: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'cost',
       fromKey: 'cost',
       mutable: true,
       description: "The unit cost of the inventory item. The shop's default currency is used.",
     },
     country_code_of_origin: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       options: OPTIONS_COUNTRY_NAMES,
       fixedId: 'country_code_of_origin',
       fromKey: 'country_code_of_origin',
@@ -57,20 +51,8 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
       description: 'The ISO 3166-2 alpha-2 province code of where the item originated from.',
     },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the inventory item was last modified.',
-    },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the inventory item was created.',
-    },
+    updated_at: PROPS.makeUpdatedAtProp('inventory item'),
+    created_at: PROPS.makeCreatedAtProp('inventory item'),
     tracked: {
       type: coda.ValueType.Boolean,
       fixedId: 'tracked',
@@ -79,20 +61,9 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
       description:
         'Whether inventory levels are tracked for the item. If true, then the inventory quantity changes are tracked by Shopify.',
     },
-    requires_shipping: {
-      type: coda.ValueType.Boolean,
-      fixedId: 'requires_shipping',
-      fromKey: 'requires_shipping',
-      description:
-        'Whether a customer needs to provide a shipping address when placing an order containing the inventory item.',
-    },
+    requires_shipping: inventoryItemRequiresShippingProp,
     // Not needed : already in ProductVariant
-    // sku: {
-    //   type: coda.ValueType.String,
-    //   fixedId: 'sku',
-    //   fromKey: 'sku',
-    //   description: 'The unique SKU (stock keeping unit) of the inventory item.',
-    // },
+    // sku: itemSkuProp,
     variant: {
       ...ProductVariantReference,
       fixedId: 'variant',
@@ -100,8 +71,7 @@ export const InventoryItemSyncTableSchema = coda.makeObjectSchema({
       description: 'The variant that owns this inventory item',
     },
     variant_id: {
-      type: coda.ValueType.Number,
-      useThousandsSeparator: false,
+      ...PROPS.ID_NUMBER,
       fixedId: 'variant_id',
       fromKey: 'variant_id',
       description: 'The ID of the variant that owns this inventory item.',

@@ -1,12 +1,13 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
+import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseContext, RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { MergedCollection } from './MergedCollection';
 
 // #endregion
@@ -128,17 +129,17 @@ export class MergedCollection_Custom extends MergedCollection {
       urlIds: {},
       params: {
         limit,
-        ids: ids,
-        since_id: since_id,
-        title: title,
-        product_id: product_id,
-        handle: handle,
-        updated_at_min: updated_at_min,
-        updated_at_max: updated_at_max,
-        published_at_min: published_at_min,
-        published_at_max: published_at_max,
-        published_status: published_status,
-        fields: fields,
+        ids,
+        since_id,
+        title,
+        product_id,
+        handle,
+        updated_at_min,
+        updated_at_max,
+        published_at_min,
+        published_at_max,
+        published_status,
+        fields,
         ...otherArgs,
       },
       options,

@@ -4,7 +4,7 @@ import { FetchRequestOptions } from '../../Clients/Client.types';
 import { BaseContext } from '../types/Resource.types';
 import { CACHE_DEFAULT, Identity, PACK_IDENTITIES } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Theme } from './Theme';
 
 // #endregion

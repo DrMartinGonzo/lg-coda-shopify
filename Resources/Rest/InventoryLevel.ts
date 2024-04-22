@@ -10,9 +10,11 @@ import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/Inventory
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { parseOptionId } from '../../utils/helpers';
 import { FindAllRestResponse, SaveArgs } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource, FromRow } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { FromRow } from '../types/Resource.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseContext, RestResourcesPlural, RestResourcesSingular } from '../types/Resource.types';
+import { BaseContext } from '../types/Resource.types';
+import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 

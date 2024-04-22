@@ -1,56 +1,24 @@
 import * as coda from '@codahq/packs-sdk';
-import { NOT_FOUND } from '../../constants';
-import { PACK_IDENTITIES } from '../../constants';
-
-import type { FieldDependency } from '../Schema.types';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { FieldDependency } from '../Schema.types';
 
 export const PageSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the page in the Shopify admin.',
-    },
+    admin_url: PROPS.makeAdminUrlProp('page'),
     shop_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'shop_url',
       description: 'A link to the page in the oniine shop.',
     },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fromKey: 'admin_graphql_api_id',
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID of the page.',
-    },
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      fixedId: 'id',
-      required: true,
-      useThousandsSeparator: false,
-      description: 'The unique numeric identifier for the page.',
-    },
-    body: {
-      type: coda.ValueType.String,
-      fixedId: 'body',
-      description: 'Text-only content of the page, stripped of any HTML tags and formatting that were included.',
-    },
-    body_html: {
-      type: coda.ValueType.String,
-      mutable: true,
-      fixedId: 'body_html',
-      fromKey: 'body_html',
-      description: 'The text content of the page, in raw HTML.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('page'),
+    id: PROPS.makeRequiredIdNumberProp('page'),
+    body: PROPS.makeBodyProp('page'),
+    body_html: { ...PROPS.makeBodyHtmlProp('page'), mutable: true },
     handle: {
-      type: coda.ValueType.String,
+      ...PROPS.makeHandleProp('page'),
       mutable: true,
-      fixedId: 'handle',
-      fromKey: 'handle',
-      description: 'A unique, human-friendly string for the page.',
     },
     author: {
       type: coda.ValueType.String,
@@ -60,16 +28,12 @@ export const PageSyncTableSchema = coda.makeObjectSchema({
       description: 'The name of the person who created the page.',
     },
     title: {
-      type: coda.ValueType.String,
+      ...PROPS.makeTitleProp('page'),
       required: true,
       mutable: true,
-      fixedId: 'title',
-      fromKey: 'title',
-      description: 'The title of the page.',
     },
     template_suffix: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...PROPS.SELECT_LIST,
       fixedId: 'template_suffix',
       fromKey: 'template_suffix',
       mutable: true,
@@ -78,36 +42,13 @@ export const PageSyncTableSchema = coda.makeObjectSchema({
       description:
         'The suffix of the template that is used to render the page. If the value is an empty string or null, then the default page template is used.',
     },
-    created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'created_at',
-      fromKey: 'created_at',
-      description: 'The date and time when the page was created.',
-    },
-    updated_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updated_at',
-      fromKey: 'updated_at',
-      description: 'The date and time when the page was last updated.',
-    },
+    created_at: PROPS.makeCreatedAtProp('page'),
+    updated_at: PROPS.makeUpdatedAtProp('page'),
     published: {
-      type: coda.ValueType.Boolean,
-      codaType: coda.ValueHintType.Toggle,
+      ...PROPS.makePublishedProp('page'),
       mutable: true,
-      fixedId: 'published',
-      fromKey: 'published',
-      description: 'Whether the page is visible.',
     },
-    published_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      mutable: true,
-      fixedId: 'published_at',
-      fromKey: 'published_at',
-      description: 'The date and time when the page was published. Blank when the page is hidden.',
-    },
+    published_at: { ...PROPS.makePublishedAtProp('page'), mutable: true },
   },
   displayProperty: 'title',
   idProperty: 'id',

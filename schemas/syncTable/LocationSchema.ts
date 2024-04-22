@@ -1,61 +1,42 @@
 import * as coda from '@codahq/packs-sdk';
-import { NOT_FOUND } from '../../constants';
-import { OPTIONS_COUNTRY_NAMES } from '../../constants';
-import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
-import { PACK_IDENTITIES } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, OPTIONS_COUNTRY_NAMES, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
+import {
+  addressAddress1,
+  addressAddress2,
+  addressCityProp,
+  addressCountryCodeProp,
+  addressCountryProp,
+  addressPhoneProp,
+  addressProvinceCodeProp,
+  addressProvinceProp,
+  addressZipProp,
+} from '../basic/AddressSchema';
 
 export const LocationSyncTableSchema = coda.makeObjectSchema({
   properties: {
-    id: {
-      type: coda.ValueType.Number,
-      fromKey: 'id',
-      required: true,
-      fixedId: 'id',
-      useThousandsSeparator: false,
-      description: 'The ID of the location.',
-    },
+    id: PROPS.makeRequiredIdNumberProp('location'),
     active: {
       type: coda.ValueType.Boolean,
       fixedId: 'active',
       description:
         "Whether the location is active. If true, then the location can be used to sell products, stock inventory, and fulfill orders. Merchants can deactivate locations from the Shopify admin. Deactivated locations don't contribute to the shop's location limit.",
     },
-    address1: {
-      type: coda.ValueType.String,
-      fixedId: 'address1',
-      mutable: true,
-      description: "The location's street address.",
-    },
-    address2: {
-      type: coda.ValueType.String,
-      fixedId: 'address2',
-      mutable: true,
-      description: "The optional second line of the location's street address.",
-    },
-    city: {
-      type: coda.ValueType.String,
-      fixedId: 'city',
-      mutable: true,
-      description: 'The city the location is in.',
-    },
-    country: {
-      type: coda.ValueType.String,
-      fixedId: 'country',
-      description: 'The country the location is in.',
-    },
+    address1: { ...addressAddress1, mutable: true },
+    address2: { ...addressAddress2, mutable: true },
+    city: { ...addressCityProp, mutable: true },
+    country: addressCountryProp,
     country_code: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.SelectList,
+      ...addressCountryCodeProp,
+      ...PROPS.SELECT_LIST,
       options: OPTIONS_COUNTRY_NAMES,
-      fixedId: 'country_code',
       mutable: true,
       requireForUpdates: false,
-      description: 'The two-letter code (ISO 3166-1 alpha-2 format) corresponding to country the location is in.',
     },
     // created_at: {
-    //   type: coda.ValueType.String,
-    //   codaType: coda.ValueHintType.DateTime,
+    //   ...PROPS.DATETIME_STRING,
     //   fixedId: 'created_at',
     //   description: 'The date and time when the location was created.',
     // },
@@ -66,46 +47,17 @@ export const LocationSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
       description: 'The name of the location.',
     },
-    phone: {
-      type: coda.ValueType.String,
-      fixedId: 'phone',
-      mutable: true,
-      description: 'The phone number of the location.',
-    },
-    province: {
-      type: coda.ValueType.String,
-      fixedId: 'province',
-      description: 'The province, state, or district of the location.',
-    },
-    province_code: {
-      type: coda.ValueType.String,
-      fixedId: 'province_code',
-      mutable: true,
-      description: 'The province, state, or district code (ISO 3166-2 alpha-2 format) of the location.',
-    },
-    zip: {
-      type: coda.ValueType.String,
-      fixedId: 'zip',
-      mutable: true,
-      description: 'The zip or postal code.',
-    },
-    admin_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
-      fixedId: 'admin_url',
-      description: 'A link to the location in the Shopify admin.',
-    },
+    phone: { ...addressPhoneProp, mutable: true },
+    province: addressProvinceProp,
+    province_code: { ...addressProvinceCodeProp, mutable: true },
+    zip: { ...addressZipProp, mutable: true },
+    admin_url: PROPS.makeAdminUrlProp('location'),
     stock_url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'stock_url',
       description: 'A link to the stock at the location in the Shopify admin.',
     },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      fixedId: 'graphql_gid',
-      description: 'The GraphQL GID of the location.',
-    },
+    graphql_gid: PROPS.makeGraphQlGidProp('location'),
     // Requires any of shipping access scopes or preferences user permission
     local_pickup_settings: {
       ...LocalPickupSettingsSchema,

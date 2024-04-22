@@ -1,6 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
@@ -11,9 +12,8 @@ import { formatProductVariantReference } from '../../schemas/syncTable/ProductVa
 import { deepCopy } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { BaseContext } from '../types/Resource.types';
-import { Order } from './Order';
+import { Duty, Order } from './Order';
 import { Shop } from './Shop';
 
 // #endregion
@@ -40,6 +40,8 @@ export type LineItem = {
   [K in keyof (typeof OrderLineItemSchema)['properties']]: coda.SchemaType<
     (typeof OrderLineItemSchema)['properties'][K]
   >;
+} & {
+  duties: Duty[] | null;
 };
 // #endregion
 

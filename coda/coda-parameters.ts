@@ -8,7 +8,7 @@ import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition'
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { Asset } from '../Resources/Rest/Asset';
 import { Blog } from '../Resources/Rest/Blog';
-import { GraphQlResourceNames, RestResourceSingular } from '../Resources/types/Resource.types';
+import { GraphQlResourceNames, RestResourceSingular } from '../Resources/types/SupportedResource';
 import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import {
   CACHE_DEFAULT,

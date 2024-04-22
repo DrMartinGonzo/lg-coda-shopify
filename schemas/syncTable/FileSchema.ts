@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
-import { NOT_FOUND } from '../../constants';
-import { PACK_IDENTITIES } from '../../constants';
+import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 
 export const FileSyncTableSchema = coda.makeObjectSchema({
@@ -13,13 +13,7 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
       description: 'The name of the file including its extension.',
     },
-    graphql_gid: {
-      type: coda.ValueType.String,
-      required: true,
-      fixedId: 'graphql_gid',
-      fromKey: 'id',
-      description: 'The GraphQL GID of the file.',
-    },
+    graphql_gid: { ...PROPS.makeGraphQlGidProp('file', 'id'), required: true },
     alt: {
       type: coda.ValueType.String,
       fixedId: 'alt',
@@ -27,21 +21,10 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
       description: 'A word or phrase to describe the contents or the function of a file.',
     },
-    createdAt: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'createdAt',
-      description: 'The date and time when the file was created.',
-    },
-    updatedAt: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
-      fixedId: 'updatedAt',
-      description: 'The date and time when the file was last updated.',
-    },
+    createdAt: PROPS.makeCreatedAtProp('file', 'createdAt', 'createdAt'),
+    updatedAt: PROPS.makeUpdatedAtProp('file', 'updatedAt', 'updatedAt'),
     preview: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.ImageReference,
+      ...PROPS.IMAGE_REF,
       fixedId: 'preview',
       description: 'The preview image for the file.',
     },
@@ -57,8 +40,7 @@ export const FileSyncTableSchema = coda.makeObjectSchema({
       description: 'The size of the original file in bytes.',
     },
     url: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.Url,
+      ...PROPS.LINK,
       fixedId: 'url',
       description: 'The location of the file as a URL.',
     },

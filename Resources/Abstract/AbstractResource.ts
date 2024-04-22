@@ -4,6 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { Body } from '@shopify/shopify-api/rest/types';
 import { Identity } from '../../constants';
 import { isDefinedEmpty } from '../../utils/helpers';
+import { ResourceConstructorArgs } from '../types/Resource.types';
 
 // #endregion
 
@@ -71,7 +72,7 @@ export abstract class AbstractResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  constructor({ context, fromData }: { context: coda.ExecutionContext; fromData?: Body | null }) {
+  constructor({ context, fromData }: ResourceConstructorArgs) {
     this.context = context;
 
     if (fromData) {

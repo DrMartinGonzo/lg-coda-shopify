@@ -1,4 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const CollectionImageSchema = coda.makeObjectSchema({
   properties: {
@@ -13,8 +14,7 @@ export const CollectionImageSchema = coda.makeObjectSchema({
     // The height of the image in pixels.
     height: { type: coda.ValueType.Number },
     created_at: {
-      type: coda.ValueType.String,
-      codaType: coda.ValueHintType.DateTime,
+      ...PROPS.DATETIME_STRING,
       description: 'The time and date when the image was added to the collection.',
     },
   },

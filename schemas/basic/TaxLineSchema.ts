@@ -1,16 +1,11 @@
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const TaxLineSchema = coda.makeObjectSchema({
   properties: {
-    title: {
-      type: coda.ValueType.String,
-      fixedId: 'title',
-      fromKey: 'title',
-      description: 'The name of the tax.',
-    },
+    title: PROPS.makeTitleProp('tax'),
     price: {
-      type: coda.ValueType.Number,
-      codaType: coda.ValueHintType.Currency,
+      ...PROPS.CURRENCY,
       fixedId: 'price',
       fromKey: 'price',
       description: 'The amount of tax to be charged in the shop currency.',

@@ -1,8 +1,12 @@
 // #region Imports
-import { VariablesOf, readFragment } from '../../utils/tada-utils';
+import * as coda from '@codahq/packs-sdk';
 
 import { GraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlClient';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithGraphQLMetafields';
+import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import {
+  AbstractSyncedRestResourceWithGraphQLMetafields,
+  AbstractSyncedRestResourceWithRestMetafields,
+} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../graphql/metafields-graphql';
@@ -11,10 +15,14 @@ import { FieldDependency } from '../../schemas/Schema.types';
 import { graphQlGidToId } from '../../utils/conversion-utils';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
 import { splitMetaFieldFullKey } from '../../utils/metafields-utils';
-import { AbstractSyncTableManagerRestWithMetafields } from '../Abstract/Rest/AbstractSyncTableManagerRestWithMetafields';
-import { CurrentBatchType, SyncTableMixedContinuation } from '../types/SyncTable.types';
+import { VariablesOf, readFragment } from '../../utils/tada-utils';
+import { AbstractSyncTableManagerWithMetafields } from '../Abstract/AbstractSyncTableManagerWithMetafields';
+import { CurrentBatchType, SyncTableMixedContinuation, SyncTableRestContinuation } from '../types/SyncTable.types';
 import {
+  ExecuteRestSyncArgs,
   ExecuteRestSyncWithGraphQlMetafieldsArgs,
+  ExecuteRestSyncWithRestMetafieldsArgs,
+  ISyncTableManagerConstructorArgs,
   ISyncTableManagerWithMetafields,
   SyncTableManagerRestResult,
 } from '../types/SyncTableManager.types';
@@ -23,20 +31,66 @@ import {
   skipGraphQlSyncTableRun,
   stringifyContinuationProperty,
 } from '../utils/syncTableManager-utils';
+import { SyncTableManagerRest } from './SyncTableManagerRest';
 
 // #endregion
 
-export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields>
-  extends AbstractSyncTableManagerRestWithMetafields<
-    BaseT,
-    SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>
-  >
-  implements ISyncTableManagerWithMetafields
-{
+// prettier-ignore
+export abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends AbstractSyncedRestResource, C extends coda.Continuation> extends AbstractSyncTableManagerWithMetafields<BaseT, C> implements ISyncTableManagerWithMetafields {
+  protected parentSyncTableManager: SyncTableManagerRest<BaseT>;
+
+  constructor({ schema, codaSyncParams, context }: ISyncTableManagerConstructorArgs) {
+    super({ schema, codaSyncParams, context });
+    this.parentSyncTableManager = new SyncTableManagerRest({ schema, codaSyncParams, context });
+  }
+
+  public abstract executeSync({
+    sync,
+    defaultLimit,
+  }: ExecuteRestSyncArgs<BaseT>): Promise<SyncTableManagerRestResult<typeof this.continuation, BaseT>>;
+}
+
+// prettier-ignore
+export class SyncTableManagerRestWithRestMetafields<BaseT extends AbstractSyncedRestResourceWithRestMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableRestContinuation> implements ISyncTableManagerWithMetafields {
+  public async executeSync({
+    sync,
+    syncMetafields,
+    defaultLimit,
+  }: ExecuteRestSyncWithRestMetafieldsArgs<BaseT>): Promise<
+    SyncTableManagerRestResult<typeof this.continuation, BaseT>
+  > {
+    /** ————————————————————————————————————————————————————————————
+     * Perform the main Rest Sync
+     */
+    const { response, continuation } = await this.parentSyncTableManager.executeSync({
+      sync,
+      defaultLimit: defaultLimit,
+    });
+
+    /** ————————————————————————————————————————————————————————————
+     * Augment Rest sync with metafields fetched via Rest for each resource
+     */
+    if (this.shouldSyncMetafields) {
+      await Promise.all(
+        response.data.map(async (item) => {
+          const metafieldsResponse = await syncMetafields(item);
+          item.apiData.metafields = metafieldsResponse.data;
+        })
+      );
+    }
+
+    return {
+      response,
+      continuation,
+    };
+  }
+}
+
+// prettier-ignore
+export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>> implements ISyncTableManagerWithMetafields {
   protected currentRestLimit: number;
 
   // ———————————————————————————————————————————————
-
   public getSyncedStandardFields(dependencies: Array<FieldDependency<any>>): string[] {
     // admin_graphql_api_id is necessary for metafield sync
     return arrayUnique<string>(super.getSyncedStandardFields(dependencies).concat(['admin_graphql_api_id']));
@@ -211,5 +265,4 @@ export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractSyn
       continuation: this.continuation,
     };
   }
-  // #endregion
 }

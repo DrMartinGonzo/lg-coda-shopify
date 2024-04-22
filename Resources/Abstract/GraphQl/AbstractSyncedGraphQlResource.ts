@@ -13,12 +13,14 @@ import { BaseRow } from '../../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../../utils/coda-utils';
 import { arrayUnique } from '../../../utils/helpers';
 import { GetSchemaArgs } from '../AbstractResource';
-import { BaseConstructorSyncedArgs, FromRow } from '../Rest/AbstractSyncedRestResource';
+import { SyncedResourceConstructorArgs } from '../../types/Resource.types';
+import { FromRow } from '../../types/Resource.types';
 import { AbstractGraphQlResource } from './AbstractGraphQlResource';
+import { ISyncedResource } from '../../types/Resource.types';
 
 // #endregion
 
-export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResource {
+export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResource implements ISyncedResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
 
@@ -133,15 +135,16 @@ export abstract class AbstractSyncedGraphQlResource extends AbstractGraphQlResou
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  constructor({ context, fromData, fromRow }: BaseConstructorSyncedArgs) {
+  constructor({ context, fromData, fromRow }: SyncedResourceConstructorArgs) {
     super({ context, fromData });
     if (fromRow) {
       this.setDataFromRow(fromRow);
     }
   }
 
-  public abstract formatToRow(...args: any[]): BaseRow;
   protected abstract formatToApi(...args: any[]): any;
+
+  public abstract formatToRow(...args: any[]): BaseRow;
 
   protected setDataFromRow(fromRow: FromRow): void {
     this.setData(this.formatToApi(fromRow));
