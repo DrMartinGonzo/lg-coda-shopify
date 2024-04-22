@@ -1,3 +1,4 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { readFragment, readFragmentArray } from '../utils/tada-utils';
 
@@ -35,8 +36,19 @@ import { idToGraphQlGid } from '../utils/conversion-utils';
 import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
 import { fetchProductTypesGraphQl } from '../utils/products-utils';
 
+// #endregion
+
 export function createOrUpdateMetafieldDescription(actionName: 'update' | 'create', name: string) {
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
+}
+
+export function makeTemplateSuffixParameter(kind: RestResourceSingular) {
+  return coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'templateSuffix',
+    autocomplete: makeAutocompleteTemplateSuffixesFor(kind),
+    description: `The suffix of the Liquid template used for the ${kind}. If this property is null, then the ${kind} uses the default template.`,
+  });
 }
 
 // #region Autocomplete
@@ -334,13 +346,7 @@ const articleInputs = {
     description:
       'A summary of the article, which can include HTML markup. The summary is used by the online store theme to display the article on other pages, such as the home page or the main blog page.',
   }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('article'),
-    description:
-      'The suffix of the Liquid template used for the article. If this property is null, then the article uses the default template.',
-  }),
+  templateSuffix: makeTemplateSuffixParameter('article'),
 };
 // #endregion
 
@@ -363,13 +369,7 @@ const blogInputs = {
     description: 'The ID of the blog.',
     autocomplete: autocompleteBlogParameterWithName,
   }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('blog'),
-    description:
-      'The suffix of the Liquid template used for the blog. If this property is null, then the blog uses the default template.',
-  }),
+  templateSuffix: makeTemplateSuffixParameter('blog'),
 };
 // #endregion
 
@@ -384,13 +384,7 @@ const collectionInputs = {
     name: 'collectionId',
     description: 'The ID of the collection.',
   },
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('collection'),
-    description:
-      'The suffix of the Liquid template used for the collection. If this property is null, then the collection uses the default template.',
-  }),
+  templateSuffix: makeTemplateSuffixParameter('collection'),
 };
 // #endregion
 
@@ -716,13 +710,7 @@ const pageInputs = {
     name: 'pageId',
     description: 'The ID of the page.',
   },
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('page'),
-    description:
-      'The suffix of the Liquid template used for the page. If this property is null, then the page uses the default template.',
-  }),
+  templateSuffix: makeTemplateSuffixParameter('page'),
 };
 // #endregion
 
@@ -758,13 +746,7 @@ const productInputs = {
     autocomplete: OPTIONS_PRODUCT_STATUS_REST,
     description: 'The status of the product.',
   }),
-  templateSuffix: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'templateSuffix',
-    autocomplete: makeAutocompleteTemplateSuffixesFor('product'),
-    description:
-      'The suffix of the Liquid template used for the product page. If this property is null, then the product page uses the default template.',
-  }),
+  templateSuffix: makeTemplateSuffixParameter('product'),
   title: {
     ...generalInputs.title,
     description: 'The name of the product.',
@@ -928,16 +910,16 @@ const generalFilters = {
     name: 'syncMetafields',
     description: 'Also retrieve metafields\n(only for metafields with a definition, can slow down the sync)',
   }),
-  tagLOL: coda.makeParameter({
+  tagsString: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'tags',
     description: 'Filter items with a specific tag.',
   }),
-  tagsArray: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'tags',
-    description: 'Filter items by a comma-separated list of tags.',
-  }),
+  // tagsArray: coda.makeParameter({
+  //   type: coda.ParameterType.StringArray,
+  //   name: 'tags',
+  //   description: 'Filter items by a comma-separated list of tags.',
+  // }),
   title: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
@@ -1086,6 +1068,11 @@ const productFilters = {
     name: 'productId',
     description: 'Filter results by product ID.',
   },
+  collectionId: {
+    ...generalFilters.id,
+    name: 'collectionId',
+    description: 'Filter results by product collection ID.',
+  },
   idArray: {
     ...generalFilters.idArray,
     name: 'productIds',
@@ -1097,12 +1084,12 @@ const productFilters = {
     autocomplete: autocompleteProductTypes,
     description: 'Filter results by product type.',
   }),
-  productTypesArray: coda.makeParameter({
-    type: coda.ParameterType.StringArray,
-    name: 'productTypes',
-    description: 'Filter results by product types.',
-    autocomplete: autocompleteProductTypes,
-  }),
+  // productTypesArray: coda.makeParameter({
+  //   type: coda.ParameterType.StringArray,
+  //   name: 'productTypes',
+  //   description: 'Filter results by product types.',
+  //   autocomplete: autocompleteProductTypes,
+  // }),
   publishedStatus: {
     ...generalFilters.publishedStatus,
     description: 'Filter results by the published status of the product.',
@@ -1119,10 +1106,10 @@ const productFilters = {
     ...generalFilters.publishedAtRange,
     description: 'Filter results for products published in the given date range.',
   },
-  status: {
-    ...productInputs.status,
-    description: 'Filter results by the status of the product.',
-  },
+  // status: {
+  //   ...productInputs.status,
+  //   description: 'Filter results by the status of the product.',
+  // },
   statusArray: coda.makeParameter({
     type: coda.ParameterType.StringArray,
     name: 'status',

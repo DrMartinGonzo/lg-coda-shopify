@@ -152,6 +152,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
       vendor,
       handles,
       ids,
+      collectionId,
     ] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
@@ -161,6 +162,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
         limit,
         firstPageParams: {
           fields: fields.join(','),
+          collection_id: collectionId,
           handle: handles && handles.length ? handles.join(',') : undefined,
           ids: ids && ids.length ? ids.join(',') : undefined,
           product_type,

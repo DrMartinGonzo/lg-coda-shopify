@@ -37,7 +37,6 @@ export const Sync_Products = coda.makeSyncTable({
       }
     },
   },
-  // TODO: finish implementing Rest filters
   formula: {
     name: 'SyncProducts',
     description: '<Help text for the sync formula, not show to the user>',
@@ -58,6 +57,7 @@ export const Sync_Products = coda.makeSyncTable({
       { ...filters.product.vendor, optional: true },
       { ...filters.general.handleArray, optional: true },
       { ...filters.product.idArray, optional: true },
+      { ...filters.product.collectionId, optional: true },
     ],
     execute: async function (params, context) {
       return Product.sync(params, context);

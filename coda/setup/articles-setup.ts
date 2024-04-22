@@ -54,7 +54,7 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedAtRange, optional: true },
       { ...filters.general.handle, optional: true },
       { ...filters.general.publishedStatus, optional: true },
-      { ...filters.general.tagLOL, optional: true },
+      { ...filters.general.tagsString, optional: true },
     ],
     execute: async function (params, context) {
       return Article.sync(params, context);
