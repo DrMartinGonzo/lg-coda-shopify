@@ -6,6 +6,7 @@ import { NotFoundVisibleError, RequiredParameterMissingVisibleError, Unsupported
 import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/Metafield.types';
+import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
 import { Article } from '../../Resources/Rest/Article';
 import { Blog } from '../../Resources/Rest/Blog';
@@ -16,12 +17,12 @@ import { GraphQlResourceName, GraphQlResourceNames } from '../../Resources/types
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
+import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { filters, inputs } from '../coda-parameters';
-import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 
 // #endregion
 
@@ -259,18 +260,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
   },
 });
 
-export const Action_DeleteMetafield = coda.makeFormula({
-  name: 'DeleteMetafield',
-  description: 'delete metafield.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [{ ...inputs.metafield.id, description: 'The ID of the metafield to delete.' }],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async ([metafieldId], context) => {
-    await Metafield.delete({ context, id: metafieldId });
-    return true;
-  },
-});
+export const Action_DeleteMetafield = makeDeleteRestResourceAction(Metafield, inputs.metafield.id);
 // #endregion
 
 // #region Formulas

@@ -113,7 +113,6 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
 
   protected static readonly graphQlName = GraphQlResourceNames.Customer;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'customers/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'customers.json' },
@@ -168,7 +167,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     const [syncMetafields, created_at, updated_at, ids] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

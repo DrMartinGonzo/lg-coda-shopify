@@ -103,7 +103,6 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
 
   protected static readonly graphQlName = GraphQlResourceNames.DraftOrder;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'draft_orders/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'draft_orders.json' },
@@ -172,7 +171,7 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     const [syncMetafields, status, updated_at, ids, since_id] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

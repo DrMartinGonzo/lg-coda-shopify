@@ -1,16 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Article } from '../../Resources/Rest/Article';
 import { Asset } from '../../Resources/Rest/Asset';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
@@ -56,13 +56,9 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.tagsString, optional: true },
     ],
-    execute: async function (params, context) {
-      return Article.sync(params, context);
-    },
+    execute: async (params, context) => Article.sync(params, context),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Article.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (params, updates, context) => Article.syncUpdate(params, updates, context),
   },
 });
 // #endregion
@@ -221,37 +217,11 @@ export const Action_UpdateArticle = coda.makeFormula({
   },
 });
 
-export const Action_DeleteArticle = coda.makeFormula({
-  name: 'DeleteArticle',
-  description: 'Delete an existing Shopify article and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.article.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async ([articleId], context) => {
-    await Article.delete({ context, id: articleId });
-    return true;
-  },
-});
+export const Action_DeleteArticle = makeDeleteRestResourceAction(Article, inputs.article.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Article = coda.makeFormula({
-  name: 'Article',
-  description: 'Return a single article from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.article.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: ArticleSyncTableSchema,
-  execute: async ([articleId], context) => {
-    const article = await Article.find({ context, id: articleId });
-    if (article) {
-      return article.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Article);
-  },
-});
+export const Formula_Article = makeFetchSingleRestResourceAction(Article, inputs.article.id);
 
 export const Format_Article: coda.Format = {
   name: 'Article',

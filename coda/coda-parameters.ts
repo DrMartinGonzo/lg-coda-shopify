@@ -42,7 +42,7 @@ export function createOrUpdateMetafieldDescription(actionName: 'update' | 'creat
   return `List of ${name} metafields to ${actionName}. Use \`FormatMetafield\` or \`FormatListMetafield\` formulas.`;
 }
 
-export function makeTemplateSuffixParameter(kind: RestResourceSingular) {
+function makeTemplateSuffixParameter(kind: RestResourceSingular) {
   return coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'templateSuffix',

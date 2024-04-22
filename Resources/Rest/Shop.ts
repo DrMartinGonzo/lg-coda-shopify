@@ -89,7 +89,6 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Shop;
 
   protected static readonly graphQlName = GraphQlResourceNames.Shop;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'get', operation: 'get', ids: [], path: 'shop.json' },
   ];
@@ -109,7 +108,7 @@ export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
     syncTableManager,
   }: MakeSyncRestFunctionArgs<Shop, typeof Sync_Shops>): SyncRestFunction<Shop> {
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

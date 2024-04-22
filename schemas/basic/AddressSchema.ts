@@ -74,7 +74,7 @@ export const addressZipProp = {
   description: 'The postal code (for example, zip, postcode, or Eircode) of the address.',
 };
 
-export const addressPersonCompanyProp = {
+const addressPersonCompanyProp = {
   ...PROPS.STRING,
   fromKey: 'company',
   fixedId: 'company',
@@ -92,7 +92,7 @@ export const addressPersonLastNameProp = {
   fixedId: 'last_name',
   description: 'The last name of the person.',
 };
-export const addressPersonFullNameProp = {
+const addressPersonFullNameProp = {
   ...PROPS.STRING,
   fromKey: 'name',
   fixedId: 'name',

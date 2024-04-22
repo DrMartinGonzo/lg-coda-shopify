@@ -68,7 +68,6 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
 
   protected static readonly graphQlName = GraphQlResourceNames.Page;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'pages/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'pages.json' },
@@ -111,7 +110,7 @@ export class Page extends AbstractSyncedRestResourceWithRestMetafields {
       codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls

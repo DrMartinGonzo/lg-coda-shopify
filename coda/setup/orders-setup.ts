@@ -2,12 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { AllArgs, Order } from '../../Resources/Rest/Order';
-import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
-import { OrderRow } from '../../schemas/CodaRows.types';
+import { CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
+import { makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { formatOrderForDocExport } from '../../utils/orders-utils';
 import { filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -59,22 +58,7 @@ export const Sync_Orders = coda.makeSyncTable({
 // #endregion
 
 // #region Formulas
-export const Formula_Order = coda.makeFormula({
-  name: 'Order',
-  description: 'Get a single order data.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.order.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: OrderSyncTableSchema,
-  execute: async function ([orderId], context) {
-    const order = await Order.find({ id: orderId, context });
-    if (order) {
-      return order.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Order);
-  },
-});
+export const Formula_Order = makeFetchSingleRestResourceAction(Order, inputs.order.id);
 
 export const Formula_Orders = coda.makeFormula({
   name: 'Orders',

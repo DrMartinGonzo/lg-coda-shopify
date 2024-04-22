@@ -1,13 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Redirect } from '../../Resources/Rest/Redirect';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -93,37 +93,11 @@ export const Action_CreateRedirect = coda.makeFormula({
   },
 });
 
-export const Action_DeleteRedirect = coda.makeFormula({
-  name: 'DeleteRedirect',
-  description: 'Delete an existing Shopify redirect and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.redirect.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([redirectId], context) {
-    await Redirect.delete({ context, id: redirectId });
-    return true;
-  },
-});
+export const Action_DeleteRedirect = makeDeleteRestResourceAction(Redirect, inputs.redirect.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Redirect = coda.makeFormula({
-  name: 'Redirect',
-  description: 'Return a single redirect from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.redirect.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: RedirectSyncTableSchema,
-  execute: async ([redirectId], context) => {
-    const redirect = await Redirect.find({ context, id: redirectId });
-    if (redirect) {
-      return redirect.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Redirect);
-  },
-});
+export const Formula_Redirect = makeFetchSingleRestResourceAction(Redirect, inputs.redirect.id);
 
 export const Format_Redirect: coda.Format = {
   name: 'Redirect',

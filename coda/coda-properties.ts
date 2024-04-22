@@ -114,7 +114,7 @@ export function makeStoreUrlProp(name = 'item', fromKey = 'storeUrl', fixedId = 
   } satisfies coda.LinkSchema & coda.ObjectSchemaProperty;
 }
 
-export function makeDateAndTimeProp(name = 'item', fromKey = 'created_at', fixedId = 'created_at', action: string) {
+function makeDateAndTimeProp(name = 'item', fromKey = 'created_at', fixedId = 'created_at', action: string) {
   return {
     ...DATETIME_STRING,
     fromKey,

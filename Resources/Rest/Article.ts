@@ -83,7 +83,6 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
 
   protected static readonly graphQlName = GraphQlResourceNames.Article;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'articles/<id>.json' },
     { http_method: 'get', operation: 'get', ids: ['blog_id'], path: 'blogs/<blog_id>/articles.json' },
@@ -142,7 +141,7 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     }
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit: syncTableManager.shouldSyncMetafields ? 30 : limit,

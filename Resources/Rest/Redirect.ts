@@ -64,7 +64,7 @@ export class Redirect extends AbstractSyncedRestResource {
     const [path, target] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

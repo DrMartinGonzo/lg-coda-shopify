@@ -94,7 +94,6 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Product;
 
   protected static readonly graphQlName = GraphQlResourceNames.Product;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'products/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'products.json' },
@@ -156,7 +155,7 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     ] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

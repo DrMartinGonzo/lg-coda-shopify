@@ -1,7 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
-import { InvalidValueError } from '../Errors/Errors';
+import { InvalidValueError, NotFoundVisibleError } from '../Errors/Errors';
+import { AbstractSyncedGraphQlResource } from '../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { AbstractSyncedRestResource } from '../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { CACHE_DEFAULT } from '../constants';
 
 // #endregion
 
@@ -70,3 +73,100 @@ export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: strin
   });
   return normalizeSchemaKey(found);
 }
+
+// #region Coda Actions and Formula factories
+/**
+ * Create a basic formula to delete a single Rest resource
+ * @param Resource the resource class
+ * @param IdParameter the id parameter
+ */
+export function makeDeleteRestResourceAction(
+  Resource: typeof AbstractSyncedRestResource,
+  IdParameter: ReturnType<
+    typeof coda.makeParameter<
+      coda.ParameterType.Number,
+      { type: coda.ParameterType.Number; name: string; description: string }
+    >
+  >
+) {
+  return coda.makeFormula({
+    name: `Delete${Resource.displayName}`,
+    description: `Delete an existing Shopify ${Resource.displayName} and return \`true\` on success.`,
+    connectionRequirement: coda.ConnectionRequirement.Required,
+    parameters: [IdParameter],
+    isAction: true,
+    resultType: coda.ValueType.Boolean,
+    execute: async ([itemId], context) => {
+      if ('delete' in Resource && typeof Resource.delete === 'function') {
+        await Resource.delete({ context, id: itemId });
+        return true;
+      }
+      throw new Error("Resource doesn't have 'delete' method");
+    },
+  });
+}
+
+/**
+ * Create a basic formula to fetch a single Rest resource
+ * @param Resource the resource class
+ * @param IdParameter the id parameter
+ */
+export function makeFetchSingleRestResourceAction(
+  Resource: typeof AbstractSyncedRestResource,
+  IdParameter: ReturnType<
+    typeof coda.makeParameter<
+      coda.ParameterType.Number,
+      { type: coda.ParameterType.Number; name: string; description: string }
+    >
+  >
+) {
+  return coda.makeFormula({
+    name: Resource.displayName,
+    description: `Return a single ${Resource.displayName} from this shop.`,
+    connectionRequirement: coda.ConnectionRequirement.Required,
+    parameters: [IdParameter],
+    cacheTtlSecs: CACHE_DEFAULT,
+    resultType: coda.ValueType.Object,
+    schema: Resource.getStaticSchema(),
+    execute: async ([itemId], context) => {
+      if ('find' in Resource && typeof Resource.find === 'function') {
+        const item = await Resource.find({ context, id: itemId });
+        if (item) {
+          return item.formatToRow();
+        }
+        throw new NotFoundVisibleError(Resource.displayName);
+      }
+      throw new Error("Resource doesn't have 'find' method");
+    },
+  });
+}
+
+/**
+ * Create a basic formula to delete a single GraphQL resource
+ * @param Resource the resource class
+ * @param IdParameter the id parameter
+ */
+export function makeDeleteGraphQlResourceAction(
+  Resource: typeof AbstractSyncedGraphQlResource,
+  IdParameter: ReturnType<
+    typeof coda.makeParameter<
+      coda.ParameterType.Number | coda.ParameterType.String,
+      { type: coda.ParameterType.Number | coda.ParameterType.String; name: string; description: string }
+    >
+  >,
+  deleteMethod: (params: { context: coda.ExecutionContext; id: number | string }) => any
+) {
+  return coda.makeFormula({
+    name: `Delete${Resource.displayName}`,
+    description: `Delete an existing Shopify ${Resource.displayName} and return \`true\` on success.`,
+    connectionRequirement: coda.ConnectionRequirement.Required,
+    parameters: [IdParameter],
+    isAction: true,
+    resultType: coda.ValueType.Boolean,
+    execute: async ([itemId], context) => {
+      await deleteMethod({ context, id: itemId });
+      return true;
+    },
+  });
+}
+// #endregion

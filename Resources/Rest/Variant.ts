@@ -79,7 +79,6 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
 
   protected static readonly graphQlName = GraphQlResourceNames.ProductVariant;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     {
       http_method: 'delete',

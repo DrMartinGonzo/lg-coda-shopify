@@ -1,16 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { NotFoundVisibleError } from '../../Errors/Errors';
 import { Product } from '../../Resources/Rest/Product';
 import { Variant } from '../../Resources/Rest/Variant';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
+import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -248,18 +249,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
   },
 });
 
-export const Action_DeleteProductVariant = coda.makeFormula({
-  name: 'DeleteProductVariant',
-  description: 'Delete an existing Shopify product and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.productVariant.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([productVariantId], context) {
-    await Variant.delete({ id: productVariantId, context });
-    return true;
-  },
-});
+export const Action_DeleteProductVariant = makeDeleteRestResourceAction(Variant, inputs.productVariant.id);
 // #endregion
 
 // #region Formulas

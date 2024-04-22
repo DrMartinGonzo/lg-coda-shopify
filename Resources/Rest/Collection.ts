@@ -50,7 +50,6 @@ export class Collection extends AbstractSyncedRestResourceWithGraphQLMetafields 
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'get', operation: 'get', ids: ['id'], path: 'collections/<id>.json' },
     { http_method: 'get', operation: 'products', ids: ['id'], path: 'collections/<id>/products.json' },

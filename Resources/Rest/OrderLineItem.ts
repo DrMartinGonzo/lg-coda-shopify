@@ -83,7 +83,7 @@ export class OrderLineItem extends AbstractSyncedRestResource {
     ] = codaSyncParams;
 
     return async ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

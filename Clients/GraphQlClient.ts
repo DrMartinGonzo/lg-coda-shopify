@@ -173,15 +173,13 @@ export class GraphQlClient {
       cacheTtlSecs = options.cacheTtlSecs;
       forceCache = true;
     }
-    console.log('cacheTtlSecs', cacheTtlSecs);
-    console.log('forceCache', forceCache);
 
     logAdmin('');
-    logAdmin('—————————— GRAPHQL REQUEST ————————————————');
+    logAdmin('—————————— BEGIN: GRAPHQL REQUEST CONTENT ——————————');
     logAdmin(printGql(documentNode));
-    logAdmin('');
     logAdmin(variables);
-    logAdmin('———————————————————————————————————————————');
+    logAdmin(options);
+    logAdmin('——————————— END: GRAPHQL REQUEST CONTENT ———————————');
     logAdmin('');
 
     return {

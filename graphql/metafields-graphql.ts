@@ -43,11 +43,11 @@ export const metafieldFieldsFragmentWithDefinition = graphql(
   `
 );
 
-export type MetafieldFragmentWithDefinition = Omit<
-  ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
-  'fragmentRefs'
-> &
-  Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;
+// export type MetafieldFragmentWithDefinition = Omit<
+//   ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
+//   'fragmentRefs'
+// > &
+//   Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;
 
 const resourceWithMetafieldsFragment = graphql(
   `

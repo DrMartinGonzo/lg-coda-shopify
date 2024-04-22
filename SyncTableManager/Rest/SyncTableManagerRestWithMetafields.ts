@@ -36,7 +36,7 @@ import { SyncTableManagerRest } from './SyncTableManagerRest';
 // #endregion
 
 // prettier-ignore
-export abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends AbstractSyncedRestResource, C extends coda.Continuation> extends AbstractSyncTableManagerWithMetafields<BaseT, C> implements ISyncTableManagerWithMetafields {
+abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends AbstractSyncedRestResource, C extends coda.Continuation> extends AbstractSyncTableManagerWithMetafields<BaseT, C> implements ISyncTableManagerWithMetafields {
   protected parentSyncTableManager: SyncTableManagerRest<BaseT>;
 
   constructor({ schema, codaSyncParams, context }: ISyncTableManagerConstructorArgs) {

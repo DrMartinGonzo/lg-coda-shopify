@@ -1,11 +1,11 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { NotFoundVisibleError } from '../../Errors/Errors';
 import { Shop } from '../../Resources/Rest/Shop';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { filters } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 

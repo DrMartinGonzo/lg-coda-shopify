@@ -179,15 +179,13 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
       (await this.getMetafieldDefinitions(context)).map((m) => m.apiData);
 
     const sync: SyncRestFunction<AbstractSyncedRestResourceWithRestMetafields> = ({ nextPageQuery = {}, limit }) => {
-      return this.baseFind({
+      const params = this.allIterationParams({
         context,
-        urlIds: {},
-        params: {
-          fields: ['id'].join(','),
-          limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
-          ...nextPageQuery,
-        },
+        nextPageQuery,
+        limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
+        firstPageParams: { fields: ['id'].join(',') },
       });
+      return this.all(params);
     };
     const syncMetafields = this.augmentWithMetafieldsFunction(context);
 
@@ -219,12 +217,13 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
 }
 
 export abstract class AbstractSyncedRestResourceWithGraphQLMetafields extends AbstractSyncedRestResourceWithMetafields {
-  public static async getSyncTableManager(
+  // prettier-ignore
+  public static async getSyncTableManager<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields = AbstractSyncedRestResourceWithGraphQLMetafields>(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ) {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRestWithGraphQlMetafields<AbstractSyncedRestResourceWithGraphQLMetafields>({
+    return new SyncTableManagerRestWithGraphQlMetafields<BaseT>({
       schema,
       codaSyncParams,
       context,

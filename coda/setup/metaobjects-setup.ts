@@ -2,16 +2,17 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { FromMetaobjectRow, Metaobject } from '../../Resources/GraphQl/Metaobject';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { PACK_IDENTITIES } from '../../constants';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
+import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
   inputs,
 } from '../coda-parameters';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 
 // #endregion
 
@@ -143,16 +144,9 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   },
 });
 
-export const Action_DeleteMetaObject = coda.makeFormula({
-  name: 'DeleteMetaObject',
-  description: 'Delete an existing Shopify metaobject and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.metafieldObject.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([metaobjectId], context) {
-    await Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Metaobject, metaobjectId) });
-    return true;
-  },
-});
+export const Action_DeleteMetaObject = makeDeleteGraphQlResourceAction(
+  Metaobject,
+  inputs.metafieldObject.id,
+  ({ context, id }) => Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Metaobject, id) })
+);
 // #endregion

@@ -4,8 +4,8 @@ import * as coda from '@codahq/packs-sdk';
 import { InventoryLevel } from '../../Resources/Rest/InventoryLevel';
 import { PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
-import { filters, inputs } from '../coda-parameters';
 import { parseOptionId } from '../../utils/helpers';
+import { filters, inputs } from '../coda-parameters';
 
 // #endregion
 

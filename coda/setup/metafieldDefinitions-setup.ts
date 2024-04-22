@@ -1,13 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
-import { inputs } from '../coda-parameters';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { NotFoundVisibleError } from '../../Errors/Errors';
+import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { inputs } from '../coda-parameters';
 
 // #endregion
 

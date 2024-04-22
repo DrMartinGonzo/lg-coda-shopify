@@ -59,7 +59,6 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
 
   protected static readonly graphQlName = GraphQlResourceNames.Blog;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'blogs/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'blogs.json' },
@@ -100,7 +99,7 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     SyncTableManagerRestWithRestMetafields<Blog>
   >): SyncRestFunction<Blog> {
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit: syncTableManager.shouldSyncMetafields ? 30 : limit,

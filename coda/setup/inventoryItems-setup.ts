@@ -1,14 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { InventoryItem } from '../../Resources/GraphQl/InventoryItem';
 import { Shop } from '../../Resources/Rest/Shop';
+import { FromRow } from '../../Resources/types/Resource.types';
 import { PACK_IDENTITIES } from '../../constants';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
-import { filters, inputs } from '../coda-parameters';
 import { deepCopy } from '../../utils/helpers';
+import { filters, inputs } from '../coda-parameters';
 
 // #endregion
 

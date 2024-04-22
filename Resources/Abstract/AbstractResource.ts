@@ -52,6 +52,7 @@ export abstract class AbstractResource {
    * @param data Les données à nettoyer
    */
   protected static removeUndefinedData(data: any) {
+    if (data instanceof AbstractResource) return this.removeUndefinedData(data.apiData);
     for (let key in data) {
       if (data[key] === undefined) {
         delete data[key];

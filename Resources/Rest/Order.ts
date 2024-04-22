@@ -232,7 +232,6 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Order;
 
   protected static readonly graphQlName = GraphQlResourceNames.Order;
-  protected static readonly supportsDefinitions = true;
   protected static readonly paths: ResourcePath[] = [
     { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'orders/<id>.json' },
     { http_method: 'get', operation: 'get', ids: [], path: 'orders.json' },
@@ -350,7 +349,7 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     ] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,

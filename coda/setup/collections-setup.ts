@@ -1,26 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Collection } from '../../Resources/Rest/Collection';
+import { CustomCollection } from '../../Resources/Rest/CustomCollection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
-import { MergedCollection_Custom } from '../../Resources/Rest/MergedCollection_Custom';
-import { MergedCollection_Smart } from '../../Resources/Rest/MergedCollection_Smart';
-import {
-  GraphQlResourceNames,
-  RestResourceSingular,
-  RestResourcesSingular,
-} from '../../Resources/types/SupportedResource';
-import { SyncTableMixedContinuation, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
-import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #region Sync tables
 export const Sync_Collections = coda.makeSyncTable({
@@ -48,8 +39,8 @@ export const Sync_Collections = coda.makeSyncTable({
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
      *  - {@link MergedCollection.getDynamicSchema}
-     *  - {@link MergedCollection_Custom.makeSyncTableManagerSyncFunction}
-     *  - {@link MergedCollection_Smart.makeSyncTableManagerSyncFunction}
+     *  - {@link Collection_Smart.makeSyncTableManagerSyncFunction}
+     *  - {@link CustomCollection.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -65,49 +56,9 @@ export const Sync_Collections = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (params, context) {
-      const prevContinuation = context.sync.continuation as SyncTableMixedContinuation<CollectionRow>;
-      const currentResourceName: RestResourceSingular = prevContinuation?.extraData?.currentResourceName;
-
-      if (currentResourceName === RestResourcesSingular.SmartCollection) {
-        return MergedCollection_Smart.sync(params, context);
-      }
-      return MergedCollection_Custom.sync(params, context);
-    },
+    execute: async (params, context) => MergedCollection.sync(params, context),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      const gids = updates.map(({ previousValue }) =>
-        idToGraphQlGid(GraphQlResourceNames.Collection, previousValue.id)
-      );
-      const collectionTypes = await getCollectionTypes(gids, context);
-
-      const customCollectionIds = collectionTypes
-        .filter(({ type }) => type === RestResourcesSingular.CustomCollection)
-        .map(({ id }) => graphQlGidToId(id));
-      const customCollectionsUpdates = updates.filter(({ previousValue }) =>
-        customCollectionIds.includes(previousValue.id)
-      );
-
-      const smartCollectionIds = collectionTypes
-        .filter(({ type }) => type === RestResourcesSingular.SmartCollection)
-        .map(({ id }) => graphQlGidToId(id));
-      const smartCollectionsUpdates = updates.filter(({ previousValue }) =>
-        smartCollectionIds.includes(previousValue.id)
-      );
-
-      const jobs: Array<Promise<SyncTableUpdateResult>> = [];
-      if (customCollectionsUpdates.length) {
-        jobs.push(MergedCollection_Custom.syncUpdate(params, customCollectionsUpdates, context));
-      }
-      if (smartCollectionsUpdates.length) {
-        jobs.push(MergedCollection_Smart.syncUpdate(params, smartCollectionsUpdates, context));
-      }
-
-      const results = await Promise.all(jobs);
-      return {
-        result: results.flatMap((r) => r.result),
-      };
-    },
+    executeUpdate: async (params, updates, context) => MergedCollection.syncUpdate(params, updates, context),
   },
 });
 
@@ -159,7 +110,8 @@ export const Action_CreateCollection = coda.makeFormula({
       ),
     };
 
-    const newCustomCollection = new MergedCollection_Custom({ context, fromRow });
+    // Only supports creating Custom Collections
+    const newCustomCollection = new CustomCollection({ context, fromRow });
     await newCustomCollection.saveAndUpdate();
     return newCustomCollection.apiData.id;
   },
@@ -213,65 +165,17 @@ export const Action_UpdateCollection = coda.makeFormula({
       ),
     };
 
-    const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
-      context
-    );
-    const collectionClass =
-      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
-    const updatedCollection = new collectionClass({ context, fromRow });
+    const updatedCollection = new MergedCollection({ context, fromRow });
     await updatedCollection.saveAndUpdate();
     return updatedCollection.formatToRow();
   },
 });
 
-export const Action_DeleteCollection = coda.makeFormula({
-  name: 'DeleteCollection',
-  description: 'Delete an existing Shopify Collection and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.collection.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([collectionId], context) {
-    const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
-      context
-    );
-    const collectionClass =
-      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
-    await collectionClass.delete({ context, id: collectionId });
-    return true;
-  },
-});
+export const Action_DeleteCollection = makeDeleteRestResourceAction(MergedCollection, inputs.collection.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Collection = coda.makeFormula({
-  name: 'Collection',
-  description: 'Return a single collection from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    inputs.collection.id,
-    //! field filter Doesn't seem to work
-    // { ...sharedParameters.filterFields, optional: true }
-  ],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: CollectionSyncTableSchema,
-  execute: async function ([collectionId], context) {
-    const collectionType = await getCollectionType(
-      idToGraphQlGid(GraphQlResourceNames.Collection, collectionId),
-      context
-    );
-    const collectionClass =
-      collectionType === RestResourcesSingular.SmartCollection ? MergedCollection_Smart : MergedCollection_Custom;
-    const collection = await collectionClass.find({ context, id: collectionId });
-    if (collection) {
-      return collection.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Collection);
-  },
-});
+export const Formula_Collection = makeFetchSingleRestResourceAction(MergedCollection, inputs.collection.id);
 
 export const Format_Collection: coda.Format = {
   name: 'Collection',

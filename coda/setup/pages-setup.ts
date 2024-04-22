@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Page } from '../../Resources/Rest/Page';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -172,37 +172,11 @@ export const Action_UpdatePage = coda.makeFormula({
   },
 });
 
-export const Action_DeletePage = coda.makeFormula({
-  name: 'DeletePage',
-  description: 'Delete an existing Shopify page and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.page.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([pageId], context) {
-    await Page.delete({ context, id: pageId });
-    return true;
-  },
-});
+export const Action_DeletePage = makeDeleteRestResourceAction(Page, inputs.page.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Page = coda.makeFormula({
-  name: 'Page',
-  description: 'Return a single page from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.page.id],
-  resultType: coda.ValueType.Object,
-  cacheTtlSecs: CACHE_DEFAULT,
-  schema: PageSyncTableSchema,
-  execute: async ([pageId], context) => {
-    const page = await Page.find({ context, id: pageId });
-    if (page) {
-      return page.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Page);
-  },
-});
+export const Formula_Page = makeFetchSingleRestResourceAction(Page, inputs.page.id);
 
 export const Format_Page: coda.Format = {
   name: 'Page',

@@ -1,16 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Product } from '../../Resources/Rest/Product';
-import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { DEFAULT_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { fetchProductTypesGraphQl } from '../../utils/products-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -184,37 +184,11 @@ export const Action_UpdateProduct = coda.makeFormula({
   },
 });
 
-export const Action_DeleteProduct = coda.makeFormula({
-  name: 'DeleteProduct',
-  description: 'Delete an existing Shopify product and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.product.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([productId], context) {
-    await Product.delete({ id: productId, context });
-    return true;
-  },
-});
+export const Action_DeleteProduct = makeDeleteRestResourceAction(Product, inputs.product.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Product = coda.makeFormula({
-  name: 'Product',
-  description: 'Get a single product data.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.product.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: ProductSyncTableSchemaRest,
-  execute: async ([productId], context) => {
-    const product = await Product.find({ id: productId, context });
-    if (product) {
-      return product.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Product);
-  },
-});
+export const Formula_Product = makeFetchSingleRestResourceAction(Product, inputs.product.id);
 
 export const Format_Product: coda.Format = {
   name: 'Product',

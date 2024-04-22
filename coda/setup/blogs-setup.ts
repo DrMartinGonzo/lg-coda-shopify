@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Blog } from '../../Resources/Rest/Blog';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -145,37 +145,11 @@ export const Action_CreateBlog = coda.makeFormula({
   },
 });
 
-export const Action_DeleteBlog = coda.makeFormula({
-  name: 'DeleteBlog',
-  description: 'Delete an existing Shopify Blog and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.blog.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([blogId], context) {
-    await Blog.delete({ context, id: blogId });
-    return true;
-  },
-});
+export const Action_DeleteBlog = makeDeleteRestResourceAction(Blog, inputs.blog.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Blog = coda.makeFormula({
-  name: 'Blog',
-  description: 'Return a single Blog from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.blog.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: BlogSyncTableSchema,
-  execute: async ([blogId], context) => {
-    const blog = await Blog.find({ context, id: blogId });
-    if (blog) {
-      return blog.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Blog);
-  },
-});
+export const Formula_Blog = makeFetchSingleRestResourceAction(Blog, inputs.blog.id);
 
 export const Format_Blog: coda.Format = {
   name: 'Blog',

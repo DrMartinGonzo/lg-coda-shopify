@@ -2,13 +2,21 @@
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
-import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseContext } from '../types/Resource.types';
-import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
+import { Sync_Collections } from '../../coda/setup/collections-setup';
+import { CollectionRow } from '../../schemas/CodaRows.types';
+import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import {
+  AbstractSyncedRestResourceWithGraphQLMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { MergedCollection } from './MergedCollection';
+import { SupportedMetafieldOwnerResource } from './Metafield';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 
 // #endregion
 
@@ -34,44 +42,68 @@ interface AllArgs extends BaseContext {
   published_status?: unknown;
   fields?: unknown;
 }
-interface OrderArgs extends BaseContext {
-  [key: string]: unknown;
-  products?: unknown;
-  sort_order?: unknown;
-  body?: { [key: string]: unknown } | null;
+
+export interface CustomCollectionData extends RestApiDataWithMetafields {
+  title: string | null;
+  body_html: string | null;
+  handle: string | null;
+  id: number | null;
+  image: {
+    src?: string;
+    alt?: string;
+  } | null;
+  // image: string | { [key: string]: unknown } | null;
+  published: boolean | null;
+  published_at: string | null;
+  published_scope: string | null;
+  sort_order: string | null;
+  template_suffix: string | null;
+  updated_at: string | null;
 }
 
-export class MergedCollection_Smart extends MergedCollection {
-  protected static readonly restName: RestResourceSingular = RestResourcesSingular.SmartCollection;
+export class CustomCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
+  public apiData: CustomCollectionData;
+
+  public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;
+  public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
+
+  protected static readonly graphQlName = GraphQlResourceNames.Collection;
   protected static readonly paths: ResourcePath[] = [
-    { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'smart_collections/<id>.json' },
-    { http_method: 'get', operation: 'get', ids: [], path: 'smart_collections.json' },
-    { http_method: 'get', operation: 'get', ids: ['id'], path: 'smart_collections/<id>.json' },
-    { http_method: 'post', operation: 'post', ids: [], path: 'smart_collections.json' },
-    { http_method: 'put', operation: 'order', ids: ['id'], path: 'smart_collections/<id>/order.json' },
-    { http_method: 'put', operation: 'put', ids: ['id'], path: 'smart_collections/<id>.json' },
+    { http_method: 'delete', operation: 'delete', ids: ['id'], path: 'custom_collections/<id>.json' },
+    { http_method: 'get', operation: 'get', ids: [], path: 'custom_collections.json' },
+    { http_method: 'get', operation: 'get', ids: ['id'], path: 'custom_collections/<id>.json' },
+    { http_method: 'post', operation: 'post', ids: [], path: 'custom_collections.json' },
+    { http_method: 'put', operation: 'put', ids: ['id'], path: 'custom_collections/<id>.json' },
   ];
   protected static readonly resourceNames: ResourceNames[] = [
     {
-      singular: RestResourcesSingular.SmartCollection,
-      plural: RestResourcesPlural.SmartCollection,
+      singular: RestResourcesSingular.CustomCollection,
+      plural: RestResourcesPlural.CustomCollection,
     },
   ];
+
+  public static getStaticSchema() {
+    return MergedCollection.getStaticSchema();
+  }
+
+  public static async getDynamicSchema(params: GetSchemaArgs) {
+    return MergedCollection.getDynamicSchema(params);
+  }
 
   protected static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
   }: MakeSyncRestFunctionArgs<
-    MergedCollection_Smart,
+    MergedCollection,
     typeof Sync_Collections,
-    SyncTableManagerRestWithGraphQlMetafields<MergedCollection_Smart>
-  >): SyncRestFunction<MergedCollection_Smart> {
+    SyncTableManagerRestWithGraphQlMetafields<MergedCollection>
+  >): SyncRestFunction<MergedCollection> {
     const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
       codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
-      const params = this.allIterationParams<AllArgs>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,
@@ -91,14 +123,14 @@ export class MergedCollection_Smart extends MergedCollection {
         },
       });
 
-      return MergedCollection_Smart.all(params);
+      return CustomCollection.all(params);
     };
   }
 
-  public static async find({ context, options, id, fields = null }: FindArgs): Promise<MergedCollection_Smart | null> {
-    const result = await this.baseFind<MergedCollection_Smart>({
-      urlIds: { id },
-      params: { fields },
+  public static async find({ context, options, id, fields = null }: FindArgs): Promise<MergedCollection | null> {
+    const result = await this.baseFind<MergedCollection>({
+      urlIds: { id: id },
+      params: { fields: fields },
       context,
       options,
     });
@@ -106,7 +138,7 @@ export class MergedCollection_Smart extends MergedCollection {
   }
 
   public static async delete({ id, context }: DeleteArgs): Promise<unknown> {
-    const response = await this.baseDelete<MergedCollection_Smart>({
+    const response = await this.baseDelete<MergedCollection>({
       urlIds: { id },
       params: {},
       context,
@@ -130,8 +162,8 @@ export class MergedCollection_Smart extends MergedCollection {
     fields = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllRestResponse<MergedCollection_Smart>> {
-    const response = await this.baseFind<MergedCollection_Smart>({
+  }: AllArgs): Promise<FindAllRestResponse<MergedCollection>> {
+    const response = await this.baseFind<MergedCollection>({
       context,
       urlIds: {},
       params: {
@@ -158,24 +190,11 @@ export class MergedCollection_Smart extends MergedCollection {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  public async order({
-    products = null,
-    sort_order = null,
-    body = null,
-    options,
-    ...otherArgs
-  }: OrderArgs): Promise<unknown> {
-    const response = await this.request<MergedCollection_Smart>({
-      http_method: 'put',
-      operation: 'order',
-      context: this.context,
-      urlIds: { id: this.apiData.id },
-      params: { products, sort_order, ...otherArgs },
-      body,
-      entity: this,
-      options,
-    });
+  protected formatToApi(params: FromRow<CollectionRow>) {
+    return new MergedCollection({ context: this.context }).formatToApi(params);
+  }
 
-    return response ? response.body : null;
+  public formatToRow(): CollectionRow {
+    return new MergedCollection({ context: this.context, fromData: this.apiData }).formatToRow();
   }
 }

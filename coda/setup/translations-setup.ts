@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 
-import { getTranslatableResource, translateResource } from '../../utils/translations-utils';
 import { TranslatableResourceSyncTableSchema } from '../../schemas/syncTable/TranslatableResourceSchema';
+import { getTranslatableResource, translateResource } from '../../utils/translations-utils';
 
 export const setupTranslations = (pack: coda.PackDefinitionBuilder) => {
   /**====================================================================================================================

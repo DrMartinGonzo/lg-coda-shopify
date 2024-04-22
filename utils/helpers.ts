@@ -78,7 +78,7 @@ export function unitToShortName(unit: string) {
   const allUnitsMap = { ...weightUnitsMap, ...dimensionUnitsMap, ...volumeUnitsMap };
   const unitShortName = allUnitsMap[unit];
   if (!unitShortName) {
-    console.log(`Unknown unit: ${unit}`);
+    console.error(`Unknown unit: ${unit}`);
     return '';
   }
   return unitShortName;

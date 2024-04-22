@@ -10,7 +10,6 @@ import { REST_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
 import { filterObjectKeys } from '../../../utils/helpers';
-import { MergedCollection_Custom } from '../../Rest/MergedCollection_Custom';
 import { BaseContext } from '../../types/Resource.types';
 import { GraphQlResourceName, RestResourceSingular } from '../../types/SupportedResource';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
@@ -114,8 +113,8 @@ export abstract class AbstractRestResource extends AbstractResource {
   }
 
   /**
-   * Normally, the Rest body name is derived from the class name, but in some cases,
-   * we need to hardcode the value, e.g. {@link MergedCollection_Custom}
+   * Normally, the Rest body name is derived from the class name,
+   * but in some cases, we might need to hardcode the value
    */
   protected static getRestName(): string {
     return this.restName ?? this.name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
@@ -250,13 +249,13 @@ export abstract class AbstractRestResource extends AbstractResource {
     nextPageQuery = {},
     context,
     limit,
-    firstPageParams = {},
+    firstPageParams = {} as T,
   }: {
     nextPageQuery: SearchParams;
     context: coda.ExecutionContext;
     limit?: number;
-    firstPageParams?: {};
-  }): T {
+    firstPageParams?: T;
+  }) {
     /**
      * Because the request URL contains the page_info parameter, you can't add
      * any other parameters to the request, except for limit. Including other
@@ -279,7 +278,11 @@ export abstract class AbstractRestResource extends AbstractResource {
       };
     }
 
-    return params as T;
+    return params as {
+      context: coda.ExecutionContext;
+      limit?: number;
+    } & T &
+      SearchParams;
   }
   public static async allDataLoop<T extends AbstractRestResource>({ context, ...otherArgs }): Promise<Array<T>> {
     let items: Array<T> = [];
@@ -287,7 +290,7 @@ export abstract class AbstractRestResource extends AbstractResource {
     let run = true;
 
     while (run) {
-      const params = this.allIterationParams<any>({
+      const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit: REST_DEFAULT_LIMIT,

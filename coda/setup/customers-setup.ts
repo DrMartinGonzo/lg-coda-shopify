@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/types/Resource.types';
 import { Customer } from '../../Resources/Rest/Customer';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { formatPersonDisplayValue } from '../../utils/helpers';
-import { NotFoundVisibleError } from '../../Errors/Errors';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #endregion
 
@@ -203,37 +203,11 @@ export const Action_UpdateCustomer = coda.makeFormula({
   },
 });
 
-export const Action_DeleteCustomer = coda.makeFormula({
-  name: 'DeleteCustomer',
-  description: 'Delete an existing Shopify customer and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.customer.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([customerId], context) {
-    await Customer.delete({ id: customerId, context });
-    return true;
-  },
-});
+export const Action_DeleteCustomer = makeDeleteRestResourceAction(Customer, inputs.customer.id);
 // #endregion
 
 // #region Formulas
-export const Formula_Customer = coda.makeFormula({
-  name: 'Customer',
-  description: 'Return a single Customer from this shop.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.customer.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: CustomerSyncTableSchema,
-  execute: async ([customerId], context) => {
-    const customer = await Customer.find({ id: customerId, context });
-    if (customer) {
-      return customer.formatToRow() as any;
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Customer);
-  },
-});
+export const Formula_Customer = makeFetchSingleRestResourceAction(Customer, inputs.customer.id);
 
 export const Format_Customer: coda.Format = {
   name: 'Customer',

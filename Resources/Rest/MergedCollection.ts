@@ -2,78 +2,63 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import {
+  CodaSyncParams,
+  SyncTableMixedContinuation,
+  SyncTableSyncResult,
+  SyncTableUpdateResult,
+} from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { FromRow } from '../types/Resource.types';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
+import { SaveArgs } from '../Abstract/Rest/AbstractRestResource';
 import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/SupportedResource';
+import { hasMetafieldsInUpdate } from '../utils/abstractResource-utils';
+import { CustomCollection, CustomCollectionData } from './CustomCollection';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SmartCollection, SmartCollectionData } from './SmartCollection';
 
 // #endregion
 
-export abstract class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
-  public apiData: RestApiDataWithMetafields & {
-    // Collection —————————————————————————————————————————————————————————————————————————————————
-    title: string | null;
-    body_html: string | null;
-    handle: string | null;
-    id: number | null;
-    images: any[] | null | { [key: string]: any };
-    // image: Image | null | { [key: string]: any };
-    published_at: string | null;
-    published_scope: string | null;
-    sort_order: string | null;
-    template_suffix: string | null;
-    updated_at: string | null;
-  } & {
-    // SmartCollection ————————————————————————————————————————————————————————————————————————————
-    rules: Array<{ column: string; relation: string; condition: string }> | null;
-    // rules: { [key: string]: unknown } | { [key: string]: unknown }[] | null;
-    title: string | null;
-    body_html: string | null;
-    disjunctive: boolean | null;
-    handle: string | null;
-    id: number | null;
-    image: string | { [key: string]: unknown } | null;
-    published_at: string | null;
-    published_scope: string | null;
-    sort_order: string | null;
-    template_suffix: string | null;
-    updated_at: string | null;
-  } & {
-    // CustomCollection ———————————————————————————————————————————————————————————————————————————
-    title: string | null;
-    body_html: string | null;
-    handle: string | null;
-    id: number | null;
-    image: {
-      src?: string;
-      alt?: string;
-    } | null;
-    // image: string | { [key: string]: unknown } | null;
-    published: boolean | null;
-    published_at: string | null;
-    published_scope: string | null;
-    sort_order: string | null;
-    template_suffix: string | null;
-    updated_at: string | null;
-  };
+// #region Types
+interface FindArgs extends BaseContext {
+  id: number;
+  fields?: unknown;
+}
+interface DeleteArgs extends BaseContext {
+  id: number;
+}
+interface GetCollectionClassFromIdArgs {
+  id: number;
+  context: coda.ExecutionContext;
+}
+interface ParseCollectionClassesFromUpdatesArgs {
+  updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>;
+  context: coda.ExecutionContext;
+}
+// #endregion
+
+/**
+ * A special class responsible for handling both the `custom` and `smart`
+ * collections as a single resource in Coda
+ */
+export class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
+  public apiData: CustomCollectionData & SmartCollectionData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collection;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
 
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
-  protected static readonly supportsDefinitions = true;
 
   public static getStaticSchema() {
     return CollectionSyncTableSchema;
@@ -94,42 +79,121 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
     return augmentedSchema;
   }
 
+  public static async getCollectionClassFromId({
+    id,
+    context,
+  }: GetCollectionClassFromIdArgs): Promise<typeof CustomCollection | typeof SmartCollection> {
+    const collectionType = await getCollectionType(idToGraphQlGid(GraphQlResourceNames.Collection, id), context);
+    return collectionType === RestResourcesSingular.SmartCollection ? SmartCollection : CustomCollection;
+  }
+
+  public static async parseCollectionClassesFromUpdates({ updates, context }: ParseCollectionClassesFromUpdatesArgs) {
+    const gids = updates.map(({ previousValue }) =>
+      idToGraphQlGid(GraphQlResourceNames.Collection, previousValue.id as number)
+    );
+    const collectionTypes = await getCollectionTypes(gids, context);
+    const filterUpdatesByType = (type: string) => {
+      const typeIds = collectionTypes.filter(({ type: t }) => t === type).map(({ id }) => graphQlGidToId(id));
+      return updates.filter(({ previousValue }) => typeIds.includes(previousValue.id as number));
+    };
+
+    return {
+      customCollectionsUpdates: filterUpdatesByType(RestResourcesSingular.CustomCollection),
+      smartCollectionsUpdates: filterUpdatesByType(RestResourcesSingular.SmartCollection),
+    };
+  }
+
   public static async sync(
     codaSyncParams: CodaSyncParams<any>,
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
-    const syncTableManager = await this.getSyncTableManager(
-      context,
-      codaSyncParams as CodaSyncParams<typeof Sync_Collections>
+    const { CustomCollection: singularCustom, SmartCollection: singularSmart } = RestResourcesSingular;
+
+    const currResourceName: RestResourceSingular =
+      (context.sync?.continuation as SyncTableMixedContinuation<CollectionRow>)?.extraData?.currResourceName ??
+      singularCustom;
+    const CurrResource = currResourceName === singularCustom ? CustomCollection : SmartCollection;
+
+    let { result, continuation } = await CurrResource.sync(
+      codaSyncParams as CodaSyncParams<typeof Sync_Collections>,
+      context
     );
-    const syncFunction = this.makeSyncTableManagerSyncFunction({
-      codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_Collections>,
-      context,
-      syncTableManager,
-    });
-    const currentResourceName: RestResourceSingular =
-      syncTableManager.prevContinuation?.extraData?.currentResourceName ?? RestResourcesSingular.CustomCollection;
 
-    let { response, continuation } = await syncTableManager.executeSync({ sync: syncFunction });
-
-    if (!response.pageInfo?.nextPage && currentResourceName === RestResourcesSingular.CustomCollection) {
+    if (!continuation && currResourceName === singularCustom) {
       continuation = {
-        ...continuation,
         extraData: {
-          currentResourceName: RestResourcesSingular.SmartCollection,
+          currResourceName: singularSmart,
         },
       };
     }
 
     return {
-      result: response.data.map((data) => data.formatToRow()),
+      result,
       continuation,
     };
+  }
+
+  public static async syncUpdate(
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+    updates: Array<coda.SyncUpdate<string, string, typeof this._schemaCache.items>>,
+    context: coda.SyncExecutionContext
+  ): Promise<SyncTableUpdateResult> {
+    // Warm up metafield definitions cache
+    if (updates.map(hasMetafieldsInUpdate).some(Boolean)) {
+      await this.getMetafieldDefinitions(context);
+    }
+
+    const { customCollectionsUpdates, smartCollectionsUpdates } = await this.parseCollectionClassesFromUpdates({
+      updates,
+      context,
+    });
+
+    const syncUpdateJobs = [
+      customCollectionsUpdates.length
+        ? CustomCollection.syncUpdate(codaSyncParams, customCollectionsUpdates, context)
+        : undefined,
+      smartCollectionsUpdates.length
+        ? SmartCollection.syncUpdate(codaSyncParams, smartCollectionsUpdates, context)
+        : undefined,
+    ].filter(Boolean);
+
+    const results = await Promise.all(syncUpdateJobs);
+    return {
+      result: results.flatMap((r) => r.result),
+    };
+  }
+
+  public static async find({ id, context, ...otherArgs }: FindArgs): Promise<MergedCollection | null> {
+    const CurrResource = await this.getCollectionClassFromId({ id, context });
+    return CurrResource.find({ context, id, ...otherArgs });
+  }
+
+  public static async delete({ id, context }: DeleteArgs): Promise<unknown> {
+    const CurrResource = await this.getCollectionClassFromId({ id, context });
+    return CurrResource.delete({ context, id });
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
+  public async save({ update = false }: SaveArgs = {}): Promise<void> {
+    const staticResource = this.resource<typeof MergedCollection>();
+    const CurrResource = await staticResource.getCollectionClassFromId({ id: this.apiData.id, context: this.context });
+    return new CurrResource({ context: this.context, fromData: this.apiData }).save({ update });
+  }
+
+  public async delete(): Promise<void> {
+    const staticResource = this.resource<typeof MergedCollection>();
+    const CurrResource = await staticResource.getCollectionClassFromId({ id: this.apiData.id, context: this.context });
+    await CurrResource.request({
+      http_method: 'delete',
+      operation: 'delete',
+      context: this.context,
+      urlIds: {},
+      entity: this,
+    });
+  }
+
   // TODO: Add validation
   validateParams = (
     // TODO: fix params
@@ -150,7 +214,7 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
     return true;
   };
 
-  protected formatToApi({ row, metafields = [] }: FromRow<CollectionRow>) {
+  public formatToApi({ row, metafields = [] }: FromRow<CollectionRow>) {
     let apiData: Partial<typeof this.apiData> = {};
 
     // prettier-ignore
@@ -187,7 +251,6 @@ export abstract class MergedCollection extends AbstractSyncedRestResourceWithGra
       disjunctive: apiData.disjunctive ?? false,
     };
 
-    // console.log('apiData', apiData);
     if (apiData.image) {
       obj.image_alt_text = apiData.image.alt;
       obj.image_url = apiData.image.src;

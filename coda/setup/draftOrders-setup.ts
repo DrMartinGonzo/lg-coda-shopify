@@ -1,14 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
-import { FromRow } from '../../Resources/types/Resource.types';
 import { DraftOrder } from '../../Resources/Rest/DraftOrder';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { FromRow } from '../../Resources/types/Resource.types';
+import { PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { NotFoundVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -158,37 +158,11 @@ export const Action_SendDraftOrderInvoice = coda.makeFormula({
   },
 });
 
-export const Action_DeleteDraftOrder = coda.makeFormula({
-  name: 'DeleteDraftOrder',
-  description: 'Delete an existing Shopify draft order and return `true` on success.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.draftOrder.id],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
-  execute: async function ([draftOrderId], context) {
-    await DraftOrder.delete({ context, id: draftOrderId });
-    return true;
-  },
-});
+export const Action_DeleteDraftOrder = makeDeleteRestResourceAction(DraftOrder, inputs.draftOrder.id);
 // #endregion
 
 // #region Formulas
-export const Formula_DraftOrder = coda.makeFormula({
-  name: 'DraftOrder',
-  description: 'Get a single draft order data.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.draftOrder.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: DraftOrderSyncTableSchema,
-  execute: async function ([draftOrderId], context) {
-    const draftOrder = await DraftOrder.find({ context, id: draftOrderId });
-    if (draftOrder) {
-      return draftOrder.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.DraftOrder);
-  },
-});
+export const Formula_DraftOrder = makeFetchSingleRestResourceAction(DraftOrder, inputs.draftOrder.id);
 
 export const Format_DraftOrder: coda.Format = {
   name: 'DraftOrder',
