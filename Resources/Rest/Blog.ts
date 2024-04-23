@@ -9,7 +9,7 @@ import { BlogRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys } from '../../utils/helpers';
+import { deepCopy, filterObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow } from '../types/Resource.types';
@@ -20,6 +20,7 @@ import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestRe
 import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -150,18 +151,17 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
     return response;
   }
 
+  protected static validateParams(params: AllArgs) {
+    const validCommentableOptions = COMMENTABLE_OPTIONS.map((option) => option.value);
+    if (!isNullishOrEmpty(params.commentable) && !validCommentableOptions.includes(params.commentable)) {
+      throw new InvalidValueVisibleError('commentable: ' + params.commentable);
+    }
+    return super.validateParams(params);
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO: Add validation
-  validateParams = (params: AllArgs) => {
-    const validCommentableOptions = COMMENTABLE_OPTIONS.map((option) => option.value);
-    if ('commentable' in params && !validCommentableOptions.includes(params.commentable)) {
-      throw new coda.UserVisibleError('Unknown commentable option: ' + params.commentable);
-    }
-    return true;
-  };
-
   protected formatToApi({ row, metafields = [] }: FromRow<BlogRow>) {
     let apiData: Partial<typeof this.apiData> = {};
 
@@ -174,9 +174,6 @@ export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

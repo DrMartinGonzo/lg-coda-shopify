@@ -194,26 +194,6 @@ export class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetaf
     });
   }
 
-  // TODO: Add validation
-  validateParams = (
-    // TODO: fix params
-    params: any
-  ) => {
-    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
-      throw new coda.UserVisibleError('Unknown published status: ' + params.published_status);
-    }
-
-    // TODO implement this for update jobs
-    //  if (
-    //    !isNullOrEmpty(update.newValue.image_alt_text) &&
-    //    (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
-    //  ) {
-    //    throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
-    //  }
-    return true;
-  };
-
   public formatToApi({ row, metafields = [] }: FromRow<CollectionRow>) {
     let apiData: Partial<typeof this.apiData> = {};
 
@@ -235,9 +215,6 @@ export class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetaf
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

@@ -6,7 +6,7 @@ import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManage
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
   CONSENT_STATE__SUBSCRIBED,
@@ -15,7 +15,14 @@ import {
   customerFieldDependencies,
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
+import {
+  arrayUnique,
+  deepCopy,
+  filterObjectKeys,
+  formatAddressDisplayName,
+  formatPersonDisplayValue,
+  splitAndTrimValues,
+} from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow } from '../types/Resource.types';
@@ -26,6 +33,7 @@ import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestRe
 import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { Shop } from './Shop';
 
 // #endregion
 
@@ -52,6 +60,7 @@ interface AllArgs extends BaseContext {
   updated_at_max?: unknown;
   limit?: unknown;
   fields?: unknown;
+  tags?: string[];
 }
 interface OrdersArgs extends BaseContext {
   [key: string]: unknown;
@@ -150,6 +159,11 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
         context
       );
     }
+
+    const shopCurrencyCode = await Shop.activeCurrency({ context });
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    // augmentedSchema.properties.total_spent.currencyCode = shopCurrencyCode;
+
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
@@ -164,7 +178,12 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     typeof Sync_Customers,
     SyncTableManagerRestWithGraphQlMetafields<Customer>
   >): SyncRestFunction<Customer> {
-    const [syncMetafields, created_at, updated_at, ids] = codaSyncParams;
+    const [syncMetafields, created_at, updated_at, ids, tags] = codaSyncParams;
+
+    const fieldsArray = syncTableManager.getSyncedStandardFields(customerFieldDependencies);
+    if (tags && tags.length) {
+      fieldsArray.push('tags');
+    }
 
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
@@ -172,12 +191,13 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
         nextPageQuery,
         limit,
         firstPageParams: {
-          fields: syncTableManager.getSyncedStandardFields(customerFieldDependencies).join(','),
+          fields: arrayUnique(fieldsArray).join(','),
           ids: ids && ids.length ? ids.join(',') : undefined,
           created_at_min: created_at ? created_at[0] : undefined,
           created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
+          tags,
         },
       });
 
@@ -215,6 +235,7 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
     limit = null,
     fields = null,
     options = {},
+    tags: filterTags = [],
     ...otherArgs
   }: AllArgs): Promise<FindAllRestResponse<Customer>> {
     const response = await this.baseFind<Customer>({
@@ -234,7 +255,18 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
       options,
     });
 
-    return response;
+    // TODO: implement using search endpoint
+    return {
+      ...response,
+      data: response.data.filter((d) => {
+        let passCustomerTags = true;
+        if (filterTags.length) {
+          const customerTags = splitAndTrimValues(d.apiData?.tags ?? '');
+          passCustomerTags = customerTags.length && customerTags.some((t) => filterTags.includes(t));
+        }
+        return passCustomerTags;
+      }),
+    };
   }
 
   /*
@@ -349,9 +381,6 @@ export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

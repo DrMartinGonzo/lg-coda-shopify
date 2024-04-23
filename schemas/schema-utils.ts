@@ -10,7 +10,7 @@ import { Shop } from '../Resources/Rest/Shop';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
-import { MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
+import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
 import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
@@ -27,6 +27,16 @@ export function extractFormulaContextFromParamsWIP(params: coda.ParamsList) {
   return Object.fromEntries(but);
 }
 
+export function updateCurrencyCodesInSchema(obj: any, currencyCode: string) {
+  for (const key in obj) {
+    const prop = obj[key];
+    if (prop?.codaType === coda.ValueHintType.Currency) {
+      prop.currencyCode = currencyCode;
+    } else if (typeof obj[key] === 'object') {
+      updateCurrencyCodesInSchema(obj[key], currencyCode); // Recursively call the function for nested objects
+    }
+  }
+}
 /*
 async function wrapDynamicSchemaForCli(
   fn: coda.MetadataFormulaDef,
@@ -72,22 +82,22 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
 
   const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
 
-  const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
-    return metafieldDefinition.apiData.type.name === METAFIELD_TYPES.money;
-  });
+  // const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
+  //   return metafieldDefinition.apiData.type.name === METAFIELD_TYPES.money;
+  // });
 
-  let shopCurrencyCode = DEFAULT_CURRENCY_CODE;
-  if (hasMoneyFields) {
-    shopCurrencyCode = await Shop.activeCurrency({ context });
-  }
+  // let shopCurrencyCode = DEFAULT_CURRENCY_CODE;
+  // if (hasMoneyFields) {
+  //   shopCurrencyCode = await Shop.activeCurrency({ context });
+  // }
 
   metafieldDefinitions.forEach((metafieldDefinition) => {
     const property = mapMetaFieldToSchemaProperty(metafieldDefinition.apiData);
     if (property) {
       // TODO: write a generic function for setting Shop currency code in schema
-      if ('codaType' in property && property.codaType === coda.ValueHintType.Currency) {
-        property['currencyCode'] = shopCurrencyCode;
-      }
+      // if ('codaType' in property && property.codaType === coda.ValueHintType.Currency) {
+      //   property['currencyCode'] = shopCurrencyCode;
+      // }
 
       const name = accents.remove(metafieldDefinition.apiData.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
@@ -97,6 +107,15 @@ export async function augmentSchemaWithMetafields<SchemaT extends coda.ObjectSch
       schema.featuredProperties.push(propName);
     }
   });
+
+  // TODO: on fait ça deux fois dans certains shemas quand il y a des metafields, e.g. Orders. Faut simplifier
+  const hasMoneyFields = metafieldDefinitions.some((metafieldDefinition) => {
+    return metafieldDefinition.apiData.type.name === METAFIELD_TYPES.money;
+  });
+  if (hasMoneyFields) {
+    const shopCurrencyCode = await Shop.activeCurrency({ context });
+    updateCurrencyCodesInSchema(schema, shopCurrencyCode);
+  }
 
   return schema;
 }

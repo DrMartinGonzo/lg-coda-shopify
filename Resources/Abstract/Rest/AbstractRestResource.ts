@@ -145,6 +145,7 @@ export abstract class AbstractRestResource extends AbstractResource {
         }
       }
     }
+    this.validateParams(cleanParams);
 
     switch (http_method) {
       case 'get':
@@ -331,6 +332,12 @@ export abstract class AbstractRestResource extends AbstractResource {
     const staticResource = this.resource<typeof AbstractRestResource>();
     const { primaryKey, resourceNames } = staticResource;
     const method = this.apiData[primaryKey] ? 'put' : 'post';
+    if (method === 'put') {
+      // If this.apiData[primaryKey] is the only defined key, there is nothing to update
+      if (Object.keys(this.apiData).filter((key) => key !== primaryKey).length === 0) {
+        return;
+      }
+    }
 
     const response = await staticResource.request({
       http_method: method,

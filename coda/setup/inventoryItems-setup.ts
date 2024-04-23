@@ -9,6 +9,7 @@ import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { deepCopy } from '../../utils/helpers';
 import { filters, inputs } from '../coda-parameters';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -16,7 +17,8 @@ async function getInventoryItemSchema(context: coda.ExecutionContext, _: string,
   let augmentedSchema = deepCopy(InventoryItemSyncTableSchema);
 
   const shopCurrencyCode = await Shop.activeCurrency({ context });
-  augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
+  updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+  // augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
 
   return augmentedSchema;
 }

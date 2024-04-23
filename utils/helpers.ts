@@ -387,4 +387,9 @@ export function deleteUndefinedInObject<T>(obj: T) {
   });
   return obj;
 }
+
+export function splitAndTrimValues(values = '', delimiter = ','): string[] {
+  console.log('values', values);
+  return values.split(delimiter).map((s) => s.trim());
+}
 // #endregion

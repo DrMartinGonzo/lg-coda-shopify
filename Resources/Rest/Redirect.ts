@@ -130,9 +130,6 @@ export class Redirect extends AbstractSyncedRestResource {
       if (row[key] !== undefined) apiData[key] = row[key];
     });
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

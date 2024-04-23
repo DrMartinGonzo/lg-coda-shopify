@@ -8,7 +8,7 @@ import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManag
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
 import { Identity, OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../../schemas/syncTable/DraftOrderSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
@@ -27,6 +27,7 @@ import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { ShippingLine } from './Order';
 import { LineItem } from './OrderLineItem';
 import { Shop } from './Shop';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -132,27 +133,28 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     }
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
 
-    // Line items
-    [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-      properties.price['currencyCode'] = shopCurrencyCode;
-      properties.total_discount['currencyCode'] = shopCurrencyCode;
-      properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-    });
+    // // Line items
+    // [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
+    //   properties.price['currencyCode'] = shopCurrencyCode;
+    //   properties.total_discount['currencyCode'] = shopCurrencyCode;
+    //   properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Tax lines
-    [
-      augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.tax_lines.items.properties,
-      augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-    ].forEach((properties) => {
-      properties.price['currencyCode'] = shopCurrencyCode;
-    });
+    // // Tax lines
+    // [
+    //   augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
+    // ].forEach((properties) => {
+    //   properties.price['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Main props
-    augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
+    // // Main props
+    // augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
@@ -239,6 +241,17 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
     return response;
   }
 
+  protected static validateParams(params: AllArgs) {
+    if (params.status) {
+      const validStatuses = OPTIONS_DRAFT_ORDER_STATUS;
+      const statuses = Array.isArray(params.status) ? params.status : [params.status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('status: ' + statuses.join(', '));
+      }
+    }
+    return super.validateParams(params);
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -274,17 +287,6 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
 
     return response ? response.body : null;
   }
-
-  // TODO ?
-  validateParams = (params: any) => {
-    if (params.status) {
-      const validStatuses = OPTIONS_DRAFT_ORDER_STATUS;
-      (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
-        if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown status: ' + params.status);
-      });
-    }
-    return true;
-  };
 
   protected static async handleRowUpdate(
     prevRow: DraftOrderRow,
@@ -323,9 +325,6 @@ export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields 
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

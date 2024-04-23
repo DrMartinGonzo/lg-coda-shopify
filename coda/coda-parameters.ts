@@ -915,11 +915,11 @@ const generalFilters = {
     name: 'tags',
     description: 'Filter items with a specific tag.',
   }),
-  // tagsArray: coda.makeParameter({
-  //   type: coda.ParameterType.StringArray,
-  //   name: 'tags',
-  //   description: 'Filter items by a comma-separated list of tags.',
-  // }),
+  tagsArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'tags',
+    description: 'Filter items by a comma-separated list of tags.',
+  }),
   title: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'title',
@@ -980,6 +980,11 @@ const customerFilters = {
     ...generalFilters.idArray,
     name: 'customerIds',
     description: 'Filter results by comma-separated list of Customer IDs.',
+  },
+  tags: {
+    ...generalFilters.tagsArray,
+    name: 'tags',
+    description: 'Filter results by comma-separated list of Customer tags.',
   },
 };
 // #endregion
@@ -1054,6 +1059,11 @@ const orderFilters = {
     suggestedValue: 'open',
     description: 'Filter results by order status.',
   }),
+  tags: {
+    ...generalFilters.tagsArray,
+    name: 'tags',
+    description: 'Filter results by comma-separated list of Order tags.',
+  },
 };
 // #endregion
 

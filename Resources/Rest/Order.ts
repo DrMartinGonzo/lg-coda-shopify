@@ -24,11 +24,18 @@ import { PriceSetSchema } from '../../schemas/basic/PriceSetSchema';
 import { RefundLineItemSchema } from '../../schemas/basic/RefundLineItemSchema';
 import { RefundSchema } from '../../schemas/basic/RefundSchema';
 import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { OrderSyncTableSchema, orderFieldDependencies } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
+import {
+  arrayUnique,
+  deepCopy,
+  filterObjectKeys,
+  formatAddressDisplayName,
+  formatPersonDisplayValue,
+  splitAndTrimValues,
+} from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
@@ -41,6 +48,7 @@ import { CustomerCodaData } from './Customer';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
 import { Shop } from './Shop';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -68,6 +76,8 @@ export interface AllArgs extends BaseContext {
   financial_status?: unknown;
   fulfillment_status?: unknown;
   fields?: unknown;
+  customerTags?: string[];
+  orderTags?: string[];
 }
 interface CancelArgs extends BaseContext {
   [key: string]: unknown;
@@ -262,65 +272,67 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     }
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+
     // Refund order adjustments
-    [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
-      properties.amount['currencyCode'] = shopCurrencyCode;
-      properties.tax_amount['currencyCode'] = shopCurrencyCode;
-    });
+    // [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
+    //   properties.amount['currencyCode'] = shopCurrencyCode;
+    //   properties.tax_amount['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Refund transactions
-    [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
-      properties.amount['currencyCode'] = shopCurrencyCode;
-      properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
-    });
+    // // Refund transactions
+    // [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
+    //   properties.amount['currencyCode'] = shopCurrencyCode;
+    //   properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Refund line items
-    [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
-      properties.subtotal['currencyCode'] = shopCurrencyCode;
-      properties.total_tax['currencyCode'] = shopCurrencyCode;
-    });
+    // // Refund line items
+    // [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
+    //   properties.subtotal['currencyCode'] = shopCurrencyCode;
+    //   properties.total_tax['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Line items
-    [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-      properties.price['currencyCode'] = shopCurrencyCode;
-      properties.total_discount['currencyCode'] = shopCurrencyCode;
-      properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-    });
+    // // Line items
+    // [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
+    //   properties.price['currencyCode'] = shopCurrencyCode;
+    //   properties.total_discount['currencyCode'] = shopCurrencyCode;
+    //   properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Shipping lines
-    [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
-      properties.discounted_price['currencyCode'] = shopCurrencyCode;
-      properties.price['currencyCode'] = shopCurrencyCode;
-    });
+    // // Shipping lines
+    // [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
+    //   properties.discounted_price['currencyCode'] = shopCurrencyCode;
+    //   properties.price['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Tax lines
-    [
-      augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.tax_lines.items.properties,
-      augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-      augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
-    ].forEach((properties) => {
-      properties.price['currencyCode'] = shopCurrencyCode;
-    });
+    // // Tax lines
+    // [
+    //   augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
+    //   augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
+    // ].forEach((properties) => {
+    //   properties.price['currencyCode'] = shopCurrencyCode;
+    // });
 
-    // Main props
-    augmentedSchema.properties.current_subtotal_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.current_total_additional_fees['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.current_total_discounts['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.current_total_duties['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.current_total_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.current_total_tax['currencyCode'] = shopCurrencyCode;
+    // // Main props
+    // augmentedSchema.properties.current_subtotal_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.current_total_additional_fees['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.current_total_discounts['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.current_total_duties['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.current_total_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.current_total_tax['currencyCode'] = shopCurrencyCode;
 
-    augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
 
-    augmentedSchema.properties.total_discounts['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_line_items_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_outstanding['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_shipping_price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_tip_received['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_discounts['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_line_items_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_outstanding['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_shipping_price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_tip_received['currencyCode'] = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
@@ -346,7 +358,17 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
       fulfillment_status,
       ids,
       since_id,
+      customerTags,
+      orderTags,
     ] = codaSyncParams;
+
+    const fieldsArray = syncTableManager.getSyncedStandardFields(orderFieldDependencies);
+    if (orderTags && orderTags.length) {
+      fieldsArray.push('tags');
+    }
+    if (customerTags && customerTags.length) {
+      fieldsArray.push('customer');
+    }
 
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
@@ -354,7 +376,7 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
         nextPageQuery,
         limit,
         firstPageParams: {
-          fields: syncTableManager.getSyncedStandardFields(orderFieldDependencies).join(','),
+          fields: arrayUnique(fieldsArray).join(','),
           ids: ids && ids.length ? ids.join(',') : undefined,
           financial_status,
           fulfillment_status,
@@ -366,6 +388,8 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
           updated_at_max: updated_at ? updated_at[1] : undefined,
           processed_at_min: processed_at ? processed_at[0] : undefined,
           processed_at_max: processed_at ? processed_at[1] : undefined,
+          customerTags,
+          orderTags,
         },
       });
 
@@ -409,6 +433,8 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     fulfillment_status = null,
     fields = null,
     options = {},
+    customerTags: filterCustomerTags = [],
+    orderTags: filterOrderTags = [],
     ...otherArgs
   }: AllArgs): Promise<FindAllRestResponse<Order>> {
     const response = await this.baseFind<Order>({
@@ -434,7 +460,50 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
       options,
     });
 
-    return response;
+    return {
+      ...response,
+      data: response.data.filter((d) => {
+        let passCustomerTags = true;
+        let passOrderTags = true;
+        if (filterCustomerTags.length) {
+          const customerTags = splitAndTrimValues(d.apiData?.customer?.tags ?? '');
+          passCustomerTags = customerTags.length && customerTags.some((t) => filterCustomerTags.includes(t));
+        }
+        if (filterOrderTags.length) {
+          const orderTags = splitAndTrimValues(d.apiData?.tags ?? '');
+          passOrderTags = orderTags.length && orderTags.some((t) => filterOrderTags.includes(t));
+        }
+        return passCustomerTags && passOrderTags;
+      }),
+    };
+  }
+
+  protected static validateParams(params: AllArgs) {
+    if (params.status) {
+      const validStatuses = OPTIONS_ORDER_STATUS;
+      const statuses = Array.isArray(params.status) ? params.status : [params.status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('status: ' + statuses.join(', '));
+      }
+    }
+    if (params.financial_status) {
+      const validStatuses = OPTIONS_ORDER_FINANCIAL_STATUS;
+      const statuses = Array.isArray(params.financial_status) ? params.financial_status : [params.financial_status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('financial status: ' + statuses.join(', '));
+      }
+    }
+    if (params.fulfillment_status) {
+      const validStatuses = OPTIONS_ORDER_FULFILLMENT_STATUS;
+      const statuses = Array.isArray(params.fulfillment_status)
+        ? params.fulfillment_status
+        : [params.fulfillment_status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('fulfillment status: ' + statuses.join(', '));
+      }
+    }
+
+    return super.validateParams(params);
   }
 
   /**====================================================================================================================
@@ -503,35 +572,6 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
     return response ? response.body : null;
   }
 
-  // TODO ?
-  validateParams = (params: any) => {
-    if (params.status) {
-      const validStatuses = OPTIONS_ORDER_STATUS;
-      (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
-        if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown status: ' + params.status);
-      });
-    }
-    if (params.financial_status) {
-      const validStatuses = OPTIONS_ORDER_FINANCIAL_STATUS;
-      (Array.isArray(params.financial_status) ? params.financial_status : [params.financial_status]).forEach(
-        (financial_status) => {
-          if (!validStatuses.includes(financial_status))
-            throw new coda.UserVisibleError('Unknown financial status: ' + params.financial_status);
-        }
-      );
-    }
-    if (params.fulfillment_status) {
-      const validStatuses = OPTIONS_ORDER_FULFILLMENT_STATUS;
-      (Array.isArray(params.fulfillment_status) ? params.fulfillment_status : [params.fulfillment_status]).forEach(
-        (fulfillment_status) => {
-          if (!validStatuses.includes(fulfillment_status))
-            throw new coda.UserVisibleError('Unknown fulfillment status: ' + params.fulfillment_status);
-        }
-      );
-    }
-    return true;
-  };
-
   protected formatToApi({ row, metafields = [] }: FromRow<OrderRow>) {
     let apiData: Partial<typeof this.apiData> = {};
 
@@ -560,9 +600,6 @@ export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

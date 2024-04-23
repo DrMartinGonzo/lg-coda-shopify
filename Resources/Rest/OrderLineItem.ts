@@ -15,6 +15,7 @@ import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestR
 import { BaseContext } from '../types/Resource.types';
 import { Duty, Order } from './Order';
 import { Shop } from './Shop';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -58,11 +59,12 @@ export class OrderLineItem extends AbstractSyncedRestResource {
     let augmentedSchema = deepCopy(this.getStaticSchema());
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
 
-    // Main props
-    augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.total_discount['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
+    // // Main props
+    // augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.total_discount['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
 
     return augmentedSchema;
   }

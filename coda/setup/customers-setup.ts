@@ -49,6 +49,7 @@ export const Sync_Customers = coda.makeSyncTable({
         description: 'Sync only customers updated in the given date range.',
       },
       { ...filters.customer.idArray, optional: true },
+      { ...filters.customer.tags, optional: true },
     ],
     execute: async function (params, context) {
       return Customer.sync(params, context);

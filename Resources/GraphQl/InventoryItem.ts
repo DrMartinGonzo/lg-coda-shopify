@@ -23,6 +23,7 @@ import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTabl
 import { FromRow } from '../types/Resource.types';
 import { Shop } from '../Rest/Shop';
 import { GraphQlResourceNames } from '../types/SupportedResource';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -64,7 +65,8 @@ export class InventoryItem extends AbstractSyncedGraphQlResource {
     let augmentedSchema = deepCopy(this.getStaticSchema());
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
-    augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    // augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
 
     return augmentedSchema;
   }

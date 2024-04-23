@@ -11,7 +11,7 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, parseOptionId } from '../../utils/helpers';
+import { deepCopy, filterObjectKeys, isDefinedEmpty, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow } from '../types/Resource.types';
@@ -22,6 +22,7 @@ import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/A
 import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -229,18 +230,17 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
     return response;
   }
 
+  protected static validateParams(params: AllArgs) {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((s) => s.value);
+    if (!isNullishOrEmpty(params.published_status) && !validPublishedStatuses.includes(params.published_status)) {
+      throw new InvalidValueVisibleError('published_status: ' + params.published_status);
+    }
+    return super.validateParams(params);
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO: Add validation
-  validateParams = (params: AllArgs) => {
-    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-    if ('published_status' in params && !validPublishedStatuses.includes(params.published_status)) {
-      throw new coda.UserVisibleError('Unknown published_status: ' + params.published_status);
-    }
-    return true;
-  };
-
   protected formatToApi({ row, metafields = [] }: FromRow<ArticleRow>) {
     let apiData: Partial<typeof this.apiData> = {};
 
@@ -263,9 +263,6 @@ export class Article extends AbstractSyncedRestResourceWithRestMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

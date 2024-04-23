@@ -17,6 +17,9 @@ import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from
 import { MergedCollection } from './MergedCollection';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
+import { isNullishOrEmpty } from '../../utils/helpers';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -39,7 +42,7 @@ interface AllArgs extends BaseContext {
   updated_at_max?: unknown;
   published_at_min?: unknown;
   published_at_max?: unknown;
-  published_status?: unknown;
+  published_status?: string;
   fields?: unknown;
 }
 
@@ -185,6 +188,23 @@ export class CustomCollection extends AbstractSyncedRestResourceWithGraphQLMetaf
     });
 
     return response;
+  }
+
+  protected static validateParams(params: AllArgs) {
+    const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+    if (!isNullishOrEmpty(params.published_status) && !validPublishedStatuses.includes(params.published_status)) {
+      throw new InvalidValueVisibleError('published_status: ' + params.published_status);
+    }
+
+    // TODO implement this for update jobs
+    //  if (
+    //    !isNullOrEmpty(update.newValue.image_alt_text) &&
+    //    (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
+    //  ) {
+    //    throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
+    //  }
+
+    return super.validateParams(params);
   }
 
   /**====================================================================================================================

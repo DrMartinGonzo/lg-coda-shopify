@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { Asset } from '../../Resources/Rest/Asset';
-import { Collection } from '../../Resources/Rest/Collection';
 import { CustomCollection } from '../../Resources/Rest/CustomCollection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
 import { FromRow } from '../../Resources/types/Resource.types';
@@ -106,7 +105,7 @@ export const Action_CreateCollection = coda.makeFormula({
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Collection.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_resource: MergedCollection.metafieldRestOwnerType })
       ),
     };
 
@@ -161,7 +160,7 @@ export const Action_UpdateCollection = coda.makeFormula({
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: collectionId, owner_resource: Collection.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_id: collectionId, owner_resource: MergedCollection.metafieldRestOwnerType })
       ),
     };
 

@@ -45,6 +45,8 @@ export const Sync_Orders = coda.makeSyncTable({
       { ...filters.order.fulfillmentStatus, optional: true },
       { ...filters.order.idArray, optional: true },
       { ...filters.general.sinceId, optional: true },
+      { ...filters.customer.tags, name: 'customerTags', optional: true },
+      { ...filters.order.tags, name: 'orderTags', optional: true },
     ],
     execute: async function (params, context) {
       return Order.sync(params, context);

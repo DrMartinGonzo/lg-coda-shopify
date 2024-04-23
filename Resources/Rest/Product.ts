@@ -15,7 +15,7 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../schemas/syncTable/ProductSchemaRest';
 import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { arrayUnique, deepCopy, filterObjectKeys } from '../../utils/helpers';
+import { arrayUnique, deepCopy, filterObjectKeys, isDefinedEmpty, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow } from '../types/Resource.types';
@@ -28,6 +28,7 @@ import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Variant } from './Variant';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -372,35 +373,31 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
     return response;
   }
 
+  protected static validateParams(params: AllArgs) {
+    if (params.status) {
+      const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
+      const statuses = Array.isArray(params.status) ? params.status : [params.status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('product status: ' + statuses.join(', '));
+      }
+    }
+    if (params.published_status) {
+      const validStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
+      const statuses = Array.isArray(params.published_status) ? params.published_status : [params.published_status];
+      if (!statuses.every((s) => validStatuses.includes(s))) {
+        throw new InvalidValueVisibleError('published_status: ' + statuses.join(', '));
+      }
+    }
+    if (isDefinedEmpty(params.title)) {
+      throw new InvalidValueVisibleError("Product title can't be blank");
+    }
+
+    return super.validateParams(params);
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO: Add validation
-  validateParams = (
-    // TODO: fix params
-    params: any
-  ) => {
-    if (params.status) {
-      const validStatuses = OPTIONS_PRODUCT_STATUS_REST.map((status) => status.value);
-      (Array.isArray(params.status) ? params.status : [params.status]).forEach((status) => {
-        if (!validStatuses.includes(status)) throw new coda.UserVisibleError('Unknown product status: ' + status);
-      });
-    }
-    if ('title' in params && params.title === '') {
-      throw new coda.UserVisibleError("Product title can't be blank");
-    }
-    if ('published_status' in params) {
-      const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
-      (Array.isArray(params.published_status) ? params.published_status : [params.published_status]).forEach(
-        (published_status) => {
-          if (!validPublishedStatuses.includes(published_status))
-            throw new coda.UserVisibleError('Unknown published_status: ' + published_status);
-        }
-      );
-    }
-    return true;
-  };
-
   protected formatToApi({ row, metafields = [] }: FromRow<ProductRow>) {
     // let apiData: UpdateArgs | CreateArgs = {};
     let apiData: Partial<typeof this.apiData> = {};
@@ -439,9 +436,6 @@ export class Product extends AbstractSyncedRestResourceWithGraphQLMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 

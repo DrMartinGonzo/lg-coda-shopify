@@ -3,7 +3,7 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -119,9 +119,10 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
     }
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
-    // Main props
-    augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-    augmentedSchema.properties.compare_at_price['currencyCode'] = shopCurrencyCode;
+    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    // // Main props
+    // augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
+    // augmentedSchema.properties.compare_at_price['currencyCode'] = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
@@ -199,9 +200,6 @@ export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
       apiData.metafields = metafields;
     }
 
-    // TODO: not sure we need to keep this
-    // Means we have nothing to update/create
-    if (Object.keys(apiData).length === 0) return undefined;
     return apiData;
   }
 
