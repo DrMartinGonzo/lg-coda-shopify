@@ -29,19 +29,11 @@ interface AllArgs extends BaseContext {
   limit?: unknown;
   updated_at_min?: unknown;
 }
-interface AdjustArgs extends BaseContext {
+interface AdjustArgs {
   [key: string]: unknown;
   inventory_item_id?: unknown;
   location_id?: unknown;
   available_adjustment?: number;
-  body?: { [key: string]: unknown } | null;
-}
-interface ConnectArgs extends BaseContext {
-  [key: string]: unknown;
-  inventory_item_id?: unknown;
-  location_id?: unknown;
-  relocate_if_necessary?: unknown;
-  body?: { [key: string]: unknown } | null;
 }
 interface SetArgs {
   [key: string]: unknown;
@@ -49,6 +41,12 @@ interface SetArgs {
   location_id?: unknown;
   available?: unknown;
   disconnect_if_necessary?: unknown;
+}
+interface ConnectArgs extends BaseContext {
+  [key: string]: unknown;
+  inventory_item_id?: unknown;
+  location_id?: unknown;
+  relocate_if_necessary?: unknown;
   body?: { [key: string]: unknown } | null;
 }
 
@@ -143,12 +141,10 @@ export class InventoryLevel extends AbstractSyncedRestResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO: should also be static
   public async adjust({
     inventory_item_id = null,
     location_id = null,
     available_adjustment = null,
-    body = null,
     ...otherArgs
   }: AdjustArgs): Promise<unknown> {
     const response = await this.request<InventoryLevel>({
@@ -157,25 +153,22 @@ export class InventoryLevel extends AbstractSyncedRestResource {
       context: this.context,
       urlIds: {},
       params: {
-        inventory_item_id: inventory_item_id,
-        location_id: location_id,
-        available_adjustment: available_adjustment,
+        inventory_item_id,
+        location_id,
+        available_adjustment,
         ...otherArgs,
       },
-      body: body,
       entity: this,
     });
 
     return response ? response.body : null;
   }
 
-  // TODO: should also be static
   public async set({
     inventory_item_id = null,
     location_id = null,
     available = null,
     disconnect_if_necessary = null,
-    body = null,
     ...otherArgs
   }: SetArgs): Promise<unknown> {
     const response = await this.request<InventoryLevel>({
@@ -184,13 +177,12 @@ export class InventoryLevel extends AbstractSyncedRestResource {
       context: this.context,
       urlIds: {},
       params: {
-        inventory_item_id: inventory_item_id,
-        location_id: location_id,
-        available: available,
-        disconnect_if_necessary: disconnect_if_necessary,
+        inventory_item_id,
+        location_id,
+        available,
+        disconnect_if_necessary,
         ...otherArgs,
       },
-      body: body,
       entity: this,
     });
 

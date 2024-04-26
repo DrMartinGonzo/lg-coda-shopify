@@ -6,6 +6,12 @@
     },
   ],
   "settings": {
+    "files.exclude": {
+      "**/_upload_build": true
+    },
+    "search.exclude": {
+      "**/_upload_build": true
+    },
     "typescript.workspaceSymbols.excludeLibrarySymbols": true,
     "typescript.tsdk": "./node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
