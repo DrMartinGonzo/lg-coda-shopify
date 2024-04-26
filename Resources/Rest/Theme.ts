@@ -1,9 +1,9 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
-import { BaseContext } from '../types/Resource.types';
-import { PACK_IDENTITIES, Identity } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext } from '../types/Resource.types';
 import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
@@ -88,5 +88,15 @@ export class Theme extends AbstractRestResource {
     });
 
     return response;
+  }
+
+  /**====================================================================================================================
+   *    Instance Methods
+   *===================================================================================================================== */
+  protected formatToApi(): any {
+    return;
+  }
+  public formatToRow(): any {
+    return;
   }
 }

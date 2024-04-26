@@ -6,16 +6,16 @@ import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractRestResource } from '../Abstract/Rest/AbstractRestResource';
 import { BaseContext } from '../types/Resource.types';
 import { Duty, Order } from './Order';
 import { Shop } from './Shop';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -46,7 +46,7 @@ export type LineItem = {
 };
 // #endregion
 
-export class OrderLineItem extends AbstractSyncedRestResource {
+export class OrderLineItem extends AbstractRestResource {
   public apiData: (LineItem & { order_id: number; order_name: string }) | null;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.OrderLineItem;

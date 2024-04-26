@@ -1,9 +1,9 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
 import { FetchRequestOptions } from '../../Clients/Client.types';
-import { BaseContext } from '../types/Resource.types';
 import { CACHE_DEFAULT, Identity, PACK_IDENTITIES } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext } from '../types/Resource.types';
 import { RestResourceSingular, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Theme } from './Theme';
 
@@ -100,5 +100,15 @@ export class Asset extends AbstractRestResource {
     }
 
     return [];
+  }
+
+  /**====================================================================================================================
+   *    Instance Methods
+   *===================================================================================================================== */
+  protected formatToApi(): any {
+    return;
+  }
+  public formatToRow(): any {
+    return;
   }
 }

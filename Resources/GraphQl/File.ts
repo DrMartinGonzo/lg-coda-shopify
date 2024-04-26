@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../types/Resource.types';
 import { UnsupportedActionError } from '../../Errors/Errors';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Files } from '../../coda/setup/files-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -24,10 +24,13 @@ import {
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
 } from '../../utils/helpers';
-import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { FromRow } from '../types/Resource.types';
+import {
+  AbstractGraphQlResource,
+  FindAllGraphQlResponse,
+  GraphQlResourcePath,
+  SaveArgs,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { BaseContext, FromRow } from '../types/Resource.types';
 
 // #endregion
 
@@ -60,7 +63,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class File extends AbstractSyncedGraphQlResource {
+export class File extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof fileFieldsFragment> &
     ResultOf<typeof genericFileFieldsFragment> &
     ResultOf<typeof videoFieldsFragment> &

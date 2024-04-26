@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { InvalidValueError, NotFoundVisibleError } from '../Errors/Errors';
-import { AbstractSyncedGraphQlResource } from '../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { AbstractSyncedRestResource } from '../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractGraphQlResource } from '../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractRestResource } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { CACHE_DEFAULT } from '../constants';
 
 // #endregion
@@ -81,7 +81,7 @@ export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: strin
  * @param IdParameter the id parameter
  */
 export function makeDeleteRestResourceAction(
-  Resource: typeof AbstractSyncedRestResource,
+  Resource: typeof AbstractRestResource,
   IdParameter: ReturnType<
     typeof coda.makeParameter<
       coda.ParameterType.Number,
@@ -112,7 +112,7 @@ export function makeDeleteRestResourceAction(
  * @param IdParameter the id parameter
  */
 export function makeFetchSingleRestResourceAction(
-  Resource: typeof AbstractSyncedRestResource,
+  Resource: typeof AbstractRestResource,
   IdParameter: ReturnType<
     typeof coda.makeParameter<
       coda.ParameterType.Number,
@@ -147,7 +147,7 @@ export function makeFetchSingleRestResourceAction(
  * @param IdParameter the id parameter
  */
 export function makeDeleteGraphQlResourceAction(
-  Resource: typeof AbstractSyncedGraphQlResource,
+  Resource: typeof AbstractGraphQlResource,
   IdParameter: ReturnType<
     typeof coda.makeParameter<
       coda.ParameterType.Number | coda.ParameterType.String,

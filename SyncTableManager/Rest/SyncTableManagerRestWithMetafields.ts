@@ -2,11 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { GraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlClient';
-import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractRestResource } from '../../Resources/Abstract/Rest/AbstractRestResource';
 import {
-  AbstractSyncedRestResourceWithGraphQLMetafields,
-  AbstractSyncedRestResourceWithRestMetafields,
-} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+  AbstractRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithRestMetafields,
+} from '../../Resources/Abstract/Rest/AbstractRestResourceWithMetafields';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { getNodesMetafieldsByKeyQuery, metafieldFieldsFragment } from '../../graphql/metafields-graphql';
@@ -36,7 +36,7 @@ import { SyncTableManagerRest } from './SyncTableManagerRest';
 // #endregion
 
 // prettier-ignore
-abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends AbstractSyncedRestResource, C extends coda.Continuation> extends AbstractSyncTableManagerWithMetafields<BaseT, C> implements ISyncTableManagerWithMetafields {
+abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends AbstractRestResource, C extends coda.Continuation> extends AbstractSyncTableManagerWithMetafields<BaseT, C> implements ISyncTableManagerWithMetafields {
   protected parentSyncTableManager: SyncTableManagerRest<BaseT>;
 
   constructor({ schema, codaSyncParams, context }: ISyncTableManagerConstructorArgs) {
@@ -51,7 +51,7 @@ abstract class AbstractSyncTableManagerRestWithMetafields<BaseT extends Abstract
 }
 
 // prettier-ignore
-export class SyncTableManagerRestWithRestMetafields<BaseT extends AbstractSyncedRestResourceWithRestMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableRestContinuation> implements ISyncTableManagerWithMetafields {
+export class SyncTableManagerRestWithRestMetafields<BaseT extends AbstractRestResourceWithRestMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableRestContinuation> implements ISyncTableManagerWithMetafields {
   public async executeSync({
     sync,
     syncMetafields,
@@ -87,7 +87,7 @@ export class SyncTableManagerRestWithRestMetafields<BaseT extends AbstractSynced
 }
 
 // prettier-ignore
-export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>> implements ISyncTableManagerWithMetafields {
+export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRestResourceWithGraphQLMetafields> extends AbstractSyncTableManagerRestWithMetafields<BaseT, SyncTableMixedContinuation<ReturnType<BaseT['formatToRow']>>> implements ISyncTableManagerWithMetafields {
   protected currentRestLimit: number;
 
   // ———————————————————————————————————————————————

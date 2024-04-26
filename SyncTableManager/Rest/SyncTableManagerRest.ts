@@ -1,6 +1,6 @@
 // #region Imports
 
-import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
+import { AbstractRestResource } from '../../Resources/Abstract/Rest/AbstractRestResource';
 import { logAdmin } from '../../utils/helpers';
 import { AbstractSyncTableManager } from '../Abstract/AbstractSyncTableManager';
 import { SyncTableRestContinuation } from '../types/SyncTable.types';
@@ -9,7 +9,7 @@ import { parseContinuationProperty, stringifyContinuationProperty } from '../uti
 
 // #endregion
 
-export class SyncTableManagerRest<BaseT extends AbstractSyncedRestResource>
+export class SyncTableManagerRest<BaseT extends AbstractRestResource>
   extends AbstractSyncTableManager<BaseT, SyncTableRestContinuation>
   implements ISyncTableManager
 {

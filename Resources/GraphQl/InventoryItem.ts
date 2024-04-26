@@ -1,7 +1,7 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../types/Resource.types';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -11,19 +11,22 @@ import {
   updateInventoryItemMutation,
 } from '../../graphql/inventoryItems-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { FromRow } from '../types/Resource.types';
+import {
+  AbstractGraphQlResource,
+  FindAllGraphQlResponse,
+  GraphQlResourcePath,
+  SaveArgs,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { Shop } from '../Rest/Shop';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -48,7 +51,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class InventoryItem extends AbstractSyncedGraphQlResource {
+export class InventoryItem extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof inventoryItemFieldsFragment>;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryItem;

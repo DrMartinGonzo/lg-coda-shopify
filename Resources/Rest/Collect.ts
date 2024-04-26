@@ -7,10 +7,8 @@ import { CollectRow } from '../../schemas/CodaRows.types';
 import { CollectSyncTableSchema, collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
-import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { FromRow } from '../types/Resource.types';
-import { BaseContext } from '../types/Resource.types';
+import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
@@ -29,7 +27,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Collect extends AbstractSyncedRestResource {
+export class Collect extends AbstractRestResource {
   public apiData: {
     collection_id: number | null;
     created_at: string | null;

@@ -1,25 +1,25 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
+import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { isNullishOrEmpty } from '../../utils/helpers';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractSyncedRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { MergedCollection } from './MergedCollection';
 import { SupportedMetafieldOwnerResource } from './Metafield';
-import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
-import { isNullishOrEmpty } from '../../utils/helpers';
-import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -68,7 +68,7 @@ export interface SmartCollectionData extends RestApiDataWithMetafields {
   updated_at: string | null;
 }
 
-export class SmartCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class SmartCollection extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: SmartCollectionData;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;

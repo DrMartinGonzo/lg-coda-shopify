@@ -6,16 +6,21 @@ import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 
 import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlClient';
 import { ShopifyGraphQlRequestCost } from '../../../Errors/GraphQlErrors';
+import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import {
+  MakeSyncGraphQlFunctionArgs,
+  SyncGraphQlFunction,
+} from '../../../SyncTableManager/types/SyncTableManager.types';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
-import { CACHE_DEFAULT } from '../../../constants';
+import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
+import { Node } from '../../../graphql/types/graphql.types.';
 import { PageInfo as PageInfoGraphQl } from '../../../types/admin.types';
 import { graphQlGidToId } from '../../../utils/conversion-utils';
 import { flattenConnection } from '../../../utils/helpers';
 import { FragmentOf } from '../../../utils/tada-utils';
 import { Metafield } from '../../Rest/Metafield';
 import { BaseContext } from '../../types/Resource.types';
-import { Node } from '../../../graphql/types/graphql.types.';
 import { GraphQlResourceName } from '../../types/SupportedResource';
 import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 
@@ -61,6 +66,7 @@ export interface BaseSaveArgs<NodeT extends TadaDocumentNode> extends SaveArgs, 
 export abstract class AbstractGraphQlResource extends AbstractResource {
   protected static Client = GraphQlClient;
   protected static apiVersion = GRAPHQL_DEFAULT_API_VERSION;
+  protected static readonly defaultLimit: number = GRAPHQL_NODES_LIMIT;
 
   protected static readonly graphQlName: GraphQlResourceName | undefined;
   /** These paths should not includes nodes or edges keys, except for the root one */
@@ -102,6 +108,55 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
   }: BaseDeleteArgs<NodeT>): Promise<ResultOf<NodeT> | null> {
     const response = await this.request<NodeT>({ context, ...requestArgs });
     return response?.body?.data ?? null;
+  }
+
+  /**
+   * To be implemented by child class
+   */
+  public static async all(params: any): Promise<FindAllGraphQlResponse<any>> {
+    return;
+  }
+
+  public static async allDataLoop<T extends AbstractGraphQlResource>({ context, ...otherArgs }): Promise<Array<T>> {
+    let items: Array<T> = [];
+    let nextCursor: string;
+    let run = true;
+
+    while (run) {
+      const response = await this.all({ context, cursor: nextCursor, ...otherArgs });
+      const { pageInfo } = response;
+
+      items = items.concat(response.data as unknown as T);
+      if (pageInfo?.hasNextPage) {
+        nextCursor = pageInfo.endCursor;
+      } else {
+        nextCursor = undefined;
+      }
+
+      if (nextCursor === undefined) run = false;
+    }
+
+    return items;
+  }
+
+  /**
+   * Generate a sync function to be used by SyncTableManager.
+   */
+  protected static makeSyncTableManagerSyncFunction(
+    params: MakeSyncGraphQlFunctionArgs<AbstractGraphQlResource, any>
+  ): SyncGraphQlFunction<AbstractGraphQlResource> {
+    return ({ cursor = null, limit }) => this.all({ cursor, limit, ...params });
+  }
+
+  /**
+   * Get the appropriate SyncTableManager for this resource
+   */
+  public static async getSyncTableManager(
+    context: coda.SyncExecutionContext,
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>
+  ): Promise<SyncTableManagerGraphQl<AbstractGraphQlResource>> {
+    const schema = await this.getArraySchema({ codaSyncParams, context });
+    return new SyncTableManagerGraphQl<AbstractGraphQlResource>({ schema, codaSyncParams, context });
   }
 
   protected static extractDataFromAllPossiblePaths<NodeT extends TadaDocumentNode>(
@@ -168,35 +223,6 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     return instances;
   }
 
-  /**
-   * To be implemented by child class
-   */
-  public static async all(params: any): Promise<FindAllGraphQlResponse<any>> {
-    return;
-  }
-
-  public static async allDataLoop<T extends AbstractGraphQlResource>({ context, ...otherArgs }): Promise<Array<T>> {
-    let items: Array<T> = [];
-    let nextCursor: string;
-    let run = true;
-
-    while (run) {
-      const response = await this.all({ context, cursor: nextCursor, ...otherArgs });
-      const { pageInfo } = response;
-
-      items = items.concat(response.data as unknown as T);
-      if (pageInfo?.hasNextPage) {
-        nextCursor = pageInfo.endCursor;
-      } else {
-        nextCursor = undefined;
-      }
-
-      if (nextCursor === undefined) run = false;
-    }
-
-    return items;
-  }
-
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -233,20 +259,4 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
       this.setData(singleBody);
     }
   }
-
-  public abstract save({ update }: SaveArgs): Promise<void>;
-
-  public async saveAndUpdate(): Promise<void> {
-    await this.save({ update: true });
-  }
-
-  // public async delete(): Promise<void> {
-  //   await this.resource<typeof AbstractGraphQlResource>().request({
-  //     http_method: 'delete',
-  //     operation: 'delete',
-  //     context: this.context,
-  //     urlIds: {},
-  //     entity: this,
-  //   });
-  // }
 }

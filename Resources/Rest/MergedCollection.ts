@@ -19,7 +19,7 @@ import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { SaveArgs } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { AbstractRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/SupportedResource';
 import { hasMetafieldsInUpdate } from '../utils/abstractResource-utils';
@@ -51,7 +51,7 @@ interface ParseCollectionClassesFromUpdatesArgs {
  * A special class responsible for handling both the `custom` and `smart`
  * collections as a single resource in Coda
  */
-export class MergedCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class MergedCollection extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: CustomCollectionData & SmartCollectionData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collection;

@@ -1,5 +1,6 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
@@ -10,11 +11,11 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../types/Resource.types';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext } from '../types/Resource.types';
+import {
+  AbstractRestResourceWithGraphQLMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
 import { Product } from './Product';
@@ -39,7 +40,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Variant extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class Variant extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     barcode: string | null;
     compare_at_price: string | null;

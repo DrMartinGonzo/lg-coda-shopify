@@ -195,7 +195,7 @@ export const Format_Product: coda.Format = {
   instructions: 'Paste the ID of the product into the column.',
   formulaName: 'Product',
   /**
-  // TODO: regex won't work for now as it uses a different network domain.
+  // ! regex won't work for now as it uses a different network domain.
    * {@see https://coda.io/packs/build/latest/guides/blocks/column-formats/#matchers}
    */
   // matchers: [new RegExp('^https://admin.shopify.com/store/.*/products/([0-9]+)$')],

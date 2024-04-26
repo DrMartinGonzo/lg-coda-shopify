@@ -1,14 +1,12 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { RedirectSyncTableSchema, redirectFieldDependencies } from '../../schemas/syncTable/RedirectSchema';
-import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { FromRow } from '../types/Resource.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseContext } from '../types/Resource.types';
+import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
@@ -29,7 +27,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Redirect extends AbstractSyncedRestResource {
+export class Redirect extends AbstractRestResource {
   public apiData: {
     id: number | null;
     path: string | null;

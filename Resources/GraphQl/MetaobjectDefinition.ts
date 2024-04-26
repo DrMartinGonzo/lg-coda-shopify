@@ -1,8 +1,7 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../types/Resource.types';
-import { GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
+import { GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   getMetaobjectDefinitionsQuery,
   getSingleMetaObjectDefinitionQuery,
@@ -15,6 +14,7 @@ import {
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
+import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 
 // #endregion
@@ -116,4 +116,11 @@ export class MetaobjectDefinition extends AbstractGraphQlResource {
    *    Instance Methods
    *===================================================================================================================== */
   public async save({ update = false }: SaveArgs): Promise<void> {}
+
+  protected formatToApi(): any {
+    return;
+  }
+  public formatToRow(): any {
+    return;
+  }
 }

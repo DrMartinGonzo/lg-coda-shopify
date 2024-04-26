@@ -1,8 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { SyncTableManagerRestWithRestMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
+import {
+  SyncTableManagerRestWithGraphQlMetafields,
+  SyncTableManagerRestWithRestMetafields,
+} from '../../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import {
   SyncTableRestContinuation,
   SyncTableSyncResult,
@@ -18,8 +20,7 @@ import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
-import { FindAllRestResponse, RestApiData, SaveArgs } from './AbstractRestResource';
-import { AbstractSyncedRestResource } from './AbstractSyncedRestResource';
+import { AbstractRestResource, FindAllRestResponse, RestApiData, SaveArgs } from './AbstractRestResource';
 
 // #endregion
 
@@ -34,11 +35,11 @@ export interface RestApiDataWithMetafields extends RestApiData {
 }
 
 export type AugmentWithMetafieldsFunction = (
-  base: AbstractSyncedRestResourceWithRestMetafields
+  base: AbstractRestResourceWithRestMetafields
 ) => Promise<FindAllRestResponse<Metafield>>;
 // #endregion
 
-abstract class AbstractSyncedRestResourceWithMetafields extends AbstractSyncedRestResource {
+abstract class AbstractRestResourceWithMetafields extends AbstractRestResource {
   public apiData: RestApiDataWithMetafields;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
@@ -66,7 +67,7 @@ abstract class AbstractSyncedRestResourceWithMetafields extends AbstractSyncedRe
         metafieldDefinitions,
         ownerResource: this.metafieldRestOwnerType,
       });
-      const instance: AbstractSyncedRestResourceWithMetafields = new (this as any)({
+      const instance: AbstractRestResourceWithMetafields = new (this as any)({
         context,
         fromRow: { row: newRow, metafields },
       });
@@ -95,7 +96,7 @@ abstract class AbstractSyncedRestResourceWithMetafields extends AbstractSyncedRe
    *===================================================================================================================== */
   public async save({ update = false }: SaveArgs = {}): Promise<void> {
     if (this.apiData.metafields && this.apiData.metafields.length) {
-      const staticOwnerResource = this.resource<typeof AbstractSyncedRestResourceWithMetafields>();
+      const staticOwnerResource = this.resource<typeof AbstractRestResourceWithMetafields>();
       const { primaryKey } = staticOwnerResource;
       const method = this.apiData[primaryKey] ? 'put' : 'post';
 
@@ -127,18 +128,18 @@ abstract class AbstractSyncedRestResourceWithMetafields extends AbstractSyncedRe
   }
 }
 
-export abstract class AbstractSyncedRestResourceWithRestMetafields extends AbstractSyncedRestResourceWithMetafields {
+export abstract class AbstractRestResourceWithRestMetafields extends AbstractRestResourceWithMetafields {
   protected static augmentWithMetafieldsFunction(context: coda.ExecutionContext): AugmentWithMetafieldsFunction {
-    return async (base: AbstractSyncedRestResourceWithRestMetafields) =>
+    return async (base: AbstractRestResourceWithRestMetafields) =>
       Metafield.all({ context, owner_id: base.apiData.id, owner_resource: this.metafieldRestOwnerType });
   }
 
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>> {
+  ): Promise<SyncTableManagerRestWithRestMetafields<AbstractRestResourceWithRestMetafields>> {
     const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRestWithRestMetafields<AbstractSyncedRestResourceWithRestMetafields>({
+    return new SyncTableManagerRestWithRestMetafields<AbstractRestResourceWithRestMetafields>({
       schema,
       codaSyncParams,
       context,
@@ -178,7 +179,7 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
       syncTableManager.prevContinuation?.extraData?.metafieldDefinitions ??
       (await this.getMetafieldDefinitions(context)).map((m) => m.apiData);
 
-    const sync: SyncRestFunction<AbstractSyncedRestResourceWithRestMetafields> = ({ nextPageQuery = {}, limit }) => {
+    const sync: SyncRestFunction<AbstractRestResourceWithRestMetafields> = ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
         context,
         nextPageQuery,
@@ -216,9 +217,9 @@ export abstract class AbstractSyncedRestResourceWithRestMetafields extends Abstr
   }
 }
 
-export abstract class AbstractSyncedRestResourceWithGraphQLMetafields extends AbstractSyncedRestResourceWithMetafields {
+export abstract class AbstractRestResourceWithGraphQLMetafields extends AbstractRestResourceWithMetafields {
   // prettier-ignore
-  public static async getSyncTableManager<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields = AbstractSyncedRestResourceWithGraphQLMetafields>(
+  public static async getSyncTableManager<BaseT extends AbstractRestResourceWithGraphQLMetafields = AbstractRestResourceWithGraphQLMetafields>(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ) {

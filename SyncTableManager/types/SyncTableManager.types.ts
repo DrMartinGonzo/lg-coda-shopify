@@ -3,21 +3,20 @@ import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../Clients/Client.types';
 import { AbstractResource, FindAllResponseBase } from '../../Resources/Abstract/AbstractResource';
-import { FindAllGraphQlResponse } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { FindAllRestResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource } from '../../Resources/Abstract/Rest/AbstractSyncedRestResource';
-import { CodaSyncParams } from './SyncTable.types';
-import { SyncTableDefinition } from './SyncTable.types';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
 import {
-  AbstractSyncedRestResourceWithRestMetafields,
+  AbstractGraphQlResource,
+  FindAllGraphQlResponse,
+} from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
+import { AbstractRestResource, FindAllRestResponse } from '../../Resources/Abstract/Rest/AbstractRestResource';
+import {
+  AbstractRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithRestMetafields,
   AugmentWithMetafieldsFunction,
-} from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+} from '../../Resources/Abstract/Rest/AbstractRestResourceWithMetafields';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { AbstractSyncTableManager } from '../Abstract/AbstractSyncTableManager';
 import { SyncTableManagerGraphQl } from '../GraphQl/SyncTableManagerGraphQl';
-import { SyncTableGraphQlContinuation } from './SyncTable.types';
+import { CodaSyncParams, SyncTableDefinition, SyncTableGraphQlContinuation } from './SyncTable.types';
 
 // #endregion
 
@@ -60,10 +59,10 @@ export interface SyncTableManagerResult<C extends coda.Continuation, R extends F
   response: R;
   continuation?: C;
 }
-export interface SyncTableManagerRestResult<C extends coda.Continuation, BaseT extends AbstractSyncedRestResource>
+export interface SyncTableManagerRestResult<C extends coda.Continuation, BaseT extends AbstractRestResource>
   extends SyncTableManagerResult<C, FindAllRestResponse<BaseT>> {}
 
-export interface SyncTableManagerGraphQlResult<BaseT extends AbstractSyncedGraphQlResource>
+export interface SyncTableManagerGraphQlResult<BaseT extends AbstractGraphQlResource>
   extends SyncTableManagerResult<SyncTableGraphQlContinuation, FindAllGraphQlResponse<BaseT>> {}
 // #endregion
 
@@ -79,13 +78,13 @@ interface MakeSyncFunctionArgs<
 }
 
 export interface MakeSyncRestFunctionArgs<
-  T extends AbstractSyncedRestResource,
+  T extends AbstractRestResource,
   D extends SyncTableDefinition,
   S extends AbstractSyncTableManager<T, coda.Continuation> = AbstractSyncTableManager<T, coda.Continuation>
 > extends MakeSyncFunctionArgs<T, D, S> {}
 
 export interface MakeSyncGraphQlFunctionArgs<
-  T extends AbstractSyncedGraphQlResource,
+  T extends AbstractGraphQlResource,
   D extends SyncTableDefinition,
   S extends SyncTableManagerGraphQl<T> = SyncTableManagerGraphQl<T>
 > extends MakeSyncFunctionArgs<T, D, S> {}
@@ -100,17 +99,17 @@ export interface ExecuteSyncBaseArgs<T extends CallableFunction = CallableFuncti
   sync: T;
   defaultLimit?: number;
 }
-export interface ExecuteGraphQlSyncArgs<BaseT extends AbstractSyncedGraphQlResource>
+export interface ExecuteGraphQlSyncArgs<BaseT extends AbstractGraphQlResource>
   extends ExecuteSyncBaseArgs<SyncGraphQlFunction<BaseT>> {}
 
-export interface ExecuteRestSyncArgs<BaseT extends AbstractSyncedRestResource>
+export interface ExecuteRestSyncArgs<BaseT extends AbstractRestResource>
   extends ExecuteSyncBaseArgs<SyncRestFunction<BaseT>> {}
 
-export interface ExecuteRestSyncWithRestMetafieldsArgs<BaseT extends AbstractSyncedRestResourceWithRestMetafields>
+export interface ExecuteRestSyncWithRestMetafieldsArgs<BaseT extends AbstractRestResourceWithRestMetafields>
   extends ExecuteRestSyncArgs<BaseT> {
   syncMetafields: AugmentWithMetafieldsFunction;
 }
-export interface ExecuteRestSyncWithGraphQlMetafieldsArgs<BaseT extends AbstractSyncedRestResourceWithGraphQLMetafields>
+export interface ExecuteRestSyncWithGraphQlMetafieldsArgs<BaseT extends AbstractRestResourceWithGraphQLMetafields>
   extends ExecuteRestSyncArgs<BaseT> {
   getNestedData?: (response: FindAllRestResponse<BaseT>, context: coda.SyncExecutionContext) => Array<BaseT>;
 }

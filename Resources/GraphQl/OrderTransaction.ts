@@ -4,15 +4,16 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
-import { BaseContext } from '../types/Resource.types';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PACK_IDENTITIES, Identity } from '../../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   buildOrderTransactionsSearchQuery,
   getOrderTransactionsQuery,
   orderTransactionFieldsFragment,
 } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import {
   OrderTransactionSyncTableSchema,
@@ -20,17 +21,15 @@ import {
 } from '../../schemas/syncTable/OrderTransactionSchema';
 import { graphQlGidToId } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
+import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import {
   AbstractGraphQlResource,
   FindAllGraphQlResponse,
   GraphQlResourcePath,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { Shop } from '../Rest/Shop';
+import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 
 // #endregion
 
@@ -63,7 +62,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
-export class OrderTransaction extends AbstractSyncedGraphQlResource {
+export class OrderTransaction extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof orderTransactionFieldsFragment> & {
     // Extend with data from parent order
     parentOrder: {

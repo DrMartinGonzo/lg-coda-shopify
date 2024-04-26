@@ -1,18 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
 import * as accents from 'remove-accents';
+import * as PROPS from '../../coda/coda-properties';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
-import { BaseContext } from '../types/Resource.types';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import {
   CACHE_DEFAULT,
   CACHE_DISABLED,
   GRAPHQL_NODES_LIMIT,
-  PACK_IDENTITIES,
   Identity,
   OPTIONS_METAOBJECT_STATUS,
+  PACK_IDENTITIES,
 } from '../../constants';
 import {
   metaobjectDefinitionFragment,
@@ -45,19 +45,27 @@ import {
   shouldUpdateSyncTableMetafieldValue,
 } from '../../utils/metafields-utils';
 import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
-import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { ResourceConstructorArgs } from '../types/Resource.types';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
+import {
+  AbstractGraphQlResource,
+  FindAllGraphQlResponse,
+  GraphQlResourcePath,
+  SaveArgs,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { METAFIELD_TYPES, MetafieldType } from '../Mixed/Metafield.types';
 import { Shop } from '../Rest/Shop';
+import { BaseContext, ResourceConstructorArgs } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 import { MetaobjectDefinition } from './MetaobjectDefinition';
 
 // #endregion
 
 // #region Types
+export interface FromMetaobjectRow {
+  row: Partial<MetaobjectRow> | null;
+  metaobjectFields?: Array<MetaobjectField>;
+}
+
 interface MetaobjectConstructorArgs extends ResourceConstructorArgs {
   fromRow?: FromMetaobjectRow;
 }
@@ -65,11 +73,6 @@ interface MetaobjectConstructorArgs extends ResourceConstructorArgs {
 type MetaobjectField = ResultOf<typeof metaobjectFragment>['fields'][number];
 type MetaobjectUpdateInput = VariablesOf<typeof updateMetaObjectMutation>['metaobject'];
 type MetaobjectCreateInput = VariablesOf<typeof createMetaobjectMutation>['metaobject'];
-
-export interface FromMetaobjectRow {
-  row: Partial<MetaobjectRow> | null;
-  metaobjectFields?: Array<MetaobjectField>;
-}
 
 interface FieldsArgs {
   capabilities?: boolean;
@@ -93,7 +96,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class Metaobject extends AbstractSyncedGraphQlResource {
+export class Metaobject extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof metaobjectFragment>;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Metaobject;

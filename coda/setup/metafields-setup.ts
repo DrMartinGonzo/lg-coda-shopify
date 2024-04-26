@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { AbstractRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractRestResourceWithMetafields';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/Metafield.types';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
@@ -31,12 +31,12 @@ import { filters, inputs } from '../coda-parameters';
  * Matches a GraphQl MetafieldOwnerType to the corresponding Rest owner Resource class.
  *
  * @param {MetafieldOwnerType} ownerType - the MetafieldOwnerType to match
- * @return {AbstractSyncedRestResourceWithRestMetafields} the corresponding Rest owner Resource class
+ * @return {AbstractRestResourceWithMetafields} the corresponding Rest owner Resource class
  */
 
 function matchOwnerTypeToOwnerResourceClass(
   ownerType: MetafieldOwnerType
-): typeof AbstractSyncedRestResourceWithRestMetafields {
+): typeof AbstractRestResourceWithRestMetafields {
   switch (ownerType) {
     case MetafieldOwnerType.Article:
       return Article;

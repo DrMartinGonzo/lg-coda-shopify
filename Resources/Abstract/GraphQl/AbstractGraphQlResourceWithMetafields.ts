@@ -11,12 +11,11 @@ import { MetafieldGraphQl } from '../../GraphQl/MetafieldGraphQl';
 import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
-import { BaseSaveArgs, GraphQlApiDataWithMetafields } from './AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from './AbstractSyncedGraphQlResource';
+import { AbstractGraphQlResource, BaseSaveArgs, GraphQlApiDataWithMetafields } from './AbstractGraphQlResource';
 
 // #endregion
 
-export abstract class AbstractSyncedGraphQlResourceWithMetafields extends AbstractSyncedGraphQlResource {
+export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGraphQlResource {
   public apiData: GraphQlApiDataWithMetafields;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
@@ -47,7 +46,7 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
         ownerResource: this.metafieldRestOwnerType,
       });
 
-      const instance: AbstractSyncedGraphQlResourceWithMetafields = new (this as any)({
+      const instance: AbstractGraphQlResourceWithMetafields = new (this as any)({
         context,
         fromRow: { row: newRow, metafields },
       });
@@ -86,7 +85,7 @@ export abstract class AbstractSyncedGraphQlResourceWithMetafields extends Abstra
     const { restMetafieldInstances } = this.apiData;
 
     if (restMetafieldInstances && restMetafieldInstances.length) {
-      const staticOwnerResource = this.resource<typeof AbstractSyncedGraphQlResourceWithMetafields>();
+      const staticOwnerResource = this.resource<typeof AbstractGraphQlResourceWithMetafields>();
       const { primaryKey } = staticOwnerResource;
       const isUpdate = this.apiData[primaryKey];
 

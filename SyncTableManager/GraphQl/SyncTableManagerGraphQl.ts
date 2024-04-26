@@ -1,6 +1,6 @@
 // #region Imports
 
-import { AbstractSyncedGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractSyncedGraphQlResource';
+import { AbstractGraphQlResource } from '../../Resources/Abstract/GraphQl/AbstractGraphQlResource';
 import { GRAPHQL_NODES_LIMIT } from '../../constants';
 import { logAdmin } from '../../utils/helpers';
 import { AbstractSyncTableManagerWithMetafields } from '../Abstract/AbstractSyncTableManagerWithMetafields';
@@ -18,7 +18,7 @@ import {
 
 // #endregion
 
-export class SyncTableManagerGraphQl<BaseT extends AbstractSyncedGraphQlResource>
+export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource>
   extends AbstractSyncTableManagerWithMetafields<BaseT, SyncTableGraphQlContinuation>
   implements ISyncTableManagerWithMetafields
 {

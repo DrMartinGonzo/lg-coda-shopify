@@ -9,9 +9,9 @@ import { collectionFieldDependencies } from '../../schemas/syncTable/CollectionS
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractSyncedRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { MergedCollection } from './MergedCollection';
@@ -64,7 +64,7 @@ export interface CustomCollectionData extends RestApiDataWithMetafields {
   updated_at: string | null;
 }
 
-export class CustomCollection extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class CustomCollection extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: CustomCollectionData;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Collection;

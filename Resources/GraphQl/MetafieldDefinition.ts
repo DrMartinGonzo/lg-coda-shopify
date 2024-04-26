@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { BaseContext } from '../types/Resource.types';
 import { UnsupportedValueError } from '../../Errors/Errors';
+import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import {
@@ -15,11 +15,14 @@ import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldDefinitionValidationStatus, MetafieldOwnerType } from '../../types/admin.types';
 import { compareByDisplayKey } from '../../utils/helpers';
-import { FindAllGraphQlResponse, GraphQlResourcePath } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { AbstractSyncedGraphQlResource } from '../Abstract/GraphQl/AbstractSyncedGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  AbstractGraphQlResource,
+  FindAllGraphQlResponse,
+  GraphQlResourcePath,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
+import { BaseContext } from '../types/Resource.types';
 import { SupportedMetafieldOwnerType } from './MetafieldGraphQl';
 
 // #endregion
@@ -74,7 +77,7 @@ const FAKE_METADEFINITION__SEO_TITLE = {
   visibleToStorefrontApi: true,
 };
 
-export class MetafieldDefinition extends AbstractSyncedGraphQlResource {
+export class MetafieldDefinition extends AbstractGraphQlResource {
   public apiData: ResultOf<typeof metafieldDefinitionFragment>;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.MetafieldDefinition;

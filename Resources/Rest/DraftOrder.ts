@@ -17,9 +17,9 @@ import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDispl
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractSyncedRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
@@ -66,7 +66,7 @@ interface CompleteArgs {
   // body?: { [key: string]: unknown } | null;
 }
 
-export class DraftOrder extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     applied_discount: { [key: string]: unknown } | null;
     billing_address: { [key: string]: unknown } | null;

@@ -24,15 +24,13 @@ import {
   splitMetaFieldFullKey,
 } from '../../utils/metafields-utils';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { AbstractSyncedRestResource } from '../Abstract/Rest/AbstractSyncedRestResource';
-import { FromRow } from '../types/Resource.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
+import { AbstractRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl } from '../GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from '../Mixed/Metafield.types';
 import { MetafieldHelper } from '../Mixed/MetafieldHelper';
-import { BaseContext } from '../types/Resource.types';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import {
   GraphQlResourceNames,
   RestResourceSingular,
@@ -168,7 +166,7 @@ function buildMetafieldResourcePaths() {
   return paths;
 }
 
-export class Metafield extends AbstractSyncedRestResource {
+export class Metafield extends AbstractRestResource {
   apiData: {
     key: string | null;
     namespace: string | null;
@@ -220,7 +218,7 @@ export class Metafield extends AbstractSyncedRestResource {
   public static async sync(
     codaSyncParams: coda.ParamValues<coda.ParamDefs>,
     context: coda.SyncExecutionContext,
-    owner?: typeof AbstractSyncedRestResourceWithRestMetafields
+    owner?: typeof AbstractRestResourceWithRestMetafields
   ): Promise<SyncTableSyncResult> {
     // TODO: something better
     return owner.syncMetafieldsOnly(codaSyncParams, context);

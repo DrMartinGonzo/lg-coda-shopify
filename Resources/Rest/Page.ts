@@ -1,12 +1,13 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
-import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
@@ -14,17 +15,17 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../types/Resource.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext } from '../types/Resource.types';
+import {
+  AbstractRestResourceWithRestMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
+// #region Types
 interface FindArgs extends BaseContext {
   id: number | string;
   fields?: unknown;
@@ -47,8 +48,9 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
   published_status?: string;
 }
+// #endregion
 
-export class Page extends AbstractSyncedRestResourceWithRestMetafields {
+export class Page extends AbstractRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     author: string | null;

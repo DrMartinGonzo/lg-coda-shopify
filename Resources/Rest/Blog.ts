@@ -1,10 +1,12 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
-import { Identity, PACK_IDENTITIES, REST_DEFAULT_LIMIT } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
@@ -12,15 +14,13 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { deepCopy, filterObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../types/Resource.types';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext } from '../types/Resource.types';
+import {
+  AbstractRestResourceWithRestMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -40,7 +40,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Blog extends AbstractSyncedRestResourceWithRestMetafields {
+export class Blog extends AbstractRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     commentable: string | null;

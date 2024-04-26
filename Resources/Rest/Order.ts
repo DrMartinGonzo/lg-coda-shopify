@@ -39,9 +39,9 @@ import {
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
-  AbstractSyncedRestResourceWithGraphQLMetafields,
+  AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
-} from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
@@ -146,7 +146,7 @@ type Refund = {
 };
 // #endregion
 
-export class Order extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class Order extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     // line_items: { [key: string]: unknown }[] | null;

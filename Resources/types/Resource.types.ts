@@ -16,14 +16,7 @@ export interface FromRow<RowT extends BaseRow = BaseRow> {
 export interface ResourceConstructorArgs {
   context: coda.ExecutionContext;
   fromData?: Body | null;
-}
-
-export interface SyncedResourceConstructorArgs extends ResourceConstructorArgs {
   fromRow?: FromRow;
-}
-
-export interface ISyncedResource {
-  formatToRow(...args: any[]): BaseRow;
 }
 
 export interface BaseContext {

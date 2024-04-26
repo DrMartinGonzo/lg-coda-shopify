@@ -28,8 +28,8 @@ import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { FromRow } from '../types/Resource.types';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
+import { AbstractRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
@@ -84,7 +84,7 @@ interface SendInviteArgs extends BaseContext {
   body?: { [key: string]: unknown } | null;
 }
 
-export class Customer extends AbstractSyncedRestResourceWithGraphQLMetafields {
+export class Customer extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     accepts_marketing: boolean | null;
     accepts_marketing_updated_at: string | null;

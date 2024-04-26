@@ -1,6 +1,7 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, Identity, PACK_IDENTITIES } from '../../constants';
@@ -10,11 +11,11 @@ import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { filterObjectKeys } from '../../utils/helpers';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../types/Resource.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractSyncedRestResourceWithMetafields';
-import { BaseContext } from '../types/Resource.types';
+import {
+  AbstractRestResourceWithRestMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
@@ -25,7 +26,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export class Shop extends AbstractSyncedRestResourceWithRestMetafields {
+export class Shop extends AbstractRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     address1: string | null;
     address2: string | null;

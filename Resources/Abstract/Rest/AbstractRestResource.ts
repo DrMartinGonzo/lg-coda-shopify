@@ -6,6 +6,8 @@ import { Body, IdSet, ParamSet, ResourceNames, ResourcePath } from '@shopify/sho
 import { SearchParams } from '../../../Clients/Client.types';
 import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
 import { NotFoundError } from '../../../Errors/Errors';
+import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
 import { REST_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
@@ -14,7 +16,6 @@ import { BaseContext } from '../../types/Resource.types';
 import { GraphQlResourceName, RestResourceSingular } from '../../types/SupportedResource';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
 import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
-import { AbstractSyncedRestResourceWithRestMetafields } from './AbstractSyncedRestResourceWithMetafields';
 
 // #region Types
 export interface RestApiData {
@@ -58,6 +59,8 @@ export interface SaveArgs {
 export abstract class AbstractRestResource extends AbstractResource {
   protected static Client = RestClient;
   protected static apiVersion = REST_DEFAULT_API_VERSION;
+  protected static readonly defaultLimit: number = REST_DEFAULT_LIMIT;
+
   protected static readonly restName: RestResourceSingular;
   protected static readonly graphQlName: GraphQlResourceName | undefined;
   protected static readonly resourceNames: ResourceNames[] = [];
@@ -216,29 +219,6 @@ export abstract class AbstractRestResource extends AbstractResource {
     });
   }
 
-  protected static createInstancesFromResponse<T extends AbstractRestResource = AbstractRestResource>(
-    context: coda.ExecutionContext,
-    data: Body
-  ): T[] {
-    let instances: T[] = [];
-    this.resourceNames.forEach((resourceName) => {
-      const singular = resourceName.singular;
-      const plural = resourceName.plural;
-      if (data[plural] || Array.isArray(data[singular])) {
-        instances = instances.concat(
-          (data[plural] || data[singular]).reduce(
-            (acc: T[], entry: Body) => acc.concat(this.createInstance<T>(context, entry)),
-            []
-          )
-        );
-      } else if (data[singular]) {
-        instances.push(this.createInstance<T>(context, data[singular]));
-      }
-    });
-
-    return instances;
-  }
-
   /**
    * To be implemented by child class
    */
@@ -314,6 +294,54 @@ export abstract class AbstractRestResource extends AbstractResource {
     return items;
   }
 
+  /**
+   * Generate a sync function to be used by a SyncTableManager
+   */
+  protected static makeSyncTableManagerSyncFunction({
+    context,
+  }: MakeSyncRestFunctionArgs<AbstractRestResource, any>): SyncRestFunction<AbstractRestResource> {
+    return ({ nextPageQuery = {} }) =>
+      this.baseFind({
+        context,
+        urlIds: {},
+        ...nextPageQuery,
+      });
+  }
+
+  /**
+   * Get the appropriate SyncTableManager for this resource
+   */
+  public static async getSyncTableManager(
+    context: coda.SyncExecutionContext,
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>
+  ): Promise<SyncTableManagerRest<AbstractRestResource>> {
+    const schema = await this.getArraySchema({ codaSyncParams, context });
+    return new SyncTableManagerRest<AbstractRestResource>({ schema, codaSyncParams, context });
+  }
+
+  protected static createInstancesFromResponse<T extends AbstractRestResource = AbstractRestResource>(
+    context: coda.ExecutionContext,
+    data: Body
+  ): T[] {
+    let instances: T[] = [];
+    this.resourceNames.forEach((resourceName) => {
+      const singular = resourceName.singular;
+      const plural = resourceName.plural;
+      if (data[plural] || Array.isArray(data[singular])) {
+        instances = instances.concat(
+          (data[plural] || data[singular]).reduce(
+            (acc: T[], entry: Body) => acc.concat(this.createInstance<T>(context, entry)),
+            []
+          )
+        );
+      } else if (data[singular]) {
+        instances.push(this.createInstance<T>(context, data[singular]));
+      }
+    });
+
+    return instances;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -345,7 +373,7 @@ export abstract class AbstractRestResource extends AbstractResource {
       context: this.context,
       urlIds: {},
       /** When performing a PUT request, we must create/update/delete metafields
-       * individually. This will be done by {@link AbstractSyncedRestResourceWithRestMetafields} class */
+       * individually. This will be done by {@link AbstractRestResourceWithMetafields} class */
       body: {
         [staticResource.getRestName()]:
           method === 'put' ? filterObjectKeys(this.apiData, ['metafields']) : this.apiData,
@@ -366,9 +394,6 @@ export abstract class AbstractRestResource extends AbstractResource {
     if (update && body) {
       this.setData(body);
     }
-  }
-  public async saveAndUpdate(): Promise<void> {
-    await this.save({ update: true });
   }
 
   public async delete(): Promise<void> {

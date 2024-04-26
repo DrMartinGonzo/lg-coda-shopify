@@ -20,7 +20,7 @@ import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractSyncedGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractSyncedGraphQlResourceWithMetafields';
+import { AbstractGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResourceWithMetafields';
 import { GraphQlApiDataWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { FromRow } from '../types/Resource.types';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
@@ -53,7 +53,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
-export class Location extends AbstractSyncedGraphQlResourceWithMetafields {
+export class Location extends AbstractGraphQlResourceWithMetafields {
   public apiData: ResultOf<typeof locationFragment> & GraphQlApiDataWithMetafields;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Location;
