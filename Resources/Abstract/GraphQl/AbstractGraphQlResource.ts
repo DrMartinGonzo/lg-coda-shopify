@@ -1,6 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { Body } from '@shopify/shopify-api/rest/types';
+import { Body } from '@shopify/shopify-api';
 import { TadaDocumentNode } from 'gql.tada';
 import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 

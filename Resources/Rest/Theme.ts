@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { BaseContext } from '../types/Resource.types';

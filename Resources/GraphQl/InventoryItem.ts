@@ -69,7 +69,6 @@ export class InventoryItem extends AbstractGraphQlResource {
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-    // augmentedSchema.properties.cost['currencyCode'] = shopCurrencyCode;
 
     return augmentedSchema;
   }

@@ -61,11 +61,6 @@ export class OrderLineItem extends AbstractRestResource {
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
 
-    // // Main props
-    // augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_discount['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-
     return augmentedSchema;
   }
 

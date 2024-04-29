@@ -11,6 +11,7 @@ import { MetafieldGraphQl } from '../../GraphQl/MetafieldGraphQl';
 import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
+import { AbstractRestResourceWithMetafields } from '../Rest/AbstractRestResourceWithMetafields';
 import { AbstractGraphQlResource, BaseSaveArgs, GraphQlApiDataWithMetafields } from './AbstractGraphQlResource';
 
 // #endregion
@@ -23,7 +24,7 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
 
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
-  // TODO: this is duplicate code from AbstractResource_Synced_HasMetafields
+  /** Same code as in {@link AbstractRestResourceWithMetafields.getMetafieldDefinitions} */
   protected static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
     if (this.metafieldDefinitions) return this.metafieldDefinitions;
 
@@ -37,7 +38,6 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
 
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
     if (hasMetafieldsInRow(newRow)) {
-      // TODO: create MetafieldGraphQL Instances instead of Rest ?
       const metafieldDefinitions = await this.getMetafieldDefinitions(context);
       const metafields = await Metafield.createInstancesFromRow({
         context,

@@ -86,9 +86,6 @@ export class OrderTransaction extends AbstractGraphQlResource {
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-    // Main props
-    // augmentedSchema.properties.amount['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
 
     return augmentedSchema;
   }

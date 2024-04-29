@@ -1,7 +1,7 @@
 // #region Imports
 import striptags from 'striptags';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';

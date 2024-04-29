@@ -1,5 +1,5 @@
 // #region Imports
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
@@ -121,9 +121,6 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-    // // Main props
-    // augmentedSchema.properties.price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.compare_at_price['currencyCode'] = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

@@ -8,7 +8,6 @@ import { ISyncTableManagerConstructorArgs, ISyncTableManagerWithMetafields } fro
 
 // #endregion
 
-// TODO: BaseT should extend AbstractSyncedResource when this one will be done
 export abstract class AbstractSyncTableManagerWithMetafields<
     BaseT extends AbstractResource,
     C extends coda.Continuation

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
@@ -135,27 +135,6 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
 
-    // // Line items
-    // [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-    //   properties.price['currencyCode'] = shopCurrencyCode;
-    //   properties.total_discount['currencyCode'] = shopCurrencyCode;
-    //   properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Tax lines
-    // [
-    //   augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-    // ].forEach((properties) => {
-    //   properties.price['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Main props
-    // augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
-
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
@@ -252,6 +231,13 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     return super.validateParams(params);
   }
 
+  protected static validateUpdateJob(prevRow: DraftOrderRow, newRow: DraftOrderRow): boolean {
+    if (prevRow.status === 'completed' && [newRow.email, newRow.note].some((v) => v !== undefined)) {
+      throw new coda.UserVisibleError("Can't update email or note on a completed draft order.");
+    }
+    return super.validateUpdateJob(prevRow, newRow);
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -287,28 +273,6 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
 
     return response ? response.body : null;
   }
-
-  protected static async handleRowUpdate(
-    prevRow: DraftOrderRow,
-    newRow: DraftOrderRow,
-    context: coda.SyncExecutionContext
-  ) {
-    // validateUpdateJob
-    // TODO ? Combine with validateParams
-    if (prevRow.status === 'completed' && [newRow.email, newRow.note].some((v) => v !== undefined)) {
-      throw new coda.UserVisibleError("Can't update email or note on a completed draft order.");
-    }
-    return super.handleRowUpdate(prevRow, newRow, context);
-  }
-  // validateUpdateJob(update: coda.SyncUpdate<any, any, typeof DraftOrderSyncTableSchema>) {
-  //   if (
-  //     update.previousValue.status === 'completed' &&
-  //     [update.newValue.email, update.newValue.note].some((v) => v !== undefined)
-  //   ) {
-  //     throw new coda.UserVisibleError("Can't update email or note on a completed draft order.");
-  //   }
-  //   return true;
-  // }
 
   protected formatToApi({ row, metafields = [] }: FromRow<DraftOrderRow>) {
     let apiData: Partial<typeof this.apiData> = {};

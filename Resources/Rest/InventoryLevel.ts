@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
@@ -162,7 +162,6 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-    // augmentedSchema.properties.total_spent.currencyCode = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

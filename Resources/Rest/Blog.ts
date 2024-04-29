@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
@@ -78,7 +78,6 @@ export class Blog extends AbstractRestResourceWithRestMetafields {
     return BlogSyncTableSchema;
   }
 
-  // TODO: helper function for all dynamic schemas that share this simple augmentation
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Blogs>;
     let augmentedSchema = deepCopy(BlogSyncTableSchema);

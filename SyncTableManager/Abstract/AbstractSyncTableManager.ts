@@ -13,7 +13,6 @@ import {
 
 // #endregion
 
-// TODO: BaseT should extend AbstractSyncedResource when this one will be done
 export abstract class AbstractSyncTableManager<BaseT extends AbstractResource, C extends coda.Continuation>
   implements ISyncTableManager
 {

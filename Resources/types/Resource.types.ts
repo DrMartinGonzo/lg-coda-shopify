@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Body } from '@shopify/shopify-api/rest/types';
+import { Body } from '@shopify/shopify-api';
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Metafield } from '../Rest/Metafield';

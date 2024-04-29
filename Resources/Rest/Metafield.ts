@@ -1,6 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';

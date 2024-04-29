@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';

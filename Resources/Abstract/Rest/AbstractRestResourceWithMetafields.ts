@@ -20,6 +20,7 @@ import { MetafieldDefinition } from '../../GraphQl/MetafieldDefinition';
 import { MetafieldHelper } from '../../Mixed/MetafieldHelper';
 import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield';
 import { hasMetafieldsInRow, hasMetafieldsInUpdate } from '../../utils/abstractResource-utils';
+import { AbstractGraphQlResourceWithMetafields } from '../GraphQl/AbstractGraphQlResourceWithMetafields';
 import { AbstractRestResource, FindAllRestResponse, RestApiData, SaveArgs } from './AbstractRestResource';
 
 // #endregion
@@ -39,13 +40,14 @@ export type AugmentWithMetafieldsFunction = (
 ) => Promise<FindAllRestResponse<Metafield>>;
 // #endregion
 
-abstract class AbstractRestResourceWithMetafields extends AbstractRestResource {
+export abstract class AbstractRestResourceWithMetafields extends AbstractRestResource {
   public apiData: RestApiDataWithMetafields;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
   public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
+  /** Same code as in {@link AbstractGraphQlResourceWithMetafields.getMetafieldDefinitions} */
   // TODO: seems to be called too many times
   protected static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
     if (this.metafieldDefinitions) return this.metafieldDefinitions;

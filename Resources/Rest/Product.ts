@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { CodaSyncParams, SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';

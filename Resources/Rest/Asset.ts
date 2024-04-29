@@ -1,5 +1,5 @@
 // #region Imports
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { CACHE_DEFAULT, Identity, PACK_IDENTITIES } from '../../constants';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';

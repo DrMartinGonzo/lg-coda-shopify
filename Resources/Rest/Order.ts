@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
@@ -149,7 +149,6 @@ type Refund = {
 export class Order extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
-    // line_items: { [key: string]: unknown }[] | null;
     line_items: LineItem[] | null;
     app_id: number | null;
     billing_address: { [key: string]: unknown } | null;
@@ -178,13 +177,11 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     customer: CustomerCodaData | null;
     customer_locale: string | null;
     discount_applications: { [key: string]: unknown }[] | null;
-    // discount_codes: DiscountCode[] | null | { [key: string]: any };
     discount_codes: DiscountCode[] | null;
     email: string | null;
     estimated_taxes: boolean | null;
     financial_status: string | null;
     fulfillment_status: string | null;
-    // fulfillments: Fulfillment[] | null | { [key: string]: any };
     fulfillments: Fulfillment[] | null;
     gateway: string | null;
     id: number | null;
@@ -206,7 +203,6 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     presentment_currency: string | null;
     processed_at: string | null;
     referring_site: string | null;
-    // refunds: Refund[] | null | { [key: string]: any };
     refunds: Refund[] | null;
     shipping_address: { [key: string]: unknown } | null;
     shipping_lines: ShippingLine[] | null;
@@ -227,7 +223,6 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     total_outstanding: string | null;
     total_price: string | null;
     total_price_set: PriceSet | null;
-    // total_shipping_price_set: { [key: string]: unknown } | null;
     total_shipping_price_set: PriceSet | null;
     total_tax: string | null;
     total_tax_set: PriceSet | null;
@@ -273,66 +268,6 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
 
     const shopCurrencyCode = await Shop.activeCurrency({ context });
     updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-
-    // Refund order adjustments
-    // [augmentedSchema.properties.refunds.items.properties.order_adjustments.items.properties].forEach((properties) => {
-    //   properties.amount['currencyCode'] = shopCurrencyCode;
-    //   properties.tax_amount['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Refund transactions
-    // [augmentedSchema.properties.refunds.items.properties.transactions.items.properties].forEach((properties) => {
-    //   properties.amount['currencyCode'] = shopCurrencyCode;
-    //   properties.totalUnsettled['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Refund line items
-    // [augmentedSchema.properties.refunds.items.properties.refund_line_items.items.properties].forEach((properties) => {
-    //   properties.subtotal['currencyCode'] = shopCurrencyCode;
-    //   properties.total_tax['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Line items
-    // [augmentedSchema.properties.line_items.items.properties].forEach((properties) => {
-    //   properties.price['currencyCode'] = shopCurrencyCode;
-    //   properties.total_discount['currencyCode'] = shopCurrencyCode;
-    //   properties.discount_allocations.items.properties.amount['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Shipping lines
-    // [augmentedSchema.properties.shipping_lines.items.properties].forEach((properties) => {
-    //   properties.discounted_price['currencyCode'] = shopCurrencyCode;
-    //   properties.price['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Tax lines
-    // [
-    //   augmentedSchema.properties.line_items.items.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.shipping_lines.items.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.line_items.items.properties.duties.items.properties.tax_lines.items.properties,
-    //   augmentedSchema.properties.refunds.items.properties.duties.items.properties.tax_lines.items.properties,
-    // ].forEach((properties) => {
-    //   properties.price['currencyCode'] = shopCurrencyCode;
-    // });
-
-    // // Main props
-    // augmentedSchema.properties.current_subtotal_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.current_total_additional_fees['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.current_total_discounts['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.current_total_duties['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.current_total_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.current_total_tax['currencyCode'] = shopCurrencyCode;
-
-    // augmentedSchema.properties.subtotal_price['currencyCode'] = shopCurrencyCode;
-
-    // augmentedSchema.properties.total_discounts['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_line_items_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_outstanding['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_shipping_price['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_tax['currencyCode'] = shopCurrencyCode;
-    // augmentedSchema.properties.total_tip_received['currencyCode'] = shopCurrencyCode;
 
     // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

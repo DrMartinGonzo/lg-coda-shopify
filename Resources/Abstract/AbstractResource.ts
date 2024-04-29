@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
-import { Body } from '@shopify/shopify-api/rest/types';
+import { Body } from '@shopify/shopify-api';
 import { AbstractSyncTableManager } from '../../SyncTableManager/Abstract/AbstractSyncTableManager';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
 import { Identity } from '../../constants';
@@ -98,6 +98,10 @@ export abstract class AbstractResource {
     return true;
   }
 
+  protected static validateUpdateJob(prevRow: BaseRow, newRow: BaseRow): boolean {
+    return true;
+  }
+
   /**
    * Generate a sync function to be used by a SyncTableManager.
    * Should be overridden by subclasses
@@ -137,6 +141,8 @@ export abstract class AbstractResource {
   }
 
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
+    this.validateUpdateJob(prevRow, newRow);
+
     const instance: AbstractResource = new (this as any)({ context, fromRow: { row: newRow } });
     await instance.saveAndUpdate();
     return { ...prevRow, ...instance.formatToRow() };

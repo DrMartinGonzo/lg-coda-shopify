@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import UrlParse from 'url-parse';
 
-import { PageInfo, PageInfoParams } from '@shopify/shopify-api/lib/clients/types';
+import { PageInfo, PageInfoParams } from '@shopify/shopify-api';
 import { AbstractRestResource } from '../Resources/Abstract/Rest/AbstractRestResource';
 import { REST_DEFAULT_API_VERSION } from '../config';
 import { FetchRequestOptions, SearchParams } from './Client.types';

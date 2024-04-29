@@ -1,8 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { PageInfo as PageInfoRest } from '@shopify/shopify-api/lib/clients/types';
-import { Body, IdSet, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api/rest/types';
+import { Body, IdSet, PageInfo as PageInfoRest, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { SearchParams } from '../../../Clients/Client.types';
 import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
 import { NotFoundError } from '../../../Errors/Errors';
