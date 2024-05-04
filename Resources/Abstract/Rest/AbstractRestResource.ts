@@ -6,11 +6,11 @@ import { SearchParams } from '../../../Clients/Client.types';
 import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
 import { NotFoundError } from '../../../Errors/Errors';
 import { SyncTableManagerRest } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
 import { REST_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DISABLED, REST_DEFAULT_LIMIT } from '../../../constants';
 import { idToGraphQlGid } from '../../../utils/conversion-utils';
-import { filterObjectKeys } from '../../../utils/helpers';
+import { excludeObjectKeys } from '../../../utils/helpers';
 import { BaseContext } from '../../types/Resource.types';
 import { GraphQlResourceName, RestResourceSingular } from '../../types/SupportedResource';
 import { handleDeleteNotFound } from '../../utils/abstractResource-utils';
@@ -19,7 +19,7 @@ import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 // #region Types
 export interface RestApiData {
   id: number | null;
-  [key: string]: any;
+  // [key: string]: any;
 }
 
 interface GetPathArgs {
@@ -294,28 +294,32 @@ export abstract class AbstractRestResource extends AbstractResource {
   }
 
   /**
-   * Generate a sync function to be used by a SyncTableManager
-   */
-  protected static makeSyncTableManagerSyncFunction({
-    context,
-  }: MakeSyncRestFunctionArgs<AbstractRestResource, any>): SyncRestFunction<AbstractRestResource> {
-    return ({ nextPageQuery = {} }) =>
-      this.baseFind({
-        context,
-        urlIds: {},
-        ...nextPageQuery,
-      });
-  }
-
-  /**
    * Get the appropriate SyncTableManager for this resource
    */
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ): Promise<SyncTableManagerRest<AbstractRestResource>> {
-    const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerRest<AbstractRestResource>({ schema, codaSyncParams, context });
+    return new SyncTableManagerRest<AbstractRestResource>({
+      context,
+      schema: await this.getArraySchema({ codaSyncParams, context }),
+      codaSyncParams,
+      resource: this,
+    });
+  }
+
+  /**
+   * Generate a sync function to be used by a SyncTableManager
+   */
+  public static makeSyncTableManagerSyncFunction({
+    context,
+  }: MakeSyncFunctionArgs<any, any>): SyncRestFunction<AbstractRestResource> {
+    return ({ nextPageQuery = {} }) =>
+      this.baseFind({
+        context,
+        urlIds: {},
+        ...nextPageQuery,
+      });
   }
 
   protected static createInstancesFromResponse<T extends AbstractRestResource = AbstractRestResource>(
@@ -375,7 +379,7 @@ export abstract class AbstractRestResource extends AbstractResource {
        * individually. This will be done by {@link AbstractRestResourceWithMetafields} class */
       body: {
         [staticResource.getRestName()]:
-          method === 'put' ? filterObjectKeys(this.apiData, ['metafields']) : this.apiData,
+          method === 'put' ? excludeObjectKeys(this.apiData, ['metafields']) : this.apiData,
       },
       entity: this,
     });

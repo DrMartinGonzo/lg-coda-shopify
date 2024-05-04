@@ -4,7 +4,8 @@ import * as coda from '@codahq/packs-sdk';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors/Errors';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
-import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/Metafield.types';
+import { MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
 

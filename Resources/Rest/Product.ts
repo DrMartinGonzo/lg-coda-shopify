@@ -1,32 +1,30 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { CodaSyncParams, SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import { Identity, OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../schemas/syncTable/ProductSchemaRest';
-import { productVariantFieldDependencies } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { arrayUnique, deepCopy, filterObjectKeys, isDefinedEmpty } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isDefinedEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { Variant } from './Variant';
+import { SupportedMetafieldOwnerResource } from './Metafield';
+import { VariantData } from './Variant';
 
 // #endregion
 
@@ -59,6 +57,20 @@ interface AllArgs extends BaseContext {
   presentment_currencies?: unknown;
 }
 
+interface ImageData {
+  alt: string | null;
+  admin_graphql_api_id: string | null;
+  created_at: string | null;
+  height: number | null;
+  id: number | null;
+  position: number | null;
+  product_id: number | null;
+  src: string | null;
+  updated_at: string | null;
+  variant_ids: number[] | null;
+  width: number | null;
+}
+
 export class Product extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
@@ -67,9 +79,7 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     created_at: string | null;
     handle: string | null;
     id: number | null;
-    // TODO: fix this
-    // images: Image[] | null | { [key: string]: any };
-    images: any[] | null | { [key: string]: any };
+    images: ImageData[] | null;
     // image: Array<{
     //   src?: string;
     //   alt?: string;
@@ -82,9 +92,7 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     tags: string | null;
     template_suffix: string | null;
     updated_at: string | null;
-    // TODO: fix this
-    // variants: Variant[] | null | { [key: string]: any };
-    variants: any[] | null | { [key: string]: any };
+    variants: VariantData[] | null;
     vendor: string | null;
   };
 
@@ -121,24 +129,22 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
         context
       );
     }
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
   /**
-   * Shared function to generate the sync function for Products or Variants
+   * Separated function to get the first page sync params
+   * in order to be able to use it from Variant class
    */
-  protected static generateSharedSyncFunction<
-    ResourceT extends Product | Variant,
-    CodaSyncT extends typeof Sync_Products | typeof Sync_ProductVariants
-  >({
-    context,
+  public static getFirstPageParams({
     codaSyncParams,
     fields,
-  }: MakeSyncRestFunctionArgs<ResourceT, CodaSyncT, SyncTableManagerRestWithGraphQlMetafields<ResourceT>> & {
+  }: {
+    codaSyncParams: CodaSyncParams<typeof Sync_Products>;
     fields: Array<string>;
-  }): SyncRestFunction<Product> {
+  }) {
     const [
       product_type,
       syncMetafields,
@@ -153,115 +159,44 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
       collectionId,
     ] = codaSyncParams;
 
+    return {
+      fields: fields.join(','),
+      collection_id: collectionId,
+      handle: handles && handles.length ? handles.join(',') : undefined,
+      ids: ids && ids.length ? ids.join(',') : undefined,
+      product_type,
+      published_status,
+      status: status && status.length ? status.join(',') : undefined,
+      vendor,
+      created_at_min: created_at ? created_at[0] : undefined,
+      created_at_max: created_at ? created_at[1] : undefined,
+      updated_at_min: updated_at ? updated_at[0] : undefined,
+      updated_at_max: updated_at ? updated_at[1] : undefined,
+      published_at_min: published_at ? published_at[0] : undefined,
+      published_at_max: published_at ? published_at[1] : undefined,
+    };
+  }
+
+  public static makeSyncTableManagerSyncFunction({
+    context,
+    codaSyncParams,
+    syncTableManager,
+  }: MakeSyncFunctionArgs<
+    typeof Sync_Products,
+    SyncTableManagerRestWithMetafieldsType<Product>
+  >): SyncRestFunction<Product> {
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
         context,
         nextPageQuery,
         limit,
-        firstPageParams: {
-          fields: fields.join(','),
-          collection_id: collectionId,
-          handle: handles && handles.length ? handles.join(',') : undefined,
-          ids: ids && ids.length ? ids.join(',') : undefined,
-          product_type,
-          published_status,
-          status: status && status.length ? status.join(',') : undefined,
-          vendor,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
-          updated_at_min: updated_at ? updated_at[0] : undefined,
-          updated_at_max: updated_at ? updated_at[1] : undefined,
-          published_at_min: published_at ? published_at[0] : undefined,
-          published_at_max: published_at ? published_at[1] : undefined,
-        },
+        firstPageParams: this.getFirstPageParams({
+          codaSyncParams,
+          fields: syncTableManager.getSyncedStandardFields(productFieldDependencies),
+        }),
       });
 
       return this.all(params);
-    };
-  }
-
-  protected static makeSyncTableManagerSyncFunction({
-    context,
-    codaSyncParams,
-    syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Product,
-    typeof Sync_Products,
-    SyncTableManagerRestWithGraphQlMetafields<Product>
-  >): SyncRestFunction<Product> {
-    return this.generateSharedSyncFunction({
-      context,
-      codaSyncParams,
-      fields: syncTableManager.getSyncedStandardFields(productFieldDependencies),
-    });
-  }
-
-  /**
-   * Edge case: The Product class is responsible for syncing all Variants
-   */
-  protected static makeVariantsSyncFunction({
-    context,
-    codaSyncParams,
-    syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Product,
-    typeof Sync_ProductVariants,
-    SyncTableManagerRestWithGraphQlMetafields<Product>
-  >): SyncRestFunction<Product> {
-    const requiredProductFields = ['id', 'variants'];
-    const allowedProductFields = ['handle', 'id', 'images', 'status', 'title', 'variants'];
-
-    return this.generateSharedSyncFunction({
-      context,
-      codaSyncParams,
-      fields: arrayUnique(
-        syncTableManager
-          .getSyncedStandardFields(productVariantFieldDependencies)
-          .concat(requiredProductFields)
-          .filter((fromKey) => allowedProductFields.includes(fromKey))
-      ),
-    });
-  }
-
-  public static async syncVariants(
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>,
-    context: coda.SyncExecutionContext
-  ): Promise<SyncTableSyncResult> {
-    const syncTableManager = (await Variant.getSyncTableManager(
-      context,
-      codaSyncParams
-    )) as SyncTableManagerRestWithGraphQlMetafields<Product>;
-    const sync = this.makeVariantsSyncFunction({
-      codaSyncParams: codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>,
-      context,
-      syncTableManager,
-    });
-
-    const { response, continuation } = await syncTableManager.executeSync({
-      sync,
-      defaultLimit: this.defaultLimit,
-      getNestedData(response, context) {
-        return response.data.flatMap((product) =>
-          product.apiData.variants.map(
-            (variant) =>
-              new Variant({
-                context,
-                fromData: {
-                  ...variant,
-                  product_handle: product.apiData.handle,
-                  product_images: product.apiData.images,
-                  product_status: product.apiData.status,
-                  product_title: product.apiData.title,
-                },
-              })
-          )
-        );
-      },
-    });
-
-    return {
-      result: response.data.map((variant) => variant.formatToRow()),
-      continuation,
     };
   }
 
@@ -396,18 +331,26 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected formatToApi({ row, metafields = [] }: FromRow<ProductRow>) {
-    // let apiData: UpdateArgs | CreateArgs = {};
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<ProductRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      id: row.id,
+      body_html: row.body_html,
+      handle: row.handle,
+      product_type: row.product_type,
+      template_suffix: row.template_suffix,
+      title: row.title,
+      vendor: row.vendor,
+      status: row.status,
+      images: row.images !== undefined ? row.images.map((url) => ({ src: url } as ImageData)) : [],
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      published_at: row.published_at ? row.published_at.toString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      published_scope: row.published_scope,
+      tags: row.tags,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'body_html', 'handle', 'product_type', 'tags',
-      'template_suffix', 'title', 'vendor', 'status'
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
+      metafields,
+    };
 
     if (row.options !== undefined) {
       apiData.options = row.options
@@ -417,7 +360,7 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
 
       // We need to add a default variant to the product if some options are defined
       if (apiData.options.length) {
-        apiData.variants = [
+        (apiData.variants as Partial<VariantData>[]) = [
           {
             option1: DEFAULT_PRODUCTVARIANT_OPTION_VALUE,
             option2: DEFAULT_PRODUCTVARIANT_OPTION_VALUE,
@@ -426,13 +369,6 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
         ];
       }
     }
-    if (row.images !== undefined) {
-      apiData.images = row.images.map((url) => ({ src: url }));
-    }
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
 
     return apiData;
   }
@@ -440,29 +376,12 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
   public formatToRow(): ProductRow {
     const { apiData } = this;
 
-    // const filterOutTheseKeys = Object.keys(apiData)
-    //   .map((key) => {
-    //     if ((Array.isArray(apiData[key]) && apiData[key][0] instanceof Object) || apiData[key] instanceof Object) {
-    //       return key;
-    //     }
-    //   })
-    //   .filter(Boolean);
-    // if (filterOutTheseKeys.length) {
-    //   console.log('filterOutTheseKeys', filterOutTheseKeys);
-    //   throw new Error('d');
-    // }
-
     let obj: ProductRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields', 'images', 'options']),
       admin_url: `${this.context.endpoint}/admin/products/${apiData.id}`,
       body: striptags(apiData.body_html),
       published: !!apiData.published_at,
       storeUrl: apiData.status === 'active' ? `${this.context.endpoint}/products/${apiData.handle}` : '',
-
-      // keep typescript happy
-      // TODO: fix
-      images: undefined,
-      options: undefined,
     };
 
     if (apiData.options && Array.isArray(apiData.options)) {
@@ -474,7 +393,7 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

@@ -4,7 +4,16 @@ import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { SyncTableSyncResult } from '../../SyncTableManager/types/SyncTable.types';
+import {
+  CodaSyncParams,
+  SyncTableRestContinuation,
+  SyncTableSyncResult,
+} from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  parseContinuationProperty,
+  stringifyContinuationProperty,
+} from '../../SyncTableManager/utils/syncTableManager-utils';
+import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
@@ -15,6 +24,7 @@ import { isNullishOrEmpty } from '../../utils/helpers';
 import {
   formatMetaFieldValueForSchema,
   formatMetafieldValueForApi,
+  getMetaFieldFullKey,
   matchOwnerResourceToMetafieldOwnerType,
   matchOwnerTypeToOwnerResource,
   preprendPrefixToMetaFieldKey,
@@ -28,8 +38,8 @@ import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/Abst
 import { AbstractRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl } from '../GraphQl/MetafieldGraphQl';
-import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from '../Mixed/Metafield.types';
-import { MetafieldHelper } from '../Mixed/MetafieldHelper';
+import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from '../Mixed/METAFIELD_TYPES';
+import { IMetafield, MetafieldHelper } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import {
   GraphQlResourceNames,
@@ -166,7 +176,7 @@ function buildMetafieldResourcePaths() {
   return paths;
 }
 
-export class Metafield extends AbstractRestResource {
+export class Metafield extends AbstractRestResource implements IMetafield {
   apiData: {
     key: string | null;
     namespace: string | null;
@@ -220,8 +230,68 @@ export class Metafield extends AbstractRestResource {
     context: coda.SyncExecutionContext,
     owner?: typeof AbstractRestResourceWithRestMetafields
   ): Promise<SyncTableSyncResult> {
-    // TODO: something better
-    return owner.syncMetafieldsOnly(codaSyncParams, context);
+    const [metafieldKeys] = codaSyncParams as CodaSyncParams<typeof Sync_Metafields>;
+    let continuation: SyncTableRestContinuation = null;
+
+    const ownerSyncTableManager = await owner.getSyncTableManager(context, codaSyncParams);
+    ownerSyncTableManager.setSyncFunction(({ nextPageQuery = {}, limit }) => {
+      const params = owner.allIterationParams({
+        context,
+        nextPageQuery,
+        limit,
+        // Only request the minimum required fields
+        firstPageParams: { fields: ['id'].join(',') },
+      });
+      return owner.all(params);
+    });
+
+    /** Sync owner resource with a fixed low limit to avoid timeout due to the many Rest request for Metafields */
+    const ownerSyncTableResult = await ownerSyncTableManager.executeSync({ defaultLimit: 30 });
+
+    const metafieldResponses = await Promise.all(
+      ownerSyncTableResult.response.data.map(async (owner) => {
+        const ownerStatic = owner.constructor as typeof AbstractRestResourceWithRestMetafields;
+        return Metafield.all({
+          context,
+          owner_id: owner.apiData.id,
+          owner_resource: ownerStatic.metafieldRestOwnerType,
+        });
+      })
+    );
+    const metafields = metafieldResponses
+      .flatMap((metafieldResponse) => metafieldResponse.data)
+      .filter((m) => (metafieldKeys && metafieldKeys.length ? metafieldKeys.includes(m.fullKey) : true));
+
+    // TODO: create real instances ?
+    const metafieldDefinitions: MetafieldDefinition['apiData'][] = ownerSyncTableManager.prevContinuation?.extraData
+      ?.metafieldDefinitions
+      ? parseContinuationProperty(ownerSyncTableManager.prevContinuation.extraData.metafieldDefinitions)
+      : (await owner.getMetafieldDefinitions(context)).map((m) => m.apiData);
+
+    const result = metafields.map((m) => {
+      const matchDefinition = metafieldDefinitions.find((f) => f && getMetaFieldFullKey(f) === m.fullKey);
+      if (matchDefinition && matchDefinition.id) {
+        // Edge case, definition id can be a fake id
+        if (!(typeof matchDefinition.id === 'string' && matchDefinition.id.startsWith(PREFIX_FAKE))) {
+          m.apiData.definition_id = graphQlGidToId(matchDefinition.id);
+        }
+      }
+      return m.formatToRow();
+    });
+
+    if (ownerSyncTableResult.continuation) {
+      continuation = {
+        ...ownerSyncTableResult.continuation,
+        extraData: {
+          metafieldDefinitions: stringifyContinuationProperty(metafieldDefinitions),
+        },
+      } as SyncTableRestContinuation;
+    }
+
+    return {
+      result,
+      continuation,
+    };
   }
 
   public static async find({ context, id, fields = null, options }: FindArgs): Promise<Metafield | null> {
@@ -275,6 +345,7 @@ export class Metafield extends AbstractRestResource {
     newRow: MetafieldRow,
     context: coda.SyncExecutionContext
   ) {
+    this.validateUpdateJob(prevRow, newRow);
     return MetafieldHelper.handleRowUpdate(prevRow, newRow, context, Metafield);
   }
 
@@ -416,7 +487,7 @@ export class Metafield extends AbstractRestResource {
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    this.apiData = MetafieldHelper.setData(data);
+    super.setData(MetafieldHelper.preprocessData(data));
   }
 
   public async refreshData(fields: string = null): Promise<void> {
@@ -443,10 +514,10 @@ export class Metafield extends AbstractRestResource {
     }
 
     if (metafield) {
-      this.apiData = {
+      this.setData({
         ...this.apiData,
         ...metafield.apiData,
-      };
+      });
     }
   }
 
@@ -491,25 +562,18 @@ export class Metafield extends AbstractRestResource {
     let apiData: Partial<typeof this.apiData> = {
       admin_graphql_api_id: row.admin_graphql_api_id,
       created_at: row.created_at ? row.created_at.toString() : undefined,
+      definition_id: row.definition_id || row.definition?.id,
       id: isDeletedFlag ? null : row.id,
       key: metaKey,
       namespace: metaNamespace,
       owner_id: row.owner_id,
+      owner_resource: matchOwnerTypeToOwnerResource(row.owner_type as MetafieldOwnerType),
       type: row.type,
       updated_at: row.updated_at ? row.updated_at.toString() : undefined,
-      // TODO: maybe all these checks are unecessary now. Check
-      value: isNullishOrEmpty(row.rawValue)
-        ? null
-        : typeof row.rawValue === 'string'
-        ? row.rawValue
-        : JSON.stringify(row.rawValue),
-      owner_resource: matchOwnerTypeToOwnerResource(row.owner_type as MetafieldOwnerType),
+      value: isNullishOrEmpty(row.rawValue) ? null : row.rawValue,
+
       isDeletedFlag,
     };
-
-    if (row.definition_id || row.definition) {
-      apiData.definition_id = row.definition_id || row.definition?.id;
-    }
 
     return apiData;
   }

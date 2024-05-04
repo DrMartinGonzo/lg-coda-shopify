@@ -18,11 +18,16 @@
         "schema": "https://shopify.dev/admin-graphql-direct-proxy/2023-10",
         "tadaOutputLocation": "./types/graphql-env.d.ts",
         "shouldCheckForColocatedFragments": false,
-        "trackFieldUsage": false,
+        "trackFieldUsage": false
       }
     ]
   },
   "exclude": [
-    "node_modules",
-  ]
+    "node_modules"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true,
+    "experimentalResolver": true
+  }
 }

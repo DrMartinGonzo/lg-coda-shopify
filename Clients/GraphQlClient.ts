@@ -25,6 +25,11 @@ import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-uti
 
 // #endregion
 
+// Synctable doesn't handle retries, only GraphQLClient for simplicity
+// Le seul probleme serait de dépasser le seuil de temps d'execution pour un run
+// de synctable avec les temps d'attentes pour repayer le cout graphql, mais
+// comme la requete graphql est elle même rapide, ça devrait passer ?
+
 // #region Types
 interface GraphQlData<TadaT extends TadaDocumentNode> {
   data: ResultOf<TadaT>;
@@ -39,7 +44,6 @@ type GraphQlCodaFetchResponse<TadaT extends TadaDocumentNode> = coda.FetchRespon
 export interface GraphQlRequestReturn<TadaT extends TadaDocumentNode> {
   body: GraphQlCodaFetchResponse<TadaT>['body'];
   headers: GraphQlCodaFetchResponse<TadaT>['headers'];
-  retries: number;
   cost: ShopifyGraphQlRequestCost;
   pageInfo?: PageInfo;
 }
@@ -47,10 +51,7 @@ export interface GraphQlRequestReturn<TadaT extends TadaDocumentNode> {
 interface GraphQlRequestParams<NodeT extends TadaDocumentNode> {
   documentNode: NodeT;
   variables: VariablesOf<NodeT>;
-  /** The current number of retries. */
-  retries?: number;
-
-  options?: Omit<FetchRequestOptions, 'url'>;
+  options?: FetchRequestOptions;
 }
 
 interface GraphQlClientParams {
@@ -60,9 +61,11 @@ interface GraphQlClientParams {
 // #endregion
 
 export class GraphQlClient {
-  private static DEFAULT_LIMIT = '250';
   private static RETRY_WAIT_TIME = 1000;
   private static MAX_RETRIES = GRAPHQL_RETRIES__MAX;
+  private static MAX_LIMIT = GRAPHQL_NODES_LIMIT;
+
+  private retries = 0;
 
   protected readonly context: coda.ExecutionContext;
   readonly apiVersion: string;
@@ -82,8 +85,8 @@ export class GraphQlClient {
    * @param throttled - If the query was throttled, we repay all points to reach maximumAvailable as a safety measure
    */
   private static async repayCost(cost: ShopifyGraphQlRequestCost, throttled?: boolean) {
-    const { actualQueryCost, requestedQueryCost } = cost;
-    const { restoreRate, maximumAvailable, currentlyAvailable } = cost.throttleStatus;
+    const { actualQueryCost, throttleStatus } = cost;
+    const { restoreRate, maximumAvailable, currentlyAvailable } = throttleStatus;
 
     let waitMs = 0;
     let msg = '';
@@ -141,20 +144,6 @@ export class GraphQlClient {
     return `${this.context.endpoint}/admin/api/${this.apiVersion}/graphql.json`;
   }
 
-  /**
-   * Validates the number of retries and logs retry count if retries are greater than 0.
-   * Throws an error if the maximum number of retries is exceeded.
-   * @param retries The current number of retries
-   */
-  private validateAndLogRetries(retries: number) {
-    if (retries > 0) {
-      logAdmin(`🔄 Retrying (count: ${retries})...`);
-    }
-    if (retries > GraphQlClient.MAX_RETRIES) {
-      throw new coda.UserVisibleError(`Max retries (${GraphQlClient.MAX_RETRIES}) of GraphQL requests exceeded.`);
-    }
-  }
-
   private static findErrorByCode<CodeT extends ShopifyGraphQlErrorCode>(errors: ShopifyGraphQlError[], code: CodeT) {
     return errors.find((error) => 'extensions' in error && error.extensions?.code === code) as
       | (CodeT extends ShopifyThrottledErrorCode ? ShopifyGraphQlThrottledError : ShopifyGraphQlMaxCostExceededError)
@@ -175,11 +164,19 @@ export class GraphQlClient {
     }
 
     logAdmin('');
-    logAdmin('—————————— BEGIN: GRAPHQL REQUEST CONTENT ——————————');
-    logAdmin(printGql(documentNode));
+    logAdmin('—————————— GRAPHQL REQUEST CONTENT ——————————');
+    logAdmin(
+      documentNode.definitions
+        .map((def) => {
+          if ('name' in def) return `kind: ${def.kind}: ${def.name?.value}`;
+        })
+        .filter(Boolean)
+        .join('\n')
+    );
+    // logAdmin(printGql(documentNode));
     logAdmin(variables);
     logAdmin(options);
-    logAdmin('——————————— END: GRAPHQL REQUEST CONTENT ———————————');
+    logAdmin('—————————————————————————————————————————————');
     logAdmin('');
 
     return {
@@ -261,7 +258,6 @@ export class GraphQlClient {
     response: GraphQlCodaFetchResponse<NodeT>,
     params: GraphQlRequestParams<NodeT>
   ): Promise<GraphQlRequestReturn<NodeT>> {
-    const { retries = 0 } = params;
     const isCachedResponse = isCodaCached(response);
     // const isSyncContext = !!this.context.sync; // pas fiable
 
@@ -275,34 +271,39 @@ export class GraphQlClient {
      *
      * We could also signal the end of the sync if we are in a SyncContext, but detecting this is unreliable from my tests.
      */
-    return this.request({ ...params, retries: retries + 1 });
+    this.retries++;
+    return this.request(params);
   }
+
   private async handleRetryForMaxCostExceededError<NodeT extends TadaDocumentNode>(
     maxCosterror: GraphQLMaxCostExceededError,
     params: GraphQlRequestParams<NodeT>
   ): Promise<GraphQlRequestReturn<NodeT>> {
-    const { retries = 0, variables } = params;
-    const adjustedVariables = this.adjustLimitInVariables(maxCosterror, variables);
+    const adjustedVariables = this.adjustLimitInVariables(maxCosterror, params.variables);
     console.log(
       `⛔️ ${maxCosterror.message} maxCost is ${maxCosterror.maxCost} while cost is ${maxCosterror.cost}. Adjusting next query to run with ${adjustedVariables.limit} max entries.`
     );
-    return this.request({ ...params, variables: adjustedVariables, retries: retries + 1 });
+    this.retries++;
+    return this.request({ ...params, variables: adjustedVariables });
   }
 
   public async request<NodeT extends TadaDocumentNode>(
     params: GraphQlRequestParams<NodeT>
   ): Promise<GraphQlRequestReturn<NodeT>> {
     const { context } = this;
-    const { documentNode, variables, retries = 0, options } = params;
-    let currRetries = retries;
+    const { documentNode, variables, options } = params;
     let response: GraphQlCodaFetchResponse<NodeT>;
 
     try {
-      this.validateAndLogRetries(currRetries);
+      if (this.retries > 0) {
+        logAdmin(`🔄 Retrying (count: ${this.retries})...`);
+        if (this.retries > GraphQlClient.MAX_RETRIES) {
+          throw new coda.UserVisibleError(`Max retries (${GraphQlClient.MAX_RETRIES}) of GraphQL requests exceeded.`);
+        }
+      }
 
       response = await context.fetcher.fetch(this.getFetchRequest(documentNode, variables, options));
-
-      console.log('——————— isCodaCached', isCodaCached(response));
+      // console.log('——————— isCodaCached', isCodaCached(response));
 
       this.throwOnErrors(response);
 
@@ -310,11 +311,11 @@ export class GraphQlClient {
       if (!isCodaCached(response) && response.body.extensions?.cost) {
         await GraphQlClient.repayCost(response.body.extensions.cost);
       }
+
       return {
         body: response.body,
         headers: response.headers,
         pageInfo: GraphQlClient.getPageInfo(response.body),
-        retries: 0, // reset retries counter because we just got a full response
         cost: response.body.extensions.cost,
       };
     } catch (error) {

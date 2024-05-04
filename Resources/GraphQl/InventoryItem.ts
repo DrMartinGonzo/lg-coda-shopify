@@ -1,7 +1,8 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -11,12 +12,12 @@ import {
   updateInventoryItemMutation,
 } from '../../graphql/inventoryItems-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
+import { deepCopy, excludeUndefinedObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import {
   AbstractGraphQlResource,
@@ -24,7 +25,6 @@ import {
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { Shop } from '../Rest/Shop';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 
@@ -66,17 +66,18 @@ export class InventoryItem extends AbstractGraphQlResource {
 
   public static async getDynamicSchema({ context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.getStaticSchema());
-
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncGraphQlFunctionArgs<InventoryItem, typeof Sync_InventoryItems>): SyncGraphQlFunction<InventoryItem> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_InventoryItems,
+    SyncTableManagerGraphQl<InventoryItem>
+  >): SyncGraphQlFunction<InventoryItem> {
     const [createdAtRange, updatedAtRange, skus] = codaSyncParams;
 
     return async ({ cursor = null, limit }) => {
@@ -181,7 +182,7 @@ export class InventoryItem extends AbstractGraphQlResource {
 
   formatInventoryItemUpdateInput(): InventoryItemUpdateInput | undefined {
     const { apiData: data } = this;
-    let input: InventoryItemUpdateInput = {
+    const input: InventoryItemUpdateInput = {
       cost: data.unitCost?.amount,
       countryCodeOfOrigin: data.countryCodeOfOrigin,
       harmonizedSystemCode: data.harmonizedSystemCode,
@@ -195,10 +196,10 @@ export class InventoryItem extends AbstractGraphQlResource {
     //   input.cost = null;
     // }
 
-    input = deleteUndefinedInObject(input);
+    const filteredInput = excludeUndefinedObjectKeys(input);
 
     // If no input, we have nothing to update.
-    return Object.keys(input).length === 0 ? undefined : input;
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
   protected formatToApi({ row }: FromRow<InventoryItemRow>) {

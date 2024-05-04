@@ -2,11 +2,14 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { Asset } from '../../Resources/Rest/Asset';
+import { Collect } from '../../Resources/Rest/Collect';
 import { CustomCollection } from '../../Resources/Rest/CustomCollection';
 import { MergedCollection } from '../../Resources/Rest/MergedCollection';
+import { MergedCollectionHelper } from '../../Resources/Rest/MergedCollectionHelper';
+import { SmartCollection } from '../../Resources/Rest/SmartCollection';
 import { FromRow } from '../../Resources/types/Resource.types';
 import { PACK_IDENTITIES } from '../../constants';
-import { CollectionRow } from '../../schemas/CodaRows.types';
+import { CollectRow, CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
@@ -37,14 +40,12 @@ export const Sync_Collections = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link MergedCollection.getDynamicSchema}
-     *  - {@link Collection_Smart.makeSyncTableManagerSyncFunction}
+     *  - {@link MergedCollectionHelper.getDynamicSchema}
+     *  - {@link SmartCollection.makeSyncTableManagerSyncFunction}
      *  - {@link CustomCollection.makeSyncTableManagerSyncFunction}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
-      // TODO: not sure this one works -> TEST
-      { ...filters.general.createdAtRange, optional: true },
       { ...filters.general.updatedAtRange, optional: true },
       { ...filters.general.publishedAtRange, optional: true },
 
@@ -171,6 +172,31 @@ export const Action_UpdateCollection = coda.makeFormula({
 });
 
 export const Action_DeleteCollection = makeDeleteRestResourceAction(MergedCollection, inputs.collection.id);
+
+export const Action_AddProductToCollection = coda.makeFormula({
+  name: 'AddProductToCollection',
+  description:
+    "Add a Product to a Custom ('manual') Collection. You can't add a product to a Smart ('automated') Collection.",
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [
+    inputs.product.id,
+    { ...inputs.collection.id, description: 'The ID of the custom collection that will contain the product.' },
+  ],
+  isAction: true,
+  resultType: coda.ValueType.Number,
+  execute: async ([product_id, collection_id], context) => {
+    const fromRow: FromRow<CollectRow> = {
+      row: {
+        collection_id,
+        product_id,
+      },
+    };
+
+    const collect = new Collect({ context, fromRow });
+    await collect.saveAndUpdate();
+    return collect.apiData.id;
+  },
+});
 // #endregion
 
 // #region Formulas
@@ -181,5 +207,4 @@ export const Format_Collection: coda.Format = {
   instructions: 'Paste the collection ID into the column.',
   formulaName: 'Collection',
 };
-
 // #endregion

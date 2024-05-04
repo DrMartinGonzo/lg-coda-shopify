@@ -2,7 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRest } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
@@ -77,10 +78,13 @@ export class InventoryLevel extends AbstractRestResource {
     return InventoryLevelSyncTableSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncRestFunctionArgs<InventoryLevel, typeof Sync_InventoryLevels>): SyncRestFunction<InventoryLevel> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_InventoryLevels,
+    SyncTableManagerRest<InventoryLevel>
+  >): SyncRestFunction<InventoryLevel> {
     const [location_ids, updated_at_min] = codaSyncParams;
     if (!location_ids || !location_ids.length) {
       throw new coda.UserVisibleError('At least one location is required.');
@@ -223,15 +227,16 @@ export class InventoryLevel extends AbstractRestResource {
   */
 
   protected formatToApi({ row }: FromRow<InventoryLevelRow>) {
-    const inventoryLevelUniqueId = row.id;
-    const splitIds = inventoryLevelUniqueId.split(',');
+    const splitIds = row.id.split(',');
     const inventoryItemId = parseInt(splitIds[0], 10);
     const locationId = parseInt(splitIds[1], 10);
 
     const apiData: Partial<typeof this.apiData> = {
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      available: row.available,
       inventory_item_id: inventoryItemId,
       location_id: locationId,
-      available: row.available,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
     };
 
     return apiData;

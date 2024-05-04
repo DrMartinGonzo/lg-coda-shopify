@@ -7,10 +7,7 @@ import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 import { GraphQlClient, GraphQlRequestReturn } from '../../../Clients/GraphQlClient';
 import { ShopifyGraphQlRequestCost } from '../../../Errors/GraphQlErrors';
 import { SyncTableManagerGraphQl } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
-import {
-  MakeSyncGraphQlFunctionArgs,
-  SyncGraphQlFunction,
-} from '../../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../../SyncTableManager/types/SyncTableManager.types';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../../../config';
 import { CACHE_DEFAULT, GRAPHQL_NODES_LIMIT } from '../../../constants';
 import { metafieldFieldsFragment } from '../../../graphql/metafields-graphql';
@@ -142,8 +139,8 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
   /**
    * Generate a sync function to be used by SyncTableManager.
    */
-  protected static makeSyncTableManagerSyncFunction(
-    params: MakeSyncGraphQlFunctionArgs<AbstractGraphQlResource, any>
+  public static makeSyncTableManagerSyncFunction(
+    params: MakeSyncFunctionArgs<any, any>
   ): SyncGraphQlFunction<AbstractGraphQlResource> {
     return ({ cursor = null, limit }) => this.all({ cursor, limit, ...params });
   }
@@ -155,8 +152,12 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
   ): Promise<SyncTableManagerGraphQl<AbstractGraphQlResource>> {
-    const schema = await this.getArraySchema({ codaSyncParams, context });
-    return new SyncTableManagerGraphQl<AbstractGraphQlResource>({ schema, codaSyncParams, context });
+    return new SyncTableManagerGraphQl<AbstractGraphQlResource>({
+      context,
+      schema: await this.getArraySchema({ codaSyncParams, context }),
+      codaSyncParams,
+      resource: this,
+    });
   }
 
   protected static extractDataFromAllPossiblePaths<NodeT extends TadaDocumentNode>(

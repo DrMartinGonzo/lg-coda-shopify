@@ -1,10 +1,10 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Orders } from '../../coda/setup/orders-setup';
 import {
   Identity,
@@ -24,14 +24,14 @@ import { PriceSetSchema } from '../../schemas/basic/PriceSetSchema';
 import { RefundLineItemSchema } from '../../schemas/basic/RefundLineItemSchema';
 import { RefundSchema } from '../../schemas/basic/RefundSchema';
 import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { OrderSyncTableSchema, orderFieldDependencies } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import {
   arrayUnique,
   deepCopy,
-  filterObjectKeys,
+  excludeObjectKeys,
   formatAddressDisplayName,
   formatPersonDisplayValue,
   splitAndTrimValues,
@@ -42,13 +42,12 @@ import {
   AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
-import { BaseContext, FromRow } from '../types/Resource.types';
+import { IMetafield } from '../Mixed/MetafieldHelper';
+import { BaseContext, CulNew, FromRow, TypeFromCodaSchemaProps } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 import { LineItem } from './OrderLineItem';
-import { Shop } from './Shop';
-import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -98,43 +97,28 @@ interface OpenArgs extends BaseContext {
   body?: { [key: string]: unknown } | null;
 }
 
-type Fulfillment = {
-  [K in keyof (typeof FulfillmentSchema)['properties']]: coda.SchemaType<(typeof FulfillmentSchema)['properties'][K]>;
-} & {
+type Company = TypeFromCodaSchemaProps<(typeof CompanySchema)['properties']>;
+
+type DiscountCode = TypeFromCodaSchemaProps<(typeof DiscountCodeSchema)['properties']>;
+
+export type Duty = TypeFromCodaSchemaProps<(typeof DutySchema)['properties']>;
+
+type Fulfillment = TypeFromCodaSchemaProps<(typeof FulfillmentSchema)['properties']> & {
   line_items: LineItem[] | null;
 };
-type Transaction = {
-  [K in keyof (typeof OrderTransactionSchema)['properties']]: coda.SchemaType<
-    (typeof OrderTransactionSchema)['properties'][K]
-  >;
-};
-type DiscountCode = {
-  [K in keyof (typeof DiscountCodeSchema)['properties']]: coda.SchemaType<(typeof DiscountCodeSchema)['properties'][K]>;
-};
-type PriceSet = {
-  [K in keyof (typeof PriceSetSchema)['properties']]: coda.SchemaType<(typeof PriceSetSchema)['properties'][K]>;
-} & {
+
+type OrderAdjustment = TypeFromCodaSchemaProps<(typeof OrderAdjustmentSchema)['properties']>;
+
+type PriceSet = TypeFromCodaSchemaProps<(typeof PriceSetSchema)['properties']> & {
   transactions: Transaction[] | null;
 };
-export type ShippingLine = {
-  [K in keyof (typeof ShippingLineSchema)['properties']]: coda.SchemaType<(typeof ShippingLineSchema)['properties'][K]>;
-};
-type Company = {
-  [K in keyof (typeof CompanySchema)['properties']]: coda.SchemaType<(typeof CompanySchema)['properties'][K]>;
-};
-export type Duty = {
-  [K in keyof (typeof DutySchema)['properties']]: coda.SchemaType<(typeof DutySchema)['properties'][K]>;
-};
-type OrderAdjustment = {
-  [K in keyof (typeof OrderAdjustmentSchema)['properties']]: coda.SchemaType<
-    (typeof OrderAdjustmentSchema)['properties'][K]
-  >;
-};
-type RefundLineItem = {
-  [K in keyof (typeof RefundLineItemSchema)['properties']]: coda.SchemaType<
-    (typeof RefundLineItemSchema)['properties'][K]
-  >;
-};
+
+type RefundLineItem = TypeFromCodaSchemaProps<(typeof RefundLineItemSchema)['properties']>;
+
+export type ShippingLine = TypeFromCodaSchemaProps<(typeof ShippingLineSchema)['properties']>;
+
+type Transaction = TypeFromCodaSchemaProps<(typeof OrderTransactionSchema)['properties']>;
+
 // TODO: can we make this more recursive to avoid adding manually the coda.SchemaType of subproperties?
 type Refund = {
   [K in keyof (typeof RefundSchema)['properties']]: coda.SchemaType<(typeof RefundSchema)['properties'][K]>;
@@ -156,8 +140,6 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     buyer_accepts_marketing: boolean | null;
     cancel_reason: string | null;
     cancelled_at: string | null;
-    cart_token: string | null;
-    checkout_token: string | null;
     client_details: { [key: string]: unknown } | null;
     closed_at: string | null;
     company: Company | null;
@@ -183,10 +165,8 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     financial_status: string | null;
     fulfillment_status: string | null;
     fulfillments: Fulfillment[] | null;
-    gateway: string | null;
     id: number | null;
     landing_site: string | null;
-    location_id: number | null;
     merchant_of_record_app_id: number | null;
     name: string | null;
     note: string | null;
@@ -215,7 +195,6 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     tax_lines: { [key: string]: unknown }[] | null;
     taxes_included: boolean | null;
     test: boolean | null;
-    token: string | null;
     total_discounts: string | null;
     total_discounts_set: PriceSet | null;
     total_line_items_price: string | null;
@@ -265,24 +244,18 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
-
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Order,
-    typeof Sync_Orders,
-    SyncTableManagerRestWithGraphQlMetafields<Order>
-  >): SyncRestFunction<Order> {
+  }: MakeSyncFunctionArgs<typeof Sync_Orders, SyncTableManagerRestWithMetafieldsType<Order>>): SyncRestFunction<Order> {
     const [
       status = 'any',
       syncMetafields,
@@ -507,33 +480,38 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     return response ? response.body : null;
   }
 
-  protected formatToApi({ row, metafields = [] }: FromRow<OrderRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<OrderRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      ...row,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'buyer_accepts_marketing', 'email',
-      'note', 'tags',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
+      cancelled_at: row.cancelled_at ? row.cancelled_at.toString() : undefined,
+      closed_at: row.closed_at ? row.closed_at.toString() : undefined,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      processed_at: row.processed_at ? row.processed_at.toString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
 
-    // if (row.accepts_email_marketing !== undefined)
-    //   apiData.email_marketing_consent = {
-    //     state:
-    //       row.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-    //     opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-    //   };
-    // if (row.accepts_sms_marketing !== undefined)
-    //   apiData.sms_marketing_consent = {
-    //     state: row.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-    //     opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-    //   };
+      current_subtotal_price: row.current_subtotal_price ? row.current_subtotal_price.toString() : undefined,
+      current_total_discounts: row.current_total_discounts ? row.current_total_discounts.toString() : undefined,
+      current_total_price: row.current_total_price ? row.current_total_price.toString() : undefined,
+      current_total_tax: row.current_total_tax ? row.current_total_tax.toString() : undefined,
+      subtotal_price: row.subtotal_price ? row.subtotal_price.toString() : undefined,
+      total_discounts: row.total_discounts ? row.total_discounts.toString() : undefined,
+      total_line_items_price: row.total_line_items_price ? row.total_line_items_price.toString() : undefined,
+      total_outstanding: row.total_outstanding ? row.total_outstanding.toString() : undefined,
+      total_price: row.total_price ? row.total_price.toString() : undefined,
+      total_tax: row.total_tax ? row.total_tax.toString() : undefined,
+      total_tip_received: row.total_tip_received ? row.total_tip_received.toString() : undefined,
 
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
+      company: row.company as Company,
+      customer: (row.customer as CustomerCodaData) ?? undefined,
+      discount_codes: row.discount_codes as DiscountCode[],
+      fulfillments: row.fulfillments as Fulfillment[],
+      line_items: row.line_items as LineItem[],
+      refunds: row.refunds as Refund[],
+      shipping_lines: row.shipping_lines as ShippingLine[],
+
+      metafields,
+    };
 
     return apiData;
   }
@@ -542,7 +520,7 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     const { apiData } = this;
 
     let obj: OrderRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/orders/${apiData.id}`,
       current_total_discounts: parseFloat(apiData.current_total_discounts),
       current_total_price: parseFloat(apiData.current_total_price),
@@ -636,7 +614,7 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
     // }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

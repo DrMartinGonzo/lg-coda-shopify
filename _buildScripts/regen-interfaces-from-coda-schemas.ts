@@ -1,5 +1,5 @@
-const fs = require('fs');
 import * as coda from '@codahq/packs-sdk';
+import { writeFileSync } from 'fs';
 
 import { PACK_IDENTITIES } from '../constants';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
@@ -170,7 +170,7 @@ const blocks = definitions.map((def) => {
   return generateCodaRowInterface(schema, identity);
 });
 
-fs.writeFileSync(
+writeFileSync(
   './schemas/CodaRows.types.ts',
 
   `/**

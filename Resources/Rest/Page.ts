@@ -3,25 +3,26 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { SyncTableParamValues } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
 import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { PageSyncTableSchema, pageFieldDependencies } from '../../schemas/syncTable/PageSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -58,7 +59,6 @@ export class Page extends AbstractRestResourceWithRestMetafields {
     created_at: string | null;
     handle: string | null;
     id: number | null;
-    metafield: Metafield | null | { [key: string]: any };
     published_at: string | null;
     shop_id: number | null;
     template_suffix: string | null;
@@ -95,20 +95,16 @@ export class Page extends AbstractRestResourceWithRestMetafields {
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Page,
-    typeof Sync_Pages,
-    SyncTableManagerRestWithRestMetafields<Page>
-  >): SyncRestFunction<Page> {
+  }: MakeSyncFunctionArgs<typeof Sync_Pages, SyncTableManagerRestWithMetafieldsType<Page>>): SyncRestFunction<Page> {
     const [syncMetafields, created_at, updated_at, published_at, handle, published_status, since_id, title] =
       codaSyncParams;
 
@@ -116,8 +112,7 @@ export class Page extends AbstractRestResourceWithRestMetafields {
       const params = this.allIterationParams({
         context,
         nextPageQuery,
-        // limit number of returned results when syncing metafields to avoid timeout with the subsequent multiple API calls
-        // TODO: calculate best possible value based on effectiveMetafieldKeys.length
+        // limit number of returned results when syncing metafields to avoid timeout with the multiple Rest API calls
         limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
         firstPageParams: {
           fields: syncTableManager.getSyncedStandardFields(pageFieldDependencies).join(','),
@@ -209,29 +204,30 @@ export class Page extends AbstractRestResourceWithRestMetafields {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected formatToApi({ row, metafields = [] }: FromRow<PageRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<PageRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      id: row.id,
+      author: row.author,
+      body_html: row.body_html,
+      handle: row.handle,
+      published_at: row.published_at ? row.published_at.toString() : undefined,
+      title: row.title,
+      template_suffix: row.template_suffix,
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id','author', 'body_html', 'handle',
-      'published', 'published_at', 'title','template_suffix',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
+      metafields,
+    };
 
     return apiData;
   }
 
   public formatToRow(): PageRow {
     const { apiData } = this;
+
     let obj: PageRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/pages/${apiData.id}`,
       body: striptags(apiData.body_html),
       published: !!apiData.published_at,
@@ -242,7 +238,7 @@ export class Page extends AbstractRestResourceWithRestMetafields {
     }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

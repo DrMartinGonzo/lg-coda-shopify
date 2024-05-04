@@ -44,7 +44,7 @@ export const Sync_Products = coda.makeSyncTable({
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
      *  - {@link Product.getDynamicSchema}
-     *  - {@link Product.generateSharedSyncFunction}
+     *  - {@link Product.getFirstPageParams}
      */
     parameters: [
       { ...filters.product.productType, optional: true },
@@ -283,7 +283,6 @@ export const Format_Product: coda.Format = {
         validateProductParams({ status, published_status });
 
         const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-        // TODO: get an approximation for first run by using count of relation columns ?
         const defaultLimit = 50;
         const { limit, shouldDeferBy } = await getGraphQlSyncTableMaxLimitAndDeferWait(
           defaultLimit,
@@ -379,7 +378,6 @@ export const Format_Product: coda.Format = {
           separatePrefixedMetafieldsKeysFromKeys(effectivePropertyKeys);
         const effectiveMetafieldKeys = schemaPrefixedMetafieldFromKeys.map(getMetaFieldRealFromKey);
         const hasMetafieldsInSchema = !!effectiveMetafieldKeys.length;
-        // TODO: fetch metafield definitions only if a metafield update is detected, and not only if metafields are present in the schema
         const metafieldDefinitions = hasMetafieldsInSchema ? await fetchMetafieldDefinitions(MetafieldOwnerType.Product, context) : [];
 
         const jobs = updates.map(async (update) => {

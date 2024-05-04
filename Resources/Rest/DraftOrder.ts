@@ -2,32 +2,32 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
 import { Identity, OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { DraftOrderSyncTableSchema, draftOrderFieldDependencies } from '../../schemas/syncTable/DraftOrderSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithGraphQLMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 import { ShippingLine } from './Order';
 import { LineItem } from './OrderLineItem';
-import { Shop } from './Shop';
-import { InvalidValueVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -86,7 +86,6 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     payment_terms: { [key: string]: unknown } | null;
     shipping_address: { [key: string]: unknown } | null;
     shipping_line: ShippingLine | null;
-    source_name: string | null;
     status: string | null;
     subtotal_price: string | null;
     tags: string | null;
@@ -132,22 +131,20 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
 
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    DraftOrder,
+  }: MakeSyncFunctionArgs<
     typeof Sync_DraftOrders,
-    SyncTableManagerRestWithGraphQlMetafields<DraftOrder>
+    SyncTableManagerRestWithMetafieldsType<DraftOrder>
   >): SyncRestFunction<DraftOrder> {
     const [syncMetafields, status, updated_at, ids, since_id] = codaSyncParams;
 
@@ -274,20 +271,39 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     return response ? response.body : null;
   }
 
-  protected formatToApi({ row, metafields = [] }: FromRow<DraftOrderRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<DraftOrderRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      applied_discount: row.applied_discount,
+      billing_address: row.billing_address,
+      completed_at: row.completed_at ? row.completed_at.toString() : undefined,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      currency: row.currency,
+      customer: (row.customer as CustomerCodaData) ?? undefined,
+      email: row.email,
+      id: row.id,
+      invoice_sent_at: row.invoice_sent_at ? row.invoice_sent_at.toString() : undefined,
+      invoice_url: row.invoice_url,
+      line_items: row.line_items as LineItem[],
+      name: row.name,
+      note_attributes: row.note_attributes,
+      note: row.note,
+      order_id: row.order_id,
+      payment_terms: row.payment_terms,
+      shipping_address: row.shipping_address,
+      shipping_line: row.shipping_line as ShippingLine,
+      status: row.status,
+      subtotal_price: row.subtotal_price ? row.subtotal_price.toString() : undefined,
+      tags: row.tags,
+      tax_exempt: row.tax_exempt,
+      tax_exemptions: row.tax_exemptions,
+      tax_lines: row.tax_lines,
+      taxes_included: row.taxes_included,
+      total_price: row.total_price ? row.total_price.toString() : undefined,
+      total_tax: row.total_tax ? row.total_tax.toString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'email', 'note', 'tags',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
+      metafields,
+    };
 
     return apiData;
   }
@@ -296,7 +312,7 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     const { apiData } = this;
 
     let obj: DraftOrderRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/draft_orders/${apiData.id}`,
       subtotal_price: parseFloat(apiData.subtotal_price),
       total_price: parseFloat(apiData.total_price),
@@ -332,7 +348,7 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
     }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

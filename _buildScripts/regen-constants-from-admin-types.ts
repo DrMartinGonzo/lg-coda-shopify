@@ -1,5 +1,5 @@
-const fs = require('fs');
-const toPascalCase = require('to-pascal-case');
+import { writeFileSync } from 'fs';
+import * as toPascalCase from 'to-pascal-case';
 
 import { GraphQLClient, gql } from 'graphql-request';
 import { GRAPHQL_DEFAULT_API_VERSION } from '../config';
@@ -48,7 +48,7 @@ ${countryCodesParts.join(',\n')}
 } as const;
 `;
 
-    fs.writeFileSync('./contants--generated.ts', lol);
+    writeFileSync('./contants--generated.ts', lol);
   } catch (error) {
     console.error('Error fetching schema:', error);
   }

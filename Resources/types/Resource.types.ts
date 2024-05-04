@@ -23,3 +23,7 @@ export interface BaseContext {
   context: coda.ExecutionContext;
   options?: FetchRequestOptions;
 }
+
+export type TypeFromCodaSchemaProps<PropsT extends Record<string, coda.Schema>> = {
+  [K in keyof PropsT]: coda.SchemaType<PropsT[K]>;
+};

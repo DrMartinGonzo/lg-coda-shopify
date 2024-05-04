@@ -1,12 +1,13 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import {
   CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
   CONSENT_STATE__SUBSCRIBED,
@@ -18,30 +19,25 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import {
   arrayUnique,
   deepCopy,
-  filterObjectKeys,
+  excludeObjectKeys,
   formatAddressDisplayName,
   formatPersonDisplayValue,
   splitAndTrimValues,
 } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
-import { FromRow } from '../types/Resource.types';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
-import { AbstractRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
-import { RestApiDataWithMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
-import { BaseContext } from '../types/Resource.types';
+import {
+  AbstractRestResourceWithGraphQLMetafields,
+  RestApiDataWithMetafields,
+} from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
+import { BaseContext, FromRow, TypeFromCodaSchemaProps } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
-import { Shop } from './Shop';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
-export type CustomerCodaData = {
-  [K in keyof (typeof CustomerSyncTableSchema)['properties']]: coda.SchemaType<
-    (typeof CustomerSyncTableSchema)['properties'][K]
-  >;
-};
+export type CustomerCodaData = TypeFromCodaSchemaProps<(typeof CustomerSyncTableSchema)['properties']>;
 
 interface FindArgs extends BaseContext {
   id: number | string;
@@ -86,28 +82,23 @@ interface SendInviteArgs extends BaseContext {
 
 export class Customer extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
-    accepts_marketing: boolean | null;
-    accepts_marketing_updated_at: string | null;
     addresses: { [key: string]: unknown }[] | null;
     created_at: string | null;
-    currency: string | null;
     default_address: { [key: string]: unknown } | null;
     email: string | null;
-    email_marketing_consent: { [key: string]: unknown } | null;
+    email_marketing_consent: { state: string; opt_in_level: string } | null;
     first_name: string | null;
     id: number | null;
     last_name: string | null;
     last_order_id: number | null;
     last_order_name: string | null;
-    marketing_opt_in_level: string | null;
-    metafield: Metafield | null | { [key: string]: any };
     multipass_identifier: string | null;
     note: string | null;
     orders_count: number | null;
     password: string | null;
     password_confirmation: string | null;
     phone: string | null;
-    sms_marketing_consent: { [key: string]: unknown } | null;
+    sms_marketing_consent: { state: string; opt_in_level: string } | null;
     state: string | null;
     tags: string | null;
     tax_exempt: boolean | null;
@@ -160,22 +151,20 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
       );
     }
 
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Customer,
+  }: MakeSyncFunctionArgs<
     typeof Sync_Customers,
-    SyncTableManagerRestWithGraphQlMetafields<Customer>
+    SyncTableManagerRestWithMetafieldsType<Customer>
   >): SyncRestFunction<Customer> {
     const [syncMetafields, created_at, updated_at, ids, tags] = codaSyncParams;
 
@@ -352,32 +341,44 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
   }
   */
 
-  protected formatToApi({ row, metafields = [] }: FromRow<CustomerRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<CustomerRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      id: row.id,
+      addresses: row.addresses,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      default_address: row.default_address,
+      email: row.email,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      last_order_id: row.last_order_id,
+      last_order_name: row.last_order_name,
+      multipass_identifier: row.multipass_identifier,
+      note: row.note,
+      orders_count: row.orders_count,
+      phone: row.phone,
+      state: row.state,
+      tags: row.tags,
+      tax_exempt: row.tax_exempt,
+      tax_exemptions: row.tax_exemptions,
+      total_spent: row.total_spent ? row.total_spent.toString() : undefined,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      verified_email: row.verified_email,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'first_name', 'last_name',
-      'email', 'phone', 'note', 'tags',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
+      metafields,
+    };
 
-    if (row.accepts_email_marketing !== undefined)
+    if (row.accepts_email_marketing !== undefined) {
       apiData.email_marketing_consent = {
         state:
           row.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
-    if (row.accepts_sms_marketing !== undefined)
+    }
+    if (row.accepts_sms_marketing !== undefined) {
       apiData.sms_marketing_consent = {
         state: row.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
         opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
       };
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
     }
 
     return apiData;
@@ -387,7 +388,7 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
     const { apiData } = this;
 
     let obj: CustomerRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields', 'addresses', 'default_address']),
       admin_url: `${this.context.endpoint}/admin/customers/${apiData.id}`,
       display: formatPersonDisplayValue({
         id: apiData.id,
@@ -396,10 +397,6 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
         email: apiData.email,
       }),
       total_spent: parseFloat(apiData.total_spent),
-
-      // keep typescript happy
-      addresses: undefined,
-      default_address: undefined,
 
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
@@ -435,7 +432,7 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
     }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

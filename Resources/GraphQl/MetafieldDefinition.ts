@@ -3,7 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { UnsupportedValueError } from '../../Errors/Errors';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import {
@@ -20,7 +21,7 @@ import {
   FindAllGraphQlResponse,
   GraphQlResourcePath,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { METAFIELD_TYPES } from '../Mixed/Metafield.types';
+import { METAFIELD_TYPES } from '../Mixed/METAFIELD_TYPES';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
 import { BaseContext } from '../types/Resource.types';
 import { SupportedMetafieldOwnerType } from './MetafieldGraphQl';
@@ -92,12 +93,11 @@ export class MetafieldDefinition extends AbstractGraphQlResource {
     return this.getStaticSchema();
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
-    syncTableManager,
-  }: MakeSyncGraphQlFunctionArgs<
-    MetafieldDefinition,
-    typeof Sync_MetafieldDefinitions
+  }: MakeSyncFunctionArgs<
+    typeof Sync_MetafieldDefinitions,
+    SyncTableManagerGraphQl<MetafieldDefinition>
   >): SyncGraphQlFunction<MetafieldDefinition> {
     return async ({ cursor = null, limit }) => {
       const ownerType = context.sync.dynamicUrl as MetafieldOwnerType;

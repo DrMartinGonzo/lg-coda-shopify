@@ -1,6 +1,9 @@
 // #region Imports
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
+import { SyncTableManagerGraphQlWithMetafieldsType } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Locations } from '../../coda/setup/locations-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -16,16 +19,17 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { deepCopy, deleteUndefinedInObject } from '../../utils/helpers';
+import { deepCopy, excludeUndefinedObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { FindAllGraphQlResponse, GraphQlResourcePath, SaveArgs } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  FindAllGraphQlResponse,
+  GraphQlApiDataWithMetafields,
+  GraphQlResourcePath,
+  SaveArgs,
+} from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResourceWithMetafields';
-import { GraphQlApiDataWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { FromRow } from '../types/Resource.types';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
-import { BaseContext } from '../types/Resource.types';
+import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
@@ -78,15 +82,18 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
-    // @ts-ignore: admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url and stock_url should always be the last featured properties, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties = [...augmentedSchema.featuredProperties, 'admin_url', 'stock_url'];
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncGraphQlFunctionArgs<Location, typeof Sync_Locations>): SyncGraphQlFunction<Location> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_Locations,
+    SyncTableManagerGraphQlWithMetafieldsType<Location>
+  >): SyncGraphQlFunction<Location> {
     const fields: AllArgs['fields'] = {
       metafields: syncTableManager.shouldSyncMetafields,
     };
@@ -184,7 +191,7 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
     });
 
     if (response.body.data.locationActivate?.location) {
-      this.apiData = { ...this.apiData, ...response.body.data.locationActivate.location };
+      this.setData({ ...this.apiData, ...response.body.data.locationActivate.location });
     }
   }
 
@@ -202,7 +209,7 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
     });
 
     if (response.body.data.locationDeactivate?.location) {
-      this.apiData = { ...this.apiData, ...response.body.data.locationDeactivate.location };
+      this.setData({ ...this.apiData, ...response.body.data.locationDeactivate.location });
     }
   }
 
@@ -229,19 +236,17 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
       name: this.apiData.name,
       address: this.apiData.address as VariablesOf<typeof editLocationMutation>['input']['address'],
     };
+    const filteredInput = excludeUndefinedObjectKeys({
+      ...input,
+      address: excludeUndefinedObjectKeys(input.address),
+    });
 
-    input.address = deleteUndefinedInObject(input.address);
-    input = deleteUndefinedInObject(input);
-
-    // No input, we have nothing to update.
-    if (Object.keys(input).length === 0) return undefined;
-    return input;
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
-  protected formatToApi({ row, metafields = [] }: FromRow<LocationRow>) {
+  protected formatToApi({ row, metafields }: FromRow<LocationRow>) {
     let apiData: Partial<typeof this.apiData> = {
-      id: row.id ? idToGraphQlGid(GraphQlResourceNames.Location, row.id) : undefined,
-      name: row.name,
       address: {
         address1: row.address1,
         address2: row.address2,
@@ -253,11 +258,20 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
         provinceCode: row.province_code,
         zip: row.zip,
       },
-    };
+      fulfillsOnlineOrders: row.fulfills_online_orders,
+      hasActiveInventory: row.has_active_inventory,
+      id: row.id ? idToGraphQlGid(GraphQlResourceNames.Location, row.id) : undefined,
+      isActive: row.active,
+      fulfillmentService: {
+        handle: row.fulfillment_service,
+        serviceName: undefined,
+      },
+      localPickupSettingsV2: row.local_pickup_settings as (typeof this.apiData)['localPickupSettingsV2'],
+      name: row.name,
+      shipsInventory: row.ships_inventory,
 
-    if (metafields.length) {
-      apiData.restMetafieldInstances = metafields;
-    }
+      restMetafieldInstances: metafields,
+    };
 
     return apiData;
   }

@@ -2,25 +2,26 @@
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS, blogFieldDependencies } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -84,20 +85,16 @@ export class Blog extends AbstractRestResourceWithRestMetafields {
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Blog,
-    typeof Sync_Blogs,
-    SyncTableManagerRestWithRestMetafields<Blog>
-  >): SyncRestFunction<Blog> {
+  }: MakeSyncFunctionArgs<typeof Sync_Blogs, SyncTableManagerRestWithMetafieldsType<Blog>>): SyncRestFunction<Blog> {
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
         context,
@@ -161,30 +158,32 @@ export class Blog extends AbstractRestResourceWithRestMetafields {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected formatToApi({ row, metafields = [] }: FromRow<BlogRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<BlogRow>) {
+    const apiData: Partial<typeof this.apiData> = {
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      commentable: row.commentable,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      handle: row.handle,
+      id: row.id,
+      tags: row.tags,
+      template_suffix: row.template_suffix,
+      title: row.title,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
 
-    const oneToOneMappingKeys = ['id', 'title', 'handle', 'commentable', 'template_suffix'];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
-
+      metafields,
+    };
     return apiData;
   }
 
   public formatToRow(): BlogRow {
     const { apiData } = this;
     let obj: BlogRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/blogs/${apiData.id}`,
     };
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

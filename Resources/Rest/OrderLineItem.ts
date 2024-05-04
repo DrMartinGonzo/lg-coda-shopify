@@ -1,21 +1,20 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRest } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { deepCopy } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractRestResource } from '../Abstract/Rest/AbstractRestResource';
-import { BaseContext } from '../types/Resource.types';
+import { BaseContext, TypeFromCodaSchemaProps } from '../types/Resource.types';
 import { Duty, Order } from './Order';
-import { Shop } from './Shop';
 
 // #endregion
 
@@ -37,11 +36,7 @@ interface AllArgs extends BaseContext {
   fields?: unknown;
 }
 
-export type LineItem = {
-  [K in keyof (typeof OrderLineItemSchema)['properties']]: coda.SchemaType<
-    (typeof OrderLineItemSchema)['properties'][K]
-  >;
-} & {
+export type LineItem = TypeFromCodaSchemaProps<(typeof OrderLineItemSchema)['properties']> & {
   duties: Duty[] | null;
 };
 // #endregion
@@ -58,16 +53,18 @@ export class OrderLineItem extends AbstractRestResource {
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.getStaticSchema());
 
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncRestFunctionArgs<OrderLineItem, typeof Sync_OrderLineItems>): SyncRestFunction<OrderLineItem> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_OrderLineItems,
+    SyncTableManagerRest<OrderLineItem>
+  >): SyncRestFunction<OrderLineItem> {
     const [
       orderStatus = 'any',
       orderCreatedAt,

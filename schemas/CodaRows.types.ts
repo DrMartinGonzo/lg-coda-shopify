@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop
- * Last generated: 2024-04-22T08:24:41.435Z
+ * Last generated: 2024-04-29T20:31:12.968Z
  *
  */
 
@@ -114,15 +114,6 @@ export interface CollectionRow extends BaseRow {
     relation?: string;
     condition?: string;
   }[];
-  ruleSet?: {
-    display?: string;
-    rules?: {
-      column?: string;
-      condition?: string;
-      relation?: string;
-    }[];
-    appliedDisjunctively?: boolean;
-  };
   disjunctive?: boolean;
   sort_order?: string;
   template_suffix?: string;
@@ -159,8 +150,8 @@ export interface DraftOrderRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -233,11 +224,11 @@ export interface DraftOrderRow extends BaseRow {
     variant_inventory_management?: string;
   }[];
   name: string;
+  note?: string;
   note_attributes?: {
     name?: string;
     value?: string;
   }[];
-  note?: string;
   order_id?: number;
   order?: {
     id: number;
@@ -270,8 +261,8 @@ export interface DraftOrderRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -330,8 +321,8 @@ export interface CustomerRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -352,8 +343,8 @@ export interface CustomerRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -584,8 +575,8 @@ export interface OrderRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -877,8 +868,8 @@ export interface OrderRow extends BaseRow {
     first_name?: string;
     last_name?: string;
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    longitude?: number;
+    latitude?: number;
     phone?: string;
     province?: string;
     province_code?: string;
@@ -1146,6 +1137,7 @@ export interface ShopRow extends BaseRow {
   address2?: string;
   checkout_api_supported?: boolean;
   city?: string;
+  country?: string;
   country_code?: string;
   country_name?: string;
   county_taxes?: boolean;
@@ -1161,8 +1153,8 @@ export interface ShopRow extends BaseRow {
   has_gift_cards?: boolean;
   has_storefront?: boolean;
   iana_timezone?: string;
-  latitude?: number;
   longitude?: number;
+  latitude?: number;
   money_format?: string;
   money_in_emails_format?: string;
   money_with_currency_format?: string;

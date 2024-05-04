@@ -5,7 +5,6 @@ import * as coda from '@codahq/packs-sdk';
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 
 import { Shop } from './Resources/Rest/Shop';
-import { Formula_ProductStatus, Formula_ProductType } from './coda/setup/helper-formulas-setup';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -23,6 +22,7 @@ import {
   Sync_Blogs,
 } from './coda/setup/blogs-setup';
 import {
+  Action_AddProductToCollection,
   Action_CreateCollection,
   Action_DeleteCollection,
   Action_UpdateCollection,
@@ -49,6 +49,7 @@ import {
   Sync_DraftOrders,
 } from './coda/setup/draftOrders-setup';
 import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './coda/setup/files-setup';
+import { Formula_ProductStatus, Formula_ProductType } from './coda/setup/helper-formulas-setup';
 import { Action_UpdateInventoryItem, Sync_InventoryItems } from './coda/setup/inventoryItems-setup';
 import {
   Action_AdjustInventoryLevel,
@@ -72,7 +73,6 @@ import {
   Action_DeleteMetafield,
   // Action_TEST_TRANSLATION,
   Action_SetMetafield,
-  Action_SetMetafieldAltVersion,
   Formula_FormatListMetafield,
   Formula_FormatMetafield,
   Formula_MetaBoolean,
@@ -236,6 +236,7 @@ pack.formulas.push(Action_DeleteBlog);
 pack.formulas.push(Action_CreateCollection);
 pack.formulas.push(Action_UpdateCollection);
 pack.formulas.push(Action_DeleteCollection);
+pack.formulas.push(Action_AddProductToCollection);
 
 pack.formulas.push(Action_CreateCustomer);
 pack.formulas.push(Action_UpdateCustomer);

@@ -1,6 +1,7 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRest } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
@@ -57,11 +58,11 @@ export class Collect extends AbstractRestResource {
     return CollectSyncTableSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<Collect, typeof Sync_Collects>): SyncRestFunction<Collect> {
+  }: MakeSyncFunctionArgs<typeof Sync_Collects, SyncTableManagerRest<Collect>>): SyncRestFunction<Collect> {
     const [collectionId] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
@@ -119,9 +120,15 @@ export class Collect extends AbstractRestResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO
   protected formatToApi({ row }: FromRow<CollectRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+    let apiData: Partial<typeof this.apiData> = {
+      collection_id: row.collection_id,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      id: row.id,
+      position: row.position,
+      product_id: row.product_id,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+    };
     return apiData;
   }
 

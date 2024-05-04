@@ -1,15 +1,6 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
-import { GraphQlClient } from '../../Clients/GraphQlClient';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
-import { wait } from '../../Clients/utils/client-utils';
-import { GRAPHQL_BUDGET__MAX } from '../../config';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
-import { throttleStatusQuery } from '../../graphql/shop-graphql';
 import { Stringified } from '../../types/utilities';
-import { logAdmin } from '../../utils/helpers';
-import { SyncTableGraphQlContinuation, SyncTableMixedContinuation } from '../types/SyncTable.types';
 
 // #endregion
 
@@ -45,86 +36,5 @@ export function stringifyContinuationProperty<T>(
  */
 export function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
   return JSON.parse(text);
-}
-// #endregion
-
-// #region GraphQl auto throttling
-async function checkThrottleStatus(context: coda.ExecutionContext): Promise<ShopifyGraphQlThrottleStatus> {
-  const response = await new GraphQlClient({ context }).request<typeof throttleStatusQuery>({
-    documentNode: throttleStatusQuery,
-    variables: {},
-    options: { cacheTtlSecs: CACHE_DISABLED },
-  });
-  const { extensions } = response.body;
-  return extensions.cost.throttleStatus;
-}
-
-function calcSyncTableMaxLimit(
-  prevContinuation: SyncTableMixedContinuation | SyncTableGraphQlContinuation,
-  currentThrottleStatus: ShopifyGraphQlThrottleStatus,
-  defaultLimit: number
-) {
-  const lastCost = parseContinuationProperty<ShopifyGraphQlRequestCost>(prevContinuation.lastCost);
-  const { lastLimit } = prevContinuation;
-
-  if (!lastLimit || !lastCost) {
-    console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
-    return defaultLimit;
-  }
-
-  const costOneEntry = lastCost.requestedQueryCost / lastLimit;
-  const maxCost = Math.min(GRAPHQL_BUDGET__MAX, currentThrottleStatus.currentlyAvailable);
-  const maxLimit = Math.floor(maxCost / costOneEntry);
-  return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
-}
-
-export async function getGraphQlSyncTableMaxLimitAndDeferWait(
-  defaultLimit: number,
-  prevContinuation: SyncTableGraphQlContinuation,
-  context: coda.ExecutionContext
-) {
-  const previousLockAcquired = prevContinuation?.graphQlLock ? prevContinuation.graphQlLock === 'true' : false;
-  const throttleStatus = await checkThrottleStatus(context);
-  const { currentlyAvailable, maximumAvailable } = throttleStatus;
-  console.log('maximumAvailable', maximumAvailable);
-  console.log('currentlyAvailable', currentlyAvailable);
-
-  let limit: number;
-  let shouldDeferBy = 0;
-
-  if (previousLockAcquired) {
-    limit = calcSyncTableMaxLimit(prevContinuation, throttleStatus, defaultLimit);
-  } else {
-    const minPointsNeeded = maximumAvailable - 1;
-    shouldDeferBy = currentlyAvailable < minPointsNeeded ? 3000 : 0;
-    limit = defaultLimit;
-
-    if (shouldDeferBy > 0) {
-      logAdmin(
-        `🚫 Not enough points (${currentlyAvailable}/${minPointsNeeded}). Skip and wait ${shouldDeferBy / 1000}s`
-      );
-    }
-  }
-
-  return {
-    limit,
-    shouldDeferBy,
-    throttleStatus,
-  };
-}
-
-export async function skipGraphQlSyncTableRun<ContinuationT extends coda.Continuation>(
-  prevContinuation: ContinuationT,
-  waitms: number
-) {
-  await wait(waitms);
-  return {
-    response: {
-      data: [],
-      headers: null,
-      cost: null,
-    },
-    continuation: { ...prevContinuation, graphQlLock: 'false' },
-  };
 }
 // #endregion

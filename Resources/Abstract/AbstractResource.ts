@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { Body } from '@shopify/shopify-api';
 import { AbstractSyncTableManager } from '../../SyncTableManager/Abstract/AbstractSyncTableManager';
-import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTable.types';
+import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Identity } from '../../constants';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../utils/coda-utils';
@@ -31,6 +31,7 @@ export interface FindAllResponseBase<T> {
 // TODO: implement readOnlyAttributes
 
 export abstract class AbstractResource {
+  protected static readonly defaultLimit: number;
   public static readonly displayName: Identity;
   public apiData: any;
 
@@ -70,28 +71,41 @@ export abstract class AbstractResource {
   }
 
   /**
+   * Nettoyage des donnée brutes.
+   *
    * Soit la valeur est undefined et elle ne sera pas présente dans apiData,
    * donc dans les updates, soit elle a une valeur mais considérée comme "vide"
    * est on la force en `null`
-   * @param data Les données à nettoyer
    */
-  protected static removeUndefinedData(data: any) {
-    if (data instanceof AbstractResource) return this.removeUndefinedData(data.apiData);
+  protected cleanRawData(data: any): any {
+    const ret = {};
+
+    // Ce sont surtout les instances de Metafields qui sont concernées par ça pour l'instant
+    if (data instanceof AbstractResource) return data;
+
     for (let key in data) {
-      if (data[key] === undefined) {
-        delete data[key];
+      if (data[key] !== undefined) {
+        if (Array.isArray(data[key])) {
+          ret[key] = data[key].map((d) => this.cleanRawData(d));
+        } else if (typeof data[key] === 'object') {
+          const cleanedObject = this.cleanRawData(data[key]);
+          if (Object.keys(cleanedObject).length) {
+            ret[key] = cleanedObject;
+          }
+        }
+        //
         /**
-         * Apparemment Coda renvoit une string et pas un nombre lors d'une update, du coup cetaines valeurs peuvent être égales à '' !
-         * Dans ce cas on les force comme null
+         * Apparemment Coda renvoie une string et pas un nombre lors d'une update,
+         * du coup certaines valeurs peuvent être égales à ''. Dans ce cas on les force comme null
          */
-        // TODO: isDefinedEmpty n'est pas adapté ici quand c'est une array… Par exemple, refunds dans Order doit rester à '[]'. Pour l'instant on n'applique pas aux arrays
-      } else if (!Array.isArray(data[key]) && isDefinedEmpty(data[key])) {
-        data[key] = null;
-      } else if (typeof data[key] === 'object') {
-        this.removeUndefinedData(data[key]);
+        else if (isDefinedEmpty(data[key])) {
+          ret[key] = null;
+        } else {
+          ret[key] = data[key];
+        }
       }
     }
-    return data;
+    return ret;
   }
 
   protected static validateParams(params: any): boolean {
@@ -106,7 +120,7 @@ export abstract class AbstractResource {
    * Generate a sync function to be used by a SyncTableManager.
    * Should be overridden by subclasses
    */
-  protected static makeSyncTableManagerSyncFunction(params): (params) => Promise<any> {
+  public static makeSyncTableManagerSyncFunction(params): (params) => Promise<any> {
     return;
   }
 
@@ -117,7 +131,7 @@ export abstract class AbstractResource {
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<AbstractSyncTableManager<any, coda.Continuation>> {
+  ): Promise<AbstractSyncTableManager<any, coda.Continuation, any>> {
     return;
   }
 
@@ -126,9 +140,11 @@ export abstract class AbstractResource {
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
     const syncTableManager = await this.getSyncTableManager(context, codaSyncParams);
-    const syncFunction = this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager });
+    syncTableManager.setSyncFunction(
+      this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager })
+    );
 
-    const { response, continuation } = await syncTableManager.executeSync({ sync: syncFunction });
+    const { response, continuation } = await syncTableManager.executeSync({ defaultLimit: this.defaultLimit });
     return {
       result: response.data.map((data) => data.formatToRow()),
       continuation,
@@ -178,7 +194,7 @@ export abstract class AbstractResource {
     };
   }
 
-  protected static createInstance<T extends AbstractResource = AbstractResource>(
+  public static createInstance<T extends AbstractResource = AbstractResource>(
     context: coda.ExecutionContext,
     data: Body,
     prevInstance?: T
@@ -207,7 +223,7 @@ export abstract class AbstractResource {
   }
 
   protected setData(data: Body): void {
-    this.apiData = this.resource().removeUndefinedData(data);
+    this.apiData = this.cleanRawData(data);
   }
 
   protected setDataFromRow(fromRow: FromRow): void {

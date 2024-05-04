@@ -1,6 +1,7 @@
 // #region Imports
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRest } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
@@ -54,11 +55,11 @@ export class Redirect extends AbstractRestResource {
     return RedirectSyncTableSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<Redirect, typeof Sync_Redirects>): SyncRestFunction<Redirect> {
+  }: MakeSyncFunctionArgs<typeof Sync_Redirects, SyncTableManagerRest<Redirect>>): SyncRestFunction<Redirect> {
     const [path, target] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
@@ -118,15 +119,12 @@ export class Redirect extends AbstractRestResource {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  // TODO
   protected formatToApi({ row }: FromRow<RedirectRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
-
-    // prettier-ignore
-    const oneToOneMappingKeys = ['id', 'path', 'target'];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
+    let apiData: Partial<typeof this.apiData> = {
+      id: row.id,
+      path: row.path,
+      target: row.target,
+    };
 
     return apiData;
   }

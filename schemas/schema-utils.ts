@@ -1,17 +1,16 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
-import { ResultOf } from '../utils/tada-utils';
 import * as PROPS from '../coda/coda-properties';
+import { ResultOf } from '../utils/tada-utils';
 
 import { UnsupportedValueError } from '../Errors/Errors';
-import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
+import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { Shop } from '../Resources/Rest/Shop';
-import { DEFAULT_CURRENCY_CODE } from '../config';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
-import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
+import { capitalizeFirstChar, deepCopy, getUnitMap } from '../utils/helpers';
 import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
 import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
 import { CollectionReference } from './syncTable/CollectionSchema';
@@ -37,6 +36,46 @@ export function updateCurrencyCodesInSchema(obj: any, currencyCode: string) {
     }
   }
 }
+
+function isArrayProp(prop: coda.Schema & coda.ObjectSchemaProperty): prop is coda.ArraySchema {
+  return 'type' in prop && prop?.type === coda.ValueType.Array;
+}
+function isCurrencyProp(prop: coda.Schema & coda.ObjectSchemaProperty): prop is coda.CurrencySchema {
+  return 'codaType' in prop && prop?.codaType === coda.ValueHintType.Currency;
+}
+
+let shopCurrencyCode: CurrencyCode;
+export async function updateCurrencyCodesInSchemaNew<
+  SchemaT extends coda.Schema & coda.ObjectSchemaDefinition<string, string>
+>(baseSchema: SchemaT, context: coda.ExecutionContext) {
+  const schema: SchemaT = { ...baseSchema };
+  const properties = schema.properties;
+
+  for (const key in properties) {
+    let prop = properties[key];
+
+    if (typeof prop !== 'object') continue;
+
+    // Recursively call the function for nested properties
+    if ('properties' in prop) {
+      prop = await updateCurrencyCodesInSchemaNew(prop, context);
+    }
+
+    // Call the function for nested arrays
+    else if (isArrayProp(prop)) {
+      prop = await updateCurrencyCodesInSchemaNew(prop.items as any, context);
+    }
+
+    // Update currency code for currency properties
+    else if (isCurrencyProp(prop)) {
+      shopCurrencyCode = shopCurrencyCode ?? (await Shop.activeCurrency({ context }));
+      prop.currencyCode = shopCurrencyCode;
+    }
+  }
+
+  return schema;
+}
+
 /*
 async function wrapDynamicSchemaForCli(
   fn: coda.MetadataFormulaDef,
@@ -136,7 +175,7 @@ export function mapMetaFieldToSchemaProperty(
    */
   if (!isMetaobjectFieldDefinition) {
     const fullKey = getMetaFieldFullKey(fieldDefinition as MetafieldDefinitionType);
-    description += (description ? '\n' : '') + `field key: [${fullKey}]`;
+    description = (description ? description + '\n' : '') + `field key: [${fullKey}]`;
 
     schemaKey = preprendPrefixToMetaFieldKey(fullKey);
   }

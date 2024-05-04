@@ -4,7 +4,8 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -13,7 +14,7 @@ import {
   orderTransactionFieldsFragment,
 } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
-import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import {
   OrderTransactionSyncTableSchema,
@@ -27,7 +28,6 @@ import {
   FindAllGraphQlResponse,
   GraphQlResourcePath,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { Shop } from '../Rest/Shop';
 import { BaseContext } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 
@@ -83,20 +83,18 @@ export class OrderTransaction extends AbstractGraphQlResource {
 
   public static async getDynamicSchema({ context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.getStaticSchema());
-
-    const shopCurrencyCode = await Shop.activeCurrency({ context });
-    updateCurrencyCodesInSchema(augmentedSchema, shopCurrencyCode);
+    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
 
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncGraphQlFunctionArgs<
-    OrderTransaction,
-    typeof Sync_OrderTransactions
+  }: MakeSyncFunctionArgs<
+    typeof Sync_OrderTransactions,
+    SyncTableManagerGraphQl<OrderTransaction>
   >): SyncGraphQlFunction<OrderTransaction> {
     const effectiveKeys = syncTableManager.effectiveStandardFromKeys;
     const [

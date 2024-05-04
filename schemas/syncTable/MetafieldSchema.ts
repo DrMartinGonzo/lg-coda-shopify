@@ -1,5 +1,9 @@
+// #region Imports
+
 import * as coda from '@codahq/packs-sdk';
-import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/Metafield.types';
+
+import { MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES } from '../../Resources/Mixed/METAFIELD_TYPES';
 import * as PROPS from '../../coda/coda-properties';
 import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
 import { FieldDependency } from '../Schema.types';
@@ -8,6 +12,7 @@ import { FileReference } from './FileSchema';
 import { PageReference } from './PageSchema';
 import { ProductReference } from './ProductSchemaRest';
 import { ProductVariantReference } from './ProductVariantSchema';
+// #endregion
 
 function getHelperColumnDescription(metafieldType: MetafieldType) {
   return `Helper column to edit a metafield whose value is of '${metafieldType}' type.`;

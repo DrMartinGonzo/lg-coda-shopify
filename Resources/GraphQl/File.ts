@@ -3,7 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { UnsupportedActionError } from '../../Errors/Errors';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Files } from '../../coda/setup/files-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES } from '../../constants';
 import {
@@ -19,7 +20,7 @@ import {
 import { FileRow } from '../../schemas/CodaRows.types';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import {
-  deleteUndefinedInObject,
+  excludeUndefinedObjectKeys,
   extractNameFromFileUrl,
   getThumbnailUrlFromFullUrl,
   isNullishOrEmpty,
@@ -70,8 +71,6 @@ export class File extends AbstractGraphQlResource {
     ResultOf<typeof mediaImageFieldsFragment>;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.File;
-  // TODO
-  // protected static readonly graphQlName = GraphQlResourceName.GenericFile;
 
   protected static readonly defaultLimit: number = 50;
   protected static readonly paths: Array<GraphQlResourcePath> = ['node', 'files', 'fileUpdate.files'];
@@ -85,11 +84,11 @@ export class File extends AbstractGraphQlResource {
     this.previewSize = previewSize;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncGraphQlFunctionArgs<File, typeof Sync_Files>): SyncGraphQlFunction<File> {
+  }: MakeSyncFunctionArgs<typeof Sync_Files, SyncTableManagerGraphQl<File>>): SyncGraphQlFunction<File> {
     const [type] = codaSyncParams;
 
     const fields = Object.fromEntries(
@@ -188,17 +187,15 @@ export class File extends AbstractGraphQlResource {
    *    Instance Methods
    *===================================================================================================================== */
   formatFileUpdateInput(): VariablesOf<typeof updateFilesMutation>['files'][number] | undefined {
-    let input: VariablesOf<typeof updateFilesMutation>['files'][number] = {
+    const input: VariablesOf<typeof updateFilesMutation>['files'][number] = {
       id: this.apiData.id,
       filename: this.apiData.filename,
       alt: this.apiData.alt,
     };
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
 
-    input = deleteUndefinedInObject(input);
-
-    // No input, we have nothing to update.
-    if (Object.keys(input).length === 0) return undefined;
-    return input;
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
   public async save({ update = false }: SaveArgs): Promise<void> {

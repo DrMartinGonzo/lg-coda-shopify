@@ -4,11 +4,13 @@ import { ResultOf, VariablesOf } from '../../utils/tada-utils';
 
 import { TadaDocumentNode } from 'gql.tada';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import {
   deleteMetafieldMutation,
+  getNodesMetafieldsByKeyQuery,
   getResourceMetafieldsByKeysQueryFromOwnerType,
   getShopMetafieldsByKeysQuery,
   getSingleMetafieldQuery,
@@ -18,12 +20,12 @@ import {
   setMetafieldsMutation,
 } from '../../graphql/metafields-graphql';
 import { Node } from '../../graphql/types/graphql.types.';
-import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
+import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType, MetafieldsSetInput } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { deleteUndefinedInObject, isNullishOrEmpty } from '../../utils/helpers';
+import { excludeUndefinedObjectKeys, isNullishOrEmpty } from '../../utils/helpers';
 import {
   formatMetaFieldValueForSchema,
   matchOwnerTypeToOwnerResource,
@@ -40,7 +42,7 @@ import {
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { MetafieldHelper } from '../Mixed/MetafieldHelper';
+import { IMetafield, MetafieldHelper } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 
@@ -70,17 +72,24 @@ interface FindByKeysArgs extends BaseContext {
 interface DeleteArgs extends BaseContext {
   id: string;
 }
+
 interface AllArgs extends BaseContext {
-  [key: string]: unknown;
   limit?: number;
   cursor?: string;
-  ownerType: MetafieldOwnerType;
   metafieldKeys?: string[];
+  ownerType?: MetafieldOwnerType;
+  ownerIds?: string[];
+}
+interface AllByOwnerTypeArgs extends Omit<AllArgs, 'ownerIds'> {
+  ownerType: MetafieldOwnerType;
+}
+interface AllByOwnerIds extends Omit<AllArgs, 'ownerType'> {
+  ownerIds: string[];
 }
 
 // #endregion
 
-export class MetafieldGraphQl extends AbstractGraphQlResource {
+export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafield {
   public apiData: ResultOf<typeof metafieldFieldsFragment> &
     ResultOf<typeof metafieldFieldsFragmentWithDefinition> &
     GraphQlApiDataWithParentNode & {
@@ -129,10 +138,13 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     return MetafieldHelper.getDynamicSchema(args);
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
-  }: MakeSyncGraphQlFunctionArgs<MetafieldGraphQl, typeof Sync_Metafields>): SyncGraphQlFunction<MetafieldGraphQl> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_Metafields,
+    SyncTableManagerGraphQl<MetafieldGraphQl>
+  >): SyncGraphQlFunction<MetafieldGraphQl> {
     const metafieldOwnerType = context.sync.dynamicUrl as MetafieldOwnerType;
     const [metafieldKeys] = codaSyncParams;
     const filteredMetafieldKeys = Array.isArray(metafieldKeys)
@@ -140,7 +152,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
       : [];
 
     return async ({ cursor = null, limit }) => {
-      return this.all({
+      return this.allByOwnerType({
         context,
         cursor,
         limit,
@@ -222,7 +234,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     });
   }
 
-  public static async all({
+  private static async allByOwnerType({
     context,
     limit = null,
     cursor = null,
@@ -230,25 +242,70 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     metafieldKeys = [],
     options,
     ...otherArgs
-  }: AllArgs): Promise<FindAllGraphQlResponse<MetafieldGraphQl>> {
+  }: AllByOwnerTypeArgs) {
     const documentNode = getResourceMetafieldsByKeysQueryFromOwnerType(ownerType);
+    const variables = {
+      limit: limit ?? GRAPHQL_NODES_LIMIT,
+      cursor,
+      metafieldKeys,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
+      ...otherArgs,
+    } as VariablesOf<ReturnType<typeof getResourceMetafieldsByKeysQueryFromOwnerType>>;
 
     const response = await this.baseFind<MetafieldGraphQl, typeof documentNode>({
       documentNode,
-      variables: {
-        limit: limit ?? GRAPHQL_NODES_LIMIT,
-        cursor,
-
-        metafieldKeys: metafieldKeys,
-        countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
-
-        ...otherArgs,
-      } as VariablesOf<typeof documentNode>,
+      variables,
       context,
       options,
     });
 
     return response;
+  }
+
+  private static async allByOwnerIds({
+    context,
+    limit = null,
+    cursor = null,
+    ownerIds,
+    metafieldKeys = [],
+    options,
+    ...otherArgs
+  }: AllByOwnerIds) {
+    const response = await this.baseFind<MetafieldGraphQl, typeof getNodesMetafieldsByKeyQuery>({
+      documentNode: getNodesMetafieldsByKeyQuery,
+      variables: {
+        limit: limit ?? GRAPHQL_NODES_LIMIT,
+        cursor,
+        ids: ownerIds,
+        metafieldKeys,
+        countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
+        ...otherArgs,
+      } as VariablesOf<typeof getNodesMetafieldsByKeyQuery>,
+      context,
+      options,
+    });
+
+    return response;
+  }
+
+  public static async all({
+    ownerType,
+    ownerIds,
+    ...params
+  }: AllArgs): Promise<FindAllGraphQlResponse<MetafieldGraphQl>> {
+    if (!!ownerType && !!ownerIds) {
+      throw new Error('ownerType and ownerIds cannot be used together');
+    }
+
+    if (ownerType) {
+      return this.allByOwnerType({ ownerType, ...params });
+    }
+
+    if (ownerIds) {
+      return this.allByOwnerIds({ ownerIds, ...params });
+    }
+
+    throw new Error('ownerType or ownerIds must be provided');
   }
 
   /**
@@ -269,6 +326,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     newRow: MetafieldRow,
     context: coda.SyncExecutionContext
   ) {
+    this.validateUpdateJob(prevRow, newRow);
     return MetafieldHelper.handleRowUpdate(prevRow, newRow, context, MetafieldGraphQl);
   }
 
@@ -276,7 +334,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    this.apiData = MetafieldHelper.setData(data);
+    super.setData(MetafieldHelper.preprocessData(data));
   }
 
   get fullKey() {
@@ -318,7 +376,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
   /**
    * Formate un objet MetafieldsSetInput pour GraphQL Admin API
    */
-  formatMetafieldSetInput(): MetafieldsSetInput | undefined {
+  private formatMetafieldSetInput(): MetafieldsSetInput | undefined {
     let input: MetafieldsSetInput = {
       type: this.apiData.type,
       namespace: this.apiData.namespace,
@@ -326,12 +384,10 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
       value: this.apiData.value,
       ownerId: this.apiData.parentNode?.id,
     };
-
-    // input.fields = deleteUndefinedInObject(input.fields);
-    input = deleteUndefinedInObject(input);
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
 
     // If no input, we have nothing to update.
-    return Object.keys(input).length === 0 ? undefined : input;
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
   protected formatToApi({ row }: FromRow<MetafieldRow>) {
@@ -360,11 +416,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
       ownerType: row.owner_type as MetafieldOwnerType,
       type: row.type,
       updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
-      value: isNullishOrEmpty(row.rawValue)
-        ? null
-        : typeof row.rawValue === 'string'
-        ? row.rawValue
-        : JSON.stringify(row.rawValue),
+      value: isNullishOrEmpty(row.rawValue) ? null : row.rawValue,
     };
 
     if (row.definition_id || row.definition) {
@@ -376,7 +428,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     return apiData;
   }
 
-  public formatToRow(): Partial<MetafieldRow> & BaseRow {
+  public formatToRow(): MetafieldRow {
     const { apiData: data } = this;
 
     const { DELETED_SUFFIX } = MetafieldHelper;
@@ -385,7 +437,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     const ownerId = data.parentNode?.id ? graphQlGidToId(data.parentNode.id) : undefined;
     const parentOwnerId = data.parentNode.parentOwner?.id ? graphQlGidToId(data.parentNode.parentOwner.id) : undefined;
 
-    let obj: Partial<MetafieldRow> & BaseRow = {
+    let obj: MetafieldRow = {
       label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.id,
       id: graphQlGidToId(data.id),
@@ -396,11 +448,10 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
       updated_at: data.updatedAt,
       created_at: data.createdAt,
       owner_type: data.ownerType,
+      owner_id: ownerId,
     };
 
     if (ownerId) {
-      obj.owner_id = ownerId;
-
       const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(data.ownerType as MetafieldOwnerType);
       if (formatOwnerReference) {
         obj.owner = formatOwnerReference(ownerId);
@@ -438,6 +489,13 @@ export class MetafieldGraphQl extends AbstractGraphQlResource {
     }
 
     return obj;
+  }
+
+  public formatValueForOwnerRow() {
+    return formatMetaFieldValueForSchema({
+      value: this.apiData.value,
+      type: this.apiData.type,
+    });
   }
 
   // TODO

@@ -36,7 +36,8 @@ export const Sync_ProductVariants = coda.makeSyncTable({
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
      *  - {@link Variant.getDynamicSchema}
-     *  - {@link Product.generateSharedSyncFunction}
+     *  - {@link Variant.translateCodaSyncParamsFromVariantToProduct}
+     *  - {@link Product.getFirstPageParams}
      */
     parameters: [
       { ...filters.product.productType, optional: true },
@@ -57,8 +58,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
       { ...filters.product.idArray, name: 'productIds', optional: true },
     ],
     execute: async function (params, context) {
-      /** We sync from Product class in order to have parent product information */
-      return Product.syncVariants(params, context);
+      return Variant.sync(params, context);
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {

@@ -8,17 +8,26 @@ import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { compareByDisplayKey, deepCopy } from '../../utils/helpers';
+import { compareByDisplayKey, deepCopy, logAdmin } from '../../utils/helpers';
 import { formatMetafieldValueForApi, getMetaFieldFullKey, splitMetaFieldFullKey } from '../../utils/metafields-utils';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
 import { RestResourcesPlural, RestResourcesSingular, singularToPlural } from '../types/SupportedResource';
-import { MetafieldLegacyType, MetafieldType } from './Metafield.types';
+import { MetafieldLegacyType, MetafieldType } from './METAFIELD_TYPES';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './SupportedMetafieldSyncTable';
 
+// #endregion
+
 // #region Types
+export interface IMetafield {
+  get fullKey(): string;
+  get prefixedFullKey(): string;
+
+  formatValueForOwnerRow(): any;
+}
+// #endregion
 
 /**
  * This class contains functions shared between
@@ -46,7 +55,7 @@ export class MetafieldHelper {
         required: true,
         description: 'A relation to the owner of this metafield.',
       };
-      // @ts-ignore
+      // @ts-expect-error
       augmentedSchema.featuredProperties.push('owner');
     }
 
@@ -65,7 +74,7 @@ export class MetafieldHelper {
         description: 'The metafield definition of the metafield, if it exists.',
       };
 
-      // @ts-ignore: admin_url should always be the last featured property, but Shop doesn't have one
+      // @ts-expect-error: admin_url should always be the last featured property, but Shop doesn't have one
       augmentedSchema.featuredProperties.push('admin_url');
     } else {
       delete augmentedSchema.properties.admin_url;
@@ -82,7 +91,7 @@ export class MetafieldHelper {
     context: coda.ExecutionContext;
     ownerType: MetafieldOwnerType;
   }): Promise<Array<MetafieldDefinition>> {
-    console.log('🍏🍏🍏🍏🍏🍏🍏🍏🍏🍏 FETCH');
+    logAdmin('🍏 getMetafieldDefinitionsForOwner');
     return MetafieldDefinition.allForOwner({
       context,
       ownerType,
@@ -189,7 +198,7 @@ export class MetafieldHelper {
     return { ...prevRow, ...instance.formatToRow() };
   }
 
-  public static setData(data: any) {
+  public static preprocessData(data: any) {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
     const fullkey = getMetaFieldFullKey({ key: data.key, namespace: data.namespace });
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);

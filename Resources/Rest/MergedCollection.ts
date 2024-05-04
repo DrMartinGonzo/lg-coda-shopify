@@ -1,22 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import striptags from 'striptags';
 
 import {
   CodaSyncParams,
   SyncTableMixedContinuation,
   SyncTableSyncResult,
   SyncTableUpdateResult,
-} from '../../SyncTableManager/types/SyncTable.types';
+} from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
-import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
-import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { deepCopy, filterObjectKeys } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { SaveArgs } from '../Abstract/Rest/AbstractRestResource';
 import { AbstractRestResourceWithGraphQLMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
@@ -24,7 +20,8 @@ import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourceSingular, RestResourcesSingular } from '../types/SupportedResource';
 import { hasMetafieldsInUpdate } from '../utils/abstractResource-utils';
 import { CustomCollection, CustomCollectionData } from './CustomCollection';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { MergedCollectionHelper } from './MergedCollectionHelper';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 import { SmartCollection, SmartCollectionData } from './SmartCollection';
 
 // #endregion
@@ -61,22 +58,11 @@ export class MergedCollection extends AbstractRestResourceWithGraphQLMetafields 
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
 
   public static getStaticSchema() {
-    return CollectionSyncTableSchema;
+    return MergedCollectionHelper.getStaticSchema();
   }
 
-  public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Collections>;
-    let augmentedSchema = deepCopy(CollectionSyncTableSchema);
-    if (syncMetafields) {
-      augmentedSchema = await augmentSchemaWithMetafields(
-        CollectionSyncTableSchema,
-        this.metafieldGraphQlOwnerType,
-        context
-      );
-    }
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
-    augmentedSchema.featuredProperties.push('admin_url');
-    return augmentedSchema;
+  public static async getDynamicSchema(params: GetSchemaArgs) {
+    return MergedCollectionHelper.getDynamicSchema(params);
   }
 
   public static async getCollectionClassFromId({
@@ -110,8 +96,7 @@ export class MergedCollection extends AbstractRestResourceWithGraphQLMetafields 
     const { CustomCollection: singularCustom, SmartCollection: singularSmart } = RestResourcesSingular;
 
     const currResourceName: RestResourceSingular =
-      (context.sync?.continuation as SyncTableMixedContinuation<CollectionRow>)?.extraData?.currResourceName ??
-      singularCustom;
+      (context.sync?.continuation as SyncTableMixedContinuation)?.extraData?.currResourceName ?? singularCustom;
     const CurrResource = currResourceName === singularCustom ? CustomCollection : SmartCollection;
 
     let { result, continuation } = await CurrResource.sync(
@@ -194,51 +179,11 @@ export class MergedCollection extends AbstractRestResourceWithGraphQLMetafields 
     });
   }
 
-  public formatToApi({ row, metafields = [] }: FromRow<CollectionRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
-
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'body_html', 'handle', 'published', 'template_suffix', 'title',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
-
-    if (row.image_alt_text !== undefined || row.image_url !== undefined) {
-      apiData.image = {};
-      if (row.image_alt_text !== undefined) apiData.image.alt = row.image_alt_text;
-      if (row.image_url !== undefined) apiData.image.src = row.image_url;
-    }
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
-
-    return apiData;
+  public formatToApi(params: FromRow<CollectionRow>) {
+    return MergedCollectionHelper.formatToApi(params);
   }
 
   public formatToRow(): CollectionRow {
-    const { apiData } = this;
-    let obj: CollectionRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
-      admin_url: `${this.context.endpoint}/admin/collections/${apiData.id}`,
-      body: striptags(apiData.body_html),
-      published: !!apiData.published_at,
-      disjunctive: apiData.disjunctive ?? false,
-    };
-
-    if (apiData.image) {
-      obj.image_alt_text = apiData.image.alt;
-      obj.image_url = apiData.image.src;
-    }
-
-    if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
-
-    return obj;
+    return MergedCollectionHelper.formatToRow(this.context, this.apiData);
   }
 }

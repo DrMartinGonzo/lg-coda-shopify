@@ -38,13 +38,13 @@ export const addressCountryNameProp = {
   description: 'Normalized country name of the address.',
 };
 export const addressLongitudeProp = {
-  ...PROPS.STRING,
+  ...PROPS.NUMBER,
   fromKey: 'longitude',
   fixedId: 'longitude',
   description: 'The longitude of the address',
 };
 export const addressLatitudeProp = {
-  ...PROPS.STRING,
+  ...PROPS.NUMBER,
   fromKey: 'latitude',
   fixedId: 'latitude',
   description: 'The latitude of the address',

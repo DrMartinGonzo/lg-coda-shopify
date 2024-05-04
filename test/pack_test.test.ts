@@ -13,7 +13,7 @@ import { untransformKeys } from '@codahq/packs-sdk/dist/handler_templates';
 import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
 import { getUnitMap, isObject } from '../utils/helpers';
 import { Action_UpdateArticle } from '../coda/setup/articles-setup';
-import { METAFIELD_TYPES } from '../Resources/Mixed/Metafield.types';
+import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({

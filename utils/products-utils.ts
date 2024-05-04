@@ -17,7 +17,6 @@ export async function fetchProductTypesGraphQl(
   const response = await graphQlClient.request<typeof documentNode>({
     documentNode,
     variables: {},
-    retries: this.prevContinuation?.retries ?? 0,
     options: { cacheTtlSecs: requestOptions.cacheTtlSecs ?? CACHE_DEFAULT },
   });
 

@@ -1,9 +1,10 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { SyncTableManagerRestWithGraphQlMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { OPTIONS_PUBLISHED_STATUS } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
@@ -18,7 +19,9 @@ import {
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
+import { CustomCollection } from './CustomCollection';
 import { MergedCollection } from './MergedCollection';
+import { MergedCollectionHelper } from './MergedCollectionHelper';
 import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
@@ -52,9 +55,14 @@ interface OrderArgs extends BaseContext {
   body?: { [key: string]: unknown } | null;
 }
 
+export interface SmartCollectionRule {
+  column: string;
+  condition: string;
+  relation: string;
+}
+
 export interface SmartCollectionData extends RestApiDataWithMetafields {
-  rules: Array<{ column: string; relation: string; condition: string }> | null;
-  // rules: { [key: string]: unknown } | { [key: string]: unknown }[] | null;
+  rules: Array<SmartCollectionRule> | null;
   title: string | null;
   body_html: string | null;
   disjunctive: boolean | null;
@@ -91,24 +99,22 @@ export class SmartCollection extends AbstractRestResourceWithGraphQLMetafields {
   ];
 
   public static getStaticSchema() {
-    return MergedCollection.getStaticSchema();
+    return MergedCollectionHelper.getStaticSchema();
   }
 
   public static async getDynamicSchema(params: GetSchemaArgs) {
-    return MergedCollection.getDynamicSchema(params);
+    return MergedCollectionHelper.getDynamicSchema(params);
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    MergedCollection,
+  }: MakeSyncFunctionArgs<
     typeof Sync_Collections,
-    SyncTableManagerRestWithGraphQlMetafields<MergedCollection>
+    SyncTableManagerRestWithMetafieldsType<MergedCollection>
   >): SyncRestFunction<MergedCollection> {
-    const [syncMetafields, created_at, updated_at, published_at, handle, ids, product_id, published_status, title] =
-      codaSyncParams;
+    const [syncMetafields, updated_at, published_at, handle, ids, product_id, published_status, title] = codaSyncParams;
 
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
@@ -122,8 +128,6 @@ export class SmartCollection extends AbstractRestResourceWithGraphQLMetafields {
           product_id,
           title,
           published_status,
-          created_at_min: created_at ? created_at[0] : undefined,
-          created_at_max: created_at ? created_at[1] : undefined,
           updated_at_min: updated_at ? updated_at[0] : undefined,
           updated_at_max: updated_at ? updated_at[1] : undefined,
           published_at_min: published_at ? published_at[0] : undefined,
@@ -195,21 +199,29 @@ export class SmartCollection extends AbstractRestResourceWithGraphQLMetafields {
     return response;
   }
 
+  /** Same code as {@link CustomCollection.validateParams} */
+  // TODO: dedupe ?
   protected static validateParams(params: AllArgs) {
     const validPublishedStatuses = OPTIONS_PUBLISHED_STATUS.map((status) => status.value);
     if (!isNullishOrEmpty(params.published_status) && !validPublishedStatuses.includes(params.published_status)) {
       throw new InvalidValueVisibleError('published_status: ' + params.published_status);
     }
 
-    // TODO implement this for update jobs
-    //  if (
-    //    !isNullOrEmpty(update.newValue.image_alt_text) &&
-    //    (isNullOrEmpty(update.newValue.image_url) || isNullOrEmpty(update.previousValue.image_url))
-    //  ) {
-    //    throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
-    //  }
-
     return super.validateParams(params);
+  }
+
+  /** Same code as {@link CustomCollection.validateUpdateJob} */
+  // TODO: dedupe ?
+  protected static validateUpdateJob(prevRow: CollectionRow, newRow: CollectionRow): boolean {
+    if (
+      !isNullishOrEmpty(newRow.image_alt_text) &&
+      isNullishOrEmpty(newRow.image_url) &&
+      isNullishOrEmpty(prevRow.image_url)
+    ) {
+      throw new coda.UserVisibleError("Collection image url can't be empty if image_alt_text is set");
+    }
+
+    return super.validateUpdateJob(prevRow, newRow);
   }
 
   /**====================================================================================================================
@@ -237,10 +249,10 @@ export class SmartCollection extends AbstractRestResourceWithGraphQLMetafields {
   }
 
   protected formatToApi(params: FromRow<CollectionRow>) {
-    return new MergedCollection({ context: this.context }).formatToApi(params);
+    return MergedCollectionHelper.formatToApi(params);
   }
 
   public formatToRow(): CollectionRow {
-    return new MergedCollection({ context: this.context, fromData: this.apiData }).formatToRow();
+    return MergedCollectionHelper.formatToRow(this.context, this.apiData as MergedCollection['apiData']);
   }
 }

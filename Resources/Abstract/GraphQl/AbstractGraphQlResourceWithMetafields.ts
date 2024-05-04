@@ -13,6 +13,7 @@ import { Metafield, SupportedMetafieldOwnerResource } from '../../Rest/Metafield
 import { hasMetafieldsInRow } from '../../utils/abstractResource-utils';
 import { AbstractRestResourceWithMetafields } from '../Rest/AbstractRestResourceWithMetafields';
 import { AbstractGraphQlResource, BaseSaveArgs, GraphQlApiDataWithMetafields } from './AbstractGraphQlResource';
+import { SyncTableManagerGraphQlWithMetafields } from '../../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
 
 // #endregion
 
@@ -25,7 +26,7 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
   /** Same code as in {@link AbstractRestResourceWithMetafields.getMetafieldDefinitions} */
-  protected static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
+  public static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
     if (this.metafieldDefinitions) return this.metafieldDefinitions;
 
     this.metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({
@@ -36,8 +37,11 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
     return this.metafieldDefinitions;
   }
 
+  /** Mostly the same code as {@link AbstractRestResourceWithMetafields.handleRowUpdate} */
+  // TODO: deduplicate
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
     if (hasMetafieldsInRow(newRow)) {
+      this.validateUpdateJob(prevRow, newRow);
       const metafieldDefinitions = await this.getMetafieldDefinitions(context);
       const metafields = await Metafield.createInstancesFromRow({
         context,
@@ -50,6 +54,7 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
         context,
         fromRow: { row: newRow, metafields },
       });
+
       await instance.saveAndUpdate();
       return { ...prevRow, ...instance.formatToRow() };
     }
@@ -57,11 +62,27 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
     return super.handleRowUpdate(prevRow, newRow, context);
   }
 
+  public static async getSyncTableManager(
+    context: coda.SyncExecutionContext,
+    codaSyncParams: coda.ParamValues<coda.ParamDefs>
+  ) {
+    const syncTableManager = new SyncTableManagerGraphQlWithMetafields({
+      context,
+      schema: await this.getArraySchema({ codaSyncParams, context }),
+      codaSyncParams,
+      resource: this,
+    });
+    syncTableManager.setSyncFunction(
+      this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager })
+    );
+    return syncTableManager;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: typeof this.apiData): void {
-    this.apiData = data;
+    super.setData(data);
 
     /**
      * Convert GraphQl Metafields to Rest Metafields

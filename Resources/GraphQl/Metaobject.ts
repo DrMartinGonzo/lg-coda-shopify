@@ -4,7 +4,8 @@ import * as accents from 'remove-accents';
 import * as PROPS from '../../coda/coda-properties';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
-import { MakeSyncGraphQlFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
+import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import {
   CACHE_DEFAULT,
@@ -35,7 +36,7 @@ import {
   capitalizeFirstChar,
   compareByDisplayKey,
   deepCopy,
-  deleteUndefinedInObject,
+  excludeUndefinedObjectKeys,
   isNullishOrEmpty,
   isString,
 } from '../../utils/helpers';
@@ -52,7 +53,7 @@ import {
   GraphQlResourcePath,
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
-import { METAFIELD_TYPES, MetafieldType } from '../Mixed/Metafield.types';
+import { METAFIELD_TYPES, MetafieldType } from '../Mixed/METAFIELD_TYPES';
 import { Shop } from '../Rest/Shop';
 import { BaseContext, ResourceConstructorArgs } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
@@ -164,24 +165,27 @@ export class Metaobject extends AbstractGraphQlResource {
         augmentedSchema.properties[name] = property;
 
         if (displayNameKey === fieldDefinition.key) {
-          // @ts-ignore
+          // @ts-expect-error
           augmentedSchema.displayProperty = name;
           augmentedSchema.properties[name].required = true;
-          // @ts-ignore
+          // @ts-expect-error
           augmentedSchema.featuredProperties[augmentedSchema.featuredProperties.indexOf(defaultDisplayProperty)] = name;
         }
       }
     });
 
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any custom field keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any custom field keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncGraphQlFunctionArgs<Metaobject, typeof Sync_Metaobjects>): SyncGraphQlFunction<Metaobject> {
+  }: MakeSyncFunctionArgs<
+    typeof Sync_Metaobjects,
+    SyncTableManagerGraphQl<Metaobject>
+  >): SyncGraphQlFunction<Metaobject> {
     const fields: AllArgs['fields'] = {
       capabilities: syncTableManager.effectiveStandardFromKeys.includes('status'),
       definition: false,
@@ -273,7 +277,6 @@ export class Metaobject extends AbstractGraphQlResource {
     return response;
   }
 
-  // TODO: try to not make it async by prefetching and caching shop currency before ?
   protected static async formatMetaobjectFieldsFromRow(
     row: MetaobjectRow,
     metaobjectFieldDefinitions: Array<ResultOf<typeof metaobjectFieldDefinitionFragment>>,
@@ -287,6 +290,7 @@ export class Metaobject extends AbstractGraphQlResource {
         const value = row[fromKey] as string;
         const fieldDefinition = requireMatchingMetaobjectFieldDefinition(fromKey, metaobjectFieldDefinitions);
 
+        // Get current Shop currency if needed
         if (fieldDefinition.type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
           currencyCode = await Shop.activeCurrency({ context });
         }
@@ -312,12 +316,13 @@ export class Metaobject extends AbstractGraphQlResource {
     );
   }
 
-  // TODO: improve this
   protected static async handleRowUpdate(
     prevRow: MetaobjectRow,
     newRow: MetaobjectRow,
     context: coda.SyncExecutionContext
   ) {
+    this.validateUpdateJob(prevRow, newRow);
+
     const { id: metaObjectDefinitionId } = this.decodeDynamicUrl(context.sync.dynamicUrl);
     const metaobjectDefinition = await MetaobjectDefinition.find({
       context,
@@ -435,10 +440,10 @@ export class Metaobject extends AbstractGraphQlResource {
     if (input) {
       input.type = this.apiData.type;
     }
-    input = deleteUndefinedInObject(input);
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
 
     // If no input, we have nothing to update.
-    return Object.keys(input).length === 0 ? undefined : input;
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
   formatMetaobjectUpdateInput(): MetaobjectUpdateInput | undefined {
@@ -447,20 +452,21 @@ export class Metaobject extends AbstractGraphQlResource {
       handle: this.apiData.handle,
       fields: this.apiData.fields.map((f) => ({ key: f.key, value: f.value })),
     };
-
-    input.fields = deleteUndefinedInObject(input.fields);
-    input = deleteUndefinedInObject(input);
+    const filteredInput = excludeUndefinedObjectKeys({
+      ...input,
+      fields: excludeUndefinedObjectKeys(input.fields),
+    });
 
     // If no input, we have nothing to update.
-    return Object.keys(input).length === 0 ? undefined : input;
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
   protected formatToApi({ row, metaobjectFields = [] }: FromMetaobjectRow) {
     let apiData: Partial<typeof this.apiData> = {
       id: row.id ? idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id) : undefined,
+      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
       fields: metaobjectFields,
       type: row.type,
-
       handle: isNullishOrEmpty(row.handle) ? undefined : row.handle,
       capabilities: isNullishOrEmpty(row.status)
         ? undefined

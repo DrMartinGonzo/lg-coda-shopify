@@ -1,12 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-// import slugify from 'slugify';
 
-import { DEFAULT_THUMBNAIL_SIZE } from '../config';
+import { FULL_SIZE } from '../constants';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
 import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';
-import { FULL_SIZE } from '../constants';
 
 // #endregion
 
@@ -364,28 +362,29 @@ function parseGid(gid: string | undefined): ShopifyGid {
   }
 }
 
+type DistributiveOmit<Value, Key extends PropertyKey> = Value extends unknown ? Omit<Value, Key> : never;
+
 /**
- * Filters out specific keys from an object and returns a new object with only
- * the remaining keys and their corresponding values.
- // TODO: better typing for the return
- * @param obj the object to filter
- * @param keysToFilterOut the keys we want to exclude
+ * Returns a new object with all specified keys excluded from the original object
  */
-export function filterObjectKeys<LolT extends Array<string>, ObjT>(obj: ObjT, keysToFilterOut: LolT): ObjT {
-  return Object.keys(obj)
-    .filter((key) => !keysToFilterOut.includes(key))
+export function excludeObjectKeys<ObjectType extends Record<PropertyKey, any>, ExcludedKeys extends keyof ObjectType>(
+  object: ObjectType,
+  keysToFilterOut: readonly ExcludedKeys[]
+): DistributiveOmit<ObjectType, ExcludedKeys> {
+  return Object.keys(object)
+    .filter((key) => !keysToFilterOut.includes(key as ExcludedKeys))
     .reduce((acc, key) => {
-      acc[key] = obj[key];
+      acc[key] = object[key];
       return acc;
-    }, {}) as ObjT;
+    }, {}) as DistributiveOmit<ObjectType, ExcludedKeys>;
 }
 
-// TODO: rewrite to handle nested objects
-export function deleteUndefinedInObject<T>(obj: T) {
-  Object.keys(obj).forEach((key) => {
-    if (obj[key] === undefined) delete obj[key];
-  });
-  return obj;
+/**
+ * Returns a new object with all undefined keys excluded from the original object
+ */
+export function excludeUndefinedObjectKeys<ObjectType extends Record<PropertyKey, any>>(obj: ObjectType) {
+  const keysToOmit = Object.keys(obj).filter((key) => obj[key] === undefined);
+  return excludeObjectKeys(obj, keysToOmit);
 }
 
 export function splitAndTrimValues(values = '', delimiter = ','): string[] {

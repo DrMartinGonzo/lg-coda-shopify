@@ -59,7 +59,7 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
         'For a smart (automated) collection, the list of rules that define what products go into the smart collection.',
     },
 
-    ruleSet: CollectionRuleSetSchema,
+    // ruleSet: CollectionRuleSetSchema,
 
     disjunctive: {
       type: coda.ValueType.Boolean,

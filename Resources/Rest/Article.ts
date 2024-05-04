@@ -3,9 +3,9 @@ import striptags from 'striptags';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { SyncTableManagerRestWithRestMetafields } from '../../SyncTableManager/Rest/SyncTableManagerRestWithMetafields';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTable.types';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
 import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
@@ -13,16 +13,17 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, filterObjectKeys, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithRestMetafields,
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
+import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
-import { Metafield, SupportedMetafieldOwnerResource } from './Metafield';
+import { SupportedMetafieldOwnerResource } from './Metafield';
 
 // #endregion
 
@@ -109,19 +110,18 @@ export class Article extends AbstractRestResourceWithRestMetafields {
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, this.metafieldGraphQlOwnerType, context);
     }
-    // @ts-ignore: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');
     return augmentedSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     codaSyncParams,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<
-    Article,
+  }: MakeSyncFunctionArgs<
     typeof Sync_Articles,
-    SyncTableManagerRestWithRestMetafields<Article>
+    SyncTableManagerRestWithMetafieldsType<Article>
   >): SyncRestFunction<Article> {
     const [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag] =
       codaSyncParams;
@@ -241,35 +241,37 @@ export class Article extends AbstractRestResourceWithRestMetafields {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected formatToApi({ row, metafields = [] }: FromRow<ArticleRow>) {
-    let apiData: Partial<typeof this.apiData> = {};
+  protected formatToApi({ row, metafields }: FromRow<ArticleRow>) {
+    let apiData: Partial<typeof this.apiData> = {
+      admin_graphql_api_id: row.admin_graphql_api_id,
+      author: row.author,
+      blog_id: row.blog_id,
+      body_html: row.body_html,
+      created_at: row.created_at ? row.created_at.toString() : undefined,
+      handle: row.handle,
+      id: row.id,
+      image: {
+        alt: row.image_alt_text,
+        src: row.image_url,
+      },
+      published_at: row.published_at ? row.published_at.toString() : undefined,
+      published: row.published,
+      summary_html: row.summary_html,
+      tags: row.tags,
+      template_suffix: row.template_suffix,
+      title: row.title,
+      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      user_id: row.user_id,
 
-    // prettier-ignore
-    const oneToOneMappingKeys = [
-      'id', 'author', 'blog_id', 'body_html', 'handle', 'published',
-      'published_at', 'summary_html', 'template_suffix', 'tags', 'title',
-    ];
-    oneToOneMappingKeys.forEach((key) => {
-      if (row[key] !== undefined) apiData[key] = row[key];
-    });
-
-    if (row.image_alt_text !== undefined || row.image_url !== undefined) {
-      apiData.image = {};
-      if (row.image_alt_text !== undefined) apiData.image.alt = row.image_alt_text;
-      if (row.image_url !== undefined) apiData.image.src = row.image_url;
-    }
-
-    if (metafields.length) {
-      apiData.metafields = metafields;
-    }
-
+      metafields: metafields,
+    };
     return apiData;
   }
 
   public formatToRow(): ArticleRow {
     const { apiData } = this;
     let obj: ArticleRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin/articles/${apiData.id}`,
       body: striptags(apiData.body_html),
       published: !!apiData.published_at,
@@ -286,7 +288,7 @@ export class Article extends AbstractRestResourceWithRestMetafields {
     }
 
     if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: Metafield) => {
+      apiData.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

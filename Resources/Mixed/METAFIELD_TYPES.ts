@@ -1,26 +1,8 @@
 // #region Imports
-
 import { CurrencyCode } from '../../types/admin.types';
 
 // #endregion
 
-export declare namespace Fields {
-  interface Rating {
-    scale_min: number;
-    scale_max: number;
-    value: number;
-  }
-  interface Money {
-    currency_code: CurrencyCode;
-    amount: number;
-  }
-  interface Measurement {
-    unit: string;
-    value: number;
-  }
-}
-
-// TODO: move elsewhere
 export const METAFIELD_TYPES = {
   boolean: 'boolean',
   collection_reference: 'collection_reference',
@@ -72,6 +54,20 @@ export const METAFIELD_LEGACY_TYPES = {
   integer: 'integer',
   json_string: 'json_string',
 } as const;
+
+export interface MoneyField {
+  currency_code: CurrencyCode;
+  amount: number;
+}
+export interface RatingField {
+  scale_min: number;
+  scale_max: number;
+  value: number;
+}
+export interface MeasurementField {
+  unit: string;
+  value: number;
+}
 
 /** All supported modern `metafield.type`s */
 export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPES];

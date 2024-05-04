@@ -5,12 +5,14 @@ import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer'
 import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
 import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
-  Fields,
   METAFIELD_LEGACY_TYPES,
   METAFIELD_TYPES,
+  MeasurementField,
   MetafieldLegacyType,
   MetafieldType,
-} from '../Resources/Mixed/Metafield.types';
+  MoneyField,
+  RatingField,
+} from '../Resources/Mixed/METAFIELD_TYPES';
 import { SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
 import {
   GraphQlResourceName,
@@ -41,7 +43,7 @@ import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty, maybeParseJ
 function formatRatingField(
   value: number,
   validations: ResultOf<typeof metafieldDefinitionFragment>['validations']
-): Fields.Rating {
+): RatingField {
   if (!validations) {
     throw new Error('Validations are required to format a rating field');
   }
@@ -67,7 +69,7 @@ function formatRatingFieldsForApi(
 /**
  * Format a Money cell value
  */
-function formatMoneyField(amount: number, currency_code: CurrencyCode): Fields.Money {
+function formatMoneyField(amount: number, currency_code: CurrencyCode): MoneyField {
   return { amount, currency_code: currency_code ?? DEFAULT_CURRENCY_CODE };
 }
 
@@ -83,7 +85,7 @@ function formatMoneyFieldsForApi(amount: number, currency_code: CurrencyCode): s
  * @param measurementValue the string entered by user in format "{value}{unit}" with eventual spaces between
  * @param metafieldType the type of metafield
  */
-function formatMeasurementField(measurementValue: string, metafieldType: MetafieldType): Fields.Measurement {
+function formatMeasurementField(measurementValue: string, metafieldType: MetafieldType): MeasurementField {
   const measurementType = metafieldType.replace('list.', '');
   const { value, unitFull } = extractValueAndUnitFromMeasurementString(measurementValue, measurementType);
   return {

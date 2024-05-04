@@ -230,9 +230,7 @@ const queryProductMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('products
  * @return {TadaDocumentNode} The DocumentNode query corresponding to the owner type.
  * @throws {Error} If there is no matching DocumentNode for the given MetafieldOwnerType.
  */
-export function getResourceMetafieldsByKeysQueryFromOwnerType(
-  metafieldOwnerType: MetafieldOwnerType
-): TadaDocumentNode {
+export function getResourceMetafieldsByKeysQueryFromOwnerType(metafieldOwnerType: MetafieldOwnerType) {
   switch (metafieldOwnerType) {
     case MetafieldOwnerType.Shop:
       return getShopMetafieldsByKeysQuery;

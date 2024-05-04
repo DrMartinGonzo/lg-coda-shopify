@@ -1,15 +1,15 @@
 // #region Imports
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
-import { MakeSyncRestFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Shops } from '../../coda/setup/shop-setup';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, Identity, PACK_IDENTITIES } from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
-import { collectFieldDependencies } from '../../schemas/syncTable/CollectSchema';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
-import { filterObjectKeys } from '../../utils/helpers';
+import { excludeObjectKeys } from '../../utils/helpers';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
   AbstractRestResourceWithRestMetafields,
@@ -44,8 +44,6 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
     eligible_for_payments: boolean | null;
     email: string | null;
     enabled_presentment_currencies: string[] | null;
-    finances: boolean | null;
-    force_ssl: boolean | null;
     google_apps_domain: string | null;
     google_apps_login_enabled: string | null;
     has_discounts: boolean | null;
@@ -60,7 +58,6 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
     money_in_emails_format: string | null;
     money_with_currency_format: string | null;
     money_with_currency_in_emails_format: string | null;
-    multi_location_enabled: boolean | null;
     myshopify_domain: string | null;
     name: string | null;
     password_enabled: boolean | null;
@@ -69,7 +66,6 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
     plan_name: string | null;
     pre_launch_enabled: boolean | null;
     primary_locale: string | null;
-    primary_location_id: number | null;
     province: string | null;
     province_code: string | null;
     requires_extra_payments_agreement: boolean | null;
@@ -104,10 +100,10 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
     return ShopSyncTableSchema;
   }
 
-  protected static makeSyncTableManagerSyncFunction({
+  public static makeSyncTableManagerSyncFunction({
     context,
     syncTableManager,
-  }: MakeSyncRestFunctionArgs<Shop, typeof Sync_Shops>): SyncRestFunction<Shop> {
+  }: MakeSyncFunctionArgs<typeof Sync_Shops, SyncTableManagerRestWithMetafieldsType<Shop>>): SyncRestFunction<Shop> {
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
         context,
@@ -115,7 +111,7 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
         limit,
         firstPageParams: {
           fields: syncTableManager
-            .getSyncedStandardFields(collectFieldDependencies)
+            .getSyncedStandardFields()
             .filter((key) => !['admin_url'].includes(key))
             .join(','),
         },
@@ -177,8 +173,9 @@ export class Shop extends AbstractRestResourceWithRestMetafields {
 
   public formatToRow(): ShopRow {
     const { apiData } = this;
+
     let obj: ShopRow = {
-      ...filterObjectKeys(apiData, ['metafields']),
+      ...excludeObjectKeys(apiData, ['metafields']),
       admin_url: `${this.context.endpoint}/admin`,
     };
 
