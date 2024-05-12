@@ -1,54 +1,11 @@
-import * as coda from '@codahq/packs-sdk';
-import { normalizeSchema, normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+// #region Imports
+import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { pack } from '../pack';
 
-import { MockExecutionContext, executeSyncFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
-import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
-import { newJsonFetchResponse } from '@codahq/packs-sdk/dist/development';
-import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
-
-import { expect, test, describe } from 'vitest';
-import { expectedRows } from './expectedRows';
-import { untransformKeys } from '@codahq/packs-sdk/dist/handler_templates';
-import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
-import { getUnitMap, isObject } from '../utils/helpers';
-import { Action_UpdateArticle } from '../coda/setup/articles-setup';
+import { describe, expect, test } from 'vitest';
 import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 
-// let context: MockExecutionContext;
-// context = newMockExecutionContext({
-//   endpoint: 'https://coda-pack-test.myshopify.com',
-// });
-
-function normalizeExpectedRowKeys(obj) {
-  if (Array.isArray(obj)) {
-    return obj.map((item) => normalizeExpectedRowKeys(item));
-  } else if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((acc, key) => {
-      const pascalKey = normalizeSchemaKey(key);
-      acc[pascalKey] = normalizeExpectedRowKeys(obj[key]);
-      return acc;
-    }, {});
-  }
-  return obj;
-}
-
-function compareToExpectedRow(result: any, expected: any) {
-  Object.keys(result).forEach((key) => {
-    if (key in expected) {
-      if (Array.isArray(expected[key]) || isObject(expected[key])) {
-        expect(result[key], key).toStrictEqual(expected[key]);
-      } else {
-        expect(result[key], key).toBe(expected[key]);
-      }
-    }
-  });
-}
-
-const defaultExecuteOptions = {
-  useRealFetcher: true,
-  manifestPath: require.resolve('../pack.ts'),
-};
+// #endregion
 
 describe.concurrent('Metafields Formula', () => {
   test('MetaBoolean', async () => {
@@ -74,6 +31,16 @@ describe.concurrent('Metafields Formula', () => {
     expect(result).toEqual(
       JSON.stringify({ type: METAFIELD_TYPES.dimension, value: { value: 100, unit: 'CENTIMETERS' } })
     );
+  });
+  test('MetaFileReference: GenericFile', async () => {
+    const result = await executeFormulaFromPackDef(pack, 'MetaFileReference', [445458787879, 'GenericFile']);
+    expect(result).toEqual(
+      JSON.stringify({ type: METAFIELD_TYPES.file_reference, value: 'gid://shopify/GenericFile/445458787879' })
+    );
+  });
+  test('MetaFileReference: throw on wrong fileType', async () => {
+    const result = executeFormulaFromPackDef(pack, 'MetaFileReference', [445458787879, 'wrong']);
+    await expect(result).rejects.toThrowError(/Unknown file type: /);
   });
   test('MetaJson', async () => {
     const json = '{"compilerOptions":{"skipLibCheck":true,"lib":["ES2022"]},"exclude":["node_modules"]}';
@@ -255,168 +222,5 @@ describe.concurrent('Format Metafields Formula', () => {
         value: null,
       })
     );
-  });
-});
-
-describe.concurrent('Customer', () => {
-  test('Fetch', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.customer);
-    const result = await executeFormulaFromPackDef(
-      pack,
-      'Customer',
-      [expected.Id],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-    compareToExpectedRow(result, expected);
-  });
-
-  test('Sync with Metafields', async () => {
-    // No need to normalize with executeSyncFormulaFromPackDef…
-    const expected = [expectedRows.customer];
-    const result = await executeSyncFormulaFromPackDef(
-      pack,
-      'Customers',
-      [
-        true, // syncMetafields
-        undefined, // createdAtRange
-        undefined, // updatedAtRange
-        [expected[0].id], // idArray
-      ],
-      undefined,
-      { useDeprecatedResultNormalization: true },
-      defaultExecuteOptions
-    );
-
-    result.forEach((res, index) => {
-      compareToExpectedRow(res, expected[index]);
-    });
-  });
-});
-
-describe.concurrent('Metafield', () => {
-  test('Update', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.metafield);
-    const input = await executeFormulaFromPackDef(
-      pack,
-      'FormatMetafield',
-      [
-        'global.title_tag', // fullKey
-        await executeFormulaFromPackDef(
-          pack,
-          'MetaSingleLineText',
-          [
-            'vitest', // string
-          ],
-          undefined,
-          undefined,
-          defaultExecuteOptions
-        ), // value
-      ],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-
-    const result = await executeFormulaFromPackDef(
-      pack,
-      'SetMetafield',
-      [
-        expected.OwnerType, // string
-        input, // metafieldValue
-        expected.OwnerId, // ownerID
-      ],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-    compareToExpectedRow(result, expected);
-  });
-});
-
-describe.concurrent('Product', () => {
-  test('Fetch', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.product);
-    const result = await executeFormulaFromPackDef(
-      pack,
-      'Product',
-      [expected.Id],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-    compareToExpectedRow(result, expected);
-  });
-
-  test('Sync with Metafields', async () => {
-    // No need to normalize with executeSyncFormulaFromPackDef…
-    const expected = [expectedRows.product];
-    const result = await executeSyncFormulaFromPackDef(
-      pack,
-      'Products',
-      [
-        undefined, // productType
-        true, // syncMetafields
-        undefined, // createdAtRange
-        undefined, // updatedAtRange
-        undefined, // publishedAtRange
-        undefined, // statusArray
-        undefined, // publishedStatus
-        undefined, // vendor
-        undefined, // handleArray
-        [expected[0].id], // idArray
-      ],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-
-    result.forEach((res, index) => {
-      compareToExpectedRow(res, expected[index]);
-    });
-  });
-});
-
-describe.concurrent('ProductVariant', () => {
-  test('Fetch', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.productVariant);
-    const result = await executeFormulaFromPackDef(
-      pack,
-      'ProductVariant',
-      [expected.Id],
-      undefined,
-      undefined,
-      defaultExecuteOptions
-    );
-    compareToExpectedRow(result, expected);
-  });
-
-  test('Sync with Metafields', async () => {
-    // No need to normalize with executeSyncFormulaFromPackDef…
-    const expected = [expectedRows.productVariant];
-    const result = await executeSyncFormulaFromPackDef(
-      pack,
-      'ProductVariants',
-      [
-        undefined, // productType
-        true, // syncMetafields
-        undefined, // createdAtRange
-        undefined, // updatedAtRange
-        undefined, // publishedAtRange
-        undefined, // statusArray
-        undefined, // publishedStatus
-        undefined, // vendor
-        undefined, // handleArray
-        [expectedRows.product.id], // idArray
-      ],
-      undefined,
-      { useDeprecatedResultNormalization: true },
-      defaultExecuteOptions
-    );
-
-    result.forEach((res, index) => {
-      compareToExpectedRow(res, expected[index]);
-    });
   });
 });

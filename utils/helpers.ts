@@ -174,6 +174,12 @@ export function logAdmin(msg: any) {
   }
 }
 
+export function dumpToConsole(data: any) {
+  if (IS_ADMIN_RELEASE) {
+    console.log(JSON.stringify(data, null, 2));
+  }
+}
+
 // Coda date to ISO Date helper
 export function toIsoDate(convDate: Date): String {
   let isoDate = convDate.toISOString();

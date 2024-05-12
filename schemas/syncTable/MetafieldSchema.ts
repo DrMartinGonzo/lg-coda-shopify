@@ -80,6 +80,12 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
       fixedId: 'owner_type',
       description: 'The type of the resource that the metafield is attached to.',
     },
+    definition_id: {
+      ...PROPS.ID_NUMBER,
+      fixedId: 'definition_id',
+      fromKey: 'definition_id',
+      description: 'The ID of the metafield definition of the metafield, if it exists.',
+    },
     rawValue: {
       type: coda.ValueType.String,
       mutable: true,

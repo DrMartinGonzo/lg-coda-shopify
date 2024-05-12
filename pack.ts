@@ -81,6 +81,7 @@ import {
   Formula_MetaDate,
   Formula_MetaDateTime,
   Formula_MetaDimension,
+  Formula_MetaFileReference,
   Formula_MetaJson,
   // Formula_MetafieldKeyValueSet,
   Formula_MetaMetaobjectReference,
@@ -149,7 +150,7 @@ import {
   Formula_Redirect,
   Sync_Redirects,
 } from './coda/setup/redirects-setup';
-import { Formula_Shop, Formula_ShopField, Sync_Shops } from './coda/setup/shop-setup';
+import { Formula_Shop, Sync_Shops } from './coda/setup/shop-setup';
 import { setupTranslations } from './coda/setup/translations-setup';
 
 // #endregion
@@ -219,9 +220,6 @@ pack.formulas.push(Formula_Product);
 pack.formulas.push(Formula_ProductVariant);
 pack.formulas.push(Formula_Redirect);
 pack.formulas.push(Formula_Shop);
-if (IS_ADMIN_RELEASE) {
-  pack.formulas.push(Formula_ShopField);
-}
 // #endregion
 
 // #region Actions
@@ -316,6 +314,7 @@ pack.formulas.push(Formula_MetaColor);
 pack.formulas.push(Formula_MetaDate);
 pack.formulas.push(Formula_MetaDateTime);
 pack.formulas.push(Formula_MetaDimension);
+pack.formulas.push(Formula_MetaFileReference);
 pack.formulas.push(Formula_MetaJson);
 pack.formulas.push(Formula_MetaMetaobjectReference);
 pack.formulas.push(Formula_MetaMixedReference);

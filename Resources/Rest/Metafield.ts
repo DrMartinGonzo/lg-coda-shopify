@@ -48,6 +48,7 @@ import {
   RestResourcesSingular,
 } from '../types/SupportedResource';
 import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
 
 // #endregion
 
@@ -233,7 +234,10 @@ export class Metafield extends AbstractRestResource implements IMetafield {
     const [metafieldKeys] = codaSyncParams as CodaSyncParams<typeof Sync_Metafields>;
     let continuation: SyncTableRestContinuation = null;
 
-    const ownerSyncTableManager = await owner.getSyncTableManager(context, codaSyncParams);
+    const ownerSyncTableManager = (await owner.getSyncTableManager(
+      context,
+      codaSyncParams
+    )) as SyncTableManagerRestWithMetafieldsType<InstanceType<typeof owner>>;
     ownerSyncTableManager.setSyncFunction(({ nextPageQuery = {}, limit }) => {
       const params = owner.allIterationParams({
         context,
@@ -406,7 +410,7 @@ export class Metafield extends AbstractRestResource implements IMetafield {
     data: MetafieldGraphQl['apiData'],
     owner_gid?: string
   ): Metafield {
-    const definitionId = data.definition?.id ? graphQlGidToId(data.definition.id) : undefined;
+    const definitionId = graphQlGidToId(data.definition?.id);
 
     return new Metafield({
       context,
@@ -578,12 +582,12 @@ export class Metafield extends AbstractRestResource implements IMetafield {
     return apiData;
   }
 
-  public formatToRow(): MetafieldRow {
+  public formatToRow(includeHelperColumns = true): MetafieldRow {
     const { apiData: data } = this;
     const ownerType = matchOwnerResourceToMetafieldOwnerType(data.owner_resource);
     const { DELETED_SUFFIX } = MetafieldHelper;
 
-    let obj: MetafieldRow = {
+    let obj: Partial<MetafieldRow> = {
       label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.admin_graphql_api_id,
       id: data.id,
@@ -591,15 +595,27 @@ export class Metafield extends AbstractRestResource implements IMetafield {
       namespace: data.namespace,
       type: data.type,
       rawValue: data.value,
-      owner_id: data.owner_id,
       updated_at: data.updated_at,
       created_at: data.created_at,
       owner_type: ownerType,
     };
 
-    const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(ownerType);
-    if (formatOwnerReference) {
-      obj.owner = formatOwnerReference(data.owner_id);
+    if (data.owner_id) {
+      obj.owner_id = data.owner_id;
+      const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(ownerType);
+      if (formatOwnerReference) {
+        obj.owner = formatOwnerReference(data.owner_id);
+      }
+
+      /**
+       * Unlike in {@link MetafieldGraphQl.formatToRow}, we can set this at once
+       * since data.owner_id is already checked and owner parentId is never necessary.
+       */
+      obj.admin_url = MetafieldHelper.getMetafieldAdminUrl(this.context, {
+        id: data.owner_id,
+        singular: data.owner_resource,
+        hasMetafieldDefinition: !!data.definition_id,
+      });
     }
 
     if (data.definition_id) {
@@ -607,31 +623,14 @@ export class Metafield extends AbstractRestResource implements IMetafield {
       obj.definition = formatMetafieldDefinitionReference(data.definition_id);
     }
 
-    /**
-     * We don't set it at once because parentOwnerId can be necessary but
-     * undefined when formatting from a two way sync update (ex: ProductVariants).
-     * Since this value is static, we return nothing to prevent erasing the
-     * previous value. We could also retrieve the owner ID value directly in the
-     * graphQl mutation result but doing it this way reduce the GraphQL query costs.
-     */
-    const maybeAdminUrl = MetafieldHelper.getMetafieldAdminUrl(
-      this.context.endpoint,
-      !!data.definition_id,
-      data.owner_resource,
-      data.owner_id
-      // TODO
-      // parentOwnerId
-    );
-    if (maybeAdminUrl) {
-      obj.admin_url = maybeAdminUrl;
+    if (includeHelperColumns) {
+      const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
+      if (helperColumn) {
+        obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
+      }
     }
 
-    const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
-    if (helperColumn) {
-      obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
-    }
-
-    return obj;
+    return obj as MetafieldRow;
   }
 
   public formatValueForOwnerRow() {

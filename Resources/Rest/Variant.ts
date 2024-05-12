@@ -268,6 +268,21 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
+  public async refreshDataWithtParentProduct() {
+    const product = await Product.find({
+      id: this.apiData.product_id,
+      fields: ['images', 'handle', 'status', 'title'].join(','),
+      context: this.context,
+    });
+    this.setData({
+      ...this.apiData,
+      product_images: product.apiData.images,
+      product_handle: product.apiData.handle,
+      product_status: product.apiData.status,
+      product_title: product.apiData.title,
+    });
+  }
+
   protected formatToApi({ row, metafields }: FromRow<ProductVariantRow>) {
     let apiData: Partial<RestApiDataWithMetafields & VariantData> = {
       barcode: row.barcode,

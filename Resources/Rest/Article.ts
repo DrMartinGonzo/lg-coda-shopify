@@ -4,8 +4,15 @@ import striptags from 'striptags';
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
-import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  CodaSyncParams,
+  MakeSyncFunctionArgs,
+  SyncRestFunction,
+} from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  parseContinuationProperty,
+  stringifyContinuationProperty,
+} from '../../SyncTableManager/utils/syncTableManager-utils';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
 import { Identity, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
@@ -13,7 +20,7 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, excludeObjectKeys, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isNullishOrEmpty, parseOptionId, splitAndTrimValues } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
@@ -50,7 +57,7 @@ interface AllArgs extends BaseContext {
   published_at_max?: unknown;
   published_status?: string;
   handle?: unknown;
-  tag?: unknown;
+  tags?: string[];
   author?: unknown;
   fields?: unknown;
 }
@@ -123,12 +130,27 @@ export class Article extends AbstractRestResourceWithRestMetafields {
     typeof Sync_Articles,
     SyncTableManagerRestWithMetafieldsType<Article>
   >): SyncRestFunction<Article> {
-    const [syncMetafields, restrictToBlogIds, author, createdAt, updatedAt, publishedAt, handle, publishedStatus, tag] =
-      codaSyncParams;
+    const [
+      syncMetafields,
+      restrictToBlogIds,
+      author,
+      createdAt,
+      updatedAt,
+      publishedAt,
+      handle,
+      publishedStatus,
+      tags,
+    ] = codaSyncParams;
+
+    // Add required fields needed for certain filters
+    const fieldsArray = syncTableManager.getSyncedStandardFields(articleFieldDependencies);
+    if (tags && tags.length) {
+      fieldsArray.push('tags');
+    }
 
     let blogIdsLeft: number[] = [];
-    if (syncTableManager.prevContinuation) {
-      blogIdsLeft = syncTableManager.prevContinuation.extraData?.blogIdsLeft ?? [];
+    if (syncTableManager.prevContinuation?.extraData?.blogIdsLeft) {
+      blogIdsLeft = parseContinuationProperty(syncTableManager.prevContinuation.extraData.blogIdsLeft);
     }
     // Should trigger only on first run when user
     // has specified the blogs he wants to sync articles from
@@ -138,7 +160,11 @@ export class Article extends AbstractRestResourceWithRestMetafields {
 
     const currentBlogId = blogIdsLeft.shift() ?? null;
     if (blogIdsLeft.length) {
-      syncTableManager.extraContinuationData = { blogIdsLeft };
+      // Force set continuation to trigger next sync with remaining blogs
+      syncTableManager.continuation = {
+        skipNextRestSync: 'false',
+        extraData: { blogIdsLeft: stringifyContinuationProperty(blogIdsLeft) },
+      };
     }
 
     return ({ nextPageQuery = {}, limit }) => {
@@ -150,7 +176,7 @@ export class Article extends AbstractRestResourceWithRestMetafields {
           blog_id: currentBlogId,
           fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(','),
           author,
-          tag,
+          tags,
           handle,
           published_status: publishedStatus,
           created_at_min: createdAt ? createdAt[0] : undefined,
@@ -199,7 +225,7 @@ export class Article extends AbstractRestResourceWithRestMetafields {
     published_at_max = null,
     published_status = null,
     handle = null,
-    tag = null,
+    tags = [],
     author = null,
     fields = null,
     options = {},
@@ -219,7 +245,6 @@ export class Article extends AbstractRestResourceWithRestMetafields {
         published_at_max,
         published_status,
         handle,
-        tag,
         author,
         fields,
         ...otherArgs,
@@ -227,7 +252,17 @@ export class Article extends AbstractRestResourceWithRestMetafields {
       options,
     });
 
-    return response;
+    return {
+      ...response,
+      data: response.data.filter((d) => {
+        // The api only supports filtering by a single tag, so we retrieve all and filter after
+        if (tags.length) {
+          const restTagsArray = splitAndTrimValues(d.apiData?.tags ?? '');
+          return restTagsArray.length && restTagsArray.some((t) => tags.includes(t));
+        }
+        return true;
+      }),
+    };
   }
 
   protected static validateParams(params: AllArgs) {
@@ -245,7 +280,7 @@ export class Article extends AbstractRestResourceWithRestMetafields {
     let apiData: Partial<typeof this.apiData> = {
       admin_graphql_api_id: row.admin_graphql_api_id,
       author: row.author,
-      blog_id: row.blog_id,
+      blog_id: row.blog?.id || row.blog_id,
       body_html: row.body_html,
       created_at: row.created_at ? row.created_at.toString() : undefined,
       handle: row.handle,

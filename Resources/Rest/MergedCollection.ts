@@ -95,8 +95,8 @@ export class MergedCollection extends AbstractRestResourceWithGraphQLMetafields 
   ): Promise<SyncTableSyncResult> {
     const { CustomCollection: singularCustom, SmartCollection: singularSmart } = RestResourcesSingular;
 
-    const currResourceName: RestResourceSingular =
-      (context.sync?.continuation as SyncTableMixedContinuation)?.extraData?.currResourceName ?? singularCustom;
+    const prevContinuation = (context.sync?.continuation as SyncTableMixedContinuation) || null;
+    const currResourceName: RestResourceSingular = prevContinuation?.extraData?.currResourceName ?? singularCustom;
     const CurrResource = currResourceName === singularCustom ? CustomCollection : SmartCollection;
 
     let { result, continuation } = await CurrResource.sync(

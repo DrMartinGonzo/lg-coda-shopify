@@ -245,7 +245,6 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
       context: this.context,
       urlIds: { id: this.apiData.id },
       params: { ...otherArgs },
-      // body: body,
       entity: this,
     });
 
@@ -264,7 +263,6 @@ export class DraftOrder extends AbstractRestResourceWithGraphQLMetafields {
       context: this.context,
       urlIds: { id: this.apiData.id },
       params: { payment_gateway_id, payment_pending, ...otherArgs },
-      // body: body,
       entity: this,
     });
 

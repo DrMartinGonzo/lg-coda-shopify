@@ -54,6 +54,10 @@ export class CodaMetafieldValue {
     }
   }
 
+  public static isCodaMetafieldValue(value: any): boolean {
+    return Object.keys(value).length === 2 && 'type' in value && 'value' in value;
+  }
+
   /**
    * Create instance from a Coda string parameter based on the output of one of
    * the`Meta{…}` helper formulas.
@@ -64,9 +68,12 @@ export class CodaMetafieldValue {
     try {
       if (param !== '') {
         const parsedValue: ParsedMetafieldValueFormula = JSON.parse(param);
-        if (parsedValue.value !== null && !parsedValue.type) {
+        if (!this.isCodaMetafieldValue(parsedValue)) {
           throw new InvalidValueError('json', param);
         }
+        // if (parsedValue.value !== null && !parsedValue.type) {
+        //   throw new InvalidValueError('json', param);
+        // }
         type = parsedValue.type;
         value = parsedValue.value;
       }

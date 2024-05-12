@@ -7,8 +7,6 @@ import {
   ExecuteSyncBaseArgs,
   ISyncTableManager,
   ISyncTableManagerConstructorArgs,
-  SyncGraphQlFunction,
-  SyncRestFunction,
   SyncTableManagerResult,
 } from '../types/SyncTableManager.types';
 
@@ -45,7 +43,7 @@ export abstract class AbstractSyncTableManager<
 
   public prevContinuation: C;
   public continuation: C;
-  public extraContinuationData: any;
+  public pendingExtraContinuationData: any;
 
   protected readonly context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */

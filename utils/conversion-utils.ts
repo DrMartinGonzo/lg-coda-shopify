@@ -1,6 +1,7 @@
 // #region Imports
 import { FormattingError, InvalidValueError } from '../Errors/Errors';
 import { GraphQlResourceName } from '../Resources/types/SupportedResource';
+import { isNullish } from './helpers';
 
 // #endregion
 
@@ -10,8 +11,8 @@ function isGraphQlGid(gid: string) {
   return false;
 }
 
-// TODO: these functions should return undefined when no id is provided, only throw error is the stuff is invalid
-export function idToGraphQlGid(resourceName: GraphQlResourceName, id: number | string) {
+export function idToGraphQlGid(resourceName: GraphQlResourceName, id: number | string): string | undefined {
+  if (isNullish(id)) return undefined;
   if (typeof id === 'string' && isGraphQlGid(id)) {
     return id as string;
   }
@@ -21,8 +22,9 @@ export function idToGraphQlGid(resourceName: GraphQlResourceName, id: number | s
   return `gid://shopify/${resourceName}/${id}`;
 }
 
-export function graphQlGidToId(gid: string): number {
-  if (!gid || !isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
+export function graphQlGidToId(gid: string): number | undefined {
+  if (isNullish(gid)) return undefined;
+  if (!isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
   if (!Number.isNaN(parseInt(gid))) return Number(gid);
 
   const maybeNum = gid.split('/').at(-1)?.split('?').at(0);
@@ -32,8 +34,9 @@ export function graphQlGidToId(gid: string): number {
   throw new InvalidValueError('GID', gid);
 }
 
-function graphQlGidToResourceName(gid: string): GraphQlResourceName {
-  if (!gid || !isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
+function graphQlGidToResourceName(gid: string): GraphQlResourceName | undefined {
+  if (isNullish(gid)) return undefined;
+  if (!isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
   return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
 }
 // #endregion

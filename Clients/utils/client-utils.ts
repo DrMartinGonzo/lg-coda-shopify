@@ -15,7 +15,7 @@ export const getShopifyRequestHeaders = (context: coda.ExecutionContext) => {
   };
 };
 
-export const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContext) => {
+const getShopifyStorefrontRequestHeaders = (context: coda.ExecutionContext) => {
   return {
     'Content-Type': 'application/json',
     'Shopify-Storefront-Private-Token': getShopifyAccessToken(context),

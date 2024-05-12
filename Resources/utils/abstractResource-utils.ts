@@ -6,7 +6,7 @@ import { DEFAULT_CURRENCY_CODE } from '../../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES } from '../../constants';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { CurrencyCode } from '../../types/admin.types';
-import { isPrefixedMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../../utils/metafields-utils';
+import { isPrefixedMetaFieldKey } from '../../utils/metafields-utils';
 import { Shop } from '../Rest/Shop';
 
 // Same as Shop.activeCurrency but as a dependency free function
@@ -37,7 +37,6 @@ export function handleDeleteNotFound(name: string, identifier: number | string) 
 /**
  * Wether an update triggered by a 2-way sync table has metafields in it.
  */
-// TODO: combine with hasMetafieldsInRow
 export function hasMetafieldsInUpdate(
   update: coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>
 ) {
@@ -45,6 +44,5 @@ export function hasMetafieldsInUpdate(
 }
 
 export function hasMetafieldsInRow(row: BaseRow) {
-  const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(row));
-  return prefixedMetafieldFromKeys.length > 0;
+  return Object.keys(row).some((fromKey) => isPrefixedMetaFieldKey(fromKey));
 }

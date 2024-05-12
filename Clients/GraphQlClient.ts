@@ -19,7 +19,7 @@ import {
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { GRAPHQL_NODES_LIMIT } from '../constants';
 import { PageInfo } from '../types/admin.types';
-import { arrayUnique, logAdmin } from '../utils/helpers';
+import { arrayUnique, dumpToConsole, logAdmin } from '../utils/helpers';
 import { FetchRequestOptions } from './Client.types';
 import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-utils';
 
@@ -174,8 +174,8 @@ export class GraphQlClient {
         .join('\n')
     );
     // logAdmin(printGql(documentNode));
-    logAdmin(variables);
-    logAdmin(options);
+    dumpToConsole(variables);
+    dumpToConsole(options);
     logAdmin('—————————————————————————————————————————————');
     logAdmin('');
 

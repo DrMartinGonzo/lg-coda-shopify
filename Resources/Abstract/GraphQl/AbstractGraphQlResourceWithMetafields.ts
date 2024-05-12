@@ -25,6 +25,8 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
 
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
 
+  protected static SyncTableManager = SyncTableManagerGraphQlWithMetafields;
+
   /** Same code as in {@link AbstractRestResourceWithMetafields.getMetafieldDefinitions} */
   public static async getMetafieldDefinitions(context: coda.ExecutionContext): Promise<Array<MetafieldDefinition>> {
     if (this.metafieldDefinitions) return this.metafieldDefinitions;
@@ -40,42 +42,26 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
   /** Mostly the same code as {@link AbstractRestResourceWithMetafields.handleRowUpdate} */
   // TODO: deduplicate
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    if (hasMetafieldsInRow(newRow)) {
-      this.validateUpdateJob(prevRow, newRow);
-      const metafieldDefinitions = await this.getMetafieldDefinitions(context);
-      const metafields = await Metafield.createInstancesFromRow({
-        context,
-        row: newRow,
-        metafieldDefinitions,
-        ownerResource: this.metafieldRestOwnerType,
-      });
-
-      const instance: AbstractGraphQlResourceWithMetafields = new (this as any)({
-        context,
-        fromRow: { row: newRow, metafields },
-      });
-
-      await instance.saveAndUpdate();
-      return { ...prevRow, ...instance.formatToRow() };
+    if (!hasMetafieldsInRow(newRow)) {
+      return super.handleRowUpdate(prevRow, newRow, context);
     }
 
-    return super.handleRowUpdate(prevRow, newRow, context);
-  }
-
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ) {
-    const syncTableManager = new SyncTableManagerGraphQlWithMetafields({
+    this.validateUpdateJob(prevRow, newRow);
+    const metafieldDefinitions = await this.getMetafieldDefinitions(context);
+    const metafields = await Metafield.createInstancesFromRow({
       context,
-      schema: await this.getArraySchema({ codaSyncParams, context }),
-      codaSyncParams,
-      resource: this,
+      row: newRow,
+      metafieldDefinitions,
+      ownerResource: this.metafieldRestOwnerType,
     });
-    syncTableManager.setSyncFunction(
-      this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager })
-    );
-    return syncTableManager;
+
+    const instance: AbstractGraphQlResourceWithMetafields = new (this as any)({
+      context,
+      fromRow: { row: newRow, metafields },
+    });
+
+    await instance.saveAndUpdate();
+    return { ...prevRow, ...instance.formatToRow() };
   }
 
   /**====================================================================================================================

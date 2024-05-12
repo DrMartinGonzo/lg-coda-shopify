@@ -6,6 +6,7 @@ import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../ut
 
 import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
 import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
 import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import {
   CACHE_DEFAULT,
@@ -204,7 +205,7 @@ export class Metaobject extends AbstractGraphQlResource {
           })
         ).apiData?.type;
 
-      syncTableManager.extraContinuationData = {
+      syncTableManager.pendingExtraContinuationData = {
         type,
       };
 
@@ -353,6 +354,15 @@ export class Metaobject extends AbstractGraphQlResource {
     while (varargs.length > 0) {
       let key: string, value: string;
       [key, value, ...varargs] = varargs;
+      /**
+       * Check if the user used one the `Meta{…}` helper formulas
+       * If not, assume the user directly input the expected value and let Shopify GraphQL handle the possible error
+       */
+      try {
+        const maybeCodaMetafieldValue = CodaMetafieldValue.createFromCodaParameter(value);
+        value = maybeCodaMetafieldValue.value;
+      } catch (error) {}
+
       fields.push({
         key,
         // value should always be a string
@@ -454,8 +464,11 @@ export class Metaobject extends AbstractGraphQlResource {
     };
     const filteredInput = excludeUndefinedObjectKeys({
       ...input,
-      fields: excludeUndefinedObjectKeys(input.fields),
-    });
+      fields: input.fields.map((f) => excludeUndefinedObjectKeys(f)),
+    }) as MetaobjectUpdateInput;
+    if (!filteredInput.fields.length) {
+      delete filteredInput.fields;
+    }
 
     // If no input, we have nothing to update.
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
@@ -463,7 +476,7 @@ export class Metaobject extends AbstractGraphQlResource {
 
   protected formatToApi({ row, metaobjectFields = [] }: FromMetaobjectRow) {
     let apiData: Partial<typeof this.apiData> = {
-      id: row.id ? idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id) : undefined,
+      id: idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id),
       updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
       fields: metaobjectFields,
       type: row.type,

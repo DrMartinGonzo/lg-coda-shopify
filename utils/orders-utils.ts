@@ -34,6 +34,8 @@ function getRefundQuantity(item, refunds) {
 // #endregion
 
 // #region Formatting functions
+// TODO: fix `order: any` en `order: Order['apiData']`
+// pour ça il faudrait que l'on définisse correctement les types dans Order, sans les créer seulement à partir des Schemas définis pour Coda
 export const formatOrderForDocExport = (order) => {
   const discountApplications = order.discount_applications;
   const refunds = order.refunds;

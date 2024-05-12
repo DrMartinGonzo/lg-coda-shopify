@@ -221,31 +221,10 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     const updatedVariant = new Variant({ context, fromRow });
     await updatedVariant.saveAndUpdate();
 
-    // TODO: maybe incorporate the parent product fetching directly in Variant class ?
     if (updatedVariant) {
-      const product = await Product.find({
-        id: updatedVariant.apiData.product_id,
-        fields: ['images', 'handle', 'status', 'title'].join(','),
-        context,
-      });
-      updatedVariant.apiData.product_images = product.apiData.images;
-      updatedVariant.apiData.product_handle = product.apiData.handle;
-      updatedVariant.apiData.product_status = product.apiData.status;
-      updatedVariant.apiData.product_title = product.apiData.title;
-
+      await updatedVariant.refreshDataWithtParentProduct();
       return updatedVariant.formatToRow();
     }
-
-    // return updatedVariant.formatToRow();
-
-    // Add parent product info
-    // const productFetcher = new ProductRestFetcher(context);
-    // const productResponse = await productFetcher.fetch(variantRow.product?.id);
-    // if (productResponse?.body?.product) {
-    //   return variantFetcher.formatRowWithParent(variantRow, productResponse.body.product);
-    // }
-
-    // return variantRow;
   },
 });
 
@@ -262,24 +241,12 @@ export const Formula_ProductVariant = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: ProductVariantSyncTableSchema,
   execute: async ([productVariantId], context) => {
-    // TODO: maybe incorporate the parent product fetching directly in Variant class ?
     const variant = await Variant.find({ id: productVariantId, context });
     if (variant) {
-      const product = await Product.find({
-        id: variant.apiData.product_id,
-        fields: ['images', 'handle', 'status', 'title'].join(','),
-        context,
-      });
-      variant.apiData.product_images = product.apiData.images;
-      variant.apiData.product_handle = product.apiData.handle;
-      variant.apiData.product_status = product.apiData.status;
-      variant.apiData.product_title = product.apiData.title;
-
-      if (variant) {
-        return variant.formatToRow();
-      }
-      throw new NotFoundVisibleError(PACK_IDENTITIES.ProductVariant);
+      await variant.refreshDataWithtParentProduct();
+      return variant.formatToRow();
     }
+    throw new NotFoundVisibleError(PACK_IDENTITIES.ProductVariant);
   },
 });
 

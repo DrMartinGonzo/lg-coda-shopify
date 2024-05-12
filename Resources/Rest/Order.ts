@@ -270,6 +270,7 @@ export class Order extends AbstractRestResourceWithGraphQLMetafields {
       orderTags,
     ] = codaSyncParams;
 
+    // Add required fields needed for certain filters
     const fieldsArray = syncTableManager.getSyncedStandardFields(orderFieldDependencies);
     if (orderTags && orderTags.length) {
       fieldsArray.push('tags');

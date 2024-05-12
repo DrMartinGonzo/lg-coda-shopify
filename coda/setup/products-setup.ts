@@ -127,7 +127,6 @@ export const Action_CreateProduct = coda.makeFormula({
   },
 });
 
-// TODO: update image urls ?
 export const Action_UpdateProduct = coda.makeFormula({
   name: 'UpdateProduct',
   description: 'Update an existing Shopify product and return the updated data.',
@@ -144,6 +143,7 @@ export const Action_UpdateProduct = coda.makeFormula({
     { ...inputs.product.status, optional: true },
     { ...inputs.product.handle, optional: true },
     { ...inputs.product.templateSuffix, optional: true },
+    { ...inputs.product.imageUrls, optional: true },
     {
       ...inputs.general.metafields,
       optional: true,
@@ -156,7 +156,7 @@ export const Action_UpdateProduct = coda.makeFormula({
   // schema: coda.withIdentity(ProductSchemaRest, IdentitiesNew.product),
   schema: ProductSyncTableSchemaRest,
   execute: async function (
-    [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
+    [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, imageUrls, metafields],
     context
   ) {
     const fromRow: FromRow<ProductRow> = {
@@ -170,6 +170,7 @@ export const Action_UpdateProduct = coda.makeFormula({
         title,
         vendor,
         status,
+        images: imageUrls,
       },
       // prettier-ignore
       metafields: CodaMetafieldSet

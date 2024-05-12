@@ -55,21 +55,4 @@ export const Formula_Shop = coda.makeFormula({
     // }
   },
 });
-
-// TODO: maybe no longer needed, we can use Formula_Shop and get the property directly from it
-export const Formula_ShopField = coda.makeFormula({
-  name: 'ShopField',
-  description: 'Get a single shop field.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [filters.shop.shopField],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.String,
-  execute: async function ([field], context) {
-    const shop = await Shop.current({ context });
-    if (shop.apiData[field]) {
-      return shop.apiData[field];
-    }
-    throw new coda.UserVisibleError(`Unknown shop field: ${field}`);
-  },
-});
 // #endregion

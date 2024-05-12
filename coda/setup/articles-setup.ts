@@ -54,9 +54,7 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedAtRange, optional: true },
       { ...filters.general.handle, optional: true },
       { ...filters.general.publishedStatus, optional: true },
-      // Only supports filtering via a single tag natively
-      // TODO: retrieve all and filter after
-      { ...filters.general.tagsString, optional: true },
+      { ...filters.general.tagsArray, optional: true },
     ],
     execute: async (params, context) => Article.sync(params, context),
     maxUpdateBatchSize: 10,

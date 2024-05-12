@@ -9,7 +9,11 @@ import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition'
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { Asset } from '../Resources/Rest/Asset';
 import { Blog } from '../Resources/Rest/Blog';
-import { GraphQlResourceNames, RestResourceSingular } from '../Resources/types/SupportedResource';
+import {
+  GraphQlFileTypesNames,
+  GraphQlResourceNames,
+  RestResourceSingular,
+} from '../Resources/types/SupportedResource';
 import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import {
   CACHE_DEFAULT,
@@ -30,7 +34,6 @@ import {
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
-import { validShopFields } from '../schemas/syncTable/ShopSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
 import { idToGraphQlGid } from '../utils/conversion-utils';
 import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
@@ -669,8 +672,8 @@ const metafieldDefinitionInputs = {
 };
 // #endregion
 
-// #region MetafieldObject Inputs
-const metafieldObjectInputs = {
+// #region Metaobject Inputs
+const metaobjectInputs = {
   handle: {
     ...generalInputs.handle,
     description: 'The handle of the metaobject.',
@@ -686,6 +689,11 @@ const metafieldObjectInputs = {
     autocomplete: OPTIONS_METAOBJECT_STATUS,
     description: 'The status of the metaobject.',
   }),
+  varArgsPropValue: {
+    ...generalInputs.varArgsPropValue,
+    description:
+      'The property value. You can use one of the `Meta{…}` helper formulas or directly input the expected value.',
+  },
 };
 // #endregion
 
@@ -1006,6 +1014,18 @@ const draftOrderFilters = {
 };
 // #endregion
 
+// #region File Filters
+const fileFilters = {
+  fileType: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'fileType',
+    autocomplete: GraphQlFileTypesNames,
+    suggestedValue: GraphQlResourceNames.GenericFile,
+    description: 'The type of file.',
+  }),
+};
+// #endregion
+
 // #region Location Filters
 const locationFilters = {
   idOptionNameArray: coda.makeParameter({
@@ -1158,12 +1178,12 @@ const redirectFilters = {
 
 // #region Inputs: Shop
 const shopFilters = {
-  shopField: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'field',
-    autocomplete: validShopFields,
-    description: 'The Shop field to return',
-  }),
+  // shopField: coda.makeParameter({
+  //   type: coda.ParameterType.String,
+  //   name: 'field',
+  //   autocomplete: validShopFields,
+  //   description: 'The Shop field to return',
+  // }),
 };
 // #endregion
 /**====================================================================================================================
@@ -1183,7 +1203,7 @@ export const inputs = {
   location: locationInputs,
   metafield: metafieldInputs,
   metafieldDefinition: metafieldDefinitionInputs,
-  metafieldObject: metafieldObjectInputs,
+  metaobject: metaobjectInputs,
   order: orderInputs,
   page: pageInputs,
   product: productInputs,
@@ -1199,6 +1219,7 @@ export const filters = {
   collection: collectionFilters,
   customer: customerFilters,
   draftOrder: draftOrderFilters,
+  file: fileFilters,
   location: locationFilters,
   metafield: metafieldFilters,
   order: orderFilters,

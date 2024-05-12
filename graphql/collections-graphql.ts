@@ -114,36 +114,6 @@ export const collectionTypesQuery = graphql(
     }
   `
 );
-
-/*
-export const QueryCollectionsMetafieldsAdmin = /* GraphQL */ `
-  ${metafieldFieldsFragment}
-
-  query getCollectionsMetafields(
-    $limit: Int!
-    $cursor: String
-    $metafieldKeys: [String!]
-    $countMetafields: Int
-    $searchQuery: String
-  ) {
-    collections(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
-      nodes {
-        id
-
-        metafields(keys: $metafieldKeys, first: $countMetafields) {
-          nodes {
-            ...MetafieldFields
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-`;
-/*
 // #endregion
 
 // #region Mutations

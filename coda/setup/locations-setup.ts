@@ -142,9 +142,7 @@ export const Action_DeactivateLocation = coda.makeFormula({
       context,
       fromRow: { row: { id: locationID } },
     });
-    const destinationGid = destinationLocationID
-      ? idToGraphQlGid(GraphQlResourceNames.Location, destinationLocationID)
-      : undefined;
+    const destinationGid = idToGraphQlGid(GraphQlResourceNames.Location, destinationLocationID);
 
     await location.deActivate(destinationGid);
     return location.formatToRow();

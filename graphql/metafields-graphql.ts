@@ -4,7 +4,7 @@ import { TadaDocumentNode } from 'gql.tada';
 import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar } from '../utils/helpers';
-import { ResultOf, graphql } from '../utils/tada-utils';
+import { graphql } from '../utils/tada-utils';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #endregion
@@ -53,28 +53,17 @@ const resourceWithMetafieldsFragment = graphql(
   `
     fragment ResourceWithMetafields on Node {
       id
+      ... on ProductVariant {
+        parentOwner: product {
+          id
+        }
+      }
+      __typename
       ... on HasMetafields {
         metafields(keys: $metafieldKeys, first: $countMetafields) {
           nodes {
             ...MetafieldWithDefinitionFields
           }
-        }
-      }
-    }
-  `,
-  [metafieldFieldsFragmentWithDefinition]
-);
-
-const ProductVariantWithMetafieldsFragment = graphql(
-  `
-    fragment ProductVariantWithMetafields on ProductVariant {
-      id
-      parentOwner: product {
-        id
-      }
-      metafields(keys: $metafieldKeys, first: $countMetafields) {
-        nodes {
-          ...MetafieldWithDefinitionFields
         }
       }
     }
@@ -105,19 +94,11 @@ export const getNodesMetafieldsByKeyQuery = graphql(
   `
     query GetNodesMetafieldsByKey($ids: [ID!]!, $metafieldKeys: [String!], $countMetafields: Int) {
       nodes(ids: $ids) {
-        id
-        __typename
-        ... on HasMetafields {
-          metafields(keys: $metafieldKeys, first: $countMetafields) {
-            nodes {
-              ...MetafieldFields
-            }
-          }
-        }
+        ...ResourceWithMetafields
       }
     }
   `,
-  [metafieldFieldsFragment]
+  [resourceWithMetafieldsFragment]
 );
 
 /**
@@ -171,7 +152,7 @@ export const getShopMetafieldsByKeysQuery = graphql(
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
  */
-function makeResourceMetafieldsByKeysQuery<T extends string, K extends TadaDocumentNode>(graphQlOperation: T, lol?: K) {
+function makeResourceMetafieldsByKeysQuery<T extends string>(graphQlOperation: T) {
   const queryName = `Get${capitalizeFirstChar(graphQlOperation)}MetafieldsByKeys`;
   return graphql(
     `
@@ -195,64 +176,50 @@ function makeResourceMetafieldsByKeysQuery<T extends string, K extends TadaDocum
   );
 }
 
-const queryFileMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('files');
-const queryCollectionMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('collections');
-const queryCustomerMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('customers');
-const queryDraftOrderMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('draftOrders');
-const queryLocationMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('locations');
-const queryOrderMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('orders');
-const queryProductVariantMetafieldsByKeys = graphql(
-  `
-    query GetProductVariantsMetafieldsByKeys(
-      $metafieldKeys: [String!]
-      $countMetafields: Int!
-      $limit: Int!
-      $cursor: String
-    ) {
-      productVariants(first: $limit, after: $cursor) {
-        nodes {
-          ...ProductVariantWithMetafields
-        }
-        pageInfo {
-          ...PageInfoFields
-        }
-      }
-    }
-  `,
-  [ProductVariantWithMetafieldsFragment, pageInfoFragment]
-);
-const queryProductMetafieldsByKeys = makeResourceMetafieldsByKeysQuery('products');
-
 /**
  * Returns the appropriate GraphQL DocumentNode based on the given MetafieldOwnerType.
  *
  * @param {MetafieldOwnerType} metafieldOwnerType - The type of the metafield owner.
- * @return {TadaDocumentNode} The DocumentNode query corresponding to the owner type.
  * @throws {Error} If there is no matching DocumentNode for the given MetafieldOwnerType.
  */
-export function getResourceMetafieldsByKeysQueryFromOwnerType(metafieldOwnerType: MetafieldOwnerType) {
-  switch (metafieldOwnerType) {
-    case MetafieldOwnerType.Shop:
-      return getShopMetafieldsByKeysQuery;
-    case MetafieldOwnerType.Collection:
-      return queryCollectionMetafieldsByKeys;
-    case MetafieldOwnerType.Customer:
-      return queryCustomerMetafieldsByKeys;
-    case MetafieldOwnerType.Draftorder:
-      return queryDraftOrderMetafieldsByKeys;
-    case MetafieldOwnerType.Location:
-      return queryLocationMetafieldsByKeys;
-    case MetafieldOwnerType.MediaImage:
-      return queryFileMetafieldsByKeys;
-    case MetafieldOwnerType.Order:
-      return queryOrderMetafieldsByKeys;
-    case MetafieldOwnerType.Product:
-      return queryProductMetafieldsByKeys;
-    case MetafieldOwnerType.Productvariant:
-      return queryProductVariantMetafieldsByKeys;
+export function getResourceMetafieldsByKeysQueryFromOwnerType(
+  metafieldOwnerType: MetafieldOwnerType
+): TadaDocumentNode {
+  if (metafieldOwnerType === MetafieldOwnerType.Shop) {
+    return getShopMetafieldsByKeysQuery;
   }
 
-  throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
+  let graphQlOperation: string;
+  switch (metafieldOwnerType) {
+    case MetafieldOwnerType.Collection:
+      graphQlOperation = 'collections';
+      break;
+    case MetafieldOwnerType.Customer:
+      graphQlOperation = 'customers';
+      break;
+    case MetafieldOwnerType.Draftorder:
+      graphQlOperation = 'draftOrders';
+      break;
+    case MetafieldOwnerType.Location:
+      graphQlOperation = 'locations';
+      break;
+    case MetafieldOwnerType.MediaImage:
+      graphQlOperation = 'files';
+      break;
+    case MetafieldOwnerType.Order:
+      graphQlOperation = 'orders';
+      break;
+    case MetafieldOwnerType.Product:
+      graphQlOperation = 'products';
+      break;
+    case MetafieldOwnerType.Productvariant:
+      graphQlOperation = 'productVariants';
+      break;
+  }
+  if (graphQlOperation === undefined) {
+    throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
+  }
+  return makeResourceMetafieldsByKeysQuery(graphQlOperation);
 }
 // #endregion
 

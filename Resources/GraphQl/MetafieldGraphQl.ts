@@ -110,7 +110,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
   public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
   protected static readonly graphQlName = GraphQlResourceNames.Metafield;
 
-  protected static readonly defaultLimit: number = 50;
+  protected static readonly defaultLimit: number = 250;
   protected static readonly paths: Array<GraphQlResourcePath> = [
     'collections.metafields',
     'customers.metafields',
@@ -384,7 +384,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
       value: this.apiData.value,
       ownerId: this.apiData.parentNode?.id,
     };
-    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
+    const filteredInput = excludeUndefinedObjectKeys(input) as MetafieldsSetInput;
 
     // If no input, we have nothing to update.
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
@@ -406,38 +406,33 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
 
     let apiData: Partial<typeof this.apiData> = {
       __typename: 'Metafield',
-      id: row.id ? idToGraphQlGid(staticResource.graphQlName, row.id) : undefined,
+      id: idToGraphQlGid(staticResource.graphQlName, row.id),
       createdAt: row.created_at ? row.created_at.toString() : undefined,
       isDeletedFlag,
       key: metaKey,
       namespace: metaNamespace,
-      parentNode:
-        row.owner_id && ownerResourceName ? { id: idToGraphQlGid(ownerResourceName, row.owner_id) } : undefined,
+      parentNode: ownerResourceName ? { id: idToGraphQlGid(ownerResourceName, row.owner_id) } : undefined,
       ownerType: row.owner_type as MetafieldOwnerType,
       type: row.type,
       updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
       value: isNullishOrEmpty(row.rawValue) ? null : row.rawValue,
-    };
-
-    if (row.definition_id || row.definition) {
-      apiData.definition = {
+      definition: {
         id: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, row.definition_id || row.definition?.id),
-      };
-    }
+      },
+    };
 
     return apiData;
   }
 
-  public formatToRow(): MetafieldRow {
+  public formatToRow(includeHelperColumns = true): MetafieldRow {
     const { apiData: data } = this;
 
     const { DELETED_SUFFIX } = MetafieldHelper;
 
-    // const ownerId = graphQlGidToId(data.parentNode.id); // Should throw error if ownerId is missing
-    const ownerId = data.parentNode?.id ? graphQlGidToId(data.parentNode.id) : undefined;
-    const parentOwnerId = data.parentNode.parentOwner?.id ? graphQlGidToId(data.parentNode.parentOwner.id) : undefined;
+    const ownerId = graphQlGidToId(data.parentNode?.id);
+    const parentOwnerId = graphQlGidToId(data.parentNode?.parentOwner?.id);
 
-    let obj: MetafieldRow = {
+    let obj: Partial<MetafieldRow> = {
       label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.id,
       id: graphQlGidToId(data.id),
@@ -448,30 +443,29 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
       updated_at: data.updatedAt,
       created_at: data.createdAt,
       owner_type: data.ownerType,
-      owner_id: ownerId,
     };
 
     if (ownerId) {
+      obj.owner_id = ownerId;
       const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(data.ownerType as MetafieldOwnerType);
       if (formatOwnerReference) {
         obj.owner = formatOwnerReference(ownerId);
       }
 
       /**
-       * We don't set it at once because parentOwnerId can be necessary but
-       * undefined when formatting from a two way sync update (ex: ProductVariants).
+       * Only set the value if maybeAdminUrl is not undefined. Since ownerId is
+       * necessary (and parentOwnerId can be necessary for ProductVariants) but
+       * undefined when formatting from a two way sync update.
        * Since this value is static, we return nothing to prevent erasing the
        * previous value. We could also retrieve the owner ID value directly in the
        * graphQl mutation result but doing it this way reduce the GraphQL query costs.
        */
-      const maybeAdminUrl = MetafieldHelper.getMetafieldAdminUrl(
-        this.context.endpoint,
-        !!data.definition?.id,
-        matchOwnerTypeToOwnerResource(data.ownerType as MetafieldOwnerType),
-        ownerId,
-        parentOwnerId
-      );
-
+      const maybeAdminUrl = MetafieldHelper.getMetafieldAdminUrl(this.context, {
+        id: ownerId,
+        parentId: parentOwnerId,
+        singular: matchOwnerTypeToOwnerResource(data.ownerType as MetafieldOwnerType),
+        hasMetafieldDefinition: !!data.definition?.id,
+      });
       if (maybeAdminUrl) {
         obj.admin_url = maybeAdminUrl;
       }
@@ -483,12 +477,14 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
       obj.definition = formatMetafieldDefinitionReference(definitionId);
     }
 
-    const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
-    if (helperColumn) {
-      obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
+    if (includeHelperColumns) {
+      const helperColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === data.type);
+      if (helperColumn) {
+        obj[helperColumn.key] = formatMetaFieldValueForSchema({ value: data.value, type: data.type });
+      }
     }
 
-    return obj;
+    return obj as MetafieldRow;
   }
 
   public formatValueForOwnerRow() {

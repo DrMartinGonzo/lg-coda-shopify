@@ -12,10 +12,13 @@ import { SyncTableManagerGraphQl } from '../GraphQl/SyncTableManagerGraphQl';
 import { RawBatchData, RevivedBatchData, SyncTableMixedContinuation } from '../types/SyncTableManager.types';
 import { ExecuteRestSyncArgs, SyncTableManagerRestResult } from '../types/SyncTableManager.types';
 import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/syncTableManager-utils';
+import { SyncTableManagerRestWithMetafieldsType } from './SyncTableManagerRest';
 
 // #endregion
 
 export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRestResourceWithGraphQLMetafields> {
+  public pendingExtraContinuationData: any;
+
   private readonly context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */
   private readonly codaParams: coda.ParamValues<coda.ParamDefs>;
@@ -47,7 +50,11 @@ export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRes
   public async executeSync({
     defaultLimit,
   }: ExecuteRestSyncArgs): Promise<SyncTableManagerRestResult<SyncTableMixedContinuation, BaseT>> {
-    const ownerSyncTableManager = await this.resource.getSyncTableManager(this.context, this.codaParams);
+    const ownerSyncTableManager = (await this.resource.getSyncTableManager(
+      this.context,
+      this.codaParams
+    )) as SyncTableManagerRestWithMetafieldsType<AbstractRestResourceWithGraphQLMetafields>;
+
     ownerSyncTableManager.setSyncFunction(
       this.resource.makeSyncTableManagerSyncFunction({
         codaSyncParams: this.codaParams,
@@ -137,7 +144,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRes
   }
 
   private extractCurrentBatch(items: BaseT[]): RevivedBatchData<BaseT> {
-    const previousBatch = this.parseBatchData(this.prevContinuation?.batchData);
+    const previousBatch = this.parseBatchData(this.prevContinuation?.extraData?.batch);
 
     if (this.prevContinuation?.cursor) {
       logAdmin(`🔁 Fetching remaining graphQL results from current batch`);
@@ -192,9 +199,9 @@ export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRes
     if (unfinishedGraphQl || unfinishedRest) {
       metafieldsContinuation = {
         graphQlLock: 'true',
-        batchData: this.stringifyBatchData(currentBatch),
         extraData: {
-          // ...this.extraContinuationData,
+          ...(this.pendingExtraContinuationData ?? {}),
+          batch: this.stringifyBatchData(currentBatch),
         },
         skipNextRestSync: 'true',
         scheduledNextRestUrl: this.prevContinuation?.scheduledNextRestUrl ?? this.continuation?.nextUrl,

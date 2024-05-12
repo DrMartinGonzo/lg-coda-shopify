@@ -54,18 +54,6 @@ export const Sync_DraftOrders = coda.makeSyncTable({
 // #endregion
 
 // #region Actions
-// TODO: CreateDraftOrder
-// export const Action_CreateDraftOrder = coda.makeFormula({
-//   name: 'CreateDraftOrder',
-//   description: 'Create a new Shopify draft order and return its ID.',
-//   connectionRequirement: coda.ConnectionRequirement.Required,
-//   parameters: [inputs.draftOrder.id],
-//   isAction: true,
-//   resultType: coda.ValueType.Boolean,
-//   execute: async function ([draftOrderId], context) {},
-// });
-
-// TODO: UpdateDraftOrder
 export const Action_UpdateDraftOrder = coda.makeFormula({
   name: 'UpdateDraftOrder',
   description: 'Update a draft order and return the updated data.',

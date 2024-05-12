@@ -5,8 +5,7 @@ import toPascalCase from 'to-pascal-case';
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { AbstractRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractRestResourceWithMetafields';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
-import { MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
-import { METAFIELD_TYPES } from '../../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
 import { Article } from '../../Resources/Rest/Article';
@@ -14,7 +13,12 @@ import { Blog } from '../../Resources/Rest/Blog';
 import { Metafield } from '../../Resources/Rest/Metafield';
 import { Page } from '../../Resources/Rest/Page';
 import { Shop } from '../../Resources/Rest/Shop';
-import { GraphQlResourceName, GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import {
+  GraphQlFileTypes,
+  GraphQlFileTypesNames,
+  GraphQlResourceName,
+  GraphQlResourceNames,
+} from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
@@ -129,7 +133,6 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
       const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
 
       if (supportedSyncTable.syncWith === 'rest') {
-        // TODO: need helper function
         return Metafield.sync(params, context, matchOwnerTypeToOwnerResourceClass(metafieldOwnerType));
       } else {
         return MetafieldGraphQl.sync(params, context);
@@ -191,7 +194,7 @@ export const Action_SetMetafield = coda.makeFormula({
     });
 
     await metafieldInstance.saveAndUpdate();
-    return metafieldInstance.formatToRow() as any;
+    return metafieldInstance.formatToRow(false);
   },
 });
 
@@ -257,7 +260,7 @@ export const Action_SetMetafieldAltVersion = coda.makeFormula({
     });
 
     await metafieldInstance.saveAndUpdate();
-    return metafieldInstance.formatToRow() as any;
+    return metafieldInstance.formatToRow(false);
   },
 });
 
@@ -297,7 +300,7 @@ export const Formula_Metafield = coda.makeFormula({
     });
 
     if (metafield) {
-      return metafield.formatToRow() as any; //! keep typescript happy
+      return metafield.formatToRow(false);
     }
     throw new NotFoundVisibleError(PACK_IDENTITIES.Metafield);
   },
@@ -319,7 +322,6 @@ export const Formula_Metafields = coda.makeFormula({
   resultType: coda.ValueType.Array,
   items: MetafieldSyncTableSchema,
   execute: async function ([ownerType, owner_id], context) {
-    // TODO: maybe use graphql ? Notamment pour avoir parentOwnerId pour les variants
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     if (!isShopQuery && owner_id === undefined) {
       throw new RequiredParameterMissingVisibleError(
@@ -327,14 +329,30 @@ export const Formula_Metafields = coda.makeFormula({
       );
     }
 
-    const response = await Metafield.all({
-      owner_id,
-      owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
+    // —————— Using Rest
+    // const response = await Metafield.all({
+    //   owner_id,
+    //   owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
+    //   context,
+    //   options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
+    // });
+
+    // —————— Using GraphQL
+    const baseParams = {
       context,
       options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
-    });
+    };
+    const response = isShopQuery
+      ? await MetafieldGraphQl.all({
+          ...baseParams,
+          ownerType: ownerType as MetafieldOwnerType,
+        })
+      : await MetafieldGraphQl.all({
+          ...baseParams,
+          ownerIds: [idToGraphQlGid(matchOwnerTypeToResourceName(ownerType as MetafieldOwnerType), owner_id)],
+        });
 
-    return response.data.map((m) => m.formatToRow()) as any[]; //! keep typescript happy
+    return response.data.map((m) => m.formatToRow(false));
   },
 });
 // #endregion
@@ -358,6 +376,16 @@ export const Formula_FormatMetafield = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+});
+
+export const Formula_FormatMetafieldNew = coda.makeFormula({
+  name: 'FormatMetafieldNew',
+  description: 'Helper function to format value for a non `list` metafield.',
+  parameters: [inputs.metafield.ownerType, inputs.metafield.fullKeyAutocomplete, inputs.metafield.value],
+  resultType: coda.ValueType.String,
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  execute: async ([ownerType, fullKey, value]) =>
+    CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatListMetafield = coda.makeFormula({
@@ -425,10 +453,28 @@ export const Formula_MetaDimension = coda.makeFormula({
     new CodaMetafieldValue({ type: METAFIELD_TYPES.dimension, value: { value, unit } }).toJSON(),
 });
 
-// TODO: support all file types, we need a function MetafieldFileImageValue, MetafieldFileVideoValue etc ?
-// export const Formula_MetaFileReference = makeMetafieldReferenceValueFormulaDefinition(
-//   FIELD_TYPES.file_reference
-// );
+export const Formula_MetaFileReference = coda.makeFormula({
+  name: `MetaFileReference`,
+  description: `Helper function to build a \`file_reference\` metafield value.`,
+  parameters: [
+    {
+      ...inputs.metafield.referenceId,
+      description: `The ID of the referenced file.`,
+    },
+    filters.file.fileType,
+  ],
+  resultType: coda.ValueType.String,
+  connectionRequirement: coda.ConnectionRequirement.None,
+  execute: async ([value, fileType]) => {
+    if (!GraphQlFileTypesNames.includes(fileType as GraphQlFileTypes)) {
+      throw new Error(`Unknown file type: ${fileType}`);
+    }
+    return new CodaMetafieldValue({
+      type: METAFIELD_TYPES.file_reference,
+      value: idToGraphQlGid(fileType as GraphQlFileTypes, value),
+    }).toJSON();
+  },
+});
 
 export const Formula_MetaJson = coda.makeFormula({
   name: 'MetaJson',
@@ -443,7 +489,6 @@ export const Formula_MetaMetaobjectReference = makeMetafieldReferenceValueFormul
   METAFIELD_TYPES.metaobject_reference
 );
 
-// TODO: need to test this
 export const Formula_MetaMixedReference = makeMetafieldReferenceValueFormulaDefinition(METAFIELD_TYPES.mixed_reference);
 
 export const Formula_MetaMoney = coda.makeFormula({

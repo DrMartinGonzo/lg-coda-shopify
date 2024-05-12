@@ -30,20 +30,12 @@ export class SyncTableManagerRest<BaseT extends AbstractRestResource> extends Ab
 
       const response = await this.syncFunction({ nextPageQuery, limit: defaultLimit });
 
-      // TODO: Don't set continuation if there's no next page, except for smart collections
-      /** Always set continuation if extraContinuationData is set */
-      if (this.extraContinuationData) {
-        this.continuation = {
-          skipNextRestSync: 'false',
-          extraData: this.extraContinuationData,
-        };
-      }
       /** Set continuation if a next page exists */
       if (response?.pageInfo?.nextPage?.query) {
         this.continuation = {
           nextQuery: stringifyContinuationProperty(response.pageInfo.nextPage.query),
           skipNextRestSync: 'false',
-          extraData: this.extraContinuationData ?? {},
+          extraData: this.pendingExtraContinuationData ?? {},
         };
       }
 
@@ -77,7 +69,9 @@ SyncTableManagerRestWithMetafields.prototype.getSyncedStandardFields = function 
   }
 };
 
-export type SyncTableManagerRestWithMetafieldsType<ResourceConstructorT extends AbstractRestResourceWithMetafields> =
-  Omit<InstanceType<typeof SyncTableManagerRestWithMetafields>, 'resource'> & {
-    readonly resource: (new () => ResourceConstructorT) & typeof AbstractRestResourceWithMetafields;
-  };
+export type SyncTableManagerRestWithMetafieldsType<ResourceT extends AbstractRestResourceWithMetafields> = Omit<
+  InstanceType<typeof SyncTableManagerRestWithMetafields>,
+  'resource'
+> & {
+  readonly resource: (new () => ResourceT) & typeof AbstractRestResourceWithMetafields;
+};

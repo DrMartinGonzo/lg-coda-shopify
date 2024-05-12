@@ -39,9 +39,9 @@ export interface ISyncTableManager {
   prevContinuation: coda.Continuation;
   /** The continuation from the current sync. This will become prevContinuation in the next sync */
   continuation: coda.Continuation;
-  extraContinuationData: any;
+  pendingExtraContinuationData: any;
 
-  /** Execute the sync */
+  setSyncFunction(syncFunction: CallableFunction): void;
   executeSync(params: any): Promise<SyncTableManagerResult<typeof this.continuation, FindAllResponseBase<any>>>;
 }
 
@@ -86,7 +86,7 @@ export type RevivedBatchData<BaseT extends AbstractResource = AbstractResource> 
   remaining: BaseT[];
 };
 
-type SyncTableGraphQlExtraContinuationData = {
+type SyncTableExtraContinuationData = {
   [key: string]: any;
 };
 
@@ -95,23 +95,21 @@ export interface SyncTableRestContinuation extends coda.Continuation {
   nextQuery?: Stringified<SearchParams>;
   scheduledNextRestUrl?: string;
   skipNextRestSync: string;
-  extraData: {
-    [key: string]: any;
-  };
+  extraData: SyncTableExtraContinuationData;
 }
 
 export interface SyncTableGraphQlContinuation extends coda.Continuation {
   cursor?: string;
   graphQlLock: string;
-
   lastCost?: Stringified<ShopifyGraphQlRequestCost>;
   lastLimit?: number;
-
-  extraData: SyncTableGraphQlExtraContinuationData;
+  extraData: SyncTableExtraContinuationData;
 }
 
 export interface SyncTableMixedContinuation extends SyncTableRestContinuation, SyncTableGraphQlContinuation {
-  batchData?: Stringified<RawBatchData>;
+  extraData: SyncTableExtraContinuationData & {
+    batch?: Stringified<RawBatchData>;
+  };
 }
 // #endregion
 

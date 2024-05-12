@@ -10,7 +10,7 @@ export const ArticleSyncTableSchema = coda.makeObjectSchema({
     id: PROPS.makeRequiredIdNumberProp('article'),
     graphql_gid: PROPS.makeGraphQlGidProp('article'),
     admin_url: PROPS.makeAdminUrlProp('article'),
-    // TODO: Pas possible sans faire de requête supplémentaire pour récupérer le handle du blog à partir de blog_id
+    // Pas possible sans faire de requête supplémentaire pour récupérer le handle du blog à partir de blog_id
     // store_url: {
     //   ...PROPS.LINK,
     //   fixedId: 'store_url',

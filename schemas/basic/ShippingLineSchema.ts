@@ -66,7 +66,6 @@ export const ShippingLineSchema = coda.makeObjectSchema({
         'A reference to the carrier service that provided the rate. Present when the rate was computed by a third-party carrier service.',
     },
     requested_fulfillment_service_id: {
-      // TODO: string or number ?
       type: coda.ValueType.String,
       fixedId: 'requested_fulfillment_service_id',
       fromKey: 'requested_fulfillment_service_id',

@@ -69,6 +69,8 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
   /** These paths should not includes nodes or edges keys, except for the root one */
   protected static readonly paths: Array<GraphQlResourcePath> = [];
 
+  protected static SyncTableManager = SyncTableManagerGraphQl;
+
   protected static async request<NodeT extends TadaDocumentNode = TadaDocumentNode>({
     context,
     ...requestArgs
@@ -143,21 +145,6 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     params: MakeSyncFunctionArgs<any, any>
   ): SyncGraphQlFunction<AbstractGraphQlResource> {
     return ({ cursor = null, limit }) => this.all({ cursor, limit, ...params });
-  }
-
-  /**
-   * Get the appropriate SyncTableManager for this resource
-   */
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerGraphQl<AbstractGraphQlResource>> {
-    return new SyncTableManagerGraphQl<AbstractGraphQlResource>({
-      context,
-      schema: await this.getArraySchema({ codaSyncParams, context }),
-      codaSyncParams,
-      resource: this,
-    });
   }
 
   protected static extractDataFromAllPossiblePaths<NodeT extends TadaDocumentNode>(

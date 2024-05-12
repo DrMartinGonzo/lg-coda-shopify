@@ -56,11 +56,11 @@ export const Action_CreateMetaObject = coda.makeFormula({
       autocomplete: autocompleteMetaobjectType,
     }),
     {
-      ...inputs.metafieldObject.handle,
+      ...inputs.metaobject.handle,
       optional: true,
     },
     {
-      ...inputs.metafieldObject.status,
+      ...inputs.metaobject.status,
       description:
         'The status of the metaobject. Only useful if the metaobject has publishable capabilities. Defaults to DRAFT',
       optional: true,
@@ -73,7 +73,7 @@ export const Action_CreateMetaObject = coda.makeFormula({
       description: 'The metaobject property to update (metaobject type must be provided for autocomplete to work).',
       autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectType,
     }),
-    inputs.general.varArgsPropValue,
+    inputs.metaobject.varArgsPropValue,
   ],
   isAction: true,
   resultType: coda.ValueType.Number,
@@ -94,20 +94,19 @@ export const Action_CreateMetaObject = coda.makeFormula({
   },
 });
 
-// TODO: We will need multiple InputFormat formulas to help format values for the user
 export const Action_UpdateMetaObject = coda.makeFormula({
   name: 'UpdateMetaObject',
   description: 'Update an existing metaobject and return the updated data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
-    inputs.metafieldObject.id,
+    inputs.metaobject.id,
     {
-      ...inputs.metafieldObject.handle,
+      ...inputs.metaobject.handle,
       description: 'The new handle of the metaobject. A blank value will leave the handle unchanged.',
       optional: true,
     },
     {
-      ...inputs.metafieldObject.status,
+      ...inputs.metaobject.status,
       description: 'The new status of the metaobject. Only useful if the metaobject has publishable capabilities.',
       optional: true,
     },
@@ -120,7 +119,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
         'The metaobject property to update (ID of the metaobject must be provided for autocomplete to work).',
       autocomplete: autocompleteMetaobjectFieldkeyFromMetaobjectId,
     }),
-    inputs.general.varArgsPropValue,
+    inputs.metaobject.varArgsPropValue,
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
@@ -146,7 +145,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
 
 export const Action_DeleteMetaObject = makeDeleteGraphQlResourceAction(
   Metaobject,
-  inputs.metafieldObject.id,
+  inputs.metaobject.id,
   ({ context, id }) => Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Metaobject, id) })
 );
 // #endregion

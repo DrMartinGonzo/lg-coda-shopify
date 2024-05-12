@@ -60,13 +60,6 @@ export class MetafieldHelper {
     }
 
     if (supportDefinition) {
-      augmentedSchema.properties['definition_id'] = {
-        ...PROPS.ID_NUMBER,
-        fixedId: 'definition_id',
-        fromKey: 'definition_id',
-        description: 'The ID of the metafield definition of the metafield, if it exists.',
-      };
-
       augmentedSchema.properties['definition'] = {
         ...getMetafieldDefinitionReferenceSchema(metafieldOwnerType),
         fromKey: 'definition',
@@ -126,12 +119,15 @@ export class MetafieldHelper {
   }
 
   public static getMetafieldAdminUrl(
-    endpoint: string,
-    hasMetafieldDefinition: boolean,
-    singular: SupportedMetafieldOwnerResource,
-    owner_id: number,
-    parentOwnerId?: number
+    context: coda.ExecutionContext,
+    owner: {
+      hasMetafieldDefinition: boolean;
+      singular: SupportedMetafieldOwnerResource;
+      id: number;
+      parentId?: number;
+    }
   ): string | undefined {
+    const { hasMetafieldDefinition, singular, id: owner_id, parentId: parentOwnerId } = owner;
     const plural = singularToPlural(singular);
 
     if (owner_id === undefined) return undefined;
@@ -145,7 +141,7 @@ export class MetafieldHelper {
       pathPart = `settings/${plural}/${owner_id}`;
     }
 
-    let admin_url = `${endpoint}/admin/${pathPart}/metafields`;
+    let admin_url = `${context.endpoint}/admin/${pathPart}/metafields`;
     if (!hasMetafieldDefinition) {
       admin_url += `/unstructured`;
     }

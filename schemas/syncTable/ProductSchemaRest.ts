@@ -39,6 +39,7 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       },
       fixedId: 'images',
       fromKey: 'images',
+      mutable: true,
       description: 'A list of product image urls.',
     },
     featuredImage: {

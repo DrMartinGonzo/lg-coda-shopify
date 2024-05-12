@@ -260,7 +260,7 @@ export class Location extends AbstractGraphQlResourceWithMetafields {
       },
       fulfillsOnlineOrders: row.fulfills_online_orders,
       hasActiveInventory: row.has_active_inventory,
-      id: row.id ? idToGraphQlGid(GraphQlResourceNames.Location, row.id) : undefined,
+      id: idToGraphQlGid(GraphQlResourceNames.Location, row.id),
       isActive: row.active,
       fulfillmentService: {
         handle: row.fulfillment_service,

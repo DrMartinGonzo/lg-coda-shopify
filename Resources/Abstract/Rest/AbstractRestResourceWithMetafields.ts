@@ -1,7 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { SyncTableManagerRestWithMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRest';
+import {
+  SyncTableManagerRestWithMetafields,
+  SyncTableManagerRestWithMetafieldsType,
+} from '../../../SyncTableManager/Rest/SyncTableManagerRest';
 import { SyncTableManagerRestWithGraphQlMetafields } from '../../../SyncTableManager/Rest/SyncTableManagerRestWithGraphQlMetafields';
 import { SyncTableSyncResult, SyncTableUpdateResult } from '../../../SyncTableManager/types/SyncTableManager.types';
 import { BaseRow } from '../../../schemas/CodaRows.types';
@@ -28,10 +31,11 @@ export interface RestApiDataWithMetafields extends RestApiData {
 
 export abstract class AbstractRestResourceWithMetafields extends AbstractRestResource {
   public apiData: RestApiDataWithMetafields;
-
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
   public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
+
   protected static metafieldDefinitions: Array<MetafieldDefinition>;
+  protected static SyncTableManager = SyncTableManagerRestWithMetafields;
 
   /** Same code as in {@link AbstractGraphQlResourceWithMetafields.getMetafieldDefinitions} */
   // TODO: deduplicate
@@ -47,38 +51,26 @@ export abstract class AbstractRestResourceWithMetafields extends AbstractRestRes
     return this.metafieldDefinitions;
   }
 
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ) {
-    return new SyncTableManagerRestWithMetafields({
-      context,
-      schema: await this.getArraySchema({ codaSyncParams, context }),
-      codaSyncParams,
-      resource: this,
-    });
-  }
-
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    if (hasMetafieldsInRow(newRow)) {
-      this.validateUpdateJob(prevRow, newRow);
-      const metafieldDefinitions = await this.getMetafieldDefinitions(context);
-      const metafields = await Metafield.createInstancesFromRow({
-        context,
-        row: newRow,
-        metafieldDefinitions,
-        ownerResource: this.metafieldRestOwnerType,
-      });
-      const instance: AbstractRestResourceWithMetafields = new (this as any)({
-        context,
-        fromRow: { row: newRow, metafields },
-      });
-
-      await instance.saveAndUpdate();
-      return { ...prevRow, ...instance.formatToRow() };
+    if (!hasMetafieldsInRow(newRow)) {
+      return super.handleRowUpdate(prevRow, newRow, context);
     }
 
-    return super.handleRowUpdate(prevRow, newRow, context);
+    this.validateUpdateJob(prevRow, newRow);
+    const metafieldDefinitions = await this.getMetafieldDefinitions(context);
+    const metafields = await Metafield.createInstancesFromRow({
+      context,
+      row: newRow,
+      metafieldDefinitions,
+      ownerResource: this.metafieldRestOwnerType,
+    });
+    const instance: AbstractRestResourceWithMetafields = new (this as any)({
+      context,
+      fromRow: { row: newRow, metafields },
+    });
+
+    await instance.saveAndUpdate();
+    return { ...prevRow, ...instance.formatToRow() };
   }
 
   public static async syncUpdate(
@@ -135,13 +127,18 @@ export abstract class AbstractRestResourceWithRestMetafields extends AbstractRes
     codaSyncParams: coda.ParamValues<coda.ParamDefs>,
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
-    const ownerSyncTableManager = await this.getSyncTableManager(context, codaSyncParams);
+    const ownerSyncTableManager = (await this.getSyncTableManager(
+      context,
+      codaSyncParams
+    )) as SyncTableManagerRestWithMetafieldsType<AbstractRestResourceWithRestMetafields>;
     ownerSyncTableManager.setSyncFunction(
       this.makeSyncTableManagerSyncFunction({ codaSyncParams, context, syncTableManager: ownerSyncTableManager })
     );
 
     /** Sync owner resource with a fixed low limit to avoid timeout due to the many Rest request for Metafields */
-    const ownerSyncTableResult = await ownerSyncTableManager.executeSync({ defaultLimit: 30 });
+    const ownerSyncTableResult = await ownerSyncTableManager.executeSync({
+      defaultLimit: ownerSyncTableManager.shouldSyncMetafields ? 30 : this.defaultLimit,
+    });
 
     if (ownerSyncTableManager.shouldSyncMetafields) {
       await Promise.all(
@@ -168,12 +165,13 @@ export abstract class AbstractRestResourceWithGraphQLMetafields extends Abstract
     codaSyncParams: coda.ParamValues<coda.ParamDefs>,
     context: coda.SyncExecutionContext
   ): Promise<SyncTableSyncResult> {
-    const dualSyncTableManager = new SyncTableManagerRestWithGraphQlMetafields({
+    const syncTableManager = new SyncTableManagerRestWithGraphQlMetafields({
       context,
       codaSyncParams,
       resource: this,
     });
-    const { response, continuation } = await dualSyncTableManager.executeSync({ defaultLimit: this.defaultLimit });
+
+    const { response, continuation } = await syncTableManager.executeSync({ defaultLimit: this.defaultLimit });
     return {
       result: response.data.map((data) => data.formatToRow()),
       continuation,

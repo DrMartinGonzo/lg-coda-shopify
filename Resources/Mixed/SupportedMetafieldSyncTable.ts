@@ -2,8 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { UnsupportedValueError } from '../../Errors/Errors';
-import { SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
-import { RestResourcesSingular } from '../types/SupportedResource';
 import { ArticleReference, formatArticleReference } from '../../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { CollectionReference, formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
@@ -14,7 +12,10 @@ import { OrderReference, formatOrderReference } from '../../schemas/syncTable/Or
 import { PageReference, formatPageReference } from '../../schemas/syncTable/PageSchema';
 import { ProductReference, formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantReference, formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
+import { ShopReference, formatShopReference } from '../../schemas/syncTable/ShopSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
+import { RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 
@@ -114,8 +115,8 @@ export class SupportedMetafieldSyncTable {
       case MetafieldOwnerType.Shop:
         this.display = 'Shop';
         this.singular = RestResourcesSingular.Shop;
-        // this.ownerReference = ShopReference;
-        // this.formatOwnerReference = formatShopReference;
+        this.ownerReference = ShopReference;
+        this.formatOwnerReference = formatShopReference;
         this.syncWith = 'rest';
         this.supportDefinition = false;
         break;

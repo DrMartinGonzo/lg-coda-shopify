@@ -65,6 +65,8 @@ export abstract class AbstractRestResource extends AbstractResource {
   protected static readonly resourceNames: ResourceNames[] = [];
   protected static readonly paths: ResourcePath[] = [];
 
+  protected static SyncTableManager = SyncTableManagerRest;
+
   protected static getPath({ http_method, operation, urlIds, entity }: GetPathArgs): string {
     let match: string | null = null;
     let specificity = -1;
@@ -291,21 +293,6 @@ export abstract class AbstractRestResource extends AbstractResource {
     }
 
     return items;
-  }
-
-  /**
-   * Get the appropriate SyncTableManager for this resource
-   */
-  public static async getSyncTableManager(
-    context: coda.SyncExecutionContext,
-    codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<SyncTableManagerRest<AbstractRestResource>> {
-    return new SyncTableManagerRest<AbstractRestResource>({
-      context,
-      schema: await this.getArraySchema({ codaSyncParams, context }),
-      codaSyncParams,
-      resource: this,
-    });
   }
 
   /**

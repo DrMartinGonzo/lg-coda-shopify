@@ -121,4 +121,12 @@ export const GraphQlResourceNames = {
   Shop: 'Shop',
   Video: 'Video',
 } as const satisfies Partial<Record<SupportedResource, string>> & Record<string, string>;
+
+export type GraphQlFileTypes = 'GenericFile' | 'MediaImage' | 'Video';
+export const GraphQlFileTypesNames: GraphQlFileTypes[] = [
+  GraphQlResourceNames.GenericFile,
+  GraphQlResourceNames.MediaImage,
+  GraphQlResourceNames.Video,
+];
+
 export type GraphQlResourceName = (typeof GraphQlResourceNames)[keyof typeof GraphQlResourceNames];

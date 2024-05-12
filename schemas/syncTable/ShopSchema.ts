@@ -269,12 +269,12 @@ export const ShopSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, PACK_IDENTITIES.Shop);
+export const ShopReference = coda.makeReferenceSchemaFromObjectSchema(ShopSyncTableSchema, PACK_IDENTITIES.Shop);
 export const formatShopReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
   id,
   name,
 });
 
-export const validShopFields = Object.keys(ShopSyncTableSchema.properties)
-  .map((key) => ShopSyncTableSchema.properties[key].fromKey)
-  .filter(Boolean);
+// export const validShopFields = Object.keys(ShopSyncTableSchema.properties)
+//   .map((key) => ShopSyncTableSchema.properties[key].fromKey)
+//   .filter(Boolean);

@@ -122,15 +122,6 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> exte
 
     const response = await this.syncFunction({ limit, cursor: this.prevContinuation?.cursor });
 
-    // /** Always set continuation if extraContinuationData is set */
-    // if (this.extraContinuationData) {
-    //   this.continuation = {
-    //     graphQlLock: 'true',
-    //     retries: 0,
-    //     extraData: this.extraContinuationData,
-    //   };
-    // }
-
     const { pageInfo, cost } = response;
     const hasNextRun = pageInfo && pageInfo.hasNextPage;
 
@@ -138,7 +129,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> exte
     if (hasNextRun) {
       this.continuation = {
         graphQlLock: 'true',
-        extraData: this.extraContinuationData,
+        extraData: this.pendingExtraContinuationData ?? {},
       };
 
       if (pageInfo && pageInfo.hasNextPage) {

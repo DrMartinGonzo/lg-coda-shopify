@@ -3,8 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 import { Body } from '@shopify/shopify-api';
-import { AbstractSyncTableManager } from '../../SyncTableManager/Abstract/AbstractSyncTableManager';
-import { SyncTableSyncResult, SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  ISyncTableManager,
+  ISyncTableManagerConstructorArgs,
+  SyncTableSyncResult,
+  SyncTableUpdateResult,
+} from '../../SyncTableManager/types/SyncTableManager.types';
 import { Identity } from '../../constants';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../../utils/coda-utils';
@@ -41,6 +45,7 @@ export abstract class AbstractResource {
   /** The effective schema for the sync. Can be an augmented schema with metafields */
   protected static _schemaCache: coda.ArraySchema<coda.ObjectSchema<string, string>>;
   protected context: coda.ExecutionContext;
+  protected static SyncTableManager: new (params: ISyncTableManagerConstructorArgs) => ISyncTableManager;
 
   /**
    * Get the static Coda schema for the resource
@@ -78,34 +83,41 @@ export abstract class AbstractResource {
    * est on la force en `null`
    */
   protected cleanRawData(data: any): any {
-    const ret = {};
-
     // Ce sont surtout les instances de Metafields qui sont concernées par ça pour l'instant
     if (data instanceof AbstractResource) return data;
 
-    for (let key in data) {
-      if (data[key] !== undefined) {
-        if (Array.isArray(data[key])) {
-          ret[key] = data[key].map((d) => this.cleanRawData(d));
-        } else if (typeof data[key] === 'object') {
-          const cleanedObject = this.cleanRawData(data[key]);
-          if (Object.keys(cleanedObject).length) {
-            ret[key] = cleanedObject;
+    if (typeof data !== 'object') {
+      if (isDefinedEmpty(data)) {
+        return null;
+      } else {
+        return data;
+      }
+    } else {
+      const ret = {};
+      for (let key in data) {
+        if (data[key] !== undefined) {
+          if (Array.isArray(data[key])) {
+            ret[key] = data[key].map((d) => this.cleanRawData(d));
+          } else if (typeof data[key] === 'object') {
+            const cleanedObject = this.cleanRawData(data[key]);
+            if (Object.keys(cleanedObject).length) {
+              ret[key] = cleanedObject;
+            }
+          }
+          //
+          /**
+           * Apparemment Coda renvoie une string et pas un nombre lors d'une update,
+           * du coup certaines valeurs peuvent être égales à ''. Dans ce cas on les force comme null
+           */
+          else if (isDefinedEmpty(data[key])) {
+            ret[key] = null;
+          } else {
+            ret[key] = data[key];
           }
         }
-        //
-        /**
-         * Apparemment Coda renvoie une string et pas un nombre lors d'une update,
-         * du coup certaines valeurs peuvent être égales à ''. Dans ce cas on les force comme null
-         */
-        else if (isDefinedEmpty(data[key])) {
-          ret[key] = null;
-        } else {
-          ret[key] = data[key];
-        }
       }
+      return ret;
     }
-    return ret;
   }
 
   protected static validateParams(params: any): boolean {
@@ -131,8 +143,13 @@ export abstract class AbstractResource {
   public static async getSyncTableManager(
     context: coda.SyncExecutionContext,
     codaSyncParams: coda.ParamValues<coda.ParamDefs>
-  ): Promise<AbstractSyncTableManager<any, coda.Continuation, any>> {
-    return;
+  ): Promise<ISyncTableManager> {
+    return new this.SyncTableManager({
+      context,
+      schema: await this.getArraySchema({ codaSyncParams, context }),
+      codaSyncParams,
+      resource: this,
+    });
   }
 
   public static async sync(

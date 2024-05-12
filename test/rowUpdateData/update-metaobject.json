@@ -3,13 +3,19 @@
     "previousValue": {
       "id": 49386356992,
       "handle": "test",
-      "color": "#c44646"
+      "color": "#c44646",
+      "product_variant_reference": {
+        "id": "gid://shopify/ProductVariant/44365639516416"
+      }
     },
     "newValue": {
       "id": 49386356992,
       "handle": "test3",
-      "color": "#cccccc"
+      "color": "#cccccc",
+      "product_variant_reference": {
+        "id": "gid://shopify/ProductVariant/44365639516416"
+      }
     },
-    "updatedFields": ["handle", "color"]
+    "updatedFields": ["handle", "product_variant_reference"]
   }
 ]

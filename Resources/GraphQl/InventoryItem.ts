@@ -204,7 +204,7 @@ export class InventoryItem extends AbstractGraphQlResource {
 
   protected formatToApi({ row }: FromRow<InventoryItemRow>) {
     let apiData: Partial<typeof this.apiData> = {
-      id: row.id !== undefined ? idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id) : undefined,
+      id: idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id),
       createdAt: row.created_at,
       inventoryHistoryUrl: row.inventory_history_url,
       requiresShipping: row.requires_shipping,
@@ -218,10 +218,7 @@ export class InventoryItem extends AbstractGraphQlResource {
         amount: row.cost,
         currencyCode: undefined,
       },
-      variant:
-        row.variant_id !== undefined
-          ? { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) }
-          : undefined,
+      variant: { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) },
     };
 
     return apiData;
