@@ -280,7 +280,7 @@ pack.formulas.push(Action_UpdateRedirect);
 pack.formulas.push(Action_DeleteRedirect);
 
 if (IS_ADMIN_RELEASE) {
-  pack.formulas.push(Action_SALUT);
+  // pack.formulas.push(Action_SALUT);
 }
 // #endregion
 

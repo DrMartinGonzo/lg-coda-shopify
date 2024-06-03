@@ -1,4 +1,5 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
 
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
@@ -43,7 +44,7 @@ import {
   RestApiDataWithMetafields,
 } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
 import { IMetafield } from '../Mixed/MetafieldHelper';
-import { BaseContext, CulNew, FromRow, TypeFromCodaSchemaProps } from '../types/Resource.types';
+import { BaseContext, FromRow, TypeFromCodaSchemaProps } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { CustomerCodaData } from './Customer';
 import { SupportedMetafieldOwnerResource } from './Metafield';

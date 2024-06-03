@@ -4402,8 +4402,8 @@ function-bind@^1.1.2:
   integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
 
 "gas-coda-export-bills@github:DrMartinGonzo/gas-coda-export-bills.git#^0.2.0":
-  version "0.2.7"
-  resolved "git+ssh://git@github.com/DrMartinGonzo/gas-coda-export-bills.git#62c98b0c2b7e5501647d22be9ff353e4e6cc4eca"
+  version "0.2.9"
+  resolved "git+ssh://git@github.com/DrMartinGonzo/gas-coda-export-bills.git#27f0c27bab53e05118d4aa4956dc61c978d2944b"
 
 gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
