@@ -1,8 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
+import deepmerge from 'deepmerge';
 
 import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
-import { Body } from '@shopify/shopify-api';
+import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import {
   ISyncTableManager,
   ISyncTableManagerConstructorArgs,
@@ -168,15 +169,28 @@ export abstract class AbstractResource {
     };
   }
 
-  public static getRequiredPropertiesForUpdate(schema: coda.ArraySchema<coda.ObjectSchema<string, string>>) {
+  public static getRequiredPropertiesForUpdate(
+    schema: coda.ArraySchema<coda.ObjectSchema<string, string>>,
+    updateFields: string[] = []
+  ) {
     // Always include the id property
     return [schema.items.idProperty].filter(Boolean).map((key) => getObjectSchemaEffectiveKey(schema, key));
   }
 
   protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
-    this.validateUpdateJob(prevRow, newRow);
+    const instance = await this.createInstanceForUpdate(prevRow, newRow, context);
+    try {
+      this.validateUpdateJob(prevRow, newRow);
+    } catch (error) {
+      if (error instanceof RequiredSyncTableMissingVisibleError) {
+        /** Try to augment with fresh data and check again if it passes validation */
+        await instance.addMissingData();
+        this.validateUpdateJob(prevRow, instance.formatToRow());
+      } else {
+        throw error;
+      }
+    }
 
-    const instance: AbstractResource = new (this as any)({ context, fromRow: { row: newRow } });
     await instance.saveAndUpdate();
     return { ...prevRow, ...instance.formatToRow() };
   }
@@ -191,7 +205,7 @@ export abstract class AbstractResource {
     const completed = await Promise.allSettled(
       updates.map(async (update) => {
         const includedProperties = arrayUnique(
-          update.updatedFields.concat(this.getRequiredPropertiesForUpdate(schema))
+          update.updatedFields.concat(this.getRequiredPropertiesForUpdate(schema, update.updatedFields))
         );
 
         const prevRow = update.previousValue as BaseRow;
@@ -213,7 +227,7 @@ export abstract class AbstractResource {
 
   public static createInstance<T extends AbstractResource = AbstractResource>(
     context: coda.ExecutionContext,
-    data: Body,
+    data: any,
     prevInstance?: T
   ): T {
     const instance: T = prevInstance ? prevInstance : new (this as any)({ context });
@@ -223,6 +237,14 @@ export abstract class AbstractResource {
     }
 
     return instance;
+  }
+
+  protected static async createInstanceForUpdate(
+    prevRow: BaseRow,
+    newRow: BaseRow,
+    context: coda.SyncExecutionContext
+  ) {
+    return new (this as any)({ context, fromRow: { row: newRow } }) as AbstractResource;
   }
 
   /**====================================================================================================================
@@ -239,12 +261,34 @@ export abstract class AbstractResource {
     }
   }
 
-  protected setData(data: Body): void {
+  protected setData(data: any): void {
     this.apiData = this.cleanRawData(data);
   }
 
   protected setDataFromRow(fromRow: FromRow): void {
     this.setData(this.formatToApi(fromRow));
+  }
+
+  protected static combineMerge(target: any[], source: any[], options: deepmerge.ArrayMergeOptions) {
+    const destination = target.slice();
+
+    source.forEach((item, index) => {
+      /**
+       * AbstractResource instances always replace possibly existing instances
+       */
+      if (item instanceof AbstractResource) {
+        destination.push(item);
+      } else {
+        if (typeof destination[index] === 'undefined') {
+          destination[index] = options.cloneUnlessOtherwiseSpecified(item, options);
+        } else if (options.isMergeableObject(item)) {
+          destination[index] = deepmerge(target[index], item, options);
+        } else if (target.indexOf(item) === -1) {
+          destination.push(item);
+        }
+      }
+    });
+    return destination;
   }
 
   /**
@@ -253,6 +297,45 @@ export abstract class AbstractResource {
    */
   protected resource<BaseT extends typeof AbstractResource = typeof AbstractResource>(): BaseT {
     return this.constructor as BaseT;
+  }
+
+  /**
+   * Refresh data of the instance. New data takes precedence
+   */
+  protected async refreshData(): Promise<void> {
+    const updatedData = await this.getFullFreshData();
+    this.setData(this.mergeFreshData(updatedData));
+  }
+  /**
+   * Merge updated data with existing data, existing data takes precedence
+   */
+  private mergeFreshData<T extends AbstractResource['apiData']>(freshData: T) {
+    return deepmerge<T, T>(this.apiData, freshData ?? {}, {
+      arrayMerge: AbstractResource.combineMerge,
+    });
+  }
+
+  /**
+   * Refresh data of the instance. Existing data takes precedence
+   */
+  protected async addMissingData(): Promise<void> {
+    const updatedData = await this.getFullFreshData();
+    this.setData(this.mergeMissingData(updatedData));
+  }
+  /**
+   * Merge updated data with existing data, existing data takes precedence
+   */
+  private mergeMissingData<T extends AbstractResource['apiData']>(missingData: T) {
+    return deepmerge<T, T>(missingData ?? {}, this.apiData, {
+      arrayMerge: AbstractResource.combineMerge,
+    });
+  }
+
+  /**
+   * Return the latest data for the current instance. Should be implemented by subclasses
+   */
+  protected async getFullFreshData() {
+    return this.apiData;
   }
 
   public abstract formatToRow(...args: any[]): BaseRow;

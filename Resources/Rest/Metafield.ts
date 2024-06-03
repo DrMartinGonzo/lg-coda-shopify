@@ -316,7 +316,7 @@ export class Metafield extends AbstractRestResource implements IMetafield {
     context,
     options,
   }: FindByKeysArgs): Promise<Metafield[] | null> {
-    const metafields = await this.all({ context, owner_id, owner_resource, fields, options });
+    const metafields = await Metafield.all({ context, owner_id, owner_resource, fields, options });
     if (metafieldKeys.length) {
       return metafields.data.filter((metafield) => metafieldKeys.includes(metafield.fullKey)) ?? null;
     }
@@ -338,19 +338,23 @@ export class Metafield extends AbstractRestResource implements IMetafield {
    * - label: The label will give us the namespace and key
    * - type
    */
-  public static getRequiredPropertiesForUpdate(schema: coda.ArraySchema<coda.ObjectSchema<string, string>>) {
+  public static getRequiredPropertiesForUpdate(
+    schema: coda.ArraySchema<coda.ObjectSchema<string, string>>,
+    updatedFields: string[] = []
+  ) {
     const metafieldSchema = MetafieldHelper.getStaticSchema();
     const { properties } = metafieldSchema;
-    return super.getRequiredPropertiesForUpdate(schema).concat([properties.label.fromKey, properties.type.fromKey]);
+    return super
+      .getRequiredPropertiesForUpdate(schema, updatedFields)
+      .concat([properties.label.fromKey, properties.type.fromKey]);
   }
 
-  protected static async handleRowUpdate(
+  protected static async createInstanceForUpdate(
     prevRow: MetafieldRow,
     newRow: MetafieldRow,
     context: coda.SyncExecutionContext
   ) {
-    this.validateUpdateJob(prevRow, newRow);
-    return MetafieldHelper.handleRowUpdate(prevRow, newRow, context, Metafield);
+    return MetafieldHelper.createInstanceForUpdate(prevRow, newRow, context, Metafield);
   }
 
   public static async all({
@@ -491,18 +495,16 @@ export class Metafield extends AbstractRestResource implements IMetafield {
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    super.setData(MetafieldHelper.preprocessData(data));
+    super.setData(MetafieldHelper.normalizeMetafieldData(data));
   }
 
-  public async refreshData(fields: string = null): Promise<void> {
+  protected async getFullFreshData() {
     let metafield: Metafield;
     const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
-
     if (this.apiData.id) {
       metafield = await Metafield.find({
         context: this.context,
         id: this.apiData.id,
-        fields,
         options,
       });
     } else {
@@ -511,18 +513,12 @@ export class Metafield extends AbstractRestResource implements IMetafield {
         metafieldKeys: [this.fullKey],
         owner_id: this.apiData.owner_id,
         owner_resource: this.apiData.owner_resource,
-        fields,
         options,
       });
       if (search && search.length) metafield = search[0];
     }
 
-    if (metafield) {
-      this.setData({
-        ...this.apiData,
-        ...metafield.apiData,
-      });
-    }
+    return metafield?.apiData;
   }
 
   get fullKey() {

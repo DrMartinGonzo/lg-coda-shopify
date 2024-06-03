@@ -1,18 +1,12 @@
 import * as coda from '@codahq/packs-sdk';
-import { normalizeSchema, normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
+import { describe, expect, test } from 'vitest';
 import { pack } from '../pack';
 
-import { MockExecutionContext, executeSyncFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
-import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
-import { newJsonFetchResponse } from '@codahq/packs-sdk/dist/development';
-import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
-
-import { expect, test, describe } from 'vitest';
 import { expectedRows } from './expectedRows';
-import { untransformKeys } from '@codahq/packs-sdk/dist/handler_templates';
-import { getUnitMap, isObject } from '../utils/helpers';
-import { Action_UpdateArticle } from '../coda/setup/articles-setup';
 import { compareToExpectedRow, doSync, normalizeExpectedRowKeys } from './test-utils';
+import { Action_UpdateArticle } from '../coda/setup/articles-setup';
+import { Action_SetTranslation } from '../coda/setup/translations-setup';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({
@@ -189,15 +183,13 @@ describe.concurrent('EXPECTED: Product', () => {
     // No need to normalize with executeSyncFormulaFromPackDef…
     const expected = [expectedRows.product];
     const result = await doSync('Products', [
-      undefined, // productType
       true, // syncMetafields
+      undefined, // productTypesArray
       undefined, // createdAtRange
       undefined, // updatedAtRange
-      undefined, // publishedAtRange
       undefined, // statusArray
       undefined, // publishedStatus
-      undefined, // vendor
-      undefined, // handleArray
+      undefined, // vendorsArray
       [expected[0].id], // idArray
     ]);
 
@@ -225,20 +217,52 @@ describe.concurrent('EXPECTED: ProductVariant', () => {
     // No need to normalize with executeSyncFormulaFromPackDef…
     const expected = [expectedRows.productVariant];
     const result = await doSync('ProductVariants', [
-      undefined, // productType
       true, // syncMetafields
+      undefined, // productType
       undefined, // createdAtRange
       undefined, // updatedAtRange
-      undefined, // publishedAtRange
       undefined, // statusArray
       undefined, // publishedStatus
-      undefined, // vendor
-      undefined, // handleArray
+      undefined, // vendorsArray
+      undefined, // skuArray
       [expectedRows.product.id], // idArray
     ]);
 
     result.forEach((res, index) => {
       compareToExpectedRow(res, expected[index]);
     });
+  });
+});
+
+describe.concurrent('EXPECTED: Translation', () => {
+  test('Update', async () => {
+    const originalValue = 'VANS UPDATED (FR)';
+    const updatedValue = 'VANS UPDATED (FR) (UPDATED)';
+
+    /** Order must reflect what is in the parameters of {@link Action_SetTranslation} */
+    const parametersMap = new Map<string, any>();
+    parametersMap.set('resourceType', 'COLLECTION');
+    parametersMap.set('resourceId', 413086843136);
+    parametersMap.set('locale', 'fr');
+    parametersMap.set('key', 'title');
+    parametersMap.set('value', updatedValue);
+
+    async function update(parametersMap: Map<string, any>) {
+      return executeFormulaFromPackDef(
+        pack,
+        'SetTranslation',
+        Array.from(parametersMap.values()) as coda.ParamValues<coda.ParamDefs>,
+        undefined,
+        undefined,
+        defaultExecuteOptions
+      );
+    }
+
+    const updateResult = await update(parametersMap);
+    expect(updateResult.TranslatedValue, 'Should have updated translation').toBe(updatedValue);
+
+    parametersMap.set('value', originalValue);
+    const revertResult = await update(parametersMap);
+    expect(revertResult.TranslatedValue, 'Should have reverted to original value').toBe(originalValue);
   });
 });

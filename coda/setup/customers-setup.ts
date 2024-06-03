@@ -1,11 +1,14 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CustomerClient } from '../../Clients/RestApiClientBase';
 import { Customer } from '../../Resources/Rest/Customer';
 import { FromRow } from '../../Resources/types/Resource.types';
 import { PACK_IDENTITIES } from '../../constants';
+import { CustomerModel } from '../../models/rest/CustomerModel';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
+import { SyncedCustomers } from '../../sync/rest/SyncedCustomers';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { formatPersonDisplayValue } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
@@ -20,11 +23,10 @@ export const Sync_Customers = coda.makeSyncTable({
     'Return Customers from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Customer,
-  schema: CustomerSyncTableSchema,
+  schema: SyncedCustomers.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Customer.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedCustomers.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -51,12 +53,18 @@ export const Sync_Customers = coda.makeSyncTable({
       { ...filters.customer.idArray, optional: true },
       { ...filters.customer.tags, optional: true },
     ],
-    execute: async function (params, context) {
-      return Customer.sync(params, context);
+    execute: async function (codaSyncParams, context) {
+      const syncedCustomers = new SyncedCustomers({
+        context,
+        codaSyncParams,
+        model: CustomerModel,
+        client: CustomerClient.createInstance(context),
+      });
+      return syncedCustomers.executeSync();
     },
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Customer.syncUpdate(params, updates, context);
+    executeUpdate: async function (codaSyncParams, updates, context) {
+      return Customer.syncUpdate(codaSyncParams, updates, context);
     },
   },
 });

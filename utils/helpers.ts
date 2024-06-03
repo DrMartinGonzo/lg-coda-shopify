@@ -1,5 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
+import deepmerge from 'deepmerge';
 
 import { FULL_SIZE } from '../constants';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
@@ -304,6 +305,9 @@ export function getKeyFromValue<T extends object>(obj: T, value: T[keyof T]): ke
   return Object.keys(obj).find((key) => obj[key] === value) as keyof T;
 }
 
+const overwriteMerge = (destinationArray: any[], sourceArray: any[], options: deepmerge.ArrayMergeOptions) =>
+  sourceArray;
+
 // #region @shopify/hydrogen-react
 export function flattenConnection(connection) {
   if (!connection) {
@@ -394,7 +398,13 @@ export function excludeUndefinedObjectKeys<ObjectType extends Record<PropertyKey
 }
 
 export function splitAndTrimValues(values = '', delimiter = ','): string[] {
-  console.log('values', values);
   return values.split(delimiter).map((s) => s.trim());
 }
 // #endregion
+
+export function dateRangeMin(dateRange: Date[]) {
+  return dateRange ? dateRange[0] : undefined;
+}
+export function dateRangeMax(dateRange: Date[]) {
+  return dateRange ? dateRange[1] : undefined;
+}

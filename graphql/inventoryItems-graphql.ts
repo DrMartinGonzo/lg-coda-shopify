@@ -42,7 +42,9 @@ export const inventoryItemFieldsFragment = graphql(`
       currencyCode
     }
     countryCodeOfOrigin
-    locationsCount
+    # locationsCount {
+    #   count
+    # }
     variant {
       id
     }

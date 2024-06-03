@@ -152,7 +152,7 @@ export const getShopMetafieldsByKeysQuery = graphql(
 /**
  * Create a GraphQl query to get metafields by their keys from resources (except Shop)
  */
-function makeResourceMetafieldsByKeysQuery<T extends string>(graphQlOperation: T) {
+function makeResourceMetafieldsByKeysQuery<T extends SupportedGraphQlMetafieldOperation>(graphQlOperation: T) {
   const queryName = `Get${capitalizeFirstChar(graphQlOperation)}MetafieldsByKeys`;
   return graphql(
     `
@@ -177,19 +177,22 @@ function makeResourceMetafieldsByKeysQuery<T extends string>(graphQlOperation: T
 }
 
 /**
- * Returns the appropriate GraphQL DocumentNode based on the given MetafieldOwnerType.
+ * Returns the appropriate GraphQL Operation based on the given MetafieldOwnerType.
  *
  * @param {MetafieldOwnerType} metafieldOwnerType - The type of the metafield owner.
- * @throws {Error} If there is no matching DocumentNode for the given MetafieldOwnerType.
+ * @throws {Error} If there is no matching graphQlOperation for the given MetafieldOwnerType.
  */
-export function getResourceMetafieldsByKeysQueryFromOwnerType(
-  metafieldOwnerType: MetafieldOwnerType
-): TadaDocumentNode {
-  if (metafieldOwnerType === MetafieldOwnerType.Shop) {
-    return getShopMetafieldsByKeysQuery;
-  }
-
-  let graphQlOperation: string;
+export type SupportedGraphQlMetafieldOperation =
+  | 'collections'
+  | 'customers'
+  | 'draftOrders'
+  | 'locations'
+  | 'files'
+  | 'orders'
+  | 'products'
+  | 'productVariants';
+export function getMetafieldsByKeysGraphQlOperation(metafieldOwnerType: MetafieldOwnerType) {
+  let graphQlOperation: SupportedGraphQlMetafieldOperation;
   switch (metafieldOwnerType) {
     case MetafieldOwnerType.Collection:
       graphQlOperation = 'collections';
@@ -216,10 +219,25 @@ export function getResourceMetafieldsByKeysQueryFromOwnerType(
       graphQlOperation = 'productVariants';
       break;
   }
+
   if (graphQlOperation === undefined) {
     throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
   }
-  return makeResourceMetafieldsByKeysQuery(graphQlOperation);
+  return graphQlOperation;
+}
+
+/**
+ * Returns the appropriate GraphQL DocumentNode based on the given MetafieldOwnerType.
+ *
+ * @param {MetafieldOwnerType} metafieldOwnerType - The type of the metafield owner.
+ */
+export function getResourceMetafieldsByKeysQueryFromOwnerType(
+  metafieldOwnerType: MetafieldOwnerType
+): TadaDocumentNode {
+  if (metafieldOwnerType === MetafieldOwnerType.Shop) {
+    return getShopMetafieldsByKeysQuery;
+  }
+  return makeResourceMetafieldsByKeysQuery(getMetafieldsByKeysGraphQlOperation(metafieldOwnerType));
 }
 // #endregion
 
@@ -232,6 +250,11 @@ export const setMetafieldsMutation = graphql(
           owner {
             ... on Node {
               id
+            }
+            ... on ProductVariant {
+              parentOwner: product {
+                id
+              }
             }
           }
           ...MetafieldWithDefinitionFields

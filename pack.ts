@@ -71,7 +71,6 @@ import {
 } from './coda/setup/metafieldDefinitions-setup';
 import {
   Action_DeleteMetafield,
-  // Action_TEST_TRANSLATION,
   Action_SetMetafield,
   Formula_FormatListMetafield,
   Formula_FormatMetafield,
@@ -151,7 +150,11 @@ import {
   Sync_Redirects,
 } from './coda/setup/redirects-setup';
 import { Formula_Shop, Sync_Shops } from './coda/setup/shop-setup';
-import { setupTranslations } from './coda/setup/translations-setup';
+import {
+  Action_DeleteTranslation,
+  Action_SetTranslation,
+  Sync_Translations,
+} from './coda/setup/translations-setup';
 
 // #endregion
 
@@ -197,6 +200,7 @@ pack.syncTables.push(Sync_Products);
 pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
 pack.syncTables.push(Sync_Shops);
+pack.syncTables.push(Sync_Translations);
 // #endregion
 
 // #region Formulas
@@ -279,9 +283,8 @@ pack.formulas.push(Action_CreateRedirect);
 pack.formulas.push(Action_UpdateRedirect);
 pack.formulas.push(Action_DeleteRedirect);
 
-if (IS_ADMIN_RELEASE) {
-  pack.formulas.push(Action_SALUT);
-}
+pack.formulas.push(Action_SetTranslation);
+pack.formulas.push(Action_DeleteTranslation);
 // #endregion
 
 // #region Column Formats
@@ -299,8 +302,6 @@ pack.formats.push(Format_Product);
 pack.formats.push(Format_ProductVariant);
 pack.formats.push(Format_Redirect);
 // #endregion
-
-setupTranslations(pack);
 
 // #region Helper formulas
 // Metafields Helpers

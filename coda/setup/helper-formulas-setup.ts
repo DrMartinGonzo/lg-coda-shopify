@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_REST } from '../../constants';
+import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants';
 import { getUnitMap } from '../../utils/helpers';
 
 import { filters, inputs } from '../coda-parameters';
@@ -57,7 +57,7 @@ export const Formula_ProductStatus = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([status]) => {
-    if (!OPTIONS_PRODUCT_STATUS_REST.map((option) => option.value).includes(status)) {
+    if (!OPTIONS_PRODUCT_STATUS_GRAPHQL.map((option) => option.value).includes(status)) {
       throw new coda.UserVisibleError('Unsupported status: ' + status);
     }
     return status;

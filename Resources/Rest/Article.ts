@@ -20,7 +20,15 @@ import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema, articleFieldDependencies } from '../../schemas/syncTable/ArticleSchema';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, excludeObjectKeys, isNullishOrEmpty, parseOptionId, splitAndTrimValues } from '../../utils/helpers';
+import {
+  dateRangeMax,
+  dateRangeMin,
+  deepCopy,
+  excludeObjectKeys,
+  isNullishOrEmpty,
+  parseOptionId,
+  splitAndTrimValues,
+} from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
@@ -64,6 +72,7 @@ interface AllArgs extends BaseContext {
 
 // #endregion
 
+// TODO: convert to AbstractRestResourceWithGraphQLMetafields once GraphQl API version 2024-07 is stable
 export class Article extends AbstractRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     author: string | null;
@@ -174,17 +183,17 @@ export class Article extends AbstractRestResourceWithRestMetafields {
         limit: syncTableManager.shouldSyncMetafields ? 30 : limit,
         firstPageParams: {
           blog_id: currentBlogId,
-          fields: syncTableManager.getSyncedStandardFields(articleFieldDependencies).join(','),
+          fields: fieldsArray.join(','),
           author,
           tags,
           handle,
           published_status: publishedStatus,
-          created_at_min: createdAt ? createdAt[0] : undefined,
-          created_at_max: createdAt ? createdAt[1] : undefined,
-          updated_at_min: updatedAt ? updatedAt[0] : undefined,
-          updated_at_max: updatedAt ? updatedAt[1] : undefined,
-          published_at_min: publishedAt ? publishedAt[0] : undefined,
-          published_at_max: publishedAt ? publishedAt[1] : undefined,
+          created_at_min: dateRangeMin(createdAt),
+          created_at_max: dateRangeMax(createdAt),
+          updated_at_min: dateRangeMin(updatedAt),
+          updated_at_max: dateRangeMax(updatedAt),
+          published_at_min: dateRangeMin(publishedAt),
+          published_at_max: dateRangeMax(publishedAt),
         },
       });
 

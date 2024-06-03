@@ -32,7 +32,13 @@ import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
 import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from './conversion-utils';
-import { extractValueAndUnitFromMeasurementString, isNullishOrEmpty, maybeParseJson, unitToShortName } from './helpers';
+import {
+  extractValueAndUnitFromMeasurementString,
+  isNullishOrEmpty,
+  maybeParseJson,
+  splitAndTrimValues,
+  unitToShortName,
+} from './helpers';
 
 // #endregion
 
@@ -194,7 +200,7 @@ export function formatMetafieldValueForApi(
       return value;
     case METAFIELD_TYPES.list_mixed_reference:
       // The value could have been converted to a real string by coda
-      return JSON.stringify(Array.isArray(value) ? value : value.split(',').map((v: string) => v.trim()));
+      return JSON.stringify(Array.isArray(value) ? value : splitAndTrimValues(value));
 
     case METAFIELD_TYPES.collection_reference:
     case METAFIELD_TYPES.list_collection_reference:

@@ -317,13 +317,11 @@ export class Metaobject extends AbstractGraphQlResource {
     );
   }
 
-  protected static async handleRowUpdate(
+  protected static async createInstanceForUpdate(
     prevRow: MetaobjectRow,
     newRow: MetaobjectRow,
     context: coda.SyncExecutionContext
   ) {
-    this.validateUpdateJob(prevRow, newRow);
-
     const { id: metaObjectDefinitionId } = this.decodeDynamicUrl(context.sync.dynamicUrl);
     const metaobjectDefinition = await MetaobjectDefinition.find({
       context,
@@ -337,16 +335,13 @@ export class Metaobject extends AbstractGraphQlResource {
       metaobjectDefinition.apiData.fieldDefinitions
     );
     const metaobjectFields = await this.formatMetaobjectFieldsFromRow(newRow, fieldDefinitions, context);
-    const instance = new Metaobject({
+    return new Metaobject({
       context,
       fromRow: {
         row: newRow,
         metaobjectFields,
       },
     });
-
-    await instance.saveAndUpdate();
-    return { ...prevRow, ...instance.formatToRow() };
   }
 
   public static parseMetaobjectFieldsFromVarArgs(varargs: Array<any>) {

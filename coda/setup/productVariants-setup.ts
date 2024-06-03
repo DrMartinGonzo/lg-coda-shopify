@@ -2,14 +2,15 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { NotFoundVisibleError } from '../../Errors/Errors';
-import { Product } from '../../Resources/Rest/Product';
-import { Variant } from '../../Resources/Rest/Variant';
+import { VariantGraphQl } from '../../Resources/GraphQl/VariantGraphQl';
 import { FromRow } from '../../Resources/types/Resource.types';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
-import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
+import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
@@ -25,7 +26,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
   schema: ProductVariantSyncTableSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return Variant.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
+      return VariantGraphQl.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -35,40 +36,24 @@ export const Sync_ProductVariants = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Variant.getDynamicSchema}
-     *  - {@link Variant.translateCodaSyncParamsFromVariantToProduct}
-     *  - {@link Product.getFirstPageParams}
+     *  - {@link VariantGraphQl.getDynamicSchema}
+     *  - {@link VariantGraphQl.makeSyncTableManagerSyncFunction}
      */
     parameters: [
-      { ...filters.product.productType, optional: true },
       { ...filters.general.syncMetafields, optional: true },
-      // coda.makeParameter({
-      //   type: coda.ParameterType.String,
-      //   name: 'collection_id',
-      //   description: 'Return products by product collection ID.',
-      //   optional: true,
-      // }),
+      { ...filters.product.productTypesArray, optional: true },
       { ...filters.product.createdAtRange, optional: true },
       { ...filters.product.updatedAtRange, optional: true },
-      { ...filters.product.publishedAtRange, optional: true },
       { ...filters.product.statusArray, optional: true },
       { ...filters.product.publishedStatus, optional: true },
-      { ...filters.product.vendor, optional: true },
-      { ...filters.product.handleArray, optional: true },
+      { ...filters.product.vendorsArray, optional: true },
+      { ...filters.productVariant.skuArray, optional: true },
       { ...filters.product.idArray, name: 'productIds', optional: true },
+      // { ...filters.productVariant.options, optional: true },
     ],
-    execute: async function (params, context) {
-      return Variant.sync(params, context);
-    },
+    execute: async (params, context) => VariantGraphQl.sync(params, context),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      /**
-       * Pour l'instant pas besoin d'utiliser formatRowWithParent,
-       * les propriétés qui dépendent du produit parent ne vont pas bouger.
-       // TODO: à réévaluer si jamais on update l'image utilisée par la variante
-       */
-      return Variant.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (params, updates, context) => VariantGraphQl.syncUpdate(params, updates, context),
   },
 });
 // #endregion
@@ -139,13 +124,13 @@ export const Action_CreateProductVariant = coda.makeFormula({
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Variant.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_resource: VariantGraphQl.metafieldRestOwnerType })
       ),
     };
 
-    const newVariant = new Variant({ context, fromRow });
+    const newVariant = new VariantGraphQl({ context, fromRow });
     await newVariant.saveAndUpdate();
-    return newVariant.apiData.id;
+    return newVariant.restId;
   },
 });
 
@@ -214,36 +199,42 @@ export const Action_UpdateProductVariant = coda.makeFormula({
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: productVariantId, owner_resource: Variant.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_id: productVariantId, owner_resource: VariantGraphQl.metafieldRestOwnerType })
       ),
     };
 
-    const updatedVariant = new Variant({ context, fromRow });
+    const updatedVariant = new VariantGraphQl({ context, fromRow });
     await updatedVariant.saveAndUpdate();
 
     if (updatedVariant) {
-      await updatedVariant.refreshDataWithtParentProduct();
+      // await updatedVariant.refreshDataWithtParentProduct();
       return updatedVariant.formatToRow();
     }
   },
 });
 
-export const Action_DeleteProductVariant = makeDeleteRestResourceAction(Variant, inputs.productVariant.id);
+export const Action_DeleteProductVariant = makeDeleteGraphQlResourceAction(
+  VariantGraphQl,
+  inputs.productVariant.id,
+  ({ context, id }) => VariantGraphQl.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, id) })
+);
 // #endregion
 
 // #region Formulas
 export const Formula_ProductVariant = coda.makeFormula({
   name: 'ProductVariant',
-  description: 'Get a single product variant data.',
+  description: 'Return a single Product Variant from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [inputs.productVariant.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ProductVariantSyncTableSchema,
   execute: async ([productVariantId], context) => {
-    const variant = await Variant.find({ id: productVariantId, context });
+    const variant = await VariantGraphQl.find({
+      context,
+      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, productVariantId),
+    });
     if (variant) {
-      await variant.refreshDataWithtParentProduct();
       return variant.formatToRow();
     }
     throw new NotFoundVisibleError(PACK_IDENTITIES.ProductVariant);

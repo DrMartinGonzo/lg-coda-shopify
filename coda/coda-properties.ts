@@ -114,6 +114,15 @@ export function makeStoreUrlProp(name = 'item', fromKey = 'storeUrl', fixedId = 
   } satisfies coda.LinkSchema & coda.ObjectSchemaProperty;
 }
 
+export function makeStorePreviewUrlProp(name = 'item', fromKey = 'storePreviewUrl', fixedId = 'storePreviewUrl') {
+  return {
+    ...LINK,
+    fromKey,
+    fixedId,
+    description: `A link to the preview of the ${name} in the online shop.`,
+  } satisfies coda.LinkSchema & coda.ObjectSchemaProperty;
+}
+
 function makeDateAndTimeProp(name = 'item', fromKey = 'created_at', fixedId = 'created_at', action: string) {
   return {
     ...DATETIME_STRING,
@@ -181,7 +190,7 @@ export function makeHandleProp(name = 'item', fromKey = 'handle', fixedId = 'han
 
 export function makeBodyHtmlProp(name = 'item', contentName = 'content', fromKey = 'body_html', fixedId = 'body_html') {
   return {
-    ...HTML,
+    ...STRING,
     fromKey,
     fixedId,
     description: `The ${contentName} of the ${name}, complete with HTML markup.`,

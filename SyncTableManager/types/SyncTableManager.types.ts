@@ -100,7 +100,7 @@ export interface SyncTableRestContinuation extends coda.Continuation {
 
 export interface SyncTableGraphQlContinuation extends coda.Continuation {
   cursor?: string;
-  graphQlLock: string;
+  hasLock: string;
   lastCost?: Stringified<ShopifyGraphQlRequestCost>;
   lastLimit?: number;
   extraData: SyncTableExtraContinuationData;

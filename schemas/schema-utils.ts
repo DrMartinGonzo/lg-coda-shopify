@@ -170,6 +170,12 @@ export function mapMetaFieldToSchemaProperty(
         mutable: true,
       };
     case METAFIELD_TYPES.list_color:
+      return {
+        ...baseProperty,
+        type: coda.ValueType.Array,
+        items: PROPS.STRING,
+        mutable: true,
+      };
     case METAFIELD_TYPES.list_single_line_text_field:
       return {
         ...baseProperty,

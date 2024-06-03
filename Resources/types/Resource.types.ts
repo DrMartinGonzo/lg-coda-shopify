@@ -1,7 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Body } from '@shopify/shopify-api';
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Metafield } from '../Rest/Metafield';
@@ -15,7 +14,7 @@ export interface FromRow<RowT extends BaseRow = BaseRow> {
 
 export interface ResourceConstructorArgs {
   context: coda.ExecutionContext;
-  fromData?: Body | null;
+  fromData?: any | null;
   fromRow?: FromRow;
 }
 

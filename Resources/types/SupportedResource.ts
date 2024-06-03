@@ -120,6 +120,7 @@ export const GraphQlResourceNames = {
   Redirect: 'UrlRedirect',
   Shop: 'Shop',
   Video: 'Video',
+  Translation: 'Translation',
 } as const satisfies Partial<Record<SupportedResource, string>> & Record<string, string>;
 
 export type GraphQlFileTypes = 'GenericFile' | 'MediaImage' | 'Video';

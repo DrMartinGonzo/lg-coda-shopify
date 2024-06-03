@@ -51,6 +51,7 @@ interface AllArgs extends BaseContext {
 }
 // #endregion
 
+// TODO: convert to AbstractRestResourceWithGraphQLMetafields once GraphQl API version 2024-07 is stable
 export class Page extends AbstractRestResourceWithRestMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;

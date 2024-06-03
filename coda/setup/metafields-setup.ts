@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
+import { ArticleClient, MetafieldClient, PageClient } from '../../Clients/RestApiClientBase';
 import { NotFoundVisibleError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { AbstractRestResourceWithRestMetafields } from '../../Resources/Abstract/Rest/AbstractRestResourceWithMetafields';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
@@ -20,6 +21,10 @@ import {
   GraphQlResourceNames,
 } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
+import { AbstractModelRestWithMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
+import { ArticleModel } from '../../models/rest/ArticleModel';
+import { PageModel } from '../../models/rest/PageModel';
+import { SyncedMetafields } from '../../sync/rest/SyncedMetafields';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
@@ -28,6 +33,11 @@ import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { filters, inputs } from '../coda-parameters';
+import { MetafieldModel } from '../../models/rest/MetafieldModel';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
+import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
+import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
+import { SyncedGraphQlMetafields } from '../../sync/graphql/SyncedGraphQlMetafields';
 
 // #endregion
 
@@ -128,20 +138,62 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
      *  - {@link Metafield.getDynamicSchema}
      */
     parameters: [{ ...filters.metafield.metafieldKeys, optional: true }],
-    execute: async function (params, context) {
+    execute: async function (codaSyncParams, context) {
       const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
       const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
 
+      // TODO: shop should use GraphQL metafields
+      // TODO: Article, Page and Blog should use GraphQL metafields once GraphQl API version 2024-07 is stable
       if (supportedSyncTable.syncWith === 'rest') {
-        return Metafield.sync(params, context, matchOwnerTypeToOwnerResourceClass(metafieldOwnerType));
+        let ownerClient: typeof ArticleClient | typeof PageClient;
+        let ownerModel: typeof ArticleModel | typeof PageModel;
+        switch (metafieldOwnerType) {
+          case MetafieldOwnerType.Article:
+            ownerClient = ArticleClient;
+            ownerModel = ArticleModel;
+            break;
+          // case MetafieldOwnerType.Blog:
+          //   ownerClient = BlogClient;
+          //   ownerModel = BlogModel;
+          //   break;
+          case MetafieldOwnerType.Page:
+            ownerClient = PageClient;
+            ownerModel = PageModel;
+            break;
+
+          default:
+            throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
+        }
+
+        const syncedMetafields = new SyncedMetafields<AbstractModelRestWithMetafields<any>>({
+          context,
+          codaSyncParams,
+          model: ownerModel,
+          // @ts-expect-error
+          client: ownerClient.createInstance(context),
+        });
+        return syncedMetafields.executeSync();
       } else {
-        return MetafieldGraphQl.sync(params, context);
+        const syncedMetafields = new SyncedGraphQlMetafields({
+          context,
+          codaSyncParams,
+          model: MetafieldGraphQlModel,
+          client: MetafieldGraphQlClient.createInstance(context),
+        });
+        // const syncedMetafieldsTest = new SyncedGraphQlMetafields({
+        //   context,
+        //   codaSyncParams: [],
+        //   model: MetafieldGraphQlModel,
+        //   client: MetafieldGraphQlClient.createInstance(context),
+        // });
+        return syncedMetafields.executeSync();
       }
     },
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
+    executeUpdate: async function (codaSyncParams, updates, context) {
       const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
 
+      // TODO: Article, Page and Blog should use GraphQL metafields once GraphQl API version 2024-07 is stable
       const isRestUpdate = [
         MetafieldOwnerType.Article,
         MetafieldOwnerType.Blog,
@@ -150,9 +202,23 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
       ].includes(metafieldOwnerType);
 
       if (isRestUpdate) {
-        return Metafield.syncUpdate(params, updates, context);
+        /** Must add the owner type to the rows */
+        updates.forEach((update) => {
+          update.previousValue.owner_type = metafieldOwnerType;
+          update.newValue.owner_type = metafieldOwnerType;
+        });
+
+        const syncedMetafields = new SyncedMetafields({
+          context,
+          codaSyncParams,
+          // @ts-expect-error
+          model: MetafieldModel,
+          client: MetafieldClient.createInstance(context),
+        });
+        return syncedMetafields.executeSyncUpdate(updates);
+        // return Metafield.syncUpdate(codaSyncParams, updates, context);
       } else {
-        return MetafieldGraphQl.syncUpdate(params, updates, context);
+        return MetafieldGraphQl.syncUpdate(codaSyncParams, updates, context);
       }
     },
   },
@@ -177,24 +243,16 @@ export const Action_SetMetafield = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
-  execute: async ([ownerType, metafieldParam, ownerId], context) => {
+  execute: async ([ownerType, metafieldParam, owner_id], context) => {
     const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
-    const metafieldSet = CodaMetafieldSet.createFromCodaParameter(metafieldParam);
-    const isShopQuery = ownerType === MetafieldOwnerType.Shop;
-    if (!isShopQuery && ownerId === undefined) {
-      throw new RequiredParameterMissingVisibleError(
-        `ownerID is required when setting metafields from resources other than Shop.`
-      );
-    }
-
+    const metafieldSet = CodaMetafieldSetNew.createFromCodaParameter(metafieldParam);
     const metafieldInstance = metafieldSet.toMetafield({
       context,
-      owner_id: isShopQuery ? undefined : ownerId,
+      owner_id,
       owner_resource: ownerResource,
     });
-
-    await metafieldInstance.saveAndUpdate();
-    return metafieldInstance.formatToRow(false);
+    await metafieldInstance.save();
+    return metafieldInstance.toCodaRow();
   },
 });
 
@@ -202,67 +260,67 @@ export const Action_SetMetafield = coda.makeFormula({
  * Alternative version of SetMetafield Action. Main benefit is having autocomplete
  * on key, but we have to manually specify if the metafield is a `list`.
  */
-export const Action_SetMetafieldAltVersion = coda.makeFormula({
-  name: 'SetMetafieldAltVersion',
-  description:
-    'Set a metafield. If the metafield does not exist, it will be created. If it exists and you input an empty value, it will be deleted. Return the metafield data.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    inputs.metafield.ownerType,
-    inputs.metafield.fullKeyAutocomplete,
-    coda.makeParameter({
-      type: coda.ParameterType.StringArray,
-      name: 'value',
-      description:
-        'A single metafield value or a list of metafield values inside a List() formula. Use one of the `Meta{…}` helper formulas for values. You have to check the `isListMetafield` parameter if the metafield is a list.',
-      suggestedValue: [],
-    }),
-    {
-      ...inputs.metafield.ownerID,
-      description: inputs.metafield.ownerID.description + ' Not needed if setting a Shop metafield.',
-      // empty string to force Coda to show the field
-      suggestedValue: '',
-      optional: true,
-    },
-    coda.makeParameter({
-      type: coda.ParameterType.Boolean,
-      name: 'isListMetafield',
-      description: 'Wether the metafield is a `list` metafield. For example `list.color`, `list.number_decimal`, etc…',
-      suggestedValue: false,
-      optional: true,
-    }),
-  ],
-  isAction: true,
-  resultType: coda.ValueType.Object,
-  schema: MetafieldSyncTableSchema,
-  execute: async ([ownerType, fullKey, values, ownerId, list = false], context) => {
-    const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
-    let isList = !!list;
+// export const Action_SetMetafieldAltVersion = coda.makeFormula({
+//   name: 'SetMetafieldAltVersion',
+//   description:
+//     'Set a metafield. If the metafield does not exist, it will be created. If it exists and you input an empty value, it will be deleted. Return the metafield data.',
+//   connectionRequirement: coda.ConnectionRequirement.Required,
+//   parameters: [
+//     inputs.metafield.ownerType,
+//     inputs.metafield.fullKeyAutocomplete,
+//     coda.makeParameter({
+//       type: coda.ParameterType.StringArray,
+//       name: 'value',
+//       description:
+//         'A single metafield value or a list of metafield values inside a List() formula. Use one of the `Meta{…}` helper formulas for values. You have to check the `isListMetafield` parameter if the metafield is a list.',
+//       suggestedValue: [],
+//     }),
+//     {
+//       ...inputs.metafield.ownerID,
+//       description: inputs.metafield.ownerID.description + ' Not needed if setting a Shop metafield.',
+//       // empty string to force Coda to show the field
+//       suggestedValue: '',
+//       optional: true,
+//     },
+//     coda.makeParameter({
+//       type: coda.ParameterType.Boolean,
+//       name: 'isListMetafield',
+//       description: 'Wether the metafield is a `list` metafield. For example `list.color`, `list.number_decimal`, etc…',
+//       suggestedValue: false,
+//       optional: true,
+//     }),
+//   ],
+//   isAction: true,
+//   resultType: coda.ValueType.Object,
+//   schema: MetafieldSyncTableSchema,
+//   execute: async ([ownerType, fullKey, values, ownerId, list = false], context) => {
+//     const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
+//     let isList = !!list;
 
-    const codaMetafieldSet = isList
-      ? CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs: values })
-      : CodaMetafieldSet.createFromFormatMetafieldFormula({
-          fullKey,
-          value: Array.isArray(values) ? values[0] : values,
-        });
+//     const codaMetafieldSet = isList
+//       ? CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs: values })
+//       : CodaMetafieldSet.createFromFormatMetafieldFormula({
+//           fullKey,
+//           value: Array.isArray(values) ? values[0] : values,
+//         });
 
-    const isShopQuery = ownerType === MetafieldOwnerType.Shop;
-    if (!isShopQuery && ownerId === undefined) {
-      throw new RequiredParameterMissingVisibleError(
-        `ownerID is required when setting metafields from resources other than Shop.`
-      );
-    }
+//     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
+//     if (!isShopQuery && ownerId === undefined) {
+//       throw new RequiredParameterMissingVisibleError(
+//         `ownerID is required when setting metafields from resources other than Shop.`
+//       );
+//     }
 
-    const metafieldInstance = codaMetafieldSet.toMetafield({
-      context,
-      owner_id: isShopQuery ? undefined : ownerId,
-      owner_resource: ownerResource,
-    });
+//     const metafieldInstance = codaMetafieldSet.toMetafield({
+//       context,
+//       owner_id: isShopQuery ? undefined : ownerId,
+//       owner_resource: ownerResource,
+//     });
 
-    await metafieldInstance.saveAndUpdate();
-    return metafieldInstance.formatToRow(false);
-  },
-});
+//     await metafieldInstance.saveAndUpdate();
+//     return metafieldInstance.formatToRow(false);
+//   },
+// });
 
 export const Action_DeleteMetafield = makeDeleteRestResourceAction(Metafield, inputs.metafield.id);
 // #endregion
@@ -307,7 +365,7 @@ export const Formula_Metafield = coda.makeFormula({
 });
 
 export const Formula_Metafields = coda.makeFormula({
-  name: 'Metafields',
+  name: 'MetafieldsS',
   description: 'Get all metafields from a specific resource.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
@@ -338,19 +396,32 @@ export const Formula_Metafields = coda.makeFormula({
     // });
 
     // —————— Using GraphQL
-    const baseParams = {
-      context,
-      options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
+    // const baseParams = {
+    //   context,
+    //   options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
+    // };
+    const metafieldClient = MetafieldGraphQlClient.createInstance(context);
+    const listArgs: ListMetafieldsArgs = {
+      options: { cacheTtlSecs: CACHE_DISABLED },
     };
-    const response = isShopQuery
-      ? await MetafieldGraphQl.all({
-          ...baseParams,
-          ownerType: ownerType as MetafieldOwnerType,
-        })
-      : await MetafieldGraphQl.all({
-          ...baseParams,
-          ownerIds: [idToGraphQlGid(matchOwnerTypeToResourceName(ownerType as MetafieldOwnerType), owner_id)],
-        });
+    if (isShopQuery) {
+      listArgs.ownerType = ownerType as MetafieldOwnerType;
+    } else {
+      listArgs.ownerIds = [idToGraphQlGid(matchOwnerTypeToResourceName(ownerType as MetafieldOwnerType), owner_id)];
+    }
+
+    const lol = await metafieldClient.list(listArgs);
+    return lol.body.map((m) => MetafieldGraphQlModel.createInstance(context, m).toCodaRow());
+
+    // const response = isShopQuery
+    //   ? await MetafieldGraphQl.all({
+    //       ...baseParams,
+    //       ownerType: ownerType as MetafieldOwnerType,
+    //     })
+    //   : await MetafieldGraphQl.all({
+    //       ...baseParams,
+    //       ownerIds: [idToGraphQlGid(matchOwnerTypeToResourceName(ownerType as MetafieldOwnerType), owner_id)],
+    //     });
 
     return response.data.map((m) => m.formatToRow(false));
   },
@@ -601,100 +672,3 @@ export const Formula_MetaCollectionReference = makeMetafieldReferenceValueFormul
   METAFIELD_TYPES.collection_reference
 );
 // #endregion
-
-/*
-export const Action_TEST_TRANSLATION = coda.makeFormula({
-  name: 'SALUT',
-  description: 'Get a single metafield by its ID.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    coda.makeParameter({
-      type: coda.ParameterType.String,
-      name: 'productId',
-      description: 'The ID of the metafield.',
-    }),
-  ],
-  isAction: true,
-  resultType: coda.ValueType.String,
-  execute: async function ([productId, ...varargs], context) {
-    const fields = [];
-    while (varargs.length > 0) {
-      let namespace: string, key: string;
-      // Pull the first set of varargs off the list, and leave the rest.
-      [namespace, key, ...varargs] = varargs;
-      fields.push(`
-        ${key}: metafield(namespace: "${namespace}", key: "${key}") {
-          ...metafieldFields
-        }
-      `);
-    }
-
-    const mutationQuery = `
-      query product($productId: ID!) {
-        product(id: $productId) {
-          color: metafield(namespace: "lg_traits", key: "color") {
-            ...metafieldFields
-          }
-        }
-      }
-
-      fragment metafieldFields on Metafield {
-          id
-          type
-          value
-      }
-    `;
-
-    const payload = {
-      query: mutationQuery,
-
-      variables: {
-        productId: productId,
-      },
-    };
-
-    const { response } = await makeGraphQlRequest({ payload }, context);
-
-    const { body } = response;
-    console.log('body', body);
-    // return body.data.product.metaobject.id;
-
-    if (body.data.product.color) {
-      const mutationQuery = `
-        mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
-          translationsRegister(resourceId: $resourceId, translations: $translations) {
-            userErrors {
-              field
-              message
-            }
-
-            translations {
-              key
-              value
-            }
-          }
-        }
-      `;
-
-      const payload = {
-        query: mutationQuery,
-
-        variables: {
-          resourceId: body.data.product.color.id,
-          translations: [
-            {
-              locale: 'en',
-              key: 'value',
-              value: '["black"]',
-              translatableContentDigest: createHash('sha256').update(body.data.product.color.value).digest('hex'),
-            },
-          ],
-        },
-      };
-
-      return 'OK';
-    }
-    return 'OK';
-  },
-});
-*/

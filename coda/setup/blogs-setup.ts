@@ -1,12 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { BlogClient } from '../../Clients/RestApiClientBase';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Blog } from '../../Resources/Rest/Blog';
 import { FromRow } from '../../Resources/types/Resource.types';
 import { PACK_IDENTITIES } from '../../constants';
+import { BlogModel } from '../../models/rest/BlogModel';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
+import { SyncedBlogs } from '../../sync/rest/SyncedBlogs';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
@@ -20,10 +23,10 @@ export const Sync_Blogs = coda.makeSyncTable({
     "Return Blogs from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for blogs, we have to do a separate Rest call for each blog to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Blog,
-  schema: BlogSyncTableSchema,
+  schema: SyncedBlogs.staticSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return Blog.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+      return SyncedBlogs.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
@@ -38,8 +41,7 @@ export const Sync_Blogs = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Blog.getDynamicSchema}
-     *  - {@link Blog.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedBlogs.codaParamsMap}
      */
     parameters: [
       {
@@ -49,12 +51,26 @@ export const Sync_Blogs = coda.makeSyncTable({
         optional: true,
       },
     ],
-    execute: async function (params, context) {
-      return Blog.sync(params, context);
+    execute: async function (codaSyncParams, context) {
+      const syncedBlogs = new SyncedBlogs({
+        context,
+        codaSyncParams,
+        model: BlogModel,
+        client: BlogClient.createInstance(context),
+      });
+      return syncedBlogs.executeSync();
+      // return Blog.sync(codaSyncParams, context);
     },
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Blog.syncUpdate(params, updates, context);
+    executeUpdate: async function (codaSyncParams, updates, context) {
+      const syncedBlogs = new SyncedBlogs({
+        context,
+        codaSyncParams,
+        model: BlogModel,
+        client: BlogClient.createInstance(context),
+      });
+      return syncedBlogs.executeSyncUpdate(updates);
+      // return Blog.syncUpdate(codaSyncParams, updates, context);
     },
   },
 });

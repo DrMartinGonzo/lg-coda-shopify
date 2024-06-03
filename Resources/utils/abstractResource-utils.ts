@@ -30,8 +30,8 @@ export async function getCurrentShopActiveCurrency(context: coda.ExecutionContex
   return currencyCode;
 }
 
-export function handleDeleteNotFound(name: string, identifier: number | string) {
-  console.error(`${name} \`${identifier}\` not found. Possibly already deleted.`);
+export function handleDeleteNotFound(path: string | string) {
+  console.error(`Not found at path : '${path}'. Possibly already deleted.`);
 }
 
 /**

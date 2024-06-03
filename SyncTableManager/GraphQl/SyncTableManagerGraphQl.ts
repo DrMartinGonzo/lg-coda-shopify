@@ -47,7 +47,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> exte
         headers: null,
         cost: null,
       },
-      continuation: { ...prevContinuation, graphQlLock: 'false' },
+      continuation: { ...prevContinuation, hasLock: 'false' },
     };
   }
 
@@ -56,7 +56,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> exte
     prevContinuation: SyncTableGraphQlContinuation,
     defaultLimit: number
   ) {
-    const previousLockAcquired = prevContinuation?.graphQlLock ? prevContinuation.graphQlLock === 'true' : false;
+    const previousLockAcquired = prevContinuation?.hasLock ? prevContinuation.hasLock === 'true' : false;
     const throttleStatus = await SyncTableManagerGraphQl.checkThrottleStatus(context);
     const { currentlyAvailable, maximumAvailable } = throttleStatus;
     console.log('maximumAvailable', maximumAvailable);
@@ -128,7 +128,7 @@ export class SyncTableManagerGraphQl<BaseT extends AbstractGraphQlResource> exte
     /** Set continuation if a next page exists */
     if (hasNextRun) {
       this.continuation = {
-        graphQlLock: 'true',
+        hasLock: 'true',
         extraData: this.pendingExtraContinuationData ?? {},
       };
 

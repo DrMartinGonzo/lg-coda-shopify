@@ -59,6 +59,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'inventory_item_id',
       description: 'The ID of the inventory item associated with the product variant.',
     },
+    /*
     inventory_management: {
       type: coda.ValueType.String,
       fixedId: 'inventory_management',
@@ -68,6 +69,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
  - null: You aren't tracking inventory on the variant.
  - the handle of a fulfillment service that has inventory management enabled: This must be the same fulfillment service referenced by the fulfillment_service property.`,
     },
+    */
     inventory_policy: {
       type: coda.ValueType.String,
       fixedId: 'inventory_policy',
@@ -126,6 +128,12 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       mutable: true,
       description:
         'The order of the product variant in the list of product variants. The first position in the list is 1. The position of variants is indicated by the order in which they are listed.',
+    },
+    product_id: {
+      ...PROPS.ID_NUMBER,
+      fixedId: 'product_id',
+      fromKey: 'product_id',
+      description: 'The ID of the product this variant belongs to.',
     },
     product: { ...ProductReference, fixedId: 'product', description: 'The product this variant belongs to.' },
     sku: { ...itemSkuProp, mutable: true },

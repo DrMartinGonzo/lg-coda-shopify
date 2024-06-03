@@ -1,21 +1,36 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { NotFoundError, UnsupportedValueError } from '../../Errors/Errors';
-import * as PROPS from '../../coda/coda-properties';
-import { CACHE_DEFAULT } from '../../constants';
-import { MetafieldRow } from '../../schemas/CodaRows.types';
+import { NotFoundError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
+import { CACHE_DEFAULT, PREFIX_FAKE } from '../../constants';
+import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { compareByDisplayKey, deepCopy, logAdmin } from '../../utils/helpers';
-import { formatMetafieldValueForApi, getMetaFieldFullKey, splitMetaFieldFullKey } from '../../utils/metafields-utils';
+import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
+import { compareByDisplayKey, deepCopy, isNullishOrEmpty, logAdmin } from '../../utils/helpers';
+import {
+  formatMetafieldValueForApi,
+  getMetaFieldFullKey,
+  matchOwnerResourceToMetafieldOwnerType,
+  matchOwnerTypeToOwnerResource,
+  matchOwnerTypeToResourceName,
+  removePrefixFromMetaFieldKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+  splitMetaFieldFullKey,
+} from '../../utils/metafields-utils';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
 import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
 import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
-import { RestResourcesPlural, RestResourcesSingular, singularToPlural } from '../types/SupportedResource';
-import { MetafieldLegacyType, MetafieldType } from './METAFIELD_TYPES';
+import {
+  GraphQlResourceNames,
+  RestResourcesPlural,
+  RestResourcesSingular,
+  singularToPlural,
+} from '../types/SupportedResource';
+import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
+import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from './METAFIELD_TYPES';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './SupportedMetafieldSyncTable';
 
 // #endregion
@@ -26,6 +41,22 @@ export interface IMetafield {
   get prefixedFullKey(): string;
 
   formatValueForOwnerRow(): any;
+}
+
+interface NormalizedMetafieldData {
+  id: number;
+  gid: string;
+  namespace: string;
+  key: string;
+  type: string;
+  value: string;
+  ownerId: number;
+  ownerGid: string;
+  ownerType: SupportedMetafieldOwnerType;
+  ownerResource: SupportedMetafieldOwnerResource;
+  definitionId: number;
+  definitionGid: string;
+  deleted: boolean;
 }
 // #endregion
 
@@ -148,7 +179,7 @@ export class MetafieldHelper {
     return admin_url;
   }
 
-  public static async handleRowUpdate(
+  public static async createInstanceForUpdate(
     prevRow: MetafieldRow,
     newRow: MetafieldRow,
     context: coda.SyncExecutionContext,
@@ -182,19 +213,130 @@ export class MetafieldHelper {
       }
     }
 
-    const instance = new MetafieldConstructor({
+    return new MetafieldConstructor({
       context,
       fromRow: {
         row: { ...newRow, owner_type: metafieldOwnerType, rawValue: value },
       },
     });
-
-    // const instance: AbstractSyncedRestResource = new (this as any)({ context, fromRow: { row: newRow } });
-    await instance.saveAndUpdate();
-    return { ...prevRow, ...instance.formatToRow() };
   }
 
-  public static preprocessData(data: any) {
+  public static async normalizeOwnerRowMetafields({
+    context,
+    ownerRow,
+    ownerResource,
+    metafieldDefinitions = [],
+  }: {
+    ownerRow: BaseRow;
+    ownerResource: SupportedMetafieldOwnerResource;
+    metafieldDefinitions?: MetafieldDefinition[];
+    context: coda.ExecutionContext;
+  }) {
+    const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(ownerRow));
+    let currencyCode: CurrencyCode;
+
+    const promises = prefixedMetafieldFromKeys.map(async (fromKey) => {
+      const value = ownerRow[fromKey] as any;
+      const realFromKey = removePrefixFromMetaFieldKey(fromKey);
+      const metafieldDefinition = MetafieldHelper.requireMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
+
+      const { key, namespace, type, validations, id: metafieldDefinitionGid } = metafieldDefinition.apiData;
+      let formattedValue: string | null;
+
+      if (type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
+        currencyCode = await getCurrentShopActiveCurrency(context);
+        // currencyCode = await Shop.activeCurrency({ context });
+      }
+
+      try {
+        formattedValue = formatMetafieldValueForApi(
+          value,
+          type.name as MetafieldType | MetafieldLegacyType,
+          validations,
+          currencyCode
+        );
+      } catch (error) {
+        throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${fromKey}.`);
+      }
+
+      const ownerType = matchOwnerResourceToMetafieldOwnerType(ownerResource);
+      const definitionGid =
+        metafieldDefinitionGid && !metafieldDefinitionGid.startsWith(PREFIX_FAKE) ? metafieldDefinitionGid : undefined;
+
+      return {
+        id: undefined,
+        gid: undefined,
+        namespace,
+        key,
+        type: type.name,
+        value: formattedValue,
+        ownerId: ownerRow.id as number,
+        ownerGid: idToGraphQlGid(matchOwnerTypeToResourceName(ownerType), ownerRow.owner_id),
+        ownerType,
+        ownerResource,
+        definitionId: graphQlGidToId(definitionGid),
+        definitionGid,
+        deleted: false,
+      } as NormalizedMetafieldData;
+    });
+
+    return Promise.all(promises);
+  }
+
+  public static normalizeMetafieldRow(row: MetafieldRow): NormalizedMetafieldData {
+    if (!row.label) throw new RequiredParameterMissingVisibleError('label');
+
+    const { DELETED_SUFFIX } = MetafieldHelper;
+
+    const isDeletedFlag = row.label.includes(DELETED_SUFFIX);
+    const fullkey = row.label.split(DELETED_SUFFIX)[0];
+    const { metaKey: key, metaNamespace: namespace } = splitMetaFieldFullKey(fullkey);
+    const definitionId = row.definition_id || row.definition?.id;
+    // Utilisation de rawValue ou de la valeur de l'helper column adaptée si elle a été utilisée
+    let value: string | null = row.rawValue as string;
+    for (let i = 0; i < metafieldSyncTableHelperEditColumns.length; i++) {
+      const column = metafieldSyncTableHelperEditColumns[i];
+      if (Object.keys(row).includes(column.key)) {
+        if (row.type === column.type) {
+          /**
+           *? Si jamais on implémente une colonne pour les currencies,
+           *? il faudra veiller a bien passer le currencyCode a {@link formatMetafieldValueForApi}
+           */
+          value = formatMetafieldValueForApi(row[column.key], row.type as MetafieldType | MetafieldLegacyType);
+        } else {
+          const goodColumn = metafieldSyncTableHelperEditColumns.find((item) => item.type === row.type);
+          let errorMsg = `Metafield type mismatch. You tried to update using an helper column that doesn't match the metafield type.`;
+          if (goodColumn) {
+            errorMsg += ` The correct column for type '${row.type}' is: '${goodColumn.key}'.`;
+          } else {
+            errorMsg += ` You can only update this metafield by directly editing the 'Raw Value' column.`;
+          }
+          throw new coda.UserVisibleError(errorMsg);
+        }
+      }
+    }
+
+    return {
+      id: isDeletedFlag ? null : row.id,
+      gid: isDeletedFlag ? null : idToGraphQlGid(GraphQlResourceNames.Metafield, row.id),
+      namespace,
+      key,
+      type: row.type,
+      value: isNullishOrEmpty(value) ? null : value,
+      ownerId: row.owner_id,
+      ownerGid: idToGraphQlGid(
+        matchOwnerTypeToResourceName(row.owner_type as SupportedMetafieldOwnerType),
+        row.owner_id
+      ),
+      ownerType: row.owner_type as SupportedMetafieldOwnerType,
+      ownerResource: matchOwnerTypeToOwnerResource(row.owner_type as SupportedMetafieldOwnerType),
+      definitionId,
+      definitionGid: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, definitionId),
+      deleted: isDeletedFlag,
+    };
+  }
+
+  public static normalizeMetafieldData(data: any) {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
     const fullkey = getMetaFieldFullKey({ key: data.key, namespace: data.namespace });
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);

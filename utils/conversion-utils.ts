@@ -34,7 +34,7 @@ export function graphQlGidToId(gid: string): number | undefined {
   throw new InvalidValueError('GID', gid);
 }
 
-function graphQlGidToResourceName(gid: string): GraphQlResourceName | undefined {
+export function graphQlGidToResourceName(gid: string): GraphQlResourceName | undefined {
   if (isNullish(gid)) return undefined;
   if (!isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
   return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;

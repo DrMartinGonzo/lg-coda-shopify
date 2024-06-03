@@ -1,16 +1,22 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { NotFoundVisibleError } from '../../Errors/Errors';
+import { ProductGraphQl } from '../../Resources/GraphQl/Product';
 import { Asset } from '../../Resources/Rest/Asset';
-import { Product } from '../../Resources/Rest/Product';
 import { FromRow } from '../../Resources/types/Resource.types';
-import { DEFAULT_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { CACHE_DEFAULT, DEFAULT_PRODUCT_STATUS_GRAPHQL, PACK_IDENTITIES } from '../../constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
+import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { fetchProductTypesGraphQl } from '../../utils/products-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { ProductClient } from '../../Clients/GraphQlApiClientBase';
+import { ProductModel } from '../../models/graphql/ProductModel';
+import { SyncedProducts } from '../../sync/graphql/SyncedProducts';
 
 // #endregion
 
@@ -22,11 +28,10 @@ export const Sync_Products = coda.makeSyncTable({
     'Return Products from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Product,
-  schema: ProductSyncTableSchemaRest,
+  schema: SyncedProducts.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Product.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedProducts.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'product_type') {
@@ -43,28 +48,41 @@ export const Sync_Products = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Product.getDynamicSchema}
-     *  - {@link Product.getFirstPageParams}
+     *  - {@link ProductGraphQl.getDynamicSchema}
+     *  - {@link ProductGraphQl.makeSyncTableManagerSyncFunction}
      */
     parameters: [
-      { ...filters.product.productType, optional: true },
       { ...filters.general.syncMetafields, optional: true },
+      { ...filters.product.productTypesArray, optional: true },
       { ...filters.general.createdAtRange, optional: true },
       { ...filters.general.updatedAtRange, optional: true },
-      { ...filters.general.publishedAtRange, optional: true },
       { ...filters.product.statusArray, optional: true },
       { ...filters.product.publishedStatus, optional: true },
-      { ...filters.product.vendor, optional: true },
-      { ...filters.general.handleArray, optional: true },
+      { ...filters.product.vendorsArray, optional: true },
       { ...filters.product.idArray, optional: true },
-      { ...filters.product.collectionId, optional: true },
+      { ...filters.product.tagsArray, optional: true },
     ],
-    execute: async function (params, context) {
-      return Product.sync(params, context);
+    execute: async function (codaSyncParams, context) {
+      const syncedProducts = new SyncedProducts({
+        context,
+        codaSyncParams,
+        model: ProductModel,
+        client: ProductClient.createInstance(context),
+      });
+      return syncedProducts.executeSync();
+      // return ProductGraphQl.sync(codaSyncParams, context);
+      // return Product.sync(codaSyncParams, context);
     },
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Product.syncUpdate(params, updates, context);
+    executeUpdate: async function (codaSyncParams, updates, context) {
+      const syncedProducts = new SyncedProducts({
+        context,
+        codaSyncParams,
+        model: ProductModel,
+        client: ProductClient.createInstance(context),
+      });
+      return syncedProducts.executeSyncUpdate(updates);
+      // return ProductGraphQl.syncUpdate(codaSyncParams, updates, context);
     },
   },
 });
@@ -88,7 +106,6 @@ export const Action_CreateProduct = coda.makeFormula({
     { ...inputs.product.handle, optional: true },
     { ...inputs.product.templateSuffix, optional: true },
     { ...inputs.product.options, optional: true },
-    { ...inputs.product.imageUrls, optional: true },
     {
       ...inputs.general.metafields,
       optional: true,
@@ -98,7 +115,7 @@ export const Action_CreateProduct = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function (
-    [title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, options, imageUrls, metafields],
+    [title, bodyHtml, productType, tags, vendor, status, handle, templateSuffix, options, metafields],
     context
   ) {
     const fromRow: FromRow<ProductRow> = {
@@ -110,20 +127,19 @@ export const Action_CreateProduct = coda.makeFormula({
         tags: tags ? tags.join(',') : undefined,
         template_suffix: templateSuffix,
         vendor,
-        status: status ?? DEFAULT_PRODUCT_STATUS_REST,
+        status: status ?? DEFAULT_PRODUCT_STATUS_GRAPHQL,
         options: options.join(','),
-        images: imageUrls,
       },
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Product.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_resource: ProductGraphQl.metafieldRestOwnerType })
       ),
     };
 
-    const newProduct = new Product({ context, fromRow });
+    const newProduct = new ProductGraphQl({ context, fromRow });
     await newProduct.saveAndUpdate();
-    return newProduct.apiData.id;
+    return newProduct.restId;
   },
 });
 
@@ -143,7 +159,6 @@ export const Action_UpdateProduct = coda.makeFormula({
     { ...inputs.product.status, optional: true },
     { ...inputs.product.handle, optional: true },
     { ...inputs.product.templateSuffix, optional: true },
-    { ...inputs.product.imageUrls, optional: true },
     {
       ...inputs.general.metafields,
       optional: true,
@@ -156,7 +171,7 @@ export const Action_UpdateProduct = coda.makeFormula({
   // schema: coda.withIdentity(ProductSchemaRest, IdentitiesNew.product),
   schema: ProductSyncTableSchemaRest,
   execute: async function (
-    [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, imageUrls, metafields],
+    [productId, title, body_html, product_type, tags, vendor, status, handle, template_suffix, metafields],
     context
   ) {
     const fromRow: FromRow<ProductRow> = {
@@ -170,26 +185,52 @@ export const Action_UpdateProduct = coda.makeFormula({
         title,
         vendor,
         status,
-        images: imageUrls,
       },
       // prettier-ignore
       metafields: CodaMetafieldSet
         .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: productId, owner_resource: Product.metafieldRestOwnerType })
+        .map((s) => s.toMetafield({ context, owner_id: productId, owner_resource: ProductGraphQl.metafieldRestOwnerType })
       ),
     };
 
-    const updatedProduct = new Product({ context, fromRow });
+    const updatedProduct = new ProductGraphQl({ context, fromRow });
     await updatedProduct.saveAndUpdate();
     return updatedProduct.formatToRow();
   },
 });
 
-export const Action_DeleteProduct = makeDeleteRestResourceAction(Product, inputs.product.id);
+export const Action_DeleteProduct = makeDeleteGraphQlResourceAction(
+  ProductGraphQl,
+  inputs.product.id,
+  ({ context, id }) => ProductGraphQl.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Product, id) })
+);
 // #endregion
 
 // #region Formulas
-export const Formula_Product = makeFetchSingleRestResourceAction(Product, inputs.product.id);
+export const Formula_Product = coda.makeFormula({
+  name: 'Product',
+  description: 'Return a single Product from this shop.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [inputs.product.id],
+  cacheTtlSecs: CACHE_DEFAULT,
+  resultType: coda.ValueType.Object,
+  schema: ProductSyncTableSchemaRest,
+  execute: async ([product_id], context) => {
+    const response = await ProductClient.createInstance(context).single({
+      id: idToGraphQlGid(GraphQlResourceNames.Product, product_id),
+    });
+    return ProductModel.createInstance(context, response.body).toCodaRow();
+
+    // const product = await ProductGraphQl.find({
+    //   context,
+    //   id: idToGraphQlGid(GraphQlResourceNames.Product, product_id),
+    // });
+    // if (product) {
+    //   return product.formatToRow();
+    // }
+    // throw new NotFoundVisibleError(PACK_IDENTITIES.Product);
+  },
+});
 
 export const Format_Product: coda.Format = {
   name: 'Product',

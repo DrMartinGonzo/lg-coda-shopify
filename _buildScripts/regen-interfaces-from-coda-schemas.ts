@@ -24,6 +24,7 @@ import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVaria
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 import { arrayUnique } from '../utils/helpers';
+import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -163,6 +164,7 @@ const definitions = [
   [ProductVariantSyncTableSchema, PACK_IDENTITIES.ProductVariant],
   [RedirectSyncTableSchema, PACK_IDENTITIES.Redirect],
   [ShopSyncTableSchema, PACK_IDENTITIES.Shop],
+  [TranslationSyncTableSchema, PACK_IDENTITIES.Translation],
 ];
 
 const blocks = definitions.map((def) => {

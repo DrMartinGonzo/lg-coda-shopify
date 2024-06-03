@@ -1,0 +1,16 @@
+[
+  {
+    "previousValue": {
+      "id": "gid://shopify/Collection/413086843136?key=title&locale=fr&deleted=1",
+      "key": "title",
+      "locale": "fr"
+    },
+    "newValue": {
+      "id": "gid://shopify/Collection/413086843136?key=title&locale=fr",
+      "key": "title",
+      "locale": "fr",
+      "translatedValue": "TEST"
+    },
+    "updatedFields": ["translatedValue"]
+  }
+]

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Body, IdSet, PageInfo as PageInfoRest, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api';
+import { IdSet, PageInfo as PageInfoRest, ParamSet, ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { SearchParams } from '../../../Clients/Client.types';
 import { RestClient, RestRequestReturn } from '../../../Clients/RestClient';
 import { NotFoundError } from '../../../Errors/Errors';
@@ -19,7 +19,6 @@ import { AbstractResource, FindAllResponseBase } from '../AbstractResource';
 // #region Types
 export interface RestApiData {
   id: number | null;
-  // [key: string]: any;
 }
 
 interface GetPathArgs {
@@ -46,7 +45,7 @@ interface BaseDeleteArgs extends BaseContext {
 interface RequestArgs extends BaseFindArgs {
   http_method: string;
   operation: string;
-  body?: Body | null;
+  body?: any | null;
   entity?: AbstractRestResource | null;
 }
 
@@ -174,7 +173,7 @@ export abstract class AbstractRestResource extends AbstractResource {
           if (coda.StatusCodeError.isStatusCodeError(error)) {
             const statusError = error as coda.StatusCodeError;
             if (statusError.statusCode === 404) {
-              handleDeleteNotFound(this.getRestName(), path);
+              handleDeleteNotFound(path);
             }
           }
           return;
@@ -200,7 +199,7 @@ export abstract class AbstractRestResource extends AbstractResource {
     });
 
     return {
-      data: this.createInstancesFromResponse<T>(context, response.body as Body),
+      data: this.createInstancesFromResponse<T>(context, response.body),
       headers: response.headers,
       pageInfo: response.pageInfo,
     };
@@ -311,7 +310,7 @@ export abstract class AbstractRestResource extends AbstractResource {
 
   protected static createInstancesFromResponse<T extends AbstractRestResource = AbstractRestResource>(
     context: coda.ExecutionContext,
-    data: Body
+    data: any
   ): T[] {
     let instances: T[] = [];
     this.resourceNames.forEach((resourceName) => {
@@ -320,7 +319,7 @@ export abstract class AbstractRestResource extends AbstractResource {
       if (data[plural] || Array.isArray(data[singular])) {
         instances = instances.concat(
           (data[plural] || data[singular]).reduce(
-            (acc: T[], entry: Body) => acc.concat(this.createInstance<T>(context, entry)),
+            (acc: T[], entry: any) => acc.concat(this.createInstance<T>(context, entry)),
             []
           )
         );
@@ -375,11 +374,9 @@ export abstract class AbstractRestResource extends AbstractResource {
       return acc.concat(Object.values(obj));
     }, []);
 
-    const matchResourceName = Object.keys(response.body as Body).filter((key: string) =>
-      flattenResourceNames.includes(key)
-    );
+    const matchResourceName = Object.keys(response.body).filter((key: string) => flattenResourceNames.includes(key));
 
-    const body: Body | undefined = (response.body as Body)[matchResourceName[0]];
+    const body: any | undefined = response.body[matchResourceName[0]];
 
     if (update && body) {
       this.setData(body);

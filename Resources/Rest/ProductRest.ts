@@ -4,8 +4,11 @@ import striptags from 'striptags';
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
-import { MakeSyncFunctionArgs, SyncRestFunction } from '../../SyncTableManager/types/SyncTableManager.types';
+import {
+  CodaSyncParams,
+  MakeSyncFunctionArgs,
+  SyncRestFunction,
+} from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import { Identity, OPTIONS_PRODUCT_STATUS_REST, OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES } from '../../constants';
@@ -13,7 +16,7 @@ import { ProductRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ProductSyncTableSchemaRest, productFieldDependencies } from '../../schemas/syncTable/ProductSchemaRest';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { deepCopy, excludeObjectKeys, isDefinedEmpty } from '../../utils/helpers';
+import { deepCopy, excludeObjectKeys, isDefinedEmpty, splitAndTrimValues } from '../../utils/helpers';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import {
@@ -71,7 +74,7 @@ interface ImageData {
   width: number | null;
 }
 
-export class Product extends AbstractRestResourceWithGraphQLMetafields {
+export class ProductRest extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields & {
     admin_graphql_api_id: string | null;
     title: string | null;
@@ -146,11 +149,11 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     fields: Array<string>;
   }) {
     const [
-      product_type,
       syncMetafields,
+      product_type,
       created_at,
       updated_at,
-      published_at,
+      // published_at,
       status,
       published_status,
       vendor,
@@ -172,8 +175,8 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
       created_at_max: created_at ? created_at[1] : undefined,
       updated_at_min: updated_at ? updated_at[0] : undefined,
       updated_at_max: updated_at ? updated_at[1] : undefined,
-      published_at_min: published_at ? published_at[0] : undefined,
-      published_at_max: published_at ? published_at[1] : undefined,
+      // published_at_min: published_at ? published_at[0] : undefined,
+      // published_at_max: published_at ? published_at[1] : undefined,
     };
   }
 
@@ -183,8 +186,8 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     syncTableManager,
   }: MakeSyncFunctionArgs<
     typeof Sync_Products,
-    SyncTableManagerRestWithMetafieldsType<Product>
-  >): SyncRestFunction<Product> {
+    SyncTableManagerRestWithMetafieldsType<ProductRest>
+  >): SyncRestFunction<ProductRest> {
     return ({ nextPageQuery = {}, limit }) => {
       const params = this.allIterationParams({
         context,
@@ -200,8 +203,8 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     };
   }
 
-  public static async find({ id, fields = null, context, options }: FindArgs): Promise<Product | null> {
-    const result = await this.baseFind<Product>({
+  public static async find({ id, fields = null, context, options }: FindArgs): Promise<ProductRest | null> {
+    const result = await this.baseFind<ProductRest>({
       urlIds: { id },
       params: { fields },
       context,
@@ -245,7 +248,7 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
   */
 
   public static async delete({ id, context }: DeleteArgs): Promise<unknown> {
-    const response = await this.baseDelete<Product>({
+    const response = await this.baseDelete<ProductRest>({
       urlIds: { id },
       params: {},
       context,
@@ -275,8 +278,8 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     presentment_currencies = null,
     options = {},
     ...otherArgs
-  }: AllArgs): Promise<FindAllRestResponse<Product>> {
-    const response = await this.baseFind<Product>({
+  }: AllArgs): Promise<FindAllRestResponse<ProductRest>> {
+    const response = await this.baseFind<ProductRest>({
       context,
       urlIds: {},
       params: {
@@ -353,10 +356,10 @@ export class Product extends AbstractRestResourceWithGraphQLMetafields {
     };
 
     if (row.options !== undefined) {
-      apiData.options = row.options
-        .split(',')
-        .map((str) => str.trim())
-        .map((option) => ({ name: option, values: [DEFAULT_PRODUCTVARIANT_OPTION_VALUE] }));
+      apiData.options = splitAndTrimValues(row.options).map((option) => ({
+        name: option,
+        values: [DEFAULT_PRODUCTVARIANT_OPTION_VALUE],
+      }));
 
       // We need to add a default variant to the product if some options are defined
       if (apiData.options.length) {

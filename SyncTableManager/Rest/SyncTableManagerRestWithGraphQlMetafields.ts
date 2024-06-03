@@ -198,7 +198,7 @@ export class SyncTableManagerRestWithGraphQlMetafields<BaseT extends AbstractRes
 
     if (unfinishedGraphQl || unfinishedRest) {
       metafieldsContinuation = {
-        graphQlLock: 'true',
+        hasLock: 'true',
         extraData: {
           ...(this.pendingExtraContinuationData ?? {}),
           batch: this.stringifyBatchData(currentBatch),

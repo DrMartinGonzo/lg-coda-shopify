@@ -1,12 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { PageClient } from '../../Clients/RestApiClientBase';
 import { Asset } from '../../Resources/Rest/Asset';
 import { Page } from '../../Resources/Rest/Page';
 import { FromRow } from '../../Resources/types/Resource.types';
 import { PACK_IDENTITIES } from '../../constants';
+import { PageModel } from '../../models/rest/PageModel';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
+import { SyncedPages } from '../../sync/rest/SyncedPages';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
@@ -20,11 +23,10 @@ export const Sync_Pages = coda.makeSyncTable({
     "Return Pages from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for pages, we have to do a separate Rest call for each page to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Page,
-  schema: PageSyncTableSchema,
+  schema: SyncedPages.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Page.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedPages.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
@@ -38,8 +40,7 @@ export const Sync_Pages = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Page.getDynamicSchema}
-     *  - {@link Page.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedPages.codaParamsMap}
      */
     parameters: [
       {
@@ -56,8 +57,14 @@ export const Sync_Pages = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (params, context) {
-      return Page.sync(params, context);
+    execute: async function (codaSyncParams, context) {
+      const syncedPages = new SyncedPages({
+        context,
+        codaSyncParams,
+        model: PageModel,
+        client: PageClient.createInstance(context),
+      });
+      return syncedPages.executeSync();
     },
     maxUpdateBatchSize: 10,
     executeUpdate: async function (params, updates, context) {

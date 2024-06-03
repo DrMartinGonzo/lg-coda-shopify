@@ -58,7 +58,7 @@ export const OPTIONS_ORDER_FULFILLMENT_STATUS = ['any', 'shipped', 'partial', 'u
 //  - ARCHIVED: The product is no longer being sold and isn't available to customers on sales channels and apps.
 //  - DRAFT: The product isn't ready to sell and is unavailable to customers on sales channels and apps. By default, duplicated and unarchived products are set to draft.
 export const OPTIONS_PRODUCT_STATUS_GRAPHQL = [
-  { display: 'All', value: '*' },
+  // { display: 'All', value: '*' },
   { display: 'Active', value: 'ACTIVE' },
   { display: 'Archived', value: 'ARCHIVED' },
   { display: 'Draft', value: 'DRAFT' },
@@ -68,6 +68,7 @@ export const OPTIONS_PRODUCT_STATUS_REST = [
   { display: 'Archived', value: 'archived' },
   { display: 'Draft', value: 'draft' },
 ];
+export const DEFAULT_PRODUCT_STATUS_GRAPHQL = 'DRAFT';
 export const DEFAULT_PRODUCT_STATUS_REST = 'draft';
 
 export const OPTIONS_PUBLISHED_STATUS = [

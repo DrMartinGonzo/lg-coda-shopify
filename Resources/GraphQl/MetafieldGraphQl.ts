@@ -298,11 +298,11 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
     }
 
     if (ownerType) {
-      return this.allByOwnerType({ ownerType, ...params });
+      return MetafieldGraphQl.allByOwnerType({ ownerType, ...params });
     }
 
     if (ownerIds) {
-      return this.allByOwnerIds({ ownerIds, ...params });
+      return MetafieldGraphQl.allByOwnerIds({ ownerIds, ...params });
     }
 
     throw new Error('ownerType or ownerIds must be provided');
@@ -314,27 +314,29 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
    * - type
    * - owner_id: required for GraphQl
    */
-  public static getRequiredPropertiesForUpdate(schema: coda.ArraySchema<coda.ObjectSchema<string, string>>) {
+  public static getRequiredPropertiesForUpdate(
+    schema: coda.ArraySchema<coda.ObjectSchema<string, string>>,
+    updatedFields: string[] = []
+  ) {
     const { properties } = MetafieldHelper.getStaticSchema();
     return super
-      .getRequiredPropertiesForUpdate(schema)
+      .getRequiredPropertiesForUpdate(schema, updatedFields)
       .concat([properties.label.fromKey, properties.type.fromKey, properties.owner_id.fromKey]);
   }
 
-  protected static async handleRowUpdate(
+  protected static async createInstanceForUpdate(
     prevRow: MetafieldRow,
     newRow: MetafieldRow,
     context: coda.SyncExecutionContext
   ) {
-    this.validateUpdateJob(prevRow, newRow);
-    return MetafieldHelper.handleRowUpdate(prevRow, newRow, context, MetafieldGraphQl);
+    return MetafieldHelper.createInstanceForUpdate(prevRow, newRow, context, MetafieldGraphQl);
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    super.setData(MetafieldHelper.preprocessData(data));
+    super.setData(MetafieldHelper.normalizeMetafieldData(data));
   }
 
   get fullKey() {
@@ -394,7 +396,6 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
     if (!row.label) throw new RequiredParameterMissingVisibleError('label');
     if (!row.type) throw new RequiredParameterMissingVisibleError('type');
 
-    const staticResource = this.resource<typeof MetafieldGraphQl>();
     const { DELETED_SUFFIX } = MetafieldHelper;
 
     const isDeletedFlag = row.label.includes(DELETED_SUFFIX);
@@ -406,7 +407,7 @@ export class MetafieldGraphQl extends AbstractGraphQlResource implements IMetafi
 
     let apiData: Partial<typeof this.apiData> = {
       __typename: 'Metafield',
-      id: idToGraphQlGid(staticResource.graphQlName, row.id),
+      id: idToGraphQlGid(MetafieldGraphQl.graphQlName, row.id),
       createdAt: row.created_at ? row.created_at.toString() : undefined,
       isDeletedFlag,
       key: metaKey,

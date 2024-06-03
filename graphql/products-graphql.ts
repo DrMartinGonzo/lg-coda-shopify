@@ -2,39 +2,88 @@ import { graphql } from '../utils/tada-utils';
 import { metafieldFieldsFragment } from './metafields-graphql';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
+export interface ProductFilters {
+  search?: string;
+  created_at_min?: Date;
+  created_at_max?: Date;
+  updated_at_min?: Date;
+  updated_at_max?: Date;
+  gift_card?: Boolean;
+  published_status?: string;
+  title?: string;
+  status?: string[];
+  vendors?: string[];
+  product_types?: string[];
+  ids?: string[];
+  tags?: string[];
+}
+
 // #region Helpers
-function buildProductsSearchQuery(filters: { [key: string]: any }) {
+export function buildProductsSearchQuery({
+  created_at_max,
+  created_at_min,
+  updated_at_max,
+  updated_at_min,
+  gift_card,
+  ids = [],
+  product_types = [],
+  published_status,
+  search,
+  status = [],
+  tags = [],
+  title,
+  vendors = [],
+}: ProductFilters) {
   const searchItems = [];
-  if (filters.search) searchItems.push(filters.search);
+  if (search) {
+    searchItems.push(search);
+  }
 
   // date range filters
-  if (filters.created_at_min) searchItems.push(`created_at:>='${filters.created_at_min.toISOString()}'`);
-  if (filters.created_at_max) searchItems.push(`created_at:<='${filters.created_at_max.toISOString()}'`);
-  if (filters.updated_at_min) searchItems.push(`updated_at:>='${filters.updated_at_min.toISOString()}'`);
-  if (filters.updated_at_max) searchItems.push(`updated_at:<='${filters.updated_at_max.toISOString()}'`);
+  if (created_at_min) {
+    searchItems.push(`created_at:>='${created_at_min.toISOString()}'`);
+  }
+  if (created_at_max) {
+    searchItems.push(`created_at:<='${created_at_max.toISOString()}'`);
+  }
+  if (updated_at_min) {
+    searchItems.push(`updated_at:>='${updated_at_min.toISOString()}'`);
+  }
+  if (updated_at_max) {
+    searchItems.push(`updated_at:<='${updated_at_max.toISOString()}'`);
+  }
 
-  if (filters.gift_card !== undefined) searchItems.push(`gift_card:'${filters.gift_card === true ? 'true' : 'false'}'`);
-  if (filters.published_status) searchItems.push(`published_status:${filters.published_status}`);
-  if (filters.title) searchItems.push(`title:'${filters.title}'`);
-  if (filters.status && filters.status.length)
-    searchItems.push('(' + filters.status.map((status) => `status:${status}`).join(' OR ') + ')');
-
-  if (filters.vendors && filters.vendors.length)
-    searchItems.push('(' + filters.vendors.map((vendor) => `vendor:'${vendor}'`).join(' OR ') + ')');
-
-  if (filters.product_types && filters.product_types.length)
-    searchItems.push(
-      '(' + filters.product_types.map((product_type) => `product_type:'${product_type}'`).join(' OR ') + ')'
-    );
-
-  if (filters.ids && filters.ids.length) searchItems.push('(' + filters.ids.map((id) => `id:${id}`).join(' OR ') + ')');
+  if (gift_card !== undefined) {
+    searchItems.push(`gift_card:'${gift_card === true ? 'true' : 'false'}'`);
+  }
+  if (published_status) {
+    searchItems.push(`published_status:${published_status}`);
+  }
+  if (status.length) {
+    searchItems.push('(' + status.map((status) => `status:${status}`).join(' OR ') + ')');
+  }
+  if (title) {
+    searchItems.push(`title:'${title}'`);
+  }
+  if (vendors.length) {
+    searchItems.push('(' + vendors.map((vendor) => `vendor:'${vendor}'`).join(' OR ') + ')');
+  }
+  if (product_types.length) {
+    searchItems.push('(' + product_types.map((product_type) => `product_type:'${product_type}'`).join(' OR ') + ')');
+  }
+  if (ids.length) {
+    searchItems.push('(' + ids.map((id) => `id:${id}`).join(' OR ') + ')');
+  }
+  if (tags.length) {
+    searchItems.push('(' + tags.map((tag) => `tag:${tag}`).join(' OR ') + ')');
+  }
 
   return searchItems.join(' AND ');
 }
 // #endregion
 
 // #region Fragments
-const productFieldsFragment = graphql(
+export const productFieldsFragment = graphql(
   `
     fragment ProductFields on Product {
       id
@@ -53,7 +102,7 @@ const productFieldsFragment = graphql(
       onlineStoreUrl
 
       # Optional fields and connections
-      options(first: $maxOptions) @include(if: $includeOptions) {
+      options @include(if: $includeOptions) {
         name
       }
       featuredImage @include(if: $includeFeaturedImage) {
@@ -62,6 +111,11 @@ const productFieldsFragment = graphql(
       metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
         nodes {
           ...MetafieldFields
+        }
+      }
+      images(first: 10) @include(if: $includeImages) {
+        nodes {
+          url
         }
       }
 
@@ -100,18 +154,18 @@ export const getProductTypesQuery = graphql(
   `
 );
 
-const getProductsAdminQuery = graphql(
+export const getProductsQuery = graphql(
   `
-    query getProductsWithMetafields(
+    query GetProducts(
       $limit: Int!
       $cursor: String
       $metafieldKeys: [String!]
       $countMetafields: Int
-      $maxOptions: Int
       $searchQuery: String
       $includeOptions: Boolean!
       $includeFeaturedImage: Boolean!
       $includeMetafields: Boolean!
+      $includeImages: Boolean!
     ) {
       products(first: $limit, after: $cursor, query: $searchQuery) {
         nodes {
@@ -126,35 +180,53 @@ const getProductsAdminQuery = graphql(
   [productFieldsFragment, pageInfoFragment]
 );
 
-// export const QueryProductsMetafieldsAdmin = /* GraphQL */ `
-//   ${MetafieldFieldsFragment}
-
-//   query getProductsMetafields(
-//     $limit: Int!
-//     $cursor: String
-//     $metafieldKeys: [String!]
-//     $countMetafields: Int
-//     $searchQuery: String
-//   ) {
-//     products(first: $limit, after: $cursor, query: $searchQuery, sortKey: ID) {
-//       nodes {
-//         id
-//         metafields(keys: $metafieldKeys, first: $countMetafields) {
-//           nodes {
-//             ...MetafieldFields
-//           }
-//         }
-//       }
-//       pageInfo {
-//         hasNextPage
-//         endCursor
-//       }
-//     }
-//   }
-// `;
+export const getSingleProductQuery = graphql(
+  `
+    query GetSingleProduct(
+      $id: ID!
+      $metafieldKeys: [String!]
+      $countMetafields: Int
+      $includeOptions: Boolean!
+      $includeFeaturedImage: Boolean!
+      $includeMetafields: Boolean!
+      $includeImages: Boolean!
+    ) {
+      product(id: $id) {
+        ...ProductFields
+      }
+    }
+  `,
+  [productFieldsFragment]
+);
 // #endregion
 
 // #region Mutations
+export const createProductMutation = graphql(
+  `
+    mutation CreateProduct(
+      $countMetafields: Int
+      $includeFeaturedImage: Boolean!
+      $includeMetafields: Boolean!
+      $includeOptions: Boolean!
+      $metafieldKeys: [String!]
+      # $metafieldsSetsInput: [MetafieldsSetInput!]!
+      $productInput: ProductInput!
+      $includeImages: Boolean!
+    ) {
+      productCreate(input: $productInput) {
+        product {
+          ...ProductFields
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `,
+  [productFieldsFragment]
+);
+
 export const updateProductMutation = graphql(
   `
     mutation UpdateProduct(
@@ -162,22 +234,22 @@ export const updateProductMutation = graphql(
       $includeFeaturedImage: Boolean!
       $includeMetafields: Boolean!
       $includeOptions: Boolean!
-      $maxOptions: Int
       $metafieldKeys: [String!]
-      $metafieldsSetsInput: [MetafieldsSetInput!]!
+      # $metafieldsSetsInput: [MetafieldsSetInput!]!
       $productInput: ProductInput!
+      $includeImages: Boolean!
     ) {
-      metafieldsSet(metafields: $metafieldsSetsInput) {
-        metafields {
-          key
-          namespace
-          value
-        }
-        userErrors {
-          field
-          message
-        }
-      }
+      # metafieldsSet(metafields: $metafieldsSetsInput) {
+      #   metafields {
+      #     key
+      #     namespace
+      #     value
+      #   }
+      #   userErrors {
+      #     field
+      #     message
+      #   }
+      # }
       productUpdate(input: $productInput) {
         product {
           ...ProductFields
@@ -190,6 +262,21 @@ export const updateProductMutation = graphql(
     }
   `,
   [productFieldsFragment]
+);
+
+export const deleteProductMutation = graphql(
+  `
+    mutation DeleteProduct($id: ID!) {
+      productDelete(input: { id: $id }) {
+        deletedProductId
+
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `
 );
 // #endregion
 
@@ -270,7 +357,6 @@ export const makeMutationProductsWithMetafieldsBulk = () => `
     }
   }
 `;
-*/
 
 const currentBulkOperationQuery = graphql(
   `
@@ -291,4 +377,5 @@ const currentBulkOperationQuery = graphql(
     }
   `
 );
+*/
 // #endregion

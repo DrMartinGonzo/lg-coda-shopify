@@ -1,6 +1,5 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { Body } from '@shopify/shopify-api';
 import { TadaDocumentNode } from 'gql.tada';
 import { ResultOf, VariablesOf } from '../../../utils/tada-utils';
 
@@ -155,7 +154,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
 
   protected static extractDataAtPath<NodeT extends TadaDocumentNode>(currentPath: string, rawData: ResultOf<NodeT>) {
     const parts = currentPath.split('.');
-    let data: Body;
+    let data: any;
     let pointer = rawData as any;
 
     function extract(part: string, parentNode: any): any | any[] {
@@ -201,7 +200,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
     this.extractDataFromAllPossiblePaths(rawData).forEach((data) => {
       if (data && Array.isArray(data)) {
         instances = instances.concat(
-          data.reduce((acc: Array<T>, entry: Body) => acc.concat(this.createInstance<T>(context, entry)), [])
+          data.reduce((acc: Array<T>, entry: any) => acc.concat(this.createInstance<T>(context, entry)), [])
         );
       } else if (data) {
         instances.push(this.createInstance<T>(context, data));
@@ -239,7 +238,7 @@ export abstract class AbstractGraphQlResource extends AbstractResource {
 
     const body = staticResource.extractDataFromAllPossiblePaths(response.body.data)[0];
     /**
-     * Some mutations can udate multipe resources in one go,
+     * Some mutations can update multipe resources in one go,
      * but we are only interested in a single update here
      */
     const singleBody = Array.isArray(body) ? body[0] : body;

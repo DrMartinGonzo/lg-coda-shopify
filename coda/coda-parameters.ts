@@ -25,7 +25,7 @@ import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
-  OPTIONS_PRODUCT_STATUS_REST,
+  OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_LIMIT,
 } from '../constants';
@@ -751,7 +751,7 @@ const productInputs = {
   status: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'status',
-    autocomplete: OPTIONS_PRODUCT_STATUS_REST,
+    autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
     description: 'The status of the product.',
   }),
   templateSuffix: makeTemplateSuffixParameter('product'),
@@ -853,6 +853,58 @@ const redirectInputs = {
     name: 'target',
     description:
       "The target location where the user will be redirected. When the user visits the old path specified by the path property, they will be redirected to this location. This property can be set to any path on the shop's site, or to an external URL. (maximum: 255 characters)",
+  }),
+};
+// #endregion
+
+// #region ProductVariant Inputs
+const translationInputs = {
+  id: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'translationId',
+    description: 'The ID of the translation. In the format of {resourceId}?key={key}&locale={locale}.',
+  }),
+  key: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'key',
+    description: 'The key of the item to translate',
+  }),
+  locale: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'locale',
+    description: 'The locale. (ex: `en`, `fr`, `es`…)',
+  }),
+  resourceId: {
+    ...generalInputs.id,
+    name: 'resourceId',
+    description: 'The ID of the translated resource.',
+  },
+  resourceType: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'resourceType',
+    description: 'The type of the translated resource.',
+    autocomplete: [
+      'COLLECTION',
+      'DELIVERY_METHOD_DEFINITION',
+      'EMAIL_TEMPLATE',
+      'FILTER',
+      'LINK',
+      'METAFIELD',
+      'METAOBJECT',
+      'ONLINE_STORE_ARTICLE',
+      'ONLINE_STORE_BLOG',
+      'ONLINE_STORE_MENU',
+      'ONLINE_STORE_PAGE',
+      'ONLINE_STORE_THEME',
+      'PACKING_SLIP_TEMPLATE',
+      'PAYMENT_GATEWAY',
+      'PRODUCT',
+      'PRODUCT_OPTION',
+      'SELLING_PLAN',
+      'SELLING_PLAN_GROUP',
+      'SHOP',
+      'SHOP_POLICY',
+    ],
   }),
 };
 // #endregion
@@ -1114,12 +1166,12 @@ const productFilters = {
     autocomplete: autocompleteProductTypes,
     description: 'Filter results by product type.',
   }),
-  // productTypesArray: coda.makeParameter({
-  //   type: coda.ParameterType.StringArray,
-  //   name: 'productTypes',
-  //   description: 'Filter results by product types.',
-  //   autocomplete: autocompleteProductTypes,
-  // }),
+  productTypesArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'productTypes',
+    description: 'Filter results by product types.',
+    autocomplete: autocompleteProductTypes,
+  }),
   publishedStatus: {
     ...generalFilters.publishedStatus,
     description: 'Filter results by the published status of the product.',
@@ -1143,13 +1195,22 @@ const productFilters = {
   statusArray: coda.makeParameter({
     type: coda.ParameterType.StringArray,
     name: 'status',
-    autocomplete: OPTIONS_PRODUCT_STATUS_REST,
-    description: 'Filter results by the status of the product.',
+    autocomplete: OPTIONS_PRODUCT_STATUS_GRAPHQL,
+    description: 'Filter results by the status of the product. Lave empty for all.',
   }),
+  tagsArray: {
+    ...generalFilters.tagsArray,
+    description: 'Filter results by comma-separated list of product tags.',
+  },
   vendor: {
     ...productInputs.vendor,
     description: 'Filter results by product vendor.',
   },
+  vendorsArray: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'vendors',
+    description: 'Filter results by comma-separated list of product vendors.',
+  }),
 };
 // #endregion
 
@@ -1159,6 +1220,11 @@ const productVariantFilters = {
     type: coda.ParameterType.StringArray,
     name: 'skus',
     description: 'Filter results by skus.',
+  }),
+  options: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'options',
+    description: 'Filter results by comma-separated list of option values.',
   }),
 };
 // #endregion
@@ -1209,6 +1275,7 @@ export const inputs = {
   product: productInputs,
   productVariant: productVariantInputs,
   redirect: redirectInputs,
+  translation: translationInputs,
 };
 
 export const filters = {

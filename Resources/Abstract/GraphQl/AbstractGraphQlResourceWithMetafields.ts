@@ -39,14 +39,16 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
     return this.metafieldDefinitions;
   }
 
-  /** Mostly the same code as {@link AbstractRestResourceWithMetafields.handleRowUpdate} */
-  // TODO: deduplicate
-  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
+  /** Mostly the same code as {@link AbstractRestResourceWithMetafields.createInstanceForUpdate} */
+  protected static async createInstanceForUpdate(
+    prevRow: BaseRow,
+    newRow: BaseRow,
+    context: coda.SyncExecutionContext
+  ) {
     if (!hasMetafieldsInRow(newRow)) {
-      return super.handleRowUpdate(prevRow, newRow, context);
+      return super.createInstanceForUpdate(prevRow, newRow, context);
     }
 
-    this.validateUpdateJob(prevRow, newRow);
     const metafieldDefinitions = await this.getMetafieldDefinitions(context);
     const metafields = await Metafield.createInstancesFromRow({
       context,
@@ -55,13 +57,10 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
       ownerResource: this.metafieldRestOwnerType,
     });
 
-    const instance: AbstractGraphQlResourceWithMetafields = new (this as any)({
+    return new (this as any)({
       context,
       fromRow: { row: newRow, metafields },
-    });
-
-    await instance.saveAndUpdate();
-    return { ...prevRow, ...instance.formatToRow() };
+    }) as AbstractGraphQlResourceWithMetafields;
   }
 
   /**====================================================================================================================
@@ -103,7 +102,7 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
        */
       if (isUpdate) {
         const newMetafields = await Promise.all(
-          restMetafieldInstances.map(async (m: Metafield) => {
+          restMetafieldInstances.map(async (m) => {
             await m.saveAndUpdate();
             return m;
           })
@@ -118,7 +117,7 @@ export abstract class AbstractGraphQlResourceWithMetafields extends AbstractGrap
        * When creating a resource, we can create the metafields in bulk directly
        * on the main request. We have to use the metafields data and not the
        * Metafield instances themselves.
-       * */
+       */
       else {
         variables.metafields = this.apiData.restMetafieldInstances.map((metafield: Metafield) => {
           const { key, namespace, type, value } = metafield.apiData;

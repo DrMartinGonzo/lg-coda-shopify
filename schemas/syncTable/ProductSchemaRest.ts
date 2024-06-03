@@ -1,6 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
-import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_REST, PACK_IDENTITIES } from '../../constants';
+import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_GRAPHQL, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { FieldDependency } from '../Schema.types';
 
@@ -18,6 +18,14 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
      * Disabled
      */
     /*
+    published_scope: {
+      ...PROPS.STRING,
+      fixedId: 'published_scope',
+      fromKey: 'published_scope',
+      description: `Whether the product is published to the Point of Sale channel. Valid values:
+- web: The product isn't published to the Point of Sale channel.
+- global: The product is published to the Point of Sale channel.`,
+    },
      */
     admin_url: PROPS.makeAdminUrlProp('product'),
     storeUrl: PROPS.makeStoreUrlProp('product'),
@@ -39,7 +47,7 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       },
       fixedId: 'images',
       fromKey: 'images',
-      mutable: true,
+      // mutable: true,
       description: 'A list of product image urls.',
     },
     featuredImage: {
@@ -68,22 +76,16 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       description:
         publishedAtProp.description + "\nUse product status to unpublish the product by setting it to 'DRAFT'.",
     },
-    published_scope: {
-      ...PROPS.STRING,
-      fixedId: 'published_scope',
-      fromKey: 'published_scope',
-      description: `Whether the product is published to the Point of Sale channel. Valid values:
-- web: The product isn't published to the Point of Sale channel.
-- global: The product is published to the Point of Sale channel.`,
-    },
     status: {
       ...PROPS.SELECT_LIST,
       fixedId: 'status',
       fromKey: 'status',
       mutable: true,
-      options: OPTIONS_PRODUCT_STATUS_REST.map((s) => s.value),
+      options: OPTIONS_PRODUCT_STATUS_GRAPHQL.map((s) => s.value),
       requireForUpdates: true,
-      description: `The status of the product. Can be ${OPTIONS_PRODUCT_STATUS_REST.map((s) => s.display).join(', ')}`,
+      description: `The status of the product. Can be ${OPTIONS_PRODUCT_STATUS_GRAPHQL.map((s) => s.display).join(
+        ', '
+      )}`,
     },
     tags: {
       ...PROPS.makeTagsProp('product'),
@@ -106,6 +108,12 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
       mutable: true,
       description: 'The name of the product vendor.',
     },
+    giftCard: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'giftCard',
+      fromKey: 'giftCard',
+      description: 'Whether the product is a gift card.',
+    },
   },
   displayProperty: 'title',
   idProperty: 'id',
@@ -120,17 +128,17 @@ export const ProductSyncTableSchemaRest = coda.makeObjectSchema({
 });
 export const productFieldDependencies: FieldDependency<typeof ProductSyncTableSchemaRest.properties>[] = [
   {
-    field: 'body_html',
-    dependencies: ['body'],
+    field: 'storeUrl',
+    dependencies: ['published'],
   },
-  {
-    field: 'handle',
-    dependencies: ['storeUrl'],
-  },
-  {
-    field: 'status',
-    dependencies: ['storeUrl'],
-  },
+  // {
+  //   field: 'handle',
+  //   dependencies: ['storeUrl'],
+  // },
+  // {
+  //   field: 'status',
+  //   dependencies: ['storeUrl'],
+  // },
 ];
 export const ProductReference = coda.makeReferenceSchemaFromObjectSchema(
   ProductSyncTableSchemaRest,

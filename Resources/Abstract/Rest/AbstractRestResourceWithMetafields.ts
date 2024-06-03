@@ -51,12 +51,15 @@ export abstract class AbstractRestResourceWithMetafields extends AbstractRestRes
     return this.metafieldDefinitions;
   }
 
-  protected static async handleRowUpdate(prevRow: BaseRow, newRow: BaseRow, context: coda.SyncExecutionContext) {
+  protected static async createInstanceForUpdate(
+    prevRow: BaseRow,
+    newRow: BaseRow,
+    context: coda.SyncExecutionContext
+  ) {
     if (!hasMetafieldsInRow(newRow)) {
-      return super.handleRowUpdate(prevRow, newRow, context);
+      return super.createInstanceForUpdate(prevRow, newRow, context);
     }
 
-    this.validateUpdateJob(prevRow, newRow);
     const metafieldDefinitions = await this.getMetafieldDefinitions(context);
     const metafields = await Metafield.createInstancesFromRow({
       context,
@@ -64,13 +67,11 @@ export abstract class AbstractRestResourceWithMetafields extends AbstractRestRes
       metafieldDefinitions,
       ownerResource: this.metafieldRestOwnerType,
     });
-    const instance: AbstractRestResourceWithMetafields = new (this as any)({
+
+    return new (this as any)({
       context,
       fromRow: { row: newRow, metafields },
-    });
-
-    await instance.saveAndUpdate();
-    return { ...prevRow, ...instance.formatToRow() };
+    }) as AbstractGraphQlResourceWithMetafields;
   }
 
   public static async syncUpdate(

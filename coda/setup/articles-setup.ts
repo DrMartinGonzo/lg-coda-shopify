@@ -1,15 +1,19 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { ArticleClient } from '../../Clients/RestApiClientBase';
 import { Article } from '../../Resources/Rest/Article';
 import { Asset } from '../../Resources/Rest/Asset';
 import { FromRow } from '../../Resources/types/Resource.types';
-import { PACK_IDENTITIES } from '../../constants';
+import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { ArticleModel } from '../../models/rest/ArticleModel';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { SyncedArticles } from '../../sync/rest/SyncedArticles';
+import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
 import { parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #region Sync tables
@@ -19,11 +23,10 @@ export const Sync_Articles = coda.makeSyncTable({
     "Return Articles from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings, but be aware that it will slow down the sync (Shopify doesn't yet support GraphQL calls for articles, we have to do a separate Rest call for each article to get its metafields).",
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Article,
-  schema: ArticleSyncTableSchema,
+  schema: SyncedArticles.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Article.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedArticles.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
@@ -37,8 +40,7 @@ export const Sync_Articles = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Article.getDynamicSchema}
-     *  - {@link Article.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedArticles.codaParamsMap}
      */
     parameters: [
       {
@@ -56,9 +58,25 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.tagsArray, optional: true },
     ],
-    execute: async (params, context) => Article.sync(params, context),
+    execute: async (codaSyncParams, context) => {
+      const syncedArticles = new SyncedArticles({
+        context,
+        codaSyncParams,
+        model: ArticleModel,
+        client: ArticleClient.createInstance(context),
+      });
+      return syncedArticles.executeSync();
+    },
     maxUpdateBatchSize: 10,
-    executeUpdate: async (params, updates, context) => Article.syncUpdate(params, updates, context),
+    executeUpdate: async (codaSyncParams, updates, context) => {
+      const syncedArticles = new SyncedArticles({
+        context,
+        codaSyncParams,
+        model: ArticleModel,
+        client: ArticleClient.createInstance(context),
+      });
+      return syncedArticles.executeSyncUpdate(updates);
+    },
   },
 });
 // #endregion
@@ -171,7 +189,7 @@ export const Action_UpdateArticle = coda.makeFormula({
   schema: ArticleSyncTableSchema,
   execute: async function (
     [
-      articleId,
+      id,
       author,
       blog,
       bodyHtml,
@@ -188,32 +206,38 @@ export const Action_UpdateArticle = coda.makeFormula({
     ],
     context
   ) {
-    const fromRow: FromRow<ArticleRow> = {
-      row: {
-        id: articleId,
-        author,
-        blog_id: blog ? parseOptionId(blog) : undefined,
-        body_html: bodyHtml,
-        summary_html: summaryHtml,
-        handle,
-        published_at: publishedAt,
-        tags: tags ? tags.join(',') : undefined,
-        template_suffix: templateSuffix,
-        title,
-        published,
-        image_alt_text: imageAlt,
-        image_url: imageUrl,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: articleId, owner_resource: Article.metafieldRestOwnerType })
-      ),
-    };
+    const article = ArticleModel.createInstanceFromRow(context, {
+      id,
+      author,
+      blog_id: blog ? parseOptionId(blog) : undefined,
+      body_html: bodyHtml,
+      summary_html: summaryHtml,
+      handle,
+      published_at: publishedAt,
+      tags: tags ? tags.join(',') : undefined,
+      template_suffix: templateSuffix,
+      title,
+      published,
+      image_alt_text: imageAlt,
+      image_url: imageUrl,
+    });
+    if (metafields) {
+      article.data.metafields = CodaMetafieldSetNew.createMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerResource: Article.metafieldRestOwnerType,
+        ownerId: id,
+      });
+    }
 
-    const updatedArticle = new Article({ context, fromRow });
-    await updatedArticle.saveAndUpdate();
-    return updatedArticle.formatToRow();
+    console.log('article', article.data.metafields);
+    await article.save();
+    return article.toCodaRow();
+
+    // const response = await ArticleClient.create(context).update({
+    //   id,
+    //   data: article.data,
+    // });
+    // return response.data.toCodaRow();
   },
 });
 
@@ -221,7 +245,20 @@ export const Action_DeleteArticle = makeDeleteRestResourceAction(Article, inputs
 // #endregion
 
 // #region Formulas
-export const Formula_Article = makeFetchSingleRestResourceAction(Article, inputs.article.id);
+// export const Formula_Article = makeFetchSingleRestResourceAction(Article, inputs.article.id);
+export const Formula_Article = coda.makeFormula({
+  name: 'Article',
+  description: `Return a single Article from this shop.`,
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  parameters: [inputs.article.id],
+  cacheTtlSecs: CACHE_DEFAULT,
+  resultType: coda.ValueType.Object,
+  schema: ArticleSyncTableSchema,
+  execute: async ([id], context) => {
+    const response = await ArticleClient.createInstance(context).single({ id });
+    return ArticleModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Format_Article: coda.Format = {
   name: 'Article',

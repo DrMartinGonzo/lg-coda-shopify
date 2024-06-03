@@ -385,36 +385,36 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
   }
 
   public formatToRow(): CustomerRow {
-    const { apiData } = this;
+    const { apiData: data } = this;
 
     let obj: CustomerRow = {
-      ...excludeObjectKeys(apiData, ['metafields', 'addresses', 'default_address']),
-      admin_url: `${this.context.endpoint}/admin/customers/${apiData.id}`,
+      ...excludeObjectKeys(data, ['metafields', 'addresses', 'default_address']),
+      admin_url: `${this.context.endpoint}/admin/customers/${data.id}`,
       display: formatPersonDisplayValue({
-        id: apiData.id,
-        firstName: apiData.first_name,
-        lastName: apiData.last_name,
-        email: apiData.email,
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: data.email,
       }),
-      total_spent: parseFloat(apiData.total_spent),
+      total_spent: parseFloat(data.total_spent),
 
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
       // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
     };
 
-    if (apiData.default_address) {
+    if (data.default_address) {
       // we don't want to keep customer_id prop in address
-      const { customer_id, ...defaultAddressWithoutCustomerId } = apiData.default_address;
+      const { customer_id, ...defaultAddressWithoutCustomerId } = data.default_address;
       obj.default_address = {
         // keep typescript happy
         id: defaultAddressWithoutCustomerId.id as number,
-        display: formatAddressDisplayName(apiData.default_address),
+        display: formatAddressDisplayName(data.default_address),
         ...defaultAddressWithoutCustomerId,
       };
     }
-    if (apiData.addresses) {
-      obj.addresses = apiData.addresses.map((address) => {
+    if (data.addresses) {
+      obj.addresses = data.addresses.map((address) => {
         const { customer_id, ...addressWithoutCustomerId } = address;
         return {
           // keep typescript happy
@@ -424,15 +424,15 @@ export class Customer extends AbstractRestResourceWithGraphQLMetafields {
         };
       });
     }
-    if (apiData.email_marketing_consent) {
-      obj.accepts_email_marketing = apiData.email_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+    if (data.email_marketing_consent) {
+      obj.accepts_email_marketing = data.email_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
     }
-    if (apiData.sms_marketing_consent) {
-      obj.accepts_sms_marketing = apiData.sms_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+    if (data.sms_marketing_consent) {
+      obj.accepts_sms_marketing = data.sms_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
     }
 
-    if (apiData.metafields) {
-      apiData.metafields.forEach((metafield: IMetafield) => {
+    if (data.metafields) {
+      data.metafields.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

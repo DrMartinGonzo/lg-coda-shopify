@@ -7,6 +7,12 @@ export class RequiredParameterMissingVisibleError extends coda.UserVisibleError 
   }
 }
 
+export class RequiredSyncTableMissingVisibleError extends coda.UserVisibleError {
+  constructor(message?: string) {
+    super(`Required SyncTable column missing: ${message}`);
+  }
+}
+
 export class NotFoundVisibleError extends coda.UserVisibleError {
   constructor(name?: string) {
     super(`${name} not found.`);

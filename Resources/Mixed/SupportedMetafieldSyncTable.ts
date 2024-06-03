@@ -146,4 +146,3 @@ export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = 
   MetafieldOwnerType.Productvariant,
   MetafieldOwnerType.Shop,
 ].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
-// #endregion

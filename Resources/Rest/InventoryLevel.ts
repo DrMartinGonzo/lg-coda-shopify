@@ -193,7 +193,7 @@ export class InventoryLevel extends AbstractRestResource {
 
   public async save({ update = false }: SaveArgs = {}): Promise<void> {
     const responseBody = await this.set(this.apiData);
-    const body: Body | undefined = responseBody ? (responseBody as Body)['inventory_level'] : undefined;
+    const body: any | undefined = responseBody ? responseBody['inventory_level'] : undefined;
     if (update && body) {
       this.setData(body);
     }

@@ -26,7 +26,7 @@ import { IMetafield } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 import { SupportedMetafieldOwnerResource } from './Metafield';
-import { Product } from './Product';
+import { ProductRest } from './ProductRest';
 
 // #endregion
 
@@ -79,10 +79,10 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
   public apiData: RestApiDataWithMetafields &
     VariantData & {
       // custom properties
-      product_handle: Product['apiData']['handle'];
-      product_images: Product['apiData']['images'];
-      product_status: Product['apiData']['status'];
-      product_title: Product['apiData']['title'];
+      product_handle: ProductRest['apiData']['handle'];
+      product_images: ProductRest['apiData']['images'];
+      product_status: ProductRest['apiData']['status'];
+      product_title: ProductRest['apiData']['title'];
     };
 
   public static readonly displayName: Identity = PACK_IDENTITIES.ProductVariant;
@@ -118,30 +118,28 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
     codaSyncParams: CodaSyncParams<typeof Sync_ProductVariants>
   ): CodaSyncParams<typeof Sync_Products> {
     const [
-      product_type, // productType
       syncMetafields, // syncMetafields
+      product_type, // productTypesArray
       created_at, // createdAtRange
       updated_at, // updatedAtRange
-      published_at, // publishedAtRange
+      // published_at, // publishedAtRange
       status, // statusArray
       published_status, // publishedStatus
-      vendor, // vendor
-      handles, // handleArray
+      vendor, // vendorsArray
+      skus, // skuArray
       ids, // idArray
     ] = codaSyncParams;
 
     return [
-      product_type, // productType
       syncMetafields, // syncMetafields
+      product_type, // productTypesArray
       created_at, // createdAtRange
       updated_at, // updatedAtRange
-      published_at, // publishedAtRange
       status, // statusArray
       published_status, // publishedStatus
-      vendor, // vendor
-      handles, // handleArray
+      vendor, // vendorsArray
       ids, // idArray
-      undefined, // collectionId
+      undefined, // tagsArray
     ];
   }
 
@@ -162,7 +160,7 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
         context,
         nextPageQuery,
         limit,
-        firstPageParams: Product.getFirstPageParams({
+        firstPageParams: ProductRest.getFirstPageParams({
           codaSyncParams: codaProductSyncParams,
           fields: arrayUnique(
             syncTableManager
@@ -172,7 +170,7 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
           ),
         }),
       });
-      const productsResponse = await Product.all(params);
+      const productsResponse = await ProductRest.all(params);
 
       return {
         ...productsResponse,
@@ -200,7 +198,7 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
   }
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
     let augmentedSchema = deepCopy(ProductVariantSyncTableSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(
@@ -269,7 +267,7 @@ export class Variant extends AbstractRestResourceWithGraphQLMetafields {
    *    Instance Methods
    *===================================================================================================================== */
   public async refreshDataWithtParentProduct() {
-    const product = await Product.find({
+    const product = await ProductRest.find({
       id: this.apiData.product_id,
       fields: ['images', 'handle', 'status', 'title'].join(','),
       context: this.context,

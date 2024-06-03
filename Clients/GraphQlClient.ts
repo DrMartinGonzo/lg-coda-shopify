@@ -31,19 +31,19 @@ import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-uti
 // comme la requete graphql est elle même rapide, ça devrait passer ?
 
 // #region Types
-interface GraphQlData<TadaT extends TadaDocumentNode> {
-  data: ResultOf<TadaT>;
+interface GraphQlData<NodeT extends TadaDocumentNode> {
+  data: ResultOf<NodeT>;
   errors: any;
   extensions: {
     cost: ShopifyGraphQlRequestCost;
   };
 }
 
-type GraphQlCodaFetchResponse<TadaT extends TadaDocumentNode> = coda.FetchResponse<GraphQlData<TadaT>>;
+type GraphQlCodaFetchResponse<NodeT extends TadaDocumentNode> = coda.FetchResponse<GraphQlData<NodeT>>;
 
-export interface GraphQlRequestReturn<TadaT extends TadaDocumentNode> {
-  body: GraphQlCodaFetchResponse<TadaT>['body'];
-  headers: GraphQlCodaFetchResponse<TadaT>['headers'];
+export interface GraphQlRequestReturn<NodeT extends TadaDocumentNode> {
+  body: GraphQlCodaFetchResponse<NodeT>['body'];
+  headers: GraphQlCodaFetchResponse<NodeT>['headers'];
   cost: ShopifyGraphQlRequestCost;
   pageInfo?: PageInfo;
 }
