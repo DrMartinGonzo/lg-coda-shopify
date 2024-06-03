@@ -5,6 +5,7 @@ import { FetchRequestOptions } from '../../Clients/Client.types';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
+import { SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
@@ -50,6 +51,27 @@ export interface MetafieldApiData extends BaseApiDataRest {
 }
 
 export interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
+
+export interface MetafieldModelDataNew extends BaseModelDataRest, ModelWithDeletedFlag {
+  id: number;
+  gid: string;
+  namespace: string;
+  key: string;
+  type: string;
+  value: string;
+  ownerId: number;
+  ownerGid: string;
+  /** Used to reference Product Variant parent Product */
+  parentOwnerId?: number;
+  /** Used to reference Product Variant parent Product */
+  parentOwnerGid?: string;
+  ownerType: SupportedMetafieldOwnerType;
+  ownerResource: SupportedMetafieldOwnerResource;
+  definitionId: number;
+  definitionGid: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface CreateMetafieldInstancesFromRowArgs {
   ownerRow: BaseRow;

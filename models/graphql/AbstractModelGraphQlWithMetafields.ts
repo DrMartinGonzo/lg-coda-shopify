@@ -2,7 +2,7 @@
 import { ResultOf } from '../../utils/tada-utils';
 
 import { AbstractModelGraphQl, BaseModelDataGraphQl, BaseApiDataGraphQl } from './AbstractModelGraphQl';
-import { MetafieldApidata, MetafieldGraphQlModel } from './MetafieldGraphQlModel';
+import { MetafieldApiData, MetafieldGraphQlModel } from './MetafieldGraphQlModel';
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 
@@ -48,7 +48,7 @@ export abstract class AbstractModelGraphQlWithMetafields<T> extends AbstractMode
           MetafieldGraphQlModel.createInstance(this.context, {
             ...d,
             parentNode: { id: this.data[this.primaryKey] },
-          } as MetafieldApidata)
+          } as MetafieldApiData)
         )
       : [];
   }

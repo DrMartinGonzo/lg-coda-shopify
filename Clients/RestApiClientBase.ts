@@ -9,6 +9,7 @@ import { REST_DEFAULT_API_VERSION } from '../config';
 import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 
 import { RestResourcesSingular, singularToPlural } from '../Resources/types/SupportedResource';
+import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
 import { isNullish, isNullishOrEmpty, splitAndTrimValues } from '../utils/helpers';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
@@ -16,12 +17,12 @@ import { getShopifyRequestHeaders } from './utils/client-utils';
 import { BaseModelDataRest } from '../models/rest/AbstractModelRest';
 import { ArticleApiData, ArticleModelData } from '../models/rest/ArticleModel';
 import { AssetApiData, AssetModelData } from '../models/rest/AssetModel';
+import { BlogApiData, BlogModelData } from '../models/rest/BlogModel';
+import { CollectApiData, CollectModelData } from '../models/rest/CollectModel';
+import { CustomerApiData, CustomerModelData } from '../models/rest/CustomerModel';
 import { MetafieldApiData, MetafieldModelData } from '../models/rest/MetafieldModel';
 import { PageApiData, PageModelData } from '../models/rest/PageModel';
 import { ThemeApiData, ThemeModelData } from '../models/rest/ThemeModel';
-import { CustomerApiData, CustomerModelData } from '../models/rest/CustomerModel';
-import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
-import { BlogApiData, BlogModelData } from '../models/rest/BlogModel';
 // #endregion
 
 // #region Types
@@ -390,6 +391,24 @@ export class BlogClient extends CrudClient<SingleBlogArgs, ListBlogsArgs, BlogAp
       throw new InvalidValueVisibleError('commentable: ' + params.commentable);
     }
     return true;
+  }
+}
+// #endregion
+
+// #region CollectClient
+interface SingleCollectArgs extends BaseFindArgs {
+  id: number;
+}
+export interface ListCollectsArgs extends BaseFindArgs {
+  [key: string]: unknown;
+  limit?: unknown;
+  since_id?: unknown;
+  fields?: string;
+}
+
+export class CollectClient extends CrudClient<SingleCollectArgs, ListCollectsArgs, CollectApiData, CollectModelData> {
+  constructor(params: RestClientParams) {
+    super({ singular: 'collect', plural: 'collects', ...params });
   }
 }
 // #endregion

@@ -41,7 +41,7 @@ import {
 } from '../graphql/products-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
 import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
-import { MetafieldApidata, MetafieldModelData } from '../models/graphql/MetafieldGraphQlModel';
+import { MetafieldApiData, MetafieldModelData } from '../models/graphql/MetafieldGraphQlModel';
 import { ProductApidata, ProductModelData } from '../models/graphql/ProductModel';
 import { MetafieldOwnerType, MetafieldsSetInput, Node, PageInfo, ProductInput } from '../types/admin.types';
 import { arrayUnique, dumpToConsole, excludeUndefinedObjectKeys, isNullish, logAdmin } from '../utils/helpers';
@@ -440,11 +440,11 @@ export class GraphQlApiClientBase {
 interface MetafieldOwnerNodeApidata extends Node {
   __typename: string;
   parentOwner: Node;
-  metafields: { nodes: MetafieldApidata[] };
+  metafields: { nodes: MetafieldApiData[] };
 }
 
 interface SingleMetafieldResponse {
-  node: MetafieldApidata;
+  node: MetafieldApiData;
 }
 interface SingleMetafieldByKeyResponse {
   node: MetafieldOwnerNodeApidata;
@@ -464,7 +464,7 @@ interface MultipleMetafieldsByOwnerIdsResponse {
 interface SetMetafieldsResponse {
   metafieldsSet: {
     owner: Omit<MetafieldOwnerNodeApidata, 'metafields'>;
-    metafields: MetafieldApidata[];
+    metafields: MetafieldApiData[];
   };
 }
 
@@ -488,14 +488,14 @@ export interface ListMetafieldsByOwnerTypeArgs extends Omit<ListMetafieldsArgs, 
   ownerType: SupportedMetafieldOwnerType;
 }
 
-function transformMetafieldOwnerNode(ownerNode: MetafieldOwnerNodeApidata): MetafieldApidata[] {
+function transformMetafieldOwnerNode(ownerNode: MetafieldOwnerNodeApidata): MetafieldApiData[] {
   return (
     ownerNode?.metafields?.nodes
       .map((metafield) => includeOwnerInMetafieldData(metafield, ownerNode))
       .filter(Boolean) || []
   );
 }
-function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeApidata[]): MetafieldApidata[] {
+function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeApidata[]): MetafieldApiData[] {
   return (
     ownerNodes
       .map((node) => transformMetafieldOwnerNode(node))
@@ -504,9 +504,9 @@ function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeApidata[]): 
   );
 }
 function includeOwnerInMetafieldData(
-  metafield: MetafieldApidata,
+  metafield: MetafieldApiData,
   ownerNode: Pick<MetafieldOwnerNodeApidata, 'id' | 'parentOwner'>
-): MetafieldApidata {
+): MetafieldApiData {
   const data = { ...metafield };
   if (ownerNode) {
     data.parentNode = {
@@ -601,7 +601,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
     options,
     ...otherArgs
   }: ListMetafieldsByOwnerIdsArgs) {
-    return this.request<MetafieldApidata[]>(
+    return this.request<MetafieldApiData[]>(
       withCacheDefault({
         options,
         documentNode: getNodesMetafieldsByKeyQuery,
@@ -635,7 +635,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
       ...otherArgs,
     } as VariablesOf<ReturnType<typeof getResourceMetafieldsByKeysQueryFromOwnerType>>;
 
-    return this.request<MetafieldApidata[]>(
+    return this.request<MetafieldApiData[]>(
       withCacheDefault({
         options,
         documentNode,
@@ -668,7 +668,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
       const documentNode = setMetafieldsMutation;
       const variables = { inputs: [input] } as VariablesOf<typeof setMetafieldsMutation>;
 
-      return this.request<MetafieldApidata>({
+      return this.request<MetafieldApiData>({
         documentNode,
         variables,
         transformBodyResponse: transformSetMetafieldResponse,

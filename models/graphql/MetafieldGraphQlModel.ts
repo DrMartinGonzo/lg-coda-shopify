@@ -31,7 +31,7 @@ import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
 // #endregion
 
 // #region Types
-export interface MetafieldApidata
+export interface MetafieldApiData
   extends BaseApiDataGraphQl,
     ResultOf<typeof metafieldFieldsFragment>,
     ResultOf<typeof metafieldFieldsFragmentWithDefinition> {
@@ -43,7 +43,7 @@ export interface MetafieldApidata
   };
 }
 
-export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApidata, ModelWithDeletedFlag {}
+export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
 // #endregion
 
 export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQlModel> {
@@ -75,7 +75,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
         value,
         parentNode: ownerGid ? { id: ownerGid } : undefined,
         definition: definitionGid ? { id: definitionGid } : undefined,
-      } as Partial<MetafieldApidata>);
+      } as Partial<MetafieldApiData>);
     });
   }
 
@@ -108,7 +108,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
     super.setData(MetafieldHelper.normalizeMetafieldData(data));
   }
 
-  protected validateData(data: MetafieldApidata) {
+  protected validateData(data: MetafieldApiData) {
     const missing: string[] = [];
     if (!data.type) missing.push('type');
     if (!data.ownerType) missing.push('ownerType');
@@ -130,7 +130,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
     return preprendPrefixToMetaFieldKey(this.fullKey);
   }
 
-  protected async getFullFreshData(): Promise<MetafieldApidata | undefined> {
+  protected async getFullFreshData(): Promise<MetafieldApiData | undefined> {
     const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
     if (this.data.id) {
       const found = await this.client.single({ id: this.data.id, options });
