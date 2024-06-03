@@ -36,13 +36,50 @@ function getRefundQuantity(item, refunds) {
 // #region Formatting functions
 // TODO: fix `order: any` en `order: Order['apiData']`
 // pour ça il faudrait que l'on définisse correctement les types dans Order, sans les créer seulement à partir des Schemas définis pour Coda
+interface DiscountApplication {
+  allocation_method: 'across' | 'each' | 'one';
+  code?: string;
+  description?: string;
+  target_selection: 'all' | 'entitled' | 'explicit';
+  target_type: 'line_item' | 'shipping_line';
+  title: string;
+  type: 'automatic' | 'discount_code' | 'manual' | 'script';
+  value: string;
+  value_type: 'fixed_amount' | 'percentage';
+}
+
 export const formatOrderForDocExport = (order) => {
-  const discountApplications = order.discount_applications;
+  let refundedShippingAmount = 0;
+  let refundedShippingTaxAmount = 0;
+
+  const discountApplications: DiscountApplication[] = order.discount_applications;
   const refunds = order.refunds;
   const items: SheetExport.Invoice.Item[] = [];
 
+  const collectedShippingLineDiscounts: {
+    amount: number;
+    tax: number;
+  }[] = order.shipping_lines
+    .map((line) => {
+      const taxRate = line.tax_lines[0]?.rate;
+      return line.discount_allocations.map((discountAllocation) => {
+        return {
+          amount: parseFloat(discountAllocation.amount),
+          // TODO rename to taxRate
+          tax: taxRate,
+        };
+      });
+    })
+    .flat();
+  if (collectedShippingLineDiscounts.length) {
+    refundedShippingAmount += Math.abs(collectedShippingLineDiscounts.reduce((prev, curr) => prev + curr.amount, 0));
+    refundedShippingTaxAmount += Math.abs(
+      collectedShippingLineDiscounts.reduce((previous, current) => previous + current.tax * current.amount, 0)
+    );
+  }
+
   discountApplications.forEach((discountApplication, index) => {
-    const collectedAmounts = [];
+    const collectedLineItemAmounts = [];
     order.line_items.forEach((item) => {
       const taxRate = item.tax_lines[0]?.rate;
       const quantityAfterRefunds = item.quantity - getRefundQuantity(item, refunds);
@@ -50,7 +87,7 @@ export const formatOrderForDocExport = (order) => {
       if (quantityAfterRefunds > 0) {
         item.discount_allocations.forEach((discountAllocation) => {
           if (discountAllocation.discount_application_index === index) {
-            collectedAmounts.push({
+            collectedLineItemAmounts.push({
               amount: parseFloat(discountAllocation.amount),
               tax: taxRate,
             });
@@ -59,7 +96,7 @@ export const formatOrderForDocExport = (order) => {
       }
     });
 
-    if (collectedAmounts.length) {
+    if (collectedLineItemAmounts.length) {
       let name = '';
       switch (discountApplication.type) {
         case 'discount_code':
@@ -74,14 +111,14 @@ export const formatOrderForDocExport = (order) => {
           break;
       }
 
-      const uniqueTaxes = collectedAmounts
+      const uniqueTaxes = collectedLineItemAmounts
         .map((amount) => amount.tax)
         .filter((value, index, array) => array.indexOf(value) == index);
       if (uniqueTaxes.length) {
         uniqueTaxes.forEach((tax) => {
           items.push({
             name,
-            price: collectedAmounts
+            price: collectedLineItemAmounts
               .filter((a) => a.tax === tax)
               .reduce((prev, curr) => prev + convertTTCtoHT(curr.amount, tax), 0),
             quantity: -1,
@@ -92,7 +129,7 @@ export const formatOrderForDocExport = (order) => {
       } else {
         items.push({
           name,
-          price: collectedAmounts.reduce((prev, curr) => prev + curr.amount, 0),
+          price: collectedLineItemAmounts.reduce((prev, curr) => prev + curr.amount, 0),
           quantity: -1,
           tax: null,
           discount_type: discountApplication.type,
@@ -100,9 +137,6 @@ export const formatOrderForDocExport = (order) => {
       }
     }
   });
-
-  let refundedShippingAmount = 0;
-  let refundedShippingTaxAmount = 0;
 
   if (refunds.length) {
     const refundedShipping = order.refunds.flatMap((refund) => {
@@ -112,12 +146,12 @@ export const formatOrderForDocExport = (order) => {
     });
 
     if (refundedShipping.length) {
-      refundedShippingAmount = Math.abs(
+      refundedShippingAmount += Math.abs(
         refundedShipping.reduce((previous, current) => {
           return previous + parseFloat(current.amount);
         }, 0)
       );
-      refundedShippingTaxAmount = Math.abs(
+      refundedShippingTaxAmount += Math.abs(
         refundedShipping.reduce((previous, current) => {
           return previous + parseFloat(current.tax_amount);
         }, 0)
@@ -177,10 +211,9 @@ export const formatOrderForDocExport = (order) => {
 
   const shipping: SheetExport.Invoice.ShippingLineInterface[] = order.shipping_lines.map((data) => {
     const taxRate = data.tax_lines[0]?.rate;
-
     return {
       name: data.title,
-      price: convertTTCtoHT(parseFloat(data.price), taxRate) - refundedShippingAmount,
+      price: convertTTCtoHT(parseFloat(data.price) - refundedShippingAmount, taxRate),
       quantity: 1,
       tax: taxRate ?? '',
     };
