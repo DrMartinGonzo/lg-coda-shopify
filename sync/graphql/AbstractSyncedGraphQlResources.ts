@@ -43,9 +43,7 @@ interface ISyncedGraphQlResourcesConstructorArgs<T> extends ISyncedResourcesCons
 // #endregion
 
 // TODO
-function hasMetafieldsSupport<T extends AbstractModelGraphQl<T> | AbstractModelGraphQlWithMetafields<T>>(
-  model: any
-): model is typeof AbstractModelGraphQlWithMetafields {
+function hasMetafieldsSupport(model: any): model is typeof AbstractModelGraphQlWithMetafields {
   return (
     (model as typeof AbstractModelGraphQlWithMetafields).metafieldRestOwnerType !== undefined &&
     (model as typeof AbstractModelGraphQlWithMetafields).metafieldGraphQlOwnerType !== undefined
@@ -53,7 +51,7 @@ function hasMetafieldsSupport<T extends AbstractModelGraphQl<T> | AbstractModelG
 }
 
 export abstract class AbstractSyncedGraphQlResources<
-  T extends AbstractModelGraphQl<T> | AbstractModelGraphQlWithMetafields<T>
+  T extends AbstractModelGraphQl<any> | AbstractModelGraphQlWithMetafields<any>
 > extends AbstractSyncedResources<T> {
   protected static defaultLimit = GRAPHQL_NODES_LIMIT;
 
@@ -229,7 +227,7 @@ export abstract class AbstractSyncedGraphQlResources<
 
         if (this.supportMetafields && hasMetafieldsInUpdate(update)) {
           const metafieldDefinitions = await this.getMetafieldDefinitions();
-          (instance as AbstractModelGraphQlWithMetafields<T>).data.metafields =
+          (instance as AbstractModelGraphQlWithMetafields<any>).data.metafields =
             await MetafieldGraphQlModel.createInstancesFromOwnerRow({
               context: this.context,
               ownerRow: newRow,

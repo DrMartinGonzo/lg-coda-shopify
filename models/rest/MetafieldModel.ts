@@ -5,8 +5,7 @@ import { FetchRequestOptions } from '../../Clients/Client.types';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
-import { SupportedMetafieldOwnerType } from '../../Resources/GraphQl/MetafieldGraphQl';
-import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
+import { MetafieldHelper, MetafieldNormalizedData } from '../../Resources/Mixed/MetafieldHelper';
 import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES } from '../../constants';
@@ -30,48 +29,17 @@ export interface MetafieldApiData extends BaseApiDataRest {
   key: string | null;
   namespace: string | null;
   value: string | null;
-  article_id: number | null;
-  blog_id: number | null;
-  collection_id: number | null;
   created_at: string | null;
-  customer_id: number | null;
-  draft_order_id: number | null;
   id: number | null;
   admin_graphql_api_id: string | null;
-  order_id: number | null;
   owner_id: number | null;
   owner_resource: SupportedMetafieldOwnerResource | null;
-  page_id: number | null;
-  product_id: number | null;
-  product_image_id: number | null;
   type: string | null;
   updated_at: string | null;
-  variant_id: number | null;
   definition_id: number | null;
 }
 
 export interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
-
-export interface MetafieldModelDataNew extends BaseModelDataRest, ModelWithDeletedFlag {
-  id: number;
-  gid: string;
-  namespace: string;
-  key: string;
-  type: string;
-  value: string;
-  ownerId: number;
-  ownerGid: string;
-  /** Used to reference Product Variant parent Product */
-  parentOwnerId?: number;
-  /** Used to reference Product Variant parent Product */
-  parentOwnerGid?: string;
-  ownerType: SupportedMetafieldOwnerType;
-  ownerResource: SupportedMetafieldOwnerResource;
-  definitionId: number;
-  definitionGid: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface CreateMetafieldInstancesFromRowArgs {
   ownerRow: BaseRow;
@@ -87,67 +55,59 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
   public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
   protected static readonly graphQlName = GraphQlResourceNames.Metafield;
 
+  private static createInstanceFromMetafieldNormalizedData({
+    context,
+    normalizedData,
+  }: {
+    context: coda.ExecutionContext;
+    normalizedData: MetafieldNormalizedData;
+  }) {
+    return MetafieldModel.createInstance(context, {
+      admin_graphql_api_id: normalizedData.gid,
+      id: normalizedData.id,
+      namespace: normalizedData.namespace,
+      key: normalizedData.key,
+      type: normalizedData.type,
+      value: normalizedData.value,
+      owner_id: normalizedData.ownerId,
+      owner_resource: normalizedData.ownerResource,
+      created_at: normalizedData.createdAt,
+      updated_at: normalizedData.updatedAt,
+      definition_id: normalizedData.definitionId,
+      isDeletedFlag: normalizedData.isDeletedFlag,
+    } as MetafieldModelData);
+  }
+
   public static async createInstancesFromOwnerRow({
     context,
     ownerRow,
     ownerResource,
     metafieldDefinitions = [],
   }: CreateMetafieldInstancesFromRowArgs): Promise<MetafieldModel[]> {
-    const preprocessedMetafieldsData = await MetafieldHelper.normalizeOwnerRowMetafields({
+    const normalizedOwnerRowMetafields = await MetafieldHelper.normalizeOwnerRowMetafields({
       context,
       ownerResource,
       ownerRow,
       metafieldDefinitions,
     });
-    return preprocessedMetafieldsData.map(
-      ({ namespace, key, type, ownerResource, definitionId, definitionGid, ownerId, value }) => {
-        return MetafieldModel.createInstance(context, {
-          namespace,
-          key,
-          type,
-          value,
-          owner_id: ownerId,
-          owner_resource: ownerResource,
-          definition_id: definitionId,
-        } as MetafieldApiData);
-      }
+    return normalizedOwnerRowMetafields.map((n) =>
+      MetafieldModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData: n })
     );
   }
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: MetafieldRow) {
-    const { definitionId, deleted, key, namespace, ownerId, ownerResource, type, value, id, gid } =
-      MetafieldHelper.normalizeMetafieldRow(row);
-    let data: Partial<MetafieldModelData> = {
-      admin_graphql_api_id: gid,
-      id,
-      key,
-      namespace,
-      owner_id: ownerId,
-      owner_resource: ownerResource,
-      type,
-      value,
-      definition_id: definitionId,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
-
-      isDeletedFlag: deleted,
-    };
-
-    return MetafieldModel.createInstance(context, data);
+    const normalizedData = MetafieldHelper.normalizeMetafieldRow(row);
+    return MetafieldModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData });
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected setData(data: any): void {
-    super.setData(MetafieldHelper.normalizeMetafieldData(data));
-  }
-
   protected validateData(data: MetafieldApiData) {
     const missing: string[] = [];
     if (!data.type) missing.push('type');
     if (!data.owner_resource) missing.push('owner_resource');
-    if (!data.owner_id && data.owner_resource !== RestResourcesSingular.Shop) missing.push('owner_id');
+    if (data.id && !data.owner_id && data.owner_resource !== RestResourcesSingular.Shop) missing.push('owner_id');
     if (missing.length) {
       throw new RequiredParameterMissingVisibleError(missing.join(', '));
     }
@@ -166,7 +126,7 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
 
   protected async getFullFreshData(): Promise<MetafieldApiData | undefined> {
     const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
-    if (this.data[this.primaryKey]) {
+    if (this.data.id) {
       const found = await this.client.single({ id: this.data.id, options });
       return found ? found.body : undefined;
     } else {
@@ -185,7 +145,7 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
     if (shouldDeleteMetafield(this.data.value)) {
       await this.delete();
     } else {
-      if (this.data[this.primaryKey]) {
+      if (this.data.id) {
         response = await this.client.update(this.data);
       } else {
         response = await this.client.create(this.data);
@@ -198,10 +158,10 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
 
   public async delete(): Promise<void> {
     /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
-    if (!this.data[this.primaryKey]) await this.refreshData();
+    if (!this.data.id) await this.refreshData();
 
     /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
-    if (this.data[this.primaryKey]) {
+    if (this.data.id) {
       await super.delete();
     } else {
       logAdmin(`Metafield already deleted.`);
@@ -213,10 +173,7 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
   }
 
   public formatValueForOwnerRow() {
-    return formatMetaFieldValueForSchema({
-      value: this.data.value,
-      type: this.data.type,
-    });
+    return formatMetaFieldValueForSchema({ value: this.data.value, type: this.data.type });
   }
 
   public toCodaRow(includeHelperColumns = true): MetafieldRow {

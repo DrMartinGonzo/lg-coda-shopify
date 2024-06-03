@@ -30,9 +30,8 @@ export abstract class AbstractModelGraphQlWithMetafields<T> extends AbstractMode
   public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
 
   public async syncMetafields(): Promise<void> {
-    const staticResource = this.asStatic<typeof AbstractModelGraphQlWithMetafields>();
     const metafieldsResponse = await MetafieldGraphQlClient.createInstance(this.context).list({
-      ownerIds: [idToGraphQlGid(staticResource.graphQlName, this.data.id)],
+      ownerIds: [this.data[this.primaryKey]],
     });
     this.data.metafields = metafieldsResponse.body.map((d) => MetafieldGraphQlModel.createInstance(this.context, d));
   }

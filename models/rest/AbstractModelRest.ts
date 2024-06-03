@@ -5,7 +5,7 @@ import { IRestCRUD, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { AbstractModel } from '../AbstractModel';
+import { AbstractModel, BaseModelData, Serialized } from '../AbstractModel';
 
 // #endregion
 
@@ -13,7 +13,7 @@ import { AbstractModel } from '../AbstractModel';
 export interface BaseApiDataRest {
   id: number | null;
 }
-export interface BaseModelDataRest {
+export interface BaseModelDataRest extends BaseModelData {
   id: number;
 }
 // #endregion
@@ -29,7 +29,7 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
     if ('admin_graphql_api_id' in this.data) {
       return this.data.admin_graphql_api_id as string;
     }
-    return idToGraphQlGid(this.asStatic<typeof AbstractModelRest>().graphQlName, this.data[this.primaryKey]);
+    return idToGraphQlGid((this.asStatic() as typeof AbstractModelRest).graphQlName, this.data[this.primaryKey]);
   }
 
   protected async getFullFreshData(): Promise<BaseApiDataRest | undefined> {
@@ -44,14 +44,35 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
     let response: RestRequestReturn<BaseApiDataRest>;
     const isUpdate = this.data[this.primaryKey];
     if (isUpdate) {
-      response = await this.client.update(this.data);
+      response = await this.client.update(this.serializedData);
     } else {
-      response = await this.client.create(this.data);
+      response = await this.client.create(this.serializedData);
     }
-    this.setData(response.body);
+    if (response) {
+      this.setData(response.body);
+    }
   }
 
   public async delete() {
-    await this.client.delete(this.data);
+    await this.client.delete(this.serializedData);
+  }
+
+  protected get serializedData(): Serialized<any> {
+    function process(prop: any) {
+      if (prop instanceof AbstractModelRest) {
+        return prop.serializedData;
+      }
+      if (Array.isArray(prop)) {
+        return prop.map(process);
+      }
+      return prop;
+    }
+
+    const ret = {};
+    for (let key in this.data) {
+      const prop = this.data[key];
+      ret[key] = process(prop);
+    }
+    return ret as Serialized<any>;
   }
 }

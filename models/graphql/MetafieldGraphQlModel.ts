@@ -6,16 +6,17 @@ import { MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
-import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
+import { MetafieldHelper, MetafieldNormalizedData } from '../../Resources/Mixed/MetafieldHelper';
 import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from '../../graphql/metafields-graphql';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import {
   formatMetaFieldValueForSchema,
-  matchOwnerResourceToMetafieldOwnerType,
+  getMetaFieldFullKey,
   matchOwnerTypeToOwnerResource,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
+  splitMetaFieldFullKey,
 } from '../../utils/metafields-utils';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
@@ -52,68 +53,69 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
   public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
   protected static readonly graphQlName = GraphQlResourceNames.Metafield;
 
+  private static createInstanceFromMetafieldNormalizedData({
+    context,
+    normalizedData,
+  }: {
+    context: coda.ExecutionContext;
+    normalizedData: MetafieldNormalizedData;
+  }) {
+    return MetafieldGraphQlModel.createInstance(context, {
+      __typename: 'Metafield',
+      id: normalizedData.gid,
+      namespace: normalizedData.namespace,
+      key: normalizedData.key,
+      type: normalizedData.type,
+      value: normalizedData.value,
+      parentNode: normalizedData.parentOwnerGid ? { id: normalizedData.parentOwnerGid } : undefined,
+      ownerType: normalizedData.ownerType,
+      createdAt: normalizedData.createdAt,
+      updatedAt: normalizedData.updatedAt,
+      definition: normalizedData.definitionGid ? { id: normalizedData.definitionGid } : undefined,
+      isDeletedFlag: normalizedData.isDeletedFlag,
+    } as MetafieldModelData);
+  }
+
   public static async createInstancesFromOwnerRow({
     context,
     ownerRow,
     ownerResource,
     metafieldDefinitions = [],
   }: CreateMetafieldInstancesFromRowArgs): Promise<MetafieldGraphQlModel[]> {
-    const preprocessedMetafieldsData = await MetafieldHelper.normalizeOwnerRowMetafields({
+    const normalizedOwnerRowMetafields = await MetafieldHelper.normalizeOwnerRowMetafields({
       context,
       ownerResource,
       ownerRow,
       metafieldDefinitions,
     });
-    return preprocessedMetafieldsData.map(({ namespace, key, type, ownerGid, ownerResource, definitionGid, value }) => {
-      const ownerType = matchOwnerResourceToMetafieldOwnerType(ownerResource);
-      return MetafieldGraphQlModel.createInstance(context, {
-        __typename: 'Metafield',
-        namespace,
-        key,
-        type,
-        ownerType,
-        value,
-        parentNode: ownerGid ? { id: ownerGid } : undefined,
-        definition: definitionGid ? { id: definitionGid } : undefined,
-      } as Partial<MetafieldApiData>);
-    });
+    return normalizedOwnerRowMetafields.map((n) =>
+      MetafieldGraphQlModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData: n })
+    );
   }
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: MetafieldRow) {
-    const { definitionGid, deleted, key, namespace, ownerGid, ownerType, type, value, gid } =
-      MetafieldHelper.normalizeMetafieldRow(row);
-    let data: Partial<MetafieldModelData> = {
-      __typename: 'Metafield',
-      id: gid,
-      key,
-      namespace,
-      parentNode: ownerGid ? { id: ownerGid } : undefined,
-      ownerType,
-      type,
-      value,
-      definition: definitionGid ? { id: definitionGid } : undefined,
-      createdAt: row.created_at ? row.created_at.toString() : undefined,
-      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
-
-      isDeletedFlag: deleted,
-    };
-
-    return MetafieldGraphQlModel.createInstance(context, data);
+    const normalizedData = MetafieldHelper.normalizeMetafieldRow(row);
+    return MetafieldGraphQlModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData });
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
   protected setData(data: any): void {
-    super.setData(MetafieldHelper.normalizeMetafieldData(data));
+    // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
+    const fullkey = getMetaFieldFullKey({ key: data.key, namespace: data.namespace });
+    const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
+    data.key = metaKey;
+    data.namespace = metaNamespace;
+
+    super.setData(data);
   }
 
   protected validateData(data: MetafieldApiData) {
     const missing: string[] = [];
     if (!data.type) missing.push('type');
     if (!data.ownerType) missing.push('ownerType');
-    console.log('data', data);
-    if (!data.parentNode?.id && data.ownerType !== MetafieldOwnerType.Shop) missing.push('parentNode.id');
+    if (data.id && !data.parentNode?.id && data.ownerType !== MetafieldOwnerType.Shop) missing.push('parentNode.id');
     if (missing.length) {
       throw new RequiredParameterMissingVisibleError(missing.join(', '));
     }
@@ -155,10 +157,10 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
   }
 
   public async delete(): Promise<void> {
-    if (!this.data[this.primaryKey]) await this.refreshData();
+    if (!this.data.id) await this.refreshData();
 
     /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
-    if (this.data[this.primaryKey]) {
+    if (this.data.id) {
       await super.delete();
     } else {
       logAdmin(`Metafield already deleted.`);
@@ -170,10 +172,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
   }
 
   public formatValueForOwnerRow() {
-    return formatMetaFieldValueForSchema({
-      value: this.data.value,
-      type: this.data.type,
-    });
+    return formatMetaFieldValueForSchema({ value: this.data.value, type: this.data.type });
   }
 
   public toCodaRow(includeHelperColumns = true): MetafieldRow {

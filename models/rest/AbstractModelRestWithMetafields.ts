@@ -2,7 +2,7 @@
 
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 import { MetafieldGraphQlModel } from '../graphql/MetafieldGraphQlModel';
-import { MetafieldModel } from './MetafieldModel';
+import { MetafieldApiData, MetafieldModel, MetafieldModelData } from './MetafieldModel';
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
@@ -11,6 +11,7 @@ import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield'
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
+import { Serialized } from '../AbstractModel';
 
 // #endregion
 
@@ -44,17 +45,23 @@ export abstract class AbstractModelRestWithMetafields<T> extends AbstractModelRe
 
   public async save() {
     let response: RestRequestReturn<BaseApiDataRest>;
-    const { metafields, ...data } = this.data;
+    const serializedData = this.serializedData as Serialized<BaseModelDataRestWithRestMetafields>;
+    const metafieldInstances = this.data.metafields;
+
     const isUpdate = this.data[this.primaryKey];
     if (isUpdate) {
+      /** Il faut séparer les metafields de l'objet d'origine pour ne pas les
+       * sauvegarder lors d'une update. Ils seront sauvegardés séparément */
+      const { metafields, ...data } = serializedData;
       response = await this.client.update(data);
     } else {
-      response = await this.client.create(this.data);
+      response = await this.client.create(serializedData);
+    }
+    if (response) {
+      this.setData(response.body);
     }
 
-    this.setData(response.body);
-
-    if (metafields) {
+    if (metafieldInstances) {
       /**
        * Que ce soit lors d'une update ou d'une creation, les metafields ont été
        * effacés par this.setData() car aucune des deux réponses ne renvoit de
@@ -62,7 +69,7 @@ export abstract class AbstractModelRestWithMetafields<T> extends AbstractModelRe
        *
        * Assume metafields have been correctly created if no error is thrown
        */
-      this.data.metafields = metafields;
+      this.data.metafields = metafieldInstances;
 
       // If we did an update, metafiields are not saved yet
       if (isUpdate) {
@@ -80,44 +87,49 @@ export abstract class AbstractRestModelWithGraphQlMetafields<T> extends Abstract
   protected static readonly graphQlName: GraphQlResourceName;
 
   public async syncMetafields(): Promise<void> {
-    const staticResource = this.asStatic<typeof AbstractRestModelWithGraphQlMetafields>();
     const metafieldsResponse = await MetafieldGraphQlClient.createInstance(this.context).list({
-      ownerIds: [idToGraphQlGid(staticResource.graphQlName, this.data[this.primaryKey])],
+      ownerIds: [this.graphQlGid],
     });
     this.data.metafields = metafieldsResponse.body.map((d) => MetafieldGraphQlModel.createInstance(this.context, d));
   }
 
-  public async saveMetafields(): Promise<void> {
-    await Promise.all(this.data.metafields.map(async (metafield) => metafield.save()));
-  }
+  // public async saveMetafields(): Promise<void> {
+  //   await Promise.all(this.data.metafields.map(async (metafield) => metafield.save()));
+  // }
 
-  public async save() {
-    let response: RestRequestReturn<BaseApiDataRest>;
-    /** Il faut séparer les metafields de l'objet d'origine pour ne pas les
-     * sauvegarder lors d'une update. Ils seront sauvegardés séparément */
-    const { metafields, ...data } = this.data;
-    const isUpdate = this.data[this.primaryKey];
-    if (isUpdate) {
-      response = await this.client.update(data);
-    } else {
-      response = await this.client.create(this.data);
-    }
-    this.setData(response.body);
+  // TODO: dedupe
+  // public async save() {
+  //   let response: RestRequestReturn<BaseApiDataRest>;
+  //   const serializedData = this.serializedData as Serialized<BaseModelDataRestWithRestMetafields>;
+  //   const metafieldInstances = this.data.metafields;
 
-    if (metafields) {
-      /**
-       * Que ce soit lors d'une update ou d'une creation, les metafields ont été
-       * effacés par this.setData() car aucune des deux réponses ne renvoit de
-       * metafields. On remet donc les metafields a leur valeur théorique
-       *
-       * Assume metafields have been correctly created if no error is thrown
-       */
-      this.data.metafields = metafields;
+  //   const isUpdate = this.data[this.primaryKey];
+  //   if (isUpdate) {
+  //     /** Il faut séparer les metafields de l'objet d'origine pour ne pas les
+  //      * sauvegarder lors d'une update. Ils seront sauvegardés séparément */
+  //     const { metafields, ...data } = serializedData;
+  //     response = await this.client.update(data);
+  //   } else {
+  //     response = await this.client.create(this.serializedData);
+  //   }
+  //   if (response) {
+  //     this.setData(response.body);
+  //   }
 
-      // If we did an update, metafiields are not saved yet
-      if (isUpdate) {
-        await this.saveMetafields();
-      }
-    }
-  }
+  //   if (metafieldInstances) {
+  //     /**
+  //      * Que ce soit lors d'une update ou d'une creation, les metafields ont été
+  //      * effacés par this.setData() car aucune des deux réponses ne renvoit de
+  //      * metafields. On remet donc les metafields a leur valeur théorique
+  //      *
+  //      * Assume metafields have been correctly created if no error is thrown
+  //      */
+  //     this.data.metafields = metafieldInstances;
+
+  //     // If we did an update, metafiields are not saved yet
+  //     if (isUpdate) {
+  //       await this.saveMetafields();
+  //     }
+  //   }
+  // }
 }

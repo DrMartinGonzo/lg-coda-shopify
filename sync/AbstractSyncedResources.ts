@@ -69,7 +69,7 @@ function AddMetafieldsSupportMixin<TBase extends Constructable>(Base: TBase) {
 }
 // #endregion
 
-export abstract class AbstractSyncedResources<T extends AbstractModel<T>> {
+export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   protected data: T[];
 
   protected readonly model: ModelType<T>;

@@ -13,6 +13,8 @@ interface AbstractModelConstructorArgs {
   fromData?: any | null;
 }
 
+export interface BaseModelData {}
+
 export interface ModelWithDeletedFlag {
   /** un flag special pour savoir si un metafield a deja été supprimé, utile
    * dans le cas du'une sync table de metafields, où l'on peut supprimer un
@@ -20,13 +22,14 @@ export interface ModelWithDeletedFlag {
    * Ça va nous servir à formatter le label avec [deleted] à la fin */
   isDeletedFlag: boolean;
 }
+
+export type Serialized<T extends BaseModelData> = Record<keyof T, any>;
 // #endregion
 
 export abstract class AbstractModel<T> {
   public data: any;
   protected readonly primaryKey: string;
 
-  // protected static readonly primaryKey: string = 'id';
   // protected static readonly readOnlyAttributes: string[] = [];
 
   protected context: coda.ExecutionContext;
@@ -104,6 +107,7 @@ export abstract class AbstractModel<T> {
     this.validateData(data);
     this.data = cleanData;
   }
+
   protected validateData(data: any) {}
 
   protected static combineMerge(target: any[], source: any[], options: deepmerge.ArrayMergeOptions) {

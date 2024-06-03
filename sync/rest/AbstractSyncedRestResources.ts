@@ -21,7 +21,6 @@ import {
   AbstractSyncedResources,
   ISyncedResourcesConstructorArgs,
   SyncTableContinuation,
-  SyncTableExtraContinuationData,
   SyncedResourcesSyncResult,
 } from '../AbstractSyncedResources';
 
@@ -40,9 +39,7 @@ export interface ISyncedRestResourcesConstructorArgs<T> extends ISyncedResources
 }
 // #endregion
 
-function hasMetafieldsSupport<T extends AbstractModelRest<T> | AbstractModelRestWithMetafields<T>>(
-  model: any
-): model is typeof AbstractModelRestWithMetafields {
+function hasMetafieldsSupport(model: any): model is typeof AbstractModelRestWithMetafields {
   return (
     (model as typeof AbstractModelRestWithMetafields).metafieldRestOwnerType !== undefined &&
     (model as typeof AbstractModelRestWithMetafields).metafieldGraphQlOwnerType !== undefined
@@ -50,7 +47,7 @@ function hasMetafieldsSupport<T extends AbstractModelRest<T> | AbstractModelRest
 }
 
 export abstract class AbstractSyncedRestResources<
-  T extends AbstractModelRest<T> | AbstractModelRestWithMetafields<T>
+  T extends AbstractModelRest<any> | AbstractModelRestWithMetafields<any>
 > extends AbstractSyncedResources<T> {
   protected static defaultLimit = REST_DEFAULT_LIMIT;
   protected readonly client: IRestCRUD;

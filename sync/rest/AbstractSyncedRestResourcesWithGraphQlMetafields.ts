@@ -42,7 +42,7 @@ type RevivedBatchData<T extends AbstractModel<any>> = {
 // #endregion
 
 export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
-  T extends AbstractRestModelWithGraphQlMetafields<T>
+  T extends AbstractRestModelWithGraphQlMetafields<any>
 > extends AbstractSyncedRestResources<T> {
   protected model: ModelType<any> & { graphQlName: GraphQlResourceName };
 

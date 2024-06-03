@@ -8,7 +8,7 @@ import { MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
 import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
-import { MetafieldModel } from '../models/rest/MetafieldModel';
+import { MetafieldApiData, MetafieldModel } from '../models/rest/MetafieldModel';
 
 // #endregion
 
@@ -197,7 +197,7 @@ export class CodaMetafieldSetNew {
       value: Array.isArray(this.value) ? JSON.stringify(this.value) : this.value,
       owner_resource: owner_resource,
       owner_id: owner_id,
-    });
+    } as MetafieldApiData);
 
     // new MetafieldNew(
 

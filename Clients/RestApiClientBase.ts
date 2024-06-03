@@ -10,25 +10,28 @@ import { OPTIONS_PUBLISHED_STATUS } from '../constants';
 
 import { RestResourcesSingular, singularToPlural } from '../Resources/types/SupportedResource';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
-import { isNullish, isNullishOrEmpty, splitAndTrimValues } from '../utils/helpers';
+import { isDefinedEmpty, isNullish, isNullishOrEmpty, splitAndTrimValues } from '../utils/helpers';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
-import { BaseModelDataRest } from '../models/rest/AbstractModelRest';
-import { ArticleApiData, ArticleModelData } from '../models/rest/ArticleModel';
-import { AssetApiData, AssetModelData } from '../models/rest/AssetModel';
-import { BlogApiData, BlogModelData } from '../models/rest/BlogModel';
-import { CollectApiData, CollectModelData } from '../models/rest/CollectModel';
-import { CustomerApiData, CustomerModelData } from '../models/rest/CustomerModel';
-import { MetafieldApiData, MetafieldModelData } from '../models/rest/MetafieldModel';
-import { PageApiData, PageModelData } from '../models/rest/PageModel';
-import { ThemeApiData, ThemeModelData } from '../models/rest/ThemeModel';
+import { BaseApiDataRest } from '../models/rest/AbstractModelRest';
+import { ArticleApiData } from '../models/rest/ArticleModel';
+import { AssetApiData } from '../models/rest/AssetModel';
+import { BlogApiData } from '../models/rest/BlogModel';
+import { CollectApiData } from '../models/rest/CollectModel';
+import { CustomerApiData } from '../models/rest/CustomerModel';
+import { MetafieldApiData } from '../models/rest/MetafieldModel';
+import { PageApiData } from '../models/rest/PageModel';
+import { ThemeApiData } from '../models/rest/ThemeModel';
 // #endregion
 
 // #region Types
 interface BaseFindArgs {
   fields?: string;
   options?: FetchRequestOptions;
+}
+interface BaseSingleArgs extends BaseFindArgs {
+  id: number;
 }
 
 export interface RestRequestReturn<ResT extends any> extends coda.FetchResponse<ResT> {
@@ -234,23 +237,22 @@ export abstract class RestApiClientBase {
 export interface IRestCRUD {
   single(params: any): Promise<RestRequestReturn<any>>;
   list(params: any): Promise<RestRequestReturn<any[]>>;
-  create(modelData: BaseModelDataRest): Promise<RestRequestReturn<any>>;
-  update(modelData: BaseModelDataRest): Promise<RestRequestReturn<any>>;
-  delete(modelData: BaseModelDataRest): Promise<RestRequestReturn<any>>;
+  create(modelData: any): Promise<RestRequestReturn<any>>;
+  update(modelData: any): Promise<RestRequestReturn<any>>;
+  delete(modelData: any): Promise<RestRequestReturn<any>>;
 }
 
 // TODO Rename and integrate directly into RestApiClientBase
 abstract class CrudClient<
     SingleArgs extends BaseFindArgs & { id: number },
     ListArgs extends BaseFindArgs,
-    ApiData,
-    ModelData extends BaseModelDataRest
+    ApiData extends BaseApiDataRest
   >
   extends RestApiClientBase
   implements IRestCRUD
 {
-  private singular: string;
-  private plural: string;
+  protected singular: string;
+  protected plural: string;
 
   constructor({
     singular,
@@ -293,28 +295,30 @@ abstract class CrudClient<
     });
   }
 
-  async create(modelData: ModelData) {
+  async create(data: ApiData) {
+    if (isDefinedEmpty(data)) return;
     return super.basePost<ApiData>({
       path: `${this.plural}.json`,
-      body: { blog: modelData },
+      body: { [this.singular]: data },
       name: `create ${this.singular}`,
       transformBodyResponse: this.transformSingleResponse.bind(this),
     });
   }
 
-  async update(modelData: ModelData) {
-    const { id, ...d } = modelData;
+  async update(data: ApiData) {
+    const { id, ...d } = data;
+    if (isDefinedEmpty(d)) return;
     return super.basePut<ApiData>({
       path: `${this.plural}/${id}.json`,
-      body: { blog: d },
+      body: { [this.singular]: d },
       name: `update ${this.singular}`,
       transformBodyResponse: this.transformSingleResponse.bind(this),
     });
   }
 
-  async delete(modelData: ModelData) {
+  async delete(data: ApiData) {
     return super.baseDelete<{}>({
-      path: `${this.plural}/${modelData.id}.json`,
+      path: `${this.plural}/${data.id}.json`,
       name: `delete ${this.singular}`,
     });
   }
@@ -322,9 +326,6 @@ abstract class CrudClient<
 // #endregion
 
 // #region ArticleClient
-interface SingleArticleArgs extends BaseFindArgs {
-  id: number;
-}
 export interface ListArticlesArgs extends BaseFindArgs {
   [key: string]: unknown;
   blog_id?: number | null;
@@ -342,16 +343,18 @@ export interface ListArticlesArgs extends BaseFindArgs {
   author?: string;
 }
 
-export class ArticleClient extends CrudClient<SingleArticleArgs, ListArticlesArgs, ArticleApiData, ArticleModelData> {
+export class ArticleClient extends CrudClient<BaseSingleArgs, ListArticlesArgs, ArticleApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'article', plural: 'articles', ...params });
   }
 
-  async create(modelData: ArticleModelData) {
-    const { blog_id, ...d } = modelData;
+  async create(data: ArticleApiData) {
+    const { blog_id, ...d } = data;
+    // TODO: need a check on request level. Problem : the main key
+    if (isDefinedEmpty(d)) return;
     return super.basePost<ArticleApiData>({
       path: `blogs/${blog_id}/articles.json`,
-      body: { article: d },
+      body: { [this.singular]: d },
       name: 'create article',
       transformBodyResponse: this.transformSingleResponse.bind(this),
     });
@@ -368,9 +371,6 @@ export class ArticleClient extends CrudClient<SingleArticleArgs, ListArticlesArg
 // #endregion
 
 // #region BlogClient
-interface SingleBlogArgs extends BaseFindArgs {
-  id: number;
-}
 export interface ListBlogsArgs extends BaseFindArgs {
   [key: string]: unknown;
   commentable?: string;
@@ -380,7 +380,7 @@ export interface ListBlogsArgs extends BaseFindArgs {
   fields?: string;
 }
 
-export class BlogClient extends CrudClient<SingleBlogArgs, ListBlogsArgs, BlogApiData, BlogModelData> {
+export class BlogClient extends CrudClient<BaseSingleArgs, ListBlogsArgs, BlogApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'blog', plural: 'blogs', ...params });
   }
@@ -396,9 +396,6 @@ export class BlogClient extends CrudClient<SingleBlogArgs, ListBlogsArgs, BlogAp
 // #endregion
 
 // #region CollectClient
-interface SingleCollectArgs extends BaseFindArgs {
-  id: number;
-}
 export interface ListCollectsArgs extends BaseFindArgs {
   [key: string]: unknown;
   limit?: unknown;
@@ -406,7 +403,7 @@ export interface ListCollectsArgs extends BaseFindArgs {
   fields?: string;
 }
 
-export class CollectClient extends CrudClient<SingleCollectArgs, ListCollectsArgs, CollectApiData, CollectModelData> {
+export class CollectClient extends CrudClient<BaseSingleArgs, ListCollectsArgs, CollectApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'collect', plural: 'collects', ...params });
   }
@@ -414,9 +411,6 @@ export class CollectClient extends CrudClient<SingleCollectArgs, ListCollectsArg
 // #endregion
 
 // #region CustomerClient
-interface SingleCustomerArgs extends BaseFindArgs {
-  id: number;
-}
 export interface ListCustomersArgs extends BaseFindArgs {
   ids?: unknown;
   since_id?: unknown;
@@ -428,12 +422,7 @@ export interface ListCustomersArgs extends BaseFindArgs {
   tags?: string[];
 }
 
-export class CustomerClient extends CrudClient<
-  SingleCustomerArgs,
-  ListCustomersArgs,
-  CustomerApiData,
-  CustomerModelData
-> {
+export class CustomerClient extends CrudClient<BaseSingleArgs, ListCustomersArgs, CustomerApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'customer', plural: 'customers', ...params });
   }
@@ -463,7 +452,7 @@ interface ListAssetsArgs extends BaseFindArgs {
   asset?: { [key: string]: unknown } | null;
 }
 
-export class AssetClient extends CrudClient<any, ListAssetsArgs, AssetApiData, AssetModelData> {
+export class AssetClient extends CrudClient<any, ListAssetsArgs, AssetApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'asset', plural: 'assets', ...params });
   }
@@ -485,9 +474,6 @@ interface SingleMetafieldResponse {
 }
 interface MultipleMetafieldsResponse {
   metafields: MetafieldApiData[];
-}
-interface SingleMetafieldArgs extends BaseFindArgs {
-  id: number;
 }
 interface ListMetafieldsByKeysArgs extends BaseFindArgs {
   metafieldKeys: Array<string>;
@@ -513,12 +499,7 @@ interface ListMetafieldsArgs extends BaseFindArgs {
 const transformSingleMetafieldResponse = (response: SingleMetafieldResponse) => response.metafield;
 const transformListMetafieldsResponse = (response: MultipleMetafieldsResponse) => response.metafields;
 
-export class MetafieldClient extends CrudClient<
-  SingleMetafieldArgs,
-  ListMetafieldsArgs,
-  MetafieldApiData,
-  MetafieldModelData
-> {
+export class MetafieldClient extends CrudClient<BaseSingleArgs, ListMetafieldsArgs, MetafieldApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'metafield', plural: 'metafields', ...params });
   }
@@ -550,39 +531,38 @@ export class MetafieldClient extends CrudClient<
     });
   }
 
-  async create(modelData: MetafieldModelData) {
+  async create(data: MetafieldApiData) {
+    if (isDefinedEmpty(data)) return;
     return super.basePost<MetafieldApiData>({
-      path: this.getPostPath(modelData),
-      body: { metafield: modelData },
+      path: this.getPostPath(data),
+      body: { [this.singular]: data },
       name: 'create metafield',
       transformBodyResponse: transformSingleMetafieldResponse,
     });
   }
-  getPostPath(modelData: MetafieldModelData) {
-    return modelData.owner_resource !== RestResourcesSingular.Shop
-      ? `${singularToPlural(modelData.owner_resource)}/${modelData.owner_id}/metafields.json`
+  getPostPath(data: MetafieldApiData) {
+    return data.owner_resource !== RestResourcesSingular.Shop
+      ? `${singularToPlural(data.owner_resource)}/${data.owner_id}/metafields.json`
       : 'metafields.json';
   }
 
-  async update(modelData: MetafieldModelData) {
-    const { id, ...d } = modelData;
+  async update(data: MetafieldApiData) {
+    const { id, ...d } = data;
+    if (isDefinedEmpty(d)) return;
     return super.basePut<MetafieldApiData>({
-      path: this.getPutPath(modelData),
-      body: { metafield: d },
+      path: this.getPutPath(data),
+      body: { [this.singular]: d },
       name: 'update metafield',
       transformBodyResponse: transformSingleMetafieldResponse,
     });
   }
-  getPutPath(modelData: MetafieldModelData) {
-    return this.getPostPath(modelData).split('.json')[0] + `/${modelData.id}.json`;
+  getPutPath(data: MetafieldApiData) {
+    return this.getPostPath(data).split('.json')[0] + `/${data.id}.json`;
   }
 }
 // #endregion
 
 // #region PageClient
-interface SinglePageArgs extends BaseFindArgs {
-  id: number;
-}
 export interface ListPagesArgs extends BaseFindArgs {
   [key: string]: unknown;
   limit?: unknown;
@@ -598,7 +578,7 @@ export interface ListPagesArgs extends BaseFindArgs {
   published_status?: string;
 }
 
-export class PageClient extends CrudClient<SinglePageArgs, ListPagesArgs, PageApiData, PageModelData> {
+export class PageClient extends CrudClient<BaseSingleArgs, ListPagesArgs, PageApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'page', plural: 'pages', ...params });
   }
@@ -614,12 +594,9 @@ export class PageClient extends CrudClient<SinglePageArgs, ListPagesArgs, PageAp
 // #endregion
 
 // #region ThemeClient
-interface SingleThemeArgs extends BaseFindArgs {
-  id: number;
-}
 interface ListThemesArgs extends BaseFindArgs {}
 
-export class ThemeClient extends CrudClient<SingleThemeArgs, ListThemesArgs, ThemeApiData, ThemeModelData> {
+export class ThemeClient extends CrudClient<BaseSingleArgs, ListThemesArgs, ThemeApiData> {
   constructor(params: RestClientParams) {
     super({ singular: 'theme', plural: 'themes', ...params });
   }
