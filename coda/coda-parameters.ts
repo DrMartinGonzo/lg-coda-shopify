@@ -2,13 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 import { readFragment, readFragmentArray } from '../utils/tada-utils';
 
-import { Location } from '../Resources/GraphQl/Location';
-import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
+import { LocationClient } from '../Clients/GraphQlApiClientBase';
+import { BlogClient, ListBlogsArgs } from '../Clients/RestApiClientBase';
 import { Metaobject } from '../Resources/GraphQl/Metaobject';
 import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
-import { Asset } from '../Resources/Rest/Asset';
-import { Blog } from '../Resources/Rest/Blog';
 import {
   GraphQlFileTypesNames,
   GraphQlResourceNames,
@@ -33,9 +31,10 @@ import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
+import { getTemplateSuffixesFor } from '../models/rest/AssetModel';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
-import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
-import { idToGraphQlGid } from '../utils/conversion-utils';
+import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../utils/conversion-utils';
 import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
 import { fetchProductTypesGraphQl } from '../utils/products-utils';
 
@@ -56,33 +55,25 @@ function makeTemplateSuffixParameter(kind: RestResourceSingular) {
 
 // #region Autocomplete
 async function autocompleteBlogIdParameter(context: coda.ExecutionContext, search: string, args: any) {
-  const params = {
+  const params: ListBlogsArgs = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
   };
-
-  const blogs = await Blog.all({ context, ...params });
-  return coda.autocompleteSearchObjects(
-    search,
-    blogs.data.map((blog) => blog.apiData),
-    'title',
-    'id'
-  );
+  const response = await BlogClient.createInstance(context).list(params);
+  return coda.autocompleteSearchObjects(search, response?.body, 'title', 'id');
 }
 
 async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
-  const params = {
+  const params: ListBlogsArgs = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
   };
-
-  const blogs = await Blog.all({ context, ...params });
-  return blogs.data.map((blog) => formatOptionNameId(blog.apiData.title, blog.apiData.id));
+  const response = await BlogClient.createInstance(context).list(params);
+  return response?.body.map((blog) => formatOptionNameId(blog.title, blog.id));
 }
 
 async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string): Promise<Array<string>> {
-  const response = await Location.all({
-    context,
+  const response = await LocationClient.createInstance(context).list({
     limit: GRAPHQL_NODES_LIMIT,
     fields: {
       fulfillment_service: false,
@@ -92,22 +83,14 @@ async function autocompleteLocationsWithName(context: coda.ExecutionContext, sea
     options: {},
   });
 
-  return response.data.map((location) => formatOptionNameId(location.apiData.name, location.restId));
+  return response.body.map((location) => formatOptionNameId(location.name, graphQlGidToId(location.id)));
 }
 
 function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await MetafieldDefinition.allForOwner({
-      context,
-      ownerType,
-      includeFakeExtraDefinitions: true,
-      options: { cacheTtlSecs: CACHE_DEFAULT },
-    });
+    const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
     const searchObjects = metafieldDefinitions.map((metafield) => {
-      return {
-        name: metafield.apiData.name,
-        fullKey: metafield.fullKey,
-      };
+      return { name: metafield.data.name, fullKey: metafield.fullKey };
     });
     return coda.autocompleteSearchObjects(search, searchObjects, 'name', 'fullKey');
   };
@@ -115,12 +98,7 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
 
 function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await MetafieldDefinition.allForOwner({
-      context,
-      ownerType,
-      includeFakeExtraDefinitions: true,
-      options: { cacheTtlSecs: CACHE_DEFAULT },
-    });
+    const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
     const keys = metafieldDefinitions.map((m) => m.fullKey).sort();
     return coda.simpleAutocomplete(search, keys);
   };
@@ -203,7 +181,7 @@ async function autocompleteProductTypes(context: coda.ExecutionContext, search: 
 
 function makeAutocompleteTemplateSuffixesFor(kind: RestResourceSingular) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    return Asset.getTemplateSuffixesFor({ kind, context });
+    return getTemplateSuffixesFor({ kind, context });
   };
 }
 // #endregion
@@ -295,6 +273,7 @@ const generalInputs = {
     name: 'phone',
     description: 'The phone number (E.164 format).',
   }),
+  // TODO: why is this a string ???
   previewSize: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'previewSize',
@@ -883,28 +862,7 @@ const translationInputs = {
     type: coda.ParameterType.String,
     name: 'resourceType',
     description: 'The type of the translated resource.',
-    autocomplete: [
-      'COLLECTION',
-      'DELIVERY_METHOD_DEFINITION',
-      'EMAIL_TEMPLATE',
-      'FILTER',
-      'LINK',
-      'METAFIELD',
-      'METAOBJECT',
-      'ONLINE_STORE_ARTICLE',
-      'ONLINE_STORE_BLOG',
-      'ONLINE_STORE_MENU',
-      'ONLINE_STORE_PAGE',
-      'ONLINE_STORE_THEME',
-      'PACKING_SLIP_TEMPLATE',
-      'PAYMENT_GATEWAY',
-      'PRODUCT',
-      'PRODUCT_OPTION',
-      'SELLING_PLAN',
-      'SELLING_PLAN_GROUP',
-      'SHOP',
-      'SHOP_POLICY',
-    ],
+    autocomplete: Object.values(TranslatableResourceType),
   }),
 };
 // #endregion

@@ -2,15 +2,13 @@
 
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
-import { METAFIELD_TYPES } from '../../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
 import * as PROPS from '../../coda/coda-properties';
 import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
-import { FieldDependency } from '../Schema.types';
 import { CollectionReference } from './CollectionSchema';
 import { FileReference } from './FileSchema';
 import { PageReference } from './PageSchema';
-import { ProductReference } from './ProductSchemaRest';
+import { ProductReference } from './ProductSchema';
 import { ProductVariantReference } from './ProductVariantSchema';
 // #endregion
 
@@ -155,13 +153,6 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
   snippetProperty: 'rawValue',
   linkProperty: 'admin_url',
 });
-
-export const metafieldFieldDependencies: FieldDependency<typeof MetafieldSyncTableSchema.properties>[] = [
-  {
-    field: 'admin_url',
-    dependencies: ['owner_id'],
-  },
-];
 
 /**
  *? Si jamais on implémente une colonne pour les currencies,

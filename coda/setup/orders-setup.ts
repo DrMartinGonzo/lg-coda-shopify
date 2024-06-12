@@ -1,13 +1,66 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { AllArgs, Order } from '../../Resources/Rest/Order';
-import { CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
+import { OrderClient } from '../../Clients/RestApiClientBase';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import {
+  CACHE_DISABLED,
+  OPTIONS_ORDER_FINANCIAL_STATUS,
+  OPTIONS_ORDER_FULFILLMENT_STATUS,
+  OPTIONS_ORDER_STATUS,
+  PACK_IDENTITIES,
+  optionValues,
+} from '../../constants';
+import { OrderModel } from '../../models/rest/OrderModel';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
+import { SyncedOrders } from '../../sync/rest/SyncedOrders';
 import { makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { assertAllowedValue, dateRangeMax, dateRangeMin, isNullishOrEmpty } from '../../utils/helpers';
 import { formatOrderForDocExport } from '../../utils/orders-utils';
 import { filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedOrders(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedOrders({
+    context,
+    codaSyncParams,
+    model: OrderModel,
+    client: OrderClient.createInstance(context),
+    validateSyncParams,
+  });
+}
+
+function validateSyncParams({
+  status,
+  financialStatus,
+  fulfillmentStatus,
+}: {
+  status?: string;
+  financialStatus?: string;
+  fulfillmentStatus?: string;
+}) {
+  const invalidMsg: string[] = [];
+  if (!isNullishOrEmpty(status) && !assertAllowedValue(status, optionValues(OPTIONS_ORDER_STATUS))) {
+    invalidMsg.push(`status: ${status}`);
+  }
+  if (
+    !isNullishOrEmpty(financialStatus) &&
+    !assertAllowedValue(financialStatus, optionValues(OPTIONS_ORDER_FINANCIAL_STATUS))
+  ) {
+    invalidMsg.push(`financialStatus: ${financialStatus}`);
+  }
+  if (
+    !isNullishOrEmpty(fulfillmentStatus) &&
+    !assertAllowedValue(fulfillmentStatus, optionValues(OPTIONS_ORDER_FULFILLMENT_STATUS))
+  ) {
+    invalidMsg.push(`fulfillmentStatus: ${fulfillmentStatus}`);
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
 // #endregion
 
 // #region Sync tables
@@ -17,11 +70,10 @@ export const Sync_Orders = coda.makeSyncTable({
     'Return Orders from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Order,
-  schema: OrderSyncTableSchema,
+  schema: SyncedOrders.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Order.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedOrders.getDynamicSchema({ context, codaSyncParams: [, formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -30,8 +82,7 @@ export const Sync_Orders = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Order.getDynamicSchema}
-     *  - {@link Order.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedOrders.codaParamsMap}
      */
     parameters: [
       filters.order.status,
@@ -48,19 +99,24 @@ export const Sync_Orders = coda.makeSyncTable({
       { ...filters.customer.tags, name: 'customerTags', optional: true },
       { ...filters.order.tags, name: 'orderTags', optional: true },
     ],
-    execute: async function (params, context) {
-      return Order.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedOrders(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Order.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedOrders(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
 
 // #region Formulas
-export const Formula_Order = makeFetchSingleRestResourceAction(Order, inputs.order.id);
+export const Formula_Order = makeFetchSingleRestResourceAction({
+  modelName: OrderModel.displayName,
+  IdParameter: inputs.order.id,
+  schema: SyncedOrders.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await OrderClient.createInstance(context).single({ id: itemId as number });
+    return OrderModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Formula_Orders = coda.makeFormula({
   name: 'Orders',
@@ -83,22 +139,24 @@ export const Formula_Orders = coda.makeFormula({
     [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
     context
   ) {
-    const allDataLoopArgs: AllArgs = {
-      context,
+    const client = OrderClient.createInstance(context);
+    const items = await client.listAllLoop({
       fields,
-      created_at_min: created_at ? created_at[0] : undefined,
-      created_at_max: created_at ? created_at[1] : undefined,
-      updated_at_min: updated_at ? updated_at[0] : undefined,
-      updated_at_max: updated_at ? updated_at[1] : undefined,
-      processed_at_min: processed_at ? processed_at[0] : undefined,
-      processed_at_max: processed_at ? processed_at[1] : undefined,
+      ids,
       financial_status,
       fulfillment_status,
       status,
-    };
-    const items = await Order.allDataLoop<Order>(allDataLoopArgs);
-    const croute = items.map((i) => i.formatToRow());
-    return items.map((i) => i.formatToRow()) as any[];
+      created_at_min: dateRangeMin(created_at),
+      created_at_max: dateRangeMax(created_at),
+      updated_at_min: dateRangeMin(updated_at),
+      updated_at_max: dateRangeMax(updated_at),
+      processed_at_min: dateRangeMin(processed_at),
+      processed_at_max: dateRangeMax(processed_at),
+      options: {
+        cacheTtlSecs: CACHE_DISABLED, // we need fresh results
+      },
+    });
+    return items.map((data) => OrderModel.createInstance(context, data).toCodaRow());
   },
 });
 
@@ -110,16 +168,16 @@ export const Formula_OrderExportFormat = coda.makeFormula({
   cacheTtlSecs: 10, // small cache because we need fresh results
   resultType: coda.ValueType.String,
   execute: async ([orderId], context) => {
-    const order = await Order.find({
+    const client = OrderClient.createInstance(context);
+    const response = await client.single({
       id: orderId,
-      context,
       options: {
         cacheTtlSecs: CACHE_DISABLED, // we need fresh results
       },
     });
 
-    if (order?.apiData) {
-      return formatOrderForDocExport(order.apiData);
+    if (response?.body) {
+      return formatOrderForDocExport(response.body);
     }
   },
 });

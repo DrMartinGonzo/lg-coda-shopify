@@ -4,7 +4,7 @@ import striptags from 'striptags';
 
 import { BlogClient } from '../../Clients/RestApiClientBase';
 import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
@@ -12,9 +12,10 @@ import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 import {
-  AbstractModelRestWithMetafields,
+  AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
+import { safeToString } from '../../utils/helpers';
 
 // #endregion
 
@@ -33,11 +34,11 @@ export interface BlogApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-export interface BlogModelData extends BlogApiData, BaseModelDataRestWithRestMetafields {}
+interface BlogModelData extends BlogApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractRestResourceWithGraphQLMetafields once GraphQl API version 2024-07 is stable
-export class BlogModel extends AbstractModelRestWithMetafields<BlogModel> {
+// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
+export class BlogModel extends AbstractModelRestWithRestMetafields<BlogModel> {
   public data: BlogModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Blog;
@@ -49,13 +50,13 @@ export class BlogModel extends AbstractModelRestWithMetafields<BlogModel> {
     const data: Partial<BlogModelData> = {
       admin_graphql_api_id: row.admin_graphql_api_id,
       commentable: row.commentable,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
+      created_at: safeToString(row.created_at),
       handle: row.handle,
       id: row.id,
       tags: row.tags,
       template_suffix: row.template_suffix,
       title: row.title,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);
   }
@@ -75,7 +76,7 @@ export class BlogModel extends AbstractModelRestWithMetafields<BlogModel> {
     };
 
     if (metafields) {
-      metafields.forEach((metafield: IMetafield) => {
+      metafields.forEach((metafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

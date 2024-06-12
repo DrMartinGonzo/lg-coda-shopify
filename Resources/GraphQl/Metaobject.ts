@@ -4,6 +4,7 @@ import * as accents from 'remove-accents';
 import * as PROPS from '../../coda/coda-properties';
 import { ResultOf, VariablesOf, readFragment, readFragmentArray } from '../../utils/tada-utils';
 
+import { ShopClient } from '../../Clients/RestApiClientBase';
 import { SyncTableManagerGraphQl } from '../../SyncTableManager/GraphQl/SyncTableManagerGraphQl';
 import { MakeSyncFunctionArgs, SyncGraphQlFunction } from '../../SyncTableManager/types/SyncTableManager.types';
 import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
@@ -55,7 +56,6 @@ import {
   SaveArgs,
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { METAFIELD_TYPES, MetafieldType } from '../Mixed/METAFIELD_TYPES';
-import { Shop } from '../Rest/Shop';
 import { BaseContext, ResourceConstructorArgs } from '../types/Resource.types';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 import { MetaobjectDefinition } from './MetaobjectDefinition';
@@ -293,7 +293,7 @@ export class Metaobject extends AbstractGraphQlResource {
 
         // Get current Shop currency if needed
         if (fieldDefinition.type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
-          currencyCode = await Shop.activeCurrency({ context });
+          currencyCode = await ShopClient.createInstance(context).activeCurrency();
         }
 
         let formattedValue: string;

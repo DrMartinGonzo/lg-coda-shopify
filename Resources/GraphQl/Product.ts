@@ -23,7 +23,7 @@ import {
 } from '../../graphql/products-graphql';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
-import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
+import { ProductSyncTableSchema } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType, ProductInput } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import {
@@ -43,7 +43,7 @@ import {
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResourceWithMetafields';
 import { IMetafield } from '../Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from '../../models/rest/MetafieldModel';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 
@@ -103,15 +103,15 @@ export class ProductGraphQl extends AbstractGraphQlResourceWithMetafields {
   ];
 
   public static getStaticSchema() {
-    return ProductSyncTableSchemaRest;
+    return ProductSyncTableSchema;
   }
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Products>;
-    let augmentedSchema = deepCopy(ProductSyncTableSchemaRest);
+    let augmentedSchema = deepCopy(ProductSyncTableSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(
-        ProductSyncTableSchemaRest,
+        ProductSyncTableSchema,
         this.metafieldGraphQlOwnerType,
         context
       );
@@ -434,7 +434,7 @@ export class ProductGraphQl extends AbstractGraphQlResourceWithMetafields {
     }
 
     if (data.restMetafieldInstances) {
-      data.restMetafieldInstances.forEach((metafield: IMetafield) => {
+      data.restMetafieldInstances.forEach((metafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

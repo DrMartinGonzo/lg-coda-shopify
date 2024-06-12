@@ -10,11 +10,11 @@ import { DraftOrderReference, formatDraftOrderReference } from '../../schemas/sy
 import { LocationReference, formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { OrderReference, formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { PageReference, formatPageReference } from '../../schemas/syncTable/PageSchema';
-import { ProductReference, formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
+import { ProductReference, formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantReference, formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { ShopReference, formatShopReference } from '../../schemas/syncTable/ShopSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
+import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
@@ -38,6 +38,7 @@ export class SupportedMetafieldSyncTable {
     this.supportDefinition = true;
     this.syncWith = 'graphQl';
 
+    // TODO: Article, Page and Blog should use GraphQL metafields once GraphQl API version 2024-07 is stable
     switch (ownerType) {
       case MetafieldOwnerType.Article:
         this.display = 'Article';
@@ -117,7 +118,6 @@ export class SupportedMetafieldSyncTable {
         this.singular = RestResourcesSingular.Shop;
         this.ownerReference = ShopReference;
         this.formatOwnerReference = formatShopReference;
-        this.syncWith = 'rest';
         this.supportDefinition = false;
         break;
 
@@ -146,3 +146,12 @@ export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = 
   MetafieldOwnerType.Productvariant,
   MetafieldOwnerType.Shop,
 ].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
+
+export function getAllSupportedMetafieldSyncTables(): Array<SupportedMetafieldSyncTable> {
+  return supportedMetafieldSyncTables.filter((r) => r.supportDefinition);
+}
+export function getSupportedMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
+  const found = getAllSupportedMetafieldSyncTables().find((r) => r.ownerType === ownerType);
+  if (found) return found;
+  throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+}

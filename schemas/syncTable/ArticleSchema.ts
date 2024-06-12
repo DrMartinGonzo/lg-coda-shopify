@@ -2,7 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 import { BlogReference } from './BlogSchema';
 
 export const ArticleSyncTableSchema = coda.makeObjectSchema({
@@ -116,30 +115,3 @@ export const formatArticleReference: FormatRowReferenceFn<number, 'title'> = (id
   id,
   title,
 });
-
-export const articleFieldDependencies: FieldDependency<typeof ArticleSyncTableSchema.properties>[] = [
-  {
-    field: 'summary_html',
-    dependencies: ['summary'],
-  },
-  {
-    field: 'body_html',
-    dependencies: ['body'],
-  },
-  {
-    field: 'blog_id',
-    dependencies: ['blog'],
-  },
-  {
-    field: 'id',
-    dependencies: ['blog', 'admin_url'],
-  },
-  {
-    field: 'published_at',
-    dependencies: ['published'],
-  },
-  {
-    field: 'image',
-    dependencies: ['image_url', 'image_alt_text'],
-  },
-];

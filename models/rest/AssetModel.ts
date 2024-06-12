@@ -23,7 +23,7 @@ export interface AssetApiData extends BaseApiDataRest {
   value: string | null;
 }
 
-export interface AssetModelData extends BaseModelDataRest, AssetApiData {}
+interface AssetModelData extends BaseModelDataRest, AssetApiData {}
 // #endregion
 
 export async function getTemplateSuffixesFor({

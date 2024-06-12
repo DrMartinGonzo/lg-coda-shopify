@@ -3,7 +3,6 @@ import { ResultOf } from './tada-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
 import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
-import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
 import {
   METAFIELD_LEGACY_TYPES,
   METAFIELD_TYPES,
@@ -13,7 +12,6 @@ import {
   MoneyField,
   RatingField,
 } from '../Resources/Mixed/METAFIELD_TYPES';
-import { SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
 import {
   GraphQlResourceName,
   GraphQlResourceNames,
@@ -23,12 +21,14 @@ import {
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
+import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
+import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { FormatRowReferenceFn } from '../schemas/CodaRows.types';
 import { formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
 import { formatFileReference } from '../schemas/syncTable/FileSchema';
 import { formatMetaobjectReference } from '../schemas/syncTable/MetaObjectSchema';
 import { formatPageReference } from '../schemas/syncTable/PageSchema';
-import { formatProductReference } from '../schemas/syncTable/ProductSchemaRest';
+import { formatProductReference } from '../schemas/syncTable/ProductSchema';
 import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from './conversion-utils';
@@ -566,6 +566,39 @@ export function matchOwnerResourceToMetafieldOwnerType(
       throw new UnsupportedValueError('OwnerResource', ownerResource);
   }
 }
+
+export function matchResourceNameToMetafieldOwnerType(
+  graphQlResourceName: GraphQlResourceName
+): SupportedMetafieldOwnerType {
+  switch (graphQlResourceName) {
+    case GraphQlResourceNames.Article:
+      return MetafieldOwnerType.Article;
+    case GraphQlResourceNames.Blog:
+      return MetafieldOwnerType.Blog;
+    case GraphQlResourceNames.Collection:
+      return MetafieldOwnerType.Collection;
+    case GraphQlResourceNames.Customer:
+      return MetafieldOwnerType.Customer;
+    case GraphQlResourceNames.DraftOrder:
+      return MetafieldOwnerType.Draftorder;
+    case GraphQlResourceNames.Location:
+      return MetafieldOwnerType.Location;
+    case GraphQlResourceNames.Order:
+      return MetafieldOwnerType.Order;
+    case GraphQlResourceNames.Page:
+      return MetafieldOwnerType.Page;
+    case GraphQlResourceNames.Product:
+      return MetafieldOwnerType.Product;
+    case GraphQlResourceNames.ProductVariant:
+      return MetafieldOwnerType.Productvariant;
+    case GraphQlResourceNames.Shop:
+      return MetafieldOwnerType.Shop;
+
+    default:
+      throw new UnsupportedValueError('graphQlResourceName', graphQlResourceName);
+  }
+}
+// #endregion
 
 // #region Misc
 /**

@@ -4,16 +4,17 @@ import striptags from 'striptags';
 
 import { PageClient } from '../../Clients/RestApiClientBase';
 import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
-  AbstractModelRestWithMetafields,
+  AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
+import { safeToString } from '../../utils/helpers';
 
 // #endregion
 
@@ -32,11 +33,11 @@ export interface PageApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-export interface PageModelData extends PageApiData, BaseModelDataRestWithRestMetafields {}
+interface PageModelData extends PageApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractRestResourceWithGraphQLMetafields once GraphQl API version 2024-07 is stable
-export class PageModel extends AbstractModelRestWithMetafields<PageModel> {
+// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
+export class PageModel extends AbstractModelRestWithRestMetafields<PageModel> {
   public data: PageModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Page;
@@ -50,12 +51,12 @@ export class PageModel extends AbstractModelRestWithMetafields<PageModel> {
       author: row.author,
       body_html: row.body_html,
       handle: row.handle,
-      published_at: row.published_at ? row.published_at.toString() : undefined,
+      published_at: safeToString(row.published_at),
       title: row.title,
       template_suffix: row.template_suffix,
       admin_graphql_api_id: row.admin_graphql_api_id,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      created_at: safeToString(row.created_at),
+      updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);
   }
@@ -81,7 +82,7 @@ export class PageModel extends AbstractModelRestWithMetafields<PageModel> {
     }
 
     if (metafields) {
-      metafields.forEach((metafield: IMetafield) => {
+      metafields.forEach((metafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

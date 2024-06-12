@@ -3,7 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 import { ResourceNames, ResourcePath } from '@shopify/shopify-api';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
+import { ShopClient } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
+import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
 import {
   CodaSyncParams,
   SyncTableRestContinuation,
@@ -33,6 +35,7 @@ import {
   shouldDeleteMetafield,
   splitMetaFieldFullKey,
 } from '../../utils/metafields-utils';
+import { SupportedMetafieldOwnerResource } from '../../models/rest/MetafieldModel';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
 import { AbstractRestResource, FindAllRestResponse } from '../Abstract/Rest/AbstractRestResource';
 import { AbstractRestResourceWithRestMetafields } from '../Abstract/Rest/AbstractRestResourceWithMetafields';
@@ -41,33 +44,11 @@ import { MetafieldGraphQl } from '../GraphQl/MetafieldGraphQl';
 import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from '../Mixed/METAFIELD_TYPES';
 import { IMetafield, MetafieldHelper } from '../Mixed/MetafieldHelper';
 import { BaseContext, FromRow } from '../types/Resource.types';
-import {
-  GraphQlResourceNames,
-  RestResourceSingular,
-  RestResourcesPlural,
-  RestResourcesSingular,
-} from '../types/SupportedResource';
-import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
-import { SyncTableManagerRestWithMetafieldsType } from '../../SyncTableManager/Rest/SyncTableManagerRest';
+import { GraphQlResourceNames, RestResourcesPlural, RestResourcesSingular } from '../types/SupportedResource';
 
 // #endregion
 
 // #region Types
-export type SupportedMetafieldOwnerResource = Extract<
-  RestResourceSingular,
-  | 'article'
-  | 'blog'
-  | 'collection'
-  | 'customer'
-  | 'draft_order'
-  | 'location'
-  | 'order'
-  | 'page'
-  | 'product'
-  // | 'product_image'
-  | 'variant'
-  | 'shop'
->;
 
 interface FindArgs extends BaseContext {
   id: number | string;
@@ -457,7 +438,7 @@ export class Metafield extends AbstractRestResource implements IMetafield {
       let formattedValue: string | null;
 
       if (type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
-        currencyCode = await getCurrentShopActiveCurrency(context);
+        currencyCode = await ShopClient.createInstance(context).activeCurrency();
       }
 
       try {

@@ -30,7 +30,9 @@ export type SupportedResource =
   | 'ProductVariant'
   | 'Redirect'
   | 'Shop'
-  | 'Theme';
+  | 'Theme'
+  | 'Translation'
+  | 'TranslatableContent';
 
 export const RestResourcesSingular = {
   Article: 'article',

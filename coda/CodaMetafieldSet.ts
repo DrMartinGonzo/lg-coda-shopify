@@ -3,7 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors/Errors';
-import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
+import { Metafield } from '../Resources/Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
 import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { splitMetaFieldFullKey } from '../utils/metafields-utils';

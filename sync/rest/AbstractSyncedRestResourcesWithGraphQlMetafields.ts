@@ -11,7 +11,7 @@ import {
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { AbstractModel } from '../../models/AbstractModel';
-import { AbstractRestModelWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
+import { AbstractModelRestWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { Stringified } from '../../types/utilities';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
@@ -42,7 +42,7 @@ type RevivedBatchData<T extends AbstractModel<any>> = {
 // #endregion
 
 export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
-  T extends AbstractRestModelWithGraphQlMetafields<any>
+  T extends AbstractModelRestWithGraphQlMetafields<any>
 > extends AbstractSyncedRestResources<T> {
   protected model: ModelType<any> & { graphQlName: GraphQlResourceName };
 
@@ -89,13 +89,13 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
   }
 
   private get hasLock(): boolean {
-    return this.prevContinuation?.hasLock && this.prevContinuation.hasLock === 'true';
+    return this.prevContinuation?.hasLock === 'true';
   }
   private get lastCost(): ShopifyGraphQlRequestCost | undefined {
-    return parseContinuationProperty<ShopifyGraphQlRequestCost>(this.prevContinuation.lastCost);
+    return parseContinuationProperty<ShopifyGraphQlRequestCost>(this.prevContinuation?.lastCost);
   }
   private get lastLimit(): number | undefined {
-    return this.prevContinuation.lastLimit;
+    return this.prevContinuation?.lastLimit;
   }
   private get minPointsNeeded() {
     return this.throttleStatus.maximumAvailable - 1;

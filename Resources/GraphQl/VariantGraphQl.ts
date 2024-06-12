@@ -30,7 +30,7 @@ import {
 } from '../../graphql/productVariants-graphql';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
-import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
+import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType, ProductVariantInput } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
@@ -53,7 +53,7 @@ import {
 } from '../Abstract/GraphQl/AbstractGraphQlResource';
 import { AbstractGraphQlResourceWithMetafields } from '../Abstract/GraphQl/AbstractGraphQlResourceWithMetafields';
 import { IMetafield } from '../Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from '../../models/rest/MetafieldModel';
 import { BaseContext, FromRow } from '../types/Resource.types';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 
@@ -549,42 +549,42 @@ export class VariantGraphQl extends AbstractGraphQlResourceWithMetafields {
   }
 
   public formatToRow(): ProductVariantRow {
-    const { apiData } = this;
+    const { apiData: data } = this;
 
-    const productId = graphQlGidToId(apiData.product?.id);
-    const inventoryItemId = graphQlGidToId(apiData.inventoryItem?.id);
+    const productId = graphQlGidToId(data.product?.id);
+    const inventoryItemId = graphQlGidToId(data.inventoryItem?.id);
 
     let obj: ProductVariantRow = {
       admin_graphql_api_id: this.graphQlGid,
-      barcode: apiData.barcode,
-      compare_at_price: apiData.compareAtPrice ? parseFloat(apiData.compareAtPrice) : undefined,
-      created_at: apiData.createdAt,
-      displayTitle: apiData.displayName,
+      barcode: data.barcode,
+      compare_at_price: data.compareAtPrice ? parseFloat(data.compareAtPrice) : undefined,
+      created_at: data.createdAt,
+      displayTitle: data.displayName,
       id: this.restId,
-      image: apiData.image?.url,
-      inventory_policy: apiData.inventoryPolicy,
-      inventory_quantity: apiData.inventoryQuantity,
-      position: apiData.position,
-      price: apiData.price ? parseFloat(apiData.price) : undefined,
-      sku: apiData.sku,
-      tax_code: apiData.taxCode,
-      taxable: apiData.taxable,
-      title: apiData.title,
-      updated_at: apiData.updatedAt,
+      image: data.image?.url,
+      inventory_policy: data.inventoryPolicy,
+      inventory_quantity: data.inventoryQuantity,
+      position: data.position,
+      price: data.price ? parseFloat(data.price) : undefined,
+      sku: data.sku,
+      tax_code: data.taxCode,
+      taxable: data.taxable,
+      title: data.title,
+      updated_at: data.updatedAt,
     };
 
-    if (apiData.selectedOptions) {
-      obj.option1 = apiData.selectedOptions[0]?.value ?? null;
-      obj.option2 = apiData.selectedOptions[1]?.value ?? null;
-      obj.option3 = apiData.selectedOptions[2]?.value ?? null;
+    if (data.selectedOptions) {
+      obj.option1 = data.selectedOptions[0]?.value ?? null;
+      obj.option2 = data.selectedOptions[1]?.value ?? null;
+      obj.option3 = data.selectedOptions[2]?.value ?? null;
     }
 
     if (inventoryItemId) {
       obj.inventory_item_id = inventoryItemId;
     }
-    if (apiData.inventoryItem?.measurement?.weight) {
-      obj.weight = apiData.inventoryItem.measurement.weight?.value;
-      obj.weight_unit = unitToShortName(apiData.inventoryItem.measurement.weight?.unit);
+    if (data.inventoryItem?.measurement?.weight) {
+      obj.weight = data.inventoryItem.measurement.weight?.value;
+      obj.weight_unit = unitToShortName(data.inventoryItem.measurement.weight?.unit);
       switch (obj.weight_unit) {
         case weightUnitsMap.GRAMS:
           obj.grams = obj.weight;
@@ -607,12 +607,12 @@ export class VariantGraphQl extends AbstractGraphQlResourceWithMetafields {
       obj.product = formatProductReference(productId);
     }
 
-    if (apiData.product?.onlineStoreUrl) {
-      obj.storeUrl = `${apiData.product.onlineStoreUrl}?variant=${this.restId}`;
+    if (data.product?.onlineStoreUrl) {
+      obj.storeUrl = `${data.product.onlineStoreUrl}?variant=${this.restId}`;
     }
 
-    if (apiData.restMetafieldInstances) {
-      apiData.restMetafieldInstances.forEach((metafield: IMetafield) => {
+    if (data.restMetafieldInstances) {
+      data.restMetafieldInstances.forEach((metafield: IMetafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

@@ -4,11 +4,10 @@ import { ListProductsArgs } from '../../Clients/GraphQlApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Products } from '../../coda/setup/products-setup';
-import { CACHE_DISABLED } from '../../constants';
 import { ProductModel } from '../../models/graphql/ProductModel';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
-import { ProductSyncTableSchemaRest } from '../../schemas/syncTable/ProductSchemaRest';
+import { ProductSyncTableSchema } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
@@ -16,7 +15,7 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 // #endregion
 
 export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel> {
-  public static schemaDependencies: FieldDependency<typeof ProductSyncTableSchemaRest.properties>[] = [
+  public static schemaDependencies: FieldDependency<typeof ProductSyncTableSchema.properties>[] = [
     {
       field: 'storeUrl',
       dependencies: ['published'],
@@ -31,7 +30,7 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
     // },
   ];
 
-  public static staticSchema = ProductSyncTableSchemaRest;
+  public static staticSchema = ProductSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Products>;
@@ -44,7 +43,7 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
     return augmentedSchema;
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [
       syncMetafields,
       productTypesArray,
@@ -69,13 +68,6 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
     };
   }
 
-  // protected async sync() {
-  //   return (this.client as ProductClient).listByOwnerType(this.getListParams());
-  // }
-
-  /**
-   * Only request the minimum required fields for the owner
-   */
   protected codaParamsToListArgs() {
     const {
       createdAtRange,

@@ -2,19 +2,43 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ArticleClient } from '../../Clients/RestApiClientBase';
-import { Article } from '../../Resources/Rest/Article';
-import { Asset } from '../../Resources/Rest/Asset';
-import { FromRow } from '../../Resources/types/Resource.types';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { ArticleModel } from '../../models/rest/ArticleModel';
-import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { SyncedArticles } from '../../sync/rest/SyncedArticles';
-import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
-import { parseOptionId } from '../../utils/helpers';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { assertAllowedValue, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
+
+// #endregion
+
+// #region Helper functions
+function createSyncedArticles(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedArticles({
+    context,
+    codaSyncParams,
+    model: ArticleModel,
+    client: ArticleClient.createInstance(context),
+    validateSyncParams,
+  });
+}
+
+function validateSyncParams({ published_status }: { published_status?: string }) {
+  const invalidMsg: string[] = [];
+  if (
+    !isNullishOrEmpty(published_status) &&
+    !assertAllowedValue(published_status, optionValues(OPTIONS_PUBLISHED_STATUS))
+  ) {
+    invalidMsg.push(`publishedStatus: ${published_status}`);
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
+// #endregion
 
 // #region Sync tables
 export const Sync_Articles = coda.makeSyncTable({
@@ -30,7 +54,7 @@ export const Sync_Articles = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return Asset.getTemplateSuffixesFor({ kind: 'article', context });
+        return getTemplateSuffixesFor({ kind: 'article', context });
       }
     },
   },
@@ -58,25 +82,10 @@ export const Sync_Articles = coda.makeSyncTable({
       { ...filters.general.publishedStatus, optional: true },
       { ...filters.general.tagsArray, optional: true },
     ],
-    execute: async (codaSyncParams, context) => {
-      const syncedArticles = new SyncedArticles({
-        context,
-        codaSyncParams,
-        model: ArticleModel,
-        client: ArticleClient.createInstance(context),
-      });
-      return syncedArticles.executeSync();
-    },
+    execute: async (codaSyncParams, context) => createSyncedArticles(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async (codaSyncParams, updates, context) => {
-      const syncedArticles = new SyncedArticles({
-        context,
-        codaSyncParams,
-        model: ArticleModel,
-        client: ArticleClient.createInstance(context),
-      });
-      return syncedArticles.executeSyncUpdate(updates);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedArticles(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -128,31 +137,29 @@ export const Action_CreateArticle = coda.makeFormula({
     context
   ) => {
     const defaultPublishedStatus = false;
-    const fromRow: FromRow<ArticleRow> = {
-      row: {
-        author,
-        blog_id: parseOptionId(blog),
-        body_html,
-        handle,
-        image_alt_text,
-        image_url,
-        published_at,
-        published: published ?? defaultPublishedStatus,
-        summary_html,
-        tags: tags ? tags.join(',') : undefined,
-        template_suffix,
-        title,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Article.metafieldRestOwnerType })
-      ),
-    };
+    const article = ArticleModel.createInstanceFromRow(context, {
+      id: undefined,
+      author,
+      blog_id: parseOptionId(blog),
+      body_html,
+      handle,
+      image_alt_text,
+      image_url,
+      published_at,
+      published: published ?? defaultPublishedStatus,
+      summary_html,
+      tags: tags ? tags.join(',') : undefined,
+      template_suffix,
+      title,
+    });
+    if (metafields) {
+      article.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
+        s.toRestMetafield({ context, owner_resource: ArticleModel.metafieldRestOwnerType })
+      );
+    }
 
-    const newArticle = new Article({ context, fromRow });
-    await newArticle.saveAndUpdate();
-    return newArticle.apiData.id;
+    await article.save();
+    return article.data.id;
   },
 });
 
@@ -222,40 +229,35 @@ export const Action_UpdateArticle = coda.makeFormula({
       image_url: imageUrl,
     });
     if (metafields) {
-      article.data.metafields = CodaMetafieldSetNew.createMetafieldsFromCodaParameterArray(context, {
+      article.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
         codaParams: metafields,
-        ownerResource: Article.metafieldRestOwnerType,
+        ownerResource: ArticleModel.metafieldRestOwnerType,
         ownerId: id,
       });
     }
 
-    console.log('article', article.data.metafields);
     await article.save();
     return article.toCodaRow();
-
-    // const response = await ArticleClient.create(context).update({
-    //   id,
-    //   data: article.data,
-    // });
-    // return response.data.toCodaRow();
   },
 });
 
-export const Action_DeleteArticle = makeDeleteRestResourceAction(Article, inputs.article.id);
+export const Action_DeleteArticle = makeDeleteRestResourceAction({
+  modelName: ArticleModel.displayName,
+  IdParameter: inputs.article.id,
+  execute: async ([itemId], context) => {
+    await ArticleClient.createInstance(context).delete({ id: itemId as number });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas
-// export const Formula_Article = makeFetchSingleRestResourceAction(Article, inputs.article.id);
-export const Formula_Article = coda.makeFormula({
-  name: 'Article',
-  description: `Return a single Article from this shop.`,
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.article.id],
-  cacheTtlSecs: CACHE_DEFAULT,
-  resultType: coda.ValueType.Object,
-  schema: ArticleSyncTableSchema,
-  execute: async ([id], context) => {
-    const response = await ArticleClient.createInstance(context).single({ id });
+export const Formula_Article = makeFetchSingleRestResourceAction({
+  modelName: ArticleModel.displayName,
+  IdParameter: inputs.article.id,
+  schema: SyncedArticles.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await ArticleClient.createInstance(context).single({ id: itemId as number });
     return ArticleModel.createInstance(context, response.body).toCodaRow();
   },
 });

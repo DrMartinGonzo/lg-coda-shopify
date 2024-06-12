@@ -1,14 +1,41 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { TranslatableContent } from '../../Resources/GraphQl/TranslatableContent';
-import { Translation } from '../../Resources/GraphQl/Translation';
+import { TranslatableContentClient, TranslationClient } from '../../Clients/GraphQlApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
-import { TranslatableContentSyncTableSchema } from '../../schemas/syncTable/TranslatableContentSchema';
-import { TranslationSyncTableSchema } from '../../schemas/syncTable/TranslationSchema';
+import { TranslatableContentModel } from '../../models/graphql/TranslatableContentModel';
+import { TranslationModel, TranslationModelData } from '../../models/graphql/TranslationModel';
+import { SyncedTranslatableContents } from '../../sync/graphql/SyncedTranslatableContents';
+import { SyncedTranslations } from '../../sync/graphql/SyncedTranslations';
 import { TranslatableResourceType } from '../../types/admin.types';
 import { inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedTranslations(
+  codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+  context: coda.SyncExecutionContext
+) {
+  return new SyncedTranslations({
+    context,
+    codaSyncParams,
+    model: TranslationModel,
+    client: TranslationClient.createInstance(context),
+  });
+}
+
+function createSyncedTranslatableContents(
+  codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+  context: coda.SyncExecutionContext
+) {
+  return new SyncedTranslatableContents({
+    context,
+    codaSyncParams,
+    model: TranslatableContentModel,
+    client: TranslatableContentClient.createInstance(context),
+  });
+}
 // #endregion
 
 // #region Sync Tables
@@ -17,10 +44,10 @@ export const Sync_Translations = coda.makeSyncTable({
   description: 'Return Translations from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Translation,
-  schema: TranslationSyncTableSchema,
+  schema: SyncedTranslations.staticSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return Translation.getDynamicSchema({ context, codaSyncParams: [formulaContext.resourceType] });
+      return SyncedTranslations.getDynamicSchema({ context, codaSyncParams: [formulaContext.resourceType] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -30,17 +57,38 @@ export const Sync_Translations = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Translation.getDynamicSchema}
-     *  - {@link Translation.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedTranslations.codaParamsMap}
      */
     parameters: [inputs.translation.locale, inputs.translation.resourceType],
-    execute: async function (params, context) {
-      return Translation.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedTranslations(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Translation.syncUpdate(params, updates, context);
-    },
+    // TODO: implement updating multiple rows in one call
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedTranslations(codaSyncParams, context).executeSyncUpdate(updates),
+  },
+});
+
+export const Sync_TranslatableContent = coda.makeSyncTable({
+  name: 'TranslatableContents',
+  description: 'Return TranslatableContent from this shop.',
+  connectionRequirement: coda.ConnectionRequirement.Required,
+  identityName: PACK_IDENTITIES.TranslatableContent,
+  schema: SyncedTranslatableContents.staticSchema,
+  dynamicOptions: {
+    getSchema: async (context, _, formulaContext) =>
+      SyncedTranslatableContents.getDynamicSchema({ context, codaSyncParams: [] }),
+    defaultAddDynamicColumns: false,
+  },
+  formula: {
+    name: 'SyncTranslatableContents',
+    description: '<Help text for the sync formula, not show to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
+     *  - {@link SyncedTranslatableContents.codaParamsMap}
+     */
+    parameters: [inputs.translation.resourceType],
+    execute: async (codaSyncParams, context) => createSyncedTranslatableContents(codaSyncParams, context).executeSync(),
   },
 });
 // #endregion
@@ -66,24 +114,26 @@ export const Action_SetTranslation = coda.makeFormula({
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(TranslationSyncTableSchema, PACK_IDENTITIES.Translation),
-  schema: TranslationSyncTableSchema,
+  schema: SyncedTranslations.staticSchema,
   execute: async function ([resourceType, resourceId, locale, key, value], context) {
-    const resourceGid = Translation.translatableResourceTypeToGid(resourceType as TranslatableResourceType, resourceId);
-    const fromData: Partial<Translation['apiData']> = {
+    const resourceGid = TranslationModel.translatableResourceTypeToGid(
+      resourceType as TranslatableResourceType,
+      resourceId
+    );
+    const translation = TranslationModel.createInstance(context, {
       resourceGid,
       locale,
       key,
       translatedValue: value,
-    };
+    } as Partial<TranslationModelData>);
 
-    const updatedTranslation = new Translation({ context, fromData });
-    await updatedTranslation.saveAndUpdate();
-    return updatedTranslation.formatToRow();
+    await translation.save();
+    return translation.toCodaRow();
   },
 });
 
 export const Action_DeleteTranslation = coda.makeFormula({
-  name: `DeleteTranslation`,
+  name: 'DeleteTranslation',
   description: `Delete an existing Shopify Translation and return \`true\` on success.`,
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
@@ -95,8 +145,11 @@ export const Action_DeleteTranslation = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([resourceType, resourceId, locale, key], context) => {
-    const resourceGid = Translation.translatableResourceTypeToGid(resourceType as TranslatableResourceType, resourceId);
-    await Translation.delete({ context, locales: [locale], resourceGid: resourceGid, translationKeys: [key] });
+    const resourceGid = TranslationModel.translatableResourceTypeToGid(
+      resourceType as TranslatableResourceType,
+      resourceId
+    );
+    await TranslationClient.createInstance(context).delete({ resourceGid, key, locale });
     return true;
   },
 });

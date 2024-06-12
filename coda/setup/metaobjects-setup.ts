@@ -13,7 +13,29 @@ import {
   autocompleteMetaobjectType,
   inputs,
 } from '../coda-parameters';
+import { SyncedMetaobjects } from '../../sync/graphql/SyncedMetaobjects';
+import { MetaobjectModel } from '../../models/graphql/MetaobjectModel';
+import { MetaobjectClient, MetaobjectDefinitionClient } from '../../Clients/GraphQlApiClientBase';
+import { capitalizeFirstChar, compareByDisplayKey } from '../../utils/helpers';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedMetaobjects(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedMetaobjects({
+    context,
+    codaSyncParams,
+    model: MetaobjectModel,
+    client: MetaobjectClient.createInstance(context),
+  });
+}
+
+async function getSyncTableMetaobjectType(context: coda.ExecutionContext) {
+  const response = await MetaobjectDefinitionClient.createInstance(context).single({
+    id: SyncedMetaobjects.decodeDynamicUrl(context.sync.dynamicUrl).id,
+  });
+  return response?.body?.type;
+}
 // #endregion
 
 // #region SyncTables
@@ -23,22 +45,37 @@ export const Sync_Metaobjects = coda.makeDynamicSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Metaobject,
   defaultAddDynamicColumns: false,
-  listDynamicUrls: Metaobject.listDynamicSyncTableUrls,
-  getName: Metaobject.getDynamicSyncTableName,
-  getDisplayUrl: Metaobject.getDynamicSyncTableDisplayUrl,
+  listDynamicUrls: async (context) => {
+    const metaobjectDefinitions = await MetaobjectDefinitionClient.createInstance(context).listAllLoop({});
+    return metaobjectDefinitions.length
+      ? metaobjectDefinitions
+          .map((definition) => ({
+            display: definition.name,
+            /** Use id instead of type as an identifier because
+             * its easier to link back to the metaobject dynamic sync table while using {@link getMetaobjectReferenceSchema} */
+            value: SyncedMetaobjects.encodeDynamicUrl(definition),
+          }))
+          .sort(compareByDisplayKey)
+      : [];
+  },
+  getName: async function (context) {
+    const type = await getSyncTableMetaobjectType(context);
+    return `${capitalizeFirstChar(type)} Metaobjects`;
+  },
+  getDisplayUrl: async function (context) {
+    const type = await getSyncTableMetaobjectType(context);
+    return `${context.endpoint}/admin/content/entries/${type}`;
+  },
   getSchema: async (context: coda.ExecutionContext, _: string, formulaContext: coda.MetadataContext) =>
-    Metaobject.getDynamicSchema({ context }),
+    SyncedMetaobjects.getDynamicSchema({ context }),
   formula: {
     name: 'SyncMetaObjects',
     description: '<Help text for the sync formula, not show to the user>',
     parameters: [],
-    execute: async function (params, context) {
-      return Metaobject.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedMetaobjects(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Metaobject.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedMetaobjects(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion

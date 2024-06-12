@@ -1,11 +1,23 @@
+// #region Imports
 import * as coda from '@codahq/packs-sdk';
+import striptags from 'striptags';
 import { VariablesOf } from './tada-utils';
 
 import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
+import { IMetafield } from '../Resources/Mixed/MetafieldHelper';
+import { RestResourcesSingular } from '../Resources/types/SupportedResource';
 import { CACHE_MAX } from '../constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
-import { RestResourcesSingular } from '../Resources/types/SupportedResource';
+import { CustomCollectionModelData } from '../models/rest/CustomCollectionModel';
+import { SmartCollectionModelData } from '../models/rest/SmartCollectionModel';
+import { CollectionRow } from '../schemas/CodaRows.types';
+
+// #endregion
+
+// #region Types
+export type CollectionModelData = CustomCollectionModelData & SmartCollectionModelData;
+// #endregion
 
 /**
  * Get Collection type via a GraphQL Admin API query
@@ -76,4 +88,35 @@ export async function getCollectionTypes(
       }
     })
     .filter(Boolean);
+}
+
+/**
+ * Méthode partagée pour exporter en row un CustomCollectionModel ou un SmartCollectionModel
+ */
+export function collectionModelToCodaRow(
+  context: coda.ExecutionContext,
+  modelData: CollectionModelData
+): CollectionRow {
+  const { metafields, ...data } = modelData;
+
+  let obj: CollectionRow = {
+    ...data,
+    admin_url: `${context.endpoint}/admin/collections/${data.id}`,
+    body: striptags(data.body_html),
+    published: !!data.published_at,
+    disjunctive: data.disjunctive ?? false,
+  };
+
+  if (data.image) {
+    obj.image_alt_text = data.image.alt;
+    obj.image_url = data.image.src;
+  }
+
+  if (metafields) {
+    metafields.forEach((metafield) => {
+      obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
+    });
+  }
+
+  return obj;
 }

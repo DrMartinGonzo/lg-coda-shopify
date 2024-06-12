@@ -519,40 +519,6 @@ export const OrderSyncTableSchema = coda.makeObjectSchema({
   // admin_url will be the last featured property, added in Products dynamicOptions after the eventual metafields
   featuredProperties: ['id', 'customer', 'shipping_lines', 'line_items'],
 });
-export const orderFieldDependencies: FieldDependency<typeof OrderSyncTableSchema.properties>[] = [
-  //   {
-  //   field: 'handle',
-  //   dependencies: ['storeUrl'],
-  // },
-  {
-    field: 'client_details',
-    dependencies: ['browser_user_agent', 'browser_accept_language'],
-  },
-  {
-    field: 'current_total_duties_set',
-    dependencies: ['current_total_duties'],
-  },
-  {
-    field: 'current_total_additional_fees_set',
-    dependencies: ['current_total_additional_fees'],
-  },
-  {
-    field: 'original_total_additional_fees_set',
-    dependencies: ['original_total_additional_fees'],
-  },
-  {
-    field: 'original_total_duties_set',
-    dependencies: ['original_total_duties'],
-  },
-  {
-    field: 'total_shipping_price_set',
-    dependencies: ['total_shipping_price'],
-  },
-  {
-    field: 'id',
-    dependencies: ['admin_url'],
-  },
-];
 export const OrderReference = coda.makeReferenceSchemaFromObjectSchema(OrderSyncTableSchema, PACK_IDENTITIES.Order);
 export const formatOrderReference: FormatRowReferenceFn<number, 'name'> = (id: number, name = NOT_FOUND) => ({
   id,

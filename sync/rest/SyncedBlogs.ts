@@ -35,12 +35,12 @@ export class SyncedBlogs extends AbstractSyncedRestResources<BlogModel> {
     return augmentedSchema;
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [syncMetafields] = this.codaParams as CodaSyncParams<typeof Sync_Blogs>;
     return { syncMetafields };
   }
 
-  protected codaParamsToListArgs(): Omit<ListBlogsArgs, 'limit'> {
+  protected codaParamsToListArgs(): Omit<ListBlogsArgs, 'limit' | 'options'> {
     return { fields: this.syncedStandardFields.join(',') };
   }
 }

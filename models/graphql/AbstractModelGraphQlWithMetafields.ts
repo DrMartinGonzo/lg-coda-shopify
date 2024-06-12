@@ -6,7 +6,7 @@ import { MetafieldApiData, MetafieldGraphQlModel } from './MetafieldGraphQlModel
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';

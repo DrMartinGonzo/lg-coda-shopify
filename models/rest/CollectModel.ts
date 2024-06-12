@@ -5,9 +5,10 @@ import { CollectClient } from '../../Clients/RestApiClientBase';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
-import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
+import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 import { BaseModelDataRestWithRestMetafields } from './AbstractModelRestWithMetafields';
+import { safeToString } from '../../utils/helpers';
 
 // #endregion
 
@@ -22,7 +23,7 @@ export interface CollectApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-export interface CollectModelData extends CollectApiData, BaseModelDataRestWithRestMetafields {}
+interface CollectModelData extends CollectApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
 export class CollectModel extends AbstractModelRest<CollectModel> {
@@ -33,11 +34,11 @@ export class CollectModel extends AbstractModelRest<CollectModel> {
   public static createInstanceFromRow(context: coda.ExecutionContext, row: CollectRow) {
     const data: Partial<CollectModelData> = {
       collection_id: row.collection_id,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
+      created_at: safeToString(row.created_at),
       id: row.id,
       position: row.position,
       product_id: row.product_id,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);
   }

@@ -3,10 +3,10 @@ import * as accents from 'remove-accents';
 import * as PROPS from '../coda/coda-properties';
 import { ResultOf } from '../utils/tada-utils';
 
+import { ShopClient } from '../Clients/RestApiClientBase';
 import { UnsupportedValueError } from '../Errors/Errors';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
-import { Shop } from '../Resources/Rest/Shop';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
@@ -16,7 +16,7 @@ import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
 import { CollectionReference } from './syncTable/CollectionSchema';
 import { FileReference } from './syncTable/FileSchema';
 import { PageReference } from './syncTable/PageSchema';
-import { ProductReference } from './syncTable/ProductSchemaRest';
+import { ProductReference } from './syncTable/ProductSchema';
 import { ProductVariantReference } from './syncTable/ProductVariantSchema';
 
 export function extractFormulaContextFromParamsWIP(params: coda.ParamsList) {
@@ -57,7 +57,7 @@ export async function updateCurrencyCodesInSchemaNew<
 
     // Update currency code for currency properties
     else if (isCurrencyProp(prop)) {
-      shopCurrencyCode = shopCurrencyCode ?? (await Shop.activeCurrency({ context }));
+      shopCurrencyCode = shopCurrencyCode ?? (await ShopClient.createInstance(context).activeCurrency());
       prop.currencyCode = shopCurrencyCode;
     }
   }
@@ -108,11 +108,11 @@ export async function augmentSchemaWithMetafields<
 
   const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
   metafieldDefinitions.forEach((metafieldDefinition) => {
-    const property = mapMetaFieldToSchemaProperty(metafieldDefinition.apiData);
+    const property = mapMetaFieldToSchemaProperty(metafieldDefinition.data);
     if (property) {
-      const name = accents.remove(metafieldDefinition.apiData.name);
+      const name = accents.remove(metafieldDefinition.data.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
-      property.displayName = `${metafieldDefinition.apiData.name} [${metafieldDefinition.fullKey}]`;
+      property.displayName = `${metafieldDefinition.data.name} [${metafieldDefinition.fullKey}]`;
       schema.properties[propName] = property;
       // always feature metafields properties so that the user know they are synced
       schema.featuredProperties.push(propName);

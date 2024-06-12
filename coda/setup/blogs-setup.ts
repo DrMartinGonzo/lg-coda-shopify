@@ -2,18 +2,38 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { BlogClient } from '../../Clients/RestApiClientBase';
-import { Asset } from '../../Resources/Rest/Asset';
-import { Blog } from '../../Resources/Rest/Blog';
-import { FromRow } from '../../Resources/types/Resource.types';
-import { PACK_IDENTITIES } from '../../constants';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { PACK_IDENTITIES, optionValues } from '../../constants';
+import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { BlogModel } from '../../models/rest/BlogModel';
-import { BlogRow } from '../../schemas/CodaRows.types';
-import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
+import { BlogSyncTableSchema, COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
 import { SyncedBlogs } from '../../sync/rest/SyncedBlogs';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedBlogs(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedBlogs({
+    context,
+    codaSyncParams,
+    model: BlogModel,
+    client: BlogClient.createInstance(context),
+  });
+}
+
+function validateCreateUpdateParams({ commentable }: { commentable?: string }) {
+  const invalidMsg: string[] = [];
+  if (!isNullishOrEmpty(commentable) && !assertAllowedValue(commentable, optionValues(COMMENTABLE_OPTIONS))) {
+    invalidMsg.push(`commentable: ${commentable}`);
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
 // #endregion
 
 // #region Sync tables
@@ -31,7 +51,7 @@ export const Sync_Blogs = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return Asset.getTemplateSuffixesFor({ kind: 'blog', context });
+        return getTemplateSuffixesFor({ kind: 'blog', context });
       }
     },
   },
@@ -51,27 +71,10 @@ export const Sync_Blogs = coda.makeSyncTable({
         optional: true,
       },
     ],
-    execute: async function (codaSyncParams, context) {
-      const syncedBlogs = new SyncedBlogs({
-        context,
-        codaSyncParams,
-        model: BlogModel,
-        client: BlogClient.createInstance(context),
-      });
-      return syncedBlogs.executeSync();
-      // return Blog.sync(codaSyncParams, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedBlogs(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (codaSyncParams, updates, context) {
-      const syncedBlogs = new SyncedBlogs({
-        context,
-        codaSyncParams,
-        model: BlogModel,
-        client: BlogClient.createInstance(context),
-      });
-      return syncedBlogs.executeSyncUpdate(updates);
-      // return Blog.syncUpdate(codaSyncParams, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedBlogs(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -100,24 +103,24 @@ export const Action_UpdateBlog = coda.makeFormula({
   // schema: coda.withIdentity(BlogSchema, IdentitiesNew.blog),
   schema: BlogSyncTableSchema,
   execute: async function ([blogId, title, handle, commentable, template_suffix, metafields], context) {
-    const fromRow: FromRow<BlogRow> = {
-      row: {
-        id: blogId,
-        title,
-        handle,
-        commentable,
-        template_suffix,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: blogId, owner_resource: Blog.metafieldRestOwnerType })
-      ),
-    };
+    validateCreateUpdateParams({ commentable });
+    const blog = BlogModel.createInstanceFromRow(context, {
+      id: blogId,
+      title,
+      handle,
+      commentable,
+      template_suffix,
+    });
+    if (metafields) {
+      blog.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerResource: BlogModel.metafieldRestOwnerType,
+        ownerId: blogId,
+      });
+    }
 
-    const updatedBlog = new Blog({ context, fromRow });
-    await updatedBlog.saveAndUpdate();
-    return updatedBlog.formatToRow();
+    await blog.save();
+    return blog.toCodaRow();
   },
 });
 
@@ -141,31 +144,45 @@ export const Action_CreateBlog = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([title, handle, commentable, template_suffix, metafields], context) {
-    const fromRow: FromRow<BlogRow> = {
-      row: {
-        title,
-        commentable,
-        handle,
-        template_suffix,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context,  owner_resource: Blog.metafieldRestOwnerType })
-      ),
-    };
+    validateCreateUpdateParams({ commentable });
+    const blog = BlogModel.createInstanceFromRow(context, {
+      id: undefined,
+      title,
+      commentable,
+      handle,
+      template_suffix,
+    });
+    if (metafields) {
+      blog.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
+        s.toRestMetafield({ context, owner_resource: BlogModel.metafieldRestOwnerType })
+      );
+    }
 
-    const newBlog = new Blog({ context, fromRow });
-    await newBlog.saveAndUpdate();
-    return newBlog.apiData.id;
+    await blog.save();
+    return blog.data.id;
   },
 });
 
-export const Action_DeleteBlog = makeDeleteRestResourceAction(Blog, inputs.blog.id);
+export const Action_DeleteBlog = makeDeleteRestResourceAction({
+  modelName: BlogModel.displayName,
+  IdParameter: inputs.blog.id,
+  execute: async ([itemId], context) => {
+    await BlogClient.createInstance(context).delete({ id: itemId as number });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas
-export const Formula_Blog = makeFetchSingleRestResourceAction(Blog, inputs.blog.id);
+export const Formula_Blog = makeFetchSingleRestResourceAction({
+  modelName: BlogModel.displayName,
+  IdParameter: inputs.blog.id,
+  schema: SyncedBlogs.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await BlogClient.createInstance(context).single({ id: itemId as number });
+    return BlogModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Format_Blog: coda.Format = {
   name: 'Blog',

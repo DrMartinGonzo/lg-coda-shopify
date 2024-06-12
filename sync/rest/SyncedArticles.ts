@@ -13,7 +13,14 @@ import { FieldDependency } from '../../schemas/Schema.types';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { arrayUnique, dateRangeMax, dateRangeMin, deepCopy, parseOptionId } from '../../utils/helpers';
+import {
+  arrayUnique,
+  dateRangeMax,
+  dateRangeMin,
+  deepCopy,
+  parseOptionId,
+  splitAndTrimValues,
+} from '../../utils/helpers';
 import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
@@ -62,7 +69,7 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
     return augmentedSchema;
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [
       syncMetafields,
       restrictToBlogIds,
@@ -113,6 +120,15 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
   }
 
   protected async afterSync(): Promise<void> {
+    const { tags: tagsFilter } = this.codaParamsMap;
+    // The api only supports filtering by a single tag, so we retrieve all and filter after
+    if (tagsFilter && tagsFilter.length) {
+      this.data = this.data.filter((d) => {
+        const restTagsArray = splitAndTrimValues(d.data?.tags ?? '');
+        return restTagsArray.length && restTagsArray.some((t) => tagsFilter.includes(t));
+      });
+    }
+
     if (this.blogIdsLeft.length) {
       // Force set continuation to trigger next sync with remaining blogs
       this.continuation = {
@@ -128,7 +144,7 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
     return super.syncedStandardFields;
   }
 
-  protected codaParamsToListArgs(): Omit<ListArticlesArgs, 'limit'> {
+  protected codaParamsToListArgs(): Omit<ListArticlesArgs, 'limit' | 'options'> {
     const { author, createdAt, handle, publishedAt, published_status, tags, updatedAt } = this.codaParamsMap;
     return {
       blog_id: this.currentBlogId,

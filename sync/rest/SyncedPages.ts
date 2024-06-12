@@ -47,7 +47,7 @@ export class SyncedPages extends AbstractSyncedRestResources<PageModel> {
     return augmentedSchema;
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [syncMetafields, createdAtRange, updatedAtRange, publishedAtRange, handle, publishedStatus, sinceId, title] =
       this.codaParams as CodaSyncParams<typeof Sync_Pages>;
     return {
@@ -62,7 +62,7 @@ export class SyncedPages extends AbstractSyncedRestResources<PageModel> {
     };
   }
 
-  protected codaParamsToListArgs(): Omit<ListPagesArgs, 'limit'> {
+  protected codaParamsToListArgs(): Omit<ListPagesArgs, 'limit' | 'options'> {
     const { handle, title, publishedStatus, sinceId, createdAtRange, updatedAtRange, publishedAtRange } =
       this.codaParamsMap;
     return {

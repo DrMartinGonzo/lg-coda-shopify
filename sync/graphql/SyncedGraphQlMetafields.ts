@@ -29,9 +29,10 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
     return MetafieldHelper.getDynamicSchema(args);
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
+    const ownerType = this.context.sync.dynamicUrl as MetafieldOwnerType;
     const [metafieldKeys] = this.codaParams as CodaSyncParams<typeof Sync_Metafields>;
-    return { metafieldKeys };
+    return { metafieldKeys, ownerType };
   }
 
   protected async sync() {
@@ -42,11 +43,8 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
    * Only request the minimum required fields for the owner
    */
   protected codaParamsToListArgs() {
-    const { metafieldKeys } = this.codaParamsMap;
-    return {
-      ownerType: MetafieldOwnerType.Product,
-      metafieldKeys: metafieldKeys,
-    } as ListMetafieldsByOwnerTypeArgs;
+    const { metafieldKeys, ownerType } = this.codaParamsMap;
+    return { ownerType, metafieldKeys } as ListMetafieldsByOwnerTypeArgs;
   }
 
   /**

@@ -1,11 +1,26 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OrderTransaction } from '../../Resources/GraphQl/OrderTransaction';
+import { OrderTransactionClient } from '../../Clients/GraphQlApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
-import { OrderTransactionSyncTableSchema } from '../../schemas/syncTable/OrderTransactionSchema';
+import { OrderTransactionModel } from '../../models/graphql/OrderTransactionModel';
+import { SyncedOrderTransactions } from '../../sync/graphql/SyncedOrderTransactions';
 import { filters } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedOrderTransactions(
+  codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+  context: coda.SyncExecutionContext
+) {
+  return new SyncedOrderTransactions({
+    context,
+    codaSyncParams,
+    model: OrderTransactionModel,
+    client: OrderTransactionClient.createInstance(context),
+  });
+}
 // #endregion
 
 // #region Sync tables
@@ -14,10 +29,10 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
   description: 'Return Order Transactions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.OrderTransaction,
-  schema: OrderTransactionSyncTableSchema,
+  schema: SyncedOrderTransactions.staticSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return OrderTransaction.getDynamicSchema({ context, codaSyncParams: [] });
+      return SyncedOrderTransactions.getDynamicSchema({ context, codaSyncParams: [] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -26,7 +41,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link OrderTransaction.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedOrderTransactions.codaParamsMap}
      */
     parameters: [
       { ...filters.general.createdAtRange, name: 'orderCreatedAt', optional: true },
@@ -42,9 +57,7 @@ export const Sync_OrderTransactions = coda.makeSyncTable({
         optional: true,
       }),
     ],
-    execute: async function (params, context) {
-      return OrderTransaction.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedOrderTransactions(codaSyncParams, context).executeSync(),
   },
 });
 // #endregion

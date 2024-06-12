@@ -1,13 +1,31 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Redirect } from '../../Resources/Rest/Redirect';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { RedirectClient } from '../../Clients/RestApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
-import { RedirectRow } from '../../schemas/CodaRows.types';
+import { RedirectModel } from '../../models/rest/RedirectModel';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
+import { SyncedRedirects } from '../../sync/rest/SyncedRedirects';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { filters, inputs } from '../coda-parameters';
+
+// #endregion
+
+// #region Helper functions
+function createSyncedRedirects(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedRedirects({
+    context,
+    codaSyncParams,
+    model: RedirectModel,
+    client: RedirectClient.createInstance(context),
+  });
+}
+
+function validateCreateUpdateParams({ path, target }: { path?: string; target?: string }) {
+  if (path === undefined && target === undefined) {
+    throw new coda.UserVisibleError('Either path or target must be provided');
+  }
+}
 
 // #endregion
 
@@ -17,25 +35,22 @@ export const Sync_Redirects = coda.makeSyncTable({
   description: 'Return Redirects from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Redirect,
-  schema: RedirectSyncTableSchema,
+  schema: SyncedRedirects.staticSchema,
   formula: {
     name: 'SyncRedirects',
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Redirect.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedRedirects.codaParamsMap}
      */
     parameters: [
       { ...filters.redirect.path, optional: true },
       { ...filters.redirect.target, optional: true },
     ],
-    execute: async function (params, context) {
-      return Redirect.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedRedirects(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Redirect.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedRedirects(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -54,21 +69,14 @@ export const Action_UpdateRedirect = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: coda.withIdentity(RedirectSyncTableSchema, PACK_IDENTITIES.Redirect),
   execute: async function ([redirect_id, path, target], context) {
-    if (path === undefined && target === undefined) {
-      throw new coda.UserVisibleError('Either path or target must be provided');
-    }
-
-    const fromRow: FromRow<RedirectRow> = {
-      row: {
-        id: redirect_id,
-        path,
-        target,
-      },
-    };
-
-    const updatedRedirect = new Redirect({ context, fromRow });
-    await updatedRedirect.saveAndUpdate();
-    return updatedRedirect.formatToRow();
+    validateCreateUpdateParams({ path, target });
+    const redirect = RedirectModel.createInstanceFromRow(context, {
+      id: redirect_id,
+      path,
+      target,
+    });
+    await redirect.save();
+    return redirect.toCodaRow();
   },
 });
 
@@ -80,24 +88,37 @@ export const Action_CreateRedirect = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([path, target], context) {
-    const fromRow: FromRow<RedirectRow> = {
-      row: {
-        path,
-        target,
-      },
-    };
-
-    const newRedirect = new Redirect({ context, fromRow });
-    await newRedirect.saveAndUpdate();
-    return newRedirect.apiData.id;
+    validateCreateUpdateParams({ path, target });
+    const redirect = RedirectModel.createInstanceFromRow(context, {
+      id: undefined,
+      path,
+      target,
+    });
+    await redirect.save();
+    return redirect.data.id;
   },
 });
 
-export const Action_DeleteRedirect = makeDeleteRestResourceAction(Redirect, inputs.redirect.id);
+export const Action_DeleteRedirect = makeDeleteRestResourceAction({
+  modelName: RedirectModel.displayName,
+  IdParameter: inputs.redirect.id,
+  execute: async ([itemId], context) => {
+    await RedirectClient.createInstance(context).delete({ id: itemId as number });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas
-export const Formula_Redirect = makeFetchSingleRestResourceAction(Redirect, inputs.redirect.id);
+export const Formula_Redirect = makeFetchSingleRestResourceAction({
+  modelName: RedirectModel.displayName,
+  IdParameter: inputs.redirect.id,
+  schema: SyncedRedirects.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await RedirectClient.createInstance(context).single({ id: itemId as number });
+    return RedirectModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Format_Redirect: coda.Format = {
   name: 'Redirect',

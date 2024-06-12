@@ -2,7 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 
 export const PageSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -60,25 +59,6 @@ export const PageSyncTableSchema = coda.makeObjectSchema({
   snippetProperty: 'body',
   linkProperty: 'admin_url',
 });
-
-export const pageFieldDependencies: FieldDependency<typeof PageSyncTableSchema.properties>[] = [
-  {
-    field: 'body_html',
-    dependencies: ['body'],
-  },
-  {
-    field: 'id',
-    dependencies: ['graphql_gid', 'admin_url'],
-  },
-  {
-    field: 'published_at',
-    dependencies: ['published', 'store_url'],
-  },
-  {
-    field: 'handle',
-    dependencies: ['store_url'],
-  },
-];
 
 export const PageReference = coda.makeReferenceSchemaFromObjectSchema(PageSyncTableSchema, PACK_IDENTITIES.Page);
 export const formatPageReference: FormatRowReferenceFn<number, 'title'> = (id: number, title = NOT_FOUND) => ({

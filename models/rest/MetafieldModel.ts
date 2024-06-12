@@ -4,15 +4,13 @@ import * as coda from '@codahq/packs-sdk';
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { MetafieldDefinition } from '../../Resources/GraphQl/MetafieldDefinition';
 import { MetafieldHelper, MetafieldNormalizedData } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourceSingular } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES } from '../../constants';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
-import { logAdmin } from '../../utils/helpers';
+import { isNullish, logAdmin } from '../../utils/helpers';
 import {
   formatMetaFieldValueForSchema,
   matchOwnerResourceToMetafieldOwnerType,
@@ -20,11 +18,27 @@ import {
   shouldDeleteMetafield,
 } from '../../utils/metafields-utils';
 import { ModelWithDeletedFlag } from '../AbstractModel';
+import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
 // #endregion
 
 // #region Types
+export type SupportedMetafieldOwnerResource = Extract<
+  RestResourceSingular,
+  | 'article'
+  | 'blog'
+  | 'collection'
+  | 'customer'
+  | 'draft_order'
+  | 'location'
+  | 'order'
+  | 'page'
+  | 'product'
+  | 'variant'
+  | 'shop'
+>;
+
 export interface MetafieldApiData extends BaseApiDataRest {
   key: string | null;
   namespace: string | null;
@@ -39,12 +53,12 @@ export interface MetafieldApiData extends BaseApiDataRest {
   definition_id: number | null;
 }
 
-export interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
+interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
 
 export interface CreateMetafieldInstancesFromRowArgs {
   ownerRow: BaseRow;
   ownerResource: SupportedMetafieldOwnerResource;
-  metafieldDefinitions?: Array<MetafieldDefinition>;
+  metafieldDefinitions?: MetafieldDefinitionModel[];
   context: coda.ExecutionContext;
 }
 // #endregion
@@ -105,9 +119,12 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
    *===================================================================================================================== */
   protected validateData(data: MetafieldApiData) {
     const missing: string[] = [];
-    if (!data.type) missing.push('type');
+    if (!isNullish(data.value)) {
+      if (!data.type) missing.push('type');
+    }
+    // if (data.id && !data.owner_id && data.owner_resource !== RestResourcesSingular.Shop) missing.push('owner_id');
+    if (data.id && !data.owner_id) missing.push('owner_id');
     if (!data.owner_resource) missing.push('owner_resource');
-    if (data.id && !data.owner_id && data.owner_resource !== RestResourcesSingular.Shop) missing.push('owner_id');
     if (missing.length) {
       throw new RequiredParameterMissingVisibleError(missing.join(', '));
     }
@@ -145,10 +162,11 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
     if (shouldDeleteMetafield(this.data.value)) {
       await this.delete();
     } else {
+      const apiData = this.getApiData<MetafieldApiData>();
       if (this.data.id) {
-        response = await this.client.update(this.data);
+        response = await this.client.update(apiData);
       } else {
-        response = await this.client.create(this.data);
+        response = await this.client.create(apiData);
       }
       if (response) {
         this.setData(response.body);

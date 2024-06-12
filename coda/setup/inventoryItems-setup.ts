@@ -1,13 +1,58 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryItem } from '../../Resources/GraphQl/InventoryItem';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { InventoryItemClient } from '../../Clients/GraphQlApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
-import { InventoryItemRow } from '../../schemas/CodaRows.types';
+import { InventoryItemModel } from '../../models/graphql/InventoryItemModel';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
+import { SyncedInventoryItems } from '../../sync/graphql/SyncedInventoryItems';
 import { filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedInventoryItems(
+  codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+  context: coda.SyncExecutionContext
+) {
+  return new SyncedInventoryItems({
+    context,
+    codaSyncParams,
+    model: InventoryItemModel,
+    client: InventoryItemClient.createInstance(context),
+    validateSyncParams,
+  });
+}
+
+function validateSyncParams({
+  publishedStatus,
+  statusArray,
+  title,
+}: {
+  publishedStatus?: string;
+  statusArray?: string[];
+  title?: string;
+}) {
+  // const invalidMsg: string[] = [];
+  // if (
+  //   !isNullishOrEmpty(statusArray) &&
+  //   !assertAllowedValue(statusArray, optionValues(OPTIONS_PRODUCT_STATUS_GRAPHQL))
+  // ) {
+  //   invalidMsg.push(`product_status: ${statusArray.join(', ')}`);
+  // }
+  // if (
+  //   !isNullishOrEmpty(publishedStatus) &&
+  //   !assertAllowedValue(publishedStatus, optionValues(OPTIONS_PUBLISHED_STATUS))
+  // ) {
+  //   invalidMsg.push(`published_status: ${publishedStatus}`);
+  // }
+  // if (!assertNotBlank(title)) {
+  //   invalidMsg.push("title can't be blank");
+  // }
+  // if (invalidMsg.length) {
+  //   throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  // }
+}
 // #endregion
 
 // #region Sync tables
@@ -16,28 +61,30 @@ export const Sync_InventoryItems = coda.makeSyncTable({
   description: 'Return Inventory Items from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.InventoryItem,
-  schema: InventoryItemSyncTableSchema,
+  schema: SyncedInventoryItems.staticSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return InventoryItem.getDynamicSchema({ context, codaSyncParams: [] });
+      return SyncedInventoryItems.getDynamicSchema({ context, codaSyncParams: [] });
     },
     defaultAddDynamicColumns: false,
   },
   formula: {
     name: 'SyncInventoryItems',
     description: '<Help text for the sync formula, not shown to the user>',
+    /**
+     *! When changing parameters, don't forget to update :
+     *  - getSchema in dynamicOptions
+     *  - {@link SyncedInventoryItems.codaParamsMap}
+     */
     parameters: [
       { ...filters.general.createdAtRange, optional: true },
       { ...filters.general.updatedAtRange, optional: true },
       { ...filters.productVariant.skuArray, optional: true },
     ],
-    execute: async function (params, context) {
-      return InventoryItem.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedInventoryItems(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return InventoryItem.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedInventoryItems(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -77,21 +124,18 @@ export const Action_UpdateInventoryItem = coda.makeFormula({
     [inventoryItemId, cost, country_code_of_origin, harmonized_system_code, province_code_of_origin, tracked],
     context
   ) {
-    const fromRow: FromRow<InventoryItemRow> = {
-      row: {
-        id: inventoryItemId,
-        /* Edge case for cost. Setting it to 0 should delete the value. */
-        cost: cost === 0 ? null : cost,
-        country_code_of_origin,
-        harmonized_system_code,
-        province_code_of_origin,
-        tracked,
-      },
-    };
+    const inventoryItem = InventoryItemModel.createInstanceFromRow(context, {
+      id: inventoryItemId,
+      /* Edge case for cost. Setting it to 0 should delete the value. */
+      cost: cost === 0 ? null : cost,
+      country_code_of_origin,
+      harmonized_system_code,
+      province_code_of_origin,
+      tracked,
+    });
 
-    const updatedInventoryItem = new InventoryItem({ context, fromRow });
-    await updatedInventoryItem.saveAndUpdate();
-    return updatedInventoryItem.formatToRow();
+    await inventoryItem.save();
+    return inventoryItem.toCodaRow();
   },
 });
 // #endregion

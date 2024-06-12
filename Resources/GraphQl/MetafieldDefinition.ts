@@ -24,7 +24,7 @@ import {
 import { METAFIELD_TYPES } from '../Mixed/METAFIELD_TYPES';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from '../Mixed/SupportedMetafieldSyncTable';
 import { BaseContext } from '../types/Resource.types';
-import { SupportedMetafieldOwnerType } from './MetafieldGraphQl';
+import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 
 // #endregion
 

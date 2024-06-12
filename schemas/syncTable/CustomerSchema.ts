@@ -1,10 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
-import { NOT_FOUND } from '../../constants';
-import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
-import { PACK_IDENTITIES } from '../../constants';
 import * as PROPS from '../../coda/coda-properties';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { addressPersonFirstNameProp, addressPersonLastNameProp, addressPhoneProp } from '../basic/AddressSchema';
+import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
 
 // #region Constants and Helpers
 export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
@@ -229,18 +228,3 @@ export const formatCustomerReference: FormatRowReferenceFn<number, 'display'> = 
   id,
   display,
 });
-
-export const customerFieldDependencies = [
-  {
-    field: 'id',
-    dependencies: ['admin_url'],
-  },
-  {
-    field: 'email_marketing_consent',
-    dependencies: ['accepts_email_marketing'],
-  },
-  {
-    field: 'sms_marketing_consent',
-    dependencies: ['accepts_sms_marketing'],
-  },
-];

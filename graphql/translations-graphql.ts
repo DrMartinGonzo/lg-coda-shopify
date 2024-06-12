@@ -58,7 +58,7 @@ export const getSingleTranslationQuery = graphql(
   `
 );
 
-export const getTranslatableResources = graphql(
+export const getTranslatableResourcesQuery = graphql(
   `
     query GetTranslatableResources($limit: Int!, $cursor: String, $resourceType: TranslatableResourceType!) {
       translatableResources(first: $limit, after: $cursor, resourceType: $resourceType) {

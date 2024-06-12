@@ -1,12 +1,24 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { NotFoundVisibleError } from '../../Errors/Errors';
-import { Shop } from '../../Resources/Rest/Shop';
+import { ShopClient } from '../../Clients/RestApiClientBase';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { ShopModel } from '../../models/rest/ShopModel';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
-import { filters } from '../coda-parameters';
+import { SyncedShops } from '../../sync/rest/SyncedShops';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedShops(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedShops({
+    context,
+    codaSyncParams,
+    // @ts-expect-error
+    model: ShopModel,
+    client: ShopClient.createInstance(context),
+  });
+}
 // #endregion
 
 // #region Sync Table
@@ -15,18 +27,16 @@ export const Sync_Shops = coda.makeSyncTable({
   description: 'Return Shop from specified account.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Shop,
-  schema: ShopSyncTableSchema,
+  schema: SyncedShops.staticSchema,
   formula: {
     name: 'SyncShops',
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Shop.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedArticles.codaParamsMap}
      */
     parameters: [],
-    execute: async function (params, context) {
-      return Shop.sync(params, context);
-    },
+    execute: async (codaParams, context) => createSyncedShops(codaParams, context).executeSync(),
   },
 });
 // #endregion
@@ -34,25 +44,15 @@ export const Sync_Shops = coda.makeSyncTable({
 // #region Formulas
 export const Formula_Shop = coda.makeFormula({
   name: 'Shop',
-  description: 'Get a single shop.',
+  description: 'Get current shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: ShopSyncTableSchema,
   execute: async function ([], context) {
-    const shop = await Shop.current({ context });
-    if (shop) {
-      return shop.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Shop);
-
-    // const shopFetcher = new ShopRestFetcher(context);
-
-    // const response = await shopFetcher.fetch();
-    // if (response?.body?.shop) {
-    //   return shopFetcher.formatApiToRow(response.body.shop);
-    // }
+    const response = await ShopClient.createInstance(context).current({});
+    return ShopModel.createInstance(context, response.body).toCodaRow();
   },
 });
 // #endregion

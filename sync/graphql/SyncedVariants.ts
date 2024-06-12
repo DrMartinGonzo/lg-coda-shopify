@@ -1,0 +1,150 @@
+// #region Imports
+
+import { ListVariantsArgs, VariantFieldsArgs } from '../../Clients/GraphQlApiClientBase';
+import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
+import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
+import { VARIANT_OPTION_KEYS, VARIANT_WEIGHT_KEYS, VariantModel } from '../../models/graphql/VariantModel';
+import { FieldDependency } from '../../schemas/Schema.types';
+import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';
+import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
+import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
+
+// #endregion
+
+export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel> {
+  public static schemaDependencies: FieldDependency<typeof ProductVariantSyncTableSchema.properties>[] = [
+    {
+      field: 'images',
+      dependencies: ['image'],
+    },
+    {
+      field: 'handle',
+      dependencies: ['storeUrl'],
+    },
+    {
+      field: 'status',
+      dependencies: ['storeUrl'],
+    },
+    {
+      field: 'title',
+      dependencies: ['product'],
+    },
+  ];
+
+  public static staticSchema = ProductVariantSyncTableSchema;
+
+  public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
+    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    let augmentedSchema = deepCopy(this.staticSchema);
+    if (syncMetafields) {
+      augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Productvariant, context);
+    }
+    // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
+    augmentedSchema.featuredProperties.push('admin_url');
+    return augmentedSchema;
+  }
+
+  public get codaParamsMap() {
+    const [
+      syncMetafields,
+      productTypes,
+      createdAtRange,
+      updatedAtRange,
+      status,
+      publishedStatus,
+      vendors,
+      skus,
+      productIds,
+    ] = this.codaParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    return {
+      syncMetafields,
+      productTypes,
+      createdAtRange,
+      updatedAtRange,
+      status,
+      publishedStatus,
+      vendors,
+      skus,
+      productIds,
+    };
+  }
+
+  protected codaParamsToListArgs() {
+    const {
+      syncMetafields,
+      productTypes,
+      createdAtRange,
+      updatedAtRange,
+      status,
+      publishedStatus,
+      vendors,
+      skus,
+      productIds,
+    } = this.codaParamsMap;
+
+    const hasEffectiveKey = (key: string) => this.effectiveStandardFromKeys.includes(key);
+
+    const fields: VariantFieldsArgs = { metafields: this.shouldSyncMetafields };
+    if (['image'].some(hasEffectiveKey)) {
+      fields.image = true;
+    }
+    if (VARIANT_WEIGHT_KEYS.concat(['inventory_item_id']).some(hasEffectiveKey)) {
+      fields.inventoryItem = true;
+      if (VARIANT_WEIGHT_KEYS.some(hasEffectiveKey)) {
+        fields.weight = true;
+      }
+    }
+    if (['product_id', 'product', 'storeUrl'].some(hasEffectiveKey)) {
+      fields.product = true;
+    }
+    if (VARIANT_OPTION_KEYS.some(hasEffectiveKey)) {
+      fields.options = true;
+    }
+
+    return {
+      fields,
+      metafieldKeys: this.effectiveMetafieldKeys,
+
+      created_at_min: dateRangeMin(createdAtRange),
+      created_at_max: dateRangeMax(createdAtRange),
+      updated_at_min: dateRangeMin(updatedAtRange),
+      updated_at_max: dateRangeMax(updatedAtRange),
+      product_ids: productIds,
+      product_publication_status: publishedStatus,
+      product_status: status,
+      product_types: productTypes,
+      vendors,
+      skus,
+      // inventory_quantity_min,
+      // inventory_quantity_max,
+      // optionsFilter,
+    } as ListVariantsArgs;
+  }
+
+  /**
+   * {@link VariantGraphQl} has some additional required properties :
+   * - weight: when requesting an update on weight_unit
+   * - weight_unit: when requesting an update on weight
+   * - options: all options are required as soon as we want to update one
+   */
+  // public static getRequiredPropertiesForUpdate(
+  //   schema: coda.ArraySchema<coda.ObjectSchema<string, string>>,
+  //   updatedFields: string[] = []
+  // ) {
+  //   let extraRequiredFields = [];
+  //   if (updatedFields.includes('weight')) {
+  //     extraRequiredFields.push('weight_unit');
+  //   }
+  //   if (updatedFields.includes('weight_unit')) {
+  //     extraRequiredFields.push('weight');
+  //   }
+  //   if (VARIANT_OPTION_KEYS.some((key) => updatedFields.includes(key))) {
+  //     extraRequiredFields = extraRequiredFields.concat(VARIANT_OPTION_KEYS);
+  //   }
+
+  //   return super.getRequiredPropertiesForUpdate(schema, updatedFields).concat(extraRequiredFields);
+  // }
+}

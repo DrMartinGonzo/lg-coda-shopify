@@ -2,9 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../Clients/Client.types';
-import { IRestCRUD } from '../../Clients/RestApiClientBase';
+import { IRestClient } from '../../Clients/RestApiClientBase';
 import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
-import { hasMetafieldsInUpdate } from '../../Resources/utils/abstractResource-utils';
 import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
 import {
   parseContinuationProperty,
@@ -12,7 +11,7 @@ import {
 } from '../../SyncTableManager/utils/syncTableManager-utils';
 import { REST_DEFAULT_LIMIT } from '../../constants';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
-import { AbstractModelRestWithMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
+import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
@@ -35,22 +34,22 @@ export interface SyncTableRestContinuation extends SyncTableContinuation {
 }
 
 export interface ISyncedRestResourcesConstructorArgs<T> extends ISyncedResourcesConstructorArgs<T> {
-  client: IRestCRUD;
+  client: Pick<IRestClient, 'list'>;
 }
 // #endregion
 
-function hasMetafieldsSupport(model: any): model is typeof AbstractModelRestWithMetafields {
+function hasMetafieldsSupport(model: any): model is typeof AbstractModelRestWithRestMetafields {
   return (
-    (model as typeof AbstractModelRestWithMetafields).metafieldRestOwnerType !== undefined &&
-    (model as typeof AbstractModelRestWithMetafields).metafieldGraphQlOwnerType !== undefined
+    (model as typeof AbstractModelRestWithRestMetafields).metafieldRestOwnerType !== undefined &&
+    (model as typeof AbstractModelRestWithRestMetafields).metafieldGraphQlOwnerType !== undefined
   );
 }
 
 export abstract class AbstractSyncedRestResources<
-  T extends AbstractModelRest<any> | AbstractModelRestWithMetafields<any>
+  T extends AbstractModelRest<any> | AbstractModelRestWithRestMetafields<any>
 > extends AbstractSyncedResources<T> {
   protected static defaultLimit = REST_DEFAULT_LIMIT;
-  protected readonly client: IRestCRUD;
+  protected readonly client: Pick<IRestClient, 'list'>;
   protected readonly prevContinuation: SyncTableRestContinuation;
   protected continuation: SyncTableRestContinuation;
 
@@ -100,7 +99,7 @@ export abstract class AbstractSyncedRestResources<
       await this.beforeSync();
 
       const response = await this.sync();
-      this.data = response.body.map((data) => this.model.createInstance(this.context, data));
+      this.data = await Promise.all(response.body.map(async (data) => this.createInstanceFromData(data)));
 
       /** Set continuation if a next page exists */
       if (response?.pageInfo?.nextPage?.query) {
@@ -129,6 +128,22 @@ export abstract class AbstractSyncedRestResources<
     }
   }
 
+  protected async createInstanceFromRow(row: BaseRow) {
+    const instance = await super.createInstanceFromRow(row);
+
+    if (this.supportMetafields && this.asStatic().hasMetafieldsInRow(row)) {
+      // Warm up metafield definitions cache
+      const metafieldDefinitions = await this.getMetafieldDefinitions();
+      (instance as AbstractModelRestWithRestMetafields<T>).data.metafields =
+        await MetafieldModel.createInstancesFromOwnerRow({
+          context: this.context,
+          ownerRow: row,
+          metafieldDefinitions,
+          ownerResource: (this.model as unknown as typeof AbstractModelRestWithRestMetafields).metafieldRestOwnerType,
+        });
+    }
+    return instance;
+  }
   public async executeSyncUpdate(updates: Array<coda.SyncUpdate<string, string, any>>): Promise<SyncTableUpdateResult> {
     await this.init();
 
@@ -142,20 +157,8 @@ export abstract class AbstractSyncedRestResources<
         const newRow = Object.fromEntries(
           Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
         ) as BaseRow;
-
-        const instance = this.model.createInstanceFromRow(this.context, newRow);
-
-        // Warm up metafield definitions cache
-        if (this.supportMetafields && hasMetafieldsInUpdate(update)) {
-          const metafieldDefinitions = await this.getMetafieldDefinitions();
-          (instance as AbstractModelRestWithMetafields<T>).data.metafields =
-            await MetafieldModel.createInstancesFromOwnerRow({
-              context: this.context,
-              ownerRow: newRow,
-              metafieldDefinitions,
-              ownerResource: (this.model as unknown as typeof AbstractModelRestWithMetafields).metafieldRestOwnerType,
-            });
-        }
+        if (this.validateSyncUpdate) this.validateSyncUpdate(prevRow, newRow);
+        const instance = await this.createInstanceFromRow(newRow);
 
         try {
           await instance.save();

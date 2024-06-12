@@ -2,18 +2,42 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { PageClient } from '../../Clients/RestApiClientBase';
-import { Asset } from '../../Resources/Rest/Asset';
-import { Page } from '../../Resources/Rest/Page';
-import { FromRow } from '../../Resources/types/Resource.types';
-import { PACK_IDENTITIES } from '../../constants';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
+import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { PageModel } from '../../models/rest/PageModel';
-import { PageRow } from '../../schemas/CodaRows.types';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { SyncedPages } from '../../sync/rest/SyncedPages';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedPages(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedPages({
+    context,
+    codaSyncParams,
+    model: PageModel,
+    client: PageClient.createInstance(context),
+    validateSyncParams,
+  });
+}
+
+function validateSyncParams({ publishedStatus }: { publishedStatus?: string }) {
+  const invalidMsg: string[] = [];
+  if (
+    !isNullishOrEmpty(publishedStatus) &&
+    !assertAllowedValue(publishedStatus, optionValues(OPTIONS_PUBLISHED_STATUS))
+  ) {
+    invalidMsg.push(`publishedStatus: ${publishedStatus}`);
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
 // #endregion
 
 // #region Sync Tables
@@ -30,7 +54,7 @@ export const Sync_Pages = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'template_suffix') {
-        return Asset.getTemplateSuffixesFor({ kind: 'page', context });
+        return getTemplateSuffixesFor({ kind: 'page', context });
       }
     },
   },
@@ -57,19 +81,10 @@ export const Sync_Pages = coda.makeSyncTable({
       { ...filters.general.sinceId, optional: true },
       { ...filters.general.title, optional: true },
     ],
-    execute: async function (codaSyncParams, context) {
-      const syncedPages = new SyncedPages({
-        context,
-        codaSyncParams,
-        model: PageModel,
-        client: PageClient.createInstance(context),
-      });
-      return syncedPages.executeSync();
-    },
+    execute: async (codaSyncParams, context) => createSyncedPages(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Page.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedPages(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -102,26 +117,24 @@ export const Action_CreatePage = coda.makeFormula({
     context
   ) {
     const defaultPublishedStatus = false;
-    const fromRow: FromRow<PageRow> = {
-      row: {
-        title,
-        author,
-        body_html,
-        handle,
-        published_at,
-        published: published ?? defaultPublishedStatus,
-        template_suffix,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Page.metafieldRestOwnerType })
-      ),
-    };
+    const page = PageModel.createInstanceFromRow(context, {
+      id: undefined,
+      title,
+      author,
+      body_html,
+      handle,
+      published_at,
+      published: published ?? defaultPublishedStatus,
+      template_suffix,
+    });
+    if (metafields) {
+      page.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
+        s.toRestMetafield({ context, owner_resource: PageModel.metafieldRestOwnerType })
+      );
+    }
 
-    const newPage = new Page({ context, fromRow });
-    await newPage.saveAndUpdate();
-    return newPage.apiData.id;
+    await page.save();
+    return page.data.id;
   },
 });
 
@@ -155,35 +168,49 @@ export const Action_UpdatePage = coda.makeFormula({
     [pageId, author, body_html, handle, published, published_at, title, template_suffix, metafields],
     context
   ) {
-    const fromRow: FromRow<PageRow> = {
-      row: {
-        id: pageId,
-        author,
-        body_html,
-        handle,
-        published,
-        published_at,
-        title,
-        template_suffix,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: pageId, owner_resource: Page.metafieldRestOwnerType })
-      ),
-    };
+    const page = PageModel.createInstanceFromRow(context, {
+      id: pageId,
+      author,
+      body_html,
+      handle,
+      published,
+      published_at,
+      title,
+      template_suffix,
+    });
+    if (metafields) {
+      page.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerResource: PageModel.metafieldRestOwnerType,
+        ownerId: pageId,
+      });
+    }
 
-    const updatedPage = new Page({ context, fromRow });
-    await updatedPage.saveAndUpdate();
-    return updatedPage.formatToRow();
+    await page.save();
+    return page.toCodaRow();
   },
 });
 
-export const Action_DeletePage = makeDeleteRestResourceAction(Page, inputs.page.id);
+export const Action_DeletePage = makeDeleteRestResourceAction({
+  modelName: PageModel.displayName,
+  IdParameter: inputs.page.id,
+  execute: async ([itemId], context) => {
+    await PageClient.createInstance(context).delete({ id: itemId as number });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas
-export const Formula_Page = makeFetchSingleRestResourceAction(Page, inputs.page.id);
+export const Formula_Page = makeFetchSingleRestResourceAction({
+  modelName: PageModel.displayName,
+  IdParameter: inputs.page.id,
+  schema: SyncedPages.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await PageClient.createInstance(context).single({ id: itemId as number });
+    return PageModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Format_Page: coda.Format = {
   name: 'Page',

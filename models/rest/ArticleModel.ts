@@ -4,7 +4,7 @@ import striptags from 'striptags';
 
 import { ArticleClient } from '../../Clients/RestApiClientBase';
 import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
@@ -12,9 +12,10 @@ import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 import {
-  AbstractModelRestWithMetafields,
+  AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
+import { safeToString } from '../../utils/helpers';
 
 // #endregion
 
@@ -41,11 +42,11 @@ export interface ArticleApiData extends BaseApiDataRest {
   user_id: number | null;
 }
 
-export interface ArticleModelData extends ArticleApiData, BaseModelDataRestWithRestMetafields {}
+interface ArticleModelData extends ArticleApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractRestResourceWithGraphQLMetafields once GraphQl API version 2024-07 is stable
-export class ArticleModel extends AbstractModelRestWithMetafields<ArticleModel> {
+// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
+export class ArticleModel extends AbstractModelRestWithRestMetafields<ArticleModel> {
   public data: ArticleModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Article;
@@ -59,20 +60,20 @@ export class ArticleModel extends AbstractModelRestWithMetafields<ArticleModel> 
       author: row.author,
       blog_id: row.blog?.id || row.blog_id,
       body_html: row.body_html,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
+      created_at: safeToString(row.created_at),
       handle: row.handle,
       id: row.id,
       image: {
         alt: row.image_alt_text,
         src: row.image_url,
       },
-      published_at: row.published_at ? row.published_at.toString() : undefined,
+      published_at: safeToString(row.published_at),
       published: row.published,
       summary_html: row.summary_html,
       tags: row.tags,
       template_suffix: row.template_suffix,
       title: row.title,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      updated_at: safeToString(row.updated_at),
       user_id: row.user_id,
     };
     return this.createInstance(context, data);
@@ -105,7 +106,7 @@ export class ArticleModel extends AbstractModelRestWithMetafields<ArticleModel> 
     }
 
     if (metafields) {
-      metafields.forEach((metafield: IMetafield) => {
+      metafields.forEach((metafield) => {
         obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
       });
     }

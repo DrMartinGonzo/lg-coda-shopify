@@ -1,26 +1,34 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { normalizeObjectSchema } from '@codahq/packs-sdk/dist/schema';
 
-import { MetafieldDefinition } from '../Resources/GraphQl/MetafieldDefinition';
 import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { SyncTableUpdateResult } from '../SyncTableManager/types/SyncTableManager.types';
 import { AbstractModel } from '../models/AbstractModel';
-import { AbstractModelRestWithMetafields } from '../models/rest/AbstractModelRestWithMetafields';
+import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
+import { AbstractModelRestWithRestMetafields } from '../models/rest/AbstractModelRestWithMetafields';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { FieldDependency } from '../schemas/Schema.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../utils/coda-utils';
 import { handleFieldDependencies } from '../utils/helpers';
-import { removePrefixFromMetaFieldKey, separatePrefixedMetafieldsKeysFromKeys } from '../utils/metafields-utils';
+import {
+  isPrefixedMetaFieldKey,
+  removePrefixFromMetaFieldKey,
+  separatePrefixedMetafieldsKeysFromKeys,
+} from '../utils/metafields-utils';
 
 // #endregion
 
 // #region Types
+type ValidateSyncParamsT = (params: any) => void;
+type ValidateSyncUpdateT = (prevRow: BaseRow, newRow: BaseRow) => void;
+
 export interface ISyncedResourcesConstructorArgs<T> {
   context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */
   codaSyncParams: coda.ParamValues<coda.ParamDefs>;
   model: ModelType<T>;
+  validateSyncParams?: ValidateSyncParamsT;
+  validateSyncUpdate?: ValidateSyncUpdateT;
 }
 
 export interface SyncedResourcesSyncResult<C extends SyncTableContinuation>
@@ -78,7 +86,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   protected effectiveMetafieldKeys: string[];
   protected supportMetafields: boolean;
   protected shouldSyncMetafields: boolean;
-  protected _metafieldDefinitions: MetafieldDefinition[];
+  protected _metafieldDefinitions: MetafieldDefinitionModel[];
 
   protected static defaultLimit: number;
   protected currentLimit: number;
@@ -90,6 +98,8 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   protected readonly context: coda.SyncExecutionContext;
   /** Array of Coda formula parameters */
   protected readonly codaParams: coda.ParamValues<coda.ParamDefs>;
+  protected readonly validateSyncParams?: ValidateSyncParamsT;
+  protected readonly validateSyncUpdate?: ValidateSyncUpdateT;
 
   /** The effective schema for the sync. Can be a static or dynamic schema */
   protected schema: coda.ArraySchema<coda.ObjectSchema<string, string>>;
@@ -127,10 +137,36 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
     return this._schemaCache;
   }
 
-  constructor({ codaSyncParams, context, model }: ISyncedResourcesConstructorArgs<T>) {
+  /**
+   * Wether an update triggered by a 2-way sync table has metafields in it.
+   */
+  /*
+  protected static hasMetafieldsInUpdate(
+    update: coda.SyncUpdate<string, string, coda.ObjectSchemaDefinition<string, string>>
+  ) {
+    return update.updatedFields.some((fromKey) => isPrefixedMetaFieldKey(fromKey));
+  }
+  */
+
+  /**
+   * Wether a row involved in a 2-way sync table has metafields in it.
+   */
+  protected static hasMetafieldsInRow(row: BaseRow) {
+    return Object.keys(row).some((fromKey) => isPrefixedMetaFieldKey(fromKey));
+  }
+
+  constructor({
+    codaSyncParams,
+    context,
+    model,
+    validateSyncParams,
+    validateSyncUpdate,
+  }: ISyncedResourcesConstructorArgs<T>) {
     this.context = context;
     this.codaParams = codaSyncParams;
     this.model = model;
+    this.validateSyncParams = validateSyncParams;
+    this.validateSyncUpdate = validateSyncUpdate;
 
     this.prevContinuation = context.sync.continuation as SyncTableContinuation;
     this.continuation = null;
@@ -147,6 +183,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   }
 
   public async init() {
+    if (this.validateSyncParams) this.validateSyncParams(this.codaParamsMap);
     this.schema = await this.asStatic().getSchema({ context: this.context, codaSyncParams: this.codaParams });
 
     const effectivePropertyKeys = coda.getEffectivePropertyKeysFromSchema(this.schema);
@@ -156,17 +193,17 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
     this.shouldSyncMetafields = this.supportMetafields && !!this.effectiveMetafieldKeys.length;
   }
 
-  protected async getMetafieldDefinitions(): Promise<MetafieldDefinition[]> {
+  protected async getMetafieldDefinitions(): Promise<MetafieldDefinitionModel[]> {
     if (this._metafieldDefinitions) return this._metafieldDefinitions;
 
     this._metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({
       context: this.context,
-      ownerType: (this.model as unknown as typeof AbstractModelRestWithMetafields).metafieldGraphQlOwnerType,
+      ownerType: (this.model as unknown as typeof AbstractModelRestWithRestMetafields).metafieldGraphQlOwnerType,
     });
     return this._metafieldDefinitions;
   }
 
-  protected abstract get codaParamsMap(): any;
+  public abstract get codaParamsMap(): any;
 
   protected get syncedStandardFields(): string[] {
     return handleFieldDependencies(this.effectiveStandardFromKeys, this.asStatic().schemaDependencies);
@@ -176,6 +213,13 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   protected abstract codaParamsToListArgs(): any;
 
   // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
+
+  protected async createInstanceFromData(data: any) {
+    return this.model.createInstance(this.context, data);
+  }
+  protected async createInstanceFromRow(row: BaseRow) {
+    return this.model.createInstanceFromRow(this.context, row);
+  }
 
   protected async beforeSync(): Promise<void> {}
   protected async afterSync(): Promise<void> {}

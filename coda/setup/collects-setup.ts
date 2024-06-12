@@ -1,11 +1,24 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { Collect } from '../../Resources/Rest/Collect';
+import { CollectClient } from '../../Clients/RestApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
+import { CollectModel } from '../../models/rest/CollectModel';
 import { CollectSyncTableSchema } from '../../schemas/syncTable/CollectSchema';
+import { SyncedCollects } from '../../sync/rest/SyncedCollects';
 import { filters } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedCollects(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedCollects({
+    context,
+    codaSyncParams,
+    model: CollectModel,
+    client: CollectClient.createInstance(context),
+  });
+}
 // #endregion
 
 // #region Sync tables
@@ -20,12 +33,10 @@ export const Sync_Collects = coda.makeSyncTable({
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link Collect.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedCollects.codaParamsMap}
      */
     parameters: [{ ...filters.collection.id, optional: true }],
-    execute: async (params, context: coda.SyncExecutionContext) => {
-      return Collect.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedCollects(codaSyncParams, context).executeSync(),
   },
 });
 // #endregion

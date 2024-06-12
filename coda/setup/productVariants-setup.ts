@@ -1,20 +1,117 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { NotFoundVisibleError } from '../../Errors/Errors';
-import { VariantGraphQl } from '../../Resources/GraphQl/VariantGraphQl';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { VariantClient } from '../../Clients/GraphQlApiClientBase';
+import { InvalidValueVisibleError, RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import {
+  CACHE_DEFAULT,
+  OPTIONS_PRODUCT_STATUS_GRAPHQL,
+  OPTIONS_PUBLISHED_STATUS,
+  PACK_IDENTITIES,
+  optionValues,
+} from '../../constants';
+import { VARIANT_OPTION_KEYS, VariantModel } from '../../models/graphql/VariantModel';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
-import { formatProductReference } from '../../schemas/syncTable/ProductSchemaRest';
+import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
-import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
+import { SyncedVariants } from '../../sync/graphql/SyncedVariants';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { makeDeleteGraphQlResourceActionNew } from '../../utils/coda-utils';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { assertAllowedValue, assertNotBlank, isNullishOrEmpty } from '../../utils/helpers';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #endregion
+
+// #region Helper functions
+function createSyncedVariants(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedVariants({
+    context,
+    codaSyncParams,
+    model: VariantModel,
+    client: VariantClient.createInstance(context),
+    validateSyncParams,
+    validateSyncUpdate,
+  });
+}
+
+function validateSyncParams({ publishedStatus, statusArray }: { publishedStatus?: string; statusArray?: string[] }) {
+  const invalidMsg: string[] = [];
+  if (
+    !isNullishOrEmpty(statusArray) &&
+    !assertAllowedValue(statusArray, optionValues(OPTIONS_PRODUCT_STATUS_GRAPHQL))
+  ) {
+    invalidMsg.push(`status: ${statusArray.join(', ')}`);
+  }
+  if (
+    !isNullishOrEmpty(publishedStatus) &&
+    !assertAllowedValue(publishedStatus, optionValues(OPTIONS_PUBLISHED_STATUS))
+  ) {
+    invalidMsg.push(`publishedStatus: ${publishedStatus}`);
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
+
+function validateSyncUpdate(prevRow: ProductVariantRow, newRow: ProductVariantRow) {
+  const invalidMsg: string[] = [];
+  if (!assertNotBlank(newRow.title)) {
+    invalidMsg.push("Product title can't be blank");
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+
+  const requiredMsg: string[] = [];
+  if (!isNullishOrEmpty(newRow.weight) && isNullishOrEmpty(newRow.weight_unit)) {
+    requiredMsg.push('weight_unit');
+  }
+  if (isNullishOrEmpty(newRow.weight) && !isNullishOrEmpty(newRow.weight_unit)) {
+    requiredMsg.push('weight');
+  }
+  const hasOptionsKeySet = VARIANT_OPTION_KEYS.some((key) => newRow.hasOwnProperty(key));
+  const hasAllOptionKeysSet = VARIANT_OPTION_KEYS.every((key) => newRow.hasOwnProperty(key));
+  if (hasOptionsKeySet && !hasAllOptionKeysSet) {
+    requiredMsg.push(VARIANT_OPTION_KEYS.filter((key) => !newRow.hasOwnProperty(key)).join(', '));
+  }
+
+  if (requiredMsg.length) {
+    throw new RequiredSyncTableMissingVisibleError(requiredMsg.join(', '));
+  }
+}
+// #endregion
+
+// protected static translateCodaSyncParamsFromVariantToProduct(
+//   codaSyncParams: CodaSyncParams<typeof Sync_ProductVariants>
+// ): CodaSyncParams<typeof Sync_Products> {
+//   const [
+//     syncMetafields, // syncMetafields
+//     product_type, // productTypesArray
+//     created_at, // createdAtRange
+//     updated_at, // updatedAtRange
+//     // published_at, // publishedAtRange
+//     status, // statusArray
+//     published_status, // publishedStatus
+//     vendor, // vendorsArray
+//     skus, // skuArray
+//     ids, // idArray
+//   ] = codaSyncParams;
+
+//   return [
+//     syncMetafields, // syncMetafields
+//     product_type, // productTypesArray
+//     created_at, // createdAtRange
+//     updated_at, // updatedAtRange
+//     status, // statusArray
+//     published_status, // publishedStatus
+//     vendor, // vendorsArray
+//     ids, // idArray
+//     undefined, // tagsArray
+//   ];
+// }
 
 // #region Sync Tables
 export const Sync_ProductVariants = coda.makeSyncTable({
@@ -23,10 +120,10 @@ export const Sync_ProductVariants = coda.makeSyncTable({
     'Return ProductVariants from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.ProductVariant,
-  schema: ProductVariantSyncTableSchema,
+  schema: SyncedVariants.staticSchema,
   dynamicOptions: {
     getSchema: async function (context, _, formulaContext) {
-      return VariantGraphQl.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
+      return SyncedVariants.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
     },
     defaultAddDynamicColumns: false,
   },
@@ -36,8 +133,7 @@ export const Sync_ProductVariants = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link VariantGraphQl.getDynamicSchema}
-     *  - {@link VariantGraphQl.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedVariants.codaParamsMap}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -51,9 +147,10 @@ export const Sync_ProductVariants = coda.makeSyncTable({
       { ...filters.product.idArray, name: 'productIds', optional: true },
       // { ...filters.productVariant.options, optional: true },
     ],
-    execute: async (params, context) => VariantGraphQl.sync(params, context),
+    execute: async (codaSyncParams, context) => createSyncedVariants(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async (params, updates, context) => VariantGraphQl.syncUpdate(params, updates, context),
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedVariants(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -106,31 +203,34 @@ export const Action_CreateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    const fromRow: FromRow<ProductVariantRow> = {
-      row: {
-        product: formatProductReference(product_id),
-        barcode,
-        compare_at_price,
-        option1,
-        option2,
-        option3,
-        price,
-        position,
-        sku,
-        taxable,
-        weight,
-        weight_unit,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: VariantGraphQl.metafieldRestOwnerType })
-      ),
+    const row: ProductVariantRow = {
+      id: undefined,
+      title: undefined,
+      product: formatProductReference(product_id),
+      barcode,
+      compare_at_price,
+      option1,
+      option2,
+      option3,
+      price,
+      position,
+      sku,
+      taxable,
+      weight,
+      weight_unit,
     };
+    validateSyncUpdate({} as ProductVariantRow, row);
 
-    const newVariant = new VariantGraphQl({ context, fromRow });
-    await newVariant.saveAndUpdate();
-    return newVariant.restId;
+    const variant = VariantModel.createInstanceFromRow(context, row);
+    if (metafields) {
+      variant.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: MetafieldOwnerType.Productvariant,
+      });
+    }
+
+    await variant.save();
+    return variant.restId;
   },
 });
 
@@ -181,43 +281,48 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     ],
     context
   ) {
-    const fromRow: FromRow<ProductVariantRow> = {
-      row: {
-        id: productVariantId,
-        barcode,
-        compare_at_price,
-        option1,
-        option2,
-        option3,
-        price,
-        position,
-        sku,
-        taxable,
-        weight,
-        weight_unit,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: productVariantId, owner_resource: VariantGraphQl.metafieldRestOwnerType })
-      ),
+    const row: ProductVariantRow = {
+      id: productVariantId,
+      title: undefined,
+      barcode,
+      compare_at_price,
+      option1,
+      option2,
+      option3,
+      price,
+      position,
+      sku,
+      taxable,
+      weight,
+      weight_unit,
     };
+    validateSyncUpdate({} as ProductVariantRow, row);
 
-    const updatedVariant = new VariantGraphQl({ context, fromRow });
-    await updatedVariant.saveAndUpdate();
-
-    if (updatedVariant) {
-      // await updatedVariant.refreshDataWithtParentProduct();
-      return updatedVariant.formatToRow();
+    const variant = VariantModel.createInstanceFromRow(context, row);
+    if (metafields) {
+      variant.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: MetafieldOwnerType.Productvariant,
+        ownerGid: variant.graphQlGid,
+      });
     }
+
+    await variant.save();
+    return variant.toCodaRow();
   },
 });
 
-export const Action_DeleteProductVariant = makeDeleteGraphQlResourceAction(
-  VariantGraphQl,
-  inputs.productVariant.id,
-  ({ context, id }) => VariantGraphQl.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, id) })
-);
+export const Action_DeleteProductVariant = makeDeleteGraphQlResourceActionNew({
+  modelName: VariantModel.displayName,
+  IdParameter: inputs.productVariant.id,
+  execute: async ([itemId], context) => {
+    await VariantClient.createInstance(context).delete({
+      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, itemId as number),
+    });
+    return true;
+  },
+});
+
 // #endregion
 
 // #region Formulas
@@ -228,16 +333,13 @@ export const Formula_ProductVariant = coda.makeFormula({
   parameters: [inputs.productVariant.id],
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
-  schema: ProductVariantSyncTableSchema,
+  schema: SyncedVariants.staticSchema,
   execute: async ([productVariantId], context) => {
-    const variant = await VariantGraphQl.find({
-      context,
-      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, productVariantId),
+    const response = await VariantClient.createInstance(context).single({
+      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, productVariantId as number),
     });
-    if (variant) {
-      return variant.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.ProductVariant);
+    const variant = VariantModel.createInstance(context, response.body);
+    return variant.toCodaRow();
   },
 });
 

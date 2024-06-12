@@ -16,5 +16,5 @@ export interface ThemeApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-export interface ThemeModelData extends BaseModelDataRest, ThemeApiData {}
+interface ThemeModelData extends BaseModelDataRest, ThemeApiData {}
 // #endregion

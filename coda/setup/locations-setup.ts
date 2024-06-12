@@ -1,17 +1,27 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { NotFoundVisibleError } from '../../Errors/Errors';
-import { Location } from '../../Resources/GraphQl/Location';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { LocationClient } from '../../Clients/GraphQlApiClientBase';
 import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
-import { LocationRow } from '../../schemas/CodaRows.types';
+import { LocationModel } from '../../models/graphql/LocationModel';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
+import { SyncedLocations } from '../../sync/graphql/SyncedLocations';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedLocations(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedLocations({
+    context,
+    codaSyncParams,
+    model: LocationModel,
+    client: LocationClient.createInstance(context),
+  });
+}
 // #endregion
 
 // #region Sync Tables
@@ -21,11 +31,10 @@ export const Sync_Locations = coda.makeSyncTable({
     'Return Locations from this shop. You can also fetch metafields that have a definition by selecting them in advanced settings.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Location,
-  schema: LocationSyncTableSchema,
+  schema: SyncedLocations.staticSchema,
   dynamicOptions: {
-    getSchema: async function (context, _, formulaContext) {
-      return Location.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] });
-    },
+    getSchema: async (context, _, formulaContext) =>
+      SyncedLocations.getDynamicSchema({ context, codaSyncParams: [formulaContext.syncMetafields] }),
     defaultAddDynamicColumns: false,
   },
   formula: {
@@ -34,16 +43,13 @@ export const Sync_Locations = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Location.getDynamicSchema}
+     *  - {@link SyncedLocations.codaParamsMap}
      */
     parameters: [{ ...filters.general.syncMetafields, optional: true }],
-    execute: async function (params, context) {
-      return Location.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedLocations(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return Location.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedLocations(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -80,28 +86,27 @@ export const Action_UpdateLocation = coda.makeFormula({
     [locationId, name, address1, address2, city, countryCode, phone, provinceCode, zip, metafields],
     context
   ) {
-    const fromRow: FromRow<LocationRow> = {
-      row: {
-        id: locationId,
-        name,
-        address1,
-        address2,
-        city,
-        country_code: countryCode,
-        phone,
-        province_code: provinceCode,
-        zip,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: locationId, owner_resource: Location.metafieldRestOwnerType })
-      ),
-    };
+    const location = LocationModel.createInstanceFromRow(context, {
+      id: locationId,
+      name,
+      address1,
+      address2,
+      city,
+      country_code: countryCode,
+      phone,
+      province_code: provinceCode,
+      zip,
+    });
+    if (metafields) {
+      location.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: LocationModel.metafieldGraphQlOwnerType,
+        ownerGid: location.graphQlGid,
+      });
+    }
 
-    const updatedLocation = new Location({ context, fromRow });
-    await updatedLocation.saveAndUpdate();
-    return updatedLocation.formatToRow();
+    await location.save();
+    return location.toCodaRow();
   },
 });
 
@@ -116,10 +121,10 @@ export const Action_ActivateLocation = coda.makeFormula({
   // schema: coda.withIdentity(LocationSchema, IdentitiesNew.location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID], context) {
-    const fromRow: FromRow<LocationRow> = { row: { id: locationID } };
-    const location = new Location({ context, fromRow });
-    await location.activate();
-    return location.formatToRow();
+    const response = await LocationClient.createInstance(context).activate(
+      idToGraphQlGid(GraphQlResourceNames.Location, locationID)
+    );
+    return LocationModel.createInstance(context, response.body).toCodaRow();
   },
 });
 
@@ -138,14 +143,11 @@ export const Action_DeactivateLocation = coda.makeFormula({
   // schema: coda.withIdentity(LocationSchema, IdentitiesNew.location),
   schema: LocationSyncTableSchema,
   execute: async function ([locationID, destinationLocationID], context) {
-    const location = new Location({
-      context,
-      fromRow: { row: { id: locationID } },
-    });
-    const destinationGid = idToGraphQlGid(GraphQlResourceNames.Location, destinationLocationID);
-
-    await location.deActivate(destinationGid);
-    return location.formatToRow();
+    const response = await LocationClient.createInstance(context).deActivate(
+      idToGraphQlGid(GraphQlResourceNames.Location, locationID),
+      idToGraphQlGid(GraphQlResourceNames.Location, destinationLocationID)
+    );
+    return LocationModel.createInstance(context, response.body).toCodaRow();
   },
 });
 // #endregion
@@ -159,12 +161,11 @@ export const Formula_Location = coda.makeFormula({
   cacheTtlSecs: CACHE_DEFAULT,
   resultType: coda.ValueType.Object,
   schema: LocationSyncTableSchema,
-  execute: async ([location_id], context) => {
-    const location = await Location.find({ context, id: idToGraphQlGid(GraphQlResourceNames.Location, location_id) });
-    if (location) {
-      return location.formatToRow();
-    }
-    throw new NotFoundVisibleError(PACK_IDENTITIES.Location);
+  execute: async ([locationID], context) => {
+    const response = await LocationClient.createInstance(context).single({
+      id: idToGraphQlGid(GraphQlResourceNames.Location, locationID),
+    });
+    return LocationModel.createInstance(context, response.body).toCodaRow();
   },
 });
 

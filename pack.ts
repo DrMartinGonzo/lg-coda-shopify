@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 
-import { Shop } from './Resources/Rest/Shop';
+import { ShopClient } from './Clients/RestApiClientBase';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,
@@ -153,6 +153,7 @@ import { Formula_Shop, Sync_Shops } from './coda/setup/shop-setup';
 import {
   Action_DeleteTranslation,
   Action_SetTranslation,
+  Sync_TranslatableContent,
   Sync_Translations,
 } from './coda/setup/translations-setup';
 
@@ -169,10 +170,8 @@ pack.setUserAuthentication({
   params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
-    const shop = await Shop.current({ context, fields: 'myshopify_domain' });
-    if (shop?.apiData?.myshopify_domain) {
-      return shop.apiData.myshopify_domain;
-    }
+    const response = await ShopClient.createInstance(context).current({ fields: 'myshopify_domain' });
+    return response?.body?.myshopify_domain;
   },
 });
 pack.addNetworkDomain('myshopify.com');
@@ -201,6 +200,9 @@ pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
 pack.syncTables.push(Sync_Shops);
 pack.syncTables.push(Sync_Translations);
+if (IS_ADMIN_RELEASE) {
+  pack.syncTables.push(Sync_TranslatableContent);
+}
 // #endregion
 
 // #region Formulas

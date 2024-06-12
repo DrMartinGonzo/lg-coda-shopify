@@ -396,15 +396,38 @@ export function excludeUndefinedObjectKeys<ObjectType extends Record<PropertyKey
   const keysToOmit = Object.keys(obj).filter((key) => obj[key] === undefined);
   return excludeObjectKeys(obj, keysToOmit);
 }
+// TODO: mostly the same as preceding function ?
+export function removeNullishPropsFromObject<T extends Record<string, any>>(params: T = {} as T) {
+  const cleanParams: T = {} as T;
+  for (const key in params) {
+    if (!isNullish(params[key])) {
+      cleanParams[key] = params[key];
+    }
+  }
+  return cleanParams;
+}
 
 export function splitAndTrimValues(values = '', delimiter = ','): string[] {
   return values.split(delimiter).map((s) => s.trim());
 }
 // #endregion
 
+export function safeToString(value?: any): string | undefined {
+  return isNullish(value) ? undefined : value.toString();
+}
+
 export function dateRangeMin(dateRange: Date[]) {
   return dateRange ? dateRange[0] : undefined;
 }
 export function dateRangeMax(dateRange: Date[]) {
   return dateRange ? dateRange[1] : undefined;
+}
+
+export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
+  if (values) {
+    return !(Array.isArray(values) ? values : [values]).some((value) => !allowedValues.includes(value));
+  }
+}
+export function assertNotBlank(value: any) {
+  return !isDefinedEmpty(value);
 }

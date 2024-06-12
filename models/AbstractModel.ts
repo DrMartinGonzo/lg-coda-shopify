@@ -4,6 +4,8 @@ import deepmerge from 'deepmerge';
 
 import { BaseRow } from '../schemas/CodaRows.types';
 import { isDefinedEmpty } from '../utils/helpers';
+import { Identity } from '../constants';
+import { BaseApiDataRest } from './rest/AbstractModelRest';
 
 // #endregion
 
@@ -29,11 +31,65 @@ export type Serialized<T extends BaseModelData> = Record<keyof T, any>;
 export abstract class AbstractModel<T> {
   public data: any;
   protected readonly primaryKey: string;
+  protected context: coda.ExecutionContext;
+  public static readonly displayName: Identity;
 
   // protected static readonly readOnlyAttributes: string[] = [];
 
-  protected context: coda.ExecutionContext;
-  // protected static SyncTableManager: new (params: ISyncTableManagerConstructorArgs) => ISyncTableManager;
+  public static createInstance<T>(this: new (...args: any[]) => T, context: coda.ExecutionContext, fromData: any) {
+    return new this({ context, fromData });
+  }
+
+  public static createInstanceFromRow(context: coda.ExecutionContext, row: BaseRow): InstanceType<typeof this> {
+    throw new Error('Must be extended by subclasses');
+  }
+
+  /**====================================================================================================================
+   *    Instance Methods
+   *===================================================================================================================== */
+  constructor({ context, fromData }: AbstractModelConstructorArgs) {
+    this.context = context;
+    this.primaryKey = 'id';
+
+    if (fromData) this.setData(fromData);
+  }
+
+  /**
+   * Returns the current class's constructor.
+   * This allows accessing the constructor type of the current class.
+   */
+  public asStatic<T extends typeof AbstractModel = typeof AbstractModel>(): T {
+    return this.constructor as T;
+  }
+
+  // #region data methods
+  protected setData(data: any): void {
+    const cleanData = this.cleanRawData(data);
+    this.validateData(data);
+    this.data = cleanData;
+  }
+
+  /**
+   * On récupère les données sans les instances qu'elles peuvent contenir
+   */
+  protected getApiData<T>(): T {
+    function process(prop: any) {
+      if (prop instanceof AbstractModel) {
+        return prop.getApiData();
+      }
+      if (Array.isArray(prop)) {
+        return prop.map(process);
+      }
+      return prop;
+    }
+
+    const ret = {};
+    for (let key in this.data) {
+      const prop = this.data[key];
+      ret[key] = process(prop);
+    }
+    return ret as T;
+  }
 
   /**
    * Nettoyage des donnée brutes.
@@ -80,34 +136,6 @@ export abstract class AbstractModel<T> {
     }
   }
 
-  public static createInstance<T extends AbstractModel<T>>(
-    this: new (...args: any[]) => T,
-    context: coda.ExecutionContext,
-    fromData: any
-  ) {
-    return new this({ context, fromData });
-  }
-
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: BaseRow): InstanceType<typeof this> {
-    throw new Error('Must be extended by subclasses');
-  }
-
-  /**====================================================================================================================
-   *    Instance Methods
-   *===================================================================================================================== */
-  constructor({ context, fromData }: AbstractModelConstructorArgs) {
-    this.context = context;
-    this.primaryKey = 'id';
-
-    if (fromData) this.setData(fromData);
-  }
-
-  protected setData(data: any): void {
-    const cleanData = this.cleanRawData(data);
-    this.validateData(data);
-    this.data = cleanData;
-  }
-
   protected validateData(data: any) {}
 
   protected static combineMerge(target: any[], source: any[], options: deepmerge.ArrayMergeOptions) {
@@ -133,14 +161,6 @@ export abstract class AbstractModel<T> {
   }
 
   /**
-   * Returns the current class's constructor.
-   * This allows accessing the constructor type of the current class.
-   */
-  public asStatic<T extends typeof AbstractModel = typeof AbstractModel>(): T {
-    return this.constructor as T;
-  }
-
-  /**
    * Refresh data of the instance. New data takes precedence
    */
   public async refreshData(): Promise<void> {
@@ -150,15 +170,6 @@ export abstract class AbstractModel<T> {
     }
   }
   /**
-   * Merge updated data with existing data, existing data takes precedence
-   */
-  private mergeFreshData<T extends AbstractModel<T>['data']>(freshData: T) {
-    return deepmerge<T, T>(this.data, freshData ?? {}, {
-      arrayMerge: AbstractModel.combineMerge,
-    });
-  }
-
-  /**
    * Refresh data of the instance. Existing data takes precedence
    */
   public async addMissingData(): Promise<void> {
@@ -166,6 +177,15 @@ export abstract class AbstractModel<T> {
     if (updatedData) {
       this.setData(this.mergeMissingData(updatedData));
     }
+  }
+
+  /**
+   * Merge updated data with existing data, updated data takes precedence
+   */
+  private mergeFreshData<T extends AbstractModel<T>['data']>(freshData: T) {
+    return deepmerge<T, T>(this.data, freshData ?? {}, {
+      arrayMerge: AbstractModel.combineMerge,
+    });
   }
   /**
    * Merge updated data with existing data, existing data takes precedence
@@ -182,13 +202,7 @@ export abstract class AbstractModel<T> {
   protected async getFullFreshData(): Promise<any | undefined> {
     return;
   }
-
-  // public abstract update(...args: any[]): Promise<void>;
-  protected updateNeeded(): boolean {
-    return Object.keys(this.data).filter((key) => key !== this.primaryKey).length > 0;
-  }
-
-  // public abstract delete(...args: any[]): Promise<void>;
+  // #endregion
 
   public abstract toCodaRow(...args: any[]): BaseRow;
 }

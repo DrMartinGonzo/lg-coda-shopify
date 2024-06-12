@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomerClient } from '../../Clients/RestApiClientBase';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
@@ -12,12 +11,13 @@ import {
   CONSENT_STATE__UNSUBSCRIBED,
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../../utils/helpers';
+import { formatAddressDisplayName, formatPersonDisplayValue, safeToString } from '../../utils/helpers';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
-  AbstractRestModelWithGraphQlMetafields,
+  AbstractModelRestWithGraphQlMetafields,
   BaseModelDataRestWithGraphQlMetafields,
 } from './AbstractModelRestWithMetafields';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 
@@ -49,10 +49,10 @@ export interface CustomerApiData extends BaseApiDataRest {
   verified_email: boolean | null;
 }
 
-export interface CustomerModelData extends CustomerApiData, BaseModelDataRestWithGraphQlMetafields {}
+interface CustomerModelData extends CustomerApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class CustomerModel extends AbstractRestModelWithGraphQlMetafields<CustomerModel> {
+export class CustomerModel extends AbstractModelRestWithGraphQlMetafields<CustomerModel> {
   public data: CustomerModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Customer;
@@ -60,11 +60,11 @@ export class CustomerModel extends AbstractRestModelWithGraphQlMetafields<Custom
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
   protected static readonly graphQlName = GraphQlResourceNames.Customer;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: CustomerRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, row: Omit<CustomerRow, 'display'>) {
     const data: Partial<CustomerModelData> = {
       id: row.id,
       addresses: row.addresses,
-      created_at: row.created_at ? row.created_at.toString() : undefined,
+      created_at: safeToString(row.created_at),
       default_address: row.default_address,
       email: row.email,
       first_name: row.first_name,
@@ -79,8 +79,8 @@ export class CustomerModel extends AbstractRestModelWithGraphQlMetafields<Custom
       tags: row.tags,
       tax_exempt: row.tax_exempt,
       tax_exemptions: row.tax_exemptions,
-      total_spent: row.total_spent ? row.total_spent.toString() : undefined,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      total_spent: safeToString(row.total_spent),
+      updated_at: safeToString(row.updated_at),
       verified_email: row.verified_email,
     };
 

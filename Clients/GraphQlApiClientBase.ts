@@ -4,21 +4,42 @@ import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
 import { VariablesOf } from '../utils/tada-utils';
 
-import { InvalidValueError } from '../Errors/Errors';
+import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
+import { FileApiData, FileModelData } from '../models/graphql/FileModel';
+import { InventoryItemApiData, InventoryItemModelData } from '../models/graphql/InventoryItemModel';
+import { LocationApiData, LocationModelData } from '../models/graphql/LocationModel';
+import { MetafieldDefinitionApiData } from '../models/graphql/MetafieldDefinitionModel';
+import { MetafieldApiData } from '../models/graphql/MetafieldGraphQlModel';
+import { MetaobjectDefinitionApiData } from '../models/graphql/MetaobjectDefinitionModel';
+import { MetaobjectApiData, MetaobjectModelData } from '../models/graphql/MetaobjectModel';
+import { OrderTransactionApiData, OrderTransactionModelData } from '../models/graphql/OrderTransactionModel';
+import { ProductApidata, ProductModelData } from '../models/graphql/ProductModel';
+import { TranslatableContentApiData, TranslatableContentModelData } from '../models/graphql/TranslatableContentModel';
 import {
-  GraphQLMaxCostExceededError,
-  GraphQLThrottledError,
-  ShopifyGraphQlError,
-  ShopifyGraphQlErrorCode,
-  ShopifyGraphQlMaxCostExceededError,
-  ShopifyGraphQlRequestCost,
-  ShopifyGraphQlThrottledError,
-  ShopifyGraphQlUserError,
-  ShopifyThrottledErrorCode,
-} from '../Errors/GraphQlErrors';
-import { SupportedMetafieldOwnerType } from '../Resources/GraphQl/MetafieldGraphQl';
-import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
-import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../constants';
+  RegisterTranslationApiData,
+  TranslatableResourceApiData,
+  TranslationApiData,
+  TranslationModelData,
+} from '../models/graphql/TranslationModel';
+import { VariantApidata, VariantModelData } from '../models/graphql/VariantModel';
+
+import { deleteFilesMutation, getFilesQuery, getSingleFileQuery, updateFilesMutation } from '../graphql/files-graphql';
+import {
+  buildInventoryItemsSearchQuery,
+  getInventoryItemsQuery,
+  updateInventoryItemMutation,
+} from '../graphql/inventoryItems-graphql';
+import {
+  activateLocationMutation,
+  deactivateLocationMutation,
+  editLocationMutation,
+  getLocationsQuery,
+  getSingleLocationQuery,
+} from '../graphql/locations-graphql';
+import {
+  getMetafieldDefinitionsQuery,
+  getSingleMetafieldDefinitionQuery,
+} from '../graphql/metafieldDefinitions-graphql';
 import {
   SupportedGraphQlMetafieldOperation,
   deleteMetafieldMutation,
@@ -31,6 +52,28 @@ import {
   setMetafieldsMutation,
 } from '../graphql/metafields-graphql';
 import {
+  getMetaobjectDefinitionsQuery,
+  getSingleMetaObjectDefinitionQuery,
+  getSingleMetaobjectDefinitionByTypeQuery,
+} from '../graphql/metaobjectDefinition-graphql';
+import {
+  createMetaobjectMutation,
+  deleteMetaobjectMutation,
+  getMetaObjectsWithFieldsQuery,
+  getSingleMetaObjectWithFieldsQuery,
+  updateMetaObjectMutation,
+} from '../graphql/metaobjects-graphql';
+import { buildOrderTransactionsSearchQuery, getOrderTransactionsQuery } from '../graphql/orderTransactions-graphql';
+import {
+  ProductVariantFilters,
+  buildProductVariantsSearchQuery,
+  createProductVariantMutation,
+  deleteProductVariantMutation,
+  getProductVariantsQuery,
+  getSingleProductVariantQuery,
+  updateProductVariantMutation,
+} from '../graphql/productVariants-graphql';
+import {
   ProductFilters,
   buildProductsSearchQuery,
   createProductMutation,
@@ -40,11 +83,47 @@ import {
   updateProductMutation,
 } from '../graphql/products-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
-import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
-import { MetafieldApiData, MetafieldModelData } from '../models/graphql/MetafieldGraphQlModel';
-import { ProductApidata, ProductModelData } from '../models/graphql/ProductModel';
-import { MetafieldOwnerType, MetafieldsSetInput, Node, PageInfo, ProductInput } from '../types/admin.types';
+import {
+  getSingleTranslationQuery,
+  getTranslatableResourcesQuery,
+  getTranslationsQuery,
+  registerTranslationMutation,
+  removeTranslationsMutation,
+} from '../graphql/translations-graphql';
+
+import { InvalidValueError } from '../Errors/Errors';
+import {
+  GraphQLMaxCostExceededError,
+  GraphQLThrottledError,
+  ShopifyGraphQlError,
+  ShopifyGraphQlErrorCode,
+  ShopifyGraphQlMaxCostExceededError,
+  ShopifyGraphQlRequestCost,
+  ShopifyGraphQlThrottledError,
+  ShopifyGraphQlUserError,
+  ShopifyThrottledErrorCode,
+} from '../Errors/GraphQlErrors';
+import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
+import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
+import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
+import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PREFIX_FAKE } from '../constants';
+import {
+  LocalizableContentType,
+  MetafieldDefinitionValidationStatus,
+  MetafieldOwnerType,
+  MetafieldsSetInput,
+  MetaobjectCapabilityDataInput,
+  MetaobjectCreateInput,
+  MetaobjectUpdateInput,
+  Node,
+  PageInfo,
+  ProductInput,
+  ProductVariantInput,
+  TranslatableResourceType,
+} from '../types/admin.types';
+import { graphQlGidToResourceName } from '../utils/conversion-utils';
 import { arrayUnique, dumpToConsole, excludeUndefinedObjectKeys, isNullish, logAdmin } from '../utils/helpers';
+import { matchResourceNameToMetafieldOwnerType } from '../utils/metafields-utils';
 import { FetchRequestOptions } from './Client.types';
 import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-utils';
 
@@ -120,7 +199,7 @@ function withCacheDefault<T>({ options, ...args }: { options: FetchRequestOption
 export class GraphQlApiClientBase {
   private static RETRY_WAIT_TIME = 1000;
   private static MAX_RETRIES = GRAPHQL_RETRIES__MAX;
-  private static MAX_LIMIT = GRAPHQL_NODES_LIMIT;
+  protected static readonly defaultLimit = GRAPHQL_NODES_LIMIT;
 
   private retries = 0;
 
@@ -185,7 +264,7 @@ export class GraphQlApiClientBase {
   private static getPageInfo<T extends any>(body: GraphQlData<T>): PageInfo | undefined {
     for (const key in body.data) {
       const prop: any = body.data[key];
-      if ('pageInfo' in prop) {
+      if (prop && 'pageInfo' in prop) {
         return prop.pageInfo;
       }
     }
@@ -392,12 +471,19 @@ export class GraphQlApiClientBase {
       // console.log('——————— isCodaCached', isCodaCached(response));
       this.throwOnErrors<T>(response);
 
+      const pageInfo = GraphQlApiClientBase.getPageInfo(response.body);
       // Always repay cost
       if (!isCodaCached(response) && response.body.extensions?.cost) {
+        // TODO: maybe don't repay cost when we reached the end of a sync table ? Because points will be replenished will waiting for the eventual next sync to start
+        // -> need to detect we are in a sync context too
+        // if (!pageInfo || !pageInfo.hasNextPage) {
         await GraphQlApiClientBase.repayCost(response.body.extensions.cost);
+        // }
       }
 
-      const transformedBody = transformBodyResponse ? transformBodyResponse(response.body.data) : (response.body as T);
+      const transformedBody = transformBodyResponse
+        ? transformBodyResponse(response.body.data)
+        : (response.body.data as T);
       return {
         ...response,
         // body: transformedBody,
@@ -406,7 +492,7 @@ export class GraphQlApiClientBase {
             ? (transformedBody.filter(Boolean) as T)
             : transformedBody
           : undefined,
-        pageInfo: GraphQlApiClientBase.getPageInfo(response.body),
+        pageInfo,
         cost: response.body.extensions.cost,
       };
     } catch (error) {
@@ -432,6 +518,394 @@ export class GraphQlApiClientBase {
       })
     );
     return response.cost.throttleStatus;
+  }
+}
+// #endregion
+
+// #region FileClient
+interface SingleFileResponse {
+  node: FileApiData;
+}
+interface MultipleFilesResponse {
+  files: { nodes: FileApiData[] };
+}
+interface FileUpdateResponse {
+  fileUpdate: {
+    files: FileApiData[];
+  };
+}
+
+interface FileFieldsArgs {
+  alt?: boolean;
+  createdAt?: boolean;
+  duration?: boolean;
+  fileSize?: boolean;
+  height?: boolean;
+  mimeType?: boolean;
+  preview?: boolean;
+  updatedAt?: boolean;
+  url?: boolean;
+  width?: boolean;
+}
+interface SingleFileArgs extends BaseFindArgs {
+  id: string;
+  fields?: FileFieldsArgs;
+}
+export interface ListFilesArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  type?: string;
+  fields?: FileFieldsArgs;
+}
+
+// TODO: recursively flatten connections
+
+export class FileClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async single({ id, fields = {}, forceAllFields, options }: SingleFileArgs) {
+    const documentNode = getSingleFileQuery;
+    const variables = {
+      id,
+
+      includeAlt: forceAllFields ?? fields?.alt ?? true,
+      includeCreatedAt: forceAllFields ?? fields?.createdAt ?? true,
+      includeDuration: forceAllFields ?? fields?.duration ?? true,
+      includeFileSize: forceAllFields ?? fields?.fileSize ?? true,
+      includeHeight: forceAllFields ?? fields?.height ?? true,
+      includeMimeType: forceAllFields ?? fields?.mimeType ?? true,
+      includePreview: forceAllFields ?? fields?.preview ?? true,
+      includeUpdatedAt: forceAllFields ?? fields?.updatedAt ?? true,
+      includeUrl: forceAllFields ?? fields?.url ?? true,
+      includeWidth: forceAllFields ?? fields?.width ?? true,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: SingleFileResponse) => response?.node,
+      })
+    );
+  }
+
+  async list({ fields = {}, forceAllFields, type, cursor, limit, options }: ListFilesArgs) {
+    let searchQuery = 'status:READY';
+    if (type && type !== '') {
+      searchQuery += ` AND media_type:${type}`;
+    }
+
+    const documentNode = getFilesQuery;
+    const variables = {
+      limit: limit ?? FileClient.defaultLimit,
+      cursor,
+      searchQuery,
+
+      includeAlt: forceAllFields ?? fields?.alt ?? true,
+      includeCreatedAt: forceAllFields ?? fields?.createdAt ?? true,
+      includeDuration: forceAllFields ?? fields?.duration ?? true,
+      includeFileSize: forceAllFields ?? fields?.fileSize ?? true,
+      includeHeight: forceAllFields ?? fields?.height ?? true,
+      includeMimeType: forceAllFields ?? fields?.mimeType ?? true,
+      includePreview: forceAllFields ?? fields?.preview ?? true,
+      includeUpdatedAt: forceAllFields ?? fields?.updatedAt ?? true,
+      includeUrl: forceAllFields ?? fields?.url ?? true,
+      includeWidth: forceAllFields ?? fields?.width ?? true,
+    } as VariablesOf<typeof getFilesQuery>;
+
+    return this.request<FileApiData[]>(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleFilesResponse) => response?.files.nodes,
+      })
+    );
+  }
+
+  async update(modelData: FileModelData) {
+    const input = this.formatUpdateInput(modelData);
+    if (input) {
+      const documentNode = updateFilesMutation;
+      const variables = {
+        files: [input],
+        includeAlt: true,
+        includeCreatedAt: true,
+        includeDuration: true,
+        includeFileSize: true,
+        includeHeight: true,
+        includeMimeType: true,
+        includePreview: true,
+        includeUpdatedAt: true,
+        includeUrl: true,
+        includeWidth: true,
+      } as VariablesOf<typeof updateFilesMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: FileUpdateResponse) =>
+          response?.fileUpdate.files.length ? response?.fileUpdate.files[0] : undefined,
+      });
+    }
+  }
+
+  async delete(fileIds: string[]) {
+    return this.request({
+      documentNode: deleteFilesMutation,
+      variables: { fileIds } as VariablesOf<typeof deleteFilesMutation>,
+    });
+  }
+
+  private formatUpdateInput(modelData: FileModelData) {
+    const input: VariablesOf<typeof updateFilesMutation>['files'][number] = {
+      id: modelData.id,
+      filename: modelData.filename,
+      alt: modelData.alt,
+    };
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
+// #endregion
+
+// #region InventoryItemClient
+interface MultipleInventoryItemsResponse {
+  inventoryItems: { nodes: InventoryItemApiData[] };
+}
+interface InventoryItemUpdateResponse {
+  inventoryItemUpdate: {
+    inventoryItem: InventoryItemApiData;
+  };
+}
+export interface ListInventoryItemsArgs extends BaseListArgs {
+  cursor?: string;
+  limit?: number;
+  createdAtMin?: Date;
+  createdAtMax?: Date;
+  updatedAtMin?: Date;
+  updatedAtMax?: Date;
+  skus?: string[];
+}
+
+export class InventoryItemClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async list({
+    createdAtMin,
+    createdAtMax,
+    updatedAtMin,
+    updatedAtMax,
+    skus,
+    cursor,
+    limit,
+    options,
+  }: ListInventoryItemsArgs) {
+    const queryFilters = {
+      created_at_min: createdAtMin,
+      created_at_max: createdAtMax,
+      updated_at_min: updatedAtMin,
+      updated_at_max: updatedAtMax,
+      skus,
+    };
+    // Remove any undefined filters
+    Object.keys(queryFilters).forEach((key) => {
+      if (queryFilters[key] === undefined) delete queryFilters[key];
+    });
+    const searchQuery = buildInventoryItemsSearchQuery(queryFilters);
+
+    const documentNode = getInventoryItemsQuery;
+    const variables = {
+      limit: limit ?? InventoryItemClient.defaultLimit,
+      cursor,
+      searchQuery,
+    } as VariablesOf<typeof getInventoryItemsQuery>;
+
+    return this.request<InventoryItemApiData[]>(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleInventoryItemsResponse) => response?.inventoryItems.nodes,
+      })
+    );
+  }
+
+  async update(modelData: InventoryItemModelData) {
+    const input = this.formatUpdateInput(modelData);
+    if (input) {
+      const documentNode = updateInventoryItemMutation;
+      const variables = {
+        id: modelData.id,
+        input,
+      } as VariablesOf<typeof updateInventoryItemMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: InventoryItemUpdateResponse) => response?.inventoryItemUpdate?.inventoryItem,
+      });
+    }
+  }
+
+  private formatUpdateInput(modelData: InventoryItemModelData) {
+    const input: VariablesOf<typeof updateInventoryItemMutation>['input'] = {
+      cost: modelData.unitCost?.amount,
+      countryCodeOfOrigin: modelData.countryCodeOfOrigin,
+      harmonizedSystemCode: modelData.harmonizedSystemCode,
+      provinceCodeOfOrigin: modelData.provinceCodeOfOrigin,
+      tracked: modelData.tracked,
+      // countryHarmonizedSystemCodes
+    };
+
+    // /* Edge case for cost. Setting it to 0 should delete the value. */
+    // if (input.cost === 0) {
+    //   input.cost = null;
+    // }
+
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
+// #endregion
+
+// #region LocationClient
+interface SingleLocationResponse {
+  location: LocationApiData;
+}
+interface MultipleLocationsResponse {
+  locations: { nodes: LocationApiData[] };
+}
+interface LocationUpdateResponse {
+  locationEdit: {
+    location: LocationApiData;
+  };
+}
+interface LocationActivateResponse {
+  locationActivate: {
+    location: LocationApiData;
+  };
+}
+interface LocationDeActivateResponse {
+  locationDeactivate: {
+    location: LocationApiData;
+  };
+}
+
+export interface LocationFieldsArgs {
+  metafields?: boolean;
+  fulfillment_service?: boolean;
+  local_pickup_settings?: boolean;
+}
+interface SingleLocationArgs extends BaseFindArgs {
+  id: string;
+  fields?: LocationFieldsArgs;
+}
+export interface ListLocationsArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  fields?: LocationFieldsArgs;
+  metafieldKeys?: Array<string>;
+}
+
+export class LocationClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async single({ id, fields = {}, forceAllFields, options }: SingleLocationArgs) {
+    const documentNode = getSingleLocationQuery;
+    const variables = {
+      id,
+
+      // TODO: retrieve metafields ?
+      includeMetafields: forceAllFields ?? fields?.metafields ?? true,
+      includeFulfillmentService: forceAllFields ?? fields?.fulfillment_service ?? true,
+      includeLocalPickupSettings: forceAllFields ?? fields?.local_pickup_settings ?? true,
+      countMetafields: 0,
+      metafieldKeys: [],
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: SingleLocationResponse) => response?.location,
+      })
+    );
+  }
+
+  async list({ fields = {}, metafieldKeys = [], forceAllFields, cursor, limit, options }: ListLocationsArgs) {
+    let searchQuery = '';
+
+    const documentNode = getLocationsQuery;
+    const variables = {
+      limit: limit ?? LocationClient.defaultLimit,
+      cursor,
+      searchQuery,
+
+      includeMetafields: forceAllFields ?? fields?.metafields ?? false,
+      includeFulfillmentService: forceAllFields ?? fields?.fulfillment_service ?? true,
+      includeLocalPickupSettings: forceAllFields ?? fields?.local_pickup_settings ?? true,
+      countMetafields: metafieldKeys.length,
+      metafieldKeys,
+    } as VariablesOf<typeof getLocationsQuery>;
+
+    return this.request<LocationApiData[]>(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleLocationsResponse) => response?.locations.nodes,
+      })
+    );
+  }
+
+  async update(modelData: LocationModelData) {
+    const input = this.formatUpdateInput(modelData);
+    if (input) {
+      const documentNode = editLocationMutation;
+      const variables = {
+        id: modelData.id,
+        input,
+
+        includeMetafields: false,
+        includeLocalPickupSettings: false,
+        includeFulfillmentService: false,
+      } as VariablesOf<typeof editLocationMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: LocationUpdateResponse) => response?.locationEdit?.location,
+      });
+    }
+  }
+
+  async activate(id: string) {
+    return this.request({
+      documentNode: activateLocationMutation,
+      variables: { locationId: id } as VariablesOf<typeof activateLocationMutation>,
+      transformBodyResponse: (response: LocationActivateResponse) => response?.locationActivate?.location,
+    });
+  }
+
+  async deActivate(locationId: string, destinationLocationId?: string) {
+    return this.request({
+      documentNode: deactivateLocationMutation,
+      variables: {
+        locationId,
+        destinationLocationId,
+      } as VariablesOf<typeof deactivateLocationMutation>,
+      transformBodyResponse: (response: LocationDeActivateResponse) => response?.locationDeactivate?.location,
+    });
+  }
+
+  private formatUpdateInput(modelData: LocationModelData) {
+    const input: VariablesOf<typeof editLocationMutation>['input'] = {
+      name: modelData.name,
+      address: modelData.address as VariablesOf<typeof editLocationMutation>['input']['address'],
+    };
+    const filteredInput = excludeUndefinedObjectKeys({
+      ...input,
+      address: input.address ? excludeUndefinedObjectKeys(input.address) : undefined,
+    });
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 }
 // #endregion
@@ -463,8 +937,9 @@ interface MultipleMetafieldsByOwnerIdsResponse {
 
 interface SetMetafieldsResponse {
   metafieldsSet: {
-    owner: Omit<MetafieldOwnerNodeApidata, 'metafields'>;
-    metafields: MetafieldApiData[];
+    metafields: (MetafieldApiData & {
+      owner: Omit<MetafieldOwnerNodeApidata, 'metafields'>;
+    })[];
   };
 }
 
@@ -479,7 +954,7 @@ export interface ListMetafieldsArgs extends BaseListArgs {
 }
 interface ListMetafieldsBySingleOwnerArgs extends BaseFindArgs {
   metafieldKeys: string[];
-  ownerId: string;
+  ownerGid: string;
 }
 interface ListMetafieldsByOwnerIdsArgs extends Omit<ListMetafieldsArgs, 'ownerType'> {
   ownerIds: string[];
@@ -540,15 +1015,6 @@ const makeTransformListMetafieldsByOwnerTypeResponse = (metafieldOwnerType: Meta
   };
 };
 
-const transformListMetafieldsByOwnerIdsResponse = (response: MultipleMetafieldsByOwnerIdsResponse) =>
-  transformMetafieldOwnerNodes(response?.nodes);
-
-const transformSetMetafieldResponse = (response: SetMetafieldsResponse) => {
-  if (response?.metafieldsSet?.metafields && response.metafieldsSet.metafields.length === 1) {
-    return includeOwnerInMetafieldData(response.metafieldsSet.metafields[0], response.metafieldsSet.owner);
-  }
-};
-
 export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRUD {
   async single({ id, options }: SingleMetafieldArgs) {
     const documentNode = getSingleMetafieldQuery;
@@ -563,9 +1029,14 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
     );
   }
 
-  async listBySingleOwnerId({ metafieldKeys = [], ownerId, options }: ListMetafieldsBySingleOwnerArgs) {
-    //* Assume we query the Shop metafields when ownerId is undefined
-    const isShopQuery = ownerId === undefined;
+  async listBySingleOwnerId({ metafieldKeys = [], ownerGid, options }: ListMetafieldsBySingleOwnerArgs) {
+    const graphQlResourceName = graphQlGidToResourceName(ownerGid);
+    //* Assume we query the Shop metafields when graphQlResourceName is undefined
+    const ownerType = graphQlResourceName
+      ? matchResourceNameToMetafieldOwnerType(graphQlResourceName)
+      : MetafieldOwnerType.Shop;
+
+    const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     let documentNode: TadaDocumentNode;
     let variables: any;
 
@@ -579,7 +1050,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
       documentNode = getSingleNodeMetafieldsByKeyQuery;
       variables = {
         countMetafields: metafieldKeys.length,
-        ownerGid: ownerId,
+        ownerGid: ownerGid,
         metafieldKeys,
       } as VariablesOf<typeof getSingleNodeMetafieldsByKeyQuery>;
     }
@@ -588,7 +1059,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformSingleMetafieldsByKeyResponse,
+        transformBodyResponse: makeTransformSingleMetafieldsByKeyResponse(ownerType),
       })
     );
   }
@@ -606,14 +1077,15 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
         options,
         documentNode: getNodesMetafieldsByKeyQuery,
         variables: {
-          limit: limit ?? GRAPHQL_NODES_LIMIT,
+          limit: limit ?? MetafieldClient.defaultLimit,
           cursor,
           ids: ownerIds,
           metafieldKeys,
           countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
           ...otherArgs,
         } as VariablesOf<typeof getNodesMetafieldsByKeyQuery>,
-        transformBodyResponse: transformListMetafieldsByOwnerIdsResponse,
+        transformBodyResponse: (response: MultipleMetafieldsByOwnerIdsResponse) =>
+          transformMetafieldOwnerNodes(response?.nodes),
       })
     );
   }
@@ -628,7 +1100,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
   }: ListMetafieldsByOwnerTypeArgs) {
     const documentNode = getResourceMetafieldsByKeysQueryFromOwnerType(ownerType);
     const variables = {
-      limit: limit ?? GRAPHQL_NODES_LIMIT,
+      limit: limit ?? MetafieldClient.defaultLimit,
       cursor,
       metafieldKeys,
       countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
@@ -662,7 +1134,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
   }
 
   // Only support setting a single metafield for now
-  async set(modelData: MetafieldModelData) {
+  async set(modelData: MetafieldApiData) {
     const input = this.formatMetafieldSetInput(modelData);
     if (input) {
       const documentNode = setMetafieldsMutation;
@@ -671,20 +1143,27 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
       return this.request<MetafieldApiData>({
         documentNode,
         variables,
-        transformBodyResponse: transformSetMetafieldResponse,
+        transformBodyResponse: (response: SetMetafieldsResponse) => {
+          if (response?.metafieldsSet?.metafields && response.metafieldsSet.metafields.length === 1) {
+            return includeOwnerInMetafieldData(
+              response.metafieldsSet.metafields[0],
+              response.metafieldsSet.metafields[0].owner
+            );
+          }
+        },
       });
     }
   }
 
-  async create(modelData: MetafieldModelData) {
+  async create(modelData: MetafieldApiData) {
     return this.set(modelData);
   }
 
-  async update(modelData: MetafieldModelData) {
+  async update(modelData: MetafieldApiData) {
     return this.set(modelData);
   }
 
-  async delete(modelData: MetafieldModelData) {
+  async delete(modelData: MetafieldApiData) {
     return this.request({
       documentNode: deleteMetafieldMutation,
       variables: { input: { id: modelData.id } } as VariablesOf<typeof deleteMetafieldMutation>,
@@ -694,7 +1173,7 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
   /**
    * Formate un objet MetafieldsSetInput pour GraphQL Admin API
    */
-  private formatMetafieldSetInput(modelData: MetafieldModelData): MetafieldsSetInput | undefined {
+  private formatMetafieldSetInput(modelData: MetafieldApiData): MetafieldsSetInput | undefined {
     let input: MetafieldsSetInput = {
       type: modelData.type,
       namespace: modelData.namespace,
@@ -706,6 +1185,129 @@ export class MetafieldClient extends GraphQlApiClientBase implements IGraphQlCRU
 
     // If no input, we have nothing to update.
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
+// #endregion
+
+// #region MetafieldDefinitionClient
+// #endregion
+
+// #region MetaobjectClient
+  async delete(modelData: ProductModelData) {
+    return this.request({
+      documentNode: deleteMetaobjectMutation,
+      variables: { id: modelData.id } as VariablesOf<typeof deleteMetaobjectMutation>,
+    });
+  }
+// #endregion
+
+// #region MetaobjectDefinitionClient
+// #endregion
+
+// #region OrderTransactionClient
+// type MultipleOrderTransactionsResponse = ResultOf<typeof getOrderTransactionsQuery>;
+interface MultipleOrderTransactionsResponse {
+  orders: {
+    nodes: {
+      id: string;
+      name: string;
+      transactions: OrderTransactionApiData[];
+    }[];
+  };
+}
+interface OrderTransactionFieldsArgs {
+  amount?: boolean;
+  icon?: boolean;
+  parentTransaction?: boolean;
+  paymentDetails?: boolean;
+  receiptJson?: boolean;
+  totalUnsettled?: boolean;
+  transactionCurrency?: boolean;
+}
+export interface ListOrderTransactionsArgs extends BaseListArgs {
+  cursor?: string;
+  limit?: number;
+  fields?: OrderTransactionFieldsArgs;
+  gateways?: string[];
+  orderFinancialStatus?: string;
+  orderFulfillmentStatus?: string;
+  orderStatus?: string;
+  orderCreatedAtMin?: Date;
+  orderCreatedAtMax?: Date;
+  orderUpdatedAtMin?: Date;
+  orderUpdatedAtMax?: Date;
+  orderProcessedAtMin?: Date;
+  orderProcessedAtMax?: Date;
+}
+
+export class OrderTransactionClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  protected static readonly defaultLimit = 50;
+
+  async list({
+    fields = {},
+    gateways,
+    orderCreatedAtMax,
+    orderCreatedAtMin,
+    orderFinancialStatus,
+    orderFulfillmentStatus,
+    orderProcessedAtMax,
+    orderProcessedAtMin,
+    orderStatus,
+    orderUpdatedAtMax,
+    orderUpdatedAtMin,
+    forceAllFields,
+    cursor,
+    limit,
+    options,
+  }: ListOrderTransactionsArgs) {
+    const queryFilters = {
+      gateways,
+      financial_status: orderFinancialStatus,
+      fulfillment_status: orderFulfillmentStatus,
+      status: orderStatus,
+      created_at_min: orderCreatedAtMin,
+      created_at_max: orderCreatedAtMax,
+      updated_at_min: orderUpdatedAtMin,
+      updated_at_max: orderUpdatedAtMax,
+      processed_at_min: orderProcessedAtMin,
+      processed_at_max: orderProcessedAtMax,
+    };
+    // Remove any undefined filters
+    Object.keys(queryFilters).forEach((key) => {
+      if (queryFilters[key] === undefined) delete queryFilters[key];
+    });
+    const searchQuery = buildOrderTransactionsSearchQuery(queryFilters);
+
+    const documentNode = getOrderTransactionsQuery;
+    const variables = {
+      limit: limit ?? OrderTransactionClient.defaultLimit,
+      cursor,
+      searchQuery,
+
+      includeAmount: forceAllFields ?? fields?.amount ?? true,
+      includeIcon: forceAllFields ?? fields?.icon ?? true,
+      includeParentTransaction: forceAllFields ?? fields?.parentTransaction ?? true,
+      includePaymentDetails: forceAllFields ?? fields?.paymentDetails ?? true,
+      includeReceiptJson: forceAllFields ?? fields?.receiptJson ?? true,
+      includeTotalUnsettled: forceAllFields ?? fields?.totalUnsettled ?? true,
+      includeTransactionCurrency: forceAllFields ?? fields?.transactionCurrency ?? true,
+    } as VariablesOf<typeof getOrderTransactionsQuery>;
+
+    return this.request<OrderTransactionApiData[]>(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleOrderTransactionsResponse): OrderTransactionModelData[] => {
+          return response?.orders?.nodes.flatMap((order) =>
+            order.transactions.map((transaction) => ({
+              ...transaction,
+              parentOrder: { id: order.id, name: order.name },
+            }))
+          );
+        },
+      })
+    );
   }
 }
 // #endregion
@@ -745,12 +1347,6 @@ export interface ListProductsArgs extends BaseListArgs, ProductFilters {
   metafieldKeys?: Array<string>;
 }
 
-const transformSingleProductResponse = (response: SingleProductResponse) => response?.product;
-// TODO: recursively flatten connections
-const transformMultipleProductsResponse = (response: MultipleProductsResponse) => response?.products.nodes;
-const transformCreateProductsResponse = (response: ProductCreateResponse) => response?.productCreate.product;
-const transformUpdateProductsResponse = (response: ProductUpdateResponse) => response?.productUpdate.product;
-
 export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD {
   async single({ id, fields = {}, forceAllFields, options }: SingleProductArgs) {
     const documentNode = getSingleProductQuery;
@@ -770,7 +1366,7 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
         options,
         documentNode,
         variables,
-        transformBodyResponse: transformSingleProductResponse,
+        transformBodyResponse: (response: SingleProductResponse) => response?.product,
       })
     );
   }
@@ -823,7 +1419,7 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
 
     const documentNode = getProductsQuery;
     const variables = {
-      limit: limit ?? GRAPHQL_NODES_LIMIT,
+      limit: limit ?? ProductClient.defaultLimit,
       cursor,
       searchQuery,
       includeFeaturedImage: forceAllFields ?? fields?.featuredImage ?? false,
@@ -841,7 +1437,7 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
         options,
         documentNode,
         variables,
-        transformBodyResponse: transformMultipleProductsResponse,
+        transformBodyResponse: (response: MultipleProductsResponse) => response?.products.nodes,
       })
     );
   }
@@ -862,7 +1458,7 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
       return this.request({
         documentNode,
         variables,
-        transformBodyResponse: transformCreateProductsResponse,
+        transformBodyResponse: (response: ProductCreateResponse) => response?.productCreate.product,
       });
     }
   }
@@ -883,7 +1479,7 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
       return this.request({
         documentNode,
         variables,
-        transformBodyResponse: transformUpdateProductsResponse,
+        transformBodyResponse: (response: ProductUpdateResponse) => response?.productUpdate.product,
       });
     }
   }
@@ -937,6 +1533,235 @@ export class ProductClient extends GraphQlApiClientBase implements IGraphQlCRUD 
       id: modelData.id,
     };
     return input;
+  }
+}
+// #endregion
+
+// #region TranslationClient
+interface SingleTranslationResponse {
+  translatableResource: TranslatableResourceApiData;
+}
+interface MultipleTranslationsResponse {
+  translatableResources: { nodes: TranslatableResourceApiData[] };
+}
+interface RegisterTranslationsResponse {
+  translationsRegister: { translations: RegisterTranslationApiData[] };
+}
+
+interface SingleTranslationArgs extends BaseFindArgs {
+  resourceGid: string;
+  locale: string;
+  key: string;
+}
+export interface ListTranslationsArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  locale: string;
+  resourceType: string;
+}
+
+function translatableResourceToTranslationModelData({
+  translatableResource,
+  translatableContent,
+  translation,
+  locale,
+}: {
+  translatableResource: Pick<TranslatableResourceApiData, 'resourceId'>;
+  translatableContent: Pick<TranslatableContentApiData, 'digest' | 'type' | 'value'>;
+  translation?: TranslationApiData;
+  locale: string;
+}) {
+  const data: Partial<TranslationModelData> = {
+    resourceGid: translatableResource.resourceId,
+    locale,
+    digest: translatableContent?.digest,
+    originalValue: translatableContent?.value,
+    type: translatableContent?.type as LocalizableContentType,
+    isDeletedFlag: true,
+  };
+  if (translation) {
+    data.key = translation.key;
+    data.translatedValue = translation.value;
+    data.outdated = translation.outdated;
+    data.isDeletedFlag = false;
+    data.updatedAt = translation?.updatedAt;
+  }
+
+  return data as TranslationModelData;
+}
+
+const makeTransformSingleTranslationResponse = (key: string, locale: string) =>
+  function (response: SingleTranslationResponse) {
+    const translatableResource = response?.translatableResource;
+    const matchingTranslatableContent = translatableResource?.translatableContent.find((c) => c.key === key);
+    const matchingTranslation = translatableResource?.translations.find((t) => t.key === key);
+    return translatableResourceToTranslationModelData({
+      translatableResource: translatableResource,
+      translatableContent: matchingTranslatableContent,
+      translation: matchingTranslation,
+      locale,
+    });
+  };
+const makeTransformMultipleTranslationsResponse = (locale: string) =>
+  function (response: MultipleTranslationsResponse) {
+    let data: TranslationModelData[] = [];
+
+    if (response?.translatableResources?.nodes) {
+      data = response.translatableResources.nodes.flatMap((translatableResource) => {
+        return translatableResource.translations.map((translation) => {
+          return translatableResourceToTranslationModelData({
+            translatableResource: translatableResource,
+            translatableContent: translatableResource.translatableContent.find((c) => c.key === translation.key),
+            translation: translation,
+            locale,
+          });
+        });
+      });
+    }
+
+    return data;
+  };
+const makeTransformRegisterTranslationResponse = (modelData: TranslationModelData) =>
+  function (response: RegisterTranslationsResponse) {
+    const matchingTranslation = response?.translationsRegister.translations.find(
+      (t) => t.key === modelData.key && t.locale === modelData.locale
+    );
+    return matchingTranslation;
+  };
+
+export class TranslationClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async single({ key, resourceGid, locale, options }: SingleTranslationArgs) {
+    const documentNode = getSingleTranslationQuery;
+    const variables = {
+      id: resourceGid,
+      locale,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: makeTransformSingleTranslationResponse(key, locale),
+      })
+    );
+  }
+
+  async list({ locale, resourceType, cursor, limit, options }: ListTranslationsArgs) {
+    const documentNode = getTranslationsQuery;
+    const variables = {
+      limit: limit ?? TranslationClient.defaultLimit,
+      cursor,
+      locale,
+      resourceType,
+    } as VariablesOf<typeof getTranslationsQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: makeTransformMultipleTranslationsResponse(locale),
+      })
+    );
+  }
+
+  async digest(modelData: TranslationModelData) {
+    const response = await this.single({
+      key: modelData.key,
+      resourceGid: modelData.resourceGid,
+      locale: modelData.locale,
+      options: {
+        cacheTtlSecs: CACHE_DISABLED,
+      },
+    });
+    return response?.body?.digest;
+  }
+
+  async delete({ key, locale, resourceGid }: Pick<TranslationModelData, 'resourceGid' | 'locale' | 'key'>) {
+    return this.request({
+      documentNode: removeTranslationsMutation,
+      variables: {
+        resourceId: resourceGid,
+        locales: [locale],
+        translationKeys: [key],
+      } as VariablesOf<typeof removeTranslationsMutation>,
+    });
+  }
+
+  async register(modelData: TranslationModelData) {
+    // const input = this.formatUpdateInput(modelData);
+    // if (input) {
+    const documentNode = registerTranslationMutation;
+    const variables = {
+      resourceId: modelData.resourceGid,
+      translations: [
+        {
+          key: modelData.key,
+          value: modelData.translatedValue,
+          translatableContentDigest: modelData.digest,
+          locale: modelData.locale,
+        },
+      ],
+    } as VariablesOf<typeof registerTranslationMutation>;
+    return this.request({
+      documentNode,
+      variables,
+      transformBodyResponse: makeTransformRegisterTranslationResponse(modelData),
+    });
+    // }
+  }
+}
+// #endregion
+
+// #region TranslatableContentClient
+interface MultipleTranslatableContentsResponse {
+  translatableResources: { nodes: Omit<TranslatableResourceApiData, 'translations'>[] };
+}
+
+export interface ListTranslatableContentsArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  resourceType: TranslatableResourceType;
+}
+
+const makeTransformMultipleTranslatableContentsResponse = (resourceType: TranslatableResourceType) =>
+  function (response: MultipleTranslatableContentsResponse) {
+    let data: TranslatableContentModelData[] = [];
+
+    if (response?.translatableResources?.nodes) {
+      return response.translatableResources.nodes.flatMap((translatableResource) => {
+        return translatableResource.translatableContent.map((translatableContent) => {
+          return {
+            resourceGid: translatableResource.resourceId,
+            key: translatableContent.key,
+            value: translatableContent.value,
+            type: translatableContent?.type,
+            resourceType,
+          } as TranslatableContentModelData;
+        });
+      });
+    }
+
+    return data;
+  };
+
+export class TranslatableContentClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async list({ resourceType, cursor, limit, options }: ListTranslatableContentsArgs) {
+    const documentNode = getTranslatableResourcesQuery;
+    const variables = {
+      limit: limit ?? TranslatableContentClient.defaultLimit,
+      cursor,
+      resourceType,
+    } as VariablesOf<typeof getTranslatableResourcesQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: makeTransformMultipleTranslatableContentsResponse(resourceType),
+      })
+    );
   }
 }
 // #endregion

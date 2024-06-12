@@ -95,16 +95,6 @@ export const CollectionSyncTableSchema = coda.makeObjectSchema({
   imageProperty: 'image_url',
   linkProperty: 'admin_url',
 });
-export const collectionFieldDependencies: FieldDependency<typeof CollectionSyncTableSchema.properties>[] = [
-  {
-    field: 'image',
-    dependencies: ['image_url', 'image_alt_text'],
-  },
-  {
-    field: 'id',
-    dependencies: ['admin_url'],
-  },
-];
 
 export const CollectionReference = coda.makeReferenceSchemaFromObjectSchema(
   CollectionSyncTableSchema,

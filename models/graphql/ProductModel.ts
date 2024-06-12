@@ -3,16 +3,16 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 import { ResultOf } from '../../utils/tada-utils';
 
-import { GraphQlRequestReturn, ProductClient } from '../../Clients/GraphQlApiClientBase';
-import { SupportedMetafieldOwnerResource } from '../../Resources/Rest/Metafield';
+import { ProductClient } from '../../Clients/GraphQlApiClientBase';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { productFieldsFragment } from '../../graphql/products-graphql';
 import { ProductRow } from '../../schemas/CodaRows.types';
-import { MetafieldOwnerType, ProductInput } from '../../types/admin.types';
+import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { excludeUndefinedObjectKeys, splitAndTrimValues } from '../../utils/helpers';
+import { safeToString, splitAndTrimValues } from '../../utils/helpers';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,
@@ -41,10 +41,10 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields<ProductMode
     let data: Partial<ProductModelData> = {
       id: idToGraphQlGid(GraphQlResourceNames.Product, row.id),
       descriptionHtml: row.body_html,
-      createdAt: row.created_at ? row.created_at.toString() : undefined,
-      publishedAt: row.published_at ? row.published_at.toString() : undefined,
+      createdAt: safeToString(row.created_at),
+      publishedAt: safeToString(row.published_at),
       templateSuffix: row.template_suffix,
-      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      updatedAt: safeToString(row.updated_at),
       handle: row.handle,
       title: row.title,
       productType: row.product_type,

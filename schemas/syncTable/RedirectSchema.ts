@@ -31,14 +31,3 @@ export const RedirectSyncTableSchema = coda.makeObjectSchema({
   idProperty: 'id',
   featuredProperties: ['id', 'path', 'target', 'admin_url'],
 });
-
-export const redirectFieldDependencies = [
-  {
-    field: 'id',
-    dependencies: ['admin_url'],
-  },
-  {
-    field: 'path',
-    dependencies: ['test_url'],
-  },
-];

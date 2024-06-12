@@ -5,7 +5,7 @@ import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
-import { AbstractModelRestWithMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
+import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -14,7 +14,7 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 // #endregion
 
 export class SyncedMetafields<
-  OwnerT extends AbstractModelRestWithMetafields<OwnerT>
+  OwnerT extends AbstractModelRestWithRestMetafields<OwnerT>
 > extends AbstractSyncedRestResources<OwnerT> {
   public static schemaDependencies: FieldDependency<typeof MetafieldSyncTableSchema.properties>[] = [
     {
@@ -29,7 +29,7 @@ export class SyncedMetafields<
     return MetafieldHelper.getDynamicSchema(args);
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [metafieldKeys] = this.codaParams as CodaSyncParams<typeof Sync_Metafields>;
     return { metafieldKeys };
   }

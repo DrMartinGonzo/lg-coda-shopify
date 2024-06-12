@@ -26,12 +26,25 @@ import { CACHE_DISABLED, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../co
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
 import { graphQlGidToId } from '../../utils/conversion-utils';
-import { logAdmin } from '../../utils/helpers';
+import { isNullish, logAdmin } from '../../utils/helpers';
 import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
 
 // #endregion
 
 // #region Types
+export type SupportedMetafieldOwnerType =
+  | MetafieldOwnerType.Article
+  | MetafieldOwnerType.Blog
+  | MetafieldOwnerType.Collection
+  | MetafieldOwnerType.Customer
+  | MetafieldOwnerType.Draftorder
+  | MetafieldOwnerType.Location
+  | MetafieldOwnerType.Order
+  | MetafieldOwnerType.Page
+  | MetafieldOwnerType.Product
+  | MetafieldOwnerType.Productvariant
+  | MetafieldOwnerType.Shop;
+
 export interface MetafieldApiData
   extends BaseApiDataGraphQl,
     ResultOf<typeof metafieldFieldsFragment>,
@@ -44,7 +57,7 @@ export interface MetafieldApiData
   };
 }
 
-export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
+interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
 // #endregion
 
 export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQlModel> {
@@ -67,7 +80,12 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
       key: normalizedData.key,
       type: normalizedData.type,
       value: normalizedData.value,
-      parentNode: normalizedData.parentOwnerGid ? { id: normalizedData.parentOwnerGid } : undefined,
+      parentNode: normalizedData.ownerGid
+        ? {
+            id: normalizedData.ownerGid,
+            parentOwner: normalizedData.parentOwnerGid ? { id: normalizedData.parentOwnerGid } : undefined,
+          }
+        : undefined,
       ownerType: normalizedData.ownerType,
       createdAt: normalizedData.createdAt,
       updatedAt: normalizedData.updatedAt,
@@ -101,7 +119,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected setData(data: any): void {
+  protected setData(data: MetafieldApiData): void {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
     const fullkey = getMetaFieldFullKey({ key: data.key, namespace: data.namespace });
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
@@ -113,9 +131,11 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
 
   protected validateData(data: MetafieldApiData) {
     const missing: string[] = [];
-    if (!data.type) missing.push('type');
-    if (!data.ownerType) missing.push('ownerType');
+    if (!isNullish(data.value)) {
+      if (!data.type) missing.push('type');
+    }
     if (data.id && !data.parentNode?.id && data.ownerType !== MetafieldOwnerType.Shop) missing.push('parentNode.id');
+    if (!data.ownerType) missing.push('ownerType');
     if (missing.length) {
       throw new RequiredParameterMissingVisibleError(missing.join(', '));
     }

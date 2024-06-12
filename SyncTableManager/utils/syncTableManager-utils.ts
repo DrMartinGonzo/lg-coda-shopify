@@ -34,7 +34,11 @@ export function stringifyContinuationProperty<T>(
  * are parsed.
  * @returns The original value recreated from the parsed string.
  */
-export function parseContinuationProperty<T>(text: Stringified<T>, reviver?: (key: any, value: any) => any): T {
+export function parseContinuationProperty<T>(
+  text: Stringified<T> | undefined,
+  reviver?: (key: any, value: any) => any
+): T {
+  if (text == undefined) return undefined;
   return JSON.parse(text);
 }
 // #endregion

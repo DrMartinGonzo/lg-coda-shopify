@@ -1,12 +1,35 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryLevel } from '../../Resources/Rest/InventoryLevel';
+import { InventoryLevelClient } from '../../Clients/RestApiClientBase';
 import { PACK_IDENTITIES } from '../../constants';
+import { InventoryLevelApiData, InventoryLevelModel } from '../../models/rest/InventoryLevelModel';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
+import { SyncedInventoryLevels } from '../../sync/rest/SyncedInventoryLevels';
 import { parseOptionId } from '../../utils/helpers';
 import { filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedInventoryLevels(
+  codaSyncParams: coda.ParamValues<coda.ParamDefs>,
+  context: coda.SyncExecutionContext
+) {
+  return new SyncedInventoryLevels({
+    context,
+    codaSyncParams,
+    model: InventoryLevelModel,
+    client: InventoryLevelClient.createInstance(context),
+    validateSyncParams,
+  });
+}
+
+function validateSyncParams({ locationIds }: { locationIds?: string[] }) {
+  if (!locationIds || !locationIds.length) {
+    throw new coda.UserVisibleError('At least one location is required.');
+  }
+}
 // #endregion
 
 // #region Sync Tables
@@ -15,22 +38,19 @@ export const Sync_InventoryLevels = coda.makeSyncTable({
   description: 'Return Inventory Levels from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.InventoryLevel,
-  schema: InventoryLevelSyncTableSchema,
+  schema: SyncedInventoryLevels.staticSchema,
   formula: {
     name: 'SyncInventoryLevels',
     description: '<Help text for the sync formula, not show to the user>',
     /**
      *! When changing parameters, don't forget to update :
-     *  - {@link InventoryLevel.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedInventoryLevels.codaParamsMap}
      */
     parameters: [filters.location.idOptionNameArray, { ...filters.general.updatedAtMin, optional: true }],
-    execute: async function (params, context) {
-      return InventoryLevel.sync(params, context);
-    },
+    execute: async (codaSyncParams, context) => createSyncedInventoryLevels(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (params, updates, context) {
-      return InventoryLevel.syncUpdate(params, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedInventoryLevels(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -53,18 +73,15 @@ export const Action_SetInventoryLevel = coda.makeFormula({
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IdentitiesNew.inventoryLevel),
   schema: InventoryLevelSyncTableSchema,
-  execute: async function ([inventory_item_id, location_id, available], context) {
-    const inventoryLevel = new InventoryLevel({
-      context,
-      fromData: {
-        available,
-        inventory_item_id,
-        location_id: parseOptionId(location_id),
-      },
-    });
-
-    await inventoryLevel.set(inventoryLevel.apiData);
-    return inventoryLevel.formatToRow();
+  execute: async function ([inventory_item_id, locationOptionId, available], context) {
+    const location_id = parseOptionId(locationOptionId);
+    const inventoryLevel = InventoryLevelModel.createInstance(context, {
+      available,
+      inventory_item_id,
+      location_id,
+    } as InventoryLevelApiData);
+    await inventoryLevel.set();
+    return inventoryLevel.toCodaRow();
   },
 });
 
@@ -86,17 +103,14 @@ export const Action_AdjustInventoryLevel = coda.makeFormula({
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(InventoryLevelSchema, IdentitiesNew.inventoryLevel),
   schema: InventoryLevelSyncTableSchema,
-  execute: async function ([inventory_item_id, location_id, available_adjustment], context) {
-    const inventoryLevel = new InventoryLevel({
-      context,
-      fromData: {
-        inventory_item_id,
-        location_id: parseOptionId(location_id),
-      },
-    });
-
-    await inventoryLevel.adjust({ ...inventoryLevel.apiData, available_adjustment, context });
-    return inventoryLevel.formatToRow();
+  execute: async function ([inventory_item_id, locationOptionId, available_adjustment], context) {
+    const location_id = parseOptionId(locationOptionId);
+    const inventoryLevel = InventoryLevelModel.createInstance(context, {
+      inventory_item_id,
+      location_id,
+    } as InventoryLevelApiData);
+    await inventoryLevel.adjust(available_adjustment);
+    return inventoryLevel.toCodaRow();
   },
 });
 // #endregion

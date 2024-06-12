@@ -2,18 +2,46 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomerClient } from '../../Clients/RestApiClientBase';
-import { Customer } from '../../Resources/Rest/Customer';
-import { FromRow } from '../../Resources/types/Resource.types';
+import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { PACK_IDENTITIES } from '../../constants';
 import { CustomerModel } from '../../models/rest/CustomerModel';
-import { CustomerRow } from '../../schemas/CodaRows.types';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { SyncedCustomers } from '../../sync/rest/SyncedCustomers';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { formatPersonDisplayValue } from '../../utils/helpers';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
+// #endregion
+
+// #region Helper functions
+function createSyncedCustomers(codaSyncParams: coda.ParamValues<coda.ParamDefs>, context: coda.SyncExecutionContext) {
+  return new SyncedCustomers({
+    context,
+    codaSyncParams,
+    model: CustomerModel,
+    client: CustomerClient.createInstance(context),
+  });
+}
+
+function validateCreateParams({
+  first_name,
+  last_name,
+  email,
+  phone,
+}: {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+}) {
+  const invalidMsg: string[] = [];
+  if (!first_name && !last_name && !email && !phone) {
+    invalidMsg.push('Customer must have a name, phone number or email address.');
+  }
+  if (invalidMsg.length) {
+    throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
 // #endregion
 
 // #region Sync Tables
@@ -35,8 +63,7 @@ export const Sync_Customers = coda.makeSyncTable({
     /**
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
-     *  - {@link Customer.getDynamicSchema}
-     *  - {@link Customer.makeSyncTableManagerSyncFunction}
+     *  - {@link SyncedCustomers.codaParamsMap}
      */
     parameters: [
       { ...filters.general.syncMetafields, optional: true },
@@ -53,19 +80,10 @@ export const Sync_Customers = coda.makeSyncTable({
       { ...filters.customer.idArray, optional: true },
       { ...filters.customer.tags, optional: true },
     ],
-    execute: async function (codaSyncParams, context) {
-      const syncedCustomers = new SyncedCustomers({
-        context,
-        codaSyncParams,
-        model: CustomerModel,
-        client: CustomerClient.createInstance(context),
-      });
-      return syncedCustomers.executeSync();
-    },
+    execute: async (codaSyncParams, context) => createSyncedCustomers(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
-    executeUpdate: async function (codaSyncParams, updates, context) {
-      return Customer.syncUpdate(codaSyncParams, updates, context);
-    },
+    executeUpdate: async (codaSyncParams, updates, context) =>
+      createSyncedCustomers(codaSyncParams, context).executeSyncUpdate(updates),
   },
 });
 // #endregion
@@ -107,31 +125,26 @@ export const Action_CreateCustomer = coda.makeFormula({
     [first_name, last_name, email, phone, note, tags, accepts_email_marketing, accepts_sms_marketing, metafields],
     context
   ) {
-    if (!first_name && !last_name && !email && !phone) {
-      throw new coda.UserVisibleError('Customer must have a name, phone number or email address.');
+    validateCreateParams({ first_name, last_name, email, phone });
+    const customer = CustomerModel.createInstanceFromRow(context, {
+      id: undefined,
+      email,
+      first_name,
+      last_name,
+      phone,
+      note,
+      tags: tags ? tags.join(',') : undefined,
+      accepts_email_marketing,
+      accepts_sms_marketing,
+    });
+    if (metafields) {
+      customer.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
+        s.toGraphQlMetafield({ context, ownerType: CustomerModel.metafieldGraphQlOwnerType })
+      );
     }
 
-    const fromRow: FromRow<CustomerRow> = {
-      row: {
-        email,
-        first_name,
-        last_name,
-        phone,
-        note,
-        tags: tags ? tags.join(',') : undefined,
-        accepts_email_marketing,
-        accepts_sms_marketing,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: Customer.metafieldRestOwnerType })
-      ),
-    };
-
-    const newCustomer = new Customer({ context, fromRow });
-    await newCustomer.saveAndUpdate();
-    return newCustomer.apiData.id;
+    await customer.save();
+    return customer.data.id;
   },
 });
 
@@ -186,37 +199,50 @@ export const Action_UpdateCustomer = coda.makeFormula({
     ],
     context
   ) {
-    const fromRow: FromRow<CustomerRow> = {
-      row: {
-        id: customerId,
-        accepts_email_marketing,
-        accepts_sms_marketing,
-        display: formatPersonDisplayValue({ id: customerId, firstName: first_name, lastName: last_name, email: email }),
-        email,
-        first_name,
-        last_name,
-        note,
-        phone,
-        tags: tags ? tags.join(',') : undefined,
-      },
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: customerId, owner_resource: Customer.metafieldRestOwnerType })
-      ),
-    };
+    const customer = CustomerModel.createInstanceFromRow(context, {
+      id: customerId,
+      accepts_email_marketing,
+      accepts_sms_marketing,
+      email,
+      first_name,
+      last_name,
+      note,
+      phone,
+      tags: tags ? tags.join(',') : undefined,
+    });
+    if (metafields) {
+      customer.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: CustomerModel.metafieldGraphQlOwnerType,
+        ownerGid: customer.graphQlGid,
+      });
+    }
 
-    const updatedCustomer = new Customer({ context, fromRow });
-    await updatedCustomer.saveAndUpdate();
-    return updatedCustomer.formatToRow() as any;
+    await customer.save();
+    return customer.toCodaRow();
   },
 });
 
-export const Action_DeleteCustomer = makeDeleteRestResourceAction(Customer, inputs.customer.id);
+export const Action_DeleteCustomer = makeDeleteRestResourceAction({
+  modelName: CustomerModel.displayName,
+  IdParameter: inputs.customer.id,
+  execute: async ([itemId], context) => {
+    await CustomerClient.createInstance(context).delete({ id: itemId as number });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas
-export const Formula_Customer = makeFetchSingleRestResourceAction(Customer, inputs.customer.id);
+export const Formula_Customer = makeFetchSingleRestResourceAction({
+  modelName: CustomerModel.displayName,
+  IdParameter: inputs.customer.id,
+  schema: SyncedCustomers.staticSchema,
+  execute: async ([itemId], context) => {
+    const response = await CustomerClient.createInstance(context).single({ id: itemId as number });
+    return CustomerModel.createInstance(context, response.body).toCodaRow();
+  },
+});
 
 export const Format_Customer: coda.Format = {
   name: 'Customer',

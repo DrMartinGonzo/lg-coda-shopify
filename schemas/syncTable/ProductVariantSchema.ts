@@ -4,7 +4,7 @@ import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { getUnitMap } from '../../utils/helpers';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { FieldDependency } from '../Schema.types';
-import { ProductReference } from './ProductSchemaRest';
+import { ProductReference } from './ProductSchema';
 
 const titleProp = PROPS.makeTitleProp('product variant');
 export const itemGramsProp = {
@@ -189,25 +189,6 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
   imageProperty: 'image',
   linkProperty: 'admin_url',
 });
-
-export const productVariantFieldDependencies: FieldDependency<typeof ProductVariantSyncTableSchema.properties>[] = [
-  {
-    field: 'images',
-    dependencies: ['image'],
-  },
-  {
-    field: 'handle',
-    dependencies: ['storeUrl'],
-  },
-  {
-    field: 'status',
-    dependencies: ['storeUrl'],
-  },
-  {
-    field: 'title',
-    dependencies: ['product'],
-  },
-];
 
 export const ProductVariantReference = coda.makeReferenceSchemaFromObjectSchema(
   ProductVariantSyncTableSchema,

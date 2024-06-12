@@ -2,7 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 
 export const COMMENTABLE_OPTIONS = [
   { display: 'No', value: 'no' },
@@ -64,9 +63,3 @@ export const formatBlogReference: FormatRowReferenceFn<number, 'title'> = (id: n
   id,
   title,
 });
-export const blogFieldDependencies: FieldDependency<typeof BlogSyncTableSchema.properties>[] = [
-  {
-    field: 'id',
-    dependencies: ['graphql_gid', 'admin_url'],
-  },
-];

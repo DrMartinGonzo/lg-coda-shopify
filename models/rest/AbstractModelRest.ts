@@ -1,7 +1,7 @@
 // #region Imports
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
-import { IRestCRUD, RestRequestReturn } from '../../Clients/RestApiClientBase';
+import { IRestClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
@@ -23,7 +23,7 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
   public data: BaseApiDataRest;
   protected static readonly graphQlName: GraphQlResourceName;
 
-  abstract get client(): IRestCRUD;
+  abstract get client(): IRestClient;
 
   get graphQlGid(): string {
     if ('admin_graphql_api_id' in this.data) {
@@ -43,10 +43,11 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
   public async save() {
     let response: RestRequestReturn<BaseApiDataRest>;
     const isUpdate = this.data[this.primaryKey];
+    const apiData = this.getApiData();
     if (isUpdate) {
-      response = await this.client.update(this.serializedData);
+      response = await this.client.update(apiData);
     } else {
-      response = await this.client.create(this.serializedData);
+      response = await this.client.create(apiData);
     }
     if (response) {
       this.setData(response.body);
@@ -54,25 +55,6 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
   }
 
   public async delete() {
-    await this.client.delete(this.serializedData);
-  }
-
-  protected get serializedData(): Serialized<any> {
-    function process(prop: any) {
-      if (prop instanceof AbstractModelRest) {
-        return prop.serializedData;
-      }
-      if (Array.isArray(prop)) {
-        return prop.map(process);
-      }
-      return prop;
-    }
-
-    const ret = {};
-    for (let key in this.data) {
-      const prop = this.data[key];
-      ret[key] = process(prop);
-    }
-    return ret as Serialized<any>;
+    await this.client.delete(this.getApiData());
   }
 }

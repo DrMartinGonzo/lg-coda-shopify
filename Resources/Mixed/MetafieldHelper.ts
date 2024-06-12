@@ -1,8 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
+import { ShopClient } from '../../Clients/RestApiClientBase';
 import { NotFoundError, RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { CACHE_DEFAULT, PREFIX_FAKE } from '../../constants';
+import { ModelWithDeletedFlag } from '../../models/AbstractModel';
+import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
+import { BaseModelDataRest } from '../../models/rest/AbstractModelRest';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
@@ -20,16 +25,16 @@ import {
   splitMetaFieldFullKey,
 } from '../../utils/metafields-utils';
 import { GetSchemaArgs } from '../Abstract/AbstractResource';
-import { MetafieldDefinition } from '../GraphQl/MetafieldDefinition';
-import { MetafieldGraphQl, SupportedMetafieldOwnerType } from '../GraphQl/MetafieldGraphQl';
-import { Metafield, SupportedMetafieldOwnerResource } from '../Rest/Metafield';
+import { MetafieldGraphQl } from '../GraphQl/MetafieldGraphQl';
+import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
+import { Metafield } from '../Rest/Metafield';
+import { SupportedMetafieldOwnerResource } from '../../models/rest/MetafieldModel';
 import {
   GraphQlResourceNames,
   RestResourcesPlural,
   RestResourcesSingular,
   singularToPlural,
 } from '../types/SupportedResource';
-import { getCurrentShopActiveCurrency } from '../utils/abstractResource-utils';
 import { METAFIELD_TYPES, MetafieldLegacyType, MetafieldType } from './METAFIELD_TYPES';
 import { SupportedMetafieldSyncTable, supportedMetafieldSyncTables } from './SupportedMetafieldSyncTable';
 
@@ -43,7 +48,7 @@ export interface IMetafield {
   formatValueForOwnerRow(): any;
 }
 
-interface NormalizedMetafieldData {
+export interface MetafieldNormalizedData extends BaseModelDataRest, ModelWithDeletedFlag {
   id: number;
   gid: string;
   namespace: string;
@@ -52,11 +57,16 @@ interface NormalizedMetafieldData {
   value: string;
   ownerId: number;
   ownerGid: string;
+  /** Used to reference Product Variant parent Product */
+  parentOwnerId?: number;
+  /** Used to reference Product Variant parent Product */
+  parentOwnerGid?: string;
   ownerType: SupportedMetafieldOwnerType;
   ownerResource: SupportedMetafieldOwnerResource;
   definitionId: number;
   definitionGid: string;
-  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 // #endregion
 
@@ -114,14 +124,14 @@ export class MetafieldHelper {
   }: {
     context: coda.ExecutionContext;
     ownerType: MetafieldOwnerType;
-  }): Promise<Array<MetafieldDefinition>> {
+  }): Promise<Array<MetafieldDefinitionModel>> {
     logAdmin('🍏 getMetafieldDefinitionsForOwner');
-    return MetafieldDefinition.allForOwner({
-      context,
+    const response = await MetafieldDefinitionClient.createInstance(context).listForOwner({
       ownerType,
       includeFakeExtraDefinitions: true,
       options: { cacheTtlSecs: CACHE_DEFAULT },
     });
+    return response.map((data) => MetafieldDefinitionModel.createInstance(context, data));
   }
 
   public static getAllSupportedSyncTables(): Array<SupportedMetafieldSyncTable> {
@@ -142,8 +152,8 @@ export class MetafieldHelper {
 
   public static requireMatchingMetafieldDefinition(
     fullKey: string,
-    metafieldDefinitions: Array<MetafieldDefinition>
-  ): MetafieldDefinition {
+    metafieldDefinitions: Array<MetafieldDefinitionModel>
+  ): MetafieldDefinitionModel {
     const metafieldDefinition = metafieldDefinitions.find((f) => f && f.fullKey === fullKey);
     if (!metafieldDefinition) throw new NotFoundError('MetafieldDefinition');
     return metafieldDefinition;
@@ -229,7 +239,7 @@ export class MetafieldHelper {
   }: {
     ownerRow: BaseRow;
     ownerResource: SupportedMetafieldOwnerResource;
-    metafieldDefinitions?: MetafieldDefinition[];
+    metafieldDefinitions?: MetafieldDefinitionModel[];
     context: coda.ExecutionContext;
   }) {
     const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(ownerRow));
@@ -240,12 +250,11 @@ export class MetafieldHelper {
       const realFromKey = removePrefixFromMetaFieldKey(fromKey);
       const metafieldDefinition = MetafieldHelper.requireMatchingMetafieldDefinition(realFromKey, metafieldDefinitions);
 
-      const { key, namespace, type, validations, id: metafieldDefinitionGid } = metafieldDefinition.apiData;
+      const { key, namespace, type, validations, id: metafieldDefinitionGid } = metafieldDefinition.data;
       let formattedValue: string | null;
 
       if (type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
-        currencyCode = await getCurrentShopActiveCurrency(context);
-        // currencyCode = await Shop.activeCurrency({ context });
+        currencyCode = await ShopClient.createInstance(context).activeCurrency();
       }
 
       try {
@@ -271,19 +280,23 @@ export class MetafieldHelper {
         type: type.name,
         value: formattedValue,
         ownerId: ownerRow.id as number,
-        ownerGid: idToGraphQlGid(matchOwnerTypeToResourceName(ownerType), ownerRow.owner_id),
+        ownerGid: idToGraphQlGid(matchOwnerTypeToResourceName(ownerType), ownerRow.id),
         ownerType,
         ownerResource,
         definitionId: graphQlGidToId(definitionGid),
         definitionGid,
-        deleted: false,
-      } as NormalizedMetafieldData;
+        createdAt: undefined,
+        updatedAt: undefined,
+        parentOwnerGid: undefined,
+        parentOwnerId: undefined,
+        isDeletedFlag: false,
+      } as MetafieldNormalizedData;
     });
 
     return Promise.all(promises);
   }
 
-  public static normalizeMetafieldRow(row: MetafieldRow): NormalizedMetafieldData {
+  public static normalizeMetafieldRow(row: MetafieldRow): MetafieldNormalizedData {
     if (!row.label) throw new RequiredParameterMissingVisibleError('label');
 
     const { DELETED_SUFFIX } = MetafieldHelper;
@@ -332,7 +345,12 @@ export class MetafieldHelper {
       ownerResource: matchOwnerTypeToOwnerResource(row.owner_type as SupportedMetafieldOwnerType),
       definitionId,
       definitionGid: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, definitionId),
-      deleted: isDeletedFlag,
+      createdAt: row.created_at ? row.created_at.toString() : undefined,
+      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      parentOwnerGid: undefined,
+      parentOwnerId: undefined,
+
+      isDeletedFlag,
     };
   }
 

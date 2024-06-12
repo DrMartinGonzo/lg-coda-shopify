@@ -47,7 +47,7 @@ export class SyncedCustomers extends AbstractSyncedRestResourcesWithGraphQlMetaf
     return augmentedSchema;
   }
 
-  protected get codaParamsMap() {
+  public get codaParamsMap() {
     const [syncMetafields, createdAtRange, updatedAtRange, idArray, tags] = this.codaParams as CodaSyncParams<
       typeof Sync_Customers
     >;
@@ -66,7 +66,7 @@ export class SyncedCustomers extends AbstractSyncedRestResourcesWithGraphQlMetaf
     return super.syncedStandardFields;
   }
 
-  protected codaParamsToListArgs(): Omit<ListCustomersArgs, 'limit'> {
+  protected codaParamsToListArgs(): Omit<ListCustomersArgs, 'limit' | 'options'> {
     const { createdAtRange, idArray, tags, updatedAtRange } = this.codaParamsMap;
     return {
       fields: this.syncedStandardFields.join(','),

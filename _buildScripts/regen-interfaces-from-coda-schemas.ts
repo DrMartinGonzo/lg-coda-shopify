@@ -19,12 +19,13 @@ import { OrderLineItemSyncTableSchema } from '../schemas/syncTable/OrderLineItem
 import { OrderSyncTableSchema } from '../schemas/syncTable/OrderSchema';
 import { OrderTransactionSyncTableSchema } from '../schemas/syncTable/OrderTransactionSchema';
 import { PageSyncTableSchema } from '../schemas/syncTable/PageSchema';
-import { ProductSyncTableSchemaRest } from '../schemas/syncTable/ProductSchemaRest';
+import { ProductSyncTableSchema } from '../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 import { arrayUnique } from '../utils/helpers';
 import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
+import { TranslatableContentSyncTableSchema } from '../schemas/syncTable/TranslatableContentSchema';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -160,11 +161,12 @@ const definitions = [
   [OrderLineItemSyncTableSchema, PACK_IDENTITIES.OrderLineItem],
   [OrderTransactionSyncTableSchema, PACK_IDENTITIES.OrderTransaction],
   [PageSyncTableSchema, PACK_IDENTITIES.Page],
-  [ProductSyncTableSchemaRest, PACK_IDENTITIES.Product],
+  [ProductSyncTableSchema, PACK_IDENTITIES.Product],
   [ProductVariantSyncTableSchema, PACK_IDENTITIES.ProductVariant],
   [RedirectSyncTableSchema, PACK_IDENTITIES.Redirect],
   [ShopSyncTableSchema, PACK_IDENTITIES.Shop],
   [TranslationSyncTableSchema, PACK_IDENTITIES.Translation],
+  [TranslatableContentSyncTableSchema, PACK_IDENTITIES.TranslatableContent],
 ];
 
 const blocks = definitions.map((def) => {

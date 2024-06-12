@@ -10,15 +10,28 @@ export const CACHE_TEN_MINUTES = 60 * 10; // 10 minute
 // #endregion
 
 // #region Options
+interface OptionDisplayValue {
+  display: string;
+  value: string;
+}
+
+export function optionValues(options: OptionDisplayValue[]) {
+  return options.map((status) => status.value);
+}
+
 /** Noms complets des pays formattés avec leur code associé pour autocompletion */
-export const OPTIONS_COUNTRY_NAMES = Object.entries(countryNames).map(([key, value]) => ({
+export const OPTIONS_COUNTRY_NAMES: OptionDisplayValue[] = Object.entries(countryNames).map(([key, value]) => ({
   display: value,
   value: key,
 }));
 
-export const OPTIONS_DRAFT_ORDER_STATUS = ['open', 'completed', 'invoice_sent'];
+export const OPTIONS_DRAFT_ORDER_STATUS: OptionDisplayValue[] = [
+  { display: 'Open', value: 'open' },
+  { display: 'Completed', value: 'completed' },
+  { display: 'Invoice sent', value: 'invoice_sent' },
+];
 
-export const OPTIONS_FILE_TYPE = [
+export const OPTIONS_FILE_TYPE: OptionDisplayValue[] = [
   { display: 'Generic files', value: 'GENERIC_FILE' },
   { display: 'Images', value: 'IMAGE' },
   { display: 'Videos', value: 'VIDEO' },
@@ -27,7 +40,7 @@ export const OPTIONS_FILE_TYPE = [
 // The status of the metaobject. Valid values:
 //  - ACTIVE: The metaobjects is active for public use.
 //  - DRAFT: The metaobjects is an internal record.
-export const OPTIONS_METAOBJECT_STATUS = [
+export const OPTIONS_METAOBJECT_STATUS: OptionDisplayValue[] = [
   { display: 'Active', value: 'ACTIVE' },
   { display: 'Draft', value: 'DRAFT' },
 ];
@@ -38,40 +51,45 @@ export const OPTIONS_METAOBJECT_STATUS = [
  cancelled: Show only canceled orders.
  any: Show orders of any status, including archived
  */
-export const OPTIONS_ORDER_STATUS = ['any', 'open', 'closed', 'cancelled'];
-
-export const OPTIONS_ORDER_FINANCIAL_STATUS = [
-  'any',
-  'authorized',
-  'pending',
-  'paid',
-  'partially_paid',
-  'refunded',
-  'voided',
-  'partially_refunded',
-  'unpaid',
+export const OPTIONS_ORDER_STATUS: OptionDisplayValue[] = [
+  { display: 'Any', value: 'any' },
+  { display: 'Open', value: 'open' },
+  { display: 'Closed', value: 'closed' },
+  { display: 'Cancelled', value: 'cancelled' },
 ];
-export const OPTIONS_ORDER_FULFILLMENT_STATUS = ['any', 'shipped', 'partial', 'unshipped', 'unfulfilled'];
+
+export const OPTIONS_ORDER_FINANCIAL_STATUS: OptionDisplayValue[] = [
+  { display: 'Any', value: 'any' },
+  { display: 'Authorized', value: 'authorized' },
+  { display: 'Pending', value: 'pending' },
+  { display: 'Paid', value: 'paid' },
+  { display: 'Partially paid', value: 'partially_paid' },
+  { display: 'Refunded', value: 'refunded' },
+  { display: 'Voided', value: 'voided' },
+  { display: 'Partially refunded', value: 'partially_refunded' },
+  { display: 'Unpaid', value: 'unpaid' },
+];
+export const OPTIONS_ORDER_FULFILLMENT_STATUS: OptionDisplayValue[] = [
+  { display: 'Any', value: 'any' },
+  { display: 'Shipped', value: 'shipped' },
+  { display: 'Partial', value: 'partial' },
+  { display: 'Unshipped', value: 'unshipped' },
+  { display: 'Unfulfilled', value: 'unfulfilled' },
+];
 
 // The status of the product. Valid values:
 //  - ACTIVE: The product is ready to sell and is available to customers on the online store, sales channels, and apps. By default, existing products are set to active.
 //  - ARCHIVED: The product is no longer being sold and isn't available to customers on sales channels and apps.
 //  - DRAFT: The product isn't ready to sell and is unavailable to customers on sales channels and apps. By default, duplicated and unarchived products are set to draft.
-export const OPTIONS_PRODUCT_STATUS_GRAPHQL = [
+export const OPTIONS_PRODUCT_STATUS_GRAPHQL: OptionDisplayValue[] = [
   // { display: 'All', value: '*' },
   { display: 'Active', value: 'ACTIVE' },
   { display: 'Archived', value: 'ARCHIVED' },
   { display: 'Draft', value: 'DRAFT' },
 ];
-export const OPTIONS_PRODUCT_STATUS_REST = [
-  { display: 'Active', value: 'active' },
-  { display: 'Archived', value: 'archived' },
-  { display: 'Draft', value: 'draft' },
-];
 export const DEFAULT_PRODUCT_STATUS_GRAPHQL = 'DRAFT';
-export const DEFAULT_PRODUCT_STATUS_REST = 'draft';
 
-export const OPTIONS_PUBLISHED_STATUS = [
+export const OPTIONS_PUBLISHED_STATUS: OptionDisplayValue[] = [
   { display: 'Any', value: 'any' },
   { display: 'Published', value: 'published' },
   { display: 'Unpublished', value: 'unpublished' },
@@ -113,6 +131,8 @@ export const PACK_IDENTITIES = {
   Redirect: 'Redirect',
   Shop: 'Shop',
   Theme: 'Theme',
+  Translation: 'Translation',
+  TranslatableContent: 'TranslatableContent',
 } as const satisfies Partial<Record<SupportedResource, string>>;
 
 export type Identity = (typeof PACK_IDENTITIES)[keyof typeof PACK_IDENTITIES];
@@ -142,4 +162,5 @@ export const CODA_SUPPORTED_CURRENCIES = [
 ];
 
 export const NOT_FOUND = 'NOT_FOUND';
+export const NOT_IMPLEMENTED = 'Not implemented';
 

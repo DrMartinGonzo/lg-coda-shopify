@@ -1,33 +1,28 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors/Errors';
-import { Metafield, SupportedMetafieldOwnerResource } from '../Resources/Rest/Metafield';
-import { MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
-import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
-import { splitMetaFieldFullKey } from '../utils/metafields-utils';
-import { arrayUnique } from '../utils/helpers';
+import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
+import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { MetafieldApiData, MetafieldModel } from '../models/rest/MetafieldModel';
+import { arrayUnique } from '../utils/helpers';
+import {
+  matchOwnerResourceToMetafieldOwnerType,
+  matchOwnerTypeToOwnerResource,
+  matchOwnerTypeToResourceName,
+  splitMetaFieldFullKey,
+} from '../utils/metafields-utils';
+import { CodaMetafieldValue } from './CodaMetafieldValue';
+import {
+  MetafieldGraphQlModel,
+  MetafieldApiData as MetafieldGraphQlApiData,
+} from '../models/graphql/MetafieldGraphQlModel';
+import { idToGraphQlGid } from '../utils/conversion-utils';
+import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 
 // #endregion
 
 // #region Types
-interface ConstructorArgs {
-  namespace: string;
-  /**  metafield key (not full) */
-  key: string;
-  value: any;
-  type: MetafieldType;
-}
-
-interface ToMetafieldArgs {
-  [key: string]: unknown;
-  context: coda.ExecutionContext;
-  owner_id?: number;
-  owner_resource: SupportedMetafieldOwnerResource;
-}
-
 interface ParsedFormatMetafieldFormula {
   /** a metafield full key */
   key: string;
@@ -35,15 +30,6 @@ interface ParsedFormatMetafieldFormula {
   value: any;
   /** a metafield type */
   type: MetafieldType;
-}
-
-interface FormatMetafieldFormulaParams {
-  fullKey: string;
-  value: string;
-}
-interface FormatListMetafieldFormulaParams {
-  fullKey: string;
-  varargs: Array<string>;
 }
 // #endregion
 
@@ -57,7 +43,18 @@ export class CodaMetafieldSetNew {
   public type: MetafieldType | null;
 
   // public valueNew: CodaMetafieldValueNew;
-  public constructor({ namespace, key, value, type }: ConstructorArgs) {
+  public constructor({
+    namespace,
+    key,
+    value,
+    type,
+  }: {
+    namespace: string;
+    /** metafield key (not full) */
+    key: string;
+    value: any;
+    type: MetafieldType;
+  }) {
     this.namespace = namespace;
     this.key = key;
     this.value = value;
@@ -71,7 +68,10 @@ export class CodaMetafieldSetNew {
   public static createFromFormatMetafieldFormula({
     fullKey,
     value,
-  }: FormatMetafieldFormulaParams): CodaMetafieldSetNew {
+  }: {
+    fullKey: string;
+    value: string;
+  }): CodaMetafieldSetNew {
     try {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
       const parsedValue: CodaMetafieldValue = CodaMetafieldValue.createFromCodaParameter(value);
@@ -93,7 +93,10 @@ export class CodaMetafieldSetNew {
   public static createFromFormatListMetafieldFormula({
     fullKey,
     varargs = [],
-  }: FormatListMetafieldFormulaParams): CodaMetafieldSetNew {
+  }: {
+    fullKey: string;
+    varargs: string[];
+  }): CodaMetafieldSetNew {
     try {
       const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
       let type: MetafieldType;
@@ -186,33 +189,48 @@ export class CodaMetafieldSetNew {
       key: this.fullKey,
       type: this.type,
       value: this.value,
-    });
+    } as ParsedFormatMetafieldFormula);
   }
 
-  public toMetafield({ context, owner_id, owner_resource, ...otherArgs }: ToMetafieldArgs): MetafieldModel {
+  public toRestMetafield({
+    context,
+    owner_id,
+    owner_resource,
+  }: {
+    context: coda.ExecutionContext;
+    owner_id?: number;
+    owner_resource: SupportedMetafieldOwnerResource;
+  }): MetafieldModel {
     return MetafieldModel.createInstance(context, {
       namespace: this.namespace,
       key: this.key,
       type: this.type,
       value: Array.isArray(this.value) ? JSON.stringify(this.value) : this.value,
-      owner_resource: owner_resource,
-      owner_id: owner_id,
+      owner_resource,
+      owner_id,
     } as MetafieldApiData);
+  }
 
-    // new MetafieldNew(
-
-    //   {
-    //   context,
-    //   fromData: {
-    //     namespace: this.namespace,
-    //     key: this.key,
-    //     type: this.type,
-    //     value: Array.isArray(this.value) ? JSON.stringify(this.value) : this.value,
-    //     owner_resource: owner_resource,
-    //     owner_id: owner_id,
-    //     ...otherArgs,
-    //   } as Metafield['apiData'],
-    // }
-    // );
+  public toGraphQlMetafield({
+    context,
+    ownerGid,
+    ownerType,
+  }: {
+    context: coda.ExecutionContext;
+    ownerGid?: string;
+    ownerType: SupportedMetafieldOwnerType;
+  }): MetafieldGraphQlModel {
+    // const ownerType = matchOwnerResourceToMetafieldOwnerType(owner_resource);
+    const graphQlResourceName = matchOwnerTypeToResourceName(ownerType);
+    return MetafieldGraphQlModel.createInstance(context, {
+      namespace: this.namespace,
+      key: this.key,
+      type: this.type,
+      value: Array.isArray(this.value) ? JSON.stringify(this.value) : this.value,
+      ownerType,
+      parentNode: {
+        id: ownerGid,
+      },
+    } as MetafieldGraphQlApiData);
   }
 }

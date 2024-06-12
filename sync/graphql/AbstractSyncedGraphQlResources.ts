@@ -12,20 +12,19 @@ import {
 } from '../AbstractSyncedResources';
 
 import { wait } from '../../Clients/utils/client-utils';
+import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
+import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
 import {
   parseContinuationProperty,
   stringifyContinuationProperty,
 } from '../../SyncTableManager/utils/syncTableManager-utils';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
+import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
-import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
-import { BaseRow } from '../../schemas/CodaRows.types';
-import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
-import { hasMetafieldsInUpdate } from '../../Resources/utils/abstractResource-utils';
-import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 
 // #endregion
 
@@ -170,7 +169,7 @@ export abstract class AbstractSyncedGraphQlResources<
     await this.beforeSync();
 
     const response = await this.sync();
-    this.data = response.body.map((data) => this.model.createInstance(this.context, data));
+    this.data = await Promise.all(response.body.map(async (data) => this.createInstanceFromData(data)));
     const { pageInfo, cost } = response;
     const hasNextRun = pageInfo && pageInfo.hasNextPage;
 
@@ -205,6 +204,21 @@ export abstract class AbstractSyncedGraphQlResources<
     };
   }
 
+  protected async createInstanceFromRow(row: BaseRow) {
+    const instance = await super.createInstanceFromRow(row);
+    if (this.supportMetafields && this.asStatic().hasMetafieldsInRow(row)) {
+      // Warm up metafield definitions cache
+      const metafieldDefinitions = await this.getMetafieldDefinitions();
+      (instance as AbstractModelGraphQlWithMetafields<any>).data.metafields =
+        await MetafieldGraphQlModel.createInstancesFromOwnerRow({
+          context: this.context,
+          ownerRow: row,
+          metafieldDefinitions,
+          ownerResource: (this.model as unknown as typeof AbstractModelGraphQlWithMetafields).metafieldRestOwnerType,
+        });
+    }
+    return instance;
+  }
   public async executeSyncUpdate(updates: Array<coda.SyncUpdate<string, string, any>>): Promise<SyncTableUpdateResult> {
     await this.init();
 
@@ -218,24 +232,8 @@ export abstract class AbstractSyncedGraphQlResources<
         const newRow = Object.fromEntries(
           Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
         ) as BaseRow;
-
-        const instance = this.model.createInstanceFromRow(this.context, newRow);
-
-        // Warm up metafield definitions cache
-        console.log('hasMetafieldsInUpdate(update)', hasMetafieldsInUpdate(update));
-        console.log('this.supportMetafields', this.supportMetafields);
-
-        if (this.supportMetafields && hasMetafieldsInUpdate(update)) {
-          const metafieldDefinitions = await this.getMetafieldDefinitions();
-          (instance as AbstractModelGraphQlWithMetafields<any>).data.metafields =
-            await MetafieldGraphQlModel.createInstancesFromOwnerRow({
-              context: this.context,
-              ownerRow: newRow,
-              metafieldDefinitions,
-              ownerResource: (this.model as unknown as typeof AbstractModelGraphQlWithMetafields)
-                .metafieldRestOwnerType,
-            });
-        }
+        if (this.validateSyncUpdate) this.validateSyncUpdate(prevRow, newRow);
+        const instance = await this.createInstanceFromRow(newRow);
 
         // console.log('instance', instance.data.metafields);
         // throw new Error('Not implemented');

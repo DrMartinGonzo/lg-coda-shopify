@@ -49,19 +49,6 @@ import { GraphQlResourceNames } from '../types/SupportedResource';
 // #endregion
 
 // #region Types
-export type SupportedMetafieldOwnerType =
-  | MetafieldOwnerType.Article
-  | MetafieldOwnerType.Blog
-  | MetafieldOwnerType.Collection
-  | MetafieldOwnerType.Customer
-  | MetafieldOwnerType.Draftorder
-  | MetafieldOwnerType.Location
-  | MetafieldOwnerType.Order
-  | MetafieldOwnerType.Page
-  | MetafieldOwnerType.Product
-  | MetafieldOwnerType.Productvariant
-  | MetafieldOwnerType.Shop;
-
 interface FindArgs extends BaseContext {
   id: string;
 }

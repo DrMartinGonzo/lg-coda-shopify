@@ -149,16 +149,6 @@ export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   snippetProperty: 'note',
   linkProperty: 'admin_url',
 });
-export const draftOrderFieldDependencies: FieldDependency<typeof DraftOrderSyncTableSchema.properties>[] = [
-  {
-    field: 'order',
-    dependencies: ['order_id'],
-  },
-  {
-    field: 'id',
-    dependencies: ['admin_url'],
-  },
-];
 export const DraftOrderReference = coda.makeReferenceSchemaFromObjectSchema(
   DraftOrderSyncTableSchema,
   PACK_IDENTITIES.DraftOrder
