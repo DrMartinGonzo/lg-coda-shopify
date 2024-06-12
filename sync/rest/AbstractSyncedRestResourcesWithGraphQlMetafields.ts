@@ -1,6 +1,6 @@
 // #region Imports
 
-import { GraphQlApiClientBase, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
+import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
@@ -115,7 +115,7 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
      * + adjust Rest sync limit
      */
     if (this.shouldSyncMetafields) {
-      this.throttleStatus = await GraphQlApiClientBase.createInstance(this.context).checkThrottleStatus();
+      this.throttleStatus = await GraphQlFetcher.createInstance(this.context).checkThrottleStatus();
       const deferByMs = this.getDeferWaitTime();
       if (deferByMs > 0) {
         logAdmin(

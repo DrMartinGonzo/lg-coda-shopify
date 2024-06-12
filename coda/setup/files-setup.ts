@@ -77,7 +77,7 @@ export const Action_DeleteFile = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Boolean,
   execute: async ([itemId], context) => {
-    await FileClient.createInstance(context).delete([itemId]);
+    await FileClient.createInstance(context).delete({ id: itemId });
     return true;
   },
 });

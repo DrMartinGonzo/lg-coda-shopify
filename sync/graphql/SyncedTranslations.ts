@@ -1,4 +1,5 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
 
 import { ListTranslationsArgs } from '../../Clients/GraphQlApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
@@ -49,5 +50,14 @@ export class SyncedTranslations extends AbstractSyncedGraphQlResources<Translati
       locale,
       resourceType,
     } as ListTranslationsArgs;
+  }
+
+  /**
+   * {@link TranslationModel} has some additional required properties :
+   * - locale
+   */
+  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const extraRequiredProps = ['locale'];
+    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
   }
 }

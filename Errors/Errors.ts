@@ -27,6 +27,12 @@ export class InvalidValueVisibleError extends coda.UserVisibleError {
 // #endregion
 
 // #region Internal Errors
+export class UnsupportedClientOperation extends Error {
+  constructor(name: string, clientName?: string) {
+    super(`Unsupported ${clientName ?? 'client'} operation: ${name}.`);
+  }
+}
+
 export class UnsupportedValueError extends Error {
   constructor(name: string, value: any) {
     super(`Unknown or unsupported ${name}: ${JSON.stringify(value)}`);

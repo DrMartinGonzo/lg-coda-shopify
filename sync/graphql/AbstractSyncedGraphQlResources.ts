@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { GraphQlApiClientBase, IGraphQlCRUD } from '../../Clients/GraphQlApiClientBase';
+import { AbstractGraphQlClient, GraphQlFetcher } from '../../Clients/GraphQlApiClientBase';
 import { AbstractModelGraphQl } from '../../models/graphql/AbstractModelGraphQl';
 import { AbstractModelGraphQlWithMetafields } from '../../models/graphql/AbstractModelGraphQlWithMetafields';
 import {
@@ -37,7 +37,7 @@ export interface SyncTableGraphQlContinuation extends SyncTableContinuation {
 }
 
 interface ISyncedGraphQlResourcesConstructorArgs<T> extends ISyncedResourcesConstructorArgs<T> {
-  client: Pick<IGraphQlCRUD, 'list' | 'defaultLimit'>;
+  client: AbstractGraphQlClient<any>;
 }
 // #endregion
 
@@ -52,7 +52,7 @@ function hasMetafieldsSupport(model: any): model is typeof AbstractModelGraphQlW
 export abstract class AbstractSyncedGraphQlResources<
   T extends AbstractModelGraphQl<any> | AbstractModelGraphQlWithMetafields<any>
 > extends AbstractSyncedResources<T> {
-  protected readonly client: Pick<IGraphQlCRUD, 'list' | 'defaultLimit'>;
+  protected readonly client: AbstractGraphQlClient<any>;
 
   protected readonly prevContinuation: SyncTableGraphQlContinuation;
   protected continuation: SyncTableGraphQlContinuation;
@@ -149,7 +149,7 @@ export abstract class AbstractSyncedGraphQlResources<
   public async executeSync(): Promise<SyncedResourcesSyncResult<typeof this.continuation>> {
     await this.init();
 
-    this.throttleStatus = await GraphQlApiClientBase.createInstance(this.context).checkThrottleStatus();
+    this.throttleStatus = await GraphQlFetcher.createInstance(this.context).checkThrottleStatus();
     const deferByMs = this.getDeferWaitTime();
     if (deferByMs > 0) {
       logAdmin(

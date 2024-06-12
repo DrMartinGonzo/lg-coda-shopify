@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
-import { Identity } from '../constants';
+import { Identity, MUST_EXTEND, NOT_IMPLEMENTED } from '../constants';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { isDefinedEmpty } from '../utils/helpers';
 
@@ -40,7 +40,7 @@ export abstract class AbstractModel<T> {
   }
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: BaseRow): InstanceType<typeof this> {
-    throw new Error('Must be extended by subclasses');
+    throw new Error(MUST_EXTEND);
   }
 
   /**====================================================================================================================
@@ -199,7 +199,7 @@ export abstract class AbstractModel<T> {
    * Return the latest data for the current instance. Should be implemented by subclasses
    */
   protected async getFullFreshData(): Promise<any | undefined> {
-    return;
+    throw new Error(MUST_EXTEND);
   }
   // #endregion
 

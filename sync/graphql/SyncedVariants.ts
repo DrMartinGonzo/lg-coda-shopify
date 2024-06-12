@@ -1,4 +1,5 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
 
 import { ListVariantsArgs, VariantFieldsArgs } from '../../Clients/GraphQlApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
@@ -125,26 +126,23 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
   }
 
   /**
-   * {@link VariantGraphQl} has some additional required properties :
+   * {@link VariantModel} has some additional required properties :
    * - weight: when requesting an update on weight_unit
    * - weight_unit: when requesting an update on weight
    * - options: all options are required as soon as we want to update one
    */
-  // public static getRequiredPropertiesForUpdate(
-  //   schema: coda.ArraySchema<coda.ObjectSchema<string, string>>,
-  //   updatedFields: string[] = []
-  // ) {
-  //   let extraRequiredFields = [];
-  //   if (updatedFields.includes('weight')) {
-  //     extraRequiredFields.push('weight_unit');
-  //   }
-  //   if (updatedFields.includes('weight_unit')) {
-  //     extraRequiredFields.push('weight');
-  //   }
-  //   if (VARIANT_OPTION_KEYS.some((key) => updatedFields.includes(key))) {
-  //     extraRequiredFields = extraRequiredFields.concat(VARIANT_OPTION_KEYS);
-  //   }
-
-  //   return super.getRequiredPropertiesForUpdate(schema, updatedFields).concat(extraRequiredFields);
-  // }
+  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const { updatedFields } = update;
+    let extraRequiredProps = [];
+    if (updatedFields.includes('weight')) {
+      extraRequiredProps.push('weight_unit');
+    }
+    if (updatedFields.includes('weight_unit')) {
+      extraRequiredProps.push('weight');
+    }
+    if (VARIANT_OPTION_KEYS.some((key) => updatedFields.includes(key))) {
+      extraRequiredProps = extraRequiredProps.concat(VARIANT_OPTION_KEYS);
+    }
+    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
+  }
 }

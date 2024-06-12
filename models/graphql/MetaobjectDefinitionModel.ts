@@ -9,5 +9,5 @@ import { BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl
 // #region Types
 export type MetaobjectDefinitionApiData = BaseApiDataGraphQl & ResultOf<typeof metaobjectDefinitionFragment>;
 
-interface MetaobjectDefinitionModelData extends MetaobjectDefinitionApiData, BaseModelDataGraphQl {}
+export interface MetaobjectDefinitionModelData extends MetaobjectDefinitionApiData, BaseModelDataGraphQl {}
 // #endregion

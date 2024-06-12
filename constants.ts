@@ -163,4 +163,5 @@ export const CODA_SUPPORTED_CURRENCIES = [
 
 export const NOT_FOUND = 'NOT_FOUND';
 export const NOT_IMPLEMENTED = 'Not implemented';
+export const MUST_EXTEND = 'Must be extended by subclasses';
 

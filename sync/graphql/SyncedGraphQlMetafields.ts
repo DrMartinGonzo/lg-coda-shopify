@@ -1,4 +1,5 @@
 // #region Imports
+import * as coda from '@codahq/packs-sdk';
 
 import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
@@ -46,18 +47,18 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
   }
 
   /**
-   * {@link Metafield} has some additional required properties :
+   * {@link MetafieldGraphQlModel} has some additional required properties :
    * - label: The label will give us the namespace and key
    * - type
    * - owner_type
    * - owner_id if not a Shop metafield
    */
-  // protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
-  //   const additionalProperties = ['label', 'type', 'owner_type'];
-  //   if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
-  //     additionalProperties.push('owner_id');
-  //   }
+  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const extraRequiredProps = ['label', 'type', 'owner_type'];
+    if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
+      extraRequiredProps.push('owner_id');
+    }
 
-  //   return super.getRequiredPropertiesForUpdate(update).concat(additionalProperties);
-  // }
+    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
+  }
 }

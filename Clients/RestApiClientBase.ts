@@ -37,6 +37,7 @@ import { getShopifyRequestHeaders } from './utils/client-utils';
 interface BaseFindArgs {
   fields?: string;
   options?: FetchRequestOptions;
+  forceAllFields?: boolean;
 }
 interface BaseSingleArgs extends BaseFindArgs {
   id: number;
@@ -59,7 +60,7 @@ interface BaseRequestParams {
   /** The name of the request, for display purpose. */
   name?: string;
   /** Query parameters to be sent with the request. */
-  query?: SearchParams;
+  query?: any;
 
   options?: FetchRequestOptions;
 
@@ -227,8 +228,8 @@ class RestFetcher {
 export interface IRestClient {
   defaultLimit: number;
 
-  single(params: any): Promise<RestRequestReturn<any>>;
-  list(params: any): Promise<RestRequestReturn<any[]>>;
+  single(params: BaseSingleArgs): Promise<RestRequestReturn<any>>;
+  list(params: BaseListArgs): Promise<RestRequestReturn<any[]>>;
   create(modelData: any): Promise<RestRequestReturn<any>>;
   update(modelData: any): Promise<RestRequestReturn<any>>;
   delete(modelData: any): Promise<RestRequestReturn<any>>;
@@ -278,20 +279,26 @@ abstract class AbstractRestClient<
     return (this.constructor as typeof AbstractRestClient).defaultLimit;
   }
 
-  async single({ id, fields = null, options }: SingleArgs) {
+  async single({ id, fields, forceAllFields, options }: SingleArgs) {
     return this.fetcher.get<ApiData>({
       path: `${this.plural}/${id}.json`,
-      query: { fields },
+      query: {
+        fields: forceAllFields ? undefined : fields,
+      },
       options,
       name: `single ${this.singular}`,
       transformResponseBody: this.transformResponseBodySingle.bind(this),
     });
   }
 
-  async list({ limit, options, ...otherArgs }: ListArgs) {
+  async list({ fields, forceAllFields, limit, options, ...otherArgs }: ListArgs) {
     return this.fetcher.get<ApiData[]>({
       path: `${this.plural}.json`,
-      query: { limit: limit ?? this.defaultLimit, ...otherArgs },
+      query: {
+        fields: forceAllFields ? undefined : fields,
+        limit: limit ?? this.defaultLimit,
+        ...otherArgs,
+      },
       options,
       name: `list ${this.plural}`,
       transformResponseBody: this.transformResponseBodyList.bind(this),
@@ -304,7 +311,7 @@ abstract class AbstractRestClient<
    */
   async listAllLoop({ options, limit, ...otherArgs }: ListArgs) {
     let items: ApiData[] = [];
-    let nextPageQuery: any = {};
+    let nextPageQuery: SearchParams = {};
     let response: RestRequestReturn<ApiData[]>;
     let params: any;
 
@@ -362,12 +369,12 @@ export interface ListArticlesArgs extends BaseListArgs {
   blog_id?: number | null;
   limit?: number;
   since_id?: number;
-  created_at_min?: Date;
-  created_at_max?: Date;
-  updated_at_min?: Date;
-  updated_at_max?: Date;
-  published_at_min?: Date;
-  published_at_max?: Date;
+  created_at_min?: unknown;
+  created_at_max?: unknown;
+  updated_at_min?: unknown;
+  updated_at_max?: unknown;
+  published_at_min?: unknown;
+  published_at_max?: unknown;
   published_status?: string;
   handle?: string;
   tags?: string[];
@@ -467,8 +474,8 @@ export class CustomCollectionClient extends AbstractRestClient<
 
 // #region CustomerClient
 export interface ListCustomersArgs extends BaseListArgs {
-  ids?: unknown;
-  since_id?: unknown;
+  ids?: string;
+  since_id?: number;
   created_at_min?: unknown;
   created_at_max?: unknown;
   updated_at_min?: unknown;
@@ -610,11 +617,11 @@ export class CustomerClient extends AbstractRestClient<BaseSingleArgs, ListCusto
 export interface ListDraftOrdersArgs extends BaseListArgs {
   fields?: string;
   limit?: number;
-  since_id?: unknown;
   updated_at_min?: unknown;
   updated_at_max?: unknown;
-  ids?: unknown;
-  status?: unknown;
+  since_id?: number;
+  ids?: string;
+  status?: string;
 }
 
 export interface CompleteDraftOrderArgs {
@@ -669,8 +676,8 @@ export class DraftOrderClient extends AbstractRestClient<BaseSingleArgs, ListDra
 
 // #region InventoryLevelClient
 export interface ListInventoryLevelsArgs extends BaseListArgs {
-  inventory_item_ids?: unknown;
-  location_ids?: unknown;
+  inventory_item_ids?: string;
+  location_ids?: string;
   limit?: number;
   updated_at_min?: unknown;
 }
@@ -784,15 +791,15 @@ interface ListMetafieldsArgs extends BaseListArgs {
   limit?: number;
   owner_id: number | null;
   owner_resource: SupportedMetafieldOwnerResource | null;
-  since_id?: unknown;
+  since_id?: number;
   created_at_min?: unknown;
   created_at_max?: unknown;
   updated_at_min?: unknown;
   updated_at_max?: unknown;
-  namespace?: unknown;
-  key?: unknown;
-  type?: unknown;
-  fields?: string | null;
+  namespace?: string;
+  key?: string;
+  type?: string;
+  fields?: string;
 }
 
 export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMetafieldsArgs, MetafieldApiData> {
@@ -813,7 +820,13 @@ export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMeta
     return response;
   }
 
-  async list({ owner_id = null, owner_resource = null, options = {}, ...otherArgs }: ListMetafieldsArgs) {
+  async list({
+    owner_id = null,
+    owner_resource = null,
+    forceAllFields,
+    options = {},
+    ...otherArgs
+  }: ListMetafieldsArgs) {
     return this.fetcher.get<MetafieldApiData[]>({
       path: 'metafields.json',
       query: {

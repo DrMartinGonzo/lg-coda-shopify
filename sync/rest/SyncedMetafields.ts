@@ -66,18 +66,18 @@ export class SyncedMetafields<
   }
 
   /**
-   * {@link Metafield} has some additional required properties :
+   * {@link MetafieldModel} has some additional required properties :
    * - label: The label will give us the namespace and key
    * - type
    * - owner_type
    * - owner_id if not a Shop metafield
    */
   protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const additionalProperties = ['label', 'type', 'owner_type'];
+    const extraRequiredProps = ['label', 'type', 'owner_type'];
     if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
-      additionalProperties.push('owner_id');
+      extraRequiredProps.push('owner_id');
     }
 
-    return super.getRequiredPropertiesForUpdate(update).concat(additionalProperties);
+    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
   }
 }

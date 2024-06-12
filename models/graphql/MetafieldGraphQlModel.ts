@@ -57,7 +57,7 @@ export interface MetafieldApiData
   };
 }
 
-interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
+export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
 // #endregion
 
 export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQlModel> {
@@ -152,7 +152,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
     return preprendPrefixToMetaFieldKey(this.fullKey);
   }
 
-  protected async getFullFreshData(): Promise<MetafieldApiData | undefined> {
+  protected async getFullFreshData(): Promise<MetafieldModelData | undefined> {
     const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
     if (this.data.id) {
       const found = await this.client.single({ id: this.data.id, options });

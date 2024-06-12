@@ -33,9 +33,11 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
   }
 
   protected async getFullFreshData(): Promise<BaseApiDataRest | undefined> {
-    const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
     if (this.data[this.primaryKey]) {
-      const found = await this.client.single({ id: this.data[this.primaryKey], options });
+      const found = await this.client.single({
+        id: this.data[this.primaryKey],
+        options: { cacheTtlSecs: CACHE_DISABLED },
+      });
       return found ? found.body : undefined;
     }
   }

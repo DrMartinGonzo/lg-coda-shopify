@@ -1,6 +1,6 @@
 // #region Imports
 
-import { GraphQlRequestReturn, IGraphQlCRUD } from '../../Clients/GraphQlApiClientBase';
+import { AbstractGraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlApiClientBase';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { Node } from '../../types/admin.types';
@@ -21,7 +21,7 @@ export abstract class AbstractModelGraphQl<T> extends AbstractModel<T> {
   public data: BaseModelDataGraphQl;
   protected static readonly graphQlName: GraphQlResourceName;
 
-  abstract get client(): IGraphQlCRUD;
+  abstract get client(): AbstractGraphQlClient<any>;
 
   get graphQlGid(): string {
     return this.data[this.primaryKey];
@@ -30,9 +30,9 @@ export abstract class AbstractModelGraphQl<T> extends AbstractModel<T> {
     return graphQlGidToId(this.graphQlGid);
   }
 
-  protected async getFullFreshData(): Promise<BaseApiDataGraphQl | undefined> {
+  protected async getFullFreshData(): Promise<BaseModelDataGraphQl | undefined> {
     if (this.data[this.primaryKey]) {
-      const found: GraphQlRequestReturn<BaseApiDataGraphQl> = await this.client.single({
+      const found: GraphQlRequestReturn<BaseModelDataGraphQl> = await this.client.single({
         id: this.data[this.primaryKey],
         forceAllFields: true,
         options: { cacheTtlSecs: CACHE_DISABLED },

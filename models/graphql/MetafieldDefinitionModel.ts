@@ -16,7 +16,7 @@ import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from '
 // #region Types
 export type MetafieldDefinitionApiData = BaseApiDataGraphQl & ResultOf<typeof metafieldDefinitionFragment>;
 
-interface MetafieldDefinitionModelData extends BaseModelDataGraphQl, MetafieldDefinitionApiData {}
+export interface MetafieldDefinitionModelData extends BaseModelDataGraphQl, MetafieldDefinitionApiData {}
 // #endregion
 
 export class MetafieldDefinitionModel extends AbstractModelGraphQl<MetafieldDefinitionModel> {
