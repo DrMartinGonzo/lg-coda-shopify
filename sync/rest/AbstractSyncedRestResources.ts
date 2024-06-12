@@ -9,7 +9,6 @@ import {
   parseContinuationProperty,
   stringifyContinuationProperty,
 } from '../../SyncTableManager/utils/syncTableManager-utils';
-import { REST_DEFAULT_LIMIT } from '../../constants';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
@@ -34,7 +33,7 @@ export interface SyncTableRestContinuation extends SyncTableContinuation {
 }
 
 export interface ISyncedRestResourcesConstructorArgs<T> extends ISyncedResourcesConstructorArgs<T> {
-  client: Pick<IRestClient, 'list'>;
+  client: Pick<IRestClient, 'list' | 'defaultLimit'>;
 }
 // #endregion
 
@@ -48,8 +47,7 @@ function hasMetafieldsSupport(model: any): model is typeof AbstractModelRestWith
 export abstract class AbstractSyncedRestResources<
   T extends AbstractModelRest<any> | AbstractModelRestWithRestMetafields<any>
 > extends AbstractSyncedResources<T> {
-  protected static defaultLimit = REST_DEFAULT_LIMIT;
-  protected readonly client: Pick<IRestClient, 'list'>;
+  protected readonly client: Pick<IRestClient, 'list' | 'defaultLimit'>;
   protected readonly prevContinuation: SyncTableRestContinuation;
   protected continuation: SyncTableRestContinuation;
 
@@ -60,9 +58,8 @@ export abstract class AbstractSyncedRestResources<
     this.supportMetafields = hasMetafieldsSupport(this.model);
   }
 
-  public async init() {
-    await super.init();
-    this.currentLimit = this.shouldSyncMetafields ? 30 : this.asStatic().defaultLimit;
+  protected get currentLimit() {
+    return this.shouldSyncMetafields ? 30 : this.client.defaultLimit;
   }
 
   protected get skipNextSync(): boolean {

@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CancelOrderArgs, OrderClient } from '../../Clients/RestApiClientBase';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { TypeFromCodaSchemaProps } from '../../Resources/types/Resource.types';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
@@ -26,6 +25,7 @@ import {
   BaseModelDataRestWithGraphQlMetafields,
 } from './AbstractModelRestWithMetafields';
 import { CustomerApiData } from './CustomerModel';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { OrderLineItemApiData } from './OrderLineItemModel';
 
 // #endregion

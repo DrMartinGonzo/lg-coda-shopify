@@ -3,18 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { InventoryItemClient } from '../../Clients/GraphQlApiClientBase';
-import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
-import { Identity, PACK_IDENTITIES } from '../../constants';
-import { fileFieldsFragment, mediaImageFieldsFragment, videoFieldsFragment } from '../../graphql/files-graphql';
-import { InventoryItemRow } from '../../schemas/CodaRows.types';
-import { getThumbnailUrlFromFullUrl, isNullishOrEmpty } from '../../utils/helpers';
-import { ModelWithDeletedFlag } from '../AbstractModel';
-import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { inventoryItemFieldsFragment } from '../../graphql/inventoryItems-graphql';
 import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
-import { CountryCode } from '../../types/admin.types';
+import { Identity, PACK_IDENTITIES } from '../../constants';
+import { inventoryItemFieldsFragment } from '../../graphql/inventoryItems-graphql';
+import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
+import { CountryCode } from '../../types/admin.types';
+import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
+import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
 

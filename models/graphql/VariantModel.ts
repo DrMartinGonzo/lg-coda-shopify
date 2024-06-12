@@ -3,20 +3,20 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { VariantClient } from '../../Clients/GraphQlApiClientBase';
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
+import { productVariantFieldsFragment } from '../../graphql/productVariants-graphql';
+import { ProductVariantRow } from '../../schemas/CodaRows.types';
+import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { getUnitMap, unitToShortName, weightUnitsMap } from '../../utils/helpers';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,
   GraphQlApiDataWithMetafields,
 } from './AbstractModelGraphQlWithMetafields';
-import { productVariantFieldsFragment } from '../../graphql/productVariants-graphql';
-import { ProductVariantRow } from '../../schemas/CodaRows.types';
-import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 
 // #endregion
 

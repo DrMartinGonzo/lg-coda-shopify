@@ -2,7 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, OPTIONS_COUNTRY_NAMES, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 import {
   addressAddress1,
   addressAddress2,
@@ -14,6 +13,7 @@ import {
   addressProvinceProp,
   addressZipProp,
 } from '../basic/AddressSchema';
+import { LocalPickupSettingsSchema } from '../basic/LocalPickupSettingsSchema';
 
 export const LocationSyncTableSchema = coda.makeObjectSchema({
   properties: {

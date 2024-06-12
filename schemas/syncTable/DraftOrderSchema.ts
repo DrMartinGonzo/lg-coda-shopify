@@ -2,15 +2,15 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
+import { orderLineItemTaxLinesProp } from '../basic/OrderLineItemSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { customerTaxExemptProp, customerTaxExemptionsProp } from './CustomerSchema';
 import {
   OrderReference,
-  orderCurrentPriceDescription,
   orderBillingAddressProp,
   orderCurrencyProp,
+  orderCurrentPriceDescription,
   orderCustomerProp,
   orderEmailProp,
   orderLineItemsProp,
@@ -21,7 +21,6 @@ import {
   orderTagsProp,
   orderTaxesIncludedProp,
 } from './OrderSchema';
-import { orderLineItemTaxLinesProp } from '../basic/OrderLineItemSchema';
 
 export const DraftOrderSyncTableSchema = coda.makeObjectSchema({
   properties: {

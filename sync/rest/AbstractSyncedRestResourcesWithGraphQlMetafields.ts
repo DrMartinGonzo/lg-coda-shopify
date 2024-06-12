@@ -11,8 +11,8 @@ import {
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { AbstractModel } from '../../models/AbstractModel';
-import { AbstractModelRestWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
+import { AbstractModelRestWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { Stringified } from '../../types/utilities';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
 import { ModelType, SyncTableExtraContinuationData, SyncedResourcesSyncResult } from '../AbstractSyncedResources';
@@ -56,8 +56,6 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
 
   private getDeferWaitTime() {
     const { currentlyAvailable, maximumAvailable } = this.throttleStatus;
-    console.log('maximumAvailable', maximumAvailable);
-    console.log('currentlyAvailable', currentlyAvailable);
 
     let deferByMs = 0;
 
@@ -72,20 +70,19 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
     return deferByMs;
   }
 
-  private getMaxLimit() {
-    if (this.hasLock) {
+  protected get currentLimit() {
+    let limit = this.client.defaultLimit;
+    if (this.hasLock && this.shouldSyncMetafields) {
       const { lastCost, lastLimit } = this;
       if (!lastLimit || !lastCost) {
         console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
-        return this.asStatic().defaultLimit;
       }
       const costOneEntry = lastCost.requestedQueryCost / lastLimit;
       const maxCost = Math.min(GRAPHQL_BUDGET__MAX, this.throttleStatus.currentlyAvailable);
       const maxLimit = Math.floor(maxCost / costOneEntry);
-      return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
+      limit = Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
     }
-
-    return this.asStatic().defaultLimit;
+    return limit;
   }
 
   private get hasLock(): boolean {
@@ -119,7 +116,6 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
      */
     if (this.shouldSyncMetafields) {
       this.throttleStatus = await GraphQlApiClientBase.createInstance(this.context).checkThrottleStatus();
-      this.currentLimit = this.getMaxLimit();
       const deferByMs = this.getDeferWaitTime();
       if (deferByMs > 0) {
         logAdmin(

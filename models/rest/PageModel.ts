@@ -3,18 +3,17 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { PageClient } from '../../Clients/RestApiClientBase';
-import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { safeToString } from '../../utils/helpers';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
-import { safeToString } from '../../utils/helpers';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 

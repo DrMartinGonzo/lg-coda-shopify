@@ -2,19 +2,17 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 import { AddressSchema } from '../basic/AddressSchema';
 import { CompanySchema } from '../basic/CompanySchema';
 import { DiscountApplicationSchema } from '../basic/DiscountApplicationSchema';
 import { DiscountCodeSchema } from '../basic/DiscountCodeSchema';
 import { FulfillmentSchema } from '../basic/FulfillmentSchema';
 import { NameValueSchema } from '../basic/NameValueSchema';
-import { OrderLineItemSchema } from '../basic/OrderLineItemSchema';
+import { OrderLineItemSchema, orderLineItemTaxLinesProp } from '../basic/OrderLineItemSchema';
 import { PaymentTermsSchema } from '../basic/PaymentTermsSchema';
 import { RefundSchema } from '../basic/RefundSchema';
 import { ShippingLineSchema } from '../basic/ShippingLineSchema';
 import { CustomerReference } from './CustomerSchema';
-import { orderLineItemTaxLinesProp } from '../basic/OrderLineItemSchema';
 
 // #region helpers
 export function orderCurrentPriceDescription(name: string) {

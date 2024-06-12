@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CompleteDraftOrderArgs, DraftOrderClient, SendDraftOrderInvoiceArgs } from '../../Clients/RestApiClientBase';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
@@ -16,6 +15,7 @@ import {
   BaseModelDataRestWithGraphQlMetafields,
 } from './AbstractModelRestWithMetafields';
 import { CustomerApiData } from './CustomerModel';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { OrderLineItemApiData } from './OrderLineItemModel';
 import { ShippingLine } from './OrderModel';
 

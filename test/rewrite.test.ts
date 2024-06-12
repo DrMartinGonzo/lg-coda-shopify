@@ -4,6 +4,7 @@ import { pack } from '../pack';
 
 import { describe, expect, test } from 'vitest';
 import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 // #endregion
 const defaultExecuteOptions = {

@@ -3,13 +3,13 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { LocationClient } from '../../Clients/GraphQlApiClientBase';
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { locationFragment } from '../../graphql/locations-graphql';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { BaseApiDataGraphQl } from './AbstractModelGraphQl';
 import {
   AbstractModelGraphQlWithMetafields,

@@ -5,13 +5,13 @@ import { ArticleClient } from '../../Clients/RestApiClientBase';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { ArticleModel } from '../../models/rest/ArticleModel';
+import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { SyncedArticles } from '../../sync/rest/SyncedArticles';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { assertAllowedValue, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
-import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 
 // #endregion
 

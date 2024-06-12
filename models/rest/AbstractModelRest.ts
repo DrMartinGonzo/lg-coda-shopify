@@ -5,7 +5,7 @@ import { IRestClient, RestRequestReturn } from '../../Clients/RestApiClientBase'
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { AbstractModel, BaseModelData, Serialized } from '../AbstractModel';
+import { AbstractModel, BaseModelData } from '../AbstractModel';
 
 // #endregion
 

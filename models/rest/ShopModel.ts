@@ -1,8 +1,6 @@
 // #region Imports
 
 import { ShopClient } from '../../Clients/RestApiClientBase';
-import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
@@ -10,10 +8,9 @@ import { MetafieldOwnerType } from '../../types/admin.types';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
-  AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithGraphQlMetafields,
-  BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 

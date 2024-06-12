@@ -10,7 +10,6 @@ import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
-import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 import { AbstractSyncedRestResourcesWithGraphQlMetafields } from './AbstractSyncedRestResourcesWithGraphQlMetafields';
 
 // #endregion

@@ -3,7 +3,6 @@ import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { getUnitMap } from '../../utils/helpers';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
 import { ProductReference } from './ProductSchema';
 
 const titleProp = PROPS.makeTitleProp('product variant');

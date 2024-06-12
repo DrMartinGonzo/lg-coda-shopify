@@ -6,9 +6,9 @@ import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
+import { safeToString } from '../../utils/helpers';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 import { BaseModelDataRestWithRestMetafields } from './AbstractModelRestWithMetafields';
-import { safeToString } from '../../utils/helpers';
 
 // #endregion
 

@@ -2,10 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
+import { Identity } from '../constants';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { isDefinedEmpty } from '../utils/helpers';
-import { Identity } from '../constants';
-import { BaseApiDataRest } from './rest/AbstractModelRest';
 
 // #endregion
 

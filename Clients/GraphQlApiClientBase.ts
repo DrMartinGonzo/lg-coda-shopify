@@ -103,10 +103,10 @@ import {
   ShopifyGraphQlUserError,
   ShopifyThrottledErrorCode,
 } from '../Errors/GraphQlErrors';
-import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PREFIX_FAKE } from '../constants';
+import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import {
   LocalizableContentType,
   MetafieldDefinitionValidationStatus,
@@ -136,6 +136,8 @@ import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-uti
 
 // #region Types
 export interface IGraphQlCRUD {
+  defaultLimit: number;
+
   single(params: any): Promise<GraphQlRequestReturn<any>>;
   list(params: any): Promise<GraphQlRequestReturn<any[]>>;
   create(modelData: BaseModelDataGraphQl): Promise<GraphQlRequestReturn<any>>;
@@ -293,6 +295,10 @@ export class GraphQlApiClientBase {
    *===================================================================================================================== */
   get apiUrl() {
     return `${this.context.endpoint}/admin/api/${this.apiVersion}/graphql.json`;
+  }
+
+  get defaultLimit() {
+    return (this.constructor as typeof GraphQlApiClientBase).defaultLimit;
   }
 
   private getFetchRequest<NodeT extends TadaDocumentNode>(
@@ -1762,6 +1768,236 @@ export class TranslatableContentClient extends GraphQlApiClientBase implements I
         transformBodyResponse: makeTransformMultipleTranslatableContentsResponse(resourceType),
       })
     );
+  }
+}
+// #endregion
+
+// #region VariantClient
+interface SingleVariantResponse {
+  productVariant: VariantApidata;
+}
+interface MultipleVariantsResponse {
+  productVariants: { nodes: VariantApidata[] };
+}
+interface VariantCreateResponse {
+  productVariantCreate: {
+    productVariant: VariantApidata;
+  };
+}
+interface VariantUpdateResponse {
+  productVariantUpdate: {
+    productVariant: VariantApidata;
+  };
+}
+
+export interface VariantFieldsArgs {
+  image?: boolean;
+  inventoryItem?: boolean;
+  metafields?: boolean;
+  options?: boolean;
+  product?: boolean;
+  weight?: boolean;
+}
+interface SingleVariantArgs extends BaseFindArgs {
+  id: string;
+  fields?: VariantFieldsArgs;
+}
+export interface ListVariantsArgs extends BaseListArgs, ProductVariantFilters {
+  limit?: number;
+  fields?: VariantFieldsArgs;
+  metafieldKeys?: string[];
+}
+
+export class VariantClient extends GraphQlApiClientBase implements IGraphQlCRUD {
+  async single({ id, fields = {}, forceAllFields, options }: SingleVariantArgs) {
+    const documentNode = getSingleProductVariantQuery;
+    const variables = {
+      id,
+      // TODO: retrieve metafields ?
+      includeMetafields: forceAllFields ?? fields?.metafields ?? false,
+      countMetafields: 0,
+      metafieldKeys: [],
+      includeInventoryItem: forceAllFields ?? fields?.inventoryItem ?? true,
+      includeProduct: forceAllFields ?? fields?.product ?? true,
+      includeImage: forceAllFields ?? fields?.image ?? true,
+      includeOptions: forceAllFields ?? fields?.options ?? true,
+      includeWeight: forceAllFields ?? fields?.weight ?? true,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: SingleVariantResponse) => response?.productVariant,
+      })
+    );
+  }
+
+  async list({
+    fields = {},
+    forceAllFields,
+    metafieldKeys = [],
+    created_at_max,
+    created_at_min,
+    inventory_quantity_max,
+    inventory_quantity_min,
+    product_ids,
+    product_publication_status,
+    product_status,
+    product_types,
+    search,
+    skus,
+    updated_at_max,
+    updated_at_min,
+    vendors,
+
+    cursor,
+    limit,
+    options,
+  }: ListVariantsArgs) {
+    const queryFilters: ProductVariantFilters = {
+      created_at_min,
+      created_at_max,
+      updated_at_min,
+      updated_at_max,
+      inventory_quantity_max,
+      inventory_quantity_min,
+      product_ids,
+      product_publication_status,
+      product_status,
+      product_types,
+      skus,
+      vendors,
+      // optionsFilter,
+    };
+    // Remove any undefined filters
+    Object.keys(queryFilters).forEach((key) => {
+      if (isNullish(queryFilters[key])) delete queryFilters[key];
+    });
+    const searchQuery = buildProductVariantsSearchQuery(queryFilters);
+    const documentNode = getProductVariantsQuery;
+    const variables = {
+      limit: limit ?? VariantClient.defaultLimit,
+      cursor,
+      searchQuery,
+      includeImage: forceAllFields ?? fields?.image ?? false,
+      includeInventoryItem: forceAllFields ?? fields?.inventoryItem ?? false,
+      includeMetafields: forceAllFields ?? fields?.metafields ?? false,
+      includeOptions: forceAllFields ?? fields?.options ?? false,
+      includeProduct: forceAllFields ?? fields?.product ?? false,
+      includeWeight: forceAllFields ?? fields?.weight ?? false,
+      countMetafields: metafieldKeys.length,
+      metafieldKeys,
+    } as VariablesOf<typeof getProductVariantsQuery>;
+    return this.request<VariantApidata[]>(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleVariantsResponse) => response?.productVariants.nodes,
+      })
+    );
+  }
+  async create(modelData: VariantModelData) {
+    const input = this.formatCreateInput(modelData);
+    if (input) {
+      const documentNode = createProductVariantMutation;
+      const variables = {
+        input: input ?? {},
+        includeImage: true,
+        includeInventoryItem: true,
+        includeMetafields: true,
+        includeOptions: true,
+        includeProduct: true,
+        includeWeight: true,
+        countMetafields: 0,
+        metafieldKeys: [],
+      } as VariablesOf<typeof createProductVariantMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: VariantCreateResponse) => response?.productVariantCreate.productVariant,
+      });
+    }
+  }
+  async update(modelData: VariantModelData) {
+    const input = this.formatUpdateInput(modelData);
+    if (input) {
+      const documentNode = updateProductVariantMutation;
+      const variables = {
+        input: input ?? {},
+        includeImage: true,
+        includeInventoryItem: true,
+        includeMetafields: true,
+        includeOptions: true,
+        includeProduct: true,
+        includeWeight: true,
+        countMetafields: 0,
+        metafieldKeys: [],
+      } as VariablesOf<typeof updateProductVariantMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: VariantUpdateResponse) => response?.productVariantUpdate.productVariant,
+      });
+    }
+  }
+
+  async delete(data: Pick<VariantModelData, 'id'>) {
+    return this.request({
+      documentNode: deleteProductVariantMutation,
+      variables: { id: data.id } as VariablesOf<typeof deleteProductVariantMutation>,
+    });
+  }
+  private formatBaseInput(modelData: VariantModelData): ProductVariantInput | undefined {
+    let input: ProductVariantInput = {
+      barcode: modelData.barcode,
+      compareAtPrice: modelData.compareAtPrice,
+      inventoryPolicy: modelData.inventoryPolicy as any,
+      position: modelData.position,
+      price: modelData.price,
+      sku: modelData.sku,
+      taxable: modelData.taxable,
+      taxCode: modelData.taxCode,
+    };
+    if (modelData.selectedOptions && modelData.selectedOptions.length) {
+      input.options = modelData.selectedOptions.map((option) => option.value);
+    }
+    if (modelData.inventoryItem?.measurement) {
+      input.inventoryItem = {
+        measurement: modelData.inventoryItem?.measurement as ProductVariantInput['inventoryItem']['measurement'],
+      };
+    }
+
+    const filteredInput = excludeUndefinedObjectKeys(input);
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+  private formatCreateInput(modelData: VariantModelData): ProductVariantInput | undefined {
+    const input = {
+      ...(this.formatBaseInput(modelData) ?? {}),
+      productId: modelData.product?.id,
+      metafields: modelData.metafields.length
+        ? modelData.metafields.map((metafield) => {
+            const { key, namespace, type, value } = metafield.data;
+            return { key, namespace, type, value };
+          })
+        : undefined,
+    };
+    const filteredInput = excludeUndefinedObjectKeys(input);
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+
+  private formatUpdateInput(modelData: VariantModelData): ProductVariantInput | undefined {
+    const input = {
+      ...(this.formatBaseInput(modelData) ?? {}),
+      id: modelData.id,
+    };
+    const filteredInput = excludeUndefinedObjectKeys(input);
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 }
 // #endregion

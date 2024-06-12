@@ -1,23 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import striptags from 'striptags';
 
-import { AdjustInventoryLevelArgs, InventoryLevelClient, SetInventoryLevelArgs } from '../../Clients/RestApiClientBase';
-import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { InventoryLevelClient } from '../../Clients/RestApiClientBase';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
-import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
-import {
-  AbstractModelRestWithRestMetafields,
-  BaseModelDataRestWithRestMetafields,
-} from './AbstractModelRestWithMetafields';
-import { safeToString } from '../../utils/helpers';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
+import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 
 // #endregion
 

@@ -1,11 +1,10 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
-import { OrderReference } from './OrderSchema';
-import { NOT_FOUND } from '../../constants';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { FormatRowReferenceFn } from '../CodaRows.types';
 import { OrderTransactionSchema } from '../basic/OrderTransactionSchema';
 import { PaymentDetailsSchema } from '../basic/PaymentDetailsSchema';
-import { PACK_IDENTITIES } from '../../constants';
-import { FormatRowReferenceFn } from '../CodaRows.types';
+import { OrderReference } from './OrderSchema';
 
 export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   properties: {

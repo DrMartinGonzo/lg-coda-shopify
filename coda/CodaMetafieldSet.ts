@@ -1,14 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CodaMetafieldValue } from './CodaMetafieldValue';
 import { InvalidValueVisibleError } from '../Errors/Errors';
+import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
 import { Metafield } from '../Resources/Rest/Metafield';
 import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
-import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
-import { splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
+import { splitMetaFieldFullKey } from '../utils/metafields-utils';
+import { CodaMetafieldValue } from './CodaMetafieldValue';
 
 // #endregion
 

@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
-import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import {
   SupportedMetafieldSyncTable,
   getAllSupportedMetafieldSyncTables,
@@ -10,6 +9,7 @@ import {
 import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
+import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { SyncedMetafieldDefinitions } from '../../sync/graphql/SyncedMetafieldDefinitions';
 import { idToGraphQlGid } from '../../utils/conversion-utils';

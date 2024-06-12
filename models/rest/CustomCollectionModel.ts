@@ -2,19 +2,18 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomCollectionClient } from '../../Clients/RestApiClientBase';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { CollectionModelData, collectionModelToCodaRow } from '../../utils/collections-utils';
+import { safeToString } from '../../utils/helpers';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
   BaseModelDataRestWithGraphQlMetafields,
 } from './AbstractModelRestWithMetafields';
-import { CollectionModelData } from '../../utils/collections-utils';
-import { collectionModelToCodaRow } from '../../utils/collections-utils';
-import { safeToString } from '../../utils/helpers';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 

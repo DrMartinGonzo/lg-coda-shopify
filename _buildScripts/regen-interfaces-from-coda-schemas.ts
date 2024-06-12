@@ -23,9 +23,9 @@ import { ProductSyncTableSchema } from '../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
-import { arrayUnique } from '../utils/helpers';
-import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
 import { TranslatableContentSyncTableSchema } from '../schemas/syncTable/TranslatableContentSchema';
+import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
+import { arrayUnique } from '../utils/helpers';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';

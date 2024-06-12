@@ -1,6 +1,5 @@
 // #region Imports
 import { graphql } from '../utils/tada-utils';
-import { metafieldFieldsFragment } from './metafields-graphql';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #endregion

@@ -3,22 +3,15 @@ import * as coda from '@codahq/packs-sdk';
 
 import { InvalidValueVisibleError } from '../Errors/Errors';
 import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
-import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { MetafieldApiData, MetafieldModel } from '../models/rest/MetafieldModel';
-import { arrayUnique } from '../utils/helpers';
 import {
-  matchOwnerResourceToMetafieldOwnerType,
-  matchOwnerTypeToOwnerResource,
-  matchOwnerTypeToResourceName,
-  splitMetaFieldFullKey,
-} from '../utils/metafields-utils';
-import { CodaMetafieldValue } from './CodaMetafieldValue';
-import {
-  MetafieldGraphQlModel,
   MetafieldApiData as MetafieldGraphQlApiData,
+  MetafieldGraphQlModel,
+  SupportedMetafieldOwnerType,
 } from '../models/graphql/MetafieldGraphQlModel';
-import { idToGraphQlGid } from '../utils/conversion-utils';
-import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
+import { MetafieldApiData, MetafieldModel, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
+import { arrayUnique } from '../utils/helpers';
+import { splitMetaFieldFullKey } from '../utils/metafields-utils';
+import { CodaMetafieldValue } from './CodaMetafieldValue';
 
 // #endregion
 
@@ -220,8 +213,6 @@ export class CodaMetafieldSetNew {
     ownerGid?: string;
     ownerType: SupportedMetafieldOwnerType;
   }): MetafieldGraphQlModel {
-    // const ownerType = matchOwnerResourceToMetafieldOwnerType(owner_resource);
-    const graphQlResourceName = matchOwnerTypeToResourceName(ownerType);
     return MetafieldGraphQlModel.createInstance(context, {
       namespace: this.namespace,
       key: this.key,

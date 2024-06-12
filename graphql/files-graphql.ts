@@ -1,4 +1,4 @@
-import { ResultOf, graphql } from '../utils/tada-utils';
+import { graphql } from '../utils/tada-utils';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Fragments

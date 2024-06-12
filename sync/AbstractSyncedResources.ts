@@ -88,9 +88,6 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
   protected shouldSyncMetafields: boolean;
   protected _metafieldDefinitions: MetafieldDefinitionModel[];
 
-  protected static defaultLimit: number;
-  protected currentLimit: number;
-
   protected readonly prevContinuation: SyncTableContinuation;
   protected continuation: SyncTableContinuation;
   protected pendingExtraContinuationData: any;
@@ -170,8 +167,6 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
 
     this.prevContinuation = context.sync.continuation as SyncTableContinuation;
     this.continuation = null;
-
-    this.currentLimit = this.asStatic().defaultLimit;
   }
 
   /**
@@ -207,6 +202,10 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
 
   protected get syncedStandardFields(): string[] {
     return handleFieldDependencies(this.effectiveStandardFromKeys, this.asStatic().schemaDependencies);
+  }
+
+  protected get currentLimit(): number {
+    return;
   }
 
   protected abstract getListParams(): any;

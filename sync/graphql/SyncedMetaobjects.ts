@@ -6,28 +6,26 @@ import { readFragment, readFragmentArray } from '../../utils/tada-utils';
 
 import {
   ListMetaobjectsArgs,
-  MetaobjectClient,
   MetaobjectDefinitionClient,
   MetaobjectFieldsArgs,
 } from '../../Clients/GraphQlApiClientBase';
+import { ShopClient } from '../../Clients/RestApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
+import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
 import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED, OPTIONS_METAOBJECT_STATUS, optionValues } from '../../constants';
 import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
-import { MetafieldDefinitionApiData } from '../../models/graphql/MetafieldDefinitionModel';
+import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefinitionModel';
 import { MetaobjectFieldApiData, MetaobjectModel } from '../../models/graphql/MetaobjectModel';
+import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
+import { CurrencyCode } from '../../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
-import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
-import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefinitionModel';
-import { CurrencyCode } from '../../types/admin.types';
-import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
-import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
-import { ShopClient } from '../../Clients/RestApiClientBase';
 import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
-import { MetaobjectRow } from '../../schemas/CodaRows.types';
+import { requireMatchingMetaobjectFieldDefinition } from '../../utils/metaobjects-utils';
+import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
 
 // #endregion
 

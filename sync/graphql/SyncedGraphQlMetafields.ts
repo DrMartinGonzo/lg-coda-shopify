@@ -1,17 +1,15 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
-import { CACHE_DISABLED } from '../../constants';
+import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
-import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 
 // #endregion
 

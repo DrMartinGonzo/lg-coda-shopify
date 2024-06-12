@@ -1,6 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
-import { OrderLineItemSchema } from './OrderLineItemSchema';
 import {
   addressAddress1,
   addressAddress2,
@@ -9,6 +8,7 @@ import {
   addressProvinceCodeProp,
   addressZipProp,
 } from './AddressSchema';
+import { OrderLineItemSchema } from './OrderLineItemSchema';
 
 export const FulfillmentSchema = coda.makeObjectSchema({
   properties: {

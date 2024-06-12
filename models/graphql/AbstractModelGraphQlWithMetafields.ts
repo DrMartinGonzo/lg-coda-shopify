@@ -1,15 +1,14 @@
 // #region Imports
 import { ResultOf } from '../../utils/tada-utils';
 
-import { AbstractModelGraphQl, BaseModelDataGraphQl, BaseApiDataGraphQl } from './AbstractModelGraphQl';
+import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 import { MetafieldApiData, MetafieldGraphQlModel } from './MetafieldGraphQlModel';
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 
 // #endregion
 

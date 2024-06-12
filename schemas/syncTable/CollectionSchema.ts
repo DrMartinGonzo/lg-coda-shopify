@@ -2,8 +2,6 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-import { FieldDependency } from '../Schema.types';
-import { CollectionRuleSetSchema } from '../basic/CollectionRuleSetSchema';
 import { SmartCollectionRuleSchema } from '../basic/SmartCollectionRuleSchema';
 
 export const CollectionSyncTableSchema = coda.makeObjectSchema({

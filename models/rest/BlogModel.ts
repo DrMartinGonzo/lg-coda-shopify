@@ -1,21 +1,18 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import striptags from 'striptags';
 
 import { BlogClient } from '../../Clients/RestApiClientBase';
-import { IMetafield } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
-import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
+import { safeToString } from '../../utils/helpers';
+import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
-import { safeToString } from '../../utils/helpers';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 

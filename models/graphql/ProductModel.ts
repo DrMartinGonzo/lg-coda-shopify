@@ -4,7 +4,6 @@ import striptags from 'striptags';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { ProductClient } from '../../Clients/GraphQlApiClientBase';
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import { Identity, PACK_IDENTITIES } from '../../constants';
@@ -13,6 +12,7 @@ import { ProductRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { safeToString, splitAndTrimValues } from '../../utils/helpers';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,

@@ -4,7 +4,6 @@ import { ListCustomCollectionsArgs } from '../../Clients/RestApiClientBase';
 import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
 import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
-import { AbstractModelRestWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { CustomCollectionModel } from '../../models/rest/CustomCollectionModel';
 import { SmartCollectionModel } from '../../models/rest/SmartCollectionModel';
 import { FieldDependency } from '../../schemas/Schema.types';

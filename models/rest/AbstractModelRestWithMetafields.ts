@@ -2,14 +2,14 @@
 
 import { MetafieldGraphQlModel } from '../graphql/MetafieldGraphQlModel';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
-import { MetafieldApiData, MetafieldModel } from './MetafieldModel';
+import { MetafieldModel } from './MetafieldModel';
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 
-import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
 // #endregion
 

@@ -1,6 +1,6 @@
 import { graphql } from '../utils/tada-utils';
-import { pageInfoFragment } from './sharedFragments-graphql';
 import { metaobjectDefinitionFragment } from './metaobjectDefinition-graphql';
+import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Fragments
 export const metaobjectFragment = graphql(

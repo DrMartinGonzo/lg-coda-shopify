@@ -5,7 +5,6 @@ import { VariablesOf } from './tada-utils';
 
 import { FetchRequestOptions } from '../Clients/Client.types';
 import { GraphQlClient } from '../Clients/GraphQlClient';
-import { IMetafield } from '../Resources/Mixed/MetafieldHelper';
 import { RestResourcesSingular } from '../Resources/types/SupportedResource';
 import { CACHE_MAX } from '../constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';

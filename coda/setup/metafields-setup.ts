@@ -6,7 +6,6 @@ import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '.
 import { ArticleClient, BlogClient, MetafieldClient, PageClient } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
 import { MetafieldGraphQl } from '../../Resources/GraphQl/MetafieldGraphQl';
-import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
 import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
 import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
@@ -17,7 +16,7 @@ import {
   GraphQlResourceNames,
 } from '../../Resources/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
-import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
+import { MetafieldGraphQlModel, SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { ArticleModel } from '../../models/rest/ArticleModel';
 import { BlogModel } from '../../models/rest/BlogModel';

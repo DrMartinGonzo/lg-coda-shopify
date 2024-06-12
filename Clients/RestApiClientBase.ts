@@ -20,16 +20,16 @@ import { RedirectApiData } from '../models/rest/RedirectModel';
 import { SmartCollectionApiData } from '../models/rest/SmartCollectionModel';
 import { ThemeApiData } from '../models/rest/ThemeModel';
 
-import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { RestResourcesSingular, singularToPlural } from '../Resources/types/SupportedResource';
 import { DEFAULT_CURRENCY_CODE, REST_DEFAULT_API_VERSION } from '../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, NOT_IMPLEMENTED, REST_DEFAULT_LIMIT } from '../constants';
+import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { ShopApiData } from '../models/rest/ShopModel';
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
+import { CurrencyCode } from '../types/admin.types';
 import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
-import { CurrencyCode } from '../types/admin.types';
 
 // #endregion
 
@@ -225,6 +225,8 @@ class RestFetcher {
 
 // #region AbstractRestClient
 export interface IRestClient {
+  defaultLimit: number;
+
   single(params: any): Promise<RestRequestReturn<any>>;
   list(params: any): Promise<RestRequestReturn<any[]>>;
   create(modelData: any): Promise<RestRequestReturn<any>>;
@@ -241,6 +243,7 @@ abstract class AbstractRestClient<
   protected singular: string;
   protected plural: string;
   protected readonly fetcher: RestFetcher;
+  protected static readonly defaultLimit = REST_DEFAULT_LIMIT;
 
   public static createInstance<T extends AbstractRestClient<any, any, any>>(
     this: new (...args: any[]) => T,
@@ -271,6 +274,10 @@ abstract class AbstractRestClient<
     return body[this.plural];
   }
 
+  get defaultLimit() {
+    return (this.constructor as typeof AbstractRestClient).defaultLimit;
+  }
+
   async single({ id, fields = null, options }: SingleArgs) {
     return this.fetcher.get<ApiData>({
       path: `${this.plural}/${id}.json`,
@@ -281,10 +288,10 @@ abstract class AbstractRestClient<
     });
   }
 
-  async list({ options, ...otherArgs }: ListArgs) {
+  async list({ limit, options, ...otherArgs }: ListArgs) {
     return this.fetcher.get<ApiData[]>({
       path: `${this.plural}.json`,
-      query: { ...otherArgs },
+      query: { limit: limit ?? this.defaultLimit, ...otherArgs },
       options,
       name: `list ${this.plural}`,
       transformResponseBody: this.transformResponseBodyList.bind(this),
@@ -304,7 +311,7 @@ abstract class AbstractRestClient<
     while (true) {
       /** See comment in {@link AbstractSyncedRestResources.getListParams} */
       params = {
-        limit: limit ?? REST_DEFAULT_LIMIT,
+        limit,
         ...('page_info' in nextPageQuery ? nextPageQuery : otherArgs),
       };
       response = await this.list({

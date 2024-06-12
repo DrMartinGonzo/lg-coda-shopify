@@ -1,5 +1,5 @@
-import * as PROPS from '../../coda/coda-properties';
 import * as coda from '@codahq/packs-sdk';
+import * as PROPS from '../../coda/coda-properties';
 
 export const addressAddress1 = {
   ...PROPS.STRING,

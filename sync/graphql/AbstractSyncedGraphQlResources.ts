@@ -37,7 +37,7 @@ export interface SyncTableGraphQlContinuation extends SyncTableContinuation {
 }
 
 interface ISyncedGraphQlResourcesConstructorArgs<T> extends ISyncedResourcesConstructorArgs<T> {
-  client: IGraphQlCRUD;
+  client: Pick<IGraphQlCRUD, 'list' | 'defaultLimit'>;
 }
 // #endregion
 
@@ -52,9 +52,7 @@ function hasMetafieldsSupport(model: any): model is typeof AbstractModelGraphQlW
 export abstract class AbstractSyncedGraphQlResources<
   T extends AbstractModelGraphQl<any> | AbstractModelGraphQlWithMetafields<any>
 > extends AbstractSyncedResources<T> {
-  protected static defaultLimit = GRAPHQL_NODES_LIMIT;
-
-  protected readonly client: IGraphQlCRUD;
+  protected readonly client: Pick<IGraphQlCRUD, 'list' | 'defaultLimit'>;
 
   protected readonly prevContinuation: SyncTableGraphQlContinuation;
   protected continuation: SyncTableGraphQlContinuation;
@@ -96,20 +94,19 @@ export abstract class AbstractSyncedGraphQlResources<
     return deferByMs;
   }
 
-  private getMaxLimit() {
+  protected get currentLimit() {
+    let limit = this.client.defaultLimit;
     if (this.hasLock) {
       const { lastCost, lastLimit } = this;
       if (!lastLimit || !lastCost) {
         console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
-        return this.asStatic().defaultLimit;
       }
       const costOneEntry = lastCost.requestedQueryCost / lastLimit;
       const maxCost = Math.min(GRAPHQL_BUDGET__MAX, this.throttleStatus.currentlyAvailable);
       const maxLimit = Math.floor(maxCost / costOneEntry);
-      return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
+      limit = Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
     }
-
-    return this.asStatic().defaultLimit;
+    return limit;
   }
 
   private get cursor(): string | undefined {
@@ -153,8 +150,6 @@ export abstract class AbstractSyncedGraphQlResources<
     await this.init();
 
     this.throttleStatus = await GraphQlApiClientBase.createInstance(this.context).checkThrottleStatus();
-    this.currentLimit = this.getMaxLimit();
-
     const deferByMs = this.getDeferWaitTime();
     if (deferByMs > 0) {
       logAdmin(
