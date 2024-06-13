@@ -11,13 +11,13 @@ import {
   MetafieldType,
   MoneyField,
   RatingField,
-} from '../Resources/Mixed/METAFIELD_TYPES';
+} from '../models/types/METAFIELD_TYPES';
 import {
   GraphQlResourceName,
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesSingular,
-} from '../Resources/types/SupportedResource';
+} from '../models/types/SupportedResource';
 import { DEFAULT_CURRENCY_CODE } from '../config';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';

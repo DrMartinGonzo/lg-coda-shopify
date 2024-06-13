@@ -1,5 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
+import { CACHE_DEFAULT, CACHE_MAX } from '../../constants';
+import { FetchRequestOptions } from '../Client.types';
 
 // #endregion
 
@@ -32,4 +34,24 @@ export async function wait(ms: number) {
   return new Promise((resolve) => {
     setTimeout(() => resolve('Rate limit wait'), ms);
   });
+}
+
+export function withCacheDefault<T>({ options, ...args }: { options: FetchRequestOptions } & T) {
+  return {
+    options: {
+      ...options,
+      cacheTtlSecs: options?.cacheTtlSecs ?? CACHE_DEFAULT,
+    },
+    ...args,
+  } as T;
+}
+
+export function withCacheMax<T>({ options, ...args }: { options: FetchRequestOptions } & T) {
+  return {
+    options: {
+      ...options,
+      cacheTtlSecs: options?.cacheTtlSecs ?? CACHE_MAX,
+    },
+    ...args,
+  } as T;
 }

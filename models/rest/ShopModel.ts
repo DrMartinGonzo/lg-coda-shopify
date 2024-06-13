@@ -1,7 +1,7 @@
 // #region Imports
 
 import { ShopClient } from '../../Clients/RestApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -69,10 +69,10 @@ export interface ShopApiData extends BaseApiDataRest {
   zip: string | null;
 }
 
-interface ShopModelData extends ShopApiData, BaseModelDataRestWithGraphQlMetafields {}
+export interface ShopModelData extends ShopApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class ShopModel extends AbstractModelRestWithGraphQlMetafields<ShopModel> {
+export class ShopModel extends AbstractModelRestWithGraphQlMetafields {
   public data: ShopModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Shop;

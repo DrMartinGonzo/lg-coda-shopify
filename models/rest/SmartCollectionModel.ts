@@ -2,11 +2,11 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderSmartCollectionArgs, SmartCollectionClient } from '../../Clients/RestApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { CollectionModelData, collectionModelToCodaRow } from '../../utils/collections-utils';
+import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
 import { safeToString } from '../../utils/helpers';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
@@ -45,7 +45,7 @@ export interface SmartCollectionApiData extends BaseApiDataRest {
 export interface SmartCollectionModelData extends SmartCollectionApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class SmartCollectionModel extends AbstractModelRestWithGraphQlMetafields<SmartCollectionModel> {
+export class SmartCollectionModel extends AbstractModelRestWithGraphQlMetafields {
   public data: SmartCollectionModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collection;

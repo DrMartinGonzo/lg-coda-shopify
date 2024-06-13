@@ -1,11 +1,9 @@
 // #region Imports
+
 import * as coda from '@codahq/packs-sdk';
 
-import { FetchRequestOptions } from '../../Clients/Client.types';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { MetafieldHelper, MetafieldNormalizedData } from '../../Resources/Mixed/MetafieldHelper';
-import { GraphQlResourceNames, RestResourceSingular } from '../../Resources/types/SupportedResource';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES } from '../../constants';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
@@ -13,12 +11,15 @@ import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/Met
 import { isNullish, logAdmin } from '../../utils/helpers';
 import {
   formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
   matchOwnerResourceToMetafieldOwnerType,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
 } from '../../utils/metafields-utils';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
+import { GraphQlResourceNames, RestResourceSingular } from '../types/SupportedResource';
+import { MetafieldHelper, MetafieldNormalizedData } from '../utils/MetafieldHelper';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
 // #endregion
@@ -53,7 +54,7 @@ export interface MetafieldApiData extends BaseApiDataRest {
   definition_id: number | null;
 }
 
-interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
+export interface MetafieldModelData extends BaseModelDataRest, MetafieldApiData, ModelWithDeletedFlag {}
 
 export interface CreateMetafieldInstancesFromRowArgs {
   ownerRow: BaseRow;
@@ -63,7 +64,7 @@ export interface CreateMetafieldInstancesFromRowArgs {
 }
 // #endregion
 
-export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
+export class MetafieldModel extends AbstractModelRest {
   public data: MetafieldModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
@@ -135,23 +136,21 @@ export class MetafieldModel extends AbstractModelRest<MetafieldModel> {
   }
 
   get fullKey() {
-    return `${this.data.namespace}.${this.data.key}`;
+    return getMetaFieldFullKey(this.data);
   }
   get prefixedFullKey() {
     return preprendPrefixToMetaFieldKey(this.fullKey);
   }
 
-  protected async getFullFreshData(): Promise<MetafieldApiData | undefined> {
-    const options: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
+  protected async getFullFreshData(): Promise<MetafieldModelData | undefined> {
     if (this.data.id) {
-      const found = await this.client.single({ id: this.data.id, options });
-      return found ? found.body : undefined;
+      return super.getFullFreshData() as Promise<MetafieldModelData>;
     } else {
       const search = await this.client.listByKeys({
         metafieldKeys: [this.fullKey],
         owner_id: this.data.owner_id,
         owner_resource: this.data.owner_resource,
-        options,
+        options: { cacheTtlSecs: CACHE_DISABLED },
       });
       return search.body && search.body.length ? search.body[0] : undefined;
     }

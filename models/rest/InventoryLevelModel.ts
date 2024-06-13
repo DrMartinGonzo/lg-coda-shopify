@@ -19,10 +19,10 @@ export interface InventoryLevelApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-interface InventoryLevelModelData extends InventoryLevelApiData {}
+export interface InventoryLevelModelData extends InventoryLevelApiData {}
 // #endregion
 
-export class InventoryLevelModel extends AbstractModelRest<InventoryLevelModel> {
+export class InventoryLevelModel extends AbstractModelRest {
   public data: InventoryLevelModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryLevel;
 

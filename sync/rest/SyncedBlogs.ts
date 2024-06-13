@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListBlogsArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';
 import { BlogModel } from '../../models/rest/BlogModel';
 import { FieldDependency } from '../../schemas/Schema.types';

@@ -3,15 +3,16 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { MetaobjectClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { metaobjectFragment } from '../../graphql/metaobjects-graphql';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaobjectStatus } from '../../types/admin.types';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { isNullishOrEmpty } from '../../utils/helpers';
+import { isNullishOrEmpty, isString } from '../../utils/helpers';
 import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../../utils/metafields-utils';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
+import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
 
 // #endregion
 
@@ -22,7 +23,7 @@ export type MetaobjectFieldApiData = MetaobjectApiData['fields'][number];
 export interface MetaobjectModelData extends MetaobjectApiData, BaseModelDataGraphQl {}
 // #endregion
 
-export class MetaobjectModel extends AbstractModelGraphQl<MetaobjectModel> {
+export class MetaobjectModel extends AbstractModelGraphQl {
   public data: MetaobjectModelData;
   // TODO: rename ?
   public metaobjectFieldFromKeys: string[];
@@ -38,6 +39,7 @@ export class MetaobjectModel extends AbstractModelGraphQl<MetaobjectModel> {
     let data: Partial<MetaobjectModelData> = {
       id: idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id),
       updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      // must be set via setCustomFields
       // fields: metaobjectFields,
       type: row.type,
       handle: isNullishOrEmpty(row.handle) ? undefined : row.handle,
@@ -58,11 +60,44 @@ export class MetaobjectModel extends AbstractModelGraphQl<MetaobjectModel> {
     return instance;
   }
 
+  public static parseCustomFieldsFromVarArgs(varargs: Array<any>): MetaobjectFieldApiData[] {
+    const fields: MetaobjectFieldApiData[] = [];
+    while (varargs.length > 0) {
+      let key: string, value: string;
+      [key, value, ...varargs] = varargs;
+      /**
+       * Check if the user used one the `Meta{…}` helper formulas
+       * If not, assume the user directly input the expected value and let Shopify GraphQL handle the possible error
+       */
+      try {
+        const maybeCodaMetafieldValue = CodaMetafieldValue.createFromCodaParameter(value);
+        value = maybeCodaMetafieldValue.value;
+      } catch (error) {}
+
+      fields.push({
+        key,
+        // value should always be a string
+        value: isString(value) ? value : JSON.stringify(value),
+        /**
+         * We don't care about the type since
+         * parseMetaobjectFieldInputsFromVarArgs is only used for
+         * creating/updating and type is not needed for these mutations
+         */
+        type: undefined,
+      });
+    }
+    return fields;
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
   get client() {
     return MetaobjectClient.createInstance(this.context);
+  }
+
+  public setCustomFields(fields: MetaobjectFieldApiData[]) {
+    this.data.fields = fields;
   }
 
   public toCodaRow(): MetaobjectRow {

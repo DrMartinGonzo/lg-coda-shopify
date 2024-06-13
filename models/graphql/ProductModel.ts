@@ -4,7 +4,7 @@ import striptags from 'striptags';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { ProductClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { productFieldsFragment } from '../../graphql/products-graphql';
@@ -29,7 +29,7 @@ export interface ProductApidata
 export interface ProductModelData extends Omit<ProductApidata, 'metafields'>, BaseModelDataGraphQlWithMetafields {}
 // #endregion
 
-export class ProductModel extends AbstractModelGraphQlWithMetafields<ProductModel> {
+export class ProductModel extends AbstractModelGraphQlWithMetafields {
   public data: ProductModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Product;

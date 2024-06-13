@@ -23,10 +23,10 @@ export interface CollectApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-interface CollectModelData extends CollectApiData, BaseModelDataRestWithRestMetafields {}
+export interface CollectModelData extends CollectApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-export class CollectModel extends AbstractModelRest<CollectModel> {
+export class CollectModel extends AbstractModelRest {
   public data: CollectModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Collect;

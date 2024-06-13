@@ -7,7 +7,7 @@ import { MetafieldModel } from './MetafieldModel';
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
 
-import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceName } from '../types/SupportedResource';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 
@@ -25,7 +25,7 @@ export interface BaseModelDataRestWithGraphQlMetafields extends BaseModelDataRes
 }
 // #endregion
 
-abstract class AbstractModelRestWithMetafields<T> extends AbstractModelRest<T> {
+abstract class AbstractModelRestWithMetafields extends AbstractModelRest {
   public data: BaseModelDataRestWithMetafields;
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;
   public static readonly metafieldGraphQlOwnerType: MetafieldOwnerType;
@@ -74,7 +74,7 @@ abstract class AbstractModelRestWithMetafields<T> extends AbstractModelRest<T> {
   }
 }
 
-export abstract class AbstractModelRestWithRestMetafields<T> extends AbstractModelRestWithMetafields<T> {
+export abstract class AbstractModelRestWithRestMetafields extends AbstractModelRestWithMetafields {
   public data: BaseModelDataRestWithRestMetafields;
 
   public async syncMetafields(): Promise<void> {
@@ -87,7 +87,7 @@ export abstract class AbstractModelRestWithRestMetafields<T> extends AbstractMod
   }
 }
 
-export abstract class AbstractModelRestWithGraphQlMetafields<T> extends AbstractModelRestWithMetafields<T> {
+export abstract class AbstractModelRestWithGraphQlMetafields extends AbstractModelRestWithMetafields {
   public data: BaseModelDataRestWithGraphQlMetafields;
   protected static readonly graphQlName: GraphQlResourceName;
 

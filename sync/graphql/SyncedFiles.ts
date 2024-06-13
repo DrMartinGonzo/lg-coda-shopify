@@ -1,7 +1,7 @@
 // #region Imports
 
 import { ListFilesArgs } from '../../Clients/GraphQlApiClientBase';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Files } from '../../coda/setup/files-setup';
 import { FileModel } from '../../models/graphql/FileModel';
 import { FileRow } from '../../schemas/CodaRows.types';

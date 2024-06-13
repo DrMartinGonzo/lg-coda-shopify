@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { AssetClient, ThemeClient } from '../../Clients/RestApiClientBase';
-import { RestResourceSingular } from '../../Resources/types/SupportedResource';
+import { RestResourceSingular } from '../types/SupportedResource';
 import { CACHE_DEFAULT } from '../../constants';
 import { BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
@@ -23,7 +23,7 @@ export interface AssetApiData extends BaseApiDataRest {
   value: string | null;
 }
 
-interface AssetModelData extends BaseModelDataRest, AssetApiData {}
+export interface AssetModelData extends BaseModelDataRest, AssetApiData {}
 // #endregion
 
 export async function getTemplateSuffixesFor({

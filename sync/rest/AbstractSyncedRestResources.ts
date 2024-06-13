@@ -2,13 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../Clients/Client.types';
-import { IRestClient } from '../../Clients/RestApiClientBase';
+import { AbstractRestClient } from '../../Clients/RestApiClientBase';
 import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
-import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
-import {
-  parseContinuationProperty,
-  stringifyContinuationProperty,
-} from '../../SyncTableManager/utils/syncTableManager-utils';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
@@ -21,6 +16,11 @@ import {
   SyncTableContinuation,
   SyncedResourcesSyncResult,
 } from '../AbstractSyncedResources';
+import {
+  restResourceSupportsMetafields,
+  parseContinuationProperty,
+  stringifyContinuationProperty,
+} from '../utils/sync-utils';
 
 // #endregion
 
@@ -33,21 +33,14 @@ export interface SyncTableRestContinuation extends SyncTableContinuation {
 }
 
 export interface ISyncedRestResourcesConstructorArgs<T> extends ISyncedResourcesConstructorArgs<T> {
-  client: Pick<IRestClient, 'list' | 'defaultLimit'>;
+  client: Pick<AbstractRestClient<any, any, any, any>, 'list' | 'defaultLimit'>;
 }
 // #endregion
 
-function hasMetafieldsSupport(model: any): model is typeof AbstractModelRestWithRestMetafields {
-  return (
-    (model as typeof AbstractModelRestWithRestMetafields).metafieldRestOwnerType !== undefined &&
-    (model as typeof AbstractModelRestWithRestMetafields).metafieldGraphQlOwnerType !== undefined
-  );
-}
-
 export abstract class AbstractSyncedRestResources<
-  T extends AbstractModelRest<any> | AbstractModelRestWithRestMetafields<any>
+  T extends AbstractModelRest | AbstractModelRestWithRestMetafields
 > extends AbstractSyncedResources<T> {
-  protected readonly client: Pick<IRestClient, 'list' | 'defaultLimit'>;
+  protected readonly client: Pick<AbstractRestClient<any, any, any, any>, 'list' | 'defaultLimit'>;
   protected readonly prevContinuation: SyncTableRestContinuation;
   protected continuation: SyncTableRestContinuation;
 
@@ -55,7 +48,7 @@ export abstract class AbstractSyncedRestResources<
     super(args);
 
     this.client = client;
-    this.supportMetafields = hasMetafieldsSupport(this.model);
+    this.supportMetafields = restResourceSupportsMetafields(this.model);
   }
 
   protected get currentLimit() {
@@ -68,6 +61,14 @@ export abstract class AbstractSyncedRestResources<
   protected get nextQuery(): SearchParams {
     return this.prevContinuation?.nextQuery ? parseContinuationProperty(this.prevContinuation.nextQuery) : {};
   }
+
+  // protected get syncedStandardFields(): string[] {
+  //   if (this.shouldSyncMetafields) {
+  //     // admin_graphql_api_id is necessary for metafield sync
+  //     return arrayUnique([...super.syncedStandardFields, 'admin_graphql_api_id']);
+  //   }
+  //   return super.syncedStandardFields;
+  // }
 
   protected getListParams() {
     /**
@@ -131,7 +132,7 @@ export abstract class AbstractSyncedRestResources<
     if (this.supportMetafields && this.asStatic().hasMetafieldsInRow(row)) {
       // Warm up metafield definitions cache
       const metafieldDefinitions = await this.getMetafieldDefinitions();
-      (instance as AbstractModelRestWithRestMetafields<T>).data.metafields =
+      (instance as AbstractModelRestWithRestMetafields).data.metafields =
         await MetafieldModel.createInstancesFromOwnerRow({
           context: this.context,
           ownerRow: row,
@@ -141,7 +142,10 @@ export abstract class AbstractSyncedRestResources<
     }
     return instance;
   }
-  public async executeSyncUpdate(updates: Array<coda.SyncUpdate<string, string, any>>): Promise<SyncTableUpdateResult> {
+
+  public async executeSyncUpdate(
+    updates: Array<coda.SyncUpdate<string, string, any>>
+  ): Promise<coda.GenericSyncUpdateResult> {
     await this.init();
 
     const completed = await Promise.allSettled(
@@ -154,20 +158,23 @@ export abstract class AbstractSyncedRestResources<
         const newRow = Object.fromEntries(
           Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
         ) as BaseRow;
-        if (this.validateSyncUpdate) this.validateSyncUpdate(prevRow, newRow);
         const instance = await this.createInstanceFromRow(newRow);
 
-        try {
-          await instance.save();
-        } catch (error) {
-          if (error instanceof RequiredSyncTableMissingVisibleError) {
-            /** Try to augment with fresh data and check again if it passes validation */
-            await instance.addMissingData();
-            await instance.save();
-          } else {
-            throw error;
+        if (this.validateSyncUpdate) {
+          try {
+            this.validateSyncUpdate(prevRow, newRow);
+          } catch (error) {
+            if (error instanceof RequiredSyncTableMissingVisibleError) {
+              /** Try to augment with fresh data and check again if it passes validation */
+              await instance.addMissingData();
+              this.validateSyncUpdate(prevRow, instance.toCodaRow());
+            } else {
+              throw error;
+            }
           }
         }
+
+        await instance.save();
 
         return { ...prevRow, ...instance.toCodaRow() };
       })

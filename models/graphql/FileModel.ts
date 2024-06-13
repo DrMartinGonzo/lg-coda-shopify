@@ -28,7 +28,7 @@ export type FileApiData = BaseApiDataGraphQl &
 export type FileModelData = BaseModelDataGraphQl & FileApiData & ModelWithDeletedFlag;
 // #endregion
 
-export class FileModel extends AbstractModelGraphQl<FileModel> {
+export class FileModel extends AbstractModelGraphQl {
   public data: FileModelData;
   public previewSize: number = DEFAULT_THUMBNAIL_SIZE;
 

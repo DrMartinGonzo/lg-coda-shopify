@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListCustomCollectionsArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Collections } from '../../coda/setup/collections-setup';
 import { CustomCollectionModel } from '../../models/rest/CustomCollectionModel';
 import { SmartCollectionModel } from '../../models/rest/SmartCollectionModel';

@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListPagesArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Pages } from '../../coda/setup/pages-setup';
 import { PageModel } from '../../models/rest/PageModel';
 import { FieldDependency } from '../../schemas/Schema.types';

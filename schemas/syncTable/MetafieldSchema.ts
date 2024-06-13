@@ -2,7 +2,7 @@
 
 import * as coda from '@codahq/packs-sdk';
 
-import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
 import * as PROPS from '../../coda/coda-properties';
 import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
 import { CollectionReference } from './CollectionSchema';

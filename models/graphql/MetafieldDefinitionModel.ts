@@ -3,13 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
-import { getSupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { getSupportDefinitionMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, NOT_IMPLEMENTED, PACK_IDENTITIES } from '../../constants';
 import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
+import { getMetaFieldFullKey } from '../../utils/metafields-utils';
 
 // #endregion
 
@@ -19,7 +20,7 @@ export type MetafieldDefinitionApiData = BaseApiDataGraphQl & ResultOf<typeof me
 export interface MetafieldDefinitionModelData extends BaseModelDataGraphQl, MetafieldDefinitionApiData {}
 // #endregion
 
-export class MetafieldDefinitionModel extends AbstractModelGraphQl<MetafieldDefinitionModel> {
+export class MetafieldDefinitionModel extends AbstractModelGraphQl {
   public data: MetafieldDefinitionModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.MetafieldDefinition;
@@ -40,13 +41,11 @@ export class MetafieldDefinitionModel extends AbstractModelGraphQl<MetafieldDefi
   }
 
   get fullKey() {
-    const { namespace, key } = this.data;
-    return `${namespace}.${key}`;
+    return getMetaFieldFullKey(this.data);
   }
 
   get adminUrl() {
-    const supportedSyncTable = getSupportedMetafieldSyncTable(this.data.ownerType as MetafieldOwnerType);
-    if (!supportedSyncTable.supportDefinition) return;
+    const supportedSyncTable = getSupportDefinitionMetafieldSyncTable(this.data.ownerType as MetafieldOwnerType);
     return coda.joinUrl(supportedSyncTable.getAdminUrl(this.context), this.restId.toString());
   }
 

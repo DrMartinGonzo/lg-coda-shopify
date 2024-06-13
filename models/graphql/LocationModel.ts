@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { LocationClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { locationFragment } from '../../graphql/locations-graphql';
 import { LocationRow } from '../../schemas/CodaRows.types';
@@ -24,7 +24,7 @@ export type LocationApiData = BaseApiDataGraphQl & ResultOf<typeof locationFragm
 export interface LocationModelData extends Omit<LocationApiData, 'metafields'>, BaseModelDataGraphQlWithMetafields {}
 // #endregion
 
-export class LocationModel extends AbstractModelGraphQlWithMetafields<LocationModel> {
+export class LocationModel extends AbstractModelGraphQlWithMetafields {
   public data: LocationModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Location;

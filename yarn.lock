@@ -7,15 +7,7 @@
   resolved "https://registry.yarnpkg.com/@0no-co/graphql.web/-/graphql.web-1.0.7.tgz#c7a762c887b3482a79ffa68f63de5e96059a62e4"
   integrity sha512-E3Qku4mTzdrlwVWGPxklDnME5ANrEGetvYw4i2GCRlppWXXE4QD66j7pwb8HelZwS6LnqEChhrSOGCXpbiu6MQ==
 
-"@0no-co/graphqlsp@^1.12.1":
-  version "1.12.3"
-  resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.12.3.tgz#57275df6dd7435ed7303e9ca755db2de121371e3"
-  integrity sha512-U0hV/FmFgm2perV+mrXKe/7Z5F4/9rmOziHJYYQgKLwzUVuN5LQG0qs3cLBGxAqoosG0HfTi2cQkgMKY1CMbYQ==
-  dependencies:
-    "@gql.tada/internal" "^1.0.0"
-    graphql "^15.5.0 || ^16.0.0 || ^17.0.0"
-
-"@0no-co/graphqlsp@^1.6.0":
+"@0no-co/graphqlsp@^1.12.8", "@0no-co/graphqlsp@^1.6.0":
   version "1.12.8"
   resolved "https://registry.yarnpkg.com/@0no-co/graphqlsp/-/graphqlsp-1.12.8.tgz#819b3fe4725cedd4eaf063011961d803a9d04797"
   integrity sha512-arW3ZzifyKIJhehoAlsP069AX73EN6q358bOCf+8z00PmfPR2DSxq7uGGSj0oFNe3vEDtGYl88HmFEWQ+0+dwQ==
@@ -1328,22 +1320,22 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.20.2.tgz#9c907b21e30a52db959ba4f80bb01a0cc403d5cc"
   integrity sha512-N49X4lJX27+l9jbLKSqZ6bKNjzQvHaT8IIFUy+YIqmXQdjYCToGWwOItDrfby14c78aDd5NHQl29xingXfCdLQ==
 
-"@gql.tada/cli-utils@1.3.9":
-  version "1.3.9"
-  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-1.3.9.tgz#3563cf18d25bca4e4a04f69c7b41623ba0821ed0"
-  integrity sha512-oRb7SG/+csx9CiypSJTI21KaLfulOUnhX1vxg4FXi2snub9XShkGR2XnnlJVTAOZXY9Vcxti1NutAElxdDkycA==
+"@gql.tada/cli-utils@1.3.10":
+  version "1.3.10"
+  resolved "https://registry.yarnpkg.com/@gql.tada/cli-utils/-/cli-utils-1.3.10.tgz#f7352d16e8762bbde8654a60ee55475c94c073ab"
+  integrity sha512-wmKW/4UuDR9rkgpXnzP2skftNO4Kc/LNkFImKXe0waus+ipvJLaV3dwQ1CghKQ1THzWl2KLp/yJ80BdFWA+HzA==
   dependencies:
-    "@0no-co/graphqlsp" "^1.12.1"
-    "@gql.tada/internal" "1.0.0"
+    "@0no-co/graphqlsp" "^1.12.8"
+    "@gql.tada/internal" "1.0.1"
     "@vue/compiler-dom" "^3.4.23"
     "@vue/language-core" "^2.0.17"
     graphql "^15.5.0 || ^16.0.0 || ^17.0.0"
     svelte2tsx "^0.7.6"
 
-"@gql.tada/internal@1.0.0", "@gql.tada/internal@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@gql.tada/internal/-/internal-1.0.0.tgz#90d84a0ffcfa700dd769033b880422d28fa6c8e2"
-  integrity sha512-B55aIYyZn5ewdgMqoJciPAwF5DKYX6HBabTU+ap/dpNH3EgJrLomc8Y8w+MCxCyOx+dXL9OduT6eWnVr7J7Eyg==
+"@gql.tada/internal@1.0.1", "@gql.tada/internal@^1.0.0":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@gql.tada/internal/-/internal-1.0.1.tgz#b5ab61261a6b54227ba93abf2022cf38fac63917"
+  integrity sha512-VglE9pEUqCD7YwytLehI1RiEpxJsEkO+8onrMI8DEFTcrn+Irv2tQfPUHBC0LjtY5sFgoodCSLIcnxyZOKggYA==
   dependencies:
     "@0no-co/graphql.web" "^1.0.5"
 
@@ -2703,17 +2695,17 @@
     loupe "^2.3.7"
     pretty-format "^29.7.0"
 
-"@volar/language-core@~2.2.4":
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/@volar/language-core/-/language-core-2.2.4.tgz#50a9194732988610d6b0d8d8732a07235e6464c8"
-  integrity sha512-7As47GndxGxsqqYnbreLrfB5NDUeQioPM2LJKUuB4/34c0NpEJ2byVl3c9KYdjIdiEstWZ9JLtLKNTaPWb5jtA==
+"@volar/language-core@~2.3.0-alpha.15":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@volar/language-core/-/language-core-2.3.0.tgz#ffb9b64c8b19d7f45b1fdcd9ae9d98d94bad7179"
+  integrity sha512-pvhL24WUh3VDnv7Yw5N1sjhPtdx7q9g+Wl3tggmnkMcyK8GcCNElF2zHiKznryn0DiUGk+eez/p2qQhz+puuHw==
   dependencies:
-    "@volar/source-map" "2.2.4"
+    "@volar/source-map" "2.3.0"
 
-"@volar/source-map@2.2.4":
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/@volar/source-map/-/source-map-2.2.4.tgz#15e50e2fc98e76e61711b6cc5d45872814a3e482"
-  integrity sha512-m92FLpR9vB1YEZfiZ+bfgpLrToL/DNkOrorWVep3pffHrwwI4Tx2oIQN+sqHJfKkiT5N3J1owC+8crhAEinfjg==
+"@volar/source-map@2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@volar/source-map/-/source-map-2.3.0.tgz#faf4df8f10ca40788f03c35eed3e2b7848110cc9"
+  integrity sha512-G/228aZjAOGhDjhlyZ++nDbKrS9uk+5DMaEstjvzglaAw7nqtDyhnQAsYzUg6BMP9BtwZ59RIw5HGePrutn00Q==
   dependencies:
     muggle-string "^0.4.0"
 
@@ -2737,11 +2729,11 @@
     "@vue/shared" "3.4.27"
 
 "@vue/language-core@^2.0.17":
-  version "2.0.19"
-  resolved "https://registry.yarnpkg.com/@vue/language-core/-/language-core-2.0.19.tgz#d55f9c1e92690c77ffd599688ba36c2b50c4303b"
-  integrity sha512-A9EGOnvb51jOvnCYoRLnMP+CcoPlbZVxI9gZXE/y2GksRWM6j/PrLEIC++pnosWTN08tFpJgxhSS//E9v/Sg+Q==
+  version "2.0.21"
+  resolved "https://registry.yarnpkg.com/@vue/language-core/-/language-core-2.0.21.tgz#882667d0c9f07bc884f163e75eed666234df77fe"
+  integrity sha512-vjs6KwnCK++kIXT+eI63BGpJHfHNVJcUCr3RnvJsccT3vbJnZV5IhHR2puEkoOkIbDdp0Gqi1wEnv3hEd3WsxQ==
   dependencies:
-    "@volar/language-core" "~2.2.4"
+    "@volar/language-core" "~2.3.0-alpha.15"
     "@vue/compiler-dom" "^3.4.0"
     "@vue/shared" "^3.4.0"
     computeds "^0.0.1"
@@ -4603,13 +4595,13 @@ gopd@^1.0.1:
     get-intrinsic "^1.1.3"
 
 gql.tada@^1.3.5:
-  version "1.7.5"
-  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.7.5.tgz#b03e7ccabf99458d828d82373a96e94cd19d6f28"
-  integrity sha512-GepPTee+FWSVVZQ7GiJHzsGNo7gOb59kcn4mUPYLlkbpeJfOUwpuoB05ZNaXG0W4qZVPd1I7R2UgMHBjY1lGlQ==
+  version "1.7.6"
+  resolved "https://registry.yarnpkg.com/gql.tada/-/gql.tada-1.7.6.tgz#4a073a718f3be920f7d923755079aa5ed8ee39f8"
+  integrity sha512-wuFq2qmWFFQETV1qz2rWqIJ65qlLxxpiuMEDOB7zqmWnKGHYQ2k/bttyDGOKwroK2cgPZ8TGhzzaUQj9MZmwxw==
   dependencies:
     "@0no-co/graphql.web" "^1.0.5"
-    "@gql.tada/cli-utils" "1.3.9"
-    "@gql.tada/internal" "1.0.0"
+    "@gql.tada/cli-utils" "1.3.10"
+    "@gql.tada/internal" "1.0.1"
 
 graceful-fs@^4.1.6, graceful-fs@^4.2.0:
   version "4.2.11"
@@ -4654,9 +4646,9 @@ graphql-ws@^5.14.0:
   integrity sha512-F/i2xNIVbaEF2xWggID0X/UZQa2V8kqKDPO8hwmu53bVOcTL7uNkxnexeEgSCVxYBQUTUNEI8+e4LO1FOhKPKQ==
 
 "graphql@^15.5.0 || ^16.0.0 || ^17.0.0", graphql@^16.8.1:
-  version "16.8.1"
-  resolved "https://registry.yarnpkg.com/graphql/-/graphql-16.8.1.tgz#1930a965bef1170603702acdb68aedd3f3cf6f07"
-  integrity sha512-59LZHPdGZVh695Ud9lRzPBVTtlX9ZCV150Er2W43ro37wVof0ctenSaskPPjN7lVTIN8mSZt8PHUNKZuNQUuxw==
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/graphql/-/graphql-16.8.2.tgz#54771c7ff195da913f5e70af8044a026d32eca2a"
+  integrity sha512-cvVIBILwuoSyD54U4cF/UXDh5yAobhNV/tPygI4lZhgOIJQE/WLWC4waBRb4I6bDVYb3OVx3lfHbaQOEoUD5sg==
 
 gzip-size@^6.0.0:
   version "6.0.0"
@@ -5299,9 +5291,9 @@ keyv@^4.5.4:
     json-buffer "3.0.1"
 
 knip@^5:
-  version "5.18.2"
-  resolved "https://registry.yarnpkg.com/knip/-/knip-5.18.2.tgz#d35f206b69f21264ce39950b8be729ef52aae5fb"
-  integrity sha512-SR3XHUviWFFfmyt4FT+iWdu17pWEypaJF5EJfiRjZ7j4J6D9Kf4Ju7+Sw+n4suIIbhZmO3+oDBZKJsRVoY/lOw==
+  version "5.19.0"
+  resolved "https://registry.yarnpkg.com/knip/-/knip-5.19.0.tgz#45cdc436f572bf84b48995924c05053bdcd4eea3"
+  integrity sha512-UGt7i9y+xvA1+Q6ssB3rqqMNKtpWvvjBcgRn25NEywDFECMkbOKK7A30Qlke04YKENIl8y2yaKp46P1INBv6Cg==
   dependencies:
     "@ericcornelissen/bash-parser" "0.5.3"
     "@nodelib/fs.walk" "2.0.0"
@@ -7024,9 +7016,9 @@ supports-preserve-symlinks-flag@^1.0.0:
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
 svelte2tsx@^0.7.6:
-  version "0.7.8"
-  resolved "https://registry.yarnpkg.com/svelte2tsx/-/svelte2tsx-0.7.8.tgz#5e95afa71629364bc72b8ea97d2a9ac1c3dc9549"
-  integrity sha512-ABK3RDFcy59AqAiU1N5Kxu1RnKrb1GDMrQjLgNgJfE8Q+coCKpjCAPtUVKQM2HnmuqeNWcT3NqfXbE+ZmN5Pow==
+  version "0.7.9"
+  resolved "https://registry.yarnpkg.com/svelte2tsx/-/svelte2tsx-0.7.9.tgz#a2b42e218e8808b9bd4b292dedba18ae8468abb0"
+  integrity sha512-Rm+0LAwg9wT4H2IsR8EaM9EWErTzi9LmuZKxkH5b1ua94XjQmwHstBP4VabLgA9AE6XmwBg+xK7Cjzwfm6ustQ==
   dependencies:
     dedent-js "^1.0.1"
     pascal-case "^3.1.1"

@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CancelOrderArgs, OrderClient } from '../../Clients/RestApiClientBase';
-import { TypeFromCodaSchemaProps } from '../../Resources/types/Resource.types';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
 import { CompanySchema } from '../../schemas/basic/CompanySchema';
@@ -152,10 +152,10 @@ export interface OrderApiData extends BaseApiDataRest {
   user_id: number | null;
 }
 
-interface OrderModelData extends OrderApiData, BaseModelDataRestWithGraphQlMetafields {}
+export interface OrderModelData extends OrderApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class OrderModel extends AbstractModelRestWithGraphQlMetafields<OrderModel> {
+export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
   public data: OrderModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Order;

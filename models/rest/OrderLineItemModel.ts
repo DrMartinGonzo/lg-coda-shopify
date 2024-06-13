@@ -1,7 +1,7 @@
 // #region Imports
 
 import { OrderLineItemClient } from '../../Clients/RestApiClientBase';
-import { TypeFromCodaSchemaProps } from '../../Resources/types/Resource.types';
+import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
@@ -18,13 +18,13 @@ export type OrderLineItemApiData = BaseApiDataRest &
     duties: Duty[] | null;
   };
 
-interface OrderLineItemModelData extends OrderLineItemApiData {
+export interface OrderLineItemModelData extends OrderLineItemApiData {
   order_id: number;
   order_name: string;
 }
 // #endregion
 
-export class OrderLineItemModel extends AbstractModelRest<OrderLineItemModel> {
+export class OrderLineItemModel extends AbstractModelRest {
   public data: OrderLineItemModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.OrderLineItem;
 

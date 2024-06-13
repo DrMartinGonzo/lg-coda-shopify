@@ -1,7 +1,7 @@
 // #region Imports
 
 import { AbstractGraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceName } from '../types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { Node } from '../../types/admin.types';
 import { graphQlGidToId } from '../../utils/conversion-utils';
@@ -13,11 +13,12 @@ import { AbstractModel } from '../AbstractModel';
 export interface BaseApiDataGraphQl extends Node {}
 
 export interface BaseModelDataGraphQl {
+  /** A globally-unique ID. */
   id: string;
 }
 // #endregion
 
-export abstract class AbstractModelGraphQl<T> extends AbstractModel<T> {
+export abstract class AbstractModelGraphQl extends AbstractModel {
   public data: BaseModelDataGraphQl;
   protected static readonly graphQlName: GraphQlResourceName;
 

@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { InventoryItemClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { inventoryItemFieldsFragment } from '../../graphql/inventoryItems-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
@@ -20,7 +20,7 @@ export type InventoryItemApiData = BaseApiDataGraphQl & ResultOf<typeof inventor
 export type InventoryItemModelData = BaseModelDataGraphQl & InventoryItemApiData;
 // #endregion
 
-export class InventoryItemModel extends AbstractModelGraphQl<InventoryItemModel> {
+export class InventoryItemModel extends AbstractModelGraphQl {
   public data: InventoryItemModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryItem;

@@ -22,7 +22,7 @@ export interface BaseModelDataGraphQlWithMetafields extends BaseModelDataGraphQl
 }
 // #endregion
 
-export abstract class AbstractModelGraphQlWithMetafields<T> extends AbstractModelGraphQl<T> {
+export abstract class AbstractModelGraphQlWithMetafields extends AbstractModelGraphQl {
   public data: BaseModelDataGraphQlWithMetafields;
 
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource;

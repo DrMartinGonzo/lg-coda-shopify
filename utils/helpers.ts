@@ -140,17 +140,18 @@ export function handleFieldDependencies(
   effectivePropertyKeys: Array<string>,
   fieldDependencies: Array<FieldDependency<any>> = []
 ) {
+  const fields = [...effectivePropertyKeys];
   fieldDependencies.forEach((def) => {
     if (
       def.dependencies.some(
         (key) => effectivePropertyKeys.includes(key) && !effectivePropertyKeys.includes(def.field as string)
       )
     ) {
-      effectivePropertyKeys.push(def.field as string);
+      fields.push(def.field as string);
     }
   });
 
-  return arrayUnique<string>(effectivePropertyKeys);
+  return arrayUnique<string>(fields);
 }
 
 /**
@@ -430,4 +431,8 @@ export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
 }
 export function assertNotBlank(value: any) {
   return !isDefinedEmpty(value);
+}
+
+function handleDeleteNotFound(path: string | string) {
+  console.error(`Not found at path : '${path}'. Possibly already deleted.`);
 }

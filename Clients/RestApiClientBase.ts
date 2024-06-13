@@ -3,31 +3,31 @@ import * as coda from '@codahq/packs-sdk';
 import { PageInfo, PageInfoParams, ParamSet } from '@shopify/shopify-api';
 import UrlParse from 'url-parse';
 
-import { BaseApiDataRest } from '../models/rest/AbstractModelRest';
-import { ArticleApiData } from '../models/rest/ArticleModel';
-import { AssetApiData } from '../models/rest/AssetModel';
-import { BlogApiData } from '../models/rest/BlogModel';
-import { CollectApiData } from '../models/rest/CollectModel';
-import { CustomCollectionApiData } from '../models/rest/CustomCollectionModel';
-import { CustomerApiData } from '../models/rest/CustomerModel';
-import { DraftOrderApiData } from '../models/rest/DraftOrderModel';
-import { InventoryLevelApiData } from '../models/rest/InventoryLevelModel';
-import { MetafieldApiData } from '../models/rest/MetafieldModel';
-import { OrderLineItemApiData } from '../models/rest/OrderLineItemModel';
-import { OrderApiData } from '../models/rest/OrderModel';
-import { PageApiData } from '../models/rest/PageModel';
-import { RedirectApiData } from '../models/rest/RedirectModel';
-import { SmartCollectionApiData } from '../models/rest/SmartCollectionModel';
-import { ThemeApiData } from '../models/rest/ThemeModel';
+import { BaseApiDataRest, BaseModelDataRest } from '../models/rest/AbstractModelRest';
+import { ArticleApiData, ArticleModelData } from '../models/rest/ArticleModel';
+import { AssetApiData, AssetModelData } from '../models/rest/AssetModel';
+import { BlogApiData, BlogModelData } from '../models/rest/BlogModel';
+import { CollectApiData, CollectModelData } from '../models/rest/CollectModel';
+import { CustomCollectionApiData, CustomCollectionModelData } from '../models/rest/CustomCollectionModel';
+import { CustomerApiData, CustomerModelData } from '../models/rest/CustomerModel';
+import { DraftOrderApiData, DraftOrderModelData } from '../models/rest/DraftOrderModel';
+import { InventoryLevelApiData, InventoryLevelModelData } from '../models/rest/InventoryLevelModel';
+import { MetafieldApiData, MetafieldModelData, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
+import { OrderLineItemApiData, OrderLineItemModelData } from '../models/rest/OrderLineItemModel';
+import { OrderApiData, OrderModelData } from '../models/rest/OrderModel';
+import { PageApiData, PageModelData } from '../models/rest/PageModel';
+import { RedirectApiData, RedirectModelData } from '../models/rest/RedirectModel';
+import { ShopApiData, ShopModelData } from '../models/rest/ShopModel';
+import { SmartCollectionApiData, SmartCollectionModelData } from '../models/rest/SmartCollectionModel';
+import { ThemeApiData, ThemeModelData } from '../models/rest/ThemeModel';
 
-import { RestResourcesSingular, singularToPlural } from '../Resources/types/SupportedResource';
 import { DEFAULT_CURRENCY_CODE, REST_DEFAULT_API_VERSION } from '../config';
 import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, NOT_IMPLEMENTED, REST_DEFAULT_LIMIT } from '../constants';
-import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { ShopApiData } from '../models/rest/ShopModel';
+import { RestResourcesSingular, singularToPlural } from '../models/types/SupportedResource';
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
 import { CurrencyCode } from '../types/admin.types';
 import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
+import { getMetaFieldFullKey } from '../utils/metafields-utils';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
@@ -52,7 +52,7 @@ export interface RestRequestReturn<ResT extends any> extends coda.FetchResponse<
 
 type TranformResponseT<T extends any = any> = (response: any) => T;
 
-interface BaseRequestParams {
+interface BaseRequestParams<T extends any> {
   /** The path to the resource, relative to the API version root. */
   path: string;
   /** The maximum number of times the request can be made if it fails with a throttling or server error. */
@@ -64,18 +64,18 @@ interface BaseRequestParams {
 
   options?: FetchRequestOptions;
 
-  transformResponseBody?: TranformResponseT;
+  transformResponseBody?: TranformResponseT<T>;
 }
-interface GetRequestParams extends BaseRequestParams {}
-interface PostRequestParams extends BaseRequestParams {
+interface GetRequestParams<T extends any> extends BaseRequestParams<T> {}
+interface PostRequestParams<T extends any> extends BaseRequestParams<T> {
   body: Record<string, any>;
 }
-interface PutRequestParams extends PostRequestParams {}
-interface DeleteRequestParams extends BaseRequestParams {}
+interface PutRequestParams<T extends any> extends PostRequestParams<T> {}
+interface DeleteRequestParams<T extends any> extends BaseRequestParams<T> {}
 
-type RequestParams = {
+type RequestParams<T extends any> = {
   method: coda.FetchMethodType;
-} & Partial<GetRequestParams & PostRequestParams & PutRequestParams & DeleteRequestParams>;
+} & Partial<GetRequestParams<T> & PostRequestParams<T> & PutRequestParams<T> & DeleteRequestParams<T>>;
 
 interface RestClientParams {
   context: coda.ExecutionContext;
@@ -172,7 +172,7 @@ class RestFetcher {
     tries,
     name,
     transformResponseBody,
-  }: RequestParams) {
+  }: RequestParams<T>) {
     const cleanedQueryParams = this.cleanQueryParams(query);
     const url = coda.withQueryParams(this.apiUrlFormatter(path), cleanedQueryParams);
 
@@ -209,44 +209,34 @@ class RestFetcher {
     }
   }
 
-  public async get<T extends any = {}>(params: GetRequestParams) {
+  public async get<T>(params: GetRequestParams<T>) {
     return this.request<T>({ method: 'GET', ...params });
   }
-  public async post<T extends any = {}>(params: PostRequestParams) {
+  public async post<T>(params: PostRequestParams<T>) {
     return this.request<T>({ method: 'POST', ...params });
   }
-  public async put<T extends any = {}>(params: PutRequestParams) {
+  public async put<T>(params: PutRequestParams<T>) {
     return this.request<T>({ method: 'PUT', ...params });
   }
-  public async delete<T extends any = {}>(params: DeleteRequestParams) {
+  public async delete<T>(params: DeleteRequestParams<T>) {
     return this.request<T>({ method: 'DELETE', ...params });
   }
 }
 // #endregion
 
 // #region AbstractRestClient
-export interface IRestClient {
-  defaultLimit: number;
-
-  single(params: BaseSingleArgs): Promise<RestRequestReturn<any>>;
-  list(params: BaseListArgs): Promise<RestRequestReturn<any[]>>;
-  create(modelData: any): Promise<RestRequestReturn<any>>;
-  update(modelData: any): Promise<RestRequestReturn<any>>;
-  delete(modelData: any): Promise<RestRequestReturn<any>>;
-}
-
-abstract class AbstractRestClient<
+export abstract class AbstractRestClient<
   SingleArgs extends BaseSingleArgs,
   ListArgs extends BaseListArgs,
-  ApiData extends BaseApiDataRest
-> implements IRestClient
-{
+  ApiData extends BaseApiDataRest,
+  ModelData extends BaseModelDataRest
+> {
   protected singular: string;
   protected plural: string;
   protected readonly fetcher: RestFetcher;
   protected static readonly defaultLimit = REST_DEFAULT_LIMIT;
 
-  public static createInstance<T extends AbstractRestClient<any, any, any>>(
+  public static createInstance<T extends AbstractRestClient<any, any, any, any>>(
     this: new (...args: any[]) => T,
     context: coda.ExecutionContext,
     apiVersion?: string
@@ -269,10 +259,10 @@ abstract class AbstractRestClient<
   }
 
   protected transformResponseBodySingle(body: { [key in typeof this.singular]: ApiData }) {
-    return body[this.singular];
+    return body[this.singular] as unknown as ModelData;
   }
   protected transformResponseBodyList(body: { [key in typeof this.plural]: ApiData }) {
-    return body[this.plural];
+    return body[this.plural] as unknown as ModelData;
   }
 
   get defaultLimit() {
@@ -280,7 +270,7 @@ abstract class AbstractRestClient<
   }
 
   async single({ id, fields, forceAllFields, options }: SingleArgs) {
-    return this.fetcher.get<ApiData>({
+    return this.fetcher.get<ModelData>({
       path: `${this.plural}/${id}.json`,
       query: {
         fields: forceAllFields ? undefined : fields,
@@ -292,7 +282,7 @@ abstract class AbstractRestClient<
   }
 
   async list({ fields, forceAllFields, limit, options, ...otherArgs }: ListArgs) {
-    return this.fetcher.get<ApiData[]>({
+    return this.fetcher.get<ModelData[]>({
       path: `${this.plural}.json`,
       query: {
         fields: forceAllFields ? undefined : fields,
@@ -310,9 +300,9 @@ abstract class AbstractRestClient<
    * sans passer par une Sync Table
    */
   async listAllLoop({ options, limit, ...otherArgs }: ListArgs) {
-    let items: ApiData[] = [];
+    let items: ModelData[] = [];
     let nextPageQuery: SearchParams = {};
-    let response: RestRequestReturn<ApiData[]>;
+    let response: RestRequestReturn<ModelData[]>;
     let params: any;
 
     while (true) {
@@ -336,7 +326,7 @@ abstract class AbstractRestClient<
 
   async create(data: ApiData) {
     if (isDefinedEmpty(data)) return;
-    return this.fetcher.post<ApiData>({
+    return this.fetcher.post<ModelData>({
       path: `${this.plural}.json`,
       body: { [this.singular]: data },
       name: `create ${this.singular}`,
@@ -347,7 +337,7 @@ abstract class AbstractRestClient<
   async update(data: ApiData) {
     const { id, ...d } = data;
     if (isDefinedEmpty(d)) return;
-    return this.fetcher.put<ApiData>({
+    return this.fetcher.put<ModelData>({
       path: `${this.plural}/${id}.json`,
       body: { [this.singular]: d },
       name: `update ${this.singular}`,
@@ -381,7 +371,12 @@ export interface ListArticlesArgs extends BaseListArgs {
   author?: string;
 }
 
-export class ArticleClient extends AbstractRestClient<BaseSingleArgs, ListArticlesArgs, ArticleApiData> {
+export class ArticleClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListArticlesArgs,
+  ArticleApiData,
+  ArticleModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'article', plural: 'articles', ...params });
   }
@@ -390,7 +385,7 @@ export class ArticleClient extends AbstractRestClient<BaseSingleArgs, ListArticl
     const { blog_id, ...d } = data;
     // TODO: need a check on request level. Problem : the main key
     if (isDefinedEmpty(d)) return;
-    return this.fetcher.post<ArticleApiData>({
+    return this.fetcher.post<ArticleModelData>({
       path: `blogs/${blog_id}/articles.json`,
       body: { [this.singular]: d },
       name: 'create article',
@@ -406,7 +401,7 @@ interface ListAssetsArgs extends BaseListArgs {
   asset?: { [key: string]: unknown } | null;
 }
 
-export class AssetClient extends AbstractRestClient<any, ListAssetsArgs, AssetApiData> {
+export class AssetClient extends AbstractRestClient<any, ListAssetsArgs, AssetApiData, AssetModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'asset', plural: 'assets', ...params });
   }
@@ -422,7 +417,7 @@ export interface ListBlogsArgs extends BaseListArgs {
   fields?: string;
 }
 
-export class BlogClient extends AbstractRestClient<BaseSingleArgs, ListBlogsArgs, BlogApiData> {
+export class BlogClient extends AbstractRestClient<BaseSingleArgs, ListBlogsArgs, BlogApiData, BlogModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'blog', plural: 'blogs', ...params });
   }
@@ -438,7 +433,12 @@ export interface ListCollectsArgs extends BaseListArgs {
   fields?: string;
 }
 
-export class CollectClient extends AbstractRestClient<BaseSingleArgs, ListCollectsArgs, CollectApiData> {
+export class CollectClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListCollectsArgs,
+  CollectApiData,
+  CollectModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'collect', plural: 'collects', ...params });
   }
@@ -464,7 +464,8 @@ export interface ListCustomCollectionsArgs extends BaseListArgs {
 export class CustomCollectionClient extends AbstractRestClient<
   BaseSingleArgs,
   ListCustomCollectionsArgs,
-  CustomCollectionApiData
+  CustomCollectionApiData,
+  CustomCollectionModelData
 > {
   constructor(params: RestClientParams) {
     super({ singular: 'custom_collection', plural: 'custom_collections', ...params });
@@ -508,7 +509,12 @@ interface CustomersSendInviteArgs extends BaseContext {
 }
 */
 
-export class CustomerClient extends AbstractRestClient<BaseSingleArgs, ListCustomersArgs, CustomerApiData> {
+export class CustomerClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListCustomersArgs,
+  CustomerApiData,
+  CustomerModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'customer', plural: 'customers', ...params });
   }
@@ -644,7 +650,12 @@ export interface SendDraftOrderInvoiceArgs {
   custom_message?: string;
 }
 
-export class DraftOrderClient extends AbstractRestClient<BaseSingleArgs, ListDraftOrdersArgs, DraftOrderApiData> {
+export class DraftOrderClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListDraftOrdersArgs,
+  DraftOrderApiData,
+  DraftOrderModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'draft_order', plural: 'draft_orders', ...params });
   }
@@ -702,7 +713,8 @@ interface ConnectInventoryLevelArgs {
 export class InventoryLevelClient extends AbstractRestClient<
   BaseSingleArgs,
   ListInventoryLevelsArgs,
-  InventoryLevelApiData
+  InventoryLevelApiData,
+  InventoryLevelModelData
 > {
   constructor(params: RestClientParams) {
     super({ singular: 'inventory_level', plural: 'inventory_levels', ...params });
@@ -802,7 +814,12 @@ interface ListMetafieldsArgs extends BaseListArgs {
   fields?: string;
 }
 
-export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMetafieldsArgs, MetafieldApiData> {
+export class MetafieldClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListMetafieldsArgs,
+  MetafieldApiData,
+  MetafieldModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'metafield', plural: 'metafields', ...params });
   }
@@ -813,7 +830,7 @@ export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMeta
       return {
         ...response,
         // TODO: implement get full key function
-        body: response.body.filter((metafield) => metafieldKeys.includes(`${metafield.namespace}.${metafield.key}`)),
+        body: response.body.filter((metafield) => metafieldKeys.includes(getMetaFieldFullKey(metafield))),
       };
     }
 
@@ -827,7 +844,16 @@ export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMeta
     options = {},
     ...otherArgs
   }: ListMetafieldsArgs) {
-    return this.fetcher.get<MetafieldApiData[]>({
+    /**
+     * Pas de owner_id et owner_resource pour le Shop
+     */
+    // const isShopQuery = owner_resource === RestResourcesSingular.Shop;
+    // if (isShopQuery) {
+    //   delete params['metafield[owner_id]'];
+    //   delete params['metafield[owner_resource]'];
+    // }
+
+    return this.fetcher.get<MetafieldModelData[]>({
       path: 'metafields.json',
       query: {
         ['metafield[owner_id]']: owner_id,
@@ -842,7 +868,7 @@ export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMeta
 
   async create(data: MetafieldApiData) {
     if (isDefinedEmpty(data)) return;
-    return this.fetcher.post<MetafieldApiData>({
+    return this.fetcher.post<MetafieldModelData>({
       path: this.getPostPath(data),
       body: { [this.singular]: data },
       name: 'create metafield',
@@ -858,7 +884,7 @@ export class MetafieldClient extends AbstractRestClient<BaseSingleArgs, ListMeta
   async update(data: MetafieldApiData) {
     const { id, ...d } = data;
     if (isDefinedEmpty(d)) return;
-    return this.fetcher.put<MetafieldApiData>({
+    return this.fetcher.put<MetafieldModelData>({
       path: this.getPutPath(data),
       body: { [this.singular]: d },
       name: 'update metafield',
@@ -922,7 +948,7 @@ export interface CancelOrderArgs {
   };
 }
 
-export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersArgs, OrderApiData> {
+export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersArgs, OrderApiData, OrderModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'order', plural: 'orders', ...params });
   }
@@ -998,21 +1024,26 @@ export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersAr
 // #endregion
 
 // #region OrderLineItemClient
-export class OrderLineItemClient extends AbstractRestClient<BaseSingleArgs, ListOrdersArgs, OrderLineItemApiData> {
+export class OrderLineItemClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListOrdersArgs,
+  OrderLineItemApiData,
+  OrderLineItemModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'order', plural: 'orders', ...params });
   }
 
-  async single(): Promise<RestRequestReturn<OrderLineItemApiData>> {
+  async single(): Promise<RestRequestReturn<OrderLineItemModelData>> {
     throw new Error(NOT_IMPLEMENTED);
   }
-  async delete(): Promise<RestRequestReturn<OrderLineItemApiData>> {
+  async delete(): Promise<RestRequestReturn<any>> {
     throw new Error(NOT_IMPLEMENTED);
   }
-  async create(): Promise<RestRequestReturn<OrderLineItemApiData>> {
+  async create(): Promise<RestRequestReturn<OrderLineItemModelData>> {
     throw new Error(NOT_IMPLEMENTED);
   }
-  async update(): Promise<RestRequestReturn<OrderLineItemApiData>> {
+  async update(): Promise<RestRequestReturn<OrderLineItemModelData>> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
@@ -1021,7 +1052,7 @@ export class OrderLineItemClient extends AbstractRestClient<BaseSingleArgs, List
       options,
       fields: ['id', 'name', 'line_items'].join(','),
       ...otherArgs,
-    })) as unknown as RestRequestReturn<OrderApiData[]>;
+    })) as unknown as RestRequestReturn<OrderModelData[]>;
 
     return {
       ...response,
@@ -1031,7 +1062,7 @@ export class OrderLineItemClient extends AbstractRestClient<BaseSingleArgs, List
             order_id: orderData.id,
             order_name: orderData.name,
             ...data,
-          } as OrderLineItemApiData;
+          } as OrderLineItemModelData;
         });
       }),
     };
@@ -1054,7 +1085,7 @@ export interface ListPagesArgs extends BaseListArgs {
   published_status?: string;
 }
 
-export class PageClient extends AbstractRestClient<BaseSingleArgs, ListPagesArgs, PageApiData> {
+export class PageClient extends AbstractRestClient<BaseSingleArgs, ListPagesArgs, PageApiData, PageModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'page', plural: 'pages', ...params });
   }
@@ -1069,7 +1100,12 @@ export interface ListRedirectsArgs extends BaseListArgs {
   target?: unknown;
 }
 
-export class RedirectClient extends AbstractRestClient<BaseSingleArgs, ListRedirectsArgs, RedirectApiData> {
+export class RedirectClient extends AbstractRestClient<
+  BaseSingleArgs,
+  ListRedirectsArgs,
+  RedirectApiData,
+  RedirectModelData
+> {
   constructor(params: RestClientParams) {
     super({ singular: 'redirect', plural: 'redirects', ...params });
   }
@@ -1079,7 +1115,7 @@ export class RedirectClient extends AbstractRestClient<BaseSingleArgs, ListRedir
 // #region ShopClient
 export interface ListShopsArgs extends BaseListArgs {}
 
-export class ShopClient extends AbstractRestClient<BaseSingleArgs, ListShopsArgs, ShopApiData> {
+export class ShopClient extends AbstractRestClient<BaseSingleArgs, ListShopsArgs, ShopApiData, ShopModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'shop', plural: 'shop', ...params });
   }
@@ -1093,7 +1129,7 @@ export class ShopClient extends AbstractRestClient<BaseSingleArgs, ListShopsArgs
   }
 
   async list(params: ListShopsArgs) {
-    const singleResponse = (await super.list(params)) as unknown as RestRequestReturn<ShopApiData>;
+    const singleResponse = (await super.list(params)) as unknown as RestRequestReturn<ShopModelData>;
     return {
       ...singleResponse,
       body: [singleResponse?.body],
@@ -1154,7 +1190,8 @@ export interface OrderSmartCollectionArgs {
 export class SmartCollectionClient extends AbstractRestClient<
   BaseSingleArgs,
   ListSmartCollectionsArgs,
-  SmartCollectionApiData
+  SmartCollectionApiData,
+  SmartCollectionModelData
 > {
   constructor(params: RestClientParams) {
     super({ singular: 'smart_collection', plural: 'smart_collections', ...params });
@@ -1172,12 +1209,12 @@ export class SmartCollectionClient extends AbstractRestClient<
 // #region ThemeClient
 interface ListThemesArgs extends BaseListArgs {}
 
-export class ThemeClient extends AbstractRestClient<BaseSingleArgs, ListThemesArgs, ThemeApiData> {
+export class ThemeClient extends AbstractRestClient<BaseSingleArgs, ListThemesArgs, ThemeApiData, ThemeModelData> {
   constructor(params: RestClientParams) {
     super({ singular: 'theme', plural: 'themes', ...params });
   }
 
-  async active(listArgs: ListThemesArgs): Promise<RestRequestReturn<ThemeApiData>> {
+  async active(listArgs: ListThemesArgs) {
     const response = await this.list(listArgs);
     return { ...response, body: response.body.find((theme) => theme.role === 'main') };
   }

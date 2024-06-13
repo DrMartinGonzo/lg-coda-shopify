@@ -10,9 +10,9 @@ import {
   MetaobjectFieldsArgs,
 } from '../../Clients/GraphQlApiClientBase';
 import { ShopClient } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
+import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { CACHE_DISABLED, OPTIONS_METAOBJECT_STATUS, optionValues } from '../../constants';
 import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
 import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefinitionModel';
@@ -21,6 +21,7 @@ import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { CurrencyCode } from '../../types/admin.types';
+import { getObjectSchemaRowKeys } from '../../utils/coda-utils';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { deepCopy } from '../../utils/helpers';
 import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
@@ -96,8 +97,72 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
     };
   }
 
+  private static getCustomFieldsKeysFromRow(row: MetaobjectRow) {
+    /** Any key that is not in the static base schema is a custom filed key */
+    const rowKeys = getObjectSchemaRowKeys(this.staticSchema);
+    return Object.keys(row).filter((key) => !rowKeys.includes(key));
+  }
+
   public get codaParamsMap() {
     return {};
+  }
+
+  private async getMetaobjectDefinition() {
+    const { id: metaObjectDefinitionId } = SyncedMetaobjects.decodeDynamicUrl(this.context.sync.dynamicUrl);
+    const response = await MetaobjectDefinitionClient.createInstance(this.context).single({
+      id: metaObjectDefinitionId,
+      fields: { fieldDefinitions: true },
+    });
+    return response?.body;
+  }
+
+  private async getMetaobjectFieldDefinitions() {
+    const metaobjectDefinition = await this.getMetaobjectDefinition();
+    return readFragmentArray(metaobjectFieldDefinitionFragment, metaobjectDefinition?.fieldDefinitions);
+  }
+
+  private async formatRowCustomFields(row: MetaobjectRow, customFieldskeys: string[]) {
+    let currencyCode: CurrencyCode;
+    const fieldDefinitions = await this.getMetaobjectFieldDefinitions();
+
+    return Promise.all(
+      customFieldskeys.map(async (key): Promise<MetaobjectFieldApiData> => {
+        const fieldDefinition = requireMatchingMetaobjectFieldDefinition(key, fieldDefinitions);
+
+        // Get current Shop currency if needed
+        if (fieldDefinition.type.name === METAFIELD_TYPES.money && currencyCode === undefined) {
+          currencyCode = await ShopClient.createInstance(this.context).activeCurrency();
+        }
+
+        let formattedValue: string;
+        try {
+          formattedValue = formatMetafieldValueForApi(
+            row[key],
+            fieldDefinition.type.name as MetafieldType,
+            fieldDefinition.validations,
+            currencyCode
+          );
+        } catch (error) {
+          throw new coda.UserVisibleError(`Unable to format value for Shopify API for key ${key}.`);
+        }
+
+        return {
+          key,
+          value: formattedValue ?? '',
+          type: fieldDefinition.type.name,
+        };
+      })
+    );
+  }
+
+  protected async createInstanceFromRow(row: MetaobjectRow) {
+    const instance = await super.createInstanceFromRow(row);
+    const customFieldsKeys = SyncedMetaobjects.getCustomFieldsKeysFromRow(row);
+    if (customFieldsKeys.length) {
+      const customFields = await this.formatRowCustomFields(row, customFieldsKeys);
+      instance.setCustomFields(customFields);
+    }
+    return instance;
   }
 
   protected async beforeSync(): Promise<void> {

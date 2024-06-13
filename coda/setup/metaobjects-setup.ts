@@ -2,10 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetaobjectClient, MetaobjectDefinitionClient } from '../../Clients/GraphQlApiClientBase';
-import { FromMetaobjectRow, Metaobject } from '../../Resources/GraphQl/Metaobject';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { PACK_IDENTITIES } from '../../constants';
 import { MetaobjectModel } from '../../models/graphql/MetaobjectModel';
+import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { SyncedMetaobjects } from '../../sync/graphql/SyncedMetaobjects';
 import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
@@ -115,19 +115,18 @@ export const Action_CreateMetaObject = coda.makeFormula({
   isAction: true,
   resultType: coda.ValueType.Number,
   execute: async function ([type, handle, status = 'DRAFT', ...varargs], context) {
-    const metaobjectFields = Metaobject.parseMetaobjectFieldsFromVarArgs(varargs);
-    const fromRow: FromMetaobjectRow = {
-      row: {
-        type,
-        handle,
-        status,
-      },
-      metaobjectFields,
+    const row: MetaobjectRow = {
+      id: undefined,
+      type,
+      handle,
+      status,
     };
+    const customFields = MetaobjectModel.parseCustomFieldsFromVarArgs(varargs);
 
-    const newMetaobject = new Metaobject({ context, fromRow });
-    await newMetaobject.saveAndUpdate();
-    return newMetaobject.restId;
+    const metaobject = MetaobjectModel.createInstanceFromRow(context, row);
+    metaobject.setCustomFields(customFields);
+    await metaobject.save();
+    return metaobject.restId;
   },
 });
 
@@ -164,25 +163,28 @@ export const Action_UpdateMetaObject = coda.makeFormula({
   // schema: coda.withIdentity(MetaObjectBaseSchema, IdentitiesNew.metaobject),
   schema: MetaObjectSyncTableBaseSchema,
   execute: async function ([metaobjectId, handle, status, ...varargs], context) {
-    const metaobjectFields = Metaobject.parseMetaobjectFieldsFromVarArgs(varargs);
-    const fromRow: FromMetaobjectRow = {
-      row: {
-        id: metaobjectId,
-        handle,
-        status,
-      },
-      metaobjectFields,
+    const row: MetaobjectRow = {
+      id: metaobjectId,
+      handle,
+      status,
     };
+    const customFields = MetaobjectModel.parseCustomFieldsFromVarArgs(varargs);
 
-    const updatedMetaobject = new Metaobject({ context, fromRow });
-    await updatedMetaobject.saveAndUpdate();
-    return updatedMetaobject.formatToRow();
+    const metaobject = MetaobjectModel.createInstanceFromRow(context, row);
+    metaobject.setCustomFields(customFields);
+    metaobject.save();
+    return metaobject.toCodaRow();
   },
 });
 
-export const Action_DeleteMetaObject = makeDeleteGraphQlResourceAction(
-  Metaobject,
-  inputs.metaobject.id,
-  ({ context, id }) => Metaobject.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Metaobject, id) })
-);
+export const Action_DeleteMetaObject = makeDeleteGraphQlResourceAction({
+  modelName: MetaobjectModel.displayName,
+  IdParameter: inputs.metaobject.id,
+  execute: async ([itemId], context) => {
+    await MetaobjectClient.createInstance(context).delete({
+      id: idToGraphQlGid(GraphQlResourceNames.Metaobject, itemId as number),
+    });
+    return true;
+  },
+});
 // #endregion

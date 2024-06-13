@@ -1,12 +1,9 @@
 // #region Imports
 
 import { ListArticlesArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
-import {
-  parseContinuationProperty,
-  stringifyContinuationProperty,
-} from '../../SyncTableManager/utils/syncTableManager-utils';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
+import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/sync-utils';
 import { Sync_Articles } from '../../coda/setup/articles-setup';
 import { ArticleModel } from '../../models/rest/ArticleModel';
 import { FieldDependency } from '../../schemas/Schema.types';

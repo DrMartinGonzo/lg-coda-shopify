@@ -23,11 +23,9 @@ export interface ModelWithDeletedFlag {
    * Ça va nous servir à formatter le label avec [deleted] à la fin */
   isDeletedFlag: boolean;
 }
-
-export type Serialized<T extends BaseModelData> = Record<keyof T, any>;
 // #endregion
 
-export abstract class AbstractModel<T> {
+export abstract class AbstractModel {
   public data: any;
   protected readonly primaryKey: string;
   protected context: coda.ExecutionContext;
@@ -181,7 +179,7 @@ export abstract class AbstractModel<T> {
   /**
    * Merge updated data with existing data, updated data takes precedence
    */
-  private mergeFreshData<T extends AbstractModel<T>['data']>(freshData: T) {
+  private mergeFreshData<T extends AbstractModel['data']>(freshData: T) {
     return deepmerge<T, T>(this.data, freshData ?? {}, {
       arrayMerge: AbstractModel.combineMerge,
     });
@@ -189,7 +187,7 @@ export abstract class AbstractModel<T> {
   /**
    * Merge updated data with existing data, existing data takes precedence
    */
-  private mergeMissingData<T extends AbstractModel<T>['data']>(missingData: T) {
+  private mergeMissingData<T extends AbstractModel['data']>(missingData: T) {
     return deepmerge<T, T>(missingData ?? {}, this.data, {
       arrayMerge: AbstractModel.combineMerge,
     });

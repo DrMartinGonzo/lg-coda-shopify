@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListInventoryItemsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
 import { InventoryItemModel } from '../../models/graphql/InventoryItemModel';
 import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';

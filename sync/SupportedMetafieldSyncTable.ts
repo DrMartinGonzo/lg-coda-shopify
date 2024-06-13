@@ -1,21 +1,21 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { UnsupportedValueError } from '../../Errors/Errors';
-import { ArticleReference, formatArticleReference } from '../../schemas/syncTable/ArticleSchema';
-import { BlogReference, formatBlogReference } from '../../schemas/syncTable/BlogSchema';
-import { CollectionReference, formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
-import { CustomerReference, formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
-import { DraftOrderReference, formatDraftOrderReference } from '../../schemas/syncTable/DraftOrderSchema';
-import { LocationReference, formatLocationReference } from '../../schemas/syncTable/LocationSchema';
-import { OrderReference, formatOrderReference } from '../../schemas/syncTable/OrderSchema';
-import { PageReference, formatPageReference } from '../../schemas/syncTable/PageSchema';
-import { ProductReference, formatProductReference } from '../../schemas/syncTable/ProductSchema';
-import { ProductVariantReference, formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
-import { ShopReference, formatShopReference } from '../../schemas/syncTable/ShopSchema';
-import { MetafieldOwnerType } from '../../types/admin.types';
-import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
-import { RestResourcesSingular } from '../types/SupportedResource';
+import { UnsupportedValueError } from '../Errors/Errors';
+import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
+import { RestResourcesSingular } from '../models/types/SupportedResource';
+import { ArticleReference, formatArticleReference } from '../schemas/syncTable/ArticleSchema';
+import { BlogReference, formatBlogReference } from '../schemas/syncTable/BlogSchema';
+import { CollectionReference, formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
+import { CustomerReference, formatCustomerReference } from '../schemas/syncTable/CustomerSchema';
+import { DraftOrderReference, formatDraftOrderReference } from '../schemas/syncTable/DraftOrderSchema';
+import { LocationReference, formatLocationReference } from '../schemas/syncTable/LocationSchema';
+import { OrderReference, formatOrderReference } from '../schemas/syncTable/OrderSchema';
+import { PageReference, formatPageReference } from '../schemas/syncTable/PageSchema';
+import { ProductReference, formatProductReference } from '../schemas/syncTable/ProductSchema';
+import { ProductVariantReference, formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
+import { ShopReference, formatShopReference } from '../schemas/syncTable/ShopSchema';
+import { MetafieldOwnerType } from '../types/admin.types';
 
 // #endregion
 
@@ -133,6 +133,7 @@ export class SupportedMetafieldSyncTable {
   }
 }
 
+// TODO: improve this
 export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = [
   MetafieldOwnerType.Article,
   MetafieldOwnerType.Blog,
@@ -147,11 +148,11 @@ export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = 
   MetafieldOwnerType.Shop,
 ].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
 
-export function getAllSupportedMetafieldSyncTables(): Array<SupportedMetafieldSyncTable> {
+export function getAllSupportDefinitionMetafieldSyncTables(): Array<SupportedMetafieldSyncTable> {
   return supportedMetafieldSyncTables.filter((r) => r.supportDefinition);
 }
-export function getSupportedMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
-  const found = getAllSupportedMetafieldSyncTables().find((r) => r.ownerType === ownerType);
+export function getSupportDefinitionMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
+  const found = getAllSupportDefinitionMetafieldSyncTables().find((r) => r.ownerType === ownerType);
   if (found) return found;
   throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
 }

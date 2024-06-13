@@ -3,7 +3,8 @@
 import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 import { expect, test } from 'vitest';
 import { RequiredSyncTableMissingVisibleError } from '../Errors/Errors';
-import { VariantGraphQl } from '../Resources/GraphQl/VariantGraphQl';
+import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
+import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
 
 // #endregion
 
@@ -22,20 +23,20 @@ test('Update missing data on row update', async () => {
     id: 44810810786048,
     weight: 222,
     option2: initialOption2,
+    title: 'whatever',
   };
   const newRow = {
     id: 44810810786048,
     weight: 9,
     option2: updatedOption2,
+    title: 'whatever',
   };
 
-  // @ts-expect-error
-  const instance: VariantGraphQl = await VariantGraphQl.createInstanceForUpdate(prevRow, newRow, context);
+  const instance: VariantModel = VariantModel.createInstanceFromRow(context, newRow);
   console.log('instance', instance);
 
   try {
-    // @ts-expect-error
-    VariantGraphQl.validateUpdateJob(prevRow, newRow);
+    validateSyncUpdate(prevRow, newRow);
   } catch (error) {
     if (error instanceof RequiredSyncTableMissingVisibleError) {
       /** Simulate augmenting with fresh data and check again if it passes validation */
@@ -56,17 +57,16 @@ test('Update missing data on row update', async () => {
               },
             },
           },
-        } as VariantGraphQl['apiData'])
+        } as VariantApidata)
       );
 
-      // @ts-expect-error
-      VariantGraphQl.validateUpdateJob(prevRow, instance.formatToRow());
+      validateSyncUpdate(prevRow, instance.toCodaRow());
 
-      expect(instance.apiData.inventoryItem.measurement.weight.unit, 'Should have updated weight unit').toBe(
+      expect(instance.data.inventoryItem.measurement.weight.unit, 'Should have updated weight unit').toBe(
         missingWeightUnit
       );
-      expect(instance.apiData.selectedOptions[0].value, 'Should have updated option1').toBe('option1');
-      expect(instance.apiData.selectedOptions[1].value, 'Should have kept option2 from newRow').toBe('option2 NEW');
+      expect(instance.data.selectedOptions[0].value, 'Should have updated option1').toBe('option1');
+      expect(instance.data.selectedOptions[1].value, 'Should have kept option2 from newRow').toBe('option2 NEW');
     } else {
       throw error;
     }

@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CompleteDraftOrderArgs, DraftOrderClient, SendDraftOrderInvoiceArgs } from '../../Clients/RestApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
@@ -53,10 +53,10 @@ export interface DraftOrderApiData extends BaseApiDataRest {
   updated_at: string | null;
 }
 
-interface DraftOrderModelData extends DraftOrderApiData, BaseModelDataRestWithGraphQlMetafields {}
+export interface DraftOrderModelData extends DraftOrderApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields<DraftOrderModel> {
+export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
   public data: DraftOrderModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.DraftOrder;

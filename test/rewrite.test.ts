@@ -3,7 +3,7 @@ import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { pack } from '../pack';
 
 import { describe, expect, test } from 'vitest';
-import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
 import { MetafieldOwnerType } from '../types/admin.types';
 
 // #endregion

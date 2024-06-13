@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListOrdersArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
 import { OrderLineItemModel } from '../../models/rest/OrderLineItemModel';
 import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';

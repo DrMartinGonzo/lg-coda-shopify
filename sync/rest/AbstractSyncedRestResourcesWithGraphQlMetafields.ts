@@ -3,11 +3,8 @@
 import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
-import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
-import {
-  parseContinuationProperty,
-  stringifyContinuationProperty,
-} from '../../SyncTableManager/utils/syncTableManager-utils';
+import { GraphQlResourceName } from '../../models/types/SupportedResource';
+import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/sync-utils';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { AbstractModel } from '../../models/AbstractModel';
@@ -35,14 +32,14 @@ type RawBatchData = {
   processing: any[];
   remaining: any[];
 };
-type RevivedBatchData<T extends AbstractModel<any>> = {
+type RevivedBatchData<T extends AbstractModel> = {
   processing: T[];
   remaining: T[];
 };
 // #endregion
 
 export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
-  T extends AbstractModelRestWithGraphQlMetafields<any>
+  T extends AbstractModelRestWithGraphQlMetafields
 > extends AbstractSyncedRestResources<T> {
   protected model: ModelType<any> & { graphQlName: GraphQlResourceName };
 
@@ -112,7 +109,6 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
 
     /** ————————————————————————————————————————————————————————————
      * Check if we have budget to use GraphQL, if not defer the sync.
-     * + adjust Rest sync limit
      */
     if (this.shouldSyncMetafields) {
       this.throttleStatus = await GraphQlFetcher.createInstance(this.context).checkThrottleStatus();

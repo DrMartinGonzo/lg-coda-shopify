@@ -1,8 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
-import { SyncTableUpdateResult } from '../SyncTableManager/types/SyncTableManager.types';
+import { MetafieldHelper } from '../models/utils/MetafieldHelper';
 import { AbstractModel } from '../models/AbstractModel';
 import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
 import { AbstractModelRestWithRestMetafields } from '../models/rest/AbstractModelRestWithMetafields';
@@ -15,10 +14,26 @@ import {
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
 } from '../utils/metafields-utils';
+import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
 
 // #endregion
 
 // #region Types
+type SyncTableDefinition =
+  | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
+  | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>;
+/** Helper type to extract the parameter values from a SyncTableDef. */
+
+type SyncTableParamValues<
+  T extends
+    | coda.SyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
+    | coda.DynamicSyncTableDef<string, string, coda.ParamDefs, coda.ObjectSchema<string, string>>
+> = coda.ParamValues<T['getter']['parameters']>;
+
+export type CodaSyncParams<SyncTableDefT extends SyncTableDefinition = never> = SyncTableDefT extends never
+  ? coda.ParamValues<coda.ParamDefs>
+  : SyncTableParamValues<SyncTableDefT>;
+
 type ValidateSyncParamsT = (params: any) => void;
 type ValidateSyncUpdateT = (prevRow: BaseRow, newRow: BaseRow) => void;
 
@@ -43,7 +58,7 @@ export interface SyncTableContinuation extends coda.Continuation {
   extraData: SyncTableExtraContinuationData;
 }
 
-interface GetSchemaArgs {
+export interface GetSchemaArgs {
   context: coda.ExecutionContext;
   codaSyncParams?: coda.ParamValues<coda.ParamDefs>;
   normalized?: boolean;
@@ -77,7 +92,7 @@ function AddMetafieldsSupportMixin<TBase extends Constructable>(Base: TBase) {
 }
 // #endregion
 
-export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
+export abstract class AbstractSyncedResources<T extends AbstractModel> {
   protected data: T[];
 
   protected readonly model: ModelType<T>;
@@ -193,7 +208,9 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
 
     this._metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({
       context: this.context,
-      ownerType: (this.model as unknown as typeof AbstractModelRestWithRestMetafields).metafieldGraphQlOwnerType,
+      ownerType: (
+        this.model as unknown as typeof AbstractModelRestWithRestMetafields | typeof AbstractModelGraphQlWithMetafields
+      ).metafieldGraphQlOwnerType,
     });
     return this._metafieldDefinitions;
   }
@@ -226,7 +243,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel<any>> {
 
   public abstract executeSyncUpdate(
     updates: Array<coda.SyncUpdate<string, string, any>>
-  ): Promise<SyncTableUpdateResult>;
+  ): Promise<coda.GenericSyncUpdateResult>;
 
   protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
     // Always include the id property

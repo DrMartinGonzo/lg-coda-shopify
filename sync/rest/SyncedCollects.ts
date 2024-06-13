@@ -1,7 +1,7 @@
 // #region Imports
 
 import { ListCollectsArgs } from '../../Clients/RestApiClientBase';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
 import { CollectModel } from '../../models/rest/CollectModel';
 import { FieldDependency } from '../../schemas/Schema.types';

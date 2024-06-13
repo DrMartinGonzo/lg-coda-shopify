@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListTranslatableContentsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_TranslatableContent } from '../../coda/setup/translations-setup';
 import { TranslatableContentModel } from '../../models/graphql/TranslatableContentModel';
 import { TranslatableContentSyncTableSchema } from '../../schemas/syncTable/TranslatableContentSchema';

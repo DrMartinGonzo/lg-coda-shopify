@@ -15,10 +15,10 @@ export interface RedirectApiData extends BaseApiDataRest {
   target: string | null;
 }
 
-interface RedirectModelData extends RedirectApiData {}
+export interface RedirectModelData extends RedirectApiData {}
 // #endregion
 
-export class RedirectModel extends AbstractModelRest<RedirectModel> {
+export class RedirectModel extends AbstractModelRest {
   public data: RedirectModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.Redirect;
 

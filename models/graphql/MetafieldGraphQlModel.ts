@@ -6,7 +6,7 @@ import { MetafieldClient } from '../../Clients/GraphQlApiClientBase';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
-import { MetafieldHelper, MetafieldNormalizedData } from '../../Resources/Mixed/MetafieldHelper';
+import { MetafieldHelper, MetafieldNormalizedData } from '../utils/MetafieldHelper';
 import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from '../../graphql/metafields-graphql';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
@@ -21,7 +21,7 @@ import {
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
@@ -60,7 +60,7 @@ export interface MetafieldApiData
 export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
 // #endregion
 
-export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQlModel> {
+export class MetafieldGraphQlModel extends AbstractModelGraphQl {
   public data: MetafieldModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Metafield;
@@ -121,7 +121,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
    *===================================================================================================================== */
   protected setData(data: MetafieldApiData): void {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
-    const fullkey = getMetaFieldFullKey({ key: data.key, namespace: data.namespace });
+    const fullkey = getMetaFieldFullKey(data);
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
     data.key = metaKey;
     data.namespace = metaNamespace;
@@ -146,7 +146,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl<MetafieldGraphQl
   }
 
   get fullKey() {
-    return `${this.data.namespace}.${this.data.key}`;
+    return getMetaFieldFullKey(this.data);
   }
   get prefixedFullKey() {
     return preprendPrefixToMetaFieldKey(this.fullKey);

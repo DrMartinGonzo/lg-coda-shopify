@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListOrderTransactionsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
 import { OrderTransactionModel } from '../../models/graphql/OrderTransactionModel';
 import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';

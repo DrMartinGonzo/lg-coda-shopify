@@ -5,16 +5,15 @@ import toPascalCase from 'to-pascal-case';
 import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
 import { ArticleClient, BlogClient, MetafieldClient, PageClient } from '../../Clients/RestApiClientBase';
 import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
-import { MetafieldGraphQl } from '../../Resources/GraphQl/MetafieldGraphQl';
-import { METAFIELD_TYPES, MetafieldType } from '../../Resources/Mixed/METAFIELD_TYPES';
-import { MetafieldHelper } from '../../Resources/Mixed/MetafieldHelper';
-import { SupportedMetafieldSyncTable } from '../../Resources/Mixed/SupportedMetafieldSyncTable';
+import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
+import { MetafieldHelper } from '../../models/utils/MetafieldHelper';
+import { SupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import {
   GraphQlFileTypes,
   GraphQlFileTypesNames,
   GraphQlResourceName,
   GraphQlResourceNames,
-} from '../../Resources/types/SupportedResource';
+} from '../../models/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
 import { MetafieldGraphQlModel, SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
@@ -29,7 +28,6 @@ import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
 import { filters, inputs } from '../coda-parameters';
@@ -43,7 +41,7 @@ function createSyncedRestMetafields(
   ownerModel: typeof ArticleModel | typeof BlogModel | typeof PageModel,
   ownerClient: typeof ArticleClient | typeof BlogClient | typeof PageClient
 ) {
-  return new SyncedMetafields<AbstractModelRestWithRestMetafields<any>>({
+  return new SyncedMetafields<AbstractModelRestWithRestMetafields>({
     context,
     codaSyncParams,
     model: ownerModel,
@@ -183,16 +181,15 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
           update.newValue.owner_type = metafieldOwnerType;
         });
 
-        const syncedMetafields = new SyncedMetafields({
-          context,
+        return createSyncedRestMetafields(
           codaSyncParams,
+          context,
           // @ts-expect-error
-          model: MetafieldModel,
-          client: MetafieldClient.createInstance(context),
-        });
-        return syncedMetafields.executeSyncUpdate(updates);
+          MetafieldModel,
+          MetafieldClient
+        ).executeSyncUpdate(updates);
       } else {
-        return MetafieldGraphQl.syncUpdate(codaSyncParams, updates, context);
+        return createSyncedGraphQlMetafields(codaSyncParams, context).executeSyncUpdate(updates);
       }
     },
   },
@@ -430,7 +427,8 @@ export const Formula_FormatMetafield = coda.makeFormula({
   parameters: [inputs.metafield.fullKey, inputs.metafield.value],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+  execute: async ([fullKey, value]) =>
+    CodaMetafieldSetNew.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatMetafieldNew = coda.makeFormula({
@@ -440,7 +438,7 @@ export const Formula_FormatMetafieldNew = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.Required,
   execute: async ([ownerType, fullKey, value]) =>
-    CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+    CodaMetafieldSetNew.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatListMetafield = coda.makeFormula({
@@ -451,7 +449,7 @@ export const Formula_FormatListMetafield = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, ...varargs]) =>
-    CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
+    CodaMetafieldSetNew.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
 });
 
 export const Formula_MetaBoolean = coda.makeFormula({

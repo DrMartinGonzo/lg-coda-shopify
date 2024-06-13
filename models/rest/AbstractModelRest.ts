@@ -1,8 +1,7 @@
 // #region Imports
 
-import { FetchRequestOptions } from '../../Clients/Client.types';
-import { IRestClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
-import { GraphQlResourceName } from '../../Resources/types/SupportedResource';
+import { AbstractRestClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
+import { GraphQlResourceName } from '../types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { AbstractModel, BaseModelData } from '../AbstractModel';
@@ -19,11 +18,11 @@ export interface BaseModelDataRest extends BaseModelData {
 // #endregion
 
 // TODO: implement readOnlyAttributes
-export abstract class AbstractModelRest<T> extends AbstractModel<T> {
+export abstract class AbstractModelRest extends AbstractModel {
   public data: BaseApiDataRest;
   protected static readonly graphQlName: GraphQlResourceName;
 
-  abstract get client(): IRestClient;
+  abstract get client(): AbstractRestClient<any, any, any, any>;
 
   get graphQlGid(): string {
     if ('admin_graphql_api_id' in this.data) {
@@ -32,7 +31,7 @@ export abstract class AbstractModelRest<T> extends AbstractModel<T> {
     return idToGraphQlGid((this.asStatic() as typeof AbstractModelRest).graphQlName, this.data[this.primaryKey]);
   }
 
-  protected async getFullFreshData(): Promise<BaseApiDataRest | undefined> {
+  protected async getFullFreshData(): Promise<BaseModelDataRest | undefined> {
     if (this.data[this.primaryKey]) {
       const found = await this.client.single({
         id: this.data[this.primaryKey],

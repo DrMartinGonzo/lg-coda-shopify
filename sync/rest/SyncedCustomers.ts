@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListCustomersArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { CustomerModel } from '../../models/rest/CustomerModel';
 import { FieldDependency } from '../../schemas/Schema.types';

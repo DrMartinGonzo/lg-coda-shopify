@@ -4,7 +4,7 @@ import toConstantCase from 'to-constant-case';
 import toPascalCase from 'to-pascal-case';
 
 import { TranslationClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { TranslationRow } from '../../schemas/CodaRows.types';
 import { LocalizableContentType, TranslatableResourceType } from '../../types/admin.types';
@@ -45,7 +45,7 @@ export interface TranslationModelData
 }
 // #endregion
 
-export class TranslationModel extends AbstractModelGraphQl<TranslationModel> {
+export class TranslationModel extends AbstractModelGraphQl {
   public data: TranslationModelData;
 
   protected readonly primaryKey = 'fullId';
@@ -259,13 +259,7 @@ export class TranslationModel extends AbstractModelGraphQl<TranslationModel> {
         // get up to date digest
         this.data.digest = await this.client.digest(this.data);
         const response = await this.client.register(this.data);
-        newData = {
-          ...this.data,
-          isDeletedFlag: false,
-          outdated: response?.body?.outdated,
-          updatedAt: response?.body?.updatedAt,
-          translatedValue: response?.body?.value,
-        };
+        newData = response.body;
       }
 
       if (newData) {

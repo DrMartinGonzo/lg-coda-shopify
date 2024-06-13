@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListDraftOrdersArgs } from '../../Clients/RestApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
 import { DraftOrderModel } from '../../models/rest/DraftOrderModel';
 import { FieldDependency } from '../../schemas/Schema.types';

@@ -81,6 +81,7 @@ import {
   buildProductsSearchQuery,
   createProductMutation,
   deleteProductMutation,
+  getProductTypesQuery,
   getProductsQuery,
   getSingleProductQuery,
   updateProductMutation,
@@ -106,10 +107,12 @@ import {
   ShopifyGraphQlUserError,
   ShopifyThrottledErrorCode,
 } from '../Errors/GraphQlErrors';
-import { METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
-import { CACHE_DEFAULT, CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PREFIX_FAKE } from '../constants';
+import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PREFIX_FAKE } from '../constants';
+import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
+import { METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
+import { RestResourcesSingular } from '../models/types/SupportedResource';
 import {
   LocalizableContentType,
   MetafieldDefinitionValidationStatus,
@@ -128,7 +131,7 @@ import { graphQlGidToResourceName } from '../utils/conversion-utils';
 import { arrayUnique, dumpToConsole, excludeUndefinedObjectKeys, isNullish, logAdmin } from '../utils/helpers';
 import { matchResourceNameToMetafieldOwnerType } from '../utils/metafields-utils';
 import { FetchRequestOptions } from './Client.types';
-import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-utils';
+import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCacheMax } from './utils/client-utils';
 
 // #endregion
 
@@ -138,16 +141,6 @@ import { getShopifyRequestHeaders, isCodaCached, wait } from './utils/client-uti
 // comme la requete graphql est elle même rapide, ça devrait passer ?
 
 // #region Types
-export interface IGraphQlCRUD {
-  defaultLimit: number;
-
-  single(params: BaseSingleArgs): Promise<GraphQlRequestReturn<any>>;
-  list(params: any): Promise<GraphQlRequestReturn<any[]>>;
-  create(modelData: BaseModelDataGraphQl): Promise<GraphQlRequestReturn<any>>;
-  update(modelData: BaseModelDataGraphQl): Promise<GraphQlRequestReturn<any>>;
-  delete(modelData: BaseModelDataGraphQl): Promise<GraphQlRequestReturn<any>>;
-}
-
 interface GraphQlData<T extends any> {
   data: T;
   errors: any;
@@ -192,16 +185,6 @@ interface BaseListArgs extends BaseFindArgs {
   cursor?: string;
 }
 // #endregion
-
-function withCacheDefault<T>({ options, ...args }: { options: FetchRequestOptions } & T) {
-  return {
-    options: {
-      ...options,
-      cacheTtlSecs: options?.cacheTtlSecs ?? CACHE_DEFAULT,
-    },
-    ...args,
-  } as T;
-}
 
 // #region GraphQlFetcher
 export class GraphQlFetcher {
@@ -296,10 +279,7 @@ export class GraphQlFetcher {
     return err;
   }
 
-  /**====================================================================================================================
-   *    Instance Methods
-   *===================================================================================================================== */
-  get apiUrl() {
+  private get apiUrl() {
     return `${this.context.endpoint}/admin/api/${this.apiVersion}/graphql.json`;
   }
 
@@ -455,6 +435,9 @@ export class GraphQlFetcher {
     return this.request({ ...params, variables: adjustedVariables });
   }
 
+  /**====================================================================================================================
+   *    Public API
+   *===================================================================================================================== */
   public async request<T extends any, NodeT extends TadaDocumentNode = TadaDocumentNode>({
     documentNode,
     variables,
@@ -519,7 +502,6 @@ export class GraphQlFetcher {
         documentNode: throttleStatusQuery,
         variables: {},
         options: { cacheTtlSecs: CACHE_DISABLED },
-        transformBodyResponse: transformSingleMetafieldResponse,
       })
     );
     return response.cost.throttleStatus;
@@ -596,6 +578,80 @@ export abstract class AbstractGraphQlClient<ModelData extends BaseModelDataGraph
   }
   async delete(modelData: ModelData): Promise<GraphQlRequestReturn<any>> {
     throw new UnsupportedClientOperation('delete', this.constructor.name);
+  }
+}
+// #endregion
+
+// #region CollectionClient
+interface SingleCollectionTypeResponse {
+  collection: {
+    isSmartCollection?: {
+      appliedDisjunctively: boolean;
+    };
+  };
+}
+interface MultipleCollectionTypesResponse {
+  nodes: {
+    id: string;
+    __typename: string;
+    isSmartCollection?: {
+      appliedDisjunctively: boolean;
+    };
+  }[];
+}
+
+interface SingleCollectionTypeArgs extends BaseSingleArgs {}
+interface MultipleCollectionTypeArgs extends BaseFindArgs {
+  ids: string[];
+}
+
+export class CollectionClient extends AbstractGraphQlClient<any> {
+  async collectionType({ id, options }: SingleCollectionTypeArgs) {
+    const documentNode = collectionTypeQuery;
+    const variables = {
+      collectionGid: id,
+    } as VariablesOf<typeof documentNode>;
+    const response = await this.request(
+      withCacheMax({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: SingleCollectionTypeResponse) =>
+          response.collection.isSmartCollection
+            ? RestResourcesSingular.SmartCollection
+            : RestResourcesSingular.CustomCollection,
+      })
+    );
+    return response.body;
+  }
+
+  async collectionTypes({ ids, options }: MultipleCollectionTypeArgs) {
+    const documentNode = collectionTypesQuery;
+    const variables = {
+      ids,
+    } as VariablesOf<typeof documentNode>;
+    const response = await this.request(
+      withCacheMax({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleCollectionTypesResponse) =>
+          response?.nodes
+            .map((node) => {
+              if (node.__typename === 'Collection') {
+                return {
+                  id: node.id,
+                  type: node.isSmartCollection
+                    ? RestResourcesSingular.SmartCollection
+                    : RestResourcesSingular.CustomCollection,
+                };
+              }
+            })
+            .filter(Boolean),
+      })
+    );
+
+    return response.body;
   }
 }
 // #endregion
@@ -799,7 +855,8 @@ export class InventoryItemClient extends AbstractGraphQlClient<InventoryItemMode
         options,
         documentNode,
         variables,
-        transformBodyResponse: (response: MultipleInventoryItemsResponse) => response?.inventoryItems.nodes,
+        transformBodyResponse: (response: MultipleInventoryItemsResponse) =>
+          response?.inventoryItems.nodes as InventoryItemModelData[],
       })
     );
   }
@@ -815,7 +872,8 @@ export class InventoryItemClient extends AbstractGraphQlClient<InventoryItemMode
       return this.request({
         documentNode,
         variables,
-        transformBodyResponse: (response: InventoryItemUpdateResponse) => response?.inventoryItemUpdate?.inventoryItem,
+        transformBodyResponse: (response: InventoryItemUpdateResponse) =>
+          response?.inventoryItemUpdate?.inventoryItem as InventoryItemModelData,
       });
     }
   }
@@ -1069,29 +1127,6 @@ function includeOwnerInMetafieldData(
   return data;
 }
 
-const transformSingleMetafieldResponse = (response: SingleMetafieldResponse) => response?.node as MetafieldModelData;
-
-const makeTransformSingleMetafieldsByKeyResponse = (metafieldOwnerType: MetafieldOwnerType) =>
-  function (response: SingleMetafieldByKeyResponse | MultipleShopMetafieldsResponse) {
-    const node =
-      metafieldOwnerType === MetafieldOwnerType.Shop
-        ? (response as MultipleShopMetafieldsResponse)?.shop
-        : (response as SingleMetafieldByKeyResponse)?.node;
-    return transformMetafieldOwnerNode(node);
-  };
-
-const makeTransformListMetafieldsByOwnerTypeResponse = (metafieldOwnerType: MetafieldOwnerType) => {
-  return function (response: MultipleMetafieldsByOwnerTypeResponse | MultipleShopMetafieldsResponse) {
-    if (metafieldOwnerType === MetafieldOwnerType.Shop) {
-      return transformMetafieldOwnerNode((response as MultipleShopMetafieldsResponse)?.shop);
-    }
-
-    const graphQlOperation = getMetafieldsByKeysGraphQlOperation(metafieldOwnerType);
-    const nodes = (response as MultipleMetafieldsByOwnerTypeResponse)[graphQlOperation]?.nodes;
-    return transformMetafieldOwnerNodes(nodes);
-  };
-};
-
 export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
   async single({ id, options }: SingleMetafieldArgs) {
     const documentNode = getSingleMetafieldQuery;
@@ -1101,7 +1136,7 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
         options,
         documentNode,
         variables,
-        transformBodyResponse: transformSingleMetafieldResponse,
+        transformBodyResponse: (response: SingleMetafieldResponse) => response?.node as MetafieldModelData,
       })
     );
   }
@@ -1136,7 +1171,13 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformSingleMetafieldsByKeyResponse(ownerType),
+        transformBodyResponse: function (response: SingleMetafieldByKeyResponse | MultipleShopMetafieldsResponse) {
+          const node =
+            ownerType === MetafieldOwnerType.Shop
+              ? (response as MultipleShopMetafieldsResponse)?.shop
+              : (response as SingleMetafieldByKeyResponse)?.node;
+          return transformMetafieldOwnerNode(node);
+        },
       })
     );
   }
@@ -1189,7 +1230,17 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformListMetafieldsByOwnerTypeResponse(ownerType),
+        transformBodyResponse: function (
+          response: MultipleMetafieldsByOwnerTypeResponse | MultipleShopMetafieldsResponse
+        ) {
+          if (ownerType === MetafieldOwnerType.Shop) {
+            return transformMetafieldOwnerNode((response as MultipleShopMetafieldsResponse)?.shop);
+          }
+
+          const graphQlOperation = getMetafieldsByKeysGraphQlOperation(ownerType);
+          const nodes = (response as MultipleMetafieldsByOwnerTypeResponse)[graphQlOperation]?.nodes;
+          return transformMetafieldOwnerNodes(nodes);
+        },
       })
     );
   }
@@ -1267,17 +1318,373 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
 // #endregion
 
 // #region MetafieldDefinitionClient
+interface SingleMetafieldDefinitionData {
+  metafieldDefinition: MetafieldDefinitionApiData;
+}
+interface MultipleMetafieldDefinitionsData {
+  metafieldDefinitions: { nodes: MetafieldDefinitionApiData[] };
+}
+
+interface SingleMetafieldDefinitionArgs extends BaseSingleArgs {}
+export interface ListMetafieldDefinitionsArgs extends Omit<BaseListArgs, 'forceAllFields'> {
+  ownerType: MetafieldOwnerType;
+  limit?: number;
+  cursor?: string;
+}
+interface ListMetafieldDefinitionsForOwnerArgs extends BaseListArgs {
+  ownerType: MetafieldOwnerType;
+  includeFakeExtraDefinitions?: boolean;
+}
+
+interface FakeMetafieldDefinition extends Omit<MetafieldDefinitionModelData, 'ownerType'> {}
+
+function wrapFakeMetafieldDefinition(
+  fake: FakeMetafieldDefinition,
+  ownerType: MetafieldOwnerType
+): MetafieldDefinitionModelData {
+  return { ...fake, ownerType };
+}
+
+const FAKE_METADEFINITION__SEO_DESCRIPTION: FakeMetafieldDefinition = {
+  id: `${PREFIX_FAKE}SEO_DESCRIPTION_ID`,
+  name: 'SEO Description',
+  namespace: 'global',
+  key: 'description_tag',
+  type: {
+    name: METAFIELD_TYPES.single_line_text_field,
+  },
+  description: 'The meta description.',
+  validations: [],
+  metafieldsCount: 0,
+  pinnedPosition: 1000,
+  validationStatus: MetafieldDefinitionValidationStatus.AllValid,
+  visibleToStorefrontApi: true,
+};
+
+const FAKE_METADEFINITION__SEO_TITLE: FakeMetafieldDefinition = {
+  id: `${PREFIX_FAKE}SEO_TITLE_ID`,
+  name: 'SEO Title',
+  namespace: 'global',
+  key: 'title_tag',
+  type: {
+    name: METAFIELD_TYPES.single_line_text_field,
+  },
+  description: 'The meta title.',
+  validations: [],
+  metafieldsCount: 0,
+  pinnedPosition: 1001,
+  validationStatus: MetafieldDefinitionValidationStatus.AllValid,
+  visibleToStorefrontApi: true,
+};
+
+export class MetafieldDefinitionClient extends AbstractGraphQlClient<MetafieldDefinitionModelData> {
+  protected static readonly defaultLimit = 50;
+
+  async single({ id, options }: SingleMetafieldDefinitionArgs) {
+    const documentNode = getSingleMetafieldDefinitionQuery;
+    const variables = { id } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (data: SingleMetafieldDefinitionData) =>
+          data?.metafieldDefinition as MetafieldDefinitionModelData,
+      })
+    );
+  }
+
+  async list({ ownerType = null, cursor, limit, options }: ListMetafieldDefinitionsArgs) {
+    const documentNode = getMetafieldDefinitionsQuery;
+    const variables = {
+      limit: limit ?? MetafieldDefinitionClient.defaultLimit,
+      cursor,
+      ownerType,
+    } as VariablesOf<typeof getMetafieldDefinitionsQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (data: MultipleMetafieldDefinitionsData) =>
+          data?.metafieldDefinitions.nodes as unknown as MetafieldDefinitionModelData[],
+      })
+    );
+  }
+
+  async listForOwner({
+    ownerType = null,
+    includeFakeExtraDefinitions = true,
+    options,
+  }: ListMetafieldDefinitionsForOwnerArgs) {
+    let data = await this.listAllLoop({
+      ownerType: ownerType,
+      limit: 200,
+      options,
+    });
+
+    /* Add 'Fake' metafield definitions for SEO metafields */
+    if (includeFakeExtraDefinitions && this.shouldIncludeFakeExtraDefinitions(ownerType)) {
+      data = [
+        ...data,
+        wrapFakeMetafieldDefinition(FAKE_METADEFINITION__SEO_DESCRIPTION, ownerType),
+        wrapFakeMetafieldDefinition(FAKE_METADEFINITION__SEO_TITLE, ownerType),
+      ];
+    }
+    return data;
+  }
+
+  private shouldIncludeFakeExtraDefinitions(ownerType: MetafieldOwnerType) {
+    return [
+      MetafieldOwnerType.Article,
+      MetafieldOwnerType.Blog,
+      MetafieldOwnerType.Collection,
+      MetafieldOwnerType.Page,
+      MetafieldOwnerType.Product,
+    ].includes(ownerType);
+  }
+}
 // #endregion
 
 // #region MetaobjectClient
+interface SingleMetaobjectResponse {
+  metaobject: MetaobjectApiData;
+}
+interface MultipleMetaobjectsResponse {
+  metaobjects: { nodes: MetaobjectApiData[] };
+}
+interface MetaobjectCreateResponse {
+  metaobjectCreate: {
+    metaobject: MetaobjectApiData;
+  };
+}
+interface MetaobjectUpdateResponse {
+  metaobjectUpdate: {
+    metaobject: MetaobjectApiData;
+  };
+}
+
+export interface MetaobjectFieldsArgs {
+  capabilities?: boolean;
+  definition?: boolean;
+  fieldDefinitions?: boolean;
+}
+interface SingleMetaobjectArgs extends BaseSingleArgs {
+  fields?: MetaobjectFieldsArgs;
+  metafieldKeys?: string[];
+}
+export interface ListMetaobjectsArgs extends BaseListArgs {
+  type: string;
+  limit?: number;
+  cursor?: string;
+  fields?: MetaobjectFieldsArgs;
+}
+
+export class MetaobjectClient extends AbstractGraphQlClient<MetaobjectModelData> {
+  protected static readonly defaultLimit = 50;
+
+  async single({ id, fields = {}, forceAllFields, options }: SingleMetaobjectArgs) {
+    const documentNode = getSingleMetaObjectWithFieldsQuery;
+    const variables = {
+      id,
+      includeCapabilities: forceAllFields ?? fields?.capabilities ?? false,
+      includeDefinition: forceAllFields ?? fields?.definition ?? false,
+      includeFieldDefinitions: forceAllFields ?? fields?.fieldDefinitions ?? false,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: SingleMetaobjectResponse) => response?.metaobject as MetaobjectModelData,
+      })
+    );
+  }
+
+  async list({ fields = {}, type, forceAllFields, cursor, limit, options }: ListMetaobjectsArgs) {
+    let searchQuery = '';
+
+    const documentNode = getMetaObjectsWithFieldsQuery;
+    const variables = {
+      limit: limit ?? MetaobjectClient.defaultLimit,
+      cursor,
+      searchQuery,
+
+      type,
+      includeCapabilities: forceAllFields ?? fields?.capabilities ?? true,
+      includeDefinition: forceAllFields ?? fields?.definition ?? true,
+      includeFieldDefinitions: forceAllFields ?? fields?.fieldDefinitions ?? true,
+    } as VariablesOf<typeof getMetaObjectsWithFieldsQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleMetaobjectsResponse) =>
+          response?.metaobjects.nodes as MetaobjectModelData[],
+      })
+    );
+  }
+
+  async create(modelData: MetaobjectModelData) {
+    const input = this.formatCreateInput(modelData);
+    if (input) {
+      const documentNode = createMetaobjectMutation;
+      const variables = {
+        metaobject: input,
+      } as VariablesOf<typeof createMetaobjectMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MetaobjectCreateResponse) =>
+          response?.metaobjectCreate?.metaobject as MetaobjectModelData,
+      });
+    }
+  }
+
+  async update(modelData: MetaobjectModelData) {
+    const input = this.formatUpdateInput(modelData);
+    if (input) {
+      const documentNode = updateMetaObjectMutation;
+      const variables = {
+        id: modelData.id,
+        metaobject: input,
+        includeDefinition: false,
+        includeCapabilities: input.hasOwnProperty('capabilities'),
+        includeFieldDefinitions: false,
+      } as VariablesOf<typeof updateMetaObjectMutation>;
+      return this.request({
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MetaobjectUpdateResponse) =>
+          response?.metaobjectUpdate?.metaobject as MetaobjectModelData,
+      });
+    }
+  }
+
+  async delete(modelData: Pick<MetaobjectModelData, 'id'>) {
     return this.request({
       documentNode: deleteMetaobjectMutation,
       variables: { id: modelData.id } as VariablesOf<typeof deleteMetaobjectMutation>,
     });
   }
+
+  private formatCreateInput(modelData: MetaobjectModelData) {
+    let input = this.formatUpdateInput(modelData) as MetaobjectCreateInput;
+    if (input) {
+      input.type = modelData.type;
+    }
+    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+  private formatUpdateInput(modelData: MetaobjectModelData) {
+    const input: MetaobjectUpdateInput = {
+      capabilities: modelData.capabilities as MetaobjectCapabilityDataInput,
+      handle: modelData.handle,
+      fields: modelData.fields.map((f) => ({ key: f.key, value: f.value })),
+    };
+    const filteredInput = excludeUndefinedObjectKeys({
+      ...input,
+      fields: input.fields.map((f) => excludeUndefinedObjectKeys(f)),
+    }) as MetaobjectUpdateInput;
+
+    // If no input, we have nothing to update.
+    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
 // #endregion
 
 // #region MetaobjectDefinitionClient
+interface SingleMetaobjectDefinitionData {
+  metaobjectDefinition: MetaobjectDefinitionApiData;
+}
+interface SingleMetaobjectDefinitionByTypeData {
+  metaobjectDefinitionByType: MetaobjectDefinitionApiData;
+}
+interface MultipleMetaobjectDefinitionsData {
+  metaobjectDefinitions: { nodes: MetaobjectDefinitionApiData[] };
+}
+
+interface MetaobjectDefinitionFieldsArgs {
+  capabilities?: boolean;
+  fieldDefinitions?: boolean;
+}
+interface SingleMetaobjectDefinitionArgs extends BaseSingleArgs {
+  fields?: MetaobjectDefinitionFieldsArgs;
+}
+interface SingleMetaobjectByTypeDefinitionArgs extends Omit<BaseSingleArgs, 'id'> {
+  type: string;
+  fields?: MetaobjectDefinitionFieldsArgs;
+}
+interface ListMetaobjectDefinitionsArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  fields?: MetaobjectDefinitionFieldsArgs;
+}
+
+export class MetaobjectDefinitionClient extends AbstractGraphQlClient<MetaobjectDefinitionModelData> {
+  protected static readonly defaultLimit = 50;
+
+  async single({ id, fields = {}, forceAllFields, options }: SingleMetaobjectDefinitionArgs) {
+    const documentNode = getSingleMetaObjectDefinitionQuery;
+    const variables = {
+      id,
+      includeCapabilities: forceAllFields ?? fields?.capabilities ?? false,
+      includeFieldDefinitions: forceAllFields ?? fields?.fieldDefinitions ?? false,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (data: SingleMetaobjectDefinitionData) =>
+          data?.metaobjectDefinition as MetaobjectDefinitionModelData,
+      })
+    );
+  }
+
+  async singleByType({ type, fields = {}, forceAllFields, options }: SingleMetaobjectByTypeDefinitionArgs) {
+    const documentNode = getSingleMetaobjectDefinitionByTypeQuery;
+    const variables = {
+      type,
+      includeCapabilities: forceAllFields ?? fields?.capabilities ?? false,
+      includeFieldDefinitions: forceAllFields ?? fields?.fieldDefinitions ?? false,
+    } as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (data: SingleMetaobjectDefinitionByTypeData) =>
+          data?.metaobjectDefinitionByType as MetaobjectDefinitionModelData,
+      })
+    );
+  }
+
+  async list({ fields = {}, forceAllFields, cursor, limit, options }: ListMetaobjectDefinitionsArgs) {
+    const documentNode = getMetaobjectDefinitionsQuery;
+    const variables = {
+      limit: limit ?? MetaobjectDefinitionClient.defaultLimit,
+      cursor,
+      includeCapabilities: forceAllFields ?? fields?.capabilities ?? false,
+      includeFieldDefinitions: forceAllFields ?? fields?.fieldDefinitions ?? false,
+    } as VariablesOf<typeof getMetaobjectDefinitionsQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (data: MultipleMetaobjectDefinitionsData) =>
+          data?.metaobjectDefinitions.nodes as MetaobjectDefinitionModelData[],
+      })
+    );
+  }
+}
 // #endregion
 
 // #region OrderTransactionClient
@@ -1394,6 +1801,16 @@ interface SingleProductResponse {
 }
 interface MultipleProductsResponse {
   products: { nodes: ProductApidata[] };
+}
+interface ProductTypesResponse {
+  shop: {
+    name: string;
+    productTypes: {
+      edges: {
+        node: string;
+      }[];
+    };
+  };
 }
 interface ProductCreateResponse {
   productCreate: {
@@ -1518,6 +1935,19 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
     );
   }
 
+  async productTypes({ options }: BaseFindArgs) {
+    const response = await this.request(
+      withCacheDefault({
+        options,
+        documentNode: getProductTypesQuery,
+        variables: {},
+        transformBodyResponse: (response: ProductTypesResponse) =>
+          response?.shop?.productTypes?.edges ? response.shop.productTypes.edges.map((edge) => edge.node) : [],
+      })
+    );
+    return response.body;
+  }
+
   async create(modelData: ProductModelData) {
     const input = this.formatCreateInput(modelData);
     if (input) {
@@ -1639,18 +2069,18 @@ export interface ListTranslationsArgs extends BaseListArgs {
 }
 
 function translatableResourceToTranslationModelData({
-  translatableResource,
+  resourceGid,
   translatableContent,
   translation,
   locale,
 }: {
-  translatableResource: Pick<TranslatableResourceApiData, 'resourceId'>;
+  resourceGid: string;
   translatableContent: Pick<TranslatableContentApiData, 'digest' | 'type' | 'value'>;
   translation?: TranslationApiData;
   locale: string;
 }) {
   const data: Partial<TranslationModelData> = {
-    resourceGid: translatableResource.resourceId,
+    resourceGid,
     locale,
     digest: translatableContent?.digest,
     originalValue: translatableContent?.value,
@@ -1668,45 +2098,6 @@ function translatableResourceToTranslationModelData({
   return data as TranslationModelData;
 }
 
-const makeTransformSingleTranslationResponse = (key: string, locale: string) =>
-  function (response: SingleTranslationResponse) {
-    const translatableResource = response?.translatableResource;
-    const matchingTranslatableContent = translatableResource?.translatableContent.find((c) => c.key === key);
-    const matchingTranslation = translatableResource?.translations.find((t) => t.key === key);
-    return translatableResourceToTranslationModelData({
-      translatableResource: translatableResource,
-      translatableContent: matchingTranslatableContent,
-      translation: matchingTranslation,
-      locale,
-    });
-  };
-const makeTransformMultipleTranslationsResponse = (locale: string) =>
-  function (response: MultipleTranslationsResponse) {
-    let data: TranslationModelData[] = [];
-
-    if (response?.translatableResources?.nodes) {
-      data = response.translatableResources.nodes.flatMap((translatableResource) => {
-        return translatableResource.translations.map((translation) => {
-          return translatableResourceToTranslationModelData({
-            translatableResource: translatableResource,
-            translatableContent: translatableResource.translatableContent.find((c) => c.key === translation.key),
-            translation: translation,
-            locale,
-          });
-        });
-      });
-    }
-
-    return data;
-  };
-const makeTransformRegisterTranslationResponse = (modelData: TranslationModelData) =>
-  function (response: RegisterTranslationsResponse) {
-    const matchingTranslation = response?.translationsRegister.translations.find(
-      (t) => t.key === modelData.key && t.locale === modelData.locale
-    );
-    return matchingTranslation;
-  };
-
 export class TranslationClient extends AbstractGraphQlClient<TranslationModelData> {
   async single({ key, id, locale, options }: SingleTranslationArgs) {
     const documentNode = getSingleTranslationQuery;
@@ -1719,7 +2110,17 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformSingleTranslationResponse(key, locale),
+        transformBodyResponse: function (response: SingleTranslationResponse) {
+          const translatableResource = response?.translatableResource;
+          const matchingTranslatableContent = translatableResource?.translatableContent.find((c) => c.key === key);
+          const matchingTranslation = translatableResource?.translations.find((t) => t.key === key);
+          return translatableResourceToTranslationModelData({
+            resourceGid: translatableResource.resourceId,
+            translatableContent: matchingTranslatableContent,
+            translation: matchingTranslation,
+            locale,
+          });
+        },
       })
     );
   }
@@ -1738,7 +2139,24 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformMultipleTranslationsResponse(locale),
+        transformBodyResponse: function (response: MultipleTranslationsResponse) {
+          let data: TranslationModelData[] = [];
+
+          if (response?.translatableResources?.nodes) {
+            data = response.translatableResources.nodes.flatMap((translatableResource) => {
+              return translatableResource.translations.map((translation) => {
+                return translatableResourceToTranslationModelData({
+                  resourceGid: translatableResource.resourceId,
+                  translatableContent: translatableResource.translatableContent.find((c) => c.key === translation.key),
+                  translation: translation,
+                  locale,
+                });
+              });
+            });
+          }
+
+          return data;
+        },
       })
     );
   }
@@ -1784,9 +2202,23 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
     return this.request({
       documentNode,
       variables,
-      transformBodyResponse: makeTransformRegisterTranslationResponse(modelData),
+      transformBodyResponse: function (response: RegisterTranslationsResponse) {
+        const matchingTranslation = response?.translationsRegister.translations.find(
+          (t) => t.key === modelData.key && t.locale === modelData.locale
+        );
+        // merge with existing data
+        return translatableResourceToTranslationModelData({
+          resourceGid: modelData.resourceGid,
+          translatableContent: {
+            digest: modelData.digest,
+            type: modelData.type,
+            value: modelData.originalValue,
+          },
+          translation: matchingTranslation,
+          locale: modelData.locale,
+        });
+      },
     });
-    // }
   }
 }
 // #endregion
@@ -1802,27 +2234,6 @@ export interface ListTranslatableContentsArgs extends BaseListArgs {
   resourceType: TranslatableResourceType;
 }
 
-const makeTransformMultipleTranslatableContentsResponse = (resourceType: TranslatableResourceType) =>
-  function (response: MultipleTranslatableContentsResponse) {
-    let data: TranslatableContentModelData[] = [];
-
-    if (response?.translatableResources?.nodes) {
-      return response.translatableResources.nodes.flatMap((translatableResource) => {
-        return translatableResource.translatableContent.map((translatableContent) => {
-          return {
-            resourceGid: translatableResource.resourceId,
-            key: translatableContent.key,
-            value: translatableContent.value,
-            type: translatableContent?.type,
-            resourceType,
-          } as TranslatableContentModelData;
-        });
-      });
-    }
-
-    return data;
-  };
-
 export class TranslatableContentClient extends AbstractGraphQlClient<TranslatableContentModelData> {
   async list({ resourceType, cursor, limit, options }: ListTranslatableContentsArgs) {
     const documentNode = getTranslatableResourcesQuery;
@@ -1837,7 +2248,25 @@ export class TranslatableContentClient extends AbstractGraphQlClient<Translatabl
         options,
         documentNode,
         variables,
-        transformBodyResponse: makeTransformMultipleTranslatableContentsResponse(resourceType),
+        transformBodyResponse: function (response: MultipleTranslatableContentsResponse) {
+          let data: TranslatableContentModelData[] = [];
+
+          if (response?.translatableResources?.nodes) {
+            return response.translatableResources.nodes.flatMap((translatableResource) => {
+              return translatableResource.translatableContent.map((translatableContent) => {
+                return {
+                  resourceGid: translatableResource.resourceId,
+                  key: translatableContent.key,
+                  value: translatableContent.value,
+                  type: translatableContent?.type,
+                  resourceType,
+                } as TranslatableContentModelData;
+              });
+            });
+          }
+
+          return data;
+        },
       })
     );
   }

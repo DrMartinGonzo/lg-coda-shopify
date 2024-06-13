@@ -14,17 +14,17 @@ import {
 import { wait } from '../../Clients/utils/client-utils';
 import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
-import { SyncTableUpdateResult } from '../../SyncTableManager/types/SyncTableManager.types';
-import {
-  parseContinuationProperty,
-  stringifyContinuationProperty,
-} from '../../SyncTableManager/utils/syncTableManager-utils';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
+import {
+  graphQlResourceSupportsMetafields,
+  parseContinuationProperty,
+  stringifyContinuationProperty,
+} from '../utils/sync-utils';
 
 // #endregion
 
@@ -41,16 +41,8 @@ interface ISyncedGraphQlResourcesConstructorArgs<T> extends ISyncedResourcesCons
 }
 // #endregion
 
-// TODO
-function hasMetafieldsSupport(model: any): model is typeof AbstractModelGraphQlWithMetafields {
-  return (
-    (model as typeof AbstractModelGraphQlWithMetafields).metafieldRestOwnerType !== undefined &&
-    (model as typeof AbstractModelGraphQlWithMetafields).metafieldGraphQlOwnerType !== undefined
-  );
-}
-
 export abstract class AbstractSyncedGraphQlResources<
-  T extends AbstractModelGraphQl<any> | AbstractModelGraphQlWithMetafields<any>
+  T extends AbstractModelGraphQl | AbstractModelGraphQlWithMetafields
 > extends AbstractSyncedResources<T> {
   protected readonly client: AbstractGraphQlClient<any>;
 
@@ -63,7 +55,7 @@ export abstract class AbstractSyncedGraphQlResources<
     super(args);
 
     this.client = client;
-    this.supportMetafields = hasMetafieldsSupport(this.model);
+    this.supportMetafields = graphQlResourceSupportsMetafields(this.model);
   }
 
   // private async getMetafieldDefinitions(): Promise<MetafieldDefinition[]> {
@@ -204,7 +196,7 @@ export abstract class AbstractSyncedGraphQlResources<
     if (this.supportMetafields && this.asStatic().hasMetafieldsInRow(row)) {
       // Warm up metafield definitions cache
       const metafieldDefinitions = await this.getMetafieldDefinitions();
-      (instance as AbstractModelGraphQlWithMetafields<any>).data.metafields =
+      (instance as AbstractModelGraphQlWithMetafields).data.metafields =
         await MetafieldGraphQlModel.createInstancesFromOwnerRow({
           context: this.context,
           ownerRow: row,
@@ -214,7 +206,10 @@ export abstract class AbstractSyncedGraphQlResources<
     }
     return instance;
   }
-  public async executeSyncUpdate(updates: Array<coda.SyncUpdate<string, string, any>>): Promise<SyncTableUpdateResult> {
+
+  public async executeSyncUpdate(
+    updates: Array<coda.SyncUpdate<string, string, any>>
+  ): Promise<coda.GenericSyncUpdateResult> {
     await this.init();
 
     const completed = await Promise.allSettled(
@@ -227,22 +222,24 @@ export abstract class AbstractSyncedGraphQlResources<
         const newRow = Object.fromEntries(
           Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
         ) as BaseRow;
-        if (this.validateSyncUpdate) this.validateSyncUpdate(prevRow, newRow);
         const instance = await this.createInstanceFromRow(newRow);
 
-        // console.log('instance', instance.data.metafields);
-        // throw new Error('Not implemented');
-        try {
-          await instance.save();
-        } catch (error) {
-          if (error instanceof RequiredSyncTableMissingVisibleError) {
-            /** Try to augment with fresh data and check again if it passes validation */
-            await instance.addMissingData();
-            await instance.save();
-          } else {
-            throw error;
+        if (this.validateSyncUpdate) {
+          try {
+            this.validateSyncUpdate(prevRow, newRow);
+          } catch (error) {
+            // TODO: rename this error to something else ?
+            if (error instanceof RequiredSyncTableMissingVisibleError) {
+              /** Try to augment with fresh data and check again if it passes validation */
+              await instance.addMissingData();
+              this.validateSyncUpdate(prevRow, instance.toCodaRow());
+            } else {
+              throw error;
+            }
           }
         }
+
+        await instance.save();
 
         return { ...prevRow, ...instance.toCodaRow() };
       })

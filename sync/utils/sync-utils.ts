@@ -1,10 +1,11 @@
 // #region Imports
 
+import { AbstractModelGraphQlWithMetafields } from '../../models/graphql/AbstractModelGraphQlWithMetafields';
+import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { Stringified } from '../../types/utilities';
 
 // #endregion
 
-// #region Continuation
 /**
  * Serializes a value to a JSON string with a special type to ensure that the
  * resulting string can be used to recreate the original value.
@@ -41,4 +42,18 @@ export function parseContinuationProperty<T>(
   if (text == undefined) return undefined;
   return JSON.parse(text);
 }
-// #endregion
+
+export function restResourceSupportsMetafields(model: any): model is typeof AbstractModelRestWithRestMetafields {
+  return (
+    (model as typeof AbstractModelRestWithRestMetafields).metafieldRestOwnerType !== undefined &&
+    (model as typeof AbstractModelRestWithRestMetafields).metafieldGraphQlOwnerType !== undefined
+  );
+}
+
+// TODO
+export function graphQlResourceSupportsMetafields(model: any): model is typeof AbstractModelGraphQlWithMetafields {
+  return (
+    (model as typeof AbstractModelGraphQlWithMetafields).metafieldRestOwnerType !== undefined &&
+    (model as typeof AbstractModelGraphQlWithMetafields).metafieldGraphQlOwnerType !== undefined
+  );
+}

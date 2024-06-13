@@ -1,7 +1,7 @@
 // #region Imports
 
 import { ListInventoryLevelsArgs } from '../../Clients/RestApiClientBase';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_InventoryLevels } from '../../coda/setup/inventoryLevels-setup';
 import { InventoryLevelModel } from '../../models/rest/InventoryLevelModel';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';

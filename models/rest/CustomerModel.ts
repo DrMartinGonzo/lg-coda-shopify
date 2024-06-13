@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomerClient } from '../../Clients/RestApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import {
@@ -49,10 +49,10 @@ export interface CustomerApiData extends BaseApiDataRest {
   verified_email: boolean | null;
 }
 
-interface CustomerModelData extends CustomerApiData, BaseModelDataRestWithGraphQlMetafields {}
+export interface CustomerModelData extends CustomerApiData, BaseModelDataRestWithGraphQlMetafields {}
 // #endregion
 
-export class CustomerModel extends AbstractModelRestWithGraphQlMetafields<CustomerModel> {
+export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
   public data: CustomerModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Customer;

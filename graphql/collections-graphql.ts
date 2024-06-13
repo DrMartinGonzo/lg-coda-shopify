@@ -117,7 +117,7 @@ export const collectionTypesQuery = graphql(
 // #endregion
 
 // #region Mutations
-export const MutationCollectionProduct = /* GraphQL */ `
+const MutationCollectionProduct = /* GraphQL */ `
   mutation UpdateCollection($input: CollectionInput!) {
     collectionUpdate(input: $input) {
       collection {

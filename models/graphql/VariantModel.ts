@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { VariantClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { productVariantFieldsFragment } from '../../graphql/productVariants-graphql';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
@@ -31,7 +31,7 @@ export interface VariantModelData extends Omit<VariantApidata, 'metafields'>, Ba
 export const VARIANT_OPTION_KEYS = ['option1', 'option2', 'option3'];
 export const VARIANT_WEIGHT_KEYS = ['grams', 'weight', 'weight_unit'];
 
-export class VariantModel extends AbstractModelGraphQlWithMetafields<VariantModel> {
+export class VariantModel extends AbstractModelGraphQlWithMetafields {
   public data: VariantModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.ProductVariant;

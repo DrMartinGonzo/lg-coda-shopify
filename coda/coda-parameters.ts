@@ -2,19 +2,15 @@
 import * as coda from '@codahq/packs-sdk';
 import { readFragment, readFragmentArray } from '../utils/tada-utils';
 
-import { LocationClient } from '../Clients/GraphQlApiClientBase';
-import { BlogClient, ListBlogsArgs } from '../Clients/RestApiClientBase';
-import { Metaobject } from '../Resources/GraphQl/Metaobject';
-import { MetaobjectDefinition } from '../Resources/GraphQl/MetaobjectDefinition';
-import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import {
-  GraphQlFileTypesNames,
-  GraphQlResourceNames,
-  RestResourceSingular,
-} from '../Resources/types/SupportedResource';
+  LocationClient,
+  MetaobjectClient,
+  MetaobjectDefinitionClient,
+  ProductClient,
+} from '../Clients/GraphQlApiClientBase';
+import { BlogClient, ListBlogsArgs } from '../Clients/RestApiClientBase';
 import { DEFAULT_THUMBNAIL_SIZE } from '../config';
 import {
-  CACHE_DEFAULT,
   FULL_SIZE,
   GRAPHQL_NODES_LIMIT,
   OPTIONS_COUNTRY_NAMES,
@@ -32,11 +28,12 @@ import {
   metaobjectFieldDefinitionFragment,
 } from '../graphql/metaobjectDefinition-graphql';
 import { getTemplateSuffixesFor } from '../models/rest/AssetModel';
+import { GraphQlFileTypesNames, GraphQlResourceNames, RestResourceSingular } from '../models/types/SupportedResource';
+import { MetafieldHelper } from '../models/utils/MetafieldHelper';
 import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
 import { graphQlGidToId, idToGraphQlGid } from '../utils/conversion-utils';
 import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
-import { fetchProductTypesGraphQl } from '../utils/products-utils';
 
 // #endregion
 
@@ -124,17 +121,16 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
   if (!args.metaobjectId || args.metaobjectId === '') {
     throw new coda.UserVisibleError('You need to provide the ID of the metaobject first for autocomplete to work.');
   }
-  const metaobject = await Metaobject.find({
-    context,
+
+  const response = await MetaobjectClient.createInstance(context).single({
     id: idToGraphQlGid(GraphQlResourceNames.Metaobject, args.metaobjectId),
     fields: { definition: true, fieldDefinitions: true },
-    options: { cacheTtlSecs: CACHE_DEFAULT },
   });
 
-  const fieldDefinitions = metaobject?.apiData.definition
+  const fieldDefinitions = response?.body?.definition
     ? readFragmentArray(
         metaobjectFieldDefinitionFragment,
-        readFragment(metaobjectDefinitionFragment, metaobject.apiData.definition).fieldDefinitions
+        readFragment(metaobjectDefinitionFragment, response.body.definition).fieldDefinitions
       )
     : [];
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
@@ -148,34 +144,22 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
   if (!args.type || args.type === '') {
     throw new coda.UserVisibleError('You need to define the type of the metaobject first for autocomplete to work.');
   }
-  const metaObjectDefinition = await MetaobjectDefinition.findByType({
-    context,
+
+  const response = await MetaobjectDefinitionClient.createInstance(context).singleByType({
     type: args.type,
     fields: { fieldDefinitions: true },
-    options: { cacheTtlSecs: CACHE_DEFAULT },
   });
-  const fieldDefinitions = readFragmentArray(
-    metaobjectFieldDefinitionFragment,
-    metaObjectDefinition.apiData.fieldDefinitions
-  );
+  const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, response.body.fieldDefinitions);
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 
 export async function autocompleteMetaobjectType(context: coda.ExecutionContext, search: string, args: any) {
-  const metaobjectDefinitions = await MetaobjectDefinition.allDataLoop<MetaobjectDefinition>({
-    context,
-    options: { cacheTtlSecs: CACHE_DEFAULT },
-  });
-  return coda.autocompleteSearchObjects(
-    search,
-    metaobjectDefinitions.map((p) => p.apiData),
-    'name',
-    'type'
-  );
+  const metaobjectDefinitionsData = await MetaobjectDefinitionClient.createInstance(context).listAllLoop({});
+  return coda.autocompleteSearchObjects(search, metaobjectDefinitionsData, 'name', 'type');
 }
 
 async function autocompleteProductTypes(context: coda.ExecutionContext, search: string) {
-  const productTypes = await fetchProductTypesGraphQl(context);
+  const productTypes = await ProductClient.createInstance(context).productTypes({});
   return coda.simpleAutocomplete(search, productTypes);
 }
 

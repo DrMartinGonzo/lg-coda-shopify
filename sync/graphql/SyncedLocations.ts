@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListLocationsArgs, LocationFieldsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Locations } from '../../coda/setup/locations-setup';
 import { LocationModel } from '../../models/graphql/LocationModel';
 import { augmentSchemaWithMetafields } from '../../schemas/schema-utils';

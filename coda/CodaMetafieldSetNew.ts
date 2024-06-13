@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { InvalidValueVisibleError } from '../Errors/Errors';
-import { METAFIELD_TYPES, MetafieldType } from '../Resources/Mixed/METAFIELD_TYPES';
+import { METAFIELD_TYPES, MetafieldType } from '../models/types/METAFIELD_TYPES';
 import {
   MetafieldApiData as MetafieldGraphQlApiData,
   MetafieldGraphQlModel,
@@ -10,7 +10,7 @@ import {
 } from '../models/graphql/MetafieldGraphQlModel';
 import { MetafieldApiData, MetafieldModel, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { arrayUnique } from '../utils/helpers';
-import { splitMetaFieldFullKey } from '../utils/metafields-utils';
+import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../utils/metafields-utils';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 
 // #endregion
@@ -174,7 +174,7 @@ export class CodaMetafieldSetNew {
    *    Instance Methods
    *===================================================================================================================== */
   get fullKey() {
-    return `${this.namespace}.${this.key}`;
+    return getMetaFieldFullKey(this);
   }
 
   public toJSON() {

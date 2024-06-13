@@ -4,7 +4,7 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf } from '../../utils/tada-utils';
 
 import { OrderTransactionClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { orderTransactionFieldsFragment } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
@@ -27,7 +27,7 @@ export interface OrderTransactionModelData extends OrderTransactionApiData, Base
 }
 // #endregion
 
-export class OrderTransactionModel extends AbstractModelGraphQl<OrderTransactionModel> {
+export class OrderTransactionModel extends AbstractModelGraphQl {
   public data: OrderTransactionModelData;
 
   public static readonly displayName: Identity = PACK_IDENTITIES.OrderTransaction;

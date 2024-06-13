@@ -3,9 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ProductClient } from '../../Clients/GraphQlApiClientBase';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { ProductGraphQl } from '../../Resources/GraphQl/Product';
-import { FromRow } from '../../Resources/types/Resource.types';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
 import {
   CACHE_DEFAULT,
   DEFAULT_PRODUCT_STATUS_GRAPHQL,
@@ -16,14 +13,15 @@ import {
 } from '../../constants';
 import { ProductModel } from '../../models/graphql/ProductModel';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
+import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchema } from '../../schemas/syncTable/ProductSchema';
 import { SyncedProducts } from '../../sync/graphql/SyncedProducts';
+import { MetafieldOwnerType } from '../../types/admin.types';
 import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { assertAllowedValue, assertNotBlank, isNullishOrEmpty } from '../../utils/helpers';
-import { fetchProductTypesGraphQl } from '../../utils/products-utils';
-import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
 // #endregion
@@ -86,7 +84,7 @@ export const Sync_Products = coda.makeSyncTable({
     defaultAddDynamicColumns: false,
     propertyOptions: async function (context) {
       if (context.propertyName === 'product_type') {
-        return fetchProductTypesGraphQl(context);
+        return ProductClient.createInstance(context).productTypes({});
       }
       if (context.propertyName === 'template_suffix') {
         return getTemplateSuffixesFor({ kind: 'product', context });
@@ -165,18 +163,15 @@ export const Action_CreateProduct = coda.makeFormula({
     };
     validateSyncUpdate(undefined, row);
 
-    const fromRow: FromRow<ProductRow> = {
-      row,
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_resource: ProductModel.metafieldRestOwnerType })
-      ),
-    };
-
-    const newProduct = new ProductGraphQl({ context, fromRow });
-    await newProduct.saveAndUpdate();
-    return newProduct.restId;
+    const product = ProductModel.createInstanceFromRow(context, row);
+    if (metafields) {
+      product.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: MetafieldOwnerType.Product,
+      });
+    }
+    await product.save();
+    return product.restId;
   },
 });
 
@@ -225,26 +220,30 @@ export const Action_UpdateProduct = coda.makeFormula({
     };
     validateSyncUpdate(undefined, row);
 
-    const fromRow: FromRow<ProductRow> = {
-      row,
-      // prettier-ignore
-      metafields: CodaMetafieldSet
-        .createFromCodaParameterArray(metafields)
-        .map((s) => s.toMetafield({ context, owner_id: productId, owner_resource: ProductModel.metafieldRestOwnerType })
-      ),
-    };
+    const product = ProductModel.createInstanceFromRow(context, row);
+    if (metafields) {
+      product.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
+        codaParams: metafields,
+        ownerType: MetafieldOwnerType.Product,
+        ownerGid: product.graphQlGid,
+      });
+    }
 
-    const updatedProduct = new ProductGraphQl({ context, fromRow });
-    await updatedProduct.saveAndUpdate();
-    return updatedProduct.formatToRow();
+    await product.save();
+    return product.toCodaRow();
   },
 });
 
-export const Action_DeleteProduct = makeDeleteGraphQlResourceAction(
-  ProductGraphQl,
-  inputs.product.id,
-  ({ context, id }) => ProductGraphQl.delete({ context, id: idToGraphQlGid(GraphQlResourceNames.Product, id) })
-);
+export const Action_DeleteProduct = makeDeleteGraphQlResourceAction({
+  modelName: ProductModel.displayName,
+  IdParameter: inputs.product.id,
+  execute: async ([itemId], context) => {
+    await ProductClient.createInstance(context).delete({
+      id: idToGraphQlGid(GraphQlResourceNames.Product, itemId as number),
+    });
+    return true;
+  },
+});
 // #endregion
 
 // #region Formulas

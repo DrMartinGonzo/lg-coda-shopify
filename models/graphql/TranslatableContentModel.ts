@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { TranslatableContentClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { TranslatableContentRow } from '../../schemas/CodaRows.types';
 import { TranslatableResourceType } from '../../types/admin.types';
@@ -28,7 +28,7 @@ export interface TranslatableContentModelData
 }
 // #endregion
 
-export class TranslatableContentModel extends AbstractModelGraphQl<TranslatableContentModel> {
+export class TranslatableContentModel extends AbstractModelGraphQl {
   public data: TranslatableContentModelData;
 
   protected readonly primaryKey = 'fullId';

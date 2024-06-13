@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { VariantClient } from '../../Clients/GraphQlApiClientBase';
 import { InvalidValueVisibleError, RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import {
   CACHE_DEFAULT,
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
@@ -17,9 +17,9 @@ import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { SyncedVariants } from '../../sync/graphql/SyncedVariants';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteGraphQlResourceActionNew } from '../../utils/coda-utils';
+import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
 import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { assertAllowedValue, assertNotBlank, isNullishOrEmpty } from '../../utils/helpers';
+import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
 import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
 
@@ -56,15 +56,7 @@ function validateSyncParams({ publishedStatus, statusArray }: { publishedStatus?
   }
 }
 
-function validateSyncUpdate(prevRow: ProductVariantRow, newRow: ProductVariantRow) {
-  const invalidMsg: string[] = [];
-  if (!assertNotBlank(newRow.title)) {
-    invalidMsg.push("Product title can't be blank");
-  }
-  if (invalidMsg.length) {
-    throw new InvalidValueVisibleError(invalidMsg.join(', '));
-  }
-
+export function validateSyncUpdate(prevRow: ProductVariantRow, newRow: ProductVariantRow) {
   const requiredMsg: string[] = [];
   if (!isNullishOrEmpty(newRow.weight) && isNullishOrEmpty(newRow.weight_unit)) {
     requiredMsg.push('weight_unit');
@@ -312,7 +304,7 @@ export const Action_UpdateProductVariant = coda.makeFormula({
   },
 });
 
-export const Action_DeleteProductVariant = makeDeleteGraphQlResourceActionNew({
+export const Action_DeleteProductVariant = makeDeleteGraphQlResourceAction({
   modelName: VariantModel.displayName,
   IdParameter: inputs.productVariant.id,
   execute: async ([itemId], context) => {

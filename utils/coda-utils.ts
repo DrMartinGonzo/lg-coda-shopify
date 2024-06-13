@@ -2,7 +2,6 @@
 import * as coda from '@codahq/packs-sdk';
 import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { InvalidValueError } from '../Errors/Errors';
-import { AbstractGraphQlResource } from '../Resources/Abstract/GraphQl/AbstractGraphQlResource';
 import { CACHE_DEFAULT } from '../constants';
 
 // #endregion
@@ -37,7 +36,7 @@ function requireObjectSchema(schema: coda.Schema): coda.GenericObjectSchema {
 /**
  * Retrieve all object schema keys or fromKeys if present
  */
-export function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
+function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
   const objectSchema = requireObjectSchema(schema);
   const properties = objectSchema.properties;
   return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(objectSchema, key));
@@ -71,6 +70,15 @@ export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: strin
     }
   });
   return normalizeSchemaKey(found);
+}
+
+export function getObjectSchemaRowKeys(schema: coda.Schema) {
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  return Object.keys(properties).map((propKey) => {
+    const property = properties[propKey];
+    return property.hasOwnProperty('fixedId') ? property.fixedId : propKey;
+  });
 }
 
 // #region Coda Actions and Formula factories
@@ -138,31 +146,7 @@ export function makeFetchSingleRestResourceAction({
  * @param Resource the resource class
  * @param IdParameter the id parameter
  */
-export function makeDeleteGraphQlResourceAction(
-  Resource: typeof AbstractGraphQlResource,
-  IdParameter: ReturnType<
-    typeof coda.makeParameter<
-      coda.ParameterType.Number | coda.ParameterType.String,
-      { type: coda.ParameterType.Number | coda.ParameterType.String; name: string; description: string }
-    >
-  >,
-  deleteMethod: (params: { context: coda.ExecutionContext; id: number | string }) => any
-) {
-  return coda.makeFormula({
-    name: `Delete${Resource.displayName}`,
-    description: `Delete an existing Shopify ${Resource.displayName} and return \`true\` on success.`,
-    connectionRequirement: coda.ConnectionRequirement.Required,
-    parameters: [IdParameter],
-    isAction: true,
-    resultType: coda.ValueType.Boolean,
-    execute: async ([itemId], context) => {
-      await deleteMethod({ context, id: itemId });
-      return true;
-    },
-  });
-}
-
-export function makeDeleteGraphQlResourceActionNew({
+export function makeDeleteGraphQlResourceAction({
   modelName,
   IdParameter,
   execute,

@@ -4,9 +4,9 @@ import * as coda from '@codahq/packs-sdk';
 import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
 import {
   SupportedMetafieldSyncTable,
-  getAllSupportedMetafieldSyncTables,
-} from '../../Resources/Mixed/SupportedMetafieldSyncTable';
-import { GraphQlResourceNames } from '../../Resources/types/SupportedResource';
+  getAllSupportDefinitionMetafieldSyncTables,
+} from '../../sync/SupportedMetafieldSyncTable';
+import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
 import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
@@ -39,7 +39,7 @@ export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.MetafieldDefinition,
   listDynamicUrls: async (context) =>
-    getAllSupportedMetafieldSyncTables()
+    getAllSupportDefinitionMetafieldSyncTables()
       .map((r) => ({
         display: r.display,
         value: r.ownerType,

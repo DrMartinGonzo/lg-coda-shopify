@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ListTranslationsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Translations } from '../../coda/setup/translations-setup';
 import { TranslationModel } from '../../models/graphql/TranslationModel';
 import { TranslationSyncTableSchema } from '../../schemas/syncTable/TranslationSchema';

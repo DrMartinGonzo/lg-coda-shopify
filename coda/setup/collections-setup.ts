@@ -1,25 +1,25 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { CollectionClient } from '../../Clients/GraphQlApiClientBase';
 import { CustomCollectionClient, SmartCollectionClient } from '../../Clients/RestApiClientBase';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import {
-  GraphQlResourceNames,
-  RestResourceSingular,
-  RestResourcesSingular,
-} from '../../Resources/types/SupportedResource';
 import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { CollectModel } from '../../models/rest/CollectModel';
 import { CustomCollectionModel } from '../../models/rest/CustomCollectionModel';
 import { SmartCollectionModel } from '../../models/rest/SmartCollectionModel';
+import {
+  GraphQlResourceNames,
+  RestResourceSingular,
+  RestResourcesSingular,
+} from '../../models/types/SupportedResource';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { SyncTableRestContinuation } from '../../sync/rest/AbstractSyncedRestResources';
 import { SyncedCollections } from '../../sync/rest/SyncedCollections';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { getCollectionType, getCollectionTypes } from '../../utils/collections-utils';
 import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
 import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
@@ -79,7 +79,9 @@ function validateSyncUpdate(prevRow: CollectionRow, newRow: CollectionRow) {
 }
 
 async function getCollectionClientFromId({ id, context }: { id: number; context: coda.ExecutionContext }) {
-  const collectionType = await getCollectionType(idToGraphQlGid(GraphQlResourceNames.Collection, id), context);
+  const collectionType = await CollectionClient.createInstance(context).collectionType({
+    id: idToGraphQlGid(GraphQlResourceNames.Collection, id),
+  });
   const client =
     collectionType === RestResourcesSingular.SmartCollection
       ? SmartCollectionClient.createInstance(context)
@@ -95,7 +97,7 @@ async function separateCollectionUpdates(
   const gids = updates.map(({ previousValue }) =>
     idToGraphQlGid(GraphQlResourceNames.Collection, previousValue.id as number)
   );
-  const collectionTypes = await getCollectionTypes(gids, context);
+  const collectionTypes = await CollectionClient.createInstance(context).collectionTypes({ ids: gids });
   const filterUpdatesByType = (type: string) => {
     const typeIds = collectionTypes.filter(({ type: t }) => t === type).map(({ id }) => graphQlGidToId(id));
     return updates.filter(({ previousValue }) => typeIds.includes(previousValue.id as number));

@@ -5,10 +5,10 @@ import { ResultOf } from '../utils/tada-utils';
 
 import { ShopClient } from '../Clients/RestApiClientBase';
 import { UnsupportedValueError } from '../Errors/Errors';
-import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../Resources/Mixed/METAFIELD_TYPES';
-import { MetafieldHelper } from '../Resources/Mixed/MetafieldHelper';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
+import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
+import { MetafieldHelper } from '../models/utils/MetafieldHelper';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';

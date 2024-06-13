@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ListProductsArgs } from '../../Clients/GraphQlApiClientBase';
-import { GetSchemaArgs } from '../../Resources/Abstract/AbstractResource';
-import { CodaSyncParams } from '../../SyncTableManager/types/SyncTableManager.types';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Products } from '../../coda/setup/products-setup';
 import { ProductModel } from '../../models/graphql/ProductModel';
 import { FieldDependency } from '../../schemas/Schema.types';
