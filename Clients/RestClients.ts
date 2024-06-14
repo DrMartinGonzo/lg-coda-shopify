@@ -69,16 +69,17 @@ interface BaseRequestParams<T extends any> {
 
   transformResponseBody?: TranformResponseT<T>;
 }
-interface GetRequestParams<T extends any> extends BaseRequestParams<T> {}
-interface PostRequestParams<T extends any> extends BaseRequestParams<T> {
+interface GetRequestParams<T> extends BaseRequestParams<T> {}
+interface PostRequestParams<T> extends BaseRequestParams<T> {
   body: Record<string, any>;
 }
-interface PutRequestParams<T extends any> extends PostRequestParams<T> {}
-interface DeleteRequestParams<T extends any> extends BaseRequestParams<T> {}
+interface PutRequestParams<T> extends PostRequestParams<T> {}
+interface DeleteRequestParams<T> extends BaseRequestParams<T> {}
 
-type RequestParams<T extends any> = {
+interface RequestParams<T>
+  extends Partial<GetRequestParams<T> & PostRequestParams<T> & PutRequestParams<T> & DeleteRequestParams<T>> {
   method: coda.FetchMethodType;
-} & Partial<GetRequestParams<T> & PostRequestParams<T> & PutRequestParams<T> & DeleteRequestParams<T>>;
+}
 
 interface RestClientParams {
   context: coda.ExecutionContext;

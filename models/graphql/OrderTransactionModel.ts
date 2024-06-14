@@ -15,7 +15,7 @@ import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from '
 // #endregion
 
 // #region Types
-export type OrderTransactionApiData = BaseApiDataGraphQl & ResultOf<typeof orderTransactionFieldsFragment>;
+export interface OrderTransactionApiData extends BaseApiDataGraphQl, ResultOf<typeof orderTransactionFieldsFragment> {}
 
 export interface OrderTransactionModelData extends OrderTransactionApiData, BaseModelDataGraphQl {
   // Extend with data from parent order

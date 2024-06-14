@@ -9,7 +9,7 @@ import { CollectionRow } from '../../schemas/CodaRows.types';
 // #endregion
 
 // #region Types
-export type CollectionModelData = CustomCollectionModelData & SmartCollectionModelData;
+export interface CollectionModelData extends CustomCollectionModelData, SmartCollectionModelData {}
 // #endregion
 
 /**

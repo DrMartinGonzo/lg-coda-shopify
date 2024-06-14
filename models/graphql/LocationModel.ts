@@ -18,7 +18,7 @@ import {
 // #endregion
 
 // #region Types
-export type LocationApiData = BaseApiDataGraphQl & ResultOf<typeof locationFragment>;
+export interface LocationApiData extends BaseApiDataGraphQl, ResultOf<typeof locationFragment> {}
 
 export interface LocationModelData extends Omit<LocationApiData, 'metafields'>, BaseModelDataGraphQlWithMetafields {}
 // #endregion

@@ -16,7 +16,7 @@ import { getMetaFieldFullKey } from '../utils/metafields-utils';
 // #endregion
 
 // #region Types
-export type MetafieldDefinitionApiData = BaseApiDataGraphQl & ResultOf<typeof metafieldDefinitionFragment>;
+export interface MetafieldDefinitionApiData extends BaseApiDataGraphQl, ResultOf<typeof metafieldDefinitionFragment> {}
 
 export interface MetafieldDefinitionModelData extends BaseModelDataGraphQl, MetafieldDefinitionApiData {}
 // #endregion

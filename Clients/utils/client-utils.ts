@@ -36,7 +36,8 @@ export async function wait(ms: number) {
   });
 }
 
-export function withCacheDefault<T>({ options, ...args }: { options: FetchRequestOptions } & T) {
+type WithCacheArgs<T> = T & { options: FetchRequestOptions };
+export function withCacheDefault<T>({ options, ...args }: WithCacheArgs<T>) {
   return {
     options: {
       ...options,
@@ -45,8 +46,7 @@ export function withCacheDefault<T>({ options, ...args }: { options: FetchReques
     ...args,
   } as T;
 }
-
-export function withCacheMax<T>({ options, ...args }: { options: FetchRequestOptions } & T) {
+export function withCacheMax<T>({ options, ...args }: WithCacheArgs<T>) {
   return {
     options: {
       ...options,

@@ -155,7 +155,7 @@ interface GraphQlData<T extends any> {
   };
 }
 
-type GraphQlResponse<T extends any> = coda.FetchResponse<GraphQlData<T>>;
+interface GraphQlResponse<T extends any> extends coda.FetchResponse<GraphQlData<T>> {}
 
 export interface GraphQlRequestReturn<T extends any> {
   body: T;

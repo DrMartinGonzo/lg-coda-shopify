@@ -13,10 +13,11 @@ import { Duty } from './OrderModel';
 // #endregion
 
 // #region Types
-export type OrderLineItemApiData = BaseApiDataRest &
-  TypeFromCodaSchemaProps<(typeof OrderLineItemSchema)['properties']> & {
-    duties: Duty[] | null;
-  };
+export interface OrderLineItemApiData
+  extends BaseApiDataRest,
+    TypeFromCodaSchemaProps<(typeof OrderLineItemSchema)['properties']> {
+  duties: Duty[] | null;
+}
 
 export interface OrderLineItemModelData extends OrderLineItemApiData {
   order_id: number;

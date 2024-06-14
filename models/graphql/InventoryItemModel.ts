@@ -14,9 +14,9 @@ import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from '
 // #endregion
 
 // #region Types
-export type InventoryItemApiData = BaseApiDataGraphQl & ResultOf<typeof inventoryItemFieldsFragment>;
+export interface InventoryItemApiData extends BaseApiDataGraphQl, ResultOf<typeof inventoryItemFieldsFragment> {}
 
-export type InventoryItemModelData = BaseModelDataGraphQl & InventoryItemApiData;
+export interface InventoryItemModelData extends BaseModelDataGraphQl, InventoryItemApiData {}
 // #endregion
 
 export class InventoryItemModel extends AbstractModelGraphQl {

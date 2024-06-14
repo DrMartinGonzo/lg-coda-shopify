@@ -1,15 +1,15 @@
 // #region Types
-export type ShopifyGraphQlThrottleStatus = {
+export interface ShopifyGraphQlThrottleStatus {
   maximumAvailable: number;
   currentlyAvailable: number;
   restoreRate: number;
-};
+}
 
-export type ShopifyGraphQlRequestCost = {
+export interface ShopifyGraphQlRequestCost {
   requestedQueryCost: number;
   actualQueryCost: number | null;
   throttleStatus: ShopifyGraphQlThrottleStatus;
-};
+}
 
 // export type ShopifyGraphQlError = {
 //   locations: {
@@ -64,14 +64,14 @@ export type ShopifyGraphQlError =
   | ShopifyGraphQlMaxCostExceededError;
 
 /** Represents an error in the input of a mutation. */
-export type ShopifyGraphQlUserError = {
+export interface ShopifyGraphQlUserError {
   __typename?: 'UserError';
   /** The path to the input field that caused the error. */
   field: string[];
   code?: string;
   /** The error message. */
   message: string;
-};
+}
 // #endregion
 
 abstract class GraphQLError extends Error {}
