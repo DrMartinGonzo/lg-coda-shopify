@@ -9,7 +9,11 @@ import { FileApiData, FileModelData } from '../models/graphql/FileModel';
 import { InventoryItemApiData, InventoryItemModelData } from '../models/graphql/InventoryItemModel';
 import { LocationApiData, LocationModelData } from '../models/graphql/LocationModel';
 import { MetafieldDefinitionApiData, MetafieldDefinitionModelData } from '../models/graphql/MetafieldDefinitionModel';
-import { MetafieldApiData, MetafieldModelData } from '../models/graphql/MetafieldGraphQlModel';
+import {
+  MetafieldApiData,
+  MetafieldModelData,
+  SupportedMetafieldOwnerName,
+} from '../models/graphql/MetafieldGraphQlModel';
 import {
   MetaobjectDefinitionApiData,
   MetaobjectDefinitionModelData,
@@ -113,7 +117,7 @@ import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collection
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
 import { RestResourcesSingular } from '../models/types/SupportedResource';
-import { matchResourceNameToMetafieldOwnerType } from '../models/utils/metafields-utils';
+import { graphQlOwnerNameToOwnerType } from '../models/utils/MetafieldHelper';
 import {
   LocalizableContentType,
   MetafieldDefinitionValidationStatus,
@@ -1144,7 +1148,7 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
     const graphQlResourceName = graphQlGidToResourceName(ownerGid);
     //* Assume we query the Shop metafields when graphQlResourceName is undefined
     const ownerType = graphQlResourceName
-      ? matchResourceNameToMetafieldOwnerType(graphQlResourceName)
+      ? graphQlOwnerNameToOwnerType(graphQlResourceName as SupportedMetafieldOwnerName)
       : MetafieldOwnerType.Shop;
 
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;

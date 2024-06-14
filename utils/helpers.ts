@@ -365,3 +365,13 @@ export function assertNotBlank(value: any) {
 function handleDeleteNotFound(path: string | string) {
   console.error(`Not found at path : '${path}'. Possibly already deleted.`);
 }
+
+export function reverseMap<T extends string | number | symbol, K extends string | number | symbol>(
+  map: Partial<Record<T, K>>
+) {
+  const reversedMap: Partial<Record<K, T>> = {};
+  for (const key in map) {
+    reversedMap[map[key]] = key;
+  }
+  return reversedMap as Record<K, T>;
+}

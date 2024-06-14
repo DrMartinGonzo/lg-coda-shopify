@@ -4,8 +4,8 @@ import { TadaDocumentNode } from 'gql.tada';
 import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar } from '../utils/helpers';
-import { graphql } from './utils/graphql-utils';
 import { pageInfoFragment } from './sharedFragments-graphql';
+import { graphql } from './utils/graphql-utils';
 
 // #endregion
 
@@ -176,54 +176,29 @@ function makeResourceMetafieldsByKeysQuery<T extends SupportedGraphQlMetafieldOp
   );
 }
 
+const ownerTypeToGraphQlOperationMap = {
+  [MetafieldOwnerType.Collection]: 'collections',
+  [MetafieldOwnerType.Customer]: 'customers',
+  [MetafieldOwnerType.Draftorder]: 'draftOrders',
+  [MetafieldOwnerType.Location]: 'locations',
+  [MetafieldOwnerType.MediaImage]: 'files',
+  [MetafieldOwnerType.Order]: 'orders',
+  [MetafieldOwnerType.Product]: 'products',
+  [MetafieldOwnerType.Productvariant]: 'productVariants',
+} as const;
+
+export type SupportedGraphQlMetafieldOperation =
+  (typeof ownerTypeToGraphQlOperationMap)[keyof typeof ownerTypeToGraphQlOperationMap];
+
 /**
  * Returns the appropriate GraphQL Operation based on the given MetafieldOwnerType.
  *
- * @param {MetafieldOwnerType} metafieldOwnerType - The type of the metafield owner.
  * @throws {Error} If there is no matching graphQlOperation for the given MetafieldOwnerType.
  */
-export type SupportedGraphQlMetafieldOperation =
-  | 'collections'
-  | 'customers'
-  | 'draftOrders'
-  | 'locations'
-  | 'files'
-  | 'orders'
-  | 'products'
-  | 'productVariants';
-export function getMetafieldsByKeysGraphQlOperation(metafieldOwnerType: MetafieldOwnerType) {
-  let graphQlOperation: SupportedGraphQlMetafieldOperation;
-  switch (metafieldOwnerType) {
-    case MetafieldOwnerType.Collection:
-      graphQlOperation = 'collections';
-      break;
-    case MetafieldOwnerType.Customer:
-      graphQlOperation = 'customers';
-      break;
-    case MetafieldOwnerType.Draftorder:
-      graphQlOperation = 'draftOrders';
-      break;
-    case MetafieldOwnerType.Location:
-      graphQlOperation = 'locations';
-      break;
-    case MetafieldOwnerType.MediaImage:
-      graphQlOperation = 'files';
-      break;
-    case MetafieldOwnerType.Order:
-      graphQlOperation = 'orders';
-      break;
-    case MetafieldOwnerType.Product:
-      graphQlOperation = 'products';
-      break;
-    case MetafieldOwnerType.Productvariant:
-      graphQlOperation = 'productVariants';
-      break;
-  }
-
-  if (graphQlOperation === undefined) {
-    throw new UnsupportedValueError('MetafieldOwnerType', metafieldOwnerType);
-  }
-  return graphQlOperation;
+export function getMetafieldsByKeysGraphQlOperation(ownerType: MetafieldOwnerType) {
+  const map = ownerTypeToGraphQlOperationMap;
+  if (ownerType in map) return map[ownerType] as (typeof map)[keyof typeof map];
+  throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
 }
 
 /**

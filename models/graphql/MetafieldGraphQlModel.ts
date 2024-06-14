@@ -19,11 +19,11 @@ import {
 import {
   formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
-  matchOwnerTypeToOwnerResource,
+  ownerTypeToRestOwnerName,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
   splitMetaFieldFullKey,
-} from '../utils/metafields-utils';
+} from '../utils/MetafieldHelper';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
@@ -33,7 +33,7 @@ import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyn
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
 import { isNullish, logAdmin } from '../../utils/helpers';
 import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
-import { GraphQlResourceNames } from '../types/SupportedResource';
+import { GraphQlResourceName, GraphQlResourceNames } from '../types/SupportedResource';
 
 // #endregion
 
@@ -45,11 +45,25 @@ export type SupportedMetafieldOwnerType =
   | MetafieldOwnerType.Customer
   | MetafieldOwnerType.Draftorder
   | MetafieldOwnerType.Location
+  | MetafieldOwnerType.MediaImage
   | MetafieldOwnerType.Order
   | MetafieldOwnerType.Page
   | MetafieldOwnerType.Product
   | MetafieldOwnerType.Productvariant
   | MetafieldOwnerType.Shop;
+
+export type SupportedMetafieldOwnerName =
+  | (typeof GraphQlResourceNames)['Article']
+  | (typeof GraphQlResourceNames)['Blog']
+  | (typeof GraphQlResourceNames)['Collection']
+  | (typeof GraphQlResourceNames)['Customer']
+  | (typeof GraphQlResourceNames)['DraftOrder']
+  | (typeof GraphQlResourceNames)['Location']
+  | (typeof GraphQlResourceNames)['Order']
+  | (typeof GraphQlResourceNames)['Page']
+  | (typeof GraphQlResourceNames)['Product']
+  | (typeof GraphQlResourceNames)['ProductVariant']
+  | (typeof GraphQlResourceNames)['Shop'];
 
 export interface MetafieldApiData
   extends BaseApiDataGraphQl,
@@ -128,9 +142,9 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
   protected setData(data: MetafieldModelData): void {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
     const fullkey = getMetaFieldFullKey(data);
-    const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
-    data.key = metaKey;
-    data.namespace = metaNamespace;
+    const { key, namespace } = splitMetaFieldFullKey(fullkey);
+    data.key = key;
+    data.namespace = namespace;
 
     super.setData(data);
   }
@@ -237,7 +251,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
       const maybeAdminUrl = getMetafieldAdminUrl(this.context, {
         id: ownerId,
         parentId: parentOwnerId,
-        singular: matchOwnerTypeToOwnerResource(data.ownerType as MetafieldOwnerType),
+        singular: ownerTypeToRestOwnerName(data.ownerType as MetafieldOwnerType),
         hasMetafieldDefinition: !!data.definition?.id,
       });
       if (maybeAdminUrl) {

@@ -23,10 +23,10 @@ import {
 import {
   formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
-  matchOwnerResourceToMetafieldOwnerType,
+  restOwnerNameToOwnerType,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
-} from '../utils/metafields-utils';
+} from '../utils/MetafieldHelper';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
 // #endregion
@@ -202,7 +202,7 @@ export class MetafieldModel extends AbstractModelRest {
 
   public toCodaRow(includeHelperColumns = true): MetafieldRow {
     const { data } = this;
-    const ownerType = matchOwnerResourceToMetafieldOwnerType(data.owner_resource);
+    const ownerType = restOwnerNameToOwnerType(data.owner_resource);
 
     let obj: Partial<MetafieldRow> = {
       label: this.fullKey + (data.isDeletedFlag ? METAFIELD_DELETED_SUFFIX : ''),

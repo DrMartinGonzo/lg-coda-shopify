@@ -7,7 +7,7 @@ import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { MetafieldDefinitionModelData } from '../../models/graphql/MetafieldDefinitionModel';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { getMetafieldsDynamicSchema } from '../../models/utils/MetafieldHelper';
-import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
+import { getMetaFieldFullKey } from '../../models/utils/MetafieldHelper';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';

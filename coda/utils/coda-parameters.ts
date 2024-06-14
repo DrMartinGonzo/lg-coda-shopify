@@ -4,6 +4,7 @@ import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from 
 
 import {
   LocationClient,
+  MetafieldDefinitionClient,
   MetaobjectClient,
   MetaobjectDefinitionClient,
   ProductClient,
@@ -33,7 +34,7 @@ import {
   GraphQlResourceNames,
   RestResourceSingular,
 } from '../../models/types/SupportedResource';
-import { getMetafieldDefinitionsForOwner } from '../../models/utils/MetafieldHelper';
+import { getMetaFieldFullKey } from '../../models/utils/MetafieldHelper';
 import { COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
 import { supportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
@@ -89,10 +90,8 @@ async function autocompleteLocationsWithName(context: coda.ExecutionContext, sea
 
 function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
-    const searchObjects = metafieldDefinitions.map((metafield) => {
-      return { name: metafield.data.name, fullKey: metafield.fullKey };
-    });
+    const defsData = await MetafieldDefinitionClient.createInstance(context).listForOwner({ ownerType });
+    const searchObjects = defsData.map((m) => ({ name: m.name, fullKey: getMetaFieldFullKey(m) }));
     return coda.autocompleteSearchObjects(search, searchObjects, 'name', 'fullKey');
   };
 }
@@ -105,8 +104,8 @@ export function autoCompleteMetafieldOwnerTypes() {
 
 function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
-    const keys = metafieldDefinitions.map((m) => m.fullKey).sort();
+    const defsData = await MetafieldDefinitionClient.createInstance(context).listForOwner({ ownerType });
+    const keys = defsData.map((m) => getMetaFieldFullKey(m)).sort();
     return coda.simpleAutocomplete(search, keys);
   };
 }

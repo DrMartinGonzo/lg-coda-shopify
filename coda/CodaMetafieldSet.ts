@@ -9,7 +9,7 @@ import {
 } from '../models/graphql/MetafieldGraphQlModel';
 import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { METAFIELD_TYPES, MetafieldType } from '../models/types/METAFIELD_TYPES';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../models/utils/metafields-utils';
+import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../models/utils/MetafieldHelper';
 import { arrayUnique } from '../utils/helpers';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 
@@ -92,14 +92,9 @@ export class CodaMetafieldSet {
     value: string;
   }): CodaMetafieldSet {
     try {
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
+      const { key, namespace } = splitMetaFieldFullKey(fullKey);
       const parsedValue: CodaMetafieldValue = CodaMetafieldValue.createFromCodaParameter(value);
-      return new CodaMetafieldSet({
-        namespace: metaNamespace,
-        key: metaKey,
-        value: parsedValue.value,
-        type: parsedValue.type,
-      });
+      return new CodaMetafieldSet({ namespace, key, value: parsedValue.value, type: parsedValue.type });
     } catch (error) {
       throw new InvalidValueVisibleError('You must use `FormatMetafield` or `FormatListMetafield` formula.');
     }
@@ -117,9 +112,9 @@ export class CodaMetafieldSet {
     varargs: string[];
   }): CodaMetafieldSet {
     try {
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullKey);
+      const { key, namespace } = splitMetaFieldFullKey(fullKey);
       const { type, value } = CodaMetafieldSet.processVarargs(varargs);
-      return new CodaMetafieldSet({ namespace: metaNamespace, key: metaKey, type, value });
+      return new CodaMetafieldSet({ namespace, key, type, value });
     } catch (error) {
       throw error;
     }
@@ -161,13 +156,8 @@ export class CodaMetafieldSet {
       if (!parsedValue.key || (parsedValue.value !== null && !parsedValue.type)) {
         throw new InvalidValueVisibleError('You must use `FormatMetafield` or `FormatListMetafield` formula.');
       }
-      const { metaKey, metaNamespace } = splitMetaFieldFullKey(parsedValue.key);
-      return new CodaMetafieldSet({
-        namespace: metaNamespace,
-        key: metaKey,
-        value: parsedValue.value,
-        type: parsedValue.type,
-      });
+      const { key, namespace } = splitMetaFieldFullKey(parsedValue.key);
+      return new CodaMetafieldSet({ namespace, key, value: parsedValue.value, type: parsedValue.type });
     } catch (error) {
       throw error;
     }

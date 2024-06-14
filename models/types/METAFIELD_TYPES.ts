@@ -72,5 +72,21 @@ export interface MeasurementField {
 /** All supported modern `metafield.type`s */
 export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPES];
 
+export type MetafieldReferenceType =
+  | (typeof METAFIELD_TYPES)['collection_reference']
+  | (typeof METAFIELD_TYPES)['metaobject_reference']
+  | (typeof METAFIELD_TYPES)['mixed_reference']
+  | (typeof METAFIELD_TYPES)['page_reference']
+  | (typeof METAFIELD_TYPES)['product_reference']
+  | (typeof METAFIELD_TYPES)['variant_reference'];
+
+type MetafieldListReferenceType =
+  | (typeof METAFIELD_TYPES)['list_collection_reference']
+  | (typeof METAFIELD_TYPES)['list_metaobject_reference']
+  | (typeof METAFIELD_TYPES)['list_mixed_reference']
+  | (typeof METAFIELD_TYPES)['list_page_reference']
+  | (typeof METAFIELD_TYPES)['list_product_reference']
+  | (typeof METAFIELD_TYPES)['list_variant_reference'];
+
 /** All supported legacy `metafield.type`s */
 export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];

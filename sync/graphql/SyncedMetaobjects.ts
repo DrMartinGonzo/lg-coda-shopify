@@ -12,7 +12,7 @@ import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefi
 import { MetaobjectFieldApiData, MetaobjectModel } from '../../models/graphql/MetaobjectModel';
 import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
 import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import { formatMetafieldValueForApi } from '../../models/utils/metafields-utils';
+import { formatMetafieldValueForApi } from '../../models/utils/MetafieldHelper';
 import { requireMatchingMetaobjectFieldDefinition } from '../../models/utils/metaobjects-utils';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { getObjectSchemaRowKeys, mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';

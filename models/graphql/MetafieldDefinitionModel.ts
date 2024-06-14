@@ -10,7 +10,7 @@ import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { getMetaFieldFullKey } from '../utils/metafields-utils';
+import { getMetaFieldFullKey } from '../utils/MetafieldHelper';
 
 // #endregion
 

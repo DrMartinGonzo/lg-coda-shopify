@@ -29,14 +29,12 @@ export class SupportedMetafieldSyncTable {
   public readonly ownerReference?: OwnerReference | undefined;
   public readonly formatOwnerReference?: CallableFunction | undefined;
   public readonly ownerType: SupportedMetafieldOwnerType;
-  public readonly syncWith: 'rest' | 'graphQl';
   public readonly supportDefinition: boolean;
 
   constructor(ownerType: SupportedMetafieldOwnerType) {
     // set default properties
     this.ownerType = ownerType;
     this.supportDefinition = true;
-    this.syncWith = 'graphQl';
 
     // TODO: Article, Page and Blog should use GraphQL metafields once GraphQl API version 2024-07 is stable
     switch (ownerType) {
@@ -45,7 +43,6 @@ export class SupportedMetafieldSyncTable {
         this.singular = RestResourcesSingular.Article;
         this.ownerReference = ArticleReference;
         this.formatOwnerReference = formatArticleReference;
-        this.syncWith = 'rest';
         break;
 
       case MetafieldOwnerType.Blog:
@@ -53,7 +50,6 @@ export class SupportedMetafieldSyncTable {
         this.singular = RestResourcesSingular.Blog;
         this.ownerReference = BlogReference;
         this.formatOwnerReference = formatBlogReference;
-        this.syncWith = 'rest';
         break;
 
       case MetafieldOwnerType.Collection:
@@ -96,7 +92,6 @@ export class SupportedMetafieldSyncTable {
         this.singular = RestResourcesSingular.Page;
         this.ownerReference = PageReference;
         this.formatOwnerReference = formatPageReference;
-        this.syncWith = 'rest';
         break;
 
       case MetafieldOwnerType.Product:

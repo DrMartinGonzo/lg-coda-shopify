@@ -27,7 +27,6 @@ import { RestResourcesSingular, singularToPlural } from '../models/types/Support
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
 import { CurrencyCode } from '../types/admin.types';
 import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
-import { getMetaFieldFullKey } from '../models/utils/metafields-utils';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
@@ -837,8 +836,7 @@ export class MetafieldClient extends AbstractRestClient<
     if (metafieldKeys.length) {
       return {
         ...response,
-        // TODO: implement get full key function
-        body: response.body.filter((metafield) => metafieldKeys.includes(getMetaFieldFullKey(metafield))),
+        body: response.body.filter((m) => metafieldKeys.includes(`${m.namespace}.${m.key}`)),
       };
     }
 

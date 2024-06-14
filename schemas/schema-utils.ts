@@ -6,13 +6,13 @@ import * as PROPS from '../coda/utils/coda-properties';
 import { ResultOf } from '../graphql/utils/graphql-utils';
 
 import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+import { MetafieldDefinitionClient } from '../Clients/GraphQlClients';
 import { ShopClient } from '../Clients/RestClients';
 import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
-import { getMetafieldDefinitionsForOwner } from '../models/utils/MetafieldHelper';
-import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../models/utils/metafields-utils';
+import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../models/utils/MetafieldHelper';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
 import { CollectionReference } from './syncTable/CollectionSchema';
@@ -103,13 +103,13 @@ export async function augmentSchemaWithMetafields<
   const schema: SchemaT = { ...baseSchema };
   schema.featuredProperties = schema.featuredProperties ?? [];
 
-  const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
-  metafieldDefinitions.forEach((metafieldDefinition) => {
-    const property = mapMetaFieldToSchemaProperty(metafieldDefinition.data);
+  const metafieldDefinitionsData = await MetafieldDefinitionClient.createInstance(context).listForOwner({ ownerType });
+  metafieldDefinitionsData.forEach((data) => {
+    const property = mapMetaFieldToSchemaProperty(data);
     if (property) {
-      const name = accents.remove(metafieldDefinition.data.name);
+      const name = accents.remove(data.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
-      property.displayName = `${metafieldDefinition.data.name} [${metafieldDefinition.fullKey}]`;
+      property.displayName = `${data.name} [${getMetaFieldFullKey(data)}]`;
       schema.properties[propName] = property;
       // always feature metafields properties so that the user know they are synced
       schema.featuredProperties.push(propName);

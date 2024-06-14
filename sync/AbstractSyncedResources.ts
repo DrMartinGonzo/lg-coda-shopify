@@ -1,16 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
+import { MetafieldDefinitionClient } from '../Clients/GraphQlClients';
 import { AbstractModel } from '../models/AbstractModel';
 import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
 import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
 import { AbstractModelRestWithRestMetafields } from '../models/rest/AbstractModelRestWithMetafields';
-import { getMetafieldDefinitionsForOwner } from '../models/utils/MetafieldHelper';
 import {
   isPrefixedMetaFieldKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-} from '../models/utils/metafields-utils';
+} from '../models/utils/MetafieldHelper';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { FieldDependency } from '../schemas/Schema.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../schemas/schema-utils';
@@ -207,12 +207,12 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   protected async getMetafieldDefinitions(): Promise<MetafieldDefinitionModel[]> {
     if (this._metafieldDefinitions) return this._metafieldDefinitions;
 
-    this._metafieldDefinitions = await getMetafieldDefinitionsForOwner({
-      context: this.context,
+    const defsData = await MetafieldDefinitionClient.createInstance(this.context).listForOwner({
       ownerType: (
         this.model as unknown as typeof AbstractModelRestWithRestMetafields | typeof AbstractModelGraphQlWithMetafields
       ).metafieldGraphQlOwnerType,
     });
+    this._metafieldDefinitions = defsData.map((data) => MetafieldDefinitionModel.createInstance(this.context, data));
     return this._metafieldDefinitions;
   }
 

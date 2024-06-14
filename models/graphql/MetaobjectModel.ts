@@ -10,7 +10,7 @@ import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaobjectStatus } from '../../types/admin.types';
 import { isNullishOrEmpty, isString } from '../../utils/helpers';
 import { GraphQlResourceNames } from '../types/SupportedResource';
-import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../utils/metafields-utils';
+import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../utils/MetafieldHelper';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
