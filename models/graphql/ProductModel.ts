@@ -5,13 +5,13 @@ import { ResultOf, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import { ProductClient } from '../../Clients/GraphQlClients';
 import { DEFAULT_PRODUCTVARIANT_OPTION_VALUE } from '../../config';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { productFieldsFragment } from '../../graphql/products-graphql';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString, splitAndTrimValues } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,

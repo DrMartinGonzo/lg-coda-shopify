@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { TranslatableContentClient, TranslationClient } from '../../Clients/GraphQlClients';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { TranslatableContentModel } from '../../models/graphql/TranslatableContentModel';
 import { TranslationModel, TranslationModelData } from '../../models/graphql/TranslationModel';
 import { SyncedTranslatableContents } from '../../sync/graphql/SyncedTranslatableContents';

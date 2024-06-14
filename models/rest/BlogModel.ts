@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { BlogClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';

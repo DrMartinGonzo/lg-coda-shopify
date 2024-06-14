@@ -112,12 +112,13 @@ import {
   ShopifyThrottledErrorCode,
 } from '../Errors/GraphQlErrors';
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT, PREFIX_FAKE } from '../constants';
+import { CACHE_DISABLED } from '../constants/cacheDurations-constants';
+import { PREFIX_FAKE } from '../constants/strings-constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
-import { METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
-import { RestResourcesSingular } from '../models/types/SupportedResource';
-import { graphQlOwnerNameToOwnerType } from '../models/utils/MetafieldHelper';
+import { RestResourcesSingular } from '../constants/resourceNames-constants';
+import { METAFIELD_TYPES } from '../constants/metafields-constants';
+import { graphQlOwnerNameToOwnerType } from '../models/utils/metafields-utils';
 import {
   LocalizableContentType,
   MetafieldDefinitionValidationStatus,
@@ -137,6 +138,8 @@ import { FetchRequestOptions } from './Client.types';
 import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCacheMax } from './utils/client-utils';
 
 // #endregion
+
+export const GRAPHQL_NODES_LIMIT = 250;
 
 // Synctable doesn't handle retries, only GraphQLClient for simplicity
 // Le seul probleme serait de dépasser le seuil de temps d'execution pour un run

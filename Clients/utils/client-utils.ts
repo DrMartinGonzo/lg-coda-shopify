@@ -1,6 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { CACHE_DEFAULT, CACHE_MAX } from '../../constants';
+import { CACHE_DEFAULT, CACHE_MAX } from '../../constants/cacheDurations-constants';
 import { FetchRequestOptions } from '../Client.types';
 
 // #endregion

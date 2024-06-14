@@ -1,6 +1,8 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
-import { NOT_FOUND, OPTIONS_PRODUCT_STATUS_GRAPHQL, PACK_IDENTITIES } from '../../constants';
+import { OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { NOT_FOUND } from '../../constants/strings-constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 
 const publishedAtProp = PROPS.makePublishedAtProp('product');

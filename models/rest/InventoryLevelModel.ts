@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { InventoryLevelClient } from '../../Clients/RestClients';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';

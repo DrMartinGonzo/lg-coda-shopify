@@ -3,10 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 
 import { BlogClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { PACK_IDENTITIES, optionValues } from '../../constants';
+import { optionValues } from '../utils/coda-utils';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { BlogModel } from '../../models/rest/BlogModel';
-import { BlogSyncTableSchema, COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
+import { BlogSyncTableSchema } from '../../schemas/syncTable/BlogSchema';
+import { OPTIONS_COMMENTABLE } from '../../constants/options-constants';
 import { SyncedBlogs } from '../../sync/rest/SyncedBlogs';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
@@ -27,7 +29,7 @@ function createSyncedBlogs(codaSyncParams: coda.ParamValues<coda.ParamDefs>, con
 
 function validateCreateUpdateParams({ commentable }: { commentable?: string }) {
   const invalidMsg: string[] = [];
-  if (!isNullishOrEmpty(commentable) && !assertAllowedValue(commentable, optionValues(COMMENTABLE_OPTIONS))) {
+  if (!isNullishOrEmpty(commentable) && !assertAllowedValue(commentable, optionValues(OPTIONS_COMMENTABLE))) {
     invalidMsg.push(`commentable: ${commentable}`);
   }
   if (invalidMsg.length) {

@@ -1,51 +1,32 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
-import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { NOT_FOUND } from '../../constants/strings-constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { addressPersonFirstNameProp, addressPersonLastNameProp, addressPhoneProp } from '../basic/AddressSchema';
 import { CustomerAddressSchema } from '../basic/CustomerAddressSchema';
 
 // #region Constants and Helpers
-export const CONSENT_STATE__SUBSCRIBED = { display: 'Subscribed', value: 'subscribed' };
-const CONSENT_STATE__NOT_SUBSCRIBED = { display: 'Not subscribed', value: 'not_subscribed' };
-export const CONSENT_STATE__UNSUBSCRIBED = { display: 'Unsubscribed', value: 'unsubscribed' };
-const CONSENT_STATE__REDACTED = { display: 'Redacted', value: 'redacted' };
-const CONSENT_STATE__INVALID = { display: 'Invalid', value: 'invalid' };
-const CONSENT_STATE__PENDING = { display: 'Pending', value: 'pending' };
-
-// After providing their information, the customer receives a confirmation and is required to perform a intermediate step before receiving marketing information.
-const CONSENT_OPT_IN_LEVEL__CONFIRMED_OPT_IN = { display: 'Confirmed opt-in', value: 'confirmed_opt_in' };
-// After providing their information, the customer receives marketing information without any intermediate steps.
-export const CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN = { display: 'Single opt-in', value: 'single_opt_in' };
-// The customer receives marketing information but how they were opted in is unknown.
-const CONSENT_OPT_IN_LEVEL__UNKNOWN = { display: 'Unknown', value: 'unknown' };
-
-const MARKETING_CONSENT_ALL_OPTIONS = [
-  CONSENT_STATE__SUBSCRIBED,
-  CONSENT_STATE__NOT_SUBSCRIBED,
-  CONSENT_STATE__UNSUBSCRIBED,
-  CONSENT_STATE__REDACTED,
-  CONSENT_STATE__INVALID,
-  CONSENT_STATE__PENDING,
-]
+/* NOT NEEDED FOR NOW
+const MARKETING_CONSENT_ALL_OPTIONS = Object.values(OPTIONS_CONSENT_STATE)
   .map((state) =>
-    [CONSENT_OPT_IN_LEVEL__CONFIRMED_OPT_IN, CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN, CONSENT_OPT_IN_LEVEL__UNKNOWN].map(
-      (optInLevel) => {
-        return {
-          state: state.value,
-          opt_in_level: optInLevel.value,
-          display: `${state.display}: ${optInLevel.display}`,
-        };
-      }
-    )
+    Object.values(OPTIONS_CONSENT_OPT_IN_LEVEL).map((optInLevel) => {
+      return {
+        state: state.value,
+        opt_in_level: optInLevel.value,
+        display: `${state.display}: ${optInLevel.display}`,
+      };
+    })
   )
   .flat();
 
 const MARKETING_CONSENT_UPDATE_OPTIONS = MARKETING_CONSENT_ALL_OPTIONS.filter(
   (option) =>
-    [CONSENT_STATE__SUBSCRIBED, CONSENT_STATE__UNSUBSCRIBED].map((s) => s.value).includes(option.state) &&
-    option.opt_in_level === CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value
+    (option.state === OPTIONS_CONSENT_STATE.subscribed.value ||
+      option.state === OPTIONS_CONSENT_STATE.unSubscribed.value) &&
+    option.opt_in_level === OPTIONS_CONSENT_OPT_IN_LEVEL.single.value
 );
+*/
 
 export const customerTaxExemptionsProp = {
   type: coda.ValueType.Array,

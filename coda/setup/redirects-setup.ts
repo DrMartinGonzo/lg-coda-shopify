@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { RedirectClient } from '../../Clients/RestClients';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { RedirectModel } from '../../models/rest/RedirectModel';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import { SyncedRedirects } from '../../sync/rest/SyncedRedirects';

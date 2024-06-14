@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { UnsupportedValueError } from '../Errors/Errors';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
-import { RestResourcesSingular } from '../models/types/SupportedResource';
+import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { ArticleReference, formatArticleReference } from '../schemas/syncTable/ArticleSchema';
 import { BlogReference, formatBlogReference } from '../schemas/syncTable/BlogSchema';
 import { CollectionReference, formatCollectionReference } from '../schemas/syncTable/CollectionSchema';

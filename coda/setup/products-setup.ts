@@ -3,17 +3,17 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ProductClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { optionValues } from '../utils/coda-utils';
 import {
-  CACHE_DEFAULT,
   DEFAULT_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PUBLISHED_STATUS,
-  PACK_IDENTITIES,
-  optionValues,
-} from '../../constants';
+} from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { ProductModel } from '../../models/graphql/ProductModel';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchema } from '../../schemas/syncTable/ProductSchema';
 import { SyncedProducts } from '../../sync/graphql/SyncedProducts';

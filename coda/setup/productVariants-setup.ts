@@ -3,14 +3,11 @@ import * as coda from '@codahq/packs-sdk';
 
 import { VariantClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError, RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import {
-  CACHE_DEFAULT,
-  OPTIONS_PRODUCT_STATUS_GRAPHQL,
-  OPTIONS_PUBLISHED_STATUS,
-  PACK_IDENTITIES,
-  optionValues,
-} from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { optionValues } from '../utils/coda-utils';
+import { OPTIONS_PRODUCT_STATUS_GRAPHQL, OPTIONS_PUBLISHED_STATUS } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { VARIANT_OPTION_KEYS, VariantModel } from '../../models/graphql/VariantModel';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';

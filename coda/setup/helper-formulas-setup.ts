@@ -1,7 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CACHE_DEFAULT, CACHE_MAX, OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants';
+import { CACHE_DEFAULT, CACHE_MAX } from '../../constants/cacheDurations-constants';
+import { OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants/options-constants';
 import { getUnitMap } from '../../utils/helpers';
 
 import { filters, inputs } from '../utils/coda-parameters';

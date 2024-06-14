@@ -1,8 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { CACHE_DEFAULT } from '../../constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { AutocompleteParameterTypes } from '@codahq/packs-sdk/dist/api';
 
 // #endregion
+
+/**
+ * Takes an array of {@link coda.MetadataFormulaObjectResultType} objects
+ * and returns an array containing only the value field of each object.
+ */
+export function optionValues<T extends AutocompleteParameterTypes>(options: coda.SimpleAutocompleteOption<T>[]) {
+  return options.map((status) => status.value);
+}
 
 // #region Coda Actions and Formula factories
 interface MakeRestResourceActionParams {

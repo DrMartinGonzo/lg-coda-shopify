@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { AbstractGraphQlClient, GraphQlFetcher } from '../../Clients/GraphQlClients';
+import { AbstractGraphQlClient, GRAPHQL_NODES_LIMIT, GraphQlFetcher } from '../../Clients/GraphQlClients';
 import { AbstractModelGraphQl } from '../../models/graphql/AbstractModelGraphQl';
 import { AbstractModelGraphQlWithMetafields } from '../../models/graphql/AbstractModelGraphQlWithMetafields';
 import {
@@ -15,7 +15,7 @@ import { wait } from '../../Clients/utils/client-utils';
 import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';

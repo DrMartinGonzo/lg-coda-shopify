@@ -4,8 +4,8 @@ import toConstantCase from 'to-constant-case';
 import toPascalCase from 'to-pascal-case';
 
 import { TranslationClient } from '../../Clients/GraphQlClients';
-import { GraphQlResourceNames } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { TranslationRow } from '../../schemas/CodaRows.types';
 import { LocalizableContentType, TranslatableResourceType } from '../../types/admin.types';
 import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';

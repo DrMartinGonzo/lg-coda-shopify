@@ -1,4 +1,4 @@
-import { NOT_FOUND } from '../constants';
+import { NOT_FOUND } from '../constants/strings-constants';
 import { CustomerRow, MetafieldRow, ProductRow, ProductVariantRow } from '../schemas/CodaRows.types';
 
 export const expectedRows = {

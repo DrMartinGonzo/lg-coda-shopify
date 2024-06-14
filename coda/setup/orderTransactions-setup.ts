@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderTransactionClient } from '../../Clients/GraphQlClients';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderTransactionModel } from '../../models/graphql/OrderTransactionModel';
 import { SyncedOrderTransactions } from '../../sync/graphql/SyncedOrderTransactions';
 import { filters } from '../utils/coda-parameters';

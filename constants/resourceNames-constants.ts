@@ -1,9 +1,3 @@
-// #region Imports
-import { NotFoundError } from '../../Errors/Errors';
-import { getKeyFromValue } from '../../utils/helpers';
-
-// #endregion
-
 export type SupportedResource =
   | 'Article'
   | 'Asset'
@@ -34,6 +28,12 @@ export type SupportedResource =
   | 'Translation'
   | 'TranslatableContent';
 
+export type RestResourceSingular = (typeof RestResourcesSingular)[keyof typeof RestResourcesSingular];
+export type RestResourcePlural = (typeof RestResourcesPlural)[keyof typeof RestResourcesPlural];
+
+export type GraphQlFileTypes = 'GenericFile' | 'MediaImage' | 'Video';
+export type GraphQlResourceName = (typeof GraphQlResourceNames)[keyof typeof GraphQlResourceNames];
+
 export const RestResourcesSingular = {
   Article: 'article',
   Asset: 'asset',
@@ -56,7 +56,6 @@ export const RestResourcesSingular = {
   Shop: 'shop',
   Theme: 'theme',
 } as const satisfies Partial<Record<SupportedResource, string>> & Record<string, string>;
-export type RestResourceSingular = (typeof RestResourcesSingular)[keyof typeof RestResourcesSingular];
 
 export const RestResourcesPlural = {
   Article: 'articles',
@@ -80,24 +79,7 @@ export const RestResourcesPlural = {
   Shop: 'shops',
   Theme: 'themes',
 } as const satisfies Partial<Record<SupportedResource, string>> & Record<string, string>;
-type RestResourcePlural = (typeof RestResourcesPlural)[keyof typeof RestResourcesPlural];
 
-export function singularToPlural(singular: RestResourceSingular): RestResourcePlural {
-  const resourceKey = getKeyFromValue(RestResourcesSingular, singular);
-  const plural = RestResourcesPlural[resourceKey];
-  if (plural === undefined) throw new NotFoundError('plural');
-  return plural;
-}
-export function pluralToSingular(plural: RestResourcePlural): RestResourceSingular {
-  const resourceKey = getKeyFromValue(RestResourcesPlural, plural);
-  const singular = RestResourcesSingular[resourceKey];
-  if (plural === undefined) throw new NotFoundError('singular');
-  return singular;
-}
-
-/**
- * Types of GraphQL Admin API resources
- */
 export const GraphQlResourceNames = {
   Article: 'OnlineStoreArticle',
   Blog: 'OnlineStoreBlog',
@@ -125,11 +107,8 @@ export const GraphQlResourceNames = {
   Translation: 'Translation',
 } as const satisfies Partial<Record<SupportedResource, string>> & Record<string, string>;
 
-export type GraphQlFileTypes = 'GenericFile' | 'MediaImage' | 'Video';
 export const GraphQlFileTypesNames: GraphQlFileTypes[] = [
   GraphQlResourceNames.GenericFile,
   GraphQlResourceNames.MediaImage,
   GraphQlResourceNames.Video,
 ];
-
-export type GraphQlResourceName = (typeof GraphQlResourceNames)[keyof typeof GraphQlResourceNames];

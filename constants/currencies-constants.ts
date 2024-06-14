@@ -1,0 +1,20 @@
+// #endregion
+export const CODA_SUPPORTED_CURRENCIES = [
+  'BRL',
+  'CHF',
+  'EUR',
+  'GBP',
+  'IDR',
+  'ILS',
+  'INR',
+  'JPY',
+  'KRW',
+  'NOK',
+  'PLN',
+  'RUB',
+  'TRY',
+  'UAH',
+  'USD',
+  'VND',
+  'XBT',
+];

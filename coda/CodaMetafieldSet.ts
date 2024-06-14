@@ -8,8 +8,9 @@ import {
   SupportedMetafieldOwnerType,
 } from '../models/graphql/MetafieldGraphQlModel';
 import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { METAFIELD_TYPES, MetafieldType } from '../models/types/METAFIELD_TYPES';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../models/utils/MetafieldHelper';
+import { MetafieldType } from '../constants/metafields-constants';
+import { METAFIELD_TYPES } from '../constants/metafields-constants';
+import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../models/utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 

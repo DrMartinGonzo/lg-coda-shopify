@@ -3,8 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ArticleClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';

@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
-import { CACHE_DEFAULT } from '../../constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
 import { getProductTypesQuery } from '../../graphql/products-graphql';
 
 /**

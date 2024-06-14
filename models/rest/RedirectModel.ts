@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { RedirectClient } from '../../Clients/RestClients';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 

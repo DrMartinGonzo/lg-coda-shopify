@@ -1,13 +1,9 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
-import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { OPTIONS_COMMENTABLE } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { NOT_FOUND } from '../../constants/strings-constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
-
-export const COMMENTABLE_OPTIONS = [
-  { display: 'No', value: 'no' },
-  { display: 'Moderate', value: 'moderate' },
-  { display: 'Yes', value: 'yes' },
-];
 
 export const BlogSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -20,7 +16,7 @@ export const BlogSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'commentable',
       mutable: true,
       description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
-      options: COMMENTABLE_OPTIONS,
+      options: OPTIONS_COMMENTABLE,
       requireForUpdates: true,
     },
     created_at: PROPS.makeCreatedAtProp('blog'),

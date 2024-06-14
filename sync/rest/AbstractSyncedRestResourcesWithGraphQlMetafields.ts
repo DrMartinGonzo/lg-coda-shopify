@@ -1,19 +1,19 @@
 // #region Imports
 
-import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlClients';
+import { GRAPHQL_NODES_LIMIT, GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlClients';
 import { wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
-import { GraphQlResourceName } from '../../models/types/SupportedResource';
-import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/sync-utils';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
-import { CACHE_DISABLED, GRAPHQL_NODES_LIMIT } from '../../constants';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { AbstractModel } from '../../models/AbstractModel';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRestWithGraphQlMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
+import { GraphQlResourceName } from '../../constants/resourceNames-constants';
 import { Stringified } from '../../types/utilities';
 import { arrayUnique, logAdmin } from '../../utils/helpers';
 import { ModelType, SyncTableExtraContinuationData, SyncedResourcesSyncResult } from '../AbstractSyncedResources';
 import { SyncTableGraphQlContinuation } from '../graphql/AbstractSyncedGraphQlResources';
+import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/sync-utils';
 import {
   AbstractSyncedRestResources,
   ISyncedRestResourcesConstructorArgs,

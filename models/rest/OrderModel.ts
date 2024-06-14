@@ -3,8 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CancelOrderArgs, OrderClient } from '../../Clients/RestClients';
 import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
 import { CompanySchema } from '../../schemas/basic/CompanySchema';
 import { DiscountCodeSchema } from '../../schemas/basic/DiscountCodeSchema';

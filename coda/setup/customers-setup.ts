@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CustomerClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { CustomerModel } from '../../models/rest/CustomerModel';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { SyncedCustomers } from '../../sync/rest/SyncedCustomers';

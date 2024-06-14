@@ -4,7 +4,8 @@ import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestClients';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { CACHE_DISABLED, Identity, PACK_IDENTITIES } from '../../constants';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
@@ -12,21 +13,21 @@ import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyn
 import { isNullish, logAdmin } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
-import { GraphQlResourceNames, RestResourceSingular } from '../types/SupportedResource';
+import { GraphQlResourceNames, RestResourceSingular } from '../../constants/resourceNames-constants';
 import {
   METAFIELD_DELETED_SUFFIX,
   MetafieldNormalizedData,
   getMetafieldAdminUrl,
   normalizeMetafieldRow,
   normalizeOwnerRowMetafields,
-} from '../utils/MetafieldHelper';
+} from '../utils/metafields-utils';
 import {
   formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
   restOwnerNameToOwnerType,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
-} from '../utils/MetafieldHelper';
+} from '../utils/metafields-utils';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
 // #endregion

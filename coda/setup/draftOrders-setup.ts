@@ -3,7 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { DraftOrderClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
+import { optionValues } from '../utils/coda-utils';
+import { OPTIONS_DRAFT_ORDER_STATUS } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { DraftOrderModel } from '../../models/rest/DraftOrderModel';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';

@@ -6,8 +6,9 @@ import {
   SupportedMetafieldSyncTable,
   getAllSupportDefinitionMetafieldSyncTables,
 } from '../../sync/SupportedMetafieldSyncTable';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
 import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';

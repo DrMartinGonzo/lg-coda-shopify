@@ -22,8 +22,11 @@ import { SmartCollectionApiData, SmartCollectionModelData } from '../models/rest
 import { ThemeApiData, ThemeModelData } from '../models/rest/ThemeModel';
 
 import { DEFAULT_CURRENCY_CODE, REST_DEFAULT_API_VERSION } from '../config';
-import { CACHE_TEN_MINUTES, CODA_SUPPORTED_CURRENCIES, NOT_IMPLEMENTED, REST_DEFAULT_LIMIT } from '../constants';
-import { RestResourcesSingular, singularToPlural } from '../models/types/SupportedResource';
+import { CODA_SUPPORTED_CURRENCIES } from '../constants/currencies-constants';
+import { CACHE_TEN_MINUTES } from '../constants/cacheDurations-constants';
+import { NOT_IMPLEMENTED } from '../constants/strings-constants';
+import { RestResourcesSingular } from '../constants/resourceNames-constants';
+import { singularToPlural } from '../models/utils/restModel-utils';
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
 import { CurrencyCode } from '../types/admin.types';
 import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
@@ -32,6 +35,7 @@ import { getShopifyRequestHeaders } from './utils/client-utils';
 
 // #endregion
 
+export const REST_DEFAULT_LIMIT = 250;
 // #region Types
 interface BaseFindArgs {
   fields?: string;

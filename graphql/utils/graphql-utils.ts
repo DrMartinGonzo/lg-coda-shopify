@@ -2,7 +2,7 @@
 import { FragmentOf, initGraphQLTada, readFragment } from 'gql.tada';
 
 import { FormattingError, InvalidValueError } from '../../Errors/Errors';
-import { GraphQlResourceName } from '../../models/types/SupportedResource';
+import { GraphQlResourceName } from '../../constants/resourceNames-constants';
 import { introspection } from '../../types/graphql-env.js';
 import { isNullish } from '../../utils/helpers';
 

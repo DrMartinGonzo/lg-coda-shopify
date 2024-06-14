@@ -1,5 +1,5 @@
 // #region Imports
-import { CurrencyCode } from '../../types/admin.types';
+import { CurrencyCode } from '../types/admin.types';
 
 // #endregion
 
@@ -55,22 +55,11 @@ export const METAFIELD_LEGACY_TYPES = {
   json_string: 'json_string',
 } as const;
 
-export interface MoneyField {
-  currency_code: CurrencyCode;
-  amount: number;
-}
-export interface RatingField {
-  scale_min: number;
-  scale_max: number;
-  value: number;
-}
-export interface MeasurementField {
-  unit: string;
-  value: number;
-}
-
 /** All supported modern `metafield.type`s */
 export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPES];
+
+/** All supported legacy `metafield.type`s */
+export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];
 
 export type MetafieldReferenceType =
   | (typeof METAFIELD_TYPES)['collection_reference']
@@ -88,5 +77,18 @@ type MetafieldListReferenceType =
   | (typeof METAFIELD_TYPES)['list_product_reference']
   | (typeof METAFIELD_TYPES)['list_variant_reference'];
 
-/** All supported legacy `metafield.type`s */
-export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];
+export interface MoneyField {
+  currency_code: CurrencyCode;
+  amount: number;
+}
+
+export interface RatingField {
+  scale_min: number;
+  scale_max: number;
+  value: number;
+}
+
+export interface MeasurementField {
+  unit: string;
+  value: number;
+}

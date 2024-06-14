@@ -2,7 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ShopClient } from '../../Clients/RestClients';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { ShopModel } from '../../models/rest/ShopModel';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { SyncedShops } from '../../sync/rest/SyncedShops';

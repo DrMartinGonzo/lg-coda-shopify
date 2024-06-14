@@ -3,12 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import { InventoryItemClient } from '../../Clients/GraphQlClients';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { inventoryItemFieldsFragment } from '../../graphql/inventoryItems-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
-import { GraphQlResourceNames } from '../types/SupportedResource';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion

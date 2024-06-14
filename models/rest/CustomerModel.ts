@@ -2,14 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomerClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { OPTIONS_CONSENT_OPT_IN_LEVEL, OPTIONS_CONSENT_STATE } from '../../constants/options-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
-import {
-  CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN,
-  CONSENT_STATE__SUBSCRIBED,
-  CONSENT_STATE__UNSUBSCRIBED,
-} from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
 import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
@@ -61,6 +57,13 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Customer;
   protected static readonly graphQlName = GraphQlResourceNames.Customer;
 
+  private static formatSingleOptInMarketingConsent(accepts: boolean) {
+    return {
+      state: accepts === true ? OPTIONS_CONSENT_STATE.subscribed.value : OPTIONS_CONSENT_STATE.unSubscribed.value,
+      opt_in_level: OPTIONS_CONSENT_OPT_IN_LEVEL.single.value,
+    };
+  }
+
   public static createInstanceFromRow(context: coda.ExecutionContext, row: Omit<CustomerRow, 'display'>) {
     const data: Partial<CustomerModelData> = {
       id: row.id,
@@ -86,17 +89,10 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
     };
 
     if (row.accepts_email_marketing !== undefined) {
-      data.email_marketing_consent = {
-        state:
-          row.accepts_email_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
+      data.email_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(row.accepts_email_marketing);
     }
     if (row.accepts_sms_marketing !== undefined) {
-      data.sms_marketing_consent = {
-        state: row.accepts_sms_marketing === true ? CONSENT_STATE__SUBSCRIBED.value : CONSENT_STATE__UNSUBSCRIBED.value,
-        opt_in_level: CONSENT_OPT_IN_LEVEL__SINGLE_OPT_IN.value,
-      };
+      data.sms_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(row.accepts_sms_marketing);
     }
 
     return this.createInstance(context, data);
@@ -149,10 +145,10 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
       });
     }
     if (data.email_marketing_consent) {
-      obj.accepts_email_marketing = data.email_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+      obj.accepts_email_marketing = data.email_marketing_consent.state === OPTIONS_CONSENT_STATE.subscribed.value;
     }
     if (data.sms_marketing_consent) {
-      obj.accepts_sms_marketing = data.sms_marketing_consent.state === CONSENT_STATE__SUBSCRIBED.value;
+      obj.accepts_sms_marketing = data.sms_marketing_consent.state === OPTIONS_CONSENT_STATE.subscribed.value;
     }
 
     if (metafields) {

@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { InventoryLevelClient } from '../../Clients/RestClients';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { InventoryLevelApiData, InventoryLevelModel } from '../../models/rest/InventoryLevelModel';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { SyncedInventoryLevels } from '../../sync/rest/SyncedInventoryLevels';

@@ -1,13 +1,13 @@
 // #region Imports
 
-import { AbstractRestClient, ArticleClient, BlogClient, PageClient } from '../../../Clients/RestClients';
-import { UnsupportedValueError } from '../../../Errors/Errors';
-import { MetafieldOwnerType } from '../../../types/admin.types';
-import { SupportedMetafieldOwnerType } from '../../graphql/MetafieldGraphQlModel';
-import { AbstractModelRestWithRestMetafields } from '../AbstractModelRestWithMetafields';
-import { ArticleModel } from '../ArticleModel';
-import { BlogModel } from '../BlogModel';
-import { PageModel } from '../PageModel';
+import { AbstractRestClient, ArticleClient, BlogClient, PageClient } from '../../Clients/RestClients';
+import { UnsupportedValueError } from '../../Errors/Errors';
+import { MetafieldOwnerType } from '../../types/admin.types';
+import { SupportedMetafieldOwnerType } from '../graphql/MetafieldGraphQlModel';
+import { AbstractModelRestWithRestMetafields } from '../rest/AbstractModelRestWithMetafields';
+import { ArticleModel } from '../rest/ArticleModel';
+import { BlogModel } from '../rest/BlogModel';
+import { PageModel } from '../rest/PageModel';
 
 // #endregion
 

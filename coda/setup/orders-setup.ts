@@ -3,14 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 
 import { OrderClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
+import { optionValues } from '../utils/coda-utils';
 import {
-  CACHE_DISABLED,
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
-  PACK_IDENTITIES,
-  optionValues,
-} from '../../constants';
+} from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderModel } from '../../models/rest/OrderModel';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { SyncedOrders } from '../../sync/rest/SyncedOrders';

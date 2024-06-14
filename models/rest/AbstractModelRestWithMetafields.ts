@@ -7,7 +7,7 @@ import { MetafieldModel } from './MetafieldModel';
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
 import { MetafieldClient, RestRequestReturn } from '../../Clients/RestClients';
 
-import { GraphQlResourceName } from '../types/SupportedResource';
+import { GraphQlResourceName } from '../../constants/resourceNames-constants';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 

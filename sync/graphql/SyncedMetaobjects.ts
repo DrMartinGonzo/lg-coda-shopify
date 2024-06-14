@@ -6,13 +6,16 @@ import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from 
 
 import { ListMetaobjectsArgs, MetaobjectDefinitionClient, MetaobjectFieldsArgs } from '../../Clients/GraphQlClients';
 import { ShopClient } from '../../Clients/RestClients';
-import { CACHE_DISABLED, OPTIONS_METAOBJECT_STATUS, optionValues } from '../../constants';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
+import { optionValues } from '../../coda/utils/coda-utils';
+import { OPTIONS_METAOBJECT_STATUS } from '../../constants/options-constants';
 import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
 import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefinitionModel';
 import { MetaobjectFieldApiData, MetaobjectModel } from '../../models/graphql/MetaobjectModel';
-import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import { formatMetafieldValueForApi } from '../../models/utils/MetafieldHelper';
+import { MetafieldType } from '../../constants/metafields-constants';
+import { METAFIELD_TYPES } from '../../constants/metafields-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { formatMetafieldValueForApi } from '../../models/utils/metafields-utils';
 import { requireMatchingMetaobjectFieldDefinition } from '../../models/utils/metaobjects-utils';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { getObjectSchemaRowKeys, mapMetaFieldToSchemaProperty } from '../../schemas/schema-utils';

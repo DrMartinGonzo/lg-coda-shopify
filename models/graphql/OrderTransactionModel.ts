@@ -4,12 +4,12 @@ import toSentenceCase from 'to-sentence-case';
 import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
 
 import { OrderTransactionClient } from '../../Clients/GraphQlClients';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { orderTransactionFieldsFragment } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReference } from '../../schemas/syncTable/OrderTransactionSchema';
-import { GraphQlResourceNames } from '../types/SupportedResource';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion

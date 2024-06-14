@@ -3,13 +3,13 @@ import * as coda from '@codahq/packs-sdk';
 
 import { OrderLineItemClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
+import { optionValues } from '../utils/coda-utils';
 import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
   OPTIONS_ORDER_STATUS,
-  PACK_IDENTITIES,
-  optionValues,
-} from '../../constants';
+} from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderLineItemModel } from '../../models/rest/OrderLineItemModel';
 import { SyncedOrderLineItems } from '../../sync/rest/SyncedOrderLineItems';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';

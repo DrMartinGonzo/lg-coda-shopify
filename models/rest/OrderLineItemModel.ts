@@ -2,7 +2,7 @@
 
 import { OrderLineItemClient } from '../../Clients/RestClients';
 import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';

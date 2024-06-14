@@ -3,14 +3,14 @@ import * as coda from '@codahq/packs-sdk';
 import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import { VariantClient } from '../../Clients/GraphQlClients';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { productVariantFieldsFragment } from '../../graphql/productVariants-graphql';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { getUnitMap, unitToShortName, weightUnitsMap } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,

@@ -3,17 +3,16 @@ import * as coda from '@codahq/packs-sdk';
 import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from '../../graphql/utils/graphql-utils';
 
 import {
+  GRAPHQL_NODES_LIMIT,
   LocationClient,
   MetafieldDefinitionClient,
   MetaobjectClient,
   MetaobjectDefinitionClient,
   ProductClient,
 } from '../../Clients/GraphQlClients';
-import { BlogClient, ListBlogsArgs } from '../../Clients/RestClients';
+import { BlogClient, ListBlogsArgs, REST_DEFAULT_LIMIT } from '../../Clients/RestClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import {
-  FULL_SIZE,
-  GRAPHQL_NODES_LIMIT,
   OPTIONS_COUNTRY_NAMES,
   OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
@@ -22,8 +21,8 @@ import {
   OPTIONS_ORDER_STATUS,
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PUBLISHED_STATUS,
-  REST_DEFAULT_LIMIT,
-} from '../../constants';
+} from '../../constants/options-constants';
+import { FULL_SIZE } from '../../constants/strings-constants';
 import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
@@ -33,9 +32,9 @@ import {
   GraphQlFileTypesNames,
   GraphQlResourceNames,
   RestResourceSingular,
-} from '../../models/types/SupportedResource';
-import { getMetaFieldFullKey } from '../../models/utils/MetafieldHelper';
-import { COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
+} from '../../constants/resourceNames-constants';
+import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
+import { OPTIONS_COMMENTABLE } from '../../constants/options-constants';
 import { supportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
 import { compareByDisplayKey, formatOptionNameId, getUnitMap, weightUnitsMap } from '../../utils/helpers';
@@ -331,7 +330,7 @@ const blogInputs = {
     type: coda.ParameterType.String,
     name: 'commentable',
     description: 'Whether readers can post comments to the blog and if comments are moderated or not.',
-    autocomplete: COMMENTABLE_OPTIONS,
+    autocomplete: OPTIONS_COMMENTABLE,
   }),
   id: {
     ...generalInputs.id,

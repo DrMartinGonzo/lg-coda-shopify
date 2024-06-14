@@ -3,7 +3,9 @@ import * as coda from '@codahq/packs-sdk';
 
 import { PageClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
+import { optionValues } from '../utils/coda-utils';
+import { OPTIONS_PUBLISHED_STATUS } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { PageModel } from '../../models/rest/PageModel';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';

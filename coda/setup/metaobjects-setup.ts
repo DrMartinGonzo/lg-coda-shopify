@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetaobjectClient, MetaobjectDefinitionClient } from '../../Clients/GraphQlClients';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import { PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { MetaobjectModel } from '../../models/graphql/MetaobjectModel';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';

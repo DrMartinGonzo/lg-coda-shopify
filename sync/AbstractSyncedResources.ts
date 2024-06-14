@@ -10,7 +10,7 @@ import {
   isPrefixedMetaFieldKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-} from '../models/utils/MetafieldHelper';
+} from '../models/utils/metafields-utils';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { FieldDependency } from '../schemas/Schema.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../schemas/schema-utils';

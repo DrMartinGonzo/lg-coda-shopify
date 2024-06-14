@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CollectClient } from '../../Clients/RestClients';
-import { PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { CollectModel } from '../../models/rest/CollectModel';
 import { CollectSyncTableSchema } from '../../schemas/syncTable/CollectSchema';
 import { SyncedCollects } from '../../sync/rest/SyncedCollects';

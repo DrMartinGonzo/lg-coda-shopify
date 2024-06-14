@@ -1,7 +1,7 @@
 import * as coda from '@codahq/packs-sdk';
 import { writeFileSync } from 'fs';
 
-import { PACK_IDENTITIES } from '../constants';
+import { PACK_IDENTITIES } from '../constants/pack-constants';
 import { ArticleSyncTableSchema } from '../schemas/syncTable/ArticleSchema';
 import { BlogSyncTableSchema } from '../schemas/syncTable/BlogSchema';
 import { CollectSyncTableSchema } from '../schemas/syncTable/CollectSchema';

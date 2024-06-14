@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { TranslatableContentClient } from '../../Clients/GraphQlClients';
-import { GraphQlResourceNames } from '../types/SupportedResource';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { TranslatableContentRow } from '../../schemas/CodaRows.types';
 import { TranslatableResourceType } from '../../types/admin.types';
 import { graphQlGidToId } from '../../graphql/utils/graphql-utils';

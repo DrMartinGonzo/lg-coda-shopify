@@ -2,8 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { LocationClient } from '../../Clients/GraphQlClients';
-import { GraphQlResourceNames } from '../../models/types/SupportedResource';
-import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { LocationModel } from '../../models/graphql/LocationModel';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { SyncedLocations } from '../../sync/graphql/SyncedLocations';

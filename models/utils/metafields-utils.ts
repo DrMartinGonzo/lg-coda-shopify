@@ -10,7 +10,8 @@ import {
   UnsupportedValueError,
 } from '../../Errors/Errors';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
-import { CUSTOM_FIELD_PREFIX_KEY, PREFIX_FAKE } from '../../constants';
+import { PREFIX_FAKE } from '../../constants/strings-constants';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants/pack-constants';
 import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
 import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { BaseRow, FormatRowReferenceFn, MetafieldRow } from '../../schemas/CodaRows.types';
@@ -40,26 +41,21 @@ import { SupportedMetafieldOwnerName, SupportedMetafieldOwnerType } from '../gra
 import { BaseModelDataRest } from '../rest/AbstractModelRest';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
-  METAFIELD_LEGACY_TYPES,
-  METAFIELD_TYPES,
-  MeasurementField,
-  MetafieldLegacyType,
-  MetafieldReferenceType,
-  MetafieldType,
-  MoneyField,
-  RatingField,
-} from '../types/METAFIELD_TYPES';
-import {
   GraphQlResourceName,
   GraphQlResourceNames,
   RestResourcesPlural,
   RestResourcesSingular,
-  singularToPlural,
-} from '../types/SupportedResource';
-
-// #endregion
-
-// #region Metafield Types
+} from '../../constants/resourceNames-constants';
+import { singularToPlural } from './restModel-utils';
+import {
+  MetafieldType,
+  MetafieldLegacyType,
+  RatingField,
+  MoneyField,
+  MeasurementField,
+  MetafieldReferenceType,
+} from '../../constants/metafields-constants';
+import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../../constants/metafields-constants';
 
 // #endregion
 

@@ -5,7 +5,8 @@ import * as PROPS from '../../coda/utils/coda-properties';
 import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
 
 import { NotFoundError } from '../../Errors/Errors';
-import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { NOT_FOUND } from '../../constants/strings-constants';
 import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
 import { CODA_PACK_ID } from '../../pack-config.json';

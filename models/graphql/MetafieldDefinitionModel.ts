@@ -4,13 +4,14 @@ import { ResultOf } from '../../graphql/utils/graphql-utils';
 
 import { MetafieldDefinitionClient } from '../../Clients/GraphQlClients';
 import { getSupportDefinitionMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
-import { GraphQlResourceNames } from '../types/SupportedResource';
-import { Identity, NOT_IMPLEMENTED, PACK_IDENTITIES } from '../../constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { NOT_IMPLEMENTED } from '../../constants/strings-constants';
 import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { getMetaFieldFullKey } from '../utils/MetafieldHelper';
+import { getMetaFieldFullKey } from '../utils/metafields-utils';
 
 // #endregion
 

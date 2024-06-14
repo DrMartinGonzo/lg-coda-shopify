@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
-import { FULL_SIZE } from '../constants';
+import { FULL_SIZE } from '../constants/strings-constants';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
 import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';

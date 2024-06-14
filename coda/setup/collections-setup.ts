@@ -4,7 +4,9 @@ import * as coda from '@codahq/packs-sdk';
 import { CollectionClient } from '../../Clients/GraphQlClients';
 import { CustomCollectionClient, SmartCollectionClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
+import { optionValues } from '../utils/coda-utils';
+import { OPTIONS_PUBLISHED_STATUS } from '../../constants/options-constants';
+import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { CollectModel } from '../../models/rest/CollectModel';
 import { CustomCollectionModel } from '../../models/rest/CustomCollectionModel';
@@ -13,7 +15,7 @@ import {
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesSingular,
-} from '../../models/types/SupportedResource';
+} from '../../constants/resourceNames-constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSchema';
 import { SyncTableRestContinuation } from '../../sync/rest/AbstractSyncedRestResources';
