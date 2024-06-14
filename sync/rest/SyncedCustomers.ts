@@ -1,12 +1,12 @@
 // #region Imports
 
-import { ListCustomersArgs } from '../../Clients/RestApiClientBase';
+import { ListCustomersArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Customers } from '../../coda/setup/customers-setup';
 import { CustomerModel } from '../../models/rest/CustomerModel';
 import { FieldDependency } from '../../schemas/Schema.types';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { arrayUnique, dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
@@ -39,7 +39,7 @@ export class SyncedCustomers extends AbstractSyncedRestResourcesWithGraphQlMetaf
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Customer, context);
     }
 
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
 
     // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

@@ -1,5 +1,5 @@
 // #region Imports
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf } from '../../graphql/utils/graphql-utils';
 
 import { metaobjectDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
 import { BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';

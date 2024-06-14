@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OrderClient } from '../../Clients/RestApiClientBase';
+import { OrderClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import {
   CACHE_DISABLED,
@@ -14,10 +14,10 @@ import {
 import { OrderModel } from '../../models/rest/OrderModel';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { SyncedOrders } from '../../sync/rest/SyncedOrders';
-import { makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 import { assertAllowedValue, dateRangeMax, dateRangeMin, isNullishOrEmpty } from '../../utils/helpers';
 import { formatOrderForDocExport } from '../../utils/orders-utils';
-import { filters, inputs } from '../coda-parameters';
+import { filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 

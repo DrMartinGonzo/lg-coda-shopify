@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ProductClient } from '../../Clients/GraphQlApiClientBase';
+import { ProductClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import {
   CACHE_DEFAULT,
@@ -18,11 +18,11 @@ import { ProductRow } from '../../schemas/CodaRows.types';
 import { ProductSyncTableSchema } from '../../schemas/syncTable/ProductSchema';
 import { SyncedProducts } from '../../sync/graphql/SyncedProducts';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { makeDeleteGraphQlResourceAction } from '../utils/coda-utils';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { assertAllowedValue, assertNotBlank, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -165,8 +165,8 @@ export const Action_CreateProduct = coda.makeFormula({
 
     const product = ProductModel.createInstanceFromRow(context, row);
     if (metafields) {
-      product.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      product.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Product,
       });
     }
@@ -222,8 +222,8 @@ export const Action_UpdateProduct = coda.makeFormula({
 
     const product = ProductModel.createInstanceFromRow(context, row);
     if (metafields) {
-      product.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      product.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Product,
         ownerGid: product.graphQlGid,
       });

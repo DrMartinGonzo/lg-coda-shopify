@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ShopClient } from '../../Clients/RestApiClientBase';
+import { ShopClient } from '../../Clients/RestClients';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { ShopRow } from '../../schemas/CodaRows.types';

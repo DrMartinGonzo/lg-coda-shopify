@@ -1,17 +1,16 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
-import { VariantClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
+import { VariantClient } from '../../Clients/GraphQlClients';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { productVariantFieldsFragment } from '../../graphql/productVariants-graphql';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
 import { getUnitMap, unitToShortName, weightUnitsMap } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,

@@ -1,12 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { TranslatableContentClient } from '../../Clients/GraphQlApiClientBase';
+import { TranslatableContentClient } from '../../Clients/GraphQlClients';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { TranslatableContentRow } from '../../schemas/CodaRows.types';
 import { TranslatableResourceType } from '../../types/admin.types';
-import { graphQlGidToId } from '../../utils/conversion-utils';
+import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { AbstractModelGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion

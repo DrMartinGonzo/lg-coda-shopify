@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListBlogsArgs } from '../../Clients/RestApiClientBase';
+import { ListBlogsArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Blogs } from '../../coda/setup/blogs-setup';

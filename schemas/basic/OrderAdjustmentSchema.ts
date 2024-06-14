@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 
 export const OrderAdjustmentSchema = coda.makeObjectSchema({
   properties: {

@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListTranslatableContentsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListTranslatableContentsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_TranslatableContent } from '../../coda/setup/translations-setup';

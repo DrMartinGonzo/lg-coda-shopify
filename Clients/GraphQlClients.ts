@@ -2,7 +2,7 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { VariablesOf } from '../utils/tada-utils';
+import { VariablesOf, graphQlGidToResourceName } from '../graphql/utils/graphql-utils';
 
 import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
 import { FileApiData, FileModelData } from '../models/graphql/FileModel';
@@ -113,6 +113,7 @@ import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collection
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
 import { RestResourcesSingular } from '../models/types/SupportedResource';
+import { matchResourceNameToMetafieldOwnerType } from '../models/utils/metafields-utils';
 import {
   LocalizableContentType,
   MetafieldDefinitionValidationStatus,
@@ -127,9 +128,7 @@ import {
   ProductVariantInput,
   TranslatableResourceType,
 } from '../types/admin.types';
-import { graphQlGidToResourceName } from '../utils/conversion-utils';
 import { arrayUnique, dumpToConsole, excludeUndefinedObjectKeys, isNullish, logAdmin } from '../utils/helpers';
-import { matchResourceNameToMetafieldOwnerType } from '../utils/metafields-utils';
 import { FetchRequestOptions } from './Client.types';
 import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCacheMax } from './utils/client-utils';
 

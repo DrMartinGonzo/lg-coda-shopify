@@ -1,22 +1,22 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetaobjectClient, MetaobjectDefinitionClient } from '../../Clients/GraphQlApiClientBase';
+import { MetaobjectClient, MetaobjectDefinitionClient } from '../../Clients/GraphQlClients';
 import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { PACK_IDENTITIES } from '../../constants';
 import { MetaobjectModel } from '../../models/graphql/MetaobjectModel';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { SyncedMetaobjects } from '../../sync/graphql/SyncedMetaobjects';
-import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { makeDeleteGraphQlResourceAction } from '../utils/coda-utils';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { capitalizeFirstChar, compareByDisplayKey } from '../../utils/helpers';
 import {
   autocompleteMetaobjectFieldkeyFromMetaobjectId,
   autocompleteMetaobjectFieldkeyFromMetaobjectType,
   autocompleteMetaobjectType,
   inputs,
-} from '../coda-parameters';
+} from '../utils/coda-parameters';
 
 // #endregion
 

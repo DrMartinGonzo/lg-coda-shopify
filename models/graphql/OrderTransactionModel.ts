@@ -1,16 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 import toSentenceCase from 'to-sentence-case';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
 
-import { OrderTransactionClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../types/SupportedResource';
+import { OrderTransactionClient } from '../../Clients/GraphQlClients';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { orderTransactionFieldsFragment } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReference } from '../../schemas/syncTable/OrderTransactionSchema';
-import { graphQlGidToId } from '../../utils/conversion-utils';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion

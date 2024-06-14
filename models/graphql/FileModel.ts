@@ -1,10 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf } from '../../graphql/utils/graphql-utils';
 
-import { FileClient } from '../../Clients/GraphQlApiClientBase';
+import { FileClient } from '../../Clients/GraphQlClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
-import { Identity, PACK_IDENTITIES } from '../../constants';
+import { FULL_SIZE, Identity, PACK_IDENTITIES } from '../../constants';
 import {
   fileFieldsFragment,
   genericFileFieldsFragment,
@@ -12,7 +12,7 @@ import {
   videoFieldsFragment,
 } from '../../graphql/files-graphql';
 import { FileRow } from '../../schemas/CodaRows.types';
-import { extractNameFromFileUrl, getThumbnailUrlFromFullUrl, isNullishOrEmpty } from '../../utils/helpers';
+import { isNullishOrEmpty } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
@@ -82,6 +82,31 @@ export class FileModel extends AbstractModelGraphQl {
     return FileModel.createInstance(context, data);
   }
 
+  private static getNameFromUrl(url: string) {
+    return url ? url.split('/').pop().split('?').shift() : '';
+  }
+
+  private static getThumbnailUrl(url: string, thumbnailSize: string | number) {
+    if (!url) return undefined;
+
+    const parsedPreviewSize =
+      typeof thumbnailSize === 'number'
+        ? Math.floor(thumbnailSize)
+        : thumbnailSize === FULL_SIZE
+        ? undefined
+        : parseInt(thumbnailSize, 10);
+
+    if (parsedPreviewSize === undefined) {
+      return url;
+    }
+
+    return coda.withQueryParams(url, {
+      width: thumbnailSize,
+      height: thumbnailSize,
+      crop: 'center',
+    });
+  }
+
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
@@ -97,9 +122,7 @@ export class FileModel extends AbstractModelGraphQl {
       alt: data.alt,
       createdAt: data.createdAt,
       name: '',
-      preview: data.preview?.image.url
-        ? getThumbnailUrlFromFullUrl(data.preview.image.url, this.previewSize)
-        : undefined,
+      preview: FileModel.getThumbnailUrl(data.preview?.image.url, this.previewSize),
       type: data.__typename,
       updatedAt: data.updatedAt,
     };
@@ -107,7 +130,7 @@ export class FileModel extends AbstractModelGraphQl {
     if (data.__typename === 'GenericFile') {
       obj.fileSize = data.originalFileSize;
       obj.mimeType = data.mimeType;
-      obj.name = data.url ? extractNameFromFileUrl(data.url) : '';
+      obj.name = FileModel.getNameFromUrl(data.url);
       obj.url = data.url;
     }
 
@@ -115,7 +138,7 @@ export class FileModel extends AbstractModelGraphQl {
       obj.fileSize = data.originalSource?.fileSize;
       obj.height = data.image?.height;
       obj.mimeType = data.mimeType;
-      obj.name = data.image?.url ? extractNameFromFileUrl(data.image.url) : '';
+      obj.name = FileModel.getNameFromUrl(data.image.url);
       obj.url = data.image?.url;
       obj.width = data.image?.width;
     }

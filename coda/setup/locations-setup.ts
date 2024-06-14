@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { LocationClient } from '../../Clients/GraphQlApiClientBase';
+import { LocationClient } from '../../Clients/GraphQlClients';
 import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { LocationModel } from '../../models/graphql/LocationModel';
 import { LocationSyncTableSchema } from '../../schemas/syncTable/LocationSchema';
 import { SyncedLocations } from '../../sync/graphql/SyncedLocations';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -98,8 +98,8 @@ export const Action_UpdateLocation = coda.makeFormula({
       zip,
     });
     if (metafields) {
-      location.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      location.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: LocationModel.metafieldGraphQlOwnerType,
         ownerGid: location.graphQlGid,
       });

@@ -1,9 +1,9 @@
 // #region Imports
 
-import { AbstractRestClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
+import { AbstractRestClient, RestRequestReturn } from '../../Clients/RestClients';
 import { GraphQlResourceName } from '../types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { AbstractModel, BaseModelData } from '../AbstractModel';
 
 // #endregion

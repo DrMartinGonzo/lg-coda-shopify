@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../Clients/Client.types';
-import { AbstractRestClient } from '../../Clients/RestApiClientBase';
+import { AbstractRestClient } from '../../Clients/RestClients';
 import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';

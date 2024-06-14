@@ -1,11 +1,11 @@
 // #region Imports
 
-import { ListInventoryItemsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListInventoryItemsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_InventoryItems } from '../../coda/setup/inventoryItems-setup';
 import { InventoryItemModel } from '../../models/graphql/InventoryItemModel';
-import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
@@ -17,7 +17,7 @@ export class SyncedInventoryItems extends AbstractSyncedGraphQlResources<Invento
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.staticSchema);
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
 
     return augmentedSchema;
   }

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
+import { MetafieldDefinitionClient } from '../../Clients/GraphQlClients';
 import {
   SupportedMetafieldSyncTable,
   getAllSupportDefinitionMetafieldSyncTables,
@@ -12,9 +12,9 @@ import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefiniti
 import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { SyncedMetafieldDefinitions } from '../../sync/graphql/SyncedMetafieldDefinitions';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { compareByDisplayKey } from '../../utils/helpers';
-import { inputs } from '../coda-parameters';
+import { inputs } from '../utils/coda-parameters';
 
 // #endregion
 

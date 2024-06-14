@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 import { PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemSchema as OrderLineItemBasicSchema } from '../basic/OrderLineItemSchema';
 import { OrderReference } from './OrderSchema';

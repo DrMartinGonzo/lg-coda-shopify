@@ -1,13 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { RedirectClient } from '../../Clients/RestApiClientBase';
+import { RedirectClient } from '../../Clients/RestClients';
 import { PACK_IDENTITIES } from '../../constants';
 import { RedirectModel } from '../../models/rest/RedirectModel';
 import { RedirectSyncTableSchema } from '../../schemas/syncTable/RedirectSchema';
 import { SyncedRedirects } from '../../sync/rest/SyncedRedirects';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { filters, inputs } from '../coda-parameters';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
+import { filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 

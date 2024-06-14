@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListCustomCollectionsArgs } from '../../Clients/RestApiClientBase';
+import { ListCustomCollectionsArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Collections } from '../../coda/setup/collections-setup';

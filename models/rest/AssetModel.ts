@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
-import { AssetClient, ThemeClient } from '../../Clients/RestApiClientBase';
+import { AssetClient, ThemeClient } from '../../Clients/RestClients';
 import { RestResourceSingular } from '../types/SupportedResource';
 import { CACHE_DEFAULT } from '../../constants';
 import { BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';

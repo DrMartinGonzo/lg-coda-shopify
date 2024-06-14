@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CollectClient } from '../../Clients/RestApiClientBase';
+import { CollectClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectRow } from '../../schemas/CodaRows.types';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';

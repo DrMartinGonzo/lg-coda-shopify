@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 import { TaxLineSchema } from '../basic/TaxLineSchema';
 import { inventoryItemRequiresShippingProp } from '../syncTable/InventoryItemSchema';
 import { itemGramsProp, itemSkuProp, itemTaxableProp } from '../syncTable/ProductVariantSchema';

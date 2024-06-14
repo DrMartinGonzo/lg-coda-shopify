@@ -1,7 +1,17 @@
+// #region Imports
+
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
-import { NOT_FOUND } from '../../constants';
+import * as PROPS from '../../coda/utils/coda-properties';
+import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
+
+import { NotFoundError } from '../../Errors/Errors';
+import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
+import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
+import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
+import { CODA_PACK_ID } from '../../pack-config.json';
 import { FormatRowReferenceFn } from '../CodaRows.types';
+
+// #endregion
 
 export const MetaObjectSyncTableBaseSchema = coda.makeObjectSchema({
   properties: {
@@ -24,3 +34,27 @@ export const formatMetaobjectReference: FormatRowReferenceFn<number, 'name'> = (
   id,
   name,
 });
+
+export function getMetaobjectReferenceSchema(
+  fieldDefinition: ResultOf<typeof metafieldDefinitionFragment> | ResultOf<typeof metaobjectFieldDefinitionFragment>
+) {
+  const metaobjectReferenceDefinitionId = fieldDefinition.validations.find(
+    (v) => v.name === 'metaobject_definition_id'
+  )?.value;
+  if (!metaobjectReferenceDefinitionId) throw new NotFoundError('MetaobjectDefinitionId');
+
+  return coda.makeObjectSchema({
+    codaType: coda.ValueHintType.Reference,
+    properties: {
+      id: { type: coda.ValueType.Number, required: true },
+      handle: { type: coda.ValueType.String, required: true },
+    },
+    displayProperty: 'handle',
+    idProperty: 'id',
+    identity: {
+      packId: CODA_PACK_ID,
+      name: PACK_IDENTITIES.Metaobject,
+      dynamicUrl: graphQlGidToId(metaobjectReferenceDefinitionId).toString(),
+    },
+  });
+}

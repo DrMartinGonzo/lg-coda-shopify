@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { DraftOrderClient } from '../../Clients/RestApiClientBase';
+import { DraftOrderClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { OPTIONS_DRAFT_ORDER_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { DraftOrderModel } from '../../models/rest/DraftOrderModel';
@@ -9,10 +9,10 @@ import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { SyncedDraftOrders } from '../../sync/rest/SyncedDraftOrders';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 import { assertAllowedValue, isNullish, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -118,8 +118,8 @@ export const Action_UpdateDraftOrder = coda.makeFormula({
       tags: tags ? tags.join(',') : undefined,
     });
     if (metafields) {
-      draftOrder.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      draftOrder.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Draftorder,
         ownerGid: draftOrder.graphQlGid,
       });

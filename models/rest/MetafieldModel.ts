@@ -2,24 +2,31 @@
 
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
+import { MetafieldClient, RestRequestReturn } from '../../Clients/RestClients';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES } from '../../constants';
 import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
+import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { isNullish, logAdmin } from '../../utils/helpers';
+import { ModelWithDeletedFlag } from '../AbstractModel';
+import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
+import { GraphQlResourceNames, RestResourceSingular } from '../types/SupportedResource';
+import {
+  METAFIELD_DELETED_SUFFIX,
+  MetafieldNormalizedData,
+  getMetafieldAdminUrl,
+  normalizeMetafieldRow,
+  normalizeOwnerRowMetafields,
+} from '../utils/MetafieldHelper';
 import {
   formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
   matchOwnerResourceToMetafieldOwnerType,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
-} from '../../utils/metafields-utils';
-import { ModelWithDeletedFlag } from '../AbstractModel';
-import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
-import { GraphQlResourceNames, RestResourceSingular } from '../types/SupportedResource';
-import { MetafieldHelper, MetafieldNormalizedData } from '../utils/MetafieldHelper';
+} from '../utils/metafields-utils';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 
 // #endregion
@@ -99,7 +106,7 @@ export class MetafieldModel extends AbstractModelRest {
     ownerResource,
     metafieldDefinitions = [],
   }: CreateMetafieldInstancesFromRowArgs): Promise<MetafieldModel[]> {
-    const normalizedOwnerRowMetafields = await MetafieldHelper.normalizeOwnerRowMetafields({
+    const normalizedOwnerRowMetafields = await normalizeOwnerRowMetafields({
       context,
       ownerResource,
       ownerRow,
@@ -111,14 +118,14 @@ export class MetafieldModel extends AbstractModelRest {
   }
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: MetafieldRow) {
-    const normalizedData = MetafieldHelper.normalizeMetafieldRow(row);
+    const normalizedData = normalizeMetafieldRow(row);
     return MetafieldModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData });
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected validateData(data: MetafieldApiData) {
+  protected validateData(data: MetafieldModelData) {
     const missing: string[] = [];
     if (!isNullish(data.value)) {
       if (!data.type) missing.push('type');
@@ -196,10 +203,9 @@ export class MetafieldModel extends AbstractModelRest {
   public toCodaRow(includeHelperColumns = true): MetafieldRow {
     const { data } = this;
     const ownerType = matchOwnerResourceToMetafieldOwnerType(data.owner_resource);
-    const { DELETED_SUFFIX } = MetafieldHelper;
 
     let obj: Partial<MetafieldRow> = {
-      label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
+      label: this.fullKey + (data.isDeletedFlag ? METAFIELD_DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.admin_graphql_api_id,
       id: data.id,
       key: data.key,
@@ -213,7 +219,7 @@ export class MetafieldModel extends AbstractModelRest {
 
     if (data.owner_id) {
       obj.owner_id = data.owner_id;
-      const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(ownerType);
+      const { formatOwnerReference } = getSupportedMetafieldSyncTable(ownerType);
       if (formatOwnerReference) {
         obj.owner = formatOwnerReference(data.owner_id);
       }
@@ -222,7 +228,7 @@ export class MetafieldModel extends AbstractModelRest {
        * Unlike in {@link MetafieldGraphQl.formatToRow}, we can set this at once
        * since data.owner_id is already checked and owner parentId is never necessary.
        */
-      obj.admin_url = MetafieldHelper.getMetafieldAdminUrl(this.context, {
+      obj.admin_url = getMetafieldAdminUrl(this.context, {
         id: data.owner_id,
         singular: data.owner_resource,
         hasMetafieldDefinition: !!data.definition_id,

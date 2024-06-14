@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ShopClient } from '../../Clients/RestApiClientBase';
+import { ShopClient } from '../../Clients/RestClients';
 import { CACHE_DEFAULT, PACK_IDENTITIES } from '../../constants';
 import { ShopModel } from '../../models/rest/ShopModel';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';

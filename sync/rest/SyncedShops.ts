@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListShopsArgs } from '../../Clients/RestApiClientBase';
+import { ListShopsArgs } from '../../Clients/RestClients';
 import { ShopModel } from '../../models/rest/ShopModel';
 import { ShopSyncTableSchema } from '../../schemas/syncTable/ShopSchema';
 import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';

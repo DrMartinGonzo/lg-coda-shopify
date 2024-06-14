@@ -1,23 +1,54 @@
+// #region Imports
+
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
-import * as PROPS from '../coda/coda-properties';
-import { ResultOf } from '../utils/tada-utils';
+import * as PROPS from '../coda/utils/coda-properties';
+import { ResultOf } from '../graphql/utils/graphql-utils';
 
-import { ShopClient } from '../Clients/RestApiClientBase';
-import { UnsupportedValueError } from '../Errors/Errors';
+import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+import { ShopClient } from '../Clients/RestClients';
+import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
 import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../models/types/METAFIELD_TYPES';
-import { MetafieldHelper } from '../models/utils/MetafieldHelper';
+import { getMetafieldDefinitionsForOwner } from '../models/utils/MetafieldHelper';
+import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../models/utils/metafields-utils';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
-import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../utils/metafields-utils';
-import { getMetaobjectReferenceSchema } from '../utils/metaobjects-utils';
 import { CollectionReference } from './syncTable/CollectionSchema';
 import { FileReference } from './syncTable/FileSchema';
+import { getMetaobjectReferenceSchema } from './syncTable/MetaObjectSchema';
 import { PageReference } from './syncTable/PageSchema';
 import { ProductReference } from './syncTable/ProductSchema';
 import { ProductVariantReference } from './syncTable/ProductVariantSchema';
+
+// #endregion
+
+/**
+ * Taken from Coda sdk
+ */
+export function transformToArraySchema(schema?: any) {
+  if (schema?.type === coda.ValueType.Array) {
+    return schema;
+  } else {
+    return {
+      type: coda.ValueType.Array,
+      items: schema,
+    };
+  }
+}
+/**
+ * Make it easier if the caller simply passed in the full sync schema.
+ * @param schema
+ */
+function requireObjectSchema(schema: coda.Schema): coda.GenericObjectSchema {
+  let objectSchema = schema;
+  if (objectSchema.type === coda.ValueType.Array) objectSchema = objectSchema.items;
+  if (objectSchema.type !== coda.ValueType.Object) {
+    throw new InvalidValueError('ObjectSchema', objectSchema);
+  }
+  return objectSchema;
+}
 
 export function extractFormulaContextFromParamsWIP(params: coda.ParamsList) {
   const but = params.map((param, index) => {
@@ -34,7 +65,7 @@ function isCurrencyProp(prop: coda.Schema & coda.ObjectSchemaProperty): prop is 
 }
 
 let shopCurrencyCode: CurrencyCode;
-export async function updateCurrencyCodesInSchemaNew<
+export async function updateCurrencyCodesInSchema<
   SchemaT extends coda.Schema & coda.ObjectSchemaDefinition<string, string>
 >(baseSchema: SchemaT, context: coda.ExecutionContext) {
   const schema: SchemaT = { ...baseSchema };
@@ -47,12 +78,12 @@ export async function updateCurrencyCodesInSchemaNew<
 
     // Recursively call the function for nested properties
     if ('properties' in prop) {
-      prop = await updateCurrencyCodesInSchemaNew(prop, context);
+      prop = await updateCurrencyCodesInSchema(prop, context);
     }
 
     // Call the function for nested arrays
     else if (isArrayProp(prop)) {
-      prop = await updateCurrencyCodesInSchemaNew(prop.items as any, context);
+      prop = await updateCurrencyCodesInSchema(prop.items as any, context);
     }
 
     // Update currency code for currency properties
@@ -65,40 +96,6 @@ export async function updateCurrencyCodesInSchemaNew<
   return schema;
 }
 
-/*
-async function wrapDynamicSchemaForCli(
-  fn: coda.MetadataFormulaDef,
-  context: coda.SyncExecutionContext,
-  formulaContext: Record<string, any>
-): Promise<coda.ArraySchema<coda.Schema>> {
-  const getSchema = wrapGetSchema(wrapMetadataFunction(fn));
-  const search = '';
-  const serializedFormulaContext = JSON.stringify(formulaContext);
-
-  const schema = await getSchema.execute([search, serializedFormulaContext], context);
-  return normalizeSchema(schema);
-}
-*/
-/**
- * Handles dynamic schema in CLI context.
- * It calls the provided `getSchemaFunction` if `context.sync.schema` is falsy.
- * It helps to overcome an issue where the dynamic schema is not present in `context.sync.schema` in CLI context.
- *
- * @param getSchemaFunction - The function to generate dynamic schema.
- * @param context - The sync execution context.
- * @param formulaContext - The formula metadata context.
- * @returns The schema
- */
-/*
-export async function resolveSchemaFromContext(
-  getSchemaFunction: coda.MetadataFormulaDef,
-  context: coda.SyncExecutionContext,
-  formulaContext: Record<string, any>
-): Promise<coda.ArraySchema<coda.Schema>> {
-  return context.sync.schema ?? (await wrapDynamicSchemaForCli(getSchemaFunction, context, formulaContext));
-}
-*/
-
 // #region Metafields in schema
 export async function augmentSchemaWithMetafields<
   SchemaT extends coda.Schema & coda.ObjectSchemaDefinition<string, string>
@@ -106,7 +103,7 @@ export async function augmentSchemaWithMetafields<
   const schema: SchemaT = { ...baseSchema };
   schema.featuredProperties = schema.featuredProperties ?? [];
 
-  const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
+  const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
   metafieldDefinitions.forEach((metafieldDefinition) => {
     const property = mapMetaFieldToSchemaProperty(metafieldDefinition.data);
     if (property) {
@@ -119,7 +116,7 @@ export async function augmentSchemaWithMetafields<
     }
   });
 
-  return updateCurrencyCodesInSchemaNew(schema, context);
+  return updateCurrencyCodesInSchema(schema, context);
 }
 
 export function mapMetaFieldToSchemaProperty(
@@ -422,3 +419,54 @@ export function mapMetaFieldToSchemaProperty(
 
   throw new UnsupportedValueError('MetafieldType', type);
 }
+// #endregion
+
+// #region Schema keys helpers
+/**
+ * Retrieve all object schema keys or fromKeys if present
+ */
+function retrieveObjectSchemaEffectiveKeys(schema: coda.Schema) {
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  return Object.keys(properties).map((key) => getObjectSchemaEffectiveKey(objectSchema, key));
+}
+
+/**
+ * Get a single object schema keys or fromKey if present
+ */
+export function getObjectSchemaEffectiveKey(schema: coda.Schema, key: string) {
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  if (properties.hasOwnProperty(key)) {
+    const property = properties[key];
+    const propKey = property.hasOwnProperty('fromKey') ? property.fromKey : key;
+    return propKey;
+  }
+  throw new Error(`Schema doesn't have ${key} property`);
+}
+
+export function getObjectSchemaNormalizedKey(schema: coda.Schema, fromKey: string) {
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  let found = fromKey;
+  Object.keys(properties).forEach((propKey) => {
+    const property = properties[propKey];
+    if (property.hasOwnProperty('fromKey') && property.fromKey === fromKey) {
+      if (property.hasOwnProperty('fixedId')) {
+        found = property.fixedId;
+        return;
+      }
+    }
+  });
+  return normalizeSchemaKey(found);
+}
+
+export function getObjectSchemaRowKeys(schema: coda.Schema) {
+  const objectSchema = requireObjectSchema(schema);
+  const properties = objectSchema.properties;
+  return Object.keys(properties).map((propKey) => {
+    const property = properties[propKey];
+    return property.hasOwnProperty('fixedId') ? property.fixedId : propKey;
+  });
+}
+// #endregion

@@ -2,35 +2,34 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
-import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
-import { ArticleClient, BlogClient, MetafieldClient, PageClient } from '../../Clients/RestApiClientBase';
+import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
+import { ArticleClient, BlogClient, MetafieldClient, PageClient } from '../../Clients/RestClients';
 import { RequiredParameterMissingVisibleError, UnsupportedValueError } from '../../Errors/Errors';
-import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
-import { MetafieldHelper } from '../../models/utils/MetafieldHelper';
-import { SupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
-import {
-  GraphQlFileTypes,
-  GraphQlFileTypesNames,
-  GraphQlResourceName,
-  GraphQlResourceNames,
-} from '../../models/types/SupportedResource';
 import { CACHE_DEFAULT, CACHE_DISABLED, PACK_IDENTITIES } from '../../constants';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { MetafieldGraphQlModel, SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { ArticleModel } from '../../models/rest/ArticleModel';
 import { BlogModel } from '../../models/rest/BlogModel';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
 import { PageModel } from '../../models/rest/PageModel';
+import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
+import {
+  GraphQlFileTypes,
+  GraphQlFileTypesNames,
+  GraphQlResourceName,
+  GraphQlResourceNames,
+} from '../../models/types/SupportedResource';
+import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../models/utils/metafields-utils';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
+import { SupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { SyncedGraphQlMetafields } from '../../sync/graphql/SyncedGraphQlMetafields';
 import { SyncedMetafields } from '../../sync/rest/SyncedMetafields';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteRestResourceAction } from '../../utils/coda-utils';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
-import { matchOwnerTypeToOwnerResource, matchOwnerTypeToResourceName } from '../../utils/metafields-utils';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
-import { filters, inputs } from '../coda-parameters';
+import { autoCompleteMetafieldOwnerTypes, filters, inputs } from '../utils/coda-parameters';
+import { makeDeleteRestResourceAction } from '../utils/coda-utils';
 
 // #endregion
 
@@ -115,8 +114,7 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   description: 'Return Metafields from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Metafield,
-  listDynamicUrls: async (context) =>
-    MetafieldHelper.listSupportedSyncTables().map((r) => ({ ...r, hasChildren: false })),
+  listDynamicUrls: async (context) => autoCompleteMetafieldOwnerTypes().map((r) => ({ ...r, hasChildren: false })),
   getName: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
     const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
@@ -215,15 +213,13 @@ export const Action_SetMetafield = coda.makeFormula({
   resultType: coda.ValueType.Object,
   schema: MetafieldSyncTableSchema,
   execute: async ([ownerType, metafieldParam, owner_id], context) => {
-    const ownerResource = matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType);
-    const metafieldSet = CodaMetafieldSetNew.createFromCodaParameter(metafieldParam);
-    const metafieldInstance = metafieldSet.toRestMetafield({
+    const metafield = CodaMetafieldSet.createRestMetafield(metafieldParam, {
       context,
-      owner_id,
-      owner_resource: ownerResource,
+      ownerId: owner_id,
+      ownerResource: matchOwnerTypeToOwnerResource(ownerType as SupportedMetafieldOwnerType),
     });
-    await metafieldInstance.save();
-    return metafieldInstance.toCodaRow();
+    await metafield.save();
+    return metafield.toCodaRow();
   },
 });
 
@@ -427,8 +423,7 @@ export const Formula_FormatMetafield = coda.makeFormula({
   parameters: [inputs.metafield.fullKey, inputs.metafield.value],
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([fullKey, value]) =>
-    CodaMetafieldSetNew.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+  execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatMetafieldNew = coda.makeFormula({
@@ -438,7 +433,7 @@ export const Formula_FormatMetafieldNew = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.Required,
   execute: async ([ownerType, fullKey, value]) =>
-    CodaMetafieldSetNew.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+    CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
 export const Formula_FormatListMetafield = coda.makeFormula({
@@ -449,7 +444,7 @@ export const Formula_FormatListMetafield = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, ...varargs]) =>
-    CodaMetafieldSetNew.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
+    CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
 });
 
 export const Formula_MetaBoolean = coda.makeFormula({

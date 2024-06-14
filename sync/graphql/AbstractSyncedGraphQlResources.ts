@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { AbstractGraphQlClient, GraphQlFetcher } from '../../Clients/GraphQlApiClientBase';
+import { AbstractGraphQlClient, GraphQlFetcher } from '../../Clients/GraphQlClients';
 import { AbstractModelGraphQl } from '../../models/graphql/AbstractModelGraphQl';
 import { AbstractModelGraphQlWithMetafields } from '../../models/graphql/AbstractModelGraphQlWithMetafields';
 import {

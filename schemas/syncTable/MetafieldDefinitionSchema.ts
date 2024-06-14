@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 import { NOT_FOUND, PACK_IDENTITIES } from '../../constants';
 import { CODA_PACK_ID } from '../../pack-config.json';
 import { MetafieldOwnerType } from '../../types/admin.types';

@@ -1,11 +1,11 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OrderTransactionClient } from '../../Clients/GraphQlApiClientBase';
+import { OrderTransactionClient } from '../../Clients/GraphQlClients';
 import { PACK_IDENTITIES } from '../../constants';
 import { OrderTransactionModel } from '../../models/graphql/OrderTransactionModel';
 import { SyncedOrderTransactions } from '../../sync/graphql/SyncedOrderTransactions';
-import { filters } from '../coda-parameters';
+import { filters } from '../utils/coda-parameters';
 
 // #endregion
 

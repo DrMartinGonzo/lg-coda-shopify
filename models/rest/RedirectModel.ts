@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { RedirectClient } from '../../Clients/RestApiClientBase';
+import { RedirectClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { RedirectRow } from '../../schemas/CodaRows.types';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';

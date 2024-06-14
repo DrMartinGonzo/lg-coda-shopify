@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { readFragment, readFragmentArray } from '../utils/tada-utils';
+import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from '../../graphql/utils/graphql-utils';
 
 import {
   LocationClient,
   MetaobjectClient,
   MetaobjectDefinitionClient,
   ProductClient,
-} from '../Clients/GraphQlApiClientBase';
-import { BlogClient, ListBlogsArgs } from '../Clients/RestApiClientBase';
-import { DEFAULT_THUMBNAIL_SIZE } from '../config';
+} from '../../Clients/GraphQlClients';
+import { BlogClient, ListBlogsArgs } from '../../Clients/RestClients';
+import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import {
   FULL_SIZE,
   GRAPHQL_NODES_LIMIT,
@@ -22,18 +22,22 @@ import {
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PUBLISHED_STATUS,
   REST_DEFAULT_LIMIT,
-} from '../constants';
+} from '../../constants';
 import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
-} from '../graphql/metaobjectDefinition-graphql';
-import { getTemplateSuffixesFor } from '../models/rest/AssetModel';
-import { GraphQlFileTypesNames, GraphQlResourceNames, RestResourceSingular } from '../models/types/SupportedResource';
-import { MetafieldHelper } from '../models/utils/MetafieldHelper';
-import { COMMENTABLE_OPTIONS } from '../schemas/syncTable/BlogSchema';
-import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from '../utils/conversion-utils';
-import { formatOptionNameId, getUnitMap, weightUnitsMap } from '../utils/helpers';
+} from '../../graphql/metaobjectDefinition-graphql';
+import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
+import {
+  GraphQlFileTypesNames,
+  GraphQlResourceNames,
+  RestResourceSingular,
+} from '../../models/types/SupportedResource';
+import { getMetafieldDefinitionsForOwner } from '../../models/utils/MetafieldHelper';
+import { COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
+import { supportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
+import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
+import { compareByDisplayKey, formatOptionNameId, getUnitMap, weightUnitsMap } from '../../utils/helpers';
 
 // #endregion
 
@@ -85,7 +89,7 @@ async function autocompleteLocationsWithName(context: coda.ExecutionContext, sea
 
 function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
+    const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
     const searchObjects = metafieldDefinitions.map((metafield) => {
       return { name: metafield.data.name, fullKey: metafield.fullKey };
     });
@@ -93,9 +97,15 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
   };
 }
 
+export function autoCompleteMetafieldOwnerTypes() {
+  return supportedMetafieldSyncTables
+    .map((r) => ({ display: r.display, value: r.ownerType }))
+    .sort(compareByDisplayKey);
+}
+
 function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
-    const metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({ context, ownerType });
+    const metafieldDefinitions = await getMetafieldDefinitionsForOwner({ context, ownerType });
     const keys = metafieldDefinitions.map((m) => m.fullKey).sort();
     return coda.simpleAutocomplete(search, keys);
   };
@@ -553,8 +563,8 @@ const metafieldInputs = {
   ownerType: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'ownerType',
-    description: 'The type of the resource owning the metafield.',
-    autocomplete: MetafieldHelper.listSupportedSyncTables(),
+    description: 'The type of resource owning the metafield.',
+    autocomplete: autoCompleteMetafieldOwnerTypes(),
   }),
   value: coda.makeParameter({
     type: coda.ParameterType.String,

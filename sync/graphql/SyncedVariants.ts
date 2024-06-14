@@ -1,13 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ListVariantsArgs, VariantFieldsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListVariantsArgs, VariantFieldsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_ProductVariants } from '../../coda/setup/productVariants-setup';
 import { VARIANT_OPTION_KEYS, VARIANT_WEIGHT_KEYS, VariantModel } from '../../models/graphql/VariantModel';
 import { FieldDependency } from '../../schemas/Schema.types';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
@@ -44,7 +44,7 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Productvariant, context);
     }
 
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
 
     // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

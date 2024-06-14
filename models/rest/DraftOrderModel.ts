@@ -1,14 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CompleteDraftOrderArgs, DraftOrderClient, SendDraftOrderInvoiceArgs } from '../../Clients/RestApiClientBase';
+import { CompleteDraftOrderArgs, DraftOrderClient, SendDraftOrderInvoiceArgs } from '../../Clients/RestClients';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { formatAddressDisplayName, formatPersonDisplayValue, safeToString } from '../../utils/helpers';
+import { safeToString } from '../../utils/helpers';
+import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,

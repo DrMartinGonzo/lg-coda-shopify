@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ListTranslationsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListTranslationsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Translations } from '../../coda/setup/translations-setup';

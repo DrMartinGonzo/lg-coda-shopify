@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OrderLineItemClient } from '../../Clients/RestApiClientBase';
+import { OrderLineItemClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
@@ -13,7 +13,7 @@ import {
 import { OrderLineItemModel } from '../../models/rest/OrderLineItemModel';
 import { SyncedOrderLineItems } from '../../sync/rest/SyncedOrderLineItems';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { filters } from '../coda-parameters';
+import { filters } from '../utils/coda-parameters';
 
 // #endregion
 

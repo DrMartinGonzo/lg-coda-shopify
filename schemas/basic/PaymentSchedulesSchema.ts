@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 
 // Schedules associated to payment terms.
 export const PaymentSchedulesSchema = coda.makeObjectSchema({

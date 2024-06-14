@@ -1,17 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { PageClient } from '../../Clients/RestApiClientBase';
+import { PageClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { PageModel } from '../../models/rest/PageModel';
 import { PageSyncTableSchema } from '../../schemas/syncTable/PageSchema';
 import { SyncedPages } from '../../sync/rest/SyncedPages';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -128,9 +128,10 @@ export const Action_CreatePage = coda.makeFormula({
       template_suffix,
     });
     if (metafields) {
-      page.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
-        s.toRestMetafield({ context, owner_resource: PageModel.metafieldRestOwnerType })
-      );
+      page.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
+        ownerResource: PageModel.metafieldRestOwnerType,
+      });
     }
 
     await page.save();
@@ -179,8 +180,8 @@ export const Action_UpdatePage = coda.makeFormula({
       template_suffix,
     });
     if (metafields) {
-      page.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      page.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
         ownerResource: PageModel.metafieldRestOwnerType,
         ownerId: pageId,
       });

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryLevelClient } from '../../Clients/RestApiClientBase';
+import { InventoryLevelClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';

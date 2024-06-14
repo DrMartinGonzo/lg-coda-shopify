@@ -1,6 +1,6 @@
 // #region Imports
 
-import { OrderLineItemClient } from '../../Clients/RestApiClientBase';
+import { OrderLineItemClient } from '../../Clients/RestClients';
 import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';

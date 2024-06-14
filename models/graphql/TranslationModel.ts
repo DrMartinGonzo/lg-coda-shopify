@@ -3,12 +3,12 @@ import * as coda from '@codahq/packs-sdk';
 import toConstantCase from 'to-constant-case';
 import toPascalCase from 'to-pascal-case';
 
-import { TranslationClient } from '../../Clients/GraphQlApiClientBase';
+import { TranslationClient } from '../../Clients/GraphQlClients';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { TranslationRow } from '../../schemas/CodaRows.types';
 import { LocalizableContentType, TranslatableResourceType } from '../../types/admin.types';
-import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../utils/conversion-utils';
+import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { isNullishOrEmpty } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';

@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CollectionClient } from '../../Clients/GraphQlApiClientBase';
-import { CustomCollectionClient, SmartCollectionClient } from '../../Clients/RestApiClientBase';
+import { CollectionClient } from '../../Clients/GraphQlClients';
+import { CustomCollectionClient, SmartCollectionClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
@@ -19,11 +19,11 @@ import { CollectionSyncTableSchema } from '../../schemas/syncTable/CollectionSch
 import { SyncTableRestContinuation } from '../../sync/rest/AbstractSyncedRestResources';
 import { SyncedCollections } from '../../sync/rest/SyncedCollections';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { graphQlGidToId, idToGraphQlGid } from '../../utils/conversion-utils';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -229,8 +229,8 @@ export const Action_CreateCollection = coda.makeFormula({
     };
     const customCollection = CustomCollectionModel.createInstanceFromRow(context, customCollectionRow);
     if (metafields) {
-      customCollection.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      customCollection.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Collection,
       });
     }
@@ -284,8 +284,8 @@ export const Action_UpdateCollection = coda.makeFormula({
 
     const collection = model.createInstanceFromRow(context, collectionRow);
     if (metafields) {
-      collection.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      collection.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Collection,
         ownerGid: collection.graphQlGid,
       });

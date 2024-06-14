@@ -1,17 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { BlogClient } from '../../Clients/RestApiClientBase';
+import { BlogClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { PACK_IDENTITIES, optionValues } from '../../constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { BlogModel } from '../../models/rest/BlogModel';
 import { BlogSyncTableSchema, COMMENTABLE_OPTIONS } from '../../schemas/syncTable/BlogSchema';
 import { SyncedBlogs } from '../../sync/rest/SyncedBlogs';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 
 // #endregion
 
@@ -112,8 +112,8 @@ export const Action_UpdateBlog = coda.makeFormula({
       template_suffix,
     });
     if (metafields) {
-      blog.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      blog.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
         ownerResource: BlogModel.metafieldRestOwnerType,
         ownerId: blogId,
       });
@@ -153,9 +153,10 @@ export const Action_CreateBlog = coda.makeFormula({
       template_suffix,
     });
     if (metafields) {
-      blog.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
-        s.toRestMetafield({ context, owner_resource: BlogModel.metafieldRestOwnerType })
-      );
+      blog.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
+        ownerResource: BlogModel.metafieldRestOwnerType,
+      });
     }
 
     await blog.save();

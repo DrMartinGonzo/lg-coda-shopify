@@ -1,18 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
-import { MetaobjectClient } from '../../Clients/GraphQlApiClientBase';
-import { GraphQlResourceNames } from '../types/SupportedResource';
+import { MetaobjectClient } from '../../Clients/GraphQlClients';
+import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { metaobjectFragment } from '../../graphql/metaobjects-graphql';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaobjectStatus } from '../../types/admin.types';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
 import { isNullishOrEmpty, isString } from '../../utils/helpers';
-import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../../utils/metafields-utils';
+import { GraphQlResourceNames } from '../types/SupportedResource';
+import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../utils/metafields-utils';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
 
 // #endregion
 

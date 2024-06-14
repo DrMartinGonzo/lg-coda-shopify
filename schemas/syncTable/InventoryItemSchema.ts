@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import * as PROPS from '../../coda/coda-properties';
+import * as PROPS from '../../coda/utils/coda-properties';
 import { OPTIONS_COUNTRY_NAMES, PACK_IDENTITIES } from '../../constants';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { ProductVariantReference } from './ProductVariantSchema';

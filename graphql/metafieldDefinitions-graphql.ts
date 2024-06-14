@@ -1,4 +1,4 @@
-import { graphql } from '../utils/tada-utils';
+import { graphql } from './utils/graphql-utils';
 
 // #region Fragments
 export const metafieldDefinitionFragment = graphql(`

@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListProductsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListProductsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Products } from '../../coda/setup/products-setup';

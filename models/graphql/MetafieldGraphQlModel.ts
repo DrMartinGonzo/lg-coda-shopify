@@ -1,15 +1,21 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
 
-import { MetafieldClient } from '../../Clients/GraphQlApiClientBase';
+import { MetafieldClient } from '../../Clients/GraphQlClients';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
-import { MetafieldHelper, MetafieldNormalizedData } from '../utils/MetafieldHelper';
 import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from '../../graphql/metafields-graphql';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
+import {
+  METAFIELD_DELETED_SUFFIX,
+  MetafieldNormalizedData,
+  getMetafieldAdminUrl,
+  normalizeMetafieldRow,
+  normalizeOwnerRowMetafields,
+} from '../utils/MetafieldHelper';
 import {
   formatMetaFieldValueForSchema,
   getMetaFieldFullKey,
@@ -17,17 +23,17 @@ import {
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
   splitMetaFieldFullKey,
-} from '../../utils/metafields-utils';
+} from '../utils/metafields-utils';
 
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
-import { GraphQlResourceNames } from '../types/SupportedResource';
 import { CACHE_DISABLED, Identity, PACK_IDENTITIES, PREFIX_FAKE } from '../../constants';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
+import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
-import { graphQlGidToId } from '../../utils/conversion-utils';
 import { isNullish, logAdmin } from '../../utils/helpers';
 import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
+import { GraphQlResourceNames } from '../types/SupportedResource';
 
 // #endregion
 
@@ -48,7 +54,9 @@ export type SupportedMetafieldOwnerType =
 export interface MetafieldApiData
   extends BaseApiDataGraphQl,
     ResultOf<typeof metafieldFieldsFragment>,
-    ResultOf<typeof metafieldFieldsFragmentWithDefinition> {
+    ResultOf<typeof metafieldFieldsFragmentWithDefinition> {}
+
+export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {
   parentNode: Node & {
     /**
      * Used to reference Product Variant parent Product
@@ -56,8 +64,6 @@ export interface MetafieldApiData
     parentOwner?: Node;
   };
 }
-
-export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {}
 // #endregion
 
 export class MetafieldGraphQlModel extends AbstractModelGraphQl {
@@ -100,7 +106,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
     ownerResource,
     metafieldDefinitions = [],
   }: CreateMetafieldInstancesFromRowArgs): Promise<MetafieldGraphQlModel[]> {
-    const normalizedOwnerRowMetafields = await MetafieldHelper.normalizeOwnerRowMetafields({
+    const normalizedOwnerRowMetafields = await normalizeOwnerRowMetafields({
       context,
       ownerResource,
       ownerRow,
@@ -112,14 +118,14 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
   }
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: MetafieldRow) {
-    const normalizedData = MetafieldHelper.normalizeMetafieldRow(row);
+    const normalizedData = normalizeMetafieldRow(row);
     return MetafieldGraphQlModel.createInstanceFromMetafieldNormalizedData({ context, normalizedData });
   }
 
   /**====================================================================================================================
    *    Instance Methods
    *===================================================================================================================== */
-  protected setData(data: MetafieldApiData): void {
+  protected setData(data: MetafieldModelData): void {
     // Make sure the key property is never the 'full' key, i.e. `${namespace}.${key}`. -> Normalize it.
     const fullkey = getMetaFieldFullKey(data);
     const { metaKey, metaNamespace } = splitMetaFieldFullKey(fullkey);
@@ -129,7 +135,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
     super.setData(data);
   }
 
-  protected validateData(data: MetafieldApiData) {
+  protected validateData(data: MetafieldModelData) {
     const missing: string[] = [];
     if (!isNullish(data.value)) {
       if (!data.type) missing.push('type');
@@ -197,12 +203,11 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
 
   public toCodaRow(includeHelperColumns = true): MetafieldRow {
     const { data } = this;
-    const { DELETED_SUFFIX } = MetafieldHelper;
     const ownerId = graphQlGidToId(data.parentNode?.id);
     const parentOwnerId = graphQlGidToId(data.parentNode?.parentOwner?.id);
 
     let obj: Partial<MetafieldRow> = {
-      label: this.fullKey + (data.isDeletedFlag ? DELETED_SUFFIX : ''),
+      label: this.fullKey + (data.isDeletedFlag ? METAFIELD_DELETED_SUFFIX : ''),
       admin_graphql_api_id: data.id,
       id: graphQlGidToId(data.id),
       key: data.key,
@@ -216,7 +221,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
 
     if (ownerId) {
       obj.owner_id = ownerId;
-      const { formatOwnerReference } = MetafieldHelper.getSupportedSyncTable(data.ownerType as MetafieldOwnerType);
+      const { formatOwnerReference } = getSupportedMetafieldSyncTable(data.ownerType as MetafieldOwnerType);
       if (formatOwnerReference) {
         obj.owner = formatOwnerReference(ownerId);
       }
@@ -229,7 +234,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
        * previous value. We could also retrieve the owner ID value directly in the
        * graphQl mutation result but doing it this way reduce the GraphQL query costs.
        */
-      const maybeAdminUrl = MetafieldHelper.getMetafieldAdminUrl(this.context, {
+      const maybeAdminUrl = getMetafieldAdminUrl(this.context, {
         id: ownerId,
         parentId: parentOwnerId,
         singular: matchOwnerTypeToOwnerResource(data.ownerType as MetafieldOwnerType),

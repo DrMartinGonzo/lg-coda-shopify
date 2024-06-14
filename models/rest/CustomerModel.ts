@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CustomerClient } from '../../Clients/RestApiClientBase';
+import { CustomerClient } from '../../Clients/RestClients';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
@@ -11,7 +11,8 @@ import {
   CONSENT_STATE__UNSUBSCRIBED,
 } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { formatAddressDisplayName, formatPersonDisplayValue, safeToString } from '../../utils/helpers';
+import { safeToString } from '../../utils/helpers';
+import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,

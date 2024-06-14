@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListRedirectsArgs } from '../../Clients/RestApiClientBase';
+import { ListRedirectsArgs } from '../../Clients/RestClients';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Redirects } from '../../coda/setup/redirects-setup';
 import { RedirectModel } from '../../models/rest/RedirectModel';

@@ -1,14 +1,13 @@
 // #region Imports
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf } from '../../graphql/utils/graphql-utils';
 
+import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { MetafieldApiData, MetafieldGraphQlModel } from './MetafieldGraphQlModel';
-
-import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
+import { MetafieldGraphQlModel, MetafieldModelData } from './MetafieldGraphQlModel';
 
 import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 
 // #endregion
 
@@ -39,14 +38,18 @@ export abstract class AbstractModelGraphQlWithMetafields extends AbstractModelGr
     await Promise.all(this.data.metafields.map(async (metafield) => metafield.save()));
   }
 
-  protected setData(data: GraphQlApiDataWithMetafields): void {
+  protected setData(
+    data: BaseModelDataGraphQl & {
+      metafields?: { nodes: ResultOf<typeof metafieldFieldsFragment>[] };
+    }
+  ): void {
     super.setData(data);
     this.data.metafields = data.metafields?.nodes
       ? data.metafields.nodes.map((d) =>
           MetafieldGraphQlModel.createInstance(this.context, {
             ...d,
             parentNode: { id: this.data[this.primaryKey] },
-          } as MetafieldApiData)
+          } as MetafieldModelData)
         )
       : [];
   }

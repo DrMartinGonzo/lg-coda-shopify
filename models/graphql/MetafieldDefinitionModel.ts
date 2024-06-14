@@ -1,8 +1,8 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ResultOf } from '../../utils/tada-utils';
+import { ResultOf } from '../../graphql/utils/graphql-utils';
 
-import { MetafieldDefinitionClient } from '../../Clients/GraphQlApiClientBase';
+import { MetafieldDefinitionClient } from '../../Clients/GraphQlClients';
 import { getSupportDefinitionMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { GraphQlResourceNames } from '../types/SupportedResource';
 import { Identity, NOT_IMPLEMENTED, PACK_IDENTITIES } from '../../constants';
@@ -10,7 +10,7 @@ import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-
 import { MetafieldDefinitionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { getMetaFieldFullKey } from '../../utils/metafields-utils';
+import { getMetaFieldFullKey } from '../utils/metafields-utils';
 
 // #endregion
 

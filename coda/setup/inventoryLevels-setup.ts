@@ -1,13 +1,13 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryLevelClient } from '../../Clients/RestApiClientBase';
+import { InventoryLevelClient } from '../../Clients/RestClients';
 import { PACK_IDENTITIES } from '../../constants';
 import { InventoryLevelApiData, InventoryLevelModel } from '../../models/rest/InventoryLevelModel';
 import { InventoryLevelSyncTableSchema } from '../../schemas/syncTable/InventoryLevelSchema';
 import { SyncedInventoryLevels } from '../../sync/rest/SyncedInventoryLevels';
 import { parseOptionId } from '../../utils/helpers';
-import { filters, inputs } from '../coda-parameters';
+import { filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 

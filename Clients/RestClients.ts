@@ -27,7 +27,7 @@ import { RestResourcesSingular, singularToPlural } from '../models/types/Support
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
 import { CurrencyCode } from '../types/admin.types';
 import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
-import { getMetaFieldFullKey } from '../utils/metafields-utils';
+import { getMetaFieldFullKey } from '../models/utils/metafields-utils';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
@@ -221,6 +221,14 @@ class RestFetcher {
   public async delete<T>(params: DeleteRequestParams<T>) {
     return this.request<T>({ method: 'DELETE', ...params });
   }
+  // public async putNew<T extends any = {}>({ body, ...params }: PutRequestParams) {
+  //   if (isDefinedEmpty(body)) return;
+  //   return this.request<T>({
+  //     method: 'PUT',
+  //     body: { [this.singular]: body },
+  //     ...params,
+  //   });
+  // }
 }
 // #endregion
 

@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CancelOrderArgs, OrderClient } from '../../Clients/RestApiClientBase';
+import { CancelOrderArgs, OrderClient } from '../../Clients/RestClients';
 import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
@@ -18,7 +18,8 @@ import { RefundSchema } from '../../schemas/basic/RefundSchema';
 import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { formatAddressDisplayName, formatPersonDisplayValue, safeToString } from '../../utils/helpers';
+import { safeToString } from '../../utils/helpers';
+import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,

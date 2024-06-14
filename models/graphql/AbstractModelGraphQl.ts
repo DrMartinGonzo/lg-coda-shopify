@@ -1,10 +1,10 @@
 // #region Imports
 
-import { AbstractGraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlApiClientBase';
+import { AbstractGraphQlClient, GraphQlRequestReturn } from '../../Clients/GraphQlClients';
 import { GraphQlResourceName } from '../types/SupportedResource';
 import { CACHE_DISABLED } from '../../constants';
 import { Node } from '../../types/admin.types';
-import { graphQlGidToId } from '../../utils/conversion-utils';
+import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { AbstractModel } from '../AbstractModel';
 
 // #endregion

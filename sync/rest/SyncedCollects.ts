@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListCollectsArgs } from '../../Clients/RestApiClientBase';
+import { ListCollectsArgs } from '../../Clients/RestClients';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Collects } from '../../coda/setup/collects-setup';
 import { CollectModel } from '../../models/rest/CollectModel';

@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListArticlesArgs } from '../../Clients/RestApiClientBase';
+import { ListArticlesArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { parseContinuationProperty, stringifyContinuationProperty } from '../utils/sync-utils';

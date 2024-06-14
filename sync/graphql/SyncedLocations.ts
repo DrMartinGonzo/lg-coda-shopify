@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListLocationsArgs, LocationFieldsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListLocationsArgs, LocationFieldsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Locations } from '../../coda/setup/locations-setup';

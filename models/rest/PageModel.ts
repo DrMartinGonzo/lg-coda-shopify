@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
-import { PageClient } from '../../Clients/RestApiClientBase';
+import { PageClient } from '../../Clients/RestClients';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { PageRow } from '../../schemas/CodaRows.types';

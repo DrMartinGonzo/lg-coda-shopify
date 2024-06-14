@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListPagesArgs } from '../../Clients/RestApiClientBase';
+import { ListPagesArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_Pages } from '../../coda/setup/pages-setup';

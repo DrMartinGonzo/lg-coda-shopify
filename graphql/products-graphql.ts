@@ -1,4 +1,5 @@
-import { graphql } from '../utils/tada-utils';
+import { toIsoDate } from '../utils/helpers';
+import { graphql } from './utils/graphql-utils';
 import { metafieldFieldsFragment } from './metafields-graphql';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
@@ -41,16 +42,16 @@ export function buildProductsSearchQuery({
 
   // date range filters
   if (created_at_min) {
-    searchItems.push(`created_at:>='${created_at_min.toISOString()}'`);
+    searchItems.push(`created_at:>='${toIsoDate(created_at_min)}'`);
   }
   if (created_at_max) {
-    searchItems.push(`created_at:<='${created_at_max.toISOString()}'`);
+    searchItems.push(`created_at:<='${toIsoDate(created_at_max)}'`);
   }
   if (updated_at_min) {
-    searchItems.push(`updated_at:>='${updated_at_min.toISOString()}'`);
+    searchItems.push(`updated_at:>='${toIsoDate(updated_at_min)}'`);
   }
   if (updated_at_max) {
-    searchItems.push(`updated_at:<='${updated_at_max.toISOString()}'`);
+    searchItems.push(`updated_at:<='${toIsoDate(updated_at_max)}'`);
   }
 
   if (gift_card !== undefined) {

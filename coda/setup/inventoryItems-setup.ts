@@ -1,12 +1,12 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { InventoryItemClient } from '../../Clients/GraphQlApiClientBase';
+import { InventoryItemClient } from '../../Clients/GraphQlClients';
 import { PACK_IDENTITIES } from '../../constants';
 import { InventoryItemModel } from '../../models/graphql/InventoryItemModel';
 import { InventoryItemSyncTableSchema } from '../../schemas/syncTable/InventoryItemSchema';
 import { SyncedInventoryItems } from '../../sync/graphql/SyncedInventoryItems';
-import { filters, inputs } from '../coda-parameters';
+import { filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 

@@ -1,11 +1,11 @@
 // #region Imports
 
-import { ListOrderTransactionsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListOrderTransactionsArgs } from '../../Clients/GraphQlClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_OrderTransactions } from '../../coda/setup/orderTransactions-setup';
 import { OrderTransactionModel } from '../../models/graphql/OrderTransactionModel';
-import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { OrderTransactionSyncTableSchema } from '../../schemas/syncTable/OrderTransactionSchema';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
@@ -17,7 +17,7 @@ export class SyncedOrderTransactions extends AbstractSyncedGraphQlResources<Orde
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.staticSchema);
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
 
     return augmentedSchema;
   }

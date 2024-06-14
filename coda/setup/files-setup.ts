@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { FileClient } from '../../Clients/GraphQlApiClientBase';
+import { FileClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import { CACHE_DEFAULT, OPTIONS_FILE_TYPE, PACK_IDENTITIES, optionValues } from '../../constants';
@@ -9,7 +9,7 @@ import { FileModel } from '../../models/graphql/FileModel';
 import { FileSyncTableSchema } from '../../schemas/syncTable/FileSchema';
 import { SyncedFiles } from '../../sync/graphql/SyncedFiles';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { inputs } from '../coda-parameters';
+import { inputs } from '../utils/coda-parameters';
 
 // #endregion
 

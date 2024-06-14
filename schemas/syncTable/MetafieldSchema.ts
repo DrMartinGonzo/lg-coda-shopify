@@ -3,8 +3,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { METAFIELD_TYPES, MetafieldType } from '../../models/types/METAFIELD_TYPES';
-import * as PROPS from '../../coda/coda-properties';
-import { formatMetafieldValueForApi } from '../../utils/metafields-utils';
+import * as PROPS from '../../coda/utils/coda-properties';
+import { formatMetafieldValueForApi } from '../../models/utils/metafields-utils';
 import { CollectionReference } from './CollectionSchema';
 import { FileReference } from './FileSchema';
 import { PageReference } from './PageSchema';

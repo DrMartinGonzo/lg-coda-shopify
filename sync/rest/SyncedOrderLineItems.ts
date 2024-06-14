@@ -1,11 +1,11 @@
 // #region Imports
 
-import { ListOrdersArgs } from '../../Clients/RestApiClientBase';
+import { ListOrdersArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_OrderLineItems } from '../../coda/setup/orderLineItems-setup';
 import { OrderLineItemModel } from '../../models/rest/OrderLineItemModel';
-import { updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { OrderLineItemSyncTableSchema } from '../../schemas/syncTable/OrderLineItemSchema';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
 import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
@@ -17,7 +17,7 @@ export class SyncedOrderLineItems extends AbstractSyncedRestResources<OrderLineI
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
     let augmentedSchema = deepCopy(this.staticSchema);
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
     return augmentedSchema;
   }
 

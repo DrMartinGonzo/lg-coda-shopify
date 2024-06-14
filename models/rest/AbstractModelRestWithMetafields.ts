@@ -4,8 +4,8 @@ import { MetafieldGraphQlModel } from '../graphql/MetafieldGraphQlModel';
 import { AbstractModelRest, BaseApiDataRest, BaseModelDataRest } from './AbstractModelRest';
 import { MetafieldModel } from './MetafieldModel';
 
-import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlApiClientBase';
-import { MetafieldClient, RestRequestReturn } from '../../Clients/RestApiClientBase';
+import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
+import { MetafieldClient, RestRequestReturn } from '../../Clients/RestClients';
 
 import { GraphQlResourceName } from '../types/SupportedResource';
 import { MetafieldOwnerType } from '../../types/admin.types';

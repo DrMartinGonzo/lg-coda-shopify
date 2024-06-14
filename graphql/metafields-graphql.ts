@@ -4,7 +4,7 @@ import { TadaDocumentNode } from 'gql.tada';
 import { UnsupportedValueError } from '../Errors/Errors';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { capitalizeFirstChar } from '../utils/helpers';
-import { graphql } from '../utils/tada-utils';
+import { graphql } from './utils/graphql-utils';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #endregion

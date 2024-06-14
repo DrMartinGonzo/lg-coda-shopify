@@ -4,7 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { IS_ADMIN_RELEASE } from './pack-config.json';
 
-import { ShopClient } from './Clients/RestApiClientBase';
+import { ShopClient } from './Clients/RestClients';
 import {
   Action_CreateArticle,
   Action_DeleteArticle,

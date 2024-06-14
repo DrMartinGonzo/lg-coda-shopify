@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { VariantClient } from '../../Clients/GraphQlApiClientBase';
+import { VariantClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError, RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { GraphQlResourceNames } from '../../models/types/SupportedResource';
 import {
@@ -17,11 +17,11 @@ import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { SyncedVariants } from '../../sync/graphql/SyncedVariants';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteGraphQlResourceAction } from '../../utils/coda-utils';
-import { idToGraphQlGid } from '../../utils/conversion-utils';
+import { makeDeleteGraphQlResourceAction } from '../utils/coda-utils';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -215,8 +215,8 @@ export const Action_CreateProductVariant = coda.makeFormula({
 
     const variant = VariantModel.createInstanceFromRow(context, row);
     if (metafields) {
-      variant.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      variant.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Productvariant,
       });
     }
@@ -292,8 +292,8 @@ export const Action_UpdateProductVariant = coda.makeFormula({
 
     const variant = VariantModel.createInstanceFromRow(context, row);
     if (metafields) {
-      variant.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      variant.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: MetafieldOwnerType.Productvariant,
         ownerGid: variant.graphQlGid,
       });

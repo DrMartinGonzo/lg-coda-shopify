@@ -1,8 +1,28 @@
 // #region Imports
-import { ResultOf } from './tada-utils';
+import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import { convertSchemaToHtml } from '@thebeyondgroup/shopify-rich-text-renderer';
-import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
+import { InvalidValueError, UnsupportedValueError } from '../../Errors/Errors';
+import { DEFAULT_CURRENCY_CODE } from '../../config';
+import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants';
+import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
+import { FormatRowReferenceFn } from '../../schemas/CodaRows.types';
+import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
+import { formatFileReference } from '../../schemas/syncTable/FileSchema';
+import { formatMetaobjectReference } from '../../schemas/syncTable/MetaObjectSchema';
+import { formatPageReference } from '../../schemas/syncTable/PageSchema';
+import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
+import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
+import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
+import {
+  extractValueAndUnitFromMeasurementString,
+  isNullishOrEmpty,
+  maybeParseJson,
+  splitAndTrimValues,
+  unitToShortName,
+} from '../../utils/helpers';
+import { SupportedMetafieldOwnerType } from '../graphql/MetafieldGraphQlModel';
+import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
   METAFIELD_LEGACY_TYPES,
   METAFIELD_TYPES,
@@ -11,34 +31,13 @@ import {
   MetafieldType,
   MoneyField,
   RatingField,
-} from '../models/types/METAFIELD_TYPES';
+} from '../types/METAFIELD_TYPES';
 import {
   GraphQlResourceName,
   GraphQlResourceNames,
   RestResourceSingular,
   RestResourcesSingular,
-} from '../models/types/SupportedResource';
-import { DEFAULT_CURRENCY_CODE } from '../config';
-import { CUSTOM_FIELD_PREFIX_KEY } from '../constants';
-import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
-import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
-import { SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { FormatRowReferenceFn } from '../schemas/CodaRows.types';
-import { formatCollectionReference } from '../schemas/syncTable/CollectionSchema';
-import { formatFileReference } from '../schemas/syncTable/FileSchema';
-import { formatMetaobjectReference } from '../schemas/syncTable/MetaObjectSchema';
-import { formatPageReference } from '../schemas/syncTable/PageSchema';
-import { formatProductReference } from '../schemas/syncTable/ProductSchema';
-import { formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
-import { CurrencyCode, MetafieldOwnerType } from '../types/admin.types';
-import { graphQlGidToId, idToGraphQlGid } from './conversion-utils';
-import {
-  extractValueAndUnitFromMeasurementString,
-  isNullishOrEmpty,
-  maybeParseJson,
-  splitAndTrimValues,
-  unitToShortName,
-} from './helpers';
+} from '../types/SupportedResource';
 
 // #endregion
 

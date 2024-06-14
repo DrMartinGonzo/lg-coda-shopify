@@ -1,15 +1,15 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { CustomerClient } from '../../Clients/RestApiClientBase';
+import { CustomerClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { PACK_IDENTITIES } from '../../constants';
 import { CustomerModel } from '../../models/rest/CustomerModel';
 import { CustomerSyncTableSchema } from '../../schemas/syncTable/CustomerSchema';
 import { SyncedCustomers } from '../../sync/rest/SyncedCustomers';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -138,9 +138,10 @@ export const Action_CreateCustomer = coda.makeFormula({
       accepts_sms_marketing,
     });
     if (metafields) {
-      customer.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
-        s.toGraphQlMetafield({ context, ownerType: CustomerModel.metafieldGraphQlOwnerType })
-      );
+      customer.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
+        ownerType: CustomerModel.metafieldGraphQlOwnerType,
+      });
     }
 
     await customer.save();
@@ -211,8 +212,8 @@ export const Action_UpdateCustomer = coda.makeFormula({
       tags: tags ? tags.join(',') : undefined,
     });
     if (metafields) {
-      customer.data.metafields = CodaMetafieldSetNew.createGraphQlMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      customer.data.metafields = CodaMetafieldSet.createGraphQlMetafieldsArray(metafields, {
+        context,
         ownerType: CustomerModel.metafieldGraphQlOwnerType,
         ownerGid: customer.graphQlGid,
       });

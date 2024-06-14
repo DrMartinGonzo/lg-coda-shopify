@@ -1,6 +1,6 @@
 // #region Imports
 
-import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
+import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlClients';
 import { wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { GraphQlResourceName } from '../../models/types/SupportedResource';

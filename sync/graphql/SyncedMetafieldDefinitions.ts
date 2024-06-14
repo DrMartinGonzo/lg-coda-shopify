@@ -1,6 +1,6 @@
 // #region Imports
 
-import { ListMetafieldDefinitionsArgs } from '../../Clients/GraphQlApiClientBase';
+import { ListMetafieldDefinitionsArgs } from '../../Clients/GraphQlClients';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';

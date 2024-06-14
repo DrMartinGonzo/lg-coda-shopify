@@ -1,20 +1,20 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { MetafieldHelper } from '../models/utils/MetafieldHelper';
 import { AbstractModel } from '../models/AbstractModel';
+import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
 import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
 import { AbstractModelRestWithRestMetafields } from '../models/rest/AbstractModelRestWithMetafields';
-import { BaseRow } from '../schemas/CodaRows.types';
-import { FieldDependency } from '../schemas/Schema.types';
-import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../utils/coda-utils';
-import { handleFieldDependencies } from '../utils/helpers';
+import { getMetafieldDefinitionsForOwner } from '../models/utils/MetafieldHelper';
 import {
   isPrefixedMetaFieldKey,
   removePrefixFromMetaFieldKey,
   separatePrefixedMetafieldsKeysFromKeys,
-} from '../utils/metafields-utils';
-import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
+} from '../models/utils/metafields-utils';
+import { BaseRow } from '../schemas/CodaRows.types';
+import { FieldDependency } from '../schemas/Schema.types';
+import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../schemas/schema-utils';
+import { arrayUnique } from '../utils/helpers';
 
 // #endregion
 
@@ -203,10 +203,11 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
     this.shouldSyncMetafields = this.supportMetafields && !!this.effectiveMetafieldKeys.length;
   }
 
+  // TODO: maybe not in abstract
   protected async getMetafieldDefinitions(): Promise<MetafieldDefinitionModel[]> {
     if (this._metafieldDefinitions) return this._metafieldDefinitions;
 
-    this._metafieldDefinitions = await MetafieldHelper.getMetafieldDefinitionsForOwner({
+    this._metafieldDefinitions = await getMetafieldDefinitionsForOwner({
       context: this.context,
       ownerType: (
         this.model as unknown as typeof AbstractModelRestWithRestMetafields | typeof AbstractModelGraphQlWithMetafields
@@ -217,8 +218,31 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
 
   public abstract get codaParamsMap(): any;
 
+  /**
+   * Some fields are not returned directly by the API but are derived from a
+   * calculation on another field. Since the user may choose not to synchronize
+   * this parent field, this function allows adding it according to a dependency
+   * array defined in the SyncResource class.
+   */
+  private handleFieldDependencies() {
+    const fields = [...this.effectiveStandardFromKeys];
+    this.asStatic().schemaDependencies.forEach((def) => {
+      if (
+        def.dependencies.some(
+          (key) =>
+            this.effectiveStandardFromKeys.includes(key) &&
+            !this.effectiveStandardFromKeys.includes(def.field as string)
+        )
+      ) {
+        fields.push(def.field as string);
+      }
+    });
+
+    return arrayUnique<string>(fields);
+  }
+
   protected get syncedStandardFields(): string[] {
-    return handleFieldDependencies(this.effectiveStandardFromKeys, this.asStatic().schemaDependencies);
+    return this.handleFieldDependencies();
   }
 
   protected get currentLimit(): number {

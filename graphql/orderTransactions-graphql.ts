@@ -1,4 +1,5 @@
-import { graphql } from '../utils/tada-utils';
+import { toIsoDate } from '../utils/helpers';
+import { graphql } from './utils/graphql-utils';
 import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Helpers
@@ -7,12 +8,12 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
   if (filters.search) searchItems.push(filters.search);
 
   // date range filters
-  if (filters.created_at_min) searchItems.push(`created_at:>='${filters.created_at_min.toISOString()}'`);
-  if (filters.created_at_max) searchItems.push(`created_at:<='${filters.created_at_max.toISOString()}'`);
-  if (filters.updated_at_min) searchItems.push(`updated_at:>='${filters.updated_at_min.toISOString()}'`);
-  if (filters.updated_at_max) searchItems.push(`updated_at:<='${filters.updated_at_max.toISOString()}'`);
-  if (filters.processed_at_min) searchItems.push(`processed_at:>='${filters.processed_at_min.toISOString()}'`);
-  if (filters.processed_at_max) searchItems.push(`processed_at:<='${filters.processed_at_max.toISOString()}'`);
+  if (filters.created_at_min) searchItems.push(`created_at:>='${toIsoDate(filters.created_at_min)}'`);
+  if (filters.created_at_max) searchItems.push(`created_at:<='${toIsoDate(filters.created_at_max)}'`);
+  if (filters.updated_at_min) searchItems.push(`updated_at:>='${toIsoDate(filters.updated_at_min)}'`);
+  if (filters.updated_at_max) searchItems.push(`updated_at:<='${toIsoDate(filters.updated_at_max)}'`);
+  if (filters.processed_at_min) searchItems.push(`processed_at:>='${toIsoDate(filters.processed_at_min)}'`);
+  if (filters.processed_at_max) searchItems.push(`processed_at:<='${toIsoDate(filters.processed_at_max)}'`);
 
   // order gateways
   if (filters.gateways && filters.gateways.length)

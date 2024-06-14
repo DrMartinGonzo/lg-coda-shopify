@@ -1,17 +1,17 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ArticleClient } from '../../Clients/RestApiClientBase';
+import { ArticleClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { OPTIONS_PUBLISHED_STATUS, PACK_IDENTITIES, optionValues } from '../../constants';
 import { ArticleModel } from '../../models/rest/ArticleModel';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { SyncedArticles } from '../../sync/rest/SyncedArticles';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../../utils/coda-utils';
 import { assertAllowedValue, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
-import { CodaMetafieldSetNew } from '../CodaMetafieldSetNew';
-import { createOrUpdateMetafieldDescription, filters, inputs } from '../coda-parameters';
+import { CodaMetafieldSet } from '../CodaMetafieldSet';
+import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 
 // #endregion
 
@@ -153,9 +153,10 @@ export const Action_CreateArticle = coda.makeFormula({
       title,
     });
     if (metafields) {
-      article.data.metafields = CodaMetafieldSetNew.createFromCodaParameterArray(metafields).map((s) =>
-        s.toRestMetafield({ context, owner_resource: ArticleModel.metafieldRestOwnerType })
-      );
+      article.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
+        ownerResource: ArticleModel.metafieldRestOwnerType,
+      });
     }
 
     await article.save();
@@ -229,8 +230,8 @@ export const Action_UpdateArticle = coda.makeFormula({
       image_url: imageUrl,
     });
     if (metafields) {
-      article.data.metafields = CodaMetafieldSetNew.createRestMetafieldsFromCodaParameterArray(context, {
-        codaParams: metafields,
+      article.data.metafields = CodaMetafieldSet.createRestMetafieldsArray(metafields, {
+        context,
         ownerResource: ArticleModel.metafieldRestOwnerType,
         ownerId: id,
       });

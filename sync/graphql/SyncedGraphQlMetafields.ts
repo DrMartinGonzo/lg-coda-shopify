@@ -1,10 +1,10 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlApiClientBase';
+import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlClients';
 import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
-import { MetafieldHelper } from '../../models/utils/MetafieldHelper';
+import { getMetafieldsDynamicSchema } from '../../models/utils/MetafieldHelper';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -21,10 +21,10 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
     },
   ];
 
-  public static staticSchema = MetafieldHelper.staticSchema;
+  public static staticSchema = MetafieldSyncTableSchema;
 
   public static async getDynamicSchema(args: GetSchemaArgs) {
-    return MetafieldHelper.getDynamicSchema(args);
+    return getMetafieldsDynamicSchema(args);
   }
 
   public get codaParamsMap() {

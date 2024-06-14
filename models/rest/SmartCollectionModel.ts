@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { OrderSmartCollectionArgs, SmartCollectionClient } from '../../Clients/RestApiClientBase';
+import { OrderSmartCollectionArgs, SmartCollectionClient } from '../../Clients/RestClients';
 import { GraphQlResourceNames, RestResourcesSingular } from '../types/SupportedResource';
 import { Identity, PACK_IDENTITIES } from '../../constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';

@@ -148,9 +148,16 @@ export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = 
   MetafieldOwnerType.Shop,
 ].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
 
+export function getSupportedMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
+  const found = supportedMetafieldSyncTables.find((r) => r.ownerType === ownerType);
+  if (found) return found;
+  throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+}
+
 export function getAllSupportDefinitionMetafieldSyncTables(): Array<SupportedMetafieldSyncTable> {
   return supportedMetafieldSyncTables.filter((r) => r.supportDefinition);
 }
+
 export function getSupportDefinitionMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
   const found = getAllSupportDefinitionMetafieldSyncTables().find((r) => r.ownerType === ownerType);
   if (found) return found;

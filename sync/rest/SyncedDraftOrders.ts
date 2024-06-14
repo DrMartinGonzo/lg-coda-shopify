@@ -1,12 +1,12 @@
 // #region Imports
 
-import { ListDraftOrdersArgs } from '../../Clients/RestApiClientBase';
+import { ListDraftOrdersArgs } from '../../Clients/RestClients';
 import { GetSchemaArgs } from '../AbstractSyncedResources';
 import { CodaSyncParams } from '../AbstractSyncedResources';
 import { Sync_DraftOrders } from '../../coda/setup/draftOrders-setup';
 import { DraftOrderModel } from '../../models/rest/DraftOrderModel';
 import { FieldDependency } from '../../schemas/Schema.types';
-import { augmentSchemaWithMetafields, updateCurrencyCodesInSchemaNew } from '../../schemas/schema-utils';
+import { augmentSchemaWithMetafields, updateCurrencyCodesInSchema } from '../../schemas/schema-utils';
 import { DraftOrderSyncTableSchema } from '../../schemas/syncTable/DraftOrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { dateRangeMax, dateRangeMin, deepCopy } from '../../utils/helpers';
@@ -35,7 +35,7 @@ export class SyncedDraftOrders extends AbstractSyncedRestResourcesWithGraphQlMet
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Draftorder, context);
     }
-    augmentedSchema = await updateCurrencyCodesInSchemaNew(augmentedSchema, context);
+    augmentedSchema = await updateCurrencyCodesInSchema(augmentedSchema, context);
 
     // @ts-expect-error: admin_url should always be the last featured property, regardless of any metafield keys added previously
     augmentedSchema.featuredProperties.push('admin_url');

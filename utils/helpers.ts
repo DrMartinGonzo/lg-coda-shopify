@@ -21,16 +21,7 @@ export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
 
-/**
- * Extracts the name from the given file URL.
- *
- * @param  url - The file URL
- * @return The extracted name from the file URL
- */
-export function extractNameFromFileUrl(url: string) {
-  return url.split('/').pop().split('?').shift();
-}
-
+// #region measurement units helpers
 export const weightUnitsMap: { [key in WeightUnit]: string } = {
   // WEIGHT
   GRAMS: 'g',
@@ -110,66 +101,9 @@ export function extractValueAndUnitFromMeasurementString(
     throw new coda.UserVisibleError(`Invalid measurement string: ${measurementString}`);
   }
 }
+// #endregion
 
-export function getThumbnailUrlFromFullUrl(url: string, thumbnailSize: string | number) {
-  const parsedPreviewSize =
-    typeof thumbnailSize === 'number'
-      ? Math.floor(thumbnailSize)
-      : thumbnailSize === FULL_SIZE
-      ? undefined
-      : parseInt(thumbnailSize, 10);
-
-  if (parsedPreviewSize === undefined) {
-    return url;
-  }
-
-  return coda.withQueryParams(url, {
-    width: thumbnailSize,
-    height: thumbnailSize,
-    crop: 'center',
-  });
-}
-
-/**
- * Some fields are not returned directly by the API but are derived from a
- * calculation on another field. Since the user may choose not to synchronize
- * this parent field, this function allows adding it according to a dependency
- * array defined next to the entity schema
- */
-export function handleFieldDependencies(
-  effectivePropertyKeys: Array<string>,
-  fieldDependencies: Array<FieldDependency<any>> = []
-) {
-  const fields = [...effectivePropertyKeys];
-  fieldDependencies.forEach((def) => {
-    if (
-      def.dependencies.some(
-        (key) => effectivePropertyKeys.includes(key) && !effectivePropertyKeys.includes(def.field as string)
-      )
-    ) {
-      fields.push(def.field as string);
-    }
-  });
-
-  return arrayUnique<string>(fields);
-}
-
-/**
- * Try to parse a json string, if it fails return the original value
- */
-export function maybeParseJson(value: any) {
-  if (!value) return value;
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return value;
-  }
-}
-
-export function arrayUnique<T = any>(array: T[]) {
-  return Array.from(new Set(array));
-}
-
+// #region Log helpers
 export function logAdmin(msg: any) {
   if (IS_ADMIN_RELEASE) {
     console.log(msg);
@@ -181,11 +115,12 @@ export function dumpToConsole(data: any) {
     console.log(JSON.stringify(data, null, 2));
   }
 }
+// #endregion
 
+// #region Date helpers
 // Coda date to ISO Date helper
 export function toIsoDate(convDate: Date): String {
-  let isoDate = convDate.toISOString();
-  return isoDate;
+  return convDate.toISOString();
 }
 
 // ISO Date to Coda date helper
@@ -195,13 +130,15 @@ export function toCodaDate(isoDateToConv: String): String {
   return codaDate;
 }
 
-export function compareByDisplayKey(a: any, b: any) {
-  return a.display.localeCompare(b.display);
+export function dateRangeMin(dateRange: Date[]) {
+  return dateRange ? dateRange[0] : undefined;
 }
-export function compareByValueKey(a: any, b: any) {
-  return a.value.localeCompare(b.value);
+export function dateRangeMax(dateRange: Date[]) {
+  return dateRange ? dateRange[1] : undefined;
 }
+// #endregion
 
+// #region OptionName helpers
 /**
  * Sometimes, we will provide an input like `${name} (${id})`, formatted using formatOptionNameId()
  * This function parses the parameter value, extracting the ID from the
@@ -222,18 +159,9 @@ export function parseOptionId(label: string): number {
 export function formatOptionNameId(name: string, id: number): string {
   return `${trimStringWithEllipsis(name, 25)} (${id})`;
 }
+// #endregion
 
-function trimStringWithEllipsis(inputString: string, maxLength: number) {
-  if (inputString.length > maxLength) {
-    return inputString.substring(0, maxLength - 1) + '…';
-  }
-  return inputString;
-}
-
-export function deepCopy<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
+// #region null/defined etc checks
 /**
  * Checks if a value is nullish.
  * @param value The value to be checked for nullishness
@@ -265,49 +193,7 @@ export function isDefinedEmpty(value: any) {
 export function isNullishOrEmpty(value: any) {
   return isNullish(value) || isDefinedEmpty(value);
 }
-
-export function formatPersonDisplayValue(person: {
-  id: string | number;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-}): string {
-  if (person.firstName || person.lastName) {
-    return [person.firstName, person.lastName].filter((p) => p && p !== '').join(' ');
-  } else if (person.email) {
-    return person.email;
-  }
-  return person.id.toString();
-}
-
-export function formatAddressDisplayName(address, withName = true, withCompany = true) {
-  const parts = [
-    withName ? [address?.first_name, address?.last_name].filter((p) => p && p !== '').join(' ') : undefined,
-    withCompany ? address?.company : undefined,
-    address?.address1,
-    address?.address2,
-    address?.city,
-    address?.country,
-  ];
-
-  return parts.filter((part) => part && part !== '').join(', ');
-}
-
-export function isObject(value: any) {
-  return (typeof value === 'object' && value !== null) || typeof value === 'function';
-}
-
-/**
- * Takes an object and returns the key associated with the given value in the object
- * @param obj
- * @param value
- */
-export function getKeyFromValue<T extends object>(obj: T, value: T[keyof T]): keyof T {
-  return Object.keys(obj).find((key) => obj[key] === value) as keyof T;
-}
-
-const overwriteMerge = (destinationArray: any[], sourceArray: any[], options: deepmerge.ArrayMergeOptions) =>
-  sourceArray;
+// #endregion
 
 // #region @shopify/hydrogen-react
 export function flattenConnection(connection) {
@@ -413,15 +299,58 @@ export function splitAndTrimValues(values = '', delimiter = ','): string[] {
 }
 // #endregion
 
-export function safeToString(value?: any): string | undefined {
-  return isNullish(value) ? undefined : value.toString();
+/**
+ * Try to parse a json string, if it fails return the original value
+ */
+export function maybeParseJson(value: any) {
+  if (!value) return value;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
 }
 
-export function dateRangeMin(dateRange: Date[]) {
-  return dateRange ? dateRange[0] : undefined;
+export function arrayUnique<T = any>(array: T[]) {
+  return Array.from(new Set(array));
 }
-export function dateRangeMax(dateRange: Date[]) {
-  return dateRange ? dateRange[1] : undefined;
+
+export function deepCopy<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+export function isObject(value: any) {
+  return (typeof value === 'object' && value !== null) || typeof value === 'function';
+}
+
+/**
+ * Takes an object and returns the key associated with the given value in the object
+ * @param obj
+ * @param value
+ */
+export function getKeyFromValue<T extends object>(obj: T, value: T[keyof T]): keyof T {
+  return Object.keys(obj).find((key) => obj[key] === value) as keyof T;
+}
+
+export function compareByDisplayKey(a: any, b: any) {
+  return a.display.localeCompare(b.display);
+}
+export function compareByValueKey(a: any, b: any) {
+  return a.value.localeCompare(b.value);
+}
+
+const overwriteMerge = (destinationArray: any[], sourceArray: any[], options: deepmerge.ArrayMergeOptions) =>
+  sourceArray;
+
+function trimStringWithEllipsis(inputString: string, maxLength: number) {
+  if (inputString.length > maxLength) {
+    return inputString.substring(0, maxLength - 1) + '…';
+  }
+  return inputString;
+}
+
+export function safeToString(value?: any): string | undefined {
+  return isNullish(value) ? undefined : value.toString();
 }
 
 export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
