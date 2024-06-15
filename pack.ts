@@ -1,4 +1,3 @@
-/// <reference path="./node_modules/gas-coda-export-bills/Interfaces.d.ts"/>
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
@@ -110,13 +109,7 @@ import {
 } from './coda/setup/metaobjects-setup';
 import { Sync_OrderLineItems } from './coda/setup/orderLineItems-setup';
 import { Sync_OrderTransactions } from './coda/setup/orderTransactions-setup';
-import {
-  Format_Order,
-  Formula_Order,
-  Formula_OrderExportFormat,
-  Formula_Orders,
-  Sync_Orders,
-} from './coda/setup/orders-setup';
+import { Format_Order, Formula_Order, Formula_OrderJSON, Formula_Orders, Sync_Orders } from './coda/setup/orders-setup';
 import {
   Action_CreatePage,
   Action_DeletePage,
@@ -216,10 +209,10 @@ pack.formulas.push(Formula_Location);
 pack.formulas.push(Formula_Metafield);
 pack.formulas.push(Formula_MetafieldDefinition);
 pack.formulas.push(Formula_Order);
+pack.formulas.push(Formula_OrderJSON);
 if (IS_ADMIN_RELEASE) {
   pack.formulas.push(Formula_Metafields);
   pack.formulas.push(Formula_Orders);
-  pack.formulas.push(Formula_OrderExportFormat);
 }
 pack.formulas.push(Formula_Page);
 pack.formulas.push(Formula_Product);

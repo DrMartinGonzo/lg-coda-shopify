@@ -74,6 +74,27 @@ export function makeFetchSingleRestResourceAction({
 }
 
 /**
+ * Create a basic formula to fetch a single Rest resource and return raw JSON
+ */
+export function makeFetchSingleRestResourceAsJsonAction({
+  modelName,
+  IdParameter,
+  execute,
+}: Omit<MakeRestFetchResourceActionParams, 'schema'>) {
+  return coda.makeFormula({
+    name: `${modelName}JSON`,
+    isExperimental: true,
+    description: `Return a single ${modelName} from this shop as raw JSON.`,
+    connectionRequirement: coda.ConnectionRequirement.Required,
+    parameters: [IdParameter],
+    // small cache because we likely want fresh results when fetching as RAW Json
+    cacheTtlSecs: 10,
+    resultType: coda.ValueType.String,
+    execute,
+  });
+}
+
+/**
  * Create a basic formula to delete a single GraphQL resource
  * @param Resource the resource class
  * @param IdParameter the id parameter

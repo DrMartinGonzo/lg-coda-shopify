@@ -4,7 +4,6 @@ import * as coda from '@codahq/packs-sdk';
 import { OrderClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
-import { optionValues } from '../utils/coda-utils';
 import {
   OPTIONS_ORDER_FINANCIAL_STATUS,
   OPTIONS_ORDER_FULFILLMENT_STATUS,
@@ -14,10 +13,13 @@ import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderModel } from '../../models/rest/OrderModel';
 import { OrderSyncTableSchema } from '../../schemas/syncTable/OrderSchema';
 import { SyncedOrders } from '../../sync/rest/SyncedOrders';
-import { makeFetchSingleRestResourceAction } from '../utils/coda-utils';
 import { assertAllowedValue, dateRangeMax, dateRangeMin, isNullishOrEmpty } from '../../utils/helpers';
-import { formatOrderForDocExport } from '../../utils/orders-utils';
 import { filters, inputs } from '../utils/coda-parameters';
+import {
+  makeFetchSingleRestResourceAction,
+  makeFetchSingleRestResourceAsJsonAction,
+  optionValues,
+} from '../utils/coda-utils';
 
 // #endregion
 
@@ -108,18 +110,31 @@ export const Sync_Orders = coda.makeSyncTable({
 // #endregion
 
 // #region Formulas
+async function fetchOrder(context: coda.ExecutionContext, id: number, asJson = false) {
+  const response = await OrderClient.createInstance(context).single({ id });
+  if (asJson == true) {
+    return JSON.stringify(response.body);
+  }
+  return OrderModel.createInstance(context, response.body).toCodaRow();
+}
+
 export const Formula_Order = makeFetchSingleRestResourceAction({
   modelName: OrderModel.displayName,
   IdParameter: inputs.order.id,
   schema: SyncedOrders.staticSchema,
-  execute: async ([itemId], context) => {
-    const response = await OrderClient.createInstance(context).single({ id: itemId as number });
-    return OrderModel.createInstance(context, response.body).toCodaRow();
-  },
+  execute: async ([itemId], context) => fetchOrder(context, itemId as number),
 });
 
+export const Formula_OrderJSON = makeFetchSingleRestResourceAsJsonAction({
+  modelName: OrderModel.displayName,
+  IdParameter: inputs.order.id,
+  execute: async ([itemId], context) => fetchOrder(context, itemId as number, true),
+});
+
+// TODO: Il faudrait lui donner les m^mees paramètres que pour Sync et se servir de la classe SyncedOrders pour récupérer les arguments du client
 export const Formula_Orders = coda.makeFormula({
   name: 'Orders',
+  isExperimental: true,
   description: 'Get orders data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
@@ -157,28 +172,6 @@ export const Formula_Orders = coda.makeFormula({
       },
     });
     return items.map((data) => OrderModel.createInstance(context, data).toCodaRow());
-  },
-});
-
-export const Formula_OrderExportFormat = coda.makeFormula({
-  name: 'OrderExportFormat',
-  description: 'Return JSON suitable for our custom lg-coda-export-documents pack.',
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.order.id],
-  cacheTtlSecs: 10, // small cache because we need fresh results
-  resultType: coda.ValueType.String,
-  execute: async ([orderId], context) => {
-    const client = OrderClient.createInstance(context);
-    const response = await client.single({
-      id: orderId,
-      options: {
-        cacheTtlSecs: CACHE_DISABLED, // we need fresh results
-      },
-    });
-
-    if (response?.body) {
-      return formatOrderForDocExport(response.body);
-    }
   },
 });
 
