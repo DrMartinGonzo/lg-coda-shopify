@@ -29,13 +29,15 @@ import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { singularToPlural } from '../models/utils/restModel-utils';
 import { AbstractSyncedRestResources } from '../sync/rest/AbstractSyncedRestResources';
 import { CurrencyCode } from '../types/admin.types';
-import { isDefinedEmpty, removeNullishPropsFromObject, splitAndTrimValues } from '../utils/helpers';
+import { isDefinedEmpty, excludeNullishObjectKeys, splitAndTrimValues } from '../utils/helpers';
 import { FetchRequestOptions, SearchParams } from './Client.types';
 import { getShopifyRequestHeaders } from './utils/client-utils';
 
 // #endregion
 
 export const REST_DEFAULT_LIMIT = 250;
+const SHOPIFY_RETRIABLE_STATUS_CODES = [429, 503];
+
 // #region Types
 interface BaseFindArgs {
   fields?: string;
@@ -104,7 +106,7 @@ class RestFetcher {
   }
 
   private cleanQueryParams = (params: ParamSet = {}) => {
-    return removeNullishPropsFromObject(params);
+    return excludeNullishObjectKeys(params);
   };
 
   private parsePageInfoLinks(link: string, query: SearchParams) {
@@ -688,7 +690,7 @@ export class DraftOrderClient extends AbstractRestClient<
     return this.fetcher.post<DraftOrderApiData>({
       path: `${this.plural}.json/${id}/send_invoice.json`,
       body: {
-        draft_order_invoice: removeNullishPropsFromObject({ to, from, bcc, subject, custom_message }),
+        draft_order_invoice: excludeNullishObjectKeys({ to, from, bcc, subject, custom_message }),
       },
       name: `send ${this.singular} invoice`,
       transformResponseBody: this.transformResponseBodySingle.bind(this),

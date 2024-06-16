@@ -202,5 +202,7 @@ export abstract class AbstractModel {
   }
   // #endregion
 
+  public abstract save(): Promise<void>;
+
   public abstract toCodaRow(...args: any[]): BaseRow;
 }

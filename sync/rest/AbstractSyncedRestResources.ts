@@ -1,15 +1,13 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { SearchParams } from '../../Clients/Client.types';
 import { AbstractRestClient } from '../../Clients/RestClients';
-import { RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
-import { arrayUnique, logAdmin } from '../../utils/helpers';
+import { logAdmin } from '../../utils/helpers';
 import {
   AbstractSyncedResources,
   ISyncedResourcesConstructorArgs,
@@ -17,8 +15,8 @@ import {
   SyncedResourcesSyncResult,
 } from '../AbstractSyncedResources';
 import {
-  restResourceSupportsMetafields,
   parseContinuationProperty,
+  restResourceSupportsMetafields,
   stringifyContinuationProperty,
 } from '../utils/sync-utils';
 
@@ -97,7 +95,7 @@ export abstract class AbstractSyncedRestResources<
       await this.beforeSync();
 
       const response = await this.sync();
-      this.data = await Promise.all(response.body.map(async (data) => this.createInstanceFromData(data)));
+      this.models = await Promise.all(response.body.map(async (data) => this.createInstanceFromData(data)));
 
       /** Set continuation if a next page exists */
       if (response?.pageInfo?.nextPage?.query) {
@@ -111,7 +109,7 @@ export abstract class AbstractSyncedRestResources<
 
       if (this.shouldSyncMetafields) {
         await Promise.all(
-          this.data.map(async (data) => {
+          this.models.map(async (data) => {
             if ('syncMetafields' in data) await data.syncMetafields();
           })
         );
@@ -119,10 +117,7 @@ export abstract class AbstractSyncedRestResources<
 
       await this.afterSync();
 
-      return {
-        result: this.data.map((data) => data.toCodaRow()),
-        continuation: this.continuation,
-      };
+      return this.asStatic().formatSyncResults(this.models, this.continuation);
     }
   }
 
@@ -141,50 +136,5 @@ export abstract class AbstractSyncedRestResources<
         });
     }
     return instance;
-  }
-
-  public async executeSyncUpdate(
-    updates: Array<coda.SyncUpdate<string, string, any>>
-  ): Promise<coda.GenericSyncUpdateResult> {
-    await this.init();
-
-    const completed = await Promise.allSettled(
-      updates.map(async (update) => {
-        const includedProperties = arrayUnique(
-          update.updatedFields.concat(this.getRequiredPropertiesForUpdate(update))
-        );
-
-        const prevRow = update.previousValue as BaseRow;
-        const newRow = Object.fromEntries(
-          Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
-        ) as BaseRow;
-        const instance = await this.createInstanceFromRow(newRow);
-
-        if (this.validateSyncUpdate) {
-          try {
-            this.validateSyncUpdate(prevRow, newRow);
-          } catch (error) {
-            if (error instanceof RequiredSyncTableMissingVisibleError) {
-              /** Try to augment with fresh data and check again if it passes validation */
-              await instance.addMissingData();
-              this.validateSyncUpdate(prevRow, instance.toCodaRow());
-            } else {
-              throw error;
-            }
-          }
-        }
-
-        await instance.save();
-
-        return { ...prevRow, ...instance.toCodaRow() };
-      })
-    );
-
-    return {
-      result: completed.map((job) => {
-        if (job.status === 'fulfilled') return job.value;
-        else return job.reason;
-      }),
-    };
   }
 }

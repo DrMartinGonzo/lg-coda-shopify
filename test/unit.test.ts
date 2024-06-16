@@ -1,10 +1,16 @@
 // #region Imports
 
-import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
-import { expect, test } from 'vitest';
+import { MockExecutionContext, newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
+import { describe, expect, test } from 'vitest';
 import { RequiredSyncTableMissingVisibleError } from '../Errors/Errors';
+import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
 import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
 import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
+import { CustomCollectionModel } from '../models/rest/CustomCollectionModel';
+import { CollectionRow } from '../schemas/CodaRows.types';
+import { SyncTableMixedContinuation } from '../sync/rest/AbstractSyncedRestResourcesWithGraphQlMetafields';
+import { RestItemsBatch } from '../sync/rest/RestItemsBatch';
+import { stringifyContinuationProperty } from '../sync/utils/sync-utils';
 
 // #endregion
 
@@ -33,7 +39,6 @@ test('Update missing data on row update', async () => {
   };
 
   const instance: VariantModel = VariantModel.createInstanceFromRow(context, newRow);
-  console.log('instance', instance);
 
   try {
     validateSyncUpdate(prevRow, newRow);
@@ -71,4 +76,143 @@ test('Update missing data on row update', async () => {
       throw error;
     }
   }
+});
+
+let context: MockExecutionContext;
+context = newMockExecutionContext({
+  endpoint: 'https://coda-pack-test.myshopify.com',
+});
+
+function getRestItemsBatchItems(count: number) {
+  const baseRow: CollectionRow = {
+    id: 1,
+    title: 'un titre',
+    body_html: '<p>un body</p>',
+    handle: 'un-handle',
+    published: true,
+    template_suffix: undefined,
+  };
+  const rows: CollectionRow[] = [];
+  for (let i = 0; i < count; i++) {
+    rows.push({ ...baseRow, id: i + 1 });
+  }
+  return rows.map((row) => CustomCollectionModel.createInstanceFromRow(context, row));
+}
+describe.concurrent('RestItemsBatch', () => {
+  test('RestItemsBatch without continuation', async () => {
+    const currentItems = getRestItemsBatchItems(500);
+    const limit = 10;
+
+    const restItemsBatch = new RestItemsBatch({
+      prevContinuation: undefined,
+      items: currentItems,
+      limit,
+      reviveItems: (data: any) => CustomCollectionModel.createInstance(context, data),
+    });
+
+    const expectedToProcessLength = Math.min(limit, currentItems.length);
+    const expectedRemainingLength = Math.max(0, currentItems.length - limit);
+    expect(restItemsBatch.toProcess.length, 'length of toProcess should be equal to limit').toEqual(
+      expectedToProcessLength
+    );
+    expect(
+      restItemsBatch.remaining.length,
+      'count of remaining items should be equal to number of items minus limit'
+    ).toEqual(expectedRemainingLength);
+  });
+
+  test('RestItemsBatch with continuation, no cursor', async () => {
+    const markedId = 999;
+    const prevRestItems = getRestItemsBatchItems(10);
+    const limit = 6;
+    const lastCost: ShopifyGraphQlRequestCost = {
+      actualQueryCost: 240,
+      requestedQueryCost: 320,
+      throttleStatus: {
+        currentlyAvailable: 1500,
+        maximumAvailable: 2000,
+        restoreRate: 500,
+      },
+    };
+    const previousRestItemsBatch = new RestItemsBatch({
+      prevContinuation: undefined,
+      items: prevRestItems,
+      limit,
+      reviveItems: (data: any) => CustomCollectionModel.createInstance(context, data),
+    });
+    // mark first remaining item with a special id
+    previousRestItemsBatch.remaining[0].data.id = markedId;
+
+    expect(previousRestItemsBatch.remaining.length, 'previous batch should have 4 remaining items').toEqual(4);
+
+    const prevContinuation: SyncTableMixedContinuation = {
+      hasLock: 'true',
+      skipNextRestSync: 'false',
+      cursor: undefined,
+      lastCost: stringifyContinuationProperty(lastCost),
+      lastLimit: limit,
+      extraData: {
+        batch: previousRestItemsBatch.toString(),
+      },
+    };
+    const currentItems = getRestItemsBatchItems(30);
+    const restItemsBatch = new RestItemsBatch({
+      prevContinuation: prevContinuation,
+      items: currentItems,
+      limit,
+      reviveItems: (data: any) => CustomCollectionModel.createInstance(context, data),
+    });
+
+    expect(
+      restItemsBatch.toProcess[0].data.id,
+      'First toProcess item should be the first remaining item of previous batch'
+    ).toEqual(markedId);
+    expect(restItemsBatch.remaining.length, 'No remaining items in current batch').toEqual(0);
+  });
+
+  test('RestItemsBatch with continuation, with cursor', async () => {
+    const markedId = 999;
+    const prevRestItems = getRestItemsBatchItems(10);
+    const limit = 6;
+    const lastCost: ShopifyGraphQlRequestCost = {
+      actualQueryCost: 240,
+      requestedQueryCost: 320,
+      throttleStatus: {
+        currentlyAvailable: 1500,
+        maximumAvailable: 2000,
+        restoreRate: 500,
+      },
+    };
+    const previousRestItemsBatch = new RestItemsBatch({
+      prevContinuation: undefined,
+      items: prevRestItems,
+      limit,
+      reviveItems: (data: any) => CustomCollectionModel.createInstance(context, data),
+    });
+    // mark first remaining item with a special id
+    previousRestItemsBatch.remaining[0].data.id = markedId;
+
+    expect(previousRestItemsBatch.remaining.length, 'previous batch should have 4 remaining items').toEqual(4);
+
+    const prevContinuation: SyncTableMixedContinuation = {
+      hasLock: 'true',
+      skipNextRestSync: 'false',
+      cursor: 'dummycursor',
+      lastCost: stringifyContinuationProperty(lastCost),
+      lastLimit: limit,
+      extraData: {
+        batch: previousRestItemsBatch.toString(),
+      },
+    };
+    const currentItems = getRestItemsBatchItems(30);
+    const restItemsBatch = new RestItemsBatch({
+      prevContinuation: prevContinuation,
+      items: currentItems,
+      limit,
+      reviveItems: (data: any) => CustomCollectionModel.createInstance(context, data),
+    });
+
+    expect(restItemsBatch.toProcess).toEqual(previousRestItemsBatch.toProcess);
+    expect(restItemsBatch.remaining).toEqual(previousRestItemsBatch.remaining);
+  });
 });

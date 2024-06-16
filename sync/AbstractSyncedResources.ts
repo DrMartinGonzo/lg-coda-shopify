@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionClient } from '../Clients/GraphQlClients';
+import { RequiredSyncTableMissingVisibleError } from '../Errors/Errors';
 import { AbstractModel } from '../models/AbstractModel';
 import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
 import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
@@ -93,7 +94,7 @@ function AddMetafieldsSupportMixin<TBase extends Constructable>(Base: TBase) {
 // #endregion
 
 export abstract class AbstractSyncedResources<T extends AbstractModel> {
-  protected data: T[];
+  protected models: T[];
 
   protected readonly model: ModelType<T>;
 
@@ -203,7 +204,6 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
     this.shouldSyncMetafields = this.supportMetafields && !!this.effectiveMetafieldKeys.length;
   }
 
-  // TODO: maybe not in abstract
   protected async getMetafieldDefinitions(): Promise<MetafieldDefinitionModel[]> {
     if (this._metafieldDefinitions) return this._metafieldDefinitions;
 
@@ -264,10 +264,62 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   protected async beforeSync(): Promise<void> {}
   protected async afterSync(): Promise<void> {}
   public abstract executeSync(): Promise<SyncedResourcesSyncResult<typeof this.continuation>>;
+  protected static formatSyncResults<T extends AbstractModel, C extends SyncTableContinuation>(
+    data: T[],
+    continuation: C
+  ): SyncedResourcesSyncResult<C> {
+    return {
+      result: data.map((data) => data.toCodaRow()),
+      continuation,
+    };
+  }
 
-  public abstract executeSyncUpdate(
+  public async executeSyncUpdate(
     updates: Array<coda.SyncUpdate<string, string, any>>
-  ): Promise<coda.GenericSyncUpdateResult>;
+  ): Promise<coda.GenericSyncUpdateResult> {
+    await this.init();
+    const jobs = updates.map(async (update) => this.updateRow(update));
+    return this.asStatic().formatSyncUpdateResults(jobs);
+  }
+
+  protected async updateRow(update: coda.SyncUpdate<string, string, any>): Promise<BaseRow> {
+    const includedProperties = arrayUnique(update.updatedFields.concat(this.getRequiredPropertiesForUpdate(update)));
+
+    const prevRow = update.previousValue as BaseRow;
+    const newRow = Object.fromEntries(
+      Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
+    ) as BaseRow;
+    const instance = await this.createInstanceFromRow(newRow);
+
+    if (this.validateSyncUpdate) {
+      try {
+        this.validateSyncUpdate(prevRow, newRow);
+      } catch (error) {
+        // TODO: rename this error to something else ?
+        if (error instanceof RequiredSyncTableMissingVisibleError) {
+          /** Try to augment with fresh data and check again if it passes validation */
+          await instance.addMissingData();
+          this.validateSyncUpdate(prevRow, instance.toCodaRow());
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    await instance.save();
+
+    return { ...prevRow, ...instance.toCodaRow() };
+  }
+
+  protected static async formatSyncUpdateResults(jobs: Promise<BaseRow>[]): Promise<coda.GenericSyncUpdateResult> {
+    const settledJobs = await Promise.allSettled(jobs);
+    return {
+      result: settledJobs.map((job) => {
+        if (job.status === 'fulfilled') return job.value;
+        else return job.reason;
+      }),
+    };
+  }
 
   protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
     // Always include the id property

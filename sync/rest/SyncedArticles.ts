@@ -120,7 +120,7 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
     const { tags: tagsFilter } = this.codaParamsMap;
     // The api only supports filtering by a single tag, so we retrieve all and filter after
     if (tagsFilter && tagsFilter.length) {
-      this.data = this.data.filter((d) => {
+      this.models = this.models.filter((d) => {
         const restTagsArray = splitAndTrimValues(d.data?.tags ?? '');
         return restTagsArray.length && restTagsArray.some((t) => tagsFilter.includes(t));
       });

@@ -71,7 +71,7 @@ export class SyncedMetafields<
      // TODO: revisit in the future ⤴
      */
     // @ts-expect-error
-    this.data = metafields;
+    this.models = metafields;
 
     if (this.continuation) {
       this.continuation = {
@@ -84,7 +84,7 @@ export class SyncedMetafields<
     }
   }
   private flattenOwnerMetafields() {
-    return (this.data as unknown as OwnerT[]).map((owner) => owner.data.metafields).flat();
+    return (this.models as unknown as OwnerT[]).map((owner) => owner.data.metafields).flat();
   }
 
   /**

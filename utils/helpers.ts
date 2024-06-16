@@ -2,9 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
-import { FULL_SIZE } from '../constants/strings-constants';
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
-import { FieldDependency } from '../schemas/Schema.types';
 import { LengthUnit, WeightUnit } from '../types/admin.types';
 
 // #endregion
@@ -276,22 +274,13 @@ export function excludeObjectKeys<ObjectType extends Record<PropertyKey, any>, E
     }, {}) as DistributiveOmit<ObjectType, ExcludedKeys>;
 }
 
-/**
- * Returns a new object with all undefined keys excluded from the original object
- */
-export function excludeUndefinedObjectKeys<ObjectType extends Record<PropertyKey, any>>(obj: ObjectType) {
+export function excludeUndefinedObjectKeys<ObjT extends Record<PropertyKey, any>>(obj: ObjT) {
   const keysToOmit = Object.keys(obj).filter((key) => obj[key] === undefined);
   return excludeObjectKeys(obj, keysToOmit);
 }
-// TODO: mostly the same as preceding function ?
-export function removeNullishPropsFromObject<T extends Record<string, any>>(params: T = {} as T) {
-  const cleanParams: T = {} as T;
-  for (const key in params) {
-    if (!isNullish(params[key])) {
-      cleanParams[key] = params[key];
-    }
-  }
-  return cleanParams;
+export function excludeNullishObjectKeys<ObjT extends Record<PropertyKey, any>>(obj: ObjT) {
+  const keysToOmit = Object.keys(obj).filter((key) => isNullish(obj[key]));
+  return excludeObjectKeys(obj, keysToOmit);
 }
 
 export function splitAndTrimValues(values = '', delimiter = ','): string[] {
