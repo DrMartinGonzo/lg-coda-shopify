@@ -134,18 +134,18 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
    * - weight_unit: when requesting an update on weight
    * - options: all options are required as soon as we want to update one
    */
-  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
+  protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
     const { updatedFields } = update;
-    let extraRequiredProps = [];
+    let additionalKeys = [];
     if (updatedFields.includes('weight')) {
-      extraRequiredProps.push('weight_unit');
+      additionalKeys.push('weight_unit');
     }
     if (updatedFields.includes('weight_unit')) {
-      extraRequiredProps.push('weight');
+      additionalKeys.push('weight');
     }
     if (VARIANT_OPTION_KEYS.some((key) => updatedFields.includes(key))) {
-      extraRequiredProps = extraRequiredProps.concat(VARIANT_OPTION_KEYS);
+      additionalKeys = additionalKeys.concat(VARIANT_OPTION_KEYS);
     }
-    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
+    return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
   }
 }

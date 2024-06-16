@@ -1,15 +1,15 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 import toSentenceCase from 'to-sentence-case';
 import { ResultOf, graphQlGidToId } from '../../graphql/utils/graphql-utils';
 
 import { OrderTransactionClient } from '../../Clients/GraphQlClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { NOT_SUPPORTED } from '../../constants/strings-constants';
 import { orderTransactionFieldsFragment } from '../../graphql/orderTransactions-graphql';
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReference } from '../../schemas/syncTable/OrderTransactionSchema';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
@@ -32,10 +32,8 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.OrderTransaction;
   protected static readonly graphQlName = GraphQlResourceNames.OrderTransaction;
 
-  // TODO: remove
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: OrderTransactionRow) {
-    let data: Partial<OrderTransactionModelData> = {};
-    return OrderTransactionModel.createInstance(context, data);
+  public static createInstanceFromRow(): InstanceType<typeof this> {
+    throw new Error(NOT_SUPPORTED);
   }
 
   /**====================================================================================================================

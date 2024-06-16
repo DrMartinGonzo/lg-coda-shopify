@@ -17,6 +17,7 @@ import { GraphQlResourceNames, RestResourceSingular } from '../../constants/reso
 import {
   METAFIELD_DELETED_SUFFIX,
   MetafieldNormalizedData,
+  deleteMetafield,
   getMetafieldAdminUrl,
   normalizeMetafieldRow,
   normalizeOwnerRowMetafields,
@@ -182,19 +183,7 @@ export class MetafieldModel extends AbstractModelRest {
   }
 
   public async delete(): Promise<void> {
-    /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
-    if (!this.data.id) await this.refreshData();
-
-    /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
-    if (this.data.id) {
-      await super.delete();
-    } else {
-      logAdmin(`Metafield already deleted.`);
-    }
-
-    // make sure to nullify metafield value
-    this.data.value = null;
-    this.data.isDeletedFlag = true;
+    this.data = await deleteMetafield<MetafieldModel>(this, async () => super.delete());
   }
 
   public formatValueForOwnerRow() {

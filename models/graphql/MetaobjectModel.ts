@@ -24,12 +24,6 @@ export interface MetaobjectModelData extends MetaobjectApiData, BaseModelDataGra
 
 export class MetaobjectModel extends AbstractModelGraphQl {
   public data: MetaobjectModelData;
-  // TODO: rename ?
-  public metaobjectFieldFromKeys: string[];
-  public metaobjectFieldFromKeysValues: {
-    fromKey: string;
-    value: string;
-  }[];
 
   public static readonly displayName: Identity = PACK_IDENTITIES.Metaobject;
   protected static readonly graphQlName = GraphQlResourceNames.Metaobject;
@@ -47,16 +41,7 @@ export class MetaobjectModel extends AbstractModelGraphQl {
         : { publishable: { status: row.status as MetaobjectStatus } },
     };
 
-    const instance = MetaobjectModel.createInstance(context, data);
-
-    const metaobjectFieldFromKeys = Object.keys(row).filter((key) => !['id', 'handle', 'status'].includes(key));
-    instance.metaobjectFieldFromKeys = metaobjectFieldFromKeys;
-    instance.metaobjectFieldFromKeysValues = metaobjectFieldFromKeys.map((fromKey) => ({
-      fromKey: fromKey,
-      value: row[fromKey] as string,
-    }));
-
-    return instance;
+    return MetaobjectModel.createInstance(context, data);
   }
 
   public static parseCustomFieldsFromVarArgs(varargs: Array<any>): MetaobjectFieldApiData[] {

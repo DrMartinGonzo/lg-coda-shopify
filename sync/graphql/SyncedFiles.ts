@@ -40,7 +40,6 @@ export class SyncedFiles extends AbstractSyncedGraphQlResources<FileModel> {
     return this.setInstancePreviewSize(instance);
   }
   private setInstancePreviewSize(instance: FileModel) {
-    // TODO: why is previewSize a string ??
     const { previewSize } = this.codaParamsMap;
     instance.previewSize = parseInt(previewSize);
     return instance;

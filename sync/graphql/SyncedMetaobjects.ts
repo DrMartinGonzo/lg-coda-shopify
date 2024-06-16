@@ -95,7 +95,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
   }
 
   private static getCustomFieldsKeysFromRow(row: MetaobjectRow) {
-    /** Any key that is not in the static base schema is a custom filed key */
+    /** Any key that is not in the static base schema is a custom field key */
     const rowKeys = getObjectSchemaRowKeys(this.staticSchema);
     return Object.keys(row).filter((key) => !rowKeys.includes(key));
   }

@@ -951,8 +951,7 @@ export class LocationClient extends AbstractGraphQlClient<LocationModelData> {
     const variables = {
       id,
 
-      // TODO: retrieve metafields ?
-      includeMetafields: forceAllFields ?? fields?.metafields ?? true,
+      includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       includeFulfillmentService: forceAllFields ?? fields?.fulfillment_service ?? true,
       includeLocalPickupSettings: forceAllFields ?? fields?.local_pickup_settings ?? true,
       countMetafields: 0,
@@ -1851,7 +1850,6 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
     const variables = {
       id,
 
-      // TODO: retrieve metafields ?
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       countMetafields: 0,
       metafieldKeys: [],

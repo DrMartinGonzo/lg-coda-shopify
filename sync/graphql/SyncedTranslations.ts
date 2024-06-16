@@ -56,8 +56,8 @@ export class SyncedTranslations extends AbstractSyncedGraphQlResources<Translati
    * {@link TranslationModel} has some additional required properties :
    * - locale
    */
-  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const extraRequiredProps = ['locale'];
-    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
+  protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const additionalKeys = ['locale'];
+    return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
   }
 }

@@ -52,12 +52,11 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
    * - owner_type
    * - owner_id if not a Shop metafield
    */
-  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const extraRequiredProps = ['label', 'type', 'owner_type'];
+  protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const additionalKeys = ['label', 'type', 'owner_type'];
     if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
-      extraRequiredProps.push('owner_id');
+      additionalKeys.push('owner_id');
     }
-
-    return super.getRequiredPropertiesForUpdate(update).concat(extraRequiredProps);
+    return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
   }
 }

@@ -70,7 +70,6 @@ export const syncCustomersGraphQlAdmin = async (
   context: coda.SyncExecutionContext
 ) => {
   const prevContinuation = context.sync.continuation as SyncTableGraphQlContinuation;
-  // TODO: get an approximation for first run by using count of relation columns ?
   const defaultLimit = 50;
   const { limit, shouldDeferBy } = await getGraphQlSyncTableMaxLimitAndDeferWait(
     defaultLimit,

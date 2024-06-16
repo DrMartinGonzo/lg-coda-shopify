@@ -40,7 +40,6 @@ type ValidateSyncUpdateT = (prevRow: BaseRow, newRow: BaseRow) => void;
 
 export interface ISyncedResourcesConstructorArgs<T> {
   context: coda.SyncExecutionContext;
-  /** Array of Coda formula parameters */
   codaSyncParams: coda.ParamValues<coda.ParamDefs>;
   model: ModelType<T>;
   validateSyncParams?: ValidateSyncParamsT;
@@ -109,7 +108,6 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   protected pendingExtraContinuationData: any;
 
   protected readonly context: coda.SyncExecutionContext;
-  /** Array of Coda formula parameters */
   protected readonly codaParams: coda.ParamValues<coda.ParamDefs>;
   protected readonly validateSyncParams?: ValidateSyncParamsT;
   protected readonly validateSyncUpdate?: ValidateSyncUpdateT;
@@ -252,27 +250,9 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   protected abstract getListParams(): any;
   protected abstract codaParamsToListArgs(): any;
 
-  // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
-
-  protected async createInstanceFromData(data: any) {
-    return this.model.createInstance(this.context, data);
-  }
-  protected async createInstanceFromRow(row: BaseRow) {
-    return this.model.createInstanceFromRow(this.context, row);
-  }
-
   protected async beforeSync(): Promise<void> {}
   protected async afterSync(): Promise<void> {}
   public abstract executeSync(): Promise<SyncedResourcesSyncResult<typeof this.continuation>>;
-  protected static formatSyncResults<T extends AbstractModel, C extends SyncTableContinuation>(
-    data: T[],
-    continuation: C
-  ): SyncedResourcesSyncResult<C> {
-    return {
-      result: data.map((data) => data.toCodaRow()),
-      continuation,
-    };
-  }
 
   public async executeSyncUpdate(
     updates: Array<coda.SyncUpdate<string, string, any>>
@@ -283,12 +263,8 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   }
 
   protected async updateRow(update: coda.SyncUpdate<string, string, any>): Promise<BaseRow> {
-    const includedProperties = arrayUnique(update.updatedFields.concat(this.getRequiredPropertiesForUpdate(update)));
-
-    const prevRow = update.previousValue as BaseRow;
-    const newRow = Object.fromEntries(
-      Object.entries(update.newValue).filter(([key]) => includedProperties.includes(key))
-    ) as BaseRow;
+    const prevRow = this.getPreviousRowFromUpdate(update);
+    const newRow = this.getNewRowFromUpdate(update);
     const instance = await this.createInstanceFromRow(newRow);
 
     if (this.validateSyncUpdate) {
@@ -307,8 +283,48 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
     }
 
     await instance.save();
-
     return { ...prevRow, ...instance.toCodaRow() };
+  }
+
+  protected getPreviousRowFromUpdate(update: coda.SyncUpdate<string, string, any>) {
+    return update.previousValue as BaseRow;
+  }
+  protected getNewRowFromUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const requiredNewRowKeys = this.getRequiredKeysForUpdate(update);
+    // Only keep required keys in the new row
+    return Object.fromEntries(
+      Object.entries(update.newValue).filter(([key]) => requiredNewRowKeys.includes(key))
+    ) as BaseRow;
+  }
+
+  private getRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    const keysInUpdate = update.updatedFields;
+    const additionalKeys = this.getAdditionalRequiredKeysForUpdate(update);
+    return arrayUnique([...keysInUpdate, ...additionalKeys]);
+  }
+
+  protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
+    // Always include the id property
+    return [this.schema.items.idProperty].filter(Boolean).map((key) => getObjectSchemaEffectiveKey(this.schema, key));
+  }
+
+  // protected validateSyncParams = (params: ResourceT['rest']['params']['sync']): Boolean => true;
+
+  protected async createInstanceFromData(data: any) {
+    return this.model.createInstance(this.context, data);
+  }
+  protected async createInstanceFromRow(row: BaseRow) {
+    return this.model.createInstanceFromRow(this.context, row);
+  }
+
+  protected static formatSyncResults<T extends AbstractModel, C extends SyncTableContinuation>(
+    data: T[],
+    continuation: C
+  ): SyncedResourcesSyncResult<C> {
+    return {
+      result: data.map((data) => data.toCodaRow()),
+      continuation,
+    };
   }
 
   protected static async formatSyncUpdateResults(jobs: Promise<BaseRow>[]): Promise<coda.GenericSyncUpdateResult> {
@@ -319,10 +335,5 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
         else return job.reason;
       }),
     };
-  }
-
-  protected getRequiredPropertiesForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    // Always include the id property
-    return [this.schema.items.idProperty].filter(Boolean).map((key) => getObjectSchemaEffectiveKey(this.schema, key));
   }
 }

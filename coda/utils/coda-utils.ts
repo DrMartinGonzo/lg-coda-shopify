@@ -29,6 +29,14 @@ interface MakeRestDeleteResourceActionParams extends MakeRestResourceActionParam
 interface MakeRestFetchResourceActionParams extends MakeRestResourceActionParams {
   schema: coda.ObjectSchema<string, string>;
 }
+interface MakeGraphQlDeleteResourceActionParams extends Omit<MakeRestDeleteResourceActionParams, 'IdParameter'> {
+  IdParameter: ReturnType<
+    typeof coda.makeParameter<
+      coda.ParameterType.Number | coda.ParameterType.String,
+      { type: coda.ParameterType.Number | coda.ParameterType.String; name: string; description: string }
+    >
+  >;
+}
 
 /**
  * Create a basic formula to delete a single Rest resource
@@ -103,7 +111,7 @@ export function makeDeleteGraphQlResourceAction({
   modelName,
   IdParameter,
   execute,
-}: MakeRestDeleteResourceActionParams) {
+}: MakeGraphQlDeleteResourceActionParams) {
   return coda.makeFormula({
     name: `Delete${modelName}`,
     description: `Delete an existing Shopify ${modelName} and return \`true\` on success.`,

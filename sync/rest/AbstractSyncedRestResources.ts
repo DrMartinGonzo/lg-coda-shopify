@@ -60,14 +60,6 @@ export abstract class AbstractSyncedRestResources<
     return this.prevContinuation?.nextQuery ? parseContinuationProperty(this.prevContinuation.nextQuery) : {};
   }
 
-  // protected get syncedStandardFields(): string[] {
-  //   if (this.shouldSyncMetafields) {
-  //     // admin_graphql_api_id is necessary for metafield sync
-  //     return arrayUnique([...super.syncedStandardFields, 'admin_graphql_api_id']);
-  //   }
-  //   return super.syncedStandardFields;
-  // }
-
   protected getListParams() {
     /**
      * Because the request URL contains the page_info parameter, you can't add
@@ -81,7 +73,6 @@ export abstract class AbstractSyncedRestResources<
     };
   }
 
-  // TODO: ça n'a plus besoin d'être une methode à part
   protected async sync() {
     return this.client.list(this.getListParams());
   }
@@ -97,14 +88,11 @@ export abstract class AbstractSyncedRestResources<
       const response = await this.sync();
       this.models = await Promise.all(response.body.map(async (data) => this.createInstanceFromData(data)));
 
-      /** Set continuation if a next page exists */
-      if (response?.pageInfo?.nextPage?.query) {
-        this.continuation = {
-          ...(this.continuation ?? {}),
-          nextQuery: stringifyContinuationProperty(response.pageInfo.nextPage.query),
-          skipNextRestSync: 'false',
-          extraData: this.pendingExtraContinuationData ?? {},
-        };
+      const hasNextRun = !!response?.pageInfo?.nextPage?.query;
+      if (hasNextRun) {
+        this.continuation = this.getNextRunContinuation({
+          nextQuery: response.pageInfo.nextPage.query,
+        });
       }
 
       if (this.shouldSyncMetafields) {
@@ -119,6 +107,17 @@ export abstract class AbstractSyncedRestResources<
 
       return this.asStatic().formatSyncResults(this.models, this.continuation);
     }
+  }
+
+  protected getNextRunContinuation({ nextQuery }: { nextQuery?: SearchParams }) {
+    this.continuation = {
+      ...(this.continuation ?? {}),
+      nextQuery: stringifyContinuationProperty(nextQuery),
+      skipNextRestSync: 'false',
+      extraData: this.pendingExtraContinuationData ?? {},
+    };
+
+    return this.continuation;
   }
 
   protected async createInstanceFromRow(row: BaseRow) {

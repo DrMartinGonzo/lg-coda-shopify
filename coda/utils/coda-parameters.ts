@@ -265,7 +265,7 @@ const generalInputs = {
     name: 'phone',
     description: 'The phone number (E.164 format).',
   }),
-  // TODO: why is this a string ???
+  /** previewSize is a string because it can be a number or `FULL_SIZE`. */
   previewSize: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'previewSize',

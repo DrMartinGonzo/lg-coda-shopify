@@ -30,6 +30,7 @@ import {
   deepCopy,
   extractValueAndUnitFromMeasurementString,
   isNullishOrEmpty,
+  logAdmin,
   maybeParseJson,
   reverseMap,
   splitAndTrimValues,
@@ -37,9 +38,14 @@ import {
 } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
-import { SupportedMetafieldOwnerName, SupportedMetafieldOwnerType } from '../graphql/MetafieldGraphQlModel';
+import {
+  MetafieldGraphQlModel,
+  MetafieldModelData as MetafieldGraphQlModelData,
+  SupportedMetafieldOwnerName,
+  SupportedMetafieldOwnerType,
+} from '../graphql/MetafieldGraphQlModel';
 import { BaseModelDataRest } from '../rest/AbstractModelRest';
-import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
   GraphQlResourceName,
   GraphQlResourceNames,
@@ -266,6 +272,29 @@ export function getMetafieldAdminUrl(
     admin_url += `/unstructured`;
   }
   return admin_url;
+}
+
+export async function deleteMetafield<T extends MetafieldModel | MetafieldGraphQlModel>(
+  instance: T,
+  baseDelete: () => Promise<void>
+) {
+  const { data } = instance;
+
+  /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
+  if (!data.id) await this.refreshData();
+
+  /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
+  if (data.id) {
+    await baseDelete();
+  } else {
+    logAdmin(`Metafield already deleted.`);
+  }
+
+  // make sure to nullify metafield value
+  data.value = null;
+  data.isDeletedFlag = true;
+
+  return data as T extends MetafieldModel ? MetafieldModelData : MetafieldGraphQlModelData;
 }
 
 /**

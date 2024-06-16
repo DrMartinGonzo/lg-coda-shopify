@@ -100,14 +100,13 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
       const response = await this.sync();
       this.models = response.body.map((data) => this.model.createInstance(this.context, data));
 
-      /** Set continuation if a next page exists */
-      if (response?.pageInfo?.nextPage?.query) {
+      const hasNextRun = !!response?.pageInfo?.nextPage?.query;
+      if (hasNextRun) {
         this.continuation = {
-          ...(this.continuation ?? {}),
-          nextQuery: stringifyContinuationProperty(response.pageInfo.nextPage.query),
-          skipNextRestSync: 'false',
+          ...this.getNextRunContinuation({
+            nextQuery: response.pageInfo.nextPage.query,
+          }),
           hasLock: 'true',
-          extraData: this.pendingExtraContinuationData ?? {},
         };
       }
     }
@@ -116,30 +115,8 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
      * Augment Rest sync with metafields fetched with GraphQL
      */
     if (this.shouldSyncMetafields) {
-      const restItemsBatch = new RestItemsBatch({
-        prevContinuation: this.prevContinuation,
-        items: this.models,
-        limit: this.currentLimit,
-        reviveItems: (data: any) => this.model.createInstance(this.context, data),
-      });
-      this.models = restItemsBatch.toProcess;
-
-      const metafieldsResponse = await MetafieldClient.createInstance(this.context).listByOwnerIds({
-        limit: this.currentLimit,
-        ownerIds: arrayUnique(this.models.map((c) => c.graphQlGid)).sort(),
-        metafieldKeys: this.effectiveMetafieldKeys,
-        options: { cacheTtlSecs: CACHE_DISABLED },
-      });
-      if (metafieldsResponse.body.length) {
-        this.models = this.models.map((owner) => {
-          owner.data.metafields = metafieldsResponse.body
-            .filter((metafield) => metafield.parentNode?.id && metafield.parentNode.id === owner.graphQlGid)
-            .map((data) => MetafieldGraphQlModel.createInstance(this.context, data));
-          return owner;
-        });
-      }
-
-      const metafieldsContinuation = this.buildGraphQlMetafieldsContinuation(metafieldsResponse.cost, restItemsBatch);
+      const { augmentedModels, metafieldsContinuation } = await this.augmentWithMetafields();
+      this.models = augmentedModels;
       if (metafieldsContinuation) {
         this.continuation = {
           ...(this.continuation ?? {}),
@@ -151,6 +128,37 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
     await this.afterSync();
 
     return this.asStatic().formatSyncResults(this.models, this.continuation);
+  }
+
+  public async augmentWithMetafields() {
+    const restItemsBatch = new RestItemsBatch({
+      prevContinuation: this.prevContinuation,
+      items: this.models,
+      limit: this.currentLimit,
+      reviveItems: (data: any) => this.model.createInstance(this.context, data),
+    });
+    let augmentedModels = restItemsBatch.toProcess;
+
+    const metafieldsResponse = await MetafieldClient.createInstance(this.context).listByOwnerIds({
+      limit: this.currentLimit,
+      ownerIds: arrayUnique(augmentedModels.map((c) => c.graphQlGid)).sort(),
+      metafieldKeys: this.effectiveMetafieldKeys,
+      options: { cacheTtlSecs: CACHE_DISABLED },
+    });
+
+    if (metafieldsResponse.body.length) {
+      augmentedModels = augmentedModels.map((owner) => {
+        owner.data.metafields = metafieldsResponse.body
+          .filter((metafield) => metafield.parentNode?.id && metafield.parentNode.id === owner.graphQlGid)
+          .map((data) => MetafieldGraphQlModel.createInstance(this.context, data));
+        return owner;
+      });
+    }
+
+    return {
+      augmentedModels,
+      metafieldsContinuation: this.buildGraphQlMetafieldsContinuation(metafieldsResponse.cost, restItemsBatch),
+    };
   }
 
   private buildGraphQlMetafieldsContinuation(cost: ShopifyGraphQlRequestCost, restItemsBatch: RestItemsBatch<T>) {

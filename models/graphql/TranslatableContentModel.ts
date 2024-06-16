@@ -1,12 +1,12 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { TranslatableContentClient } from '../../Clients/GraphQlClients';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { NOT_SUPPORTED } from '../../constants/strings-constants';
+import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { TranslatableContentRow } from '../../schemas/CodaRows.types';
 import { TranslatableResourceType } from '../../types/admin.types';
-import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { AbstractModelGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
@@ -36,9 +36,8 @@ export class TranslatableContentModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.TranslatableContent;
   protected static readonly graphQlName = GraphQlResourceNames.Translation;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: TranslatableContentRow) {
-    let data: Partial<TranslatableContentModelData> = {};
-    return TranslatableContentModel.createInstance(context, data);
+  public static createInstanceFromRow(): InstanceType<typeof this> {
+    throw new Error(NOT_SUPPORTED);
   }
 
   /**====================================================================================================================

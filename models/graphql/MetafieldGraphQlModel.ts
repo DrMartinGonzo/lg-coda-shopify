@@ -12,6 +12,7 @@ import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/Met
 import {
   METAFIELD_DELETED_SUFFIX,
   MetafieldNormalizedData,
+  deleteMetafield,
   getMetafieldAdminUrl,
   normalizeMetafieldRow,
   normalizeOwnerRowMetafields,
@@ -199,18 +200,7 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
   }
 
   public async delete(): Promise<void> {
-    if (!this.data.id) await this.refreshData();
-
-    /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
-    if (this.data.id) {
-      await super.delete();
-    } else {
-      logAdmin(`Metafield already deleted.`);
-    }
-
-    // make sure to nullify metafield value
-    this.data.value = null;
-    this.data.isDeletedFlag = true;
+    this.data = await deleteMetafield<MetafieldGraphQlModel>(this, async () => super.delete());
   }
 
   public formatValueForOwnerRow() {

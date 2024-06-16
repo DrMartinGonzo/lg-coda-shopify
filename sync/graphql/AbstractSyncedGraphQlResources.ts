@@ -120,15 +120,12 @@ export abstract class AbstractSyncedGraphQlResources<
 
     const { body, pageInfo, cost } = await this.sync();
     this.models = await Promise.all(body.map(async (data) => this.createInstanceFromData(data)));
-    const hasNextRun = pageInfo && pageInfo.hasNextPage;
 
-    /** Set continuation if a next page exists */
+    const hasNextRun = pageInfo && pageInfo.hasNextPage;
     if (hasNextRun) {
-      this.continuation = AbstractSyncedGraphQlResources.getNextRunContinuation({
-        pageInfo,
-        lastLimit: this.currentLimit,
+      this.continuation = this.getNextRunContinuation({
+        endCursor: pageInfo.endCursor,
         lastCost: cost,
-        extraData: this.pendingExtraContinuationData,
       });
     }
 
@@ -137,38 +134,29 @@ export abstract class AbstractSyncedGraphQlResources<
     return this.asStatic().formatSyncResults(this.models, this.continuation);
   }
 
-  protected static getNextRunContinuation({
-    pageInfo,
+  protected getNextRunContinuation({
+    endCursor,
     lastCost,
-    lastLimit,
-    extraData = {},
   }: {
-    pageInfo?: PageInfo;
+    endCursor?: string;
     lastCost?: ShopifyGraphQlRequestCost;
-    lastLimit: number;
-    extraData: any;
   }) {
-    let continuation: SyncTableGraphQlContinuation = {
+    this.continuation = {
+      ...(this.continuation ?? {}),
       hasLock: 'true',
-      extraData,
+      extraData: this.pendingExtraContinuationData ?? {},
+      cursor: endCursor,
     };
 
-    if (pageInfo && pageInfo.hasNextPage) {
-      continuation = {
-        ...continuation,
-        cursor: pageInfo.endCursor,
-      };
-    }
-
     if (lastCost) {
-      continuation = {
-        ...continuation,
+      this.continuation = {
+        ...this.continuation,
         lastCost: stringifyContinuationProperty(lastCost),
-        lastLimit,
+        lastLimit: this.currentLimit,
       };
     }
 
-    return continuation;
+    return this.continuation;
   }
 
   protected async createInstanceFromRow(row: BaseRow) {

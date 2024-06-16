@@ -50,7 +50,6 @@ export function restResourceSupportsMetafields(model: any): model is typeof Abst
   );
 }
 
-// TODO
 export function graphQlResourceSupportsMetafields(model: any): model is typeof AbstractModelGraphQlWithMetafields {
   return (
     (model as typeof AbstractModelGraphQlWithMetafields).metafieldRestOwnerType !== undefined &&

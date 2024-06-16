@@ -5,7 +5,7 @@ import { FileClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
-import { optionValues } from '../utils/coda-utils';
+import { makeDeleteGraphQlResourceAction, optionValues } from '../utils/coda-utils';
 import { OPTIONS_FILE_TYPE } from '../../constants/options-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { FileModel } from '../../models/graphql/FileModel';
@@ -71,16 +71,11 @@ export const Sync_Files = coda.makeSyncTable({
 // #endregion
 
 // #region Actions
-// TODO: make helper function
-export const Action_DeleteFile = coda.makeFormula({
-  name: `DeleteFile`,
-  description: `Delete an existing Shopify File and return \`true\` on success.`,
-  connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [inputs.file.gid],
-  isAction: true,
-  resultType: coda.ValueType.Boolean,
+export const Action_DeleteFile = makeDeleteGraphQlResourceAction({
+  modelName: FileModel.displayName,
+  IdParameter: inputs.file.gid,
   execute: async ([itemId], context) => {
-    await FileClient.createInstance(context).delete({ id: itemId });
+    await FileClient.createInstance(context).delete({ id: itemId as string });
     return true;
   },
 });
