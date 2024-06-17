@@ -132,7 +132,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   /**
    * Get the current Array Schema for the resource. Dynamic if it exists, else static.
    * Keep the schema in a cache to avoid refetching dynamic schema
-   // TODO: Pourquoi est-ce qu'on utilise normalizeObjectSchema ?
+   // TODO: Pourquoi est-ce qu'on utilisait normalizeObjectSchema ?
    */
   static async getSchema({ context, codaSyncParams = [], normalized = true }: GetSchemaArgs) {
     if (context.sync?.schema) {

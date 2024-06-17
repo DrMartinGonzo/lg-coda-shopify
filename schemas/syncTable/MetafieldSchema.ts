@@ -118,6 +118,16 @@ export const MetafieldSyncTableSchema = coda.makeObjectSchema({
       FileReference,
       'editFileReferenceList'
     ),
+    // editMetaobjectReference: makeEditReferenceColumnProp(
+    //   METAFIELD_TYPES.metaobject_reference,
+    //   MetaobjectReference,
+    //   'editMetaobjectReference'
+    // ),
+    // editMetaobjectReferenceList: makeEditReferenceListColumnProp(
+    //   METAFIELD_TYPES.list_metaobject_reference,
+    //   MetaobjectReference,
+    //   'editMetaobjectReferenceList'
+    // ),
     editPageReference: makeEditReferenceColumnProp(METAFIELD_TYPES.page_reference, PageReference, 'editPageReference'),
     editPageReferenceList: makeEditReferenceListColumnProp(
       METAFIELD_TYPES.list_page_reference,

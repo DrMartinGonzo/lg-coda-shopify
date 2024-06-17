@@ -128,29 +128,28 @@ export class SupportedMetafieldSyncTable {
   }
 }
 
-// TODO: improve this
-export const supportedMetafieldSyncTables: Array<SupportedMetafieldSyncTable> = [
-  MetafieldOwnerType.Article,
-  MetafieldOwnerType.Blog,
-  MetafieldOwnerType.Collection,
-  MetafieldOwnerType.Customer,
-  MetafieldOwnerType.Draftorder,
-  MetafieldOwnerType.Location,
-  MetafieldOwnerType.Order,
-  MetafieldOwnerType.Page,
-  MetafieldOwnerType.Product,
-  MetafieldOwnerType.Productvariant,
-  MetafieldOwnerType.Shop,
-].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
+export function getSupportedMetafieldSyncTables(): SupportedMetafieldSyncTable[] {
+  return [
+    MetafieldOwnerType.Article,
+    MetafieldOwnerType.Blog,
+    MetafieldOwnerType.Collection,
+    MetafieldOwnerType.Customer,
+    MetafieldOwnerType.Draftorder,
+    MetafieldOwnerType.Location,
+    MetafieldOwnerType.Order,
+    MetafieldOwnerType.Page,
+    MetafieldOwnerType.Product,
+    MetafieldOwnerType.Productvariant,
+    MetafieldOwnerType.Shop,
+  ].map((ownerType) => new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType));
+}
 
 export function getSupportedMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {
-  const found = supportedMetafieldSyncTables.find((r) => r.ownerType === ownerType);
-  if (found) return found;
-  throw new UnsupportedValueError('MetafieldOwnerType', ownerType);
+  return new SupportedMetafieldSyncTable(ownerType as SupportedMetafieldOwnerType);
 }
 
 export function getAllSupportDefinitionMetafieldSyncTables(): Array<SupportedMetafieldSyncTable> {
-  return supportedMetafieldSyncTables.filter((r) => r.supportDefinition);
+  return getSupportedMetafieldSyncTables().filter((r) => r.supportDefinition);
 }
 
 export function getSupportDefinitionMetafieldSyncTable(ownerType: MetafieldOwnerType): SupportedMetafieldSyncTable {

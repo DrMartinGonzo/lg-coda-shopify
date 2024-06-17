@@ -1,3 +1,5 @@
+import { graphql } from './utils/graphql-utils';
+
 // #region Helpers
 function buildOrdersSearchQuery(filters: { [key: string]: any }) {
   const searchItems = [];
@@ -9,6 +11,20 @@ function buildOrdersSearchQuery(filters: { [key: string]: any }) {
 // #endregion
 
 // #region Queries
+const getOrdersTagsQuery = graphql(`
+  query GetOrdersTags {
+    orders(first: 250, query: "tags:*") {
+      nodes {
+        tags
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`);
+
 // export const QueryOrdersMetafieldsAdmin = /* GraphQL */ `
 //   ${MetafieldFieldsFragment}
 

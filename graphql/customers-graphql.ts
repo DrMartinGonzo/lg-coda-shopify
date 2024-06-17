@@ -114,6 +114,20 @@ const CustomerFieldsFragment = graphql(
 // #endregion
 
 // #region Queries
+const getCustomersTagsQuery = graphql(`
+  query GetCustomersTags {
+    customers(first: 250, query: "tags:*") {
+      nodes {
+        tags
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`);
+
 // export const QueryCustomersMetafieldsAdmin = /* GraphQL */ `
 //   ${MetafieldFieldsFragment}
 

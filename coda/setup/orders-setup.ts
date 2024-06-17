@@ -85,6 +85,7 @@ export const Sync_Orders = coda.makeSyncTable({
      *! When changing parameters, don't forget to update :
      *  - getSchema in dynamicOptions
      *  - {@link SyncedOrders.codaParamsMap}
+     *  - {@link Formula_OrdersNew}
      */
     parameters: [
       filters.order.status,
@@ -131,46 +132,53 @@ export const Formula_OrderJSON = makeFetchSingleRestResourceAsJsonAction({
   execute: async ([itemId], context) => fetchOrder(context, itemId as number, true),
 });
 
-// TODO: Il faudrait lui donner les m^mees paramètres que pour Sync et se servir de la classe SyncedOrders pour récupérer les arguments du client
 export const Formula_Orders = coda.makeFormula({
-  name: 'Orders',
+  name: 'OrdersLoop',
   isExperimental: true,
   description: 'Get orders data.',
   connectionRequirement: coda.ConnectionRequirement.Required,
-  parameters: [
-    { ...filters.order.status, optional: true },
-    { ...filters.general.createdAtRange, optional: true },
-    { ...filters.order.financialStatus, optional: true },
-    { ...filters.order.fulfillmentStatus, optional: true },
-    { ...filters.order.idArray, optional: true },
-    { ...filters.general.processedAtRange, optional: true },
-    { ...filters.general.updatedAtRange, optional: true },
-    { ...filters.general.fields, optional: true },
-  ],
+  // On réutilise les paramètres de Sync_Orders + des paramètres dédiés
+  parameters: [...Sync_Orders.getter.parameters, { ...filters.general.fields, optional: true }],
   cacheTtlSecs: 10, // Cache is reduced to 10 seconds intentionnaly
   resultType: coda.ValueType.Array,
   items: OrderSyncTableSchema,
   execute: async function (
-    [status, created_at, financial_status, fulfillment_status, ids, processed_at, updated_at, fields],
+    [
+      status,
+      syncMetafields,
+      createdAtRange,
+      updatedAtRange,
+      processedAtRange,
+      financial_status,
+      fulfillment_status,
+      ids,
+      since_id,
+      customerTags,
+      orderTags,
+      fields,
+    ],
     context
   ) {
-    const client = OrderClient.createInstance(context);
-    const items = await client.listAllLoop({
+    const items = await OrderClient.createInstance(context).listAllLoop({
       fields,
       ids,
       financial_status,
       fulfillment_status,
       status,
-      created_at_min: dateRangeMin(created_at),
-      created_at_max: dateRangeMax(created_at),
-      updated_at_min: dateRangeMin(updated_at),
-      updated_at_max: dateRangeMax(updated_at),
-      processed_at_min: dateRangeMin(processed_at),
-      processed_at_max: dateRangeMax(processed_at),
+      created_at_min: dateRangeMin(createdAtRange),
+      created_at_max: dateRangeMax(createdAtRange),
+      updated_at_min: dateRangeMin(updatedAtRange),
+      updated_at_max: dateRangeMax(updatedAtRange),
+      processed_at_min: dateRangeMin(processedAtRange),
+      processed_at_max: dateRangeMax(processedAtRange),
+      customerTags,
+      orderTags,
+      since_id,
       options: {
         cacheTtlSecs: CACHE_DISABLED, // we need fresh results
       },
     });
+
     return items.map((data) => OrderModel.createInstance(context, data).toCodaRow());
   },
 });

@@ -468,7 +468,7 @@ export class GraphQlFetcher {
       const pageInfo = GraphQlFetcher.getPageInfo(response.body);
       // Always repay cost
       if (!isCodaCached(response) && response.body.extensions?.cost) {
-        // TODO: maybe don't repay cost when we reached the end of a sync table ? Because points will be replenished will waiting for the eventual next sync to start
+        // TODO: maybe don't repay cost when we reached the end of a sync table ? Because points will be replenished wile waiting for the eventual next sync to start
         // -> need to detect we are in a sync context too
         // if (!pageInfo || !pageInfo.hasNextPage) {
         await GraphQlFetcher.repayCost(response.body.extensions.cost);

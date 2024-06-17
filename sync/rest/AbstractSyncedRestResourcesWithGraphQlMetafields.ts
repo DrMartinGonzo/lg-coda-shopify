@@ -130,7 +130,7 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
     return this.asStatic().formatSyncResults(this.models, this.continuation);
   }
 
-  public async augmentWithMetafields() {
+  private async augmentWithMetafields() {
     const restItemsBatch = new RestItemsBatch({
       prevContinuation: this.prevContinuation,
       items: this.models,

@@ -13,6 +13,7 @@ import {
 import { BlogClient, ListBlogsArgs, REST_DEFAULT_LIMIT } from '../../Clients/RestClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import {
+  OPTIONS_COMMENTABLE,
   OPTIONS_COUNTRY_NAMES,
   OPTIONS_DRAFT_ORDER_STATUS,
   OPTIONS_METAOBJECT_STATUS,
@@ -22,20 +23,19 @@ import {
   OPTIONS_PRODUCT_STATUS_GRAPHQL,
   OPTIONS_PUBLISHED_STATUS,
 } from '../../constants/options-constants';
+import {
+  GraphQlFileTypesNames,
+  GraphQlResourceNames,
+  RestResourceSingular,
+} from '../../constants/resourceNames-constants';
 import { FULL_SIZE } from '../../constants/strings-constants';
 import {
   metaobjectDefinitionFragment,
   metaobjectFieldDefinitionFragment,
 } from '../../graphql/metaobjectDefinition-graphql';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
-import {
-  GraphQlFileTypesNames,
-  GraphQlResourceNames,
-  RestResourceSingular,
-} from '../../constants/resourceNames-constants';
 import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
-import { OPTIONS_COMMENTABLE } from '../../constants/options-constants';
-import { supportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
+import { getSupportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
 import { compareByDisplayKey, formatOptionNameId, getUnitMap, weightUnitsMap } from '../../utils/helpers';
 
@@ -96,7 +96,7 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
 }
 
 export function autoCompleteMetafieldOwnerTypes() {
-  return supportedMetafieldSyncTables
+  return getSupportedMetafieldSyncTables()
     .map((r) => ({ display: r.display, value: r.ownerType }))
     .sort(compareByDisplayKey);
 }
