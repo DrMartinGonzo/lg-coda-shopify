@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionClient } from '../Clients/GraphQlClients';
-import { RequiredSyncTableMissingVisibleError } from '../Errors/Errors';
+import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors';
 import { AbstractModel } from '../models/AbstractModel';
 import { AbstractModelGraphQlWithMetafields } from '../models/graphql/AbstractModelGraphQlWithMetafields';
 import { MetafieldDefinitionModel } from '../models/graphql/MetafieldDefinitionModel';
@@ -15,7 +15,7 @@ import {
 import { BaseRow } from '../schemas/CodaRows.types';
 import { FieldDependency } from '../schemas/Schema.types';
 import { getObjectSchemaEffectiveKey, transformToArraySchema } from '../schemas/schema-utils';
-import { arrayUnique } from '../utils/helpers';
+import { arrayUnique, excludeUndefinedObjectKeys } from '../utils/helpers';
 
 // #endregion
 
@@ -271,8 +271,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
       try {
         this.validateSyncUpdate(prevRow, newRow);
       } catch (error) {
-        // TODO: rename this error to something else ?
-        if (error instanceof RequiredSyncTableMissingVisibleError) {
+        if (error instanceof SyncUpdateRequiredPropertyMissingVisibleError) {
           /** Try to augment with fresh data and check again if it passes validation */
           await instance.addMissingData();
           this.validateSyncUpdate(prevRow, instance.toCodaRow());
@@ -283,7 +282,7 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
     }
 
     await instance.save();
-    return { ...prevRow, ...instance.toCodaRow() };
+    return { ...prevRow, ...excludeUndefinedObjectKeys(instance.toCodaRow()) };
   }
 
   protected getPreviousRowFromUpdate(update: coda.SyncUpdate<string, string, any>) {

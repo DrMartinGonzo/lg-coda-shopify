@@ -63,6 +63,6 @@ export class CollectModel extends AbstractModelRest {
       obj.product = formatProductReference(data.product_id);
     }
 
-    return obj;
+    return obj as CollectRow;
   }
 }

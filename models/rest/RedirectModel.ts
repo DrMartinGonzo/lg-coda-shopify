@@ -39,10 +39,11 @@ export class RedirectModel extends AbstractModelRest {
 
   public toCodaRow(): RedirectRow {
     const { data } = this;
-    return {
+    const obj: RedirectRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/redirects/${data.id}`,
       test_url: data.path ? `${this.context.endpoint}${data.path}` : undefined,
     };
+    return obj as RedirectRow;
   }
 }

@@ -13,13 +13,11 @@ import {
   METAFIELD_DELETED_SUFFIX,
   MetafieldNormalizedData,
   deleteMetafield,
+  formatMetaFieldValueForSchema,
+  getMetaFieldFullKey,
   getMetafieldAdminUrl,
   normalizeMetafieldRow,
   normalizeOwnerRowMetafields,
-} from '../utils/metafields-utils';
-import {
-  formatMetaFieldValueForSchema,
-  getMetaFieldFullKey,
   ownerTypeToRestOwnerName,
   preprendPrefixToMetaFieldKey,
   shouldDeleteMetafield,
@@ -29,14 +27,14 @@ import {
 import { FetchRequestOptions } from '../../Clients/Client.types';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
-import { PREFIX_FAKE } from '../../constants/strings-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { PREFIX_FAKE } from '../../constants/strings-constants';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
-import { isNullish, logAdmin } from '../../utils/helpers';
+import { isNullish } from '../../utils/helpers';
 import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
-import { GraphQlResourceName, GraphQlResourceNames } from '../../constants/resourceNames-constants';
 
 // #endregion
 

@@ -5,11 +5,11 @@ import { ResultOf, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { MetaobjectClient } from '../../Clients/GraphQlClients';
 import { CodaMetafieldValue } from '../../coda/CodaMetafieldValue';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { metaobjectFragment } from '../../graphql/metaobjects-graphql';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaobjectStatus } from '../../types/admin.types';
 import { isNullishOrEmpty, isString } from '../../utils/helpers';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../utils/metafields-utils';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 

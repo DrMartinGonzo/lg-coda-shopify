@@ -3,8 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { ArticleClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { ArticleRow } from '../../schemas/CodaRows.types';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -44,7 +44,6 @@ export interface ArticleApiData extends BaseApiDataRest {
 export interface ArticleModelData extends ArticleApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
 export class ArticleModel extends AbstractModelRestWithRestMetafields {
   public data: ArticleModelData;
 
@@ -110,6 +109,6 @@ export class ArticleModel extends AbstractModelRestWithRestMetafields {
       });
     }
 
-    return obj;
+    return obj as ArticleRow;
   }
 }

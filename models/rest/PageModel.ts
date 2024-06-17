@@ -3,8 +3,8 @@ import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
 import { PageClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { PageRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
@@ -35,7 +35,6 @@ export interface PageApiData extends BaseApiDataRest {
 export interface PageModelData extends PageApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
 export class PageModel extends AbstractModelRestWithRestMetafields {
   public data: PageModelData;
 
@@ -86,6 +85,6 @@ export class PageModel extends AbstractModelRestWithRestMetafields {
       });
     }
 
-    return obj;
+    return obj as PageRow;
   }
 }

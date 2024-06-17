@@ -4,11 +4,11 @@ import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/gr
 
 import { InventoryItemClient } from '../../Clients/GraphQlClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { inventoryItemFieldsFragment } from '../../graphql/inventoryItems-graphql';
 import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion

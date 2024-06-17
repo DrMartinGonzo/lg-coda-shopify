@@ -2,9 +2,9 @@
 import * as coda from '@codahq/packs-sdk';
 import striptags from 'striptags';
 
+import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CustomCollectionModelData } from '../rest/CustomCollectionModel';
 import { SmartCollectionModelData } from '../rest/SmartCollectionModel';
-import { CollectionRow } from '../../schemas/CodaRows.types';
 
 // #endregion
 
@@ -40,5 +40,5 @@ export function collectionModelToCodaRow(
     });
   }
 
-  return obj;
+  return obj as CollectionRow;
 }

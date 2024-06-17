@@ -112,7 +112,7 @@ export abstract class AbstractModel {
         if (data[key] !== undefined) {
           if (Array.isArray(data[key])) {
             ret[key] = data[key].map((d) => this.cleanRawData(d));
-          } else if (typeof data[key] === 'object') {
+          } else if (typeof data[key] === 'object' && data[key] !== null) {
             const cleanedObject = this.cleanRawData(data[key]);
             if (Object.keys(cleanedObject).length) {
               ret[key] = cleanedObject;

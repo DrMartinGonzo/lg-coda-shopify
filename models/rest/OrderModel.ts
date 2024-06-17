@@ -2,10 +2,10 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CancelOrderArgs, OrderClient } from '../../Clients/RestClients';
-import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
+import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { CompanySchema } from '../../schemas/basic/CompanySchema';
 import { DiscountCodeSchema } from '../../schemas/basic/DiscountCodeSchema';
 import { DutySchema } from '../../schemas/basic/DutySchema';
@@ -322,6 +322,6 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       });
     }
 
-    return obj;
+    return obj as OrderRow;
   }
 }

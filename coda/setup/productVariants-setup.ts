@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { VariantClient } from '../../Clients/GraphQlClients';
-import { InvalidValueVisibleError, RequiredSyncTableMissingVisibleError } from '../../Errors/Errors';
+import { InvalidValueVisibleError, SyncUpdateRequiredPropertyMissingVisibleError } from '../../Errors/Errors';
 import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
 import { optionValues } from '../utils/coda-utils';
@@ -68,7 +68,7 @@ export function validateSyncUpdate(prevRow: ProductVariantRow, newRow: ProductVa
   }
 
   if (requiredMsg.length) {
-    throw new RequiredSyncTableMissingVisibleError(requiredMsg.join(', '));
+    throw new SyncUpdateRequiredPropertyMissingVisibleError(requiredMsg.join(', '));
   }
 }
 // #endregion

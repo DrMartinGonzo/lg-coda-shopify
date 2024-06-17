@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { BlogClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
@@ -34,7 +34,6 @@ export interface BlogApiData extends BaseApiDataRest {
 export interface BlogModelData extends BlogApiData, BaseModelDataRestWithRestMetafields {}
 // #endregion
 
-// TODO: convert to AbstractModelRestWithGraphQlMetafields once GraphQl API version 2024-07 is stable
 export class BlogModel extends AbstractModelRestWithRestMetafields {
   public data: BlogModelData;
 
@@ -78,6 +77,6 @@ export class BlogModel extends AbstractModelRestWithRestMetafields {
       });
     }
 
-    return obj;
+    return obj as BlogRow;
   }
 }

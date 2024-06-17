@@ -2,12 +2,12 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CustomCollectionClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
 import { safeToString } from '../../utils/helpers';
+import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,

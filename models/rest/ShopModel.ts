@@ -1,8 +1,8 @@
 // #region Imports
 
 import { ShopClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { BaseApiDataRest } from './AbstractModelRest';
@@ -100,6 +100,6 @@ export class ShopModel extends AbstractModelRestWithGraphQlMetafields {
       });
     }
 
-    return obj;
+    return obj as ShopRow;
   }
 }

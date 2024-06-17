@@ -2,7 +2,7 @@
 
 import { MockExecutionContext, newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 import { describe, expect, test } from 'vitest';
-import { RequiredSyncTableMissingVisibleError } from '../Errors/Errors';
+import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors';
 import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
 import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
 import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
@@ -43,7 +43,7 @@ test('Update missing data on row update', async () => {
   try {
     validateSyncUpdate(prevRow, newRow);
   } catch (error) {
-    if (error instanceof RequiredSyncTableMissingVisibleError) {
+    if (error instanceof SyncUpdateRequiredPropertyMissingVisibleError) {
       /** Simulate augmenting with fresh data and check again if it passes validation */
       // @ts-expect-error
       instance.setData(

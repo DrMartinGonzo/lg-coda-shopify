@@ -1,9 +1,9 @@
 // #region Imports
 
 import { OrderLineItemClient } from '../../Clients/RestClients';
-import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
+import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
@@ -38,11 +38,12 @@ export class OrderLineItemModel extends AbstractModelRest {
 
   public toCodaRow(): OrderLineItemRow {
     const { data } = this;
-    return {
+    const obj: OrderLineItemRow = {
       ...data,
       order_id: data.order_id,
       order: formatOrderReference(data.order_id, data.order_name),
       variant: formatProductVariantReference(data.variant_id, data.variant_title),
     };
+    return obj as OrderLineItemRow;
   }
 }

@@ -75,6 +75,6 @@ export class InventoryLevelModel extends AbstractModelRest {
       obj.location = formatLocationReference(data.location_id);
     }
 
-    return obj;
+    return obj as InventoryLevelRow;
   }
 }

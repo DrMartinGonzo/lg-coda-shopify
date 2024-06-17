@@ -397,7 +397,6 @@ export class ArticleClient extends AbstractRestClient<
 
   async create(data: ArticleApiData) {
     const { blog_id, ...d } = data;
-    // TODO: need a check on request level. Problem : the main key
     if (isDefinedEmpty(d)) return;
     return this.fetcher.post<ArticleModelData>({
       path: `blogs/${blog_id}/articles.json`,

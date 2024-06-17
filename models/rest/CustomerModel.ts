@@ -157,6 +157,6 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
       });
     }
 
-    return obj;
+    return obj as CustomerRow;
   }
 }

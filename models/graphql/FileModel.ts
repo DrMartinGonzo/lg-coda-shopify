@@ -4,8 +4,8 @@ import { ResultOf } from '../../graphql/utils/graphql-utils';
 
 import { FileClient } from '../../Clients/GraphQlClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
-import { FULL_SIZE } from '../../constants/strings-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { FULL_SIZE } from '../../constants/strings-constants';
 import {
   fileFieldsFragment,
   genericFileFieldsFragment,

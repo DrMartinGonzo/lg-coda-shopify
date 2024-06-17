@@ -2,8 +2,8 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { CompleteDraftOrderArgs, DraftOrderClient, SendDraftOrderInvoiceArgs } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
@@ -166,6 +166,6 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
       });
     }
 
-    return obj;
+    return obj as DraftOrderRow;
   }
 }
