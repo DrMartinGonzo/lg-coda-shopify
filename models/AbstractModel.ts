@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
 import { Identity } from '../constants/pack-constants';
-import { MUST_EXTEND, NOT_IMPLEMENTED } from '../constants/strings-constants';
+import { MUST_EXTEND } from '../constants/strings-constants';
 import { BaseRow } from '../schemas/CodaRows.types';
 import { isDefinedEmpty } from '../utils/helpers';
 

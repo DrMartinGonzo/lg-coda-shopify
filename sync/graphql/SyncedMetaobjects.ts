@@ -2,19 +2,17 @@
 import * as coda from '@codahq/packs-sdk';
 import * as accents from 'remove-accents';
 import * as PROPS from '../../coda/utils/coda-properties';
-import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from '../../graphql/utils/graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import { ListMetaobjectsArgs, MetaobjectDefinitionClient, MetaobjectFieldsArgs } from '../../Clients/GraphQlClients';
 import { ShopClient } from '../../Clients/RestClients';
-import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { optionValues } from '../../coda/utils/coda-utils';
+import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
+import { METAFIELD_TYPES, MetafieldType } from '../../constants/metafields-constants';
 import { OPTIONS_METAOBJECT_STATUS } from '../../constants/options-constants';
-import { metaobjectFieldDefinitionFragment } from '../../graphql/metaobjectDefinition-graphql';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { MetaobjectDefinitionApiData } from '../../models/graphql/MetaobjectDefinitionModel';
 import { MetaobjectFieldApiData, MetaobjectModel } from '../../models/graphql/MetaobjectModel';
-import { MetafieldType } from '../../constants/metafields-constants';
-import { METAFIELD_TYPES } from '../../constants/metafields-constants';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { formatMetafieldValueForApi } from '../../models/utils/metafields-utils';
 import { requireMatchingMetaobjectFieldDefinition } from '../../models/utils/metaobjects-utils';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
@@ -42,10 +40,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
       options: { cacheTtlSecs: CACHE_DISABLED },
     });
     const { displayNameKey, capabilities } = metaobjectDefinition.body;
-    const fieldDefinitions = readFragment(
-      metaobjectFieldDefinitionFragment,
-      metaobjectDefinition.body.fieldDefinitions
-    );
+    const fieldDefinitions = metaobjectDefinition?.body?.fieldDefinitions ?? [];
     const isPublishable = capabilities?.publishable?.enabled;
     let defaultDisplayProperty = 'handle';
 
@@ -115,7 +110,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
 
   private async getMetaobjectFieldDefinitions() {
     const metaobjectDefinition = await this.getMetaobjectDefinition();
-    return readFragmentArray(metaobjectFieldDefinitionFragment, metaobjectDefinition?.fieldDefinitions);
+    return metaobjectDefinition?.fieldDefinitions ?? [];
   }
 
   private async formatRowCustomFields(row: MetaobjectRow, customFieldskeys: string[]) {

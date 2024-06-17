@@ -19,3 +19,4 @@ coverage
 # Generated types
 types/admin.types.ts
 types/graphql-env.d.ts
+types/graphql-cache.d.ts

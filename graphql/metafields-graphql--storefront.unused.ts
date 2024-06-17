@@ -25,7 +25,7 @@ const makeQueryMetafieldsStorefront = (type: string) => {
 const makeQueryVariantMetafieldsStorefront = /* GraphQL */ `
   ${metafieldFieldsFragment}
 
-  fragment variantFields on ProductVariant {
+  fragment variantFields on ProductVariant @_unmask {
     id
     metafields(identifiers: $metafieldsIdentifiers) {
       ...metafieldFields

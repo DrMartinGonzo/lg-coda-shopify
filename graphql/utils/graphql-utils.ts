@@ -31,12 +31,12 @@ export const graphql = initGraphQLTada<{
     UtcOffset: any;
   };
 }>();
+
 /**
  * Helper function that loops over each fragment result and return the unmasked
  * fragment. Same as direlty applying readFragment on the array, but the result
  * is not readonly
  */
-
 export const readFragmentArray = <DocT>(document: DocT, items: Array<FragmentOf<DocT>>) =>
   items.map((item) => readFragment(document, item));
 export type { ResultOf, VariablesOf } from 'gql.tada';

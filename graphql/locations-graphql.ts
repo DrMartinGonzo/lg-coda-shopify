@@ -15,7 +15,7 @@ function buildLocationsSearchQuery(filters: { [key: string]: any }) {
 // #region Fragments
 export const locationFragment = graphql(
   `
-    fragment Location on Location {
+    fragment Location on Location @_unmask {
       id
       name
       isActive

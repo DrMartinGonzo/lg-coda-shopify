@@ -99,7 +99,7 @@ export function buildProductVariantsSearchQuery({
 // #region Fragments
 export const productVariantFieldsFragment = graphql(
   `
-    fragment ProductVariantFields on ProductVariant {
+    fragment ProductVariantFields on ProductVariant @_unmask {
       barcode
       compareAtPrice
       createdAt

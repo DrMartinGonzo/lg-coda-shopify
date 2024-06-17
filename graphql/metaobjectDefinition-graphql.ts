@@ -6,7 +6,7 @@ import { pageInfoFragment } from './sharedFragments-graphql';
 
 // #region Fragments
 export const metaobjectFieldDefinitionFragment = graphql(`
-  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition {
+  fragment MetaobjectFieldDefinition on MetaobjectFieldDefinition @_unmask {
     key
     description
     name
@@ -30,7 +30,7 @@ export const metaobjectFieldDefinitionFragment = graphql(`
 
 export const metaobjectDefinitionFragment = graphql(
   `
-    fragment MetaobjectDefinition on MetaobjectDefinition {
+    fragment MetaobjectDefinition on MetaobjectDefinition @_unmask {
       id
       name
       displayNameKey

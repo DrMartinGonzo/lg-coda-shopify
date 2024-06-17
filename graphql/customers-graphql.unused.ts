@@ -13,7 +13,7 @@ function buildCustomersSearchQuery(filters: { [key: string]: any }) {
 
 // #region Fragments
 const CustomerAddressFieldsFragment = graphql(`
-  fragment CustomerAddressFields on MailingAddress {
+  fragment CustomerAddressFields on MailingAddress @_unmask {
     address1
     address2
     city
@@ -39,7 +39,7 @@ const CustomerAddressFieldsFragment = graphql(`
 
 const CustomerFieldsFragment = graphql(
   `
-    fragment CustomerFields on Customer {
+    fragment CustomerFields on Customer @_unmask {
       id
       createdAt
       displayName

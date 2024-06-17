@@ -6,25 +6,24 @@ import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '.
 import { MetafieldClient } from '../../Clients/RestClients';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { CACHE_DEFAULT, CACHE_DISABLED } from '../../constants/cacheDurations-constants';
+import { METAFIELD_TYPES, MetafieldType } from '../../constants/metafields-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlFileTypes, GraphQlFileTypesNames } from '../../constants/resourceNames-constants';
 import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { MetafieldGraphQlModel, SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
 import {
-  ownerTypeToRestClient,
-  ownerTypeToRestClientMap,
-  ownerTypeToRestModel,
-} from '../../models/utils/restModelWithRestMetafields-utils';
-import { MetafieldType } from '../../constants/metafields-constants';
-import { METAFIELD_TYPES } from '../../constants/metafields-constants';
-import { GraphQlFileTypes, GraphQlFileTypesNames } from '../../constants/resourceNames-constants';
-import {
   metafieldReferenceTypeToGraphQlOwnerName,
   ownerTypeToGraphQlOwnerName,
   ownerTypeToRestOwnerName,
 } from '../../models/utils/metafields-utils';
+import {
+  ownerTypeToRestClient,
+  ownerTypeToRestClientMap,
+  ownerTypeToRestModel,
+} from '../../models/utils/restModelWithRestMetafields-utils';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { SupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { SyncedGraphQlMetafields } from '../../sync/graphql/SyncedGraphQlMetafields';

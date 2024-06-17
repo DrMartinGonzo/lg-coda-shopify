@@ -281,7 +281,7 @@ export async function deleteMetafield<T extends MetafieldModel | MetafieldGraphQ
   const { data } = instance;
 
   /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
-  if (!data.id) await this.refreshData();
+  if (!data.id) await instance.refreshData();
 
   /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
   if (data.id) {
@@ -782,7 +782,7 @@ const ownerTypeToRestOwnerNameMap: Partial<Record<SupportedMetafieldOwnerType, S
   [MetafieldOwnerType.Shop]: RestResourcesSingular.Shop,
 } as const;
 
-export const metafieldReferenceTypeToGraphQlOwnerNameMap: Record<MetafieldReferenceType, GraphQlResourceName> = {
+const metafieldReferenceTypeToGraphQlOwnerNameMap: Record<MetafieldReferenceType, GraphQlResourceName> = {
   [METAFIELD_TYPES.collection_reference]: GraphQlResourceNames.Collection,
   [METAFIELD_TYPES.metaobject_reference]: GraphQlResourceNames.Metaobject,
   [METAFIELD_TYPES.mixed_reference]: GraphQlResourceNames.Metaobject,

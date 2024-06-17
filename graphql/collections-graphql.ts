@@ -15,7 +15,7 @@ function buildCollectionsSearchQuery(filters: { [key: string]: any }) {
 // #region Fragments
 const collectionFieldsFragmentAdmin = graphql(
   `
-    fragment CollectionFields on Collection {
+    fragment CollectionFields on Collection @_unmask {
       handle
       id
       descriptionHtml

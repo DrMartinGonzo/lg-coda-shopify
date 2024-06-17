@@ -2,7 +2,7 @@ import { graphql } from './utils/graphql-utils';
 
 // #region Fragments
 export const metafieldDefinitionFragment = graphql(`
-  fragment MetafieldDefinition on MetafieldDefinition {
+  fragment MetafieldDefinition on MetafieldDefinition @_unmask {
     key
     id
     namespace

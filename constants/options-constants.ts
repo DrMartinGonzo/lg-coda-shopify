@@ -4,7 +4,7 @@ import { countryNames } from '../contants--generated';
 
 // #endregion
 
-export type StringOption = coda.SimpleAutocompleteOption<coda.ParameterType.String>;
+type StringOption = coda.SimpleAutocompleteOption<coda.ParameterType.String>;
 
 export const OPTIONS_COMMENTABLE: StringOption[] = [
   { display: 'No', value: 'no' },

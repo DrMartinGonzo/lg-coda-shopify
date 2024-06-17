@@ -36,7 +36,7 @@ export function buildOrderTransactionsSearchQuery(filters: { [key: string]: any 
 
 // #region Fragments
 export const orderTransactionFieldsFragment = graphql(`
-  fragment OrderTransactionFields on OrderTransaction {
+  fragment OrderTransactionFields on OrderTransaction @_unmask {
     id
     kind
     status

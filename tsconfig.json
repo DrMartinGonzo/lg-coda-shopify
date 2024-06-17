@@ -17,6 +17,7 @@
         // We will have to keep this in sync whenever we update GRAPHQL_DEFAULT_API_VERSION
         "schema": "https://shopify.dev/admin-graphql-direct-proxy/2024-04",
         "tadaOutputLocation": "./types/graphql-env.d.ts",
+        "tadaTurboLocation": "./types/graphql-cache.d.ts",
         "shouldCheckForColocatedFragments": false,
         "trackFieldUsage": false
       }

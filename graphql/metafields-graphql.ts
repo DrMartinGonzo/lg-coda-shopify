@@ -10,8 +10,26 @@ import { graphql } from './utils/graphql-utils';
 // #endregion
 
 // #region Fragments
+const metafieldOwnerNodeFragment = graphql(
+  `
+    fragment MetafieldOwnerNodeFields on Node @_unmask {
+      id
+      __typename
+
+      ... on ProductVariant {
+        parentOwner: product {
+          id
+        }
+      }
+    }
+  `
+);
+
+/** Pas besoin d'inclure owner pour chaque requête vu qu'on pourra le déduire
+ * quand on query une liste de metafields. Par contre on ne le déduit pas quand
+ * c'est un single */
 export const metafieldFieldsFragment = graphql(`
-  fragment MetafieldFields on Metafield {
+  fragment MetafieldFields on Metafield @_unmask {
     __typename
     id
     namespace
@@ -26,39 +44,32 @@ export const metafieldFieldsFragment = graphql(`
 
 export const metafieldFieldsFragmentWithDefinition = graphql(
   `
-    fragment MetafieldWithDefinitionFields on Metafield {
-      __typename
-      id
-      namespace
-      key
-      type
-      value
-      ownerType
-      createdAt
-      updatedAt
+    fragment MetafieldWithDefinitionFields on Metafield @_unmask {
+      ...MetafieldFields
       definition {
         id
       }
     }
-  `
+  `,
+  [metafieldFieldsFragment]
 );
 
-// export type MetafieldFragmentWithDefinition = Omit<
-//   ResultOf<typeof metafieldFieldsFragmentWithDefinition>,
-//   'fragmentRefs'
-// > &
-//   Omit<ResultOf<typeof metafieldFieldsFragment>, 'fragmentRefs'>;
+export const metafieldFieldsFragmentWithDefinitionWithOwner = graphql(
+  `
+    fragment MetafieldWithDefinitionWithOwnerFields on Metafield @_unmask {
+      ...MetafieldWithDefinitionFields
+      owner {
+        ...MetafieldOwnerNodeFields
+      }
+    }
+  `,
+  [metafieldFieldsFragmentWithDefinition, metafieldOwnerNodeFragment]
+);
 
 const resourceWithMetafieldsFragment = graphql(
   `
-    fragment ResourceWithMetafields on Node {
-      id
-      ... on ProductVariant {
-        parentOwner: product {
-          id
-        }
-      }
-      __typename
+    fragment ResourceWithMetafields on Node @_unmask {
+      ...MetafieldOwnerNodeFields
       ... on HasMetafields {
         metafields(keys: $metafieldKeys, first: $countMetafields) {
           nodes {
@@ -68,7 +79,7 @@ const resourceWithMetafieldsFragment = graphql(
       }
     }
   `,
-  [metafieldFieldsFragmentWithDefinition]
+  [metafieldOwnerNodeFragment, metafieldFieldsFragmentWithDefinition]
 );
 // #endregion
 
@@ -78,12 +89,12 @@ export const getSingleMetafieldQuery = graphql(
     query GetSingleMetafield($id: ID!) {
       node(id: $id) {
         ... on Metafield {
-          ...MetafieldWithDefinitionFields
+          ...MetafieldWithDefinitionWithOwnerFields
         }
       }
     }
   `,
-  [metafieldFieldsFragmentWithDefinition]
+  [metafieldFieldsFragmentWithDefinitionWithOwner]
 );
 
 /**
@@ -109,13 +120,7 @@ export const getSingleNodeMetafieldsByKeyQuery = graphql(
   `
     query GetSingleNodeMetafieldsByKey($ownerGid: ID!, $metafieldKeys: [String!], $countMetafields: Int!) {
       node(id: $ownerGid) {
-        id
-        __typename
-        ... on ProductVariant {
-          parentOwner: product {
-            id
-          }
-        }
+        ...MetafieldOwnerNodeFields
         ... on HasMetafields {
           metafields(keys: $metafieldKeys, first: $countMetafields) {
             nodes {
@@ -126,7 +131,7 @@ export const getSingleNodeMetafieldsByKeyQuery = graphql(
       }
     }
   `,
-  [metafieldFieldsFragmentWithDefinition]
+  [metafieldOwnerNodeFragment, metafieldFieldsFragmentWithDefinition]
 );
 
 /**
@@ -222,17 +227,7 @@ export const setMetafieldsMutation = graphql(
     mutation SetMetafields($inputs: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $inputs) {
         metafields {
-          owner {
-            ... on Node {
-              id
-            }
-            ... on ProductVariant {
-              parentOwner: product {
-                id
-              }
-            }
-          }
-          ...MetafieldWithDefinitionFields
+          ...MetafieldWithDefinitionWithOwnerFields
         }
         userErrors {
           field
@@ -241,7 +236,7 @@ export const setMetafieldsMutation = graphql(
       }
     }
   `,
-  [metafieldFieldsFragmentWithDefinition]
+  [metafieldFieldsFragmentWithDefinitionWithOwner]
 );
 
 export const deleteMetafieldMutation = graphql(

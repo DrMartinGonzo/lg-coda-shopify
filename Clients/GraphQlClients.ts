@@ -12,6 +12,8 @@ import { MetafieldDefinitionApiData, MetafieldDefinitionModelData } from '../mod
 import {
   MetafieldApiData,
   MetafieldModelData,
+  MetafieldWithDefinitionApiData,
+  MetafieldWithDefinitionWithOwnerApiData,
   SupportedMetafieldOwnerName,
 } from '../models/graphql/MetafieldGraphQlModel';
 import {
@@ -113,11 +115,11 @@ import {
 } from '../Errors/GraphQlErrors';
 import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { CACHE_DISABLED } from '../constants/cacheDurations-constants';
+import { METAFIELD_TYPES } from '../constants/metafields-constants';
+import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { PREFIX_FAKE } from '../constants/strings-constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
-import { RestResourcesSingular } from '../constants/resourceNames-constants';
-import { METAFIELD_TYPES } from '../constants/metafields-constants';
 import { graphQlOwnerNameToOwnerType } from '../models/utils/metafields-utils';
 import {
   LocalizableContentType,
@@ -127,7 +129,6 @@ import {
   MetaobjectCapabilityDataInput,
   MetaobjectCreateInput,
   MetaobjectUpdateInput,
-  Node,
   PageInfo,
   ProductInput,
   ProductVariantInput,
@@ -1053,35 +1054,39 @@ export class LocationClient extends AbstractGraphQlClient<LocationModelData> {
 // #endregion
 
 // #region MetafieldClient
-interface MetafieldOwnerNodeApidata extends Node {
+interface MetafieldOwnerNodeApidata {
   __typename: string;
-  parentOwner: Node;
-  metafields: { nodes: MetafieldApiData[] };
+  id: string;
+  parentOwner?: {
+    id: string;
+  };
+}
+
+interface MetafieldOwnerNodeWithMetafieldsApidata extends MetafieldOwnerNodeApidata {
+  metafields: { nodes: MetafieldWithDefinitionApiData[] };
 }
 
 interface SingleMetafieldResponse {
-  node: MetafieldApiData;
+  node: MetafieldWithDefinitionWithOwnerApiData;
 }
 interface SingleMetafieldByKeyResponse {
-  node: MetafieldOwnerNodeApidata;
+  node: MetafieldOwnerNodeWithMetafieldsApidata;
 }
 
 type MultipleMetafieldsByOwnerTypeResponse = Record<
   SupportedGraphQlMetafieldOperation[number],
-  { nodes: MetafieldOwnerNodeApidata[] }
+  { nodes: MetafieldOwnerNodeWithMetafieldsApidata[] }
 >;
 interface MultipleShopMetafieldsResponse {
-  shop: MetafieldOwnerNodeApidata;
+  shop: MetafieldOwnerNodeWithMetafieldsApidata;
 }
 interface MultipleMetafieldsByOwnerIdsResponse {
-  nodes: MetafieldOwnerNodeApidata[];
+  nodes: MetafieldOwnerNodeWithMetafieldsApidata[];
 }
 
 interface SetMetafieldsResponse {
   metafieldsSet: {
-    metafields: (MetafieldApiData & {
-      owner: Omit<MetafieldOwnerNodeApidata, 'metafields'>;
-    })[];
+    metafields: MetafieldWithDefinitionWithOwnerApiData[];
   };
 }
 
@@ -1103,14 +1108,14 @@ export interface ListMetafieldsByOwnerTypeArgs extends Omit<ListMetafieldsArgs, 
   ownerType: SupportedMetafieldOwnerType;
 }
 
-function transformMetafieldOwnerNode(ownerNode: MetafieldOwnerNodeApidata) {
+function transformMetafieldOwnerNode(ownerNode: MetafieldOwnerNodeWithMetafieldsApidata) {
   return (
     ownerNode?.metafields?.nodes
       .map((metafield) => includeOwnerInMetafieldData(metafield, ownerNode))
       .filter(Boolean) || []
   );
 }
-function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeApidata[]) {
+function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeWithMetafieldsApidata[]) {
   return (
     ownerNodes
       .map((node) => transformMetafieldOwnerNode(node))
@@ -1118,9 +1123,10 @@ function transformMetafieldOwnerNodes(ownerNodes: MetafieldOwnerNodeApidata[]) {
       .filter(Boolean) || []
   );
 }
+
 function includeOwnerInMetafieldData(
-  metafield: MetafieldApiData,
-  ownerNode: Pick<MetafieldOwnerNodeApidata, 'id' | 'parentOwner'>
+  metafield: Omit<MetafieldApiData, 'owner'>,
+  ownerNode: Partial<Pick<MetafieldOwnerNodeWithMetafieldsApidata, 'id' | 'parentOwner' | '__typename'>>
 ): MetafieldModelData {
   const data = { ...metafield } as MetafieldModelData;
   if (ownerNode) {
@@ -1141,7 +1147,8 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
         options,
         documentNode,
         variables,
-        transformBodyResponse: (response: SingleMetafieldResponse) => response?.node as MetafieldModelData,
+        transformBodyResponse: (response: SingleMetafieldResponse) =>
+          includeOwnerInMetafieldData(response.node, response.node.owner as MetafieldOwnerNodeWithMetafieldsApidata),
       })
     );
   }

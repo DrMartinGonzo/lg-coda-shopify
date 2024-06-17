@@ -8,3 +8,5 @@ type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> };
 export type Stringified<T> = string & {
   [P in keyof T]: { '_ value': T[P] };
 };
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

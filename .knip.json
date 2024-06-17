@@ -8,8 +8,8 @@
     "test/pack_test.test.ts"
   ],
 
-  "project": ["**/*.{js,ts}!", "test/**/*.{js,ts}", "_buildScripts/**/*.{js,ts}"],
-  "ignore": ["types/admin.types.ts", "types/graphql-env.d.ts"],
+  "project": ["**/*.{js,ts}!", "test/**/*.{js,ts}", "_buildScripts/**/*.{js,ts}", "!**/*.unused.ts"],
+  "ignore": ["types/admin.types.ts", "types/graphql-env.d.ts", "types/graphql-cache.d.ts"],
 
   "graphql-codegen": {
     "config": [

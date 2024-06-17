@@ -86,7 +86,7 @@ export function buildProductsSearchQuery({
 // #region Fragments
 export const productFieldsFragment = graphql(
   `
-    fragment ProductFields on Product {
+    fragment ProductFields on Product @_unmask {
       id
       handle
       createdAt

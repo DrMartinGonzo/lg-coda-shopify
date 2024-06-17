@@ -1,19 +1,16 @@
 // #region Imports
-import { ResultOf } from '../../graphql/utils/graphql-utils';
 
 import { MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
+import { MetafieldOwnerType } from '../../types/admin.types';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { MetafieldGraphQlModel, MetafieldModelData } from './MetafieldGraphQlModel';
-
-import { metafieldFieldsFragment } from '../../graphql/metafields-graphql';
-import { MetafieldOwnerType } from '../../types/admin.types';
+import { MetafieldGraphQlModel, MetafieldModelData, MetafieldNoDefinitionApiData } from './MetafieldGraphQlModel';
 
 // #endregion
 
 // #region Types
 export interface GraphQlApiDataWithMetafields extends BaseApiDataGraphQl {
-  metafields?: { nodes: ResultOf<typeof metafieldFieldsFragment>[] };
+  metafields?: { nodes: MetafieldNoDefinitionApiData[] };
 }
 
 export interface BaseModelDataGraphQlWithMetafields extends BaseModelDataGraphQl {
@@ -40,7 +37,7 @@ export abstract class AbstractModelGraphQlWithMetafields extends AbstractModelGr
 
   protected setData(
     data: BaseModelDataGraphQl & {
-      metafields?: { nodes: ResultOf<typeof metafieldFieldsFragment>[] };
+      metafields?: { nodes: MetafieldNoDefinitionApiData[] };
     }
   ): void {
     super.setData(data);

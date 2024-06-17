@@ -11,7 +11,7 @@ export const genericFileFieldsFragment = graphql(`
 `);
 
 export const mediaImageFieldsFragment = graphql(`
-  fragment MediaImageFields on MediaImage {
+  fragment MediaImageFields on MediaImage @_unmask {
     image {
       url
       width @include(if: $includeWidth)
@@ -25,7 +25,7 @@ export const mediaImageFieldsFragment = graphql(`
 `);
 
 export const videoFieldsFragment = graphql(`
-  fragment VideoFields on Video {
+  fragment VideoFields on Video @_unmask {
     filename
     duration @include(if: $includeDuration)
     originalSource {
@@ -40,7 +40,7 @@ export const videoFieldsFragment = graphql(`
 
 export const fileFieldsFragment = graphql(
   `
-    fragment FileFields on File {
+    fragment FileFields on File @_unmask {
       __typename
       id
       updatedAt

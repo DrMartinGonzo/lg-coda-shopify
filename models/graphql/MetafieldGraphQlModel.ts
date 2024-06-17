@@ -6,7 +6,11 @@ import { MetafieldClient } from '../../Clients/GraphQlClients';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
-import { metafieldFieldsFragment, metafieldFieldsFragmentWithDefinition } from '../../graphql/metafields-graphql';
+import {
+  metafieldFieldsFragment,
+  metafieldFieldsFragmentWithDefinition,
+  metafieldFieldsFragmentWithDefinitionWithOwner,
+} from '../../graphql/metafields-graphql';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import {
@@ -66,10 +70,16 @@ export type SupportedMetafieldOwnerName =
   | (typeof GraphQlResourceNames)['ProductVariant']
   | (typeof GraphQlResourceNames)['Shop'];
 
+export interface MetafieldNoDefinitionApiData extends ResultOf<typeof metafieldFieldsFragment> {}
+export interface MetafieldWithDefinitionApiData extends ResultOf<typeof metafieldFieldsFragmentWithDefinition> {}
+export interface MetafieldWithDefinitionWithOwnerApiData
+  extends ResultOf<typeof metafieldFieldsFragmentWithDefinitionWithOwner> {}
+
 export interface MetafieldApiData
   extends BaseApiDataGraphQl,
-    ResultOf<typeof metafieldFieldsFragment>,
-    ResultOf<typeof metafieldFieldsFragmentWithDefinition> {}
+    MetafieldNoDefinitionApiData,
+    MetafieldWithDefinitionApiData,
+    MetafieldWithDefinitionWithOwnerApiData {}
 
 export interface MetafieldModelData extends BaseModelDataGraphQl, MetafieldApiData, ModelWithDeletedFlag {
   parentNode: Node & {

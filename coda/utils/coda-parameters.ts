@@ -1,6 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { graphQlGidToId, idToGraphQlGid, readFragment, readFragmentArray } from '../../graphql/utils/graphql-utils';
+import { graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import {
   GRAPHQL_NODES_LIMIT,
@@ -29,10 +29,6 @@ import {
   RestResourceSingular,
 } from '../../constants/resourceNames-constants';
 import { FULL_SIZE } from '../../constants/strings-constants';
-import {
-  metaobjectDefinitionFragment,
-  metaobjectFieldDefinitionFragment,
-} from '../../graphql/metaobjectDefinition-graphql';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
 import { getSupportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
@@ -135,12 +131,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectId(
     fields: { definition: true, fieldDefinitions: true },
   });
 
-  const fieldDefinitions = response?.body?.definition
-    ? readFragmentArray(
-        metaobjectFieldDefinitionFragment,
-        readFragment(metaobjectDefinitionFragment, response.body.definition).fieldDefinitions
-      )
-    : [];
+  const fieldDefinitions = response?.body?.definition?.fieldDefinitions ?? [];
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 
@@ -157,7 +148,7 @@ export async function autocompleteMetaobjectFieldkeyFromMetaobjectType(
     type: args.type,
     fields: { fieldDefinitions: true },
   });
-  const fieldDefinitions = readFragmentArray(metaobjectFieldDefinitionFragment, response.body.fieldDefinitions);
+  const fieldDefinitions = response?.body?.fieldDefinitions ?? [];
   return coda.autocompleteSearchObjects(search, fieldDefinitions, 'name', 'key');
 }
 

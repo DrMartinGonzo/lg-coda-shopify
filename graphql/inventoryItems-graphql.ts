@@ -24,7 +24,7 @@ export function buildInventoryItemsSearchQuery(filters: { [key: string]: any }) 
 
 // #region Fragments
 export const inventoryItemFieldsFragment = graphql(`
-  fragment InventoryItemFields on InventoryItem {
+  fragment InventoryItemFields on InventoryItem @_unmask {
     harmonizedSystemCode
     createdAt
     id

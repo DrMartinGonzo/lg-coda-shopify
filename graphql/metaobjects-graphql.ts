@@ -5,7 +5,7 @@ import { pageInfoFragment } from './sharedFragments-graphql';
 // #region Fragments
 export const metaobjectFragment = graphql(
   `
-    fragment MetaobjectFragment on Metaobject {
+    fragment MetaobjectFragment on Metaobject @_unmask {
       id
       handle
       type

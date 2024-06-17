@@ -18,6 +18,7 @@
     "regen:constants": "ts-node --esm ./_buildScripts/regen-constants-from-admin-types.ts",
     "regen:interfaces": "ts-node --esm ./_buildScripts/regen-interfaces-from-coda-schemas.ts",
     "regen:graphql": "graphql-codegen --config codegen.ts",
+    "regen:tada:turbo": "gql.tada turbo",
     "------------------ VALIDATION ------------------": "",
     "validate:admin": "yarn set_release:admin && coda validate pack.ts",
     "validate:user": "yarn set_release:user && coda validate pack.ts",
