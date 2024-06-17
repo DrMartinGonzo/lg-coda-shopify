@@ -1,9 +1,11 @@
 // #region Imports
 
 import { ListMetafieldDefinitionsArgs } from '../../Clients/GraphQlClients';
+import { Sync_MetafieldDefinitions } from '../../coda/setup/metafieldDefinitions-setup';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { CodaSyncParams } from '../AbstractSyncedResources';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
 
 // #endregion
@@ -11,17 +13,17 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 export class SyncedMetafieldDefinitions extends AbstractSyncedGraphQlResources<MetafieldDefinitionModel> {
   public static staticSchema = MetafieldDefinitionSyncTableSchema;
 
-  public static async getDynamicSchema() {
-    return this.staticSchema;
-  }
-
   public get codaParamsMap() {
-    return {};
+    const [ownerType] = this.codaParams as CodaSyncParams<typeof Sync_MetafieldDefinitions>;
+    return {
+      ownerType,
+    };
   }
 
   protected codaParamsToListArgs() {
+    const { ownerType } = this.codaParamsMap;
     return {
-      ownerType: this.context.sync.dynamicUrl as MetafieldOwnerType,
+      ownerType,
     } as ListMetafieldDefinitionsArgs;
   }
 }

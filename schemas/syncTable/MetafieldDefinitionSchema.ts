@@ -82,7 +82,17 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   },
   displayProperty: 'name',
   idProperty: 'id',
-  featuredProperties: ['name', 'type', 'description', 'namespace', 'key', 'id', 'metafieldsCount', 'admin_url'],
+  featuredProperties: [
+    'ownerType',
+    'name',
+    'namespace',
+    'key',
+    'type',
+    'id',
+    'description',
+    'metafieldsCount',
+    'admin_url',
+  ],
 
   // Card fields.
   subtitleProperties: ['type', 'namespace', 'key', 'ownerType', 'metafieldsCount'],
@@ -90,7 +100,7 @@ export const MetafieldDefinitionSyncTableSchema = coda.makeObjectSchema({
   linkProperty: 'admin_url',
 });
 
-export function getMetafieldDefinitionReferenceSchema(metafieldOwnerType: MetafieldOwnerType) {
+function getMetafieldDefinitionReferenceSchema(metafieldOwnerType: MetafieldOwnerType) {
   return coda.makeObjectSchema({
     codaType: coda.ValueHintType.Reference,
     properties: {
@@ -106,7 +116,10 @@ export function getMetafieldDefinitionReferenceSchema(metafieldOwnerType: Metafi
     },
   });
 }
-
+export const MetafieldDefinitionReference = coda.makeReferenceSchemaFromObjectSchema(
+  MetafieldDefinitionSyncTableSchema,
+  PACK_IDENTITIES.MetafieldDefinition
+);
 export const formatMetafieldDefinitionReference: FormatRowReferenceFn<number, 'name'> = (
   id: number,
   name = NOT_FOUND

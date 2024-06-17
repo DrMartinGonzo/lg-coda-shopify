@@ -2,19 +2,13 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { MetafieldDefinitionClient } from '../../Clients/GraphQlClients';
-import {
-  SupportedMetafieldSyncTable,
-  getAllSupportDefinitionMetafieldSyncTables,
-} from '../../sync/SupportedMetafieldSyncTable';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { MetafieldDefinitionModel } from '../../models/graphql/MetafieldDefinitionModel';
-import { SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { MetafieldDefinitionSyncTableSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { SyncedMetafieldDefinitions } from '../../sync/graphql/SyncedMetafieldDefinitions';
-import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
-import { compareByDisplayKey } from '../../utils/helpers';
 import { inputs } from '../utils/coda-parameters';
 
 // #endregion
@@ -34,35 +28,19 @@ function createSyncedMetafieldDefinitions(
 // #endregion
 
 // #region Sync tables
-export const Sync_MetafieldDefinitions = coda.makeDynamicSyncTable({
+export const Sync_MetafieldDefinitions = coda.makeSyncTable({
   name: 'MetafieldDefinitions',
   description: 'Return Metafield Definitions from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.MetafieldDefinition,
-  listDynamicUrls: async (context) =>
-    getAllSupportDefinitionMetafieldSyncTables()
-      .map((r) => ({
-        display: r.display,
-        value: r.ownerType,
-      }))
-      .sort(compareByDisplayKey)
-      .map((r) => ({ ...r, hasChildren: false })),
-  getName: async function (context) {
-    const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
-    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
-    return `${supportedSyncTable.display} MetafieldDefinitions`;
+  schema: SyncedMetafieldDefinitions.staticSchema,
+  dynamicOptions: {
+    defaultAddDynamicColumns: false,
   },
-  getDisplayUrl: async function (context) {
-    const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
-    const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);
-    return supportedSyncTable.getAdminUrl(context);
-  },
-  getSchema: async () => SyncedMetafieldDefinitions.getDynamicSchema(),
-  defaultAddDynamicColumns: false,
   formula: {
     name: 'SyncMetafieldDefinitions',
     description: '<Help text for the sync formula, not show to the user>',
-    parameters: [],
+    parameters: [inputs.metafieldDefinition.ownerType],
     execute: async (codaSyncParams, context) => createSyncedMetafieldDefinitions(codaSyncParams, context).executeSync(),
   },
 });

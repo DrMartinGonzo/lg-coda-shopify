@@ -109,11 +109,12 @@ import {
   ShopifyGraphQlErrorCode,
   ShopifyGraphQlMaxCostExceededError,
   ShopifyGraphQlRequestCost,
+  ShopifyGraphQlThrottleStatus,
   ShopifyGraphQlThrottledError,
   ShopifyGraphQlUserError,
   ShopifyThrottledErrorCode,
 } from '../Errors/GraphQlErrors';
-import { GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
+import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { CACHE_DISABLED } from '../constants/cacheDurations-constants';
 import { METAFIELD_TYPES } from '../constants/metafields-constants';
 import { RestResourcesSingular } from '../constants/resourceNames-constants';
@@ -215,6 +216,24 @@ export class GraphQlFetcher {
   constructor({ context, apiVersion = GRAPHQL_DEFAULT_API_VERSION }: GraphQlClientConstructorParams) {
     this.context = context;
     this.apiVersion = apiVersion;
+  }
+
+  public static calcGraphQlMaxLimit({
+    lastCost,
+    lastLimit,
+    throttleStatus,
+  }: {
+    lastCost: ShopifyGraphQlRequestCost | undefined;
+    lastLimit: number | undefined;
+    throttleStatus: ShopifyGraphQlThrottleStatus;
+  }) {
+    if (!lastLimit || !lastCost) {
+      console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
+    }
+    const costOneEntry = lastCost.requestedQueryCost / lastLimit;
+    const maxCost = Math.min(GRAPHQL_BUDGET__MAX, throttleStatus.currentlyAvailable);
+    const maxLimit = Math.floor(maxCost / costOneEntry);
+    return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
   }
 
   /**

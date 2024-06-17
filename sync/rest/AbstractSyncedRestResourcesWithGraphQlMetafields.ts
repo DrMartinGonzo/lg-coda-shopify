@@ -1,7 +1,7 @@
 // #region Imports
 
 import { GraphQlFetcher, MetafieldClient } from '../../Clients/GraphQlClients';
-import { calcGraphQlMaxLimit, calcGraphQlWaitTime, wait } from '../../Clients/utils/client-utils';
+import { calcGraphQlWaitTime, wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { GraphQlResourceName } from '../../constants/resourceNames-constants';
@@ -49,7 +49,7 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
 
   protected get currentLimit() {
     if (this.hasLock && this.shouldSyncMetafields) {
-      return calcGraphQlMaxLimit({
+      return GraphQlFetcher.calcGraphQlMaxLimit({
         lastCost: this.lastCost,
         lastLimit: this.lastLimit,
         throttleStatus: this.throttleStatus,

@@ -10,13 +10,12 @@ import {
   SyncedResourcesSyncResult,
 } from '../AbstractSyncedResources';
 
-import { calcGraphQlMaxLimit, calcGraphQlWaitTime, wait } from '../../Clients/utils/client-utils';
+import { calcGraphQlWaitTime, wait } from '../../Clients/utils/client-utils';
 import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { GRAPHQL_BUDGET__MAX } from '../../config';
 import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { BaseRow } from '../../schemas/CodaRows.types';
-import { PageInfo } from '../../types/admin.types';
 import { Stringified } from '../../types/utilities';
 import { logAdmin } from '../../utils/helpers';
 import {
@@ -64,7 +63,7 @@ export abstract class AbstractSyncedGraphQlResources<
 
   protected get currentLimit() {
     if (this.hasLock) {
-      return calcGraphQlMaxLimit({
+      return GraphQlFetcher.calcGraphQlMaxLimit({
         lastCost: this.lastCost,
         lastLimit: this.lastLimit,
         throttleStatus: this.throttleStatus,

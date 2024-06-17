@@ -1,11 +1,9 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
-import { ShopifyGraphQlRequestCost, ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
-import { GRAPHQL_BUDGET__MAX } from '../../config';
+import { ShopifyGraphQlThrottleStatus } from '../../Errors/GraphQlErrors';
 import { CACHE_DEFAULT, CACHE_MAX } from '../../constants/cacheDurations-constants';
 import { logAdmin } from '../../utils/helpers';
 import { FetchRequestOptions } from '../Client.types';
-import { GRAPHQL_NODES_LIMIT } from '../GraphQlClients';
 
 // #endregion
 
@@ -58,24 +56,6 @@ export function withCacheMax<T>({ options, ...args }: WithCacheArgs<T>) {
     },
     ...args,
   } as T;
-}
-
-export function calcGraphQlMaxLimit({
-  lastCost,
-  lastLimit,
-  throttleStatus,
-}: {
-  lastCost: ShopifyGraphQlRequestCost | undefined;
-  lastLimit: number | undefined;
-  throttleStatus: ShopifyGraphQlThrottleStatus;
-}) {
-  if (!lastLimit || !lastCost) {
-    console.error(`calcSyncTableMaxLimit: No lastLimit or lastCost in prevContinuation`);
-  }
-  const costOneEntry = lastCost.requestedQueryCost / lastLimit;
-  const maxCost = Math.min(GRAPHQL_BUDGET__MAX, throttleStatus.currentlyAvailable);
-  const maxLimit = Math.floor(maxCost / costOneEntry);
-  return Math.min(GRAPHQL_NODES_LIMIT, maxLimit);
 }
 
 function minGraphQlPointsNeeded(throttleStatus: ShopifyGraphQlThrottleStatus) {

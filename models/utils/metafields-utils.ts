@@ -10,15 +10,31 @@ import {
   UnsupportedValueError,
 } from '../../Errors/Errors';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
-import { PREFIX_FAKE } from '../../constants/strings-constants';
+import {
+  METAFIELD_LEGACY_TYPES,
+  METAFIELD_TYPES,
+  MeasurementField,
+  MetafieldLegacyType,
+  MetafieldReferenceType,
+  MetafieldType,
+  MoneyField,
+  RatingField,
+} from '../../constants/metafields-constants';
 import { CUSTOM_FIELD_PREFIX_KEY } from '../../constants/pack-constants';
+import {
+  GraphQlResourceName,
+  GraphQlResourceNames,
+  RestResourcesPlural,
+  RestResourcesSingular,
+} from '../../constants/resourceNames-constants';
+import { PREFIX_FAKE } from '../../constants/strings-constants';
 import { metafieldDefinitionFragment } from '../../graphql/metafieldDefinitions-graphql';
 import { ResultOf, graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { BaseRow, FormatRowReferenceFn, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatCollectionReference } from '../../schemas/syncTable/CollectionSchema';
 import { formatFileReference } from '../../schemas/syncTable/FileSchema';
 import { formatMetaobjectReference } from '../../schemas/syncTable/MetaObjectSchema';
-import { getMetafieldDefinitionReferenceSchema } from '../../schemas/syncTable/MetafieldDefinitionSchema';
+import { MetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldSyncTableSchema, metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { formatPageReference } from '../../schemas/syncTable/PageSchema';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
@@ -46,22 +62,7 @@ import {
 } from '../graphql/MetafieldGraphQlModel';
 import { BaseModelDataRest } from '../rest/AbstractModelRest';
 import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
-import {
-  GraphQlResourceName,
-  GraphQlResourceNames,
-  RestResourcesPlural,
-  RestResourcesSingular,
-} from '../../constants/resourceNames-constants';
 import { singularToPlural } from './restModel-utils';
-import {
-  MetafieldType,
-  MetafieldLegacyType,
-  RatingField,
-  MoneyField,
-  MeasurementField,
-  MetafieldReferenceType,
-} from '../../constants/metafields-constants';
-import { METAFIELD_TYPES, METAFIELD_LEGACY_TYPES } from '../../constants/metafields-constants';
 
 // #endregion
 
@@ -110,7 +111,7 @@ export async function getMetafieldsDynamicSchema({ codaSyncParams, context }: Ge
 
   if (supportDefinition) {
     augmentedSchema.properties['definition'] = {
-      ...getMetafieldDefinitionReferenceSchema(metafieldOwnerType),
+      ...MetafieldDefinitionReference,
       fromKey: 'definition',
       fixedId: 'definition',
       description: 'The metafield definition of the metafield, if it exists.',

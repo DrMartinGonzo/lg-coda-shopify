@@ -31,7 +31,10 @@ import {
 import { FULL_SIZE } from '../../constants/strings-constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
 import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
-import { getSupportedMetafieldSyncTables } from '../../sync/SupportedMetafieldSyncTable';
+import {
+  getAllSupportDefinitionMetafieldSyncTables,
+  getSupportedMetafieldSyncTables,
+} from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
 import { compareByDisplayKey, formatOptionNameId, getUnitMap, weightUnitsMap } from '../../utils/helpers';
 
@@ -93,6 +96,12 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
 
 export function autoCompleteMetafieldOwnerTypes() {
   return getSupportedMetafieldSyncTables()
+    .map((r) => ({ display: r.display, value: r.ownerType }))
+    .sort(compareByDisplayKey);
+}
+
+export function autoCompleteMetafieldWithDefinitionOwnerTypes() {
+  return getAllSupportDefinitionMetafieldSyncTables()
     .map((r) => ({ display: r.display, value: r.ownerType }))
     .sort(compareByDisplayKey);
 }
@@ -631,6 +640,12 @@ const metafieldDefinitionInputs = {
     name: 'metafieldDefinitionId',
     description: 'The ID of the metafield definition.',
   },
+  ownerType: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'ownerType',
+    description: 'The type of resource owning the metafield.',
+    autocomplete: autoCompleteMetafieldWithDefinitionOwnerTypes(),
+  }),
 };
 // #endregion
 
