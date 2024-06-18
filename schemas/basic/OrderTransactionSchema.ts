@@ -10,12 +10,6 @@ import * as PROPS from '../../coda/utils/coda-properties';
 export const OrderTransactionSchema = coda.makeObjectSchema({
   properties: {
     id: PROPS.makeRequiredIdNumberProp('order transaction'),
-    // label: {
-    //   type: coda.ValueType.String,
-    //   fromKey: 'label',
-    //   fixedId: 'label',
-    //   required: true,
-    // },
     amount: {
       ...PROPS.CURRENCY,
       fromKey: 'amount',

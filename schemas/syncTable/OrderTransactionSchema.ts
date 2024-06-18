@@ -11,6 +11,12 @@ export const OrderTransactionSyncTableSchema = coda.makeObjectSchema({
   properties: {
     ...OrderTransactionSchema.properties,
 
+    label: {
+      type: coda.ValueType.String,
+      fromKey: 'label',
+      fixedId: 'label',
+      required: true,
+    },
     accountNumber: {
       type: coda.ValueType.String,
       fromKey: 'accountNumber',
