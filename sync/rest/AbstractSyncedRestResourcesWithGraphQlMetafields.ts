@@ -48,7 +48,7 @@ export abstract class AbstractSyncedRestResourcesWithGraphQlMetafields<
   }
 
   protected get currentLimit() {
-    if (this.hasLock && this.shouldSyncMetafields) {
+    if (this.hasLock && this.shouldSyncMetafields && this.lastCost && this.lastLimit) {
       return GraphQlFetcher.calcGraphQlMaxLimit({
         lastCost: this.lastCost,
         lastLimit: this.lastLimit,

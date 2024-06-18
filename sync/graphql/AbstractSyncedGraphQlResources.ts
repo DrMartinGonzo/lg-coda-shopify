@@ -62,7 +62,7 @@ export abstract class AbstractSyncedGraphQlResources<
   }
 
   protected get currentLimit() {
-    if (this.hasLock) {
+    if (this.hasLock && this.lastCost && this.lastLimit) {
       return GraphQlFetcher.calcGraphQlMaxLimit({
         lastCost: this.lastCost,
         lastLimit: this.lastLimit,

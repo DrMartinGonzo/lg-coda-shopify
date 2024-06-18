@@ -38,7 +38,7 @@ interface ShopifyGraphQlGenericError {
 }
 
 export type ShopifyThrottledErrorCode = 'THROTTLED';
-export type ShopifyMaxCostExceededErrorCode = 'MAX_COST_EXCEEDED';
+type ShopifyMaxCostExceededErrorCode = 'MAX_COST_EXCEEDED';
 export type ShopifyGraphQlErrorCode = ShopifyThrottledErrorCode | ShopifyMaxCostExceededErrorCode;
 
 export interface ShopifyGraphQlThrottledError {
