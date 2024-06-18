@@ -8,7 +8,7 @@ import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
 import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
-import { BaseApiDataRest } from './AbstractModelRest';
+import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
   BaseModelDataRestWithGraphQlMetafields,
@@ -24,10 +24,7 @@ export interface CustomCollectionApiData extends BaseApiDataRest {
   handle: string | null;
   id: number | null;
   admin_graphql_api_id: string | null;
-  image: {
-    src?: string;
-    alt?: string;
-  } | null;
+  image: ImageApiData | null;
   published: boolean | null;
   published_at: string | null;
   published_scope: string | null;

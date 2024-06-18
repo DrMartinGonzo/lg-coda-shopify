@@ -3,17 +3,17 @@ import * as coda from '@codahq/packs-sdk';
 
 import { ArticleClient } from '../../Clients/RestClients';
 import { InvalidValueVisibleError } from '../../Errors/Errors';
-import { optionValues } from '../utils/coda-utils';
 import { OPTIONS_PUBLISHED_STATUS } from '../../constants/options-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { ArticleModel } from '../../models/rest/ArticleModel';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
+import { ArticleRow } from '../../schemas/CodaRows.types';
 import { ArticleSyncTableSchema } from '../../schemas/syncTable/ArticleSchema';
 import { SyncedArticles } from '../../sync/rest/SyncedArticles';
 import { assertAllowedValue, isNullishOrEmpty, parseOptionId } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
-import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction } from '../utils/coda-utils';
+import { makeDeleteRestResourceAction, makeFetchSingleRestResourceAction, optionValues } from '../utils/coda-utils';
 
 // #endregion
 
@@ -25,6 +25,7 @@ function createSyncedArticles(codaSyncParams: coda.ParamValues<coda.ParamDefs>, 
     model: ArticleModel,
     client: ArticleClient.createInstance(context),
     validateSyncParams,
+    validateSyncUpdate,
   });
 }
 
@@ -38,6 +39,16 @@ function validateSyncParams({ published_status }: { published_status?: string })
   }
   if (invalidMsg.length) {
     throw new InvalidValueVisibleError(invalidMsg.join(', '));
+  }
+}
+
+function validateSyncUpdate(prevRow: ArticleRow, newRow: ArticleRow) {
+  if (
+    !isNullishOrEmpty(newRow.image_alt_text) &&
+    isNullishOrEmpty(newRow.image_url) &&
+    isNullishOrEmpty(prevRow.image_url)
+  ) {
+    throw new coda.UserVisibleError("Article image url can't be empty if image_alt_text is set");
   }
 }
 // #endregion

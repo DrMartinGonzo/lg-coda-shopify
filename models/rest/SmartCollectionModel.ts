@@ -8,7 +8,7 @@ import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
 import { safeToString } from '../../utils/helpers';
-import { BaseApiDataRest } from './AbstractModelRest';
+import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
   BaseModelDataRestWithGraphQlMetafields,
@@ -31,10 +31,7 @@ export interface SmartCollectionApiData extends BaseApiDataRest {
   disjunctive: boolean | null;
   handle: string | null;
   id: number | null;
-  image: {
-    src?: string;
-    alt?: string;
-  } | null;
+  image: ImageApiData | null;
   published_at: string | null;
   published_scope: string | null;
   sort_order: string | null;

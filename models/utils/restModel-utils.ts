@@ -8,6 +8,7 @@ import {
   RestResourcesSingular,
 } from '../../constants/resourceNames-constants';
 import { getKeyFromValue } from '../../utils/helpers';
+import { ImageApiData } from '../rest/AbstractModelRest';
 
 // #endregion
 
@@ -23,4 +24,11 @@ export function pluralToSingular(plural: RestResourcePlural): RestResourceSingul
   const singular = RestResourcesSingular[resourceKey];
   if (plural === undefined) throw new NotFoundError('singular');
   return singular;
+}
+
+export function formatImageForRow(image: ImageApiData) {
+  return {
+    image_alt_text: image?.alt ?? null,
+    image_url: image?.src ?? null,
+  };
 }

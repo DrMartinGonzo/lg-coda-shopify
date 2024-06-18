@@ -5,6 +5,7 @@ import striptags from 'striptags';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { CustomCollectionModelData } from '../rest/CustomCollectionModel';
 import { SmartCollectionModelData } from '../rest/SmartCollectionModel';
+import { formatImageForRow } from './restModel-utils';
 
 // #endregion
 
@@ -19,7 +20,7 @@ export function collectionModelToCodaRow(
   context: coda.ExecutionContext,
   modelData: CollectionModelData
 ): CollectionRow {
-  const { metafields, ...data } = modelData;
+  const { metafields, image, ...data } = modelData;
 
   let obj: CollectionRow = {
     ...data,
@@ -27,12 +28,8 @@ export function collectionModelToCodaRow(
     body: striptags(data.body_html),
     published: !!data.published_at,
     disjunctive: data.disjunctive ?? false,
+    ...formatImageForRow(image),
   };
-
-  if (data.image) {
-    obj.image_alt_text = data.image.alt;
-    obj.image_url = data.image.src;
-  }
 
   if (metafields) {
     metafields.forEach((metafield) => {

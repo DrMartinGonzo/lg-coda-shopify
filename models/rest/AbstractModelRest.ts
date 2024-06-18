@@ -15,6 +15,10 @@ export interface BaseApiDataRest {
 export interface BaseModelDataRest extends BaseModelData {
   id: number;
 }
+export interface ImageApiData {
+  src?: string;
+  alt?: string;
+}
 // #endregion
 
 // TODO: implement readOnlyAttributes
