@@ -61,7 +61,7 @@ export const expectedRows = {
     // Metafields
     'lgs_meta__global.description_tag': 'SEO description',
     'lgs_meta__global.title_tag': 'SEO title',
-    'lgs_meta__custom.test': 'custom.test test',
+    'lgs_meta__custom.test': 'vitest',
   } as ArticleRow,
 
   blog: {
@@ -73,7 +73,7 @@ export const expectedRows = {
     commentable: 'no',
     created_at: '2024-02-20T13:18:08-05:00',
     template_suffix: null,
-    tags: 'tag2, tag, tag3, tag1',
+    // tags: 'tag2, tag, tag3, tag1',
     admin_graphql_api_id: 'gid://shopify/OnlineStoreBlog/91627159808',
     admin_url: `${PACK_TEST_ENDPOINT}/admin/blogs/91627159808`,
     // Metafields

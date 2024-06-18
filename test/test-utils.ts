@@ -71,3 +71,22 @@ export function getSyncContextWithDynamicUrl(dynamicUrl: string) {
   syncContext.sync = { dynamicUrl };
   return syncContext;
 }
+
+export async function formatMetafieldInput(fullkey: string, input: string): Promise<string> {
+  return executeFormulaFromPackDef(
+    pack,
+    'FormatMetafield',
+    [fullkey, input],
+    undefined,
+    undefined,
+    defaultExecuteOptions
+  );
+}
+
+export async function formatMetafieldSingleLineTextInput(value: string): Promise<string> {
+  return executeFormulaFromPackDef(pack, 'MetaSingleLineText', [value], undefined, undefined, defaultExecuteOptions);
+}
+
+export async function deleteRestResource(formulaName: string, id: number): Promise<string> {
+  return executeFormulaFromPackDef(pack, formulaName, [id], undefined, undefined, defaultExecuteOptions);
+}
