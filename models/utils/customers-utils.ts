@@ -1,6 +1,14 @@
 // #region Imports
 
+import { OPTIONS_CONSENT_STATE } from '../../constants/options-constants';
+import { CustomerConsentApiData } from '../rest/CustomerModel';
+
 // #endregion
+
+export function formatCustomerConsent(consent: CustomerConsentApiData): boolean {
+  if (!consent) return null;
+  return consent?.state === OPTIONS_CONSENT_STATE.subscribed.value;
+}
 
 /*
 function formatCustomerAddressForSchemaFromGraphQl(address) {

@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop, TranslatableContent, Translation
- * Last generated: 2024-06-12T06:30:55.951Z
+ * Last generated: 2024-06-18T20:35:13.238Z
  *
  */
 
@@ -841,19 +841,18 @@ export interface OrderRow extends BaseRow {
     }[];
     transactions?: {
       id: number;
-      label: string;
       amount?: number;
+      created_at?: string | number | Date;
       currency?: string;
-      createdAt?: string | number | Date;
-      errorCode?: string;
+      error_code?: string;
       gateway?: string;
       kind?: string;
-      parentTransactionId?: number;
-      paymentId?: string;
-      processedAt?: string | number | Date;
+      parent_id?: number;
+      payment_id?: string;
+      processed_at?: string | number | Date;
       status?: string;
       test?: boolean;
-      totalUnsettled?: number;
+      total_unsettled?: number;
     }[];
     user_id?: number;
   }[];
@@ -992,19 +991,18 @@ export interface OrderLineItemRow extends BaseRow {
  */
 export interface OrderTransactionRow extends BaseRow {
   id: number;
-  label: string;
   amount?: number;
+  created_at?: string | number | Date;
   currency?: string;
-  createdAt?: string | number | Date;
-  errorCode?: string;
+  error_code?: string;
   gateway?: string;
   kind?: string;
-  parentTransactionId?: number;
-  paymentId?: string;
-  processedAt?: string | number | Date;
+  parent_id?: number;
+  payment_id?: string;
+  processed_at?: string | number | Date;
   status?: string;
   test?: boolean;
-  totalUnsettled?: number;
+  total_unsettled?: number;
   accountNumber?: string;
   authorizationCode?: string;
   authorizationExpiresAt?: string | number | Date;
@@ -1015,7 +1013,6 @@ export interface OrderTransactionRow extends BaseRow {
   orderId?: number;
   parentTransaction?: {
     id: number;
-    label: string;
   };
   paymentDetails?: {
     avsResultCode?: string;

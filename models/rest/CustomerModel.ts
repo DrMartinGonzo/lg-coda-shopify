@@ -8,23 +8,35 @@ import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/res
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatCustomerAddress, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatCustomerConsent } from '../utils/customers-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
   BaseModelDataRestWithGraphQlMetafields,
 } from './AbstractModelRestWithMetafields';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
+import { AddressApiData } from './OrderModel';
 
 // #endregion
 
 // #region Types
+export interface CustomerAddressApiData extends Omit<AddressApiData, 'latitude' | 'longitude'> {
+  id: number;
+  customer_id: number;
+  default: boolean;
+}
+export interface CustomerConsentApiData {
+  state: string;
+  opt_in_level: string;
+}
+
 export interface CustomerApiData extends BaseApiDataRest {
-  addresses: { [key: string]: unknown }[] | null;
+  addresses: CustomerAddressApiData[] | null;
   created_at: string | null;
-  default_address: { [key: string]: unknown } | null;
+  default_address: CustomerAddressApiData | null;
   email: string | null;
-  email_marketing_consent: { state: string; opt_in_level: string } | null;
+  email_marketing_consent: CustomerConsentApiData | null;
   first_name: string | null;
   id: number | null;
   last_name: string | null;
@@ -106,7 +118,8 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): CustomerRow {
-    const { metafields, addresses, default_address, ...data } = this.data;
+    const { metafields, addresses, email_marketing_consent, sms_marketing_consent, default_address, ...data } =
+      this.data;
     const obj: CustomerRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/customers/${data.id}`,
@@ -117,39 +130,15 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
         email: data.email,
       }),
       total_spent: safeToFloat(data.total_spent),
+      default_address: formatCustomerAddress(default_address),
+      addresses: (addresses ?? []).map(formatCustomerAddress),
+      accepts_email_marketing: formatCustomerConsent(email_marketing_consent),
+      accepts_sms_marketing: formatCustomerConsent(sms_marketing_consent),
 
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
       // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
     };
-
-    if (default_address) {
-      // we don't want to keep customer_id prop in address
-      const { customer_id, ...defaultAddressWithoutCustomerId } = default_address;
-      obj.default_address = {
-        // keep typescript happy
-        id: defaultAddressWithoutCustomerId.id as number,
-        display: formatAddressDisplayName(default_address),
-        ...defaultAddressWithoutCustomerId,
-      };
-    }
-    if (addresses) {
-      obj.addresses = addresses.map((address) => {
-        const { customer_id, ...addressWithoutCustomerId } = address;
-        return {
-          // keep typescript happy
-          id: addressWithoutCustomerId.id as number,
-          display: formatAddressDisplayName(address),
-          ...addressWithoutCustomerId,
-        };
-      });
-    }
-    if (data.email_marketing_consent) {
-      obj.accepts_email_marketing = data.email_marketing_consent.state === OPTIONS_CONSENT_STATE.subscribed.value;
-    }
-    if (data.sms_marketing_consent) {
-      obj.accepts_sms_marketing = data.sms_marketing_consent.state === OPTIONS_CONSENT_STATE.subscribed.value;
-    }
 
     if (metafields) {
       metafields.forEach((metafield) => {

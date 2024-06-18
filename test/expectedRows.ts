@@ -723,7 +723,7 @@ export const expectedRows = {
     status: 'SUCCESS',
     test: true,
     amount: 50,
-    totalUnsettled: 0,
+    totalUnsettled: undefined,
   } as OrderTransactionRow,
 
   page: {

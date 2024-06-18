@@ -56,7 +56,7 @@ export class InventoryItemModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): InventoryItemRow {
-    const { data } = this;
+    const { variant, ...data } = this.data;
 
     let obj: Partial<InventoryItemRow> = {
       admin_graphql_api_id: data.id,
@@ -73,8 +73,8 @@ export class InventoryItemModel extends AbstractModelGraphQl {
       inventory_history_url: data.inventoryHistoryUrl,
     };
 
-    if (data.variant?.id) {
-      const variantId = graphQlGidToId(data.variant?.id);
+    if (variant?.id) {
+      const variantId = graphQlGidToId(variant?.id);
       obj.variant = formatProductVariantReference(variantId);
       obj.variant_id = variantId;
     }

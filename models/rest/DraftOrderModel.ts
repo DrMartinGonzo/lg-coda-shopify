@@ -9,7 +9,7 @@ import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema'
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatAddress, formatPersonDisplayValue } from '../utils/address-utils';
 import { formatOrderLineItemPropertyForDraftOrder } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
@@ -132,6 +132,8 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
       total_tax: safeToFloat(data.total_tax),
       line_items: data.line_items.map(formatOrderLineItemPropertyForDraftOrder),
       order_id,
+      billing_address: formatAddress(billing_address),
+      shipping_address: formatAddress(shipping_address),
     };
 
     if (customer) {
@@ -144,18 +146,6 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
           email: customer.email,
         })
       );
-    }
-    if (billing_address) {
-      obj.billing_address = {
-        display: formatAddressDisplayName(billing_address),
-        ...billing_address,
-      };
-    }
-    if (shipping_address) {
-      obj.shipping_address = {
-        display: formatAddressDisplayName(shipping_address),
-        ...shipping_address,
-      };
     }
     if (order_id) {
       obj.order = formatOrderReference(order_id);

@@ -11,16 +11,14 @@ import { DiscountCodeSchema } from '../../schemas/basic/DiscountCodeSchema';
 import { DutySchema } from '../../schemas/basic/DutySchema';
 import { FulfillmentSchema } from '../../schemas/basic/FulfillmentSchema';
 import { OrderAdjustmentSchema } from '../../schemas/basic/OrderAdjustmentSchema';
-import { OrderTransactionSchema } from '../../schemas/basic/OrderTransactionSchema';
 import { PriceSetSchema } from '../../schemas/basic/PriceSetSchema';
-import { RefundLineItemSchema } from '../../schemas/basic/RefundLineItemSchema';
 import { RefundSchema } from '../../schemas/basic/RefundSchema';
 import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
-import { formatOrderLineItemPropertyForOrder } from '../utils/orders-utils';
+import { formatAddress, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatOrderLineItemPropertyForOrder, formatRefundProperty } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -33,6 +31,95 @@ import { OrderLineItemApiData } from './OrderLineItemModel';
 // #endregion
 
 // #region Types
+export interface AddressApiData {
+  address1?: string;
+  address2?: string;
+  city?: string;
+  company?: any;
+  country?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  province?: string;
+  zip?: string;
+  name?: string;
+  province_code?: string;
+  country_code?: string;
+  latitude?: string;
+  longitude?: string;
+}
+
+export interface TransactionApiData {
+  amount: string;
+  authorization: string;
+  authorization_expires_at: string;
+  created_at: string;
+  currency: string;
+  device_id: number;
+  error_code: string;
+  extended_authorization_attributes: ExtendedAuthorizationAttributes;
+  gateway: string;
+  id: number;
+  kind: string;
+  location_id: {
+    id: number;
+  };
+  message: string;
+  order_id: number;
+  payment_details: PaymentDetailsApiData;
+  payment_id: string;
+  parent_id: number;
+  payments_refund_attributes: PaymentsRefundAttributes;
+  processed_at: string;
+  receipt: Receipt;
+  source_name: string;
+  status: string;
+  total_unsettled_set: PriceSetApiData;
+  test: boolean;
+  user_id: number;
+  currency_exchange_adjustment: CurrencyExchangeAdjustment;
+}
+
+interface PaymentsRefundAttributes {
+  status: string;
+  acquirer_reference_number: string;
+}
+
+interface ExtendedAuthorizationAttributes {
+  standard_authorization_expires_at: string;
+  extended_authorization_expires_at: string;
+}
+
+interface PaymentDetailsApiData {
+  credit_card_bin: string;
+  avs_result_code: string;
+  cvv_result_code: string;
+  credit_card_number: string;
+  credit_card_company: string;
+  credit_card_name: string;
+  credit_card_wallet: string;
+  credit_card_expiration_month: number;
+  credit_card_expiration_year: number;
+  buyer_action_info: BuyerActionInfo;
+  payment_method_name: string;
+}
+interface BuyerActionInfo {
+  multibanco: {
+    Entity: string;
+    Reference: string;
+  };
+}
+
+interface Receipt {}
+
+interface CurrencyExchangeAdjustment {
+  id: number;
+  adjustment: string;
+  original_amount: string;
+  final_amount: string;
+  currency: string;
+}
+
 type CompanyApiData = TypeFromCodaSchema<typeof CompanySchema>;
 
 type DiscountCodeApiData = TypeFromCodaSchema<typeof DiscountCodeSchema>;
@@ -47,13 +134,22 @@ type OrderAdjustmentApiData = TypeFromCodaSchema<typeof OrderAdjustmentSchema>;
 
 export type PriceSetApiData = TypeFromCodaSchema<typeof PriceSetSchema>;
 
-type RefundLineItemApiData = TypeFromCodaSchema<typeof RefundLineItemSchema>;
-
 export type ShippingLineApiData = TypeFromCodaSchema<typeof ShippingLineSchema>;
 
-type TransactionApiData = TypeFromCodaSchema<typeof OrderTransactionSchema>;
+export interface RefundLineItemApiData {
+  id: number;
+  line_item: OrderLineItemApiData;
+  line_item_id: number;
+  quantity: number;
+  location_id: number;
+  restock_type: string;
+  subtotal: number;
+  total_tax: number;
+  subtotal_set: PriceSetApiData;
+  total_tax_set: PriceSetApiData;
+}
 
-type RefundApiData = TypeFromCodaSchema<typeof RefundSchema> & {
+export type RefundApiData = TypeFromCodaSchema<typeof RefundSchema> & {
   duties: DutyApiData[] | null;
   transactions: TransactionApiData[] | null;
   order_adjustments: OrderAdjustmentApiData[] | null;
@@ -64,7 +160,7 @@ export interface OrderApiData extends BaseApiDataRest {
   admin_graphql_api_id: string | null;
   line_items: OrderLineItemApiData[] | null;
   app_id: number | null;
-  billing_address: { [key: string]: unknown } | null;
+  billing_address: AddressApiData | null;
   browser_ip: string | null;
   buyer_accepts_marketing: boolean | null;
   cancel_reason: string | null;
@@ -113,7 +209,7 @@ export interface OrderApiData extends BaseApiDataRest {
   processed_at: string | null;
   referring_site: string | null;
   refunds: RefundApiData[] | null;
-  shipping_address: { [key: string]: unknown } | null;
+  shipping_address: AddressApiData | null;
   shipping_lines: ShippingLineApiData[] | null;
   source_identifier: string | null;
   source_name: string | null;
@@ -178,8 +274,11 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       discount_codes: row.discount_codes as DiscountCodeApiData[],
       fulfillments: row.fulfillments as FulfillmentApiData[],
       line_items: row.line_items as OrderLineItemApiData[],
-      refunds: row.refunds as RefundApiData[],
+      refunds: row.refunds as unknown as RefundApiData[],
       shipping_lines: row.shipping_lines as ShippingLineApiData[],
+
+      billing_address: row.billing_address as unknown as AddressApiData,
+      shipping_address: row.shipping_address as unknown as AddressApiData,
     };
 
     return this.createInstance(context, data);
@@ -225,19 +324,26 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
     const obj: OrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/orders/${data.id}`,
-      current_total_discounts: safeToFloat(data.current_total_discounts),
-      current_total_price: safeToFloat(data.current_total_price),
       current_subtotal_price: safeToFloat(data.current_subtotal_price),
+      current_total_additional_fees: safeToFloat(current_total_additional_fees_set?.shop_money?.amount),
+      current_total_discounts: safeToFloat(data.current_total_discounts),
+      current_total_duties: safeToFloat(current_total_duties_set?.shop_money?.amount),
+      current_total_price: safeToFloat(data.current_total_price),
       current_total_tax: safeToFloat(data.current_total_tax),
+      fulfillments: data.fulfillments,
+      line_items: data.line_items.map(formatOrderLineItemPropertyForOrder),
+      original_total_additional_fees: safeToFloat(original_total_additional_fees_set?.shop_money?.amount),
+      original_total_duties: safeToFloat(original_total_duties_set?.shop_money?.amount),
       subtotal_price: safeToFloat(data.subtotal_price),
       total_discounts: safeToFloat(data.total_discounts),
       total_line_items_price: safeToFloat(data.total_line_items_price),
       total_outstanding: safeToFloat(data.total_outstanding),
       total_price: safeToFloat(data.total_price),
+      total_shipping_price: safeToFloat(total_shipping_price_set?.shop_money?.amount),
       total_tax: safeToFloat(data.total_tax),
       total_tip_received: safeToFloat(data.total_tip_received),
-      fulfillments: data.fulfillments,
-      line_items: data.line_items.map(formatOrderLineItemPropertyForOrder),
+      billing_address: formatAddress(billing_address),
+      shipping_address: formatAddress(shipping_address),
     };
 
     if (customer) {
@@ -251,61 +357,13 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
         })
       );
     }
-    if (billing_address) {
-      obj.billing_address = {
-        display: formatAddressDisplayName(billing_address),
-        ...billing_address,
-      };
-    }
-    if (shipping_address) {
-      obj.shipping_address = {
-        display: formatAddressDisplayName(shipping_address),
-        ...shipping_address,
-      };
-    }
-    if (current_total_duties_set) {
-      obj.current_total_duties = safeToFloat(current_total_duties_set?.shop_money?.amount);
-    }
-    if (current_total_additional_fees_set) {
-      obj.current_total_additional_fees = safeToFloat(current_total_additional_fees_set?.shop_money?.amount);
-    }
-    if (original_total_additional_fees_set) {
-      obj.original_total_additional_fees = safeToFloat(original_total_additional_fees_set?.shop_money?.amount);
-    }
-    if (original_total_duties_set) {
-      obj.original_total_duties = safeToFloat(original_total_duties_set?.shop_money?.amount);
-    }
-    if (total_shipping_price_set) {
-      obj.total_shipping_price = safeToFloat(total_shipping_price_set?.shop_money?.amount);
-    }
+
     if (client_details) {
       obj.browser_user_agent = client_details?.user_agent as string;
       obj.browser_accept_language = client_details?.accept_language as string;
     }
     if (refunds) {
-      obj.refunds = refunds.map((refund) => {
-        return {
-          ...refund,
-          transactions: refund.transactions.map((transaction) => {
-            return {
-              id: transaction.id,
-              label: transaction.label,
-              amount: transaction.amount,
-              createdAt: transaction.created_at,
-              currency: transaction.currency,
-              errorCode: transaction.error_code,
-              gateway: transaction.gateway,
-              kind: transaction.kind,
-              parentTransactionId: transaction.parent_id,
-              paymentId: transaction.payment_id,
-              processedAt: transaction.processed_at,
-              status: transaction.status,
-              test: transaction.test,
-              totalUnsettled: transaction.total_unsettled_set?.shop_money?.amount,
-            };
-          }),
-        };
-      });
+      obj.refunds = refunds.map(formatRefundProperty);
     }
     // if (data.line_items) {
     //   obj.line_items = data.line_items.map((line_item) => {

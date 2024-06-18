@@ -115,42 +115,37 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): ProductVariantRow {
-    const { metafields, ...data } = this.data;
+    const { image, inventoryItem, metafields, product, selectedOptions, ...data } = this.data;
 
-    const productId = graphQlGidToId(data.product?.id);
-    const inventoryItemId = graphQlGidToId(data.inventoryItem?.id);
+    const productId = graphQlGidToId(product?.id);
+    const inventoryItemId = graphQlGidToId(inventoryItem?.id);
 
     let obj: ProductVariantRow = {
+      ...data,
+
       admin_graphql_api_id: this.graphQlGid,
-      barcode: data.barcode,
       compare_at_price: safeToFloat(data.compareAtPrice),
       created_at: data.createdAt,
       displayTitle: data.displayName,
       id: this.restId,
-      image: data.image?.url,
+      image: image?.url,
       inventory_policy: data.inventoryPolicy,
       inventory_quantity: data.inventoryQuantity,
-      position: data.position,
       price: safeToFloat(data.price),
-      sku: data.sku,
       tax_code: data.taxCode,
-      taxable: data.taxable,
-      title: data.title,
       updated_at: data.updatedAt,
+      inventory_item_id: inventoryItemId,
     };
 
-    if (data.selectedOptions) {
-      obj.option1 = data.selectedOptions[0]?.value ?? null;
-      obj.option2 = data.selectedOptions[1]?.value ?? null;
-      obj.option3 = data.selectedOptions[2]?.value ?? null;
+    if (selectedOptions) {
+      obj.option1 = selectedOptions[0]?.value ?? null;
+      obj.option2 = selectedOptions[1]?.value ?? null;
+      obj.option3 = selectedOptions[2]?.value ?? null;
     }
 
-    if (inventoryItemId) {
-      obj.inventory_item_id = inventoryItemId;
-    }
-    if (data.inventoryItem?.measurement?.weight) {
-      obj.weight = data.inventoryItem.measurement.weight?.value;
-      obj.weight_unit = unitToShortName(data.inventoryItem.measurement.weight?.unit);
+    if (inventoryItem?.measurement?.weight) {
+      obj.weight = inventoryItem.measurement.weight?.value;
+      obj.weight_unit = unitToShortName(inventoryItem.measurement.weight?.unit);
       switch (obj.weight_unit) {
         case weightUnitsMap.GRAMS:
           obj.grams = obj.weight;
@@ -173,8 +168,8 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       obj.product = formatProductReference(productId);
     }
 
-    if (data.product?.onlineStoreUrl) {
-      obj.storeUrl = `${data.product.onlineStoreUrl}?variant=${this.restId}`;
+    if (product?.onlineStoreUrl) {
+      obj.storeUrl = `${product.onlineStoreUrl}?variant=${this.restId}`;
     }
 
     if (metafields) {

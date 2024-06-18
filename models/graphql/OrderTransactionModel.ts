@@ -45,7 +45,7 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): OrderTransactionRow {
-    const { parentTransaction, ...data } = this.data;
+    const { amountSet, parentTransaction, totalUnsettledSet, ...data } = this.data;
     if (data.parentOrder === undefined) {
       throw new Error('parentOrder is undefined');
     }
@@ -64,7 +64,7 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
       authorizationCode: data.authorizationCode,
       authorizationExpiresAt: data.authorizationExpiresAt,
       createdAt: data.createdAt,
-      currency: data.amountSet?.presentmentMoney?.currencyCode,
+      currency: amountSet?.presentmentMoney?.currencyCode,
       errorCode: data.errorCode,
       gateway: data.gateway,
       kind: data.kind,
@@ -77,8 +77,8 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
       settlementCurrencyRate: data.settlementCurrencyRate,
       status: data.status,
       test: data.test,
-      amount: safeToFloat(data.amountSet?.shopMoney?.amount),
-      totalUnsettled: safeToFloat(data.totalUnsettledSet?.shopMoney?.amount),
+      amount: safeToFloat(amountSet?.shopMoney?.amount),
+      totalUnsettled: safeToFloat(totalUnsettledSet?.shopMoney?.amount),
     };
 
     if (parentTransaction?.id) {

@@ -1,3 +1,31 @@
+// #region Imports
+
+import { safeToFloat } from '../../utils/helpers';
+import { CustomerAddressApiData } from '../rest/CustomerModel';
+import { AddressApiData } from '../rest/OrderModel';
+// #endregion
+
+export function formatAddress(data: AddressApiData) {
+  if (!data) return null;
+  const { latitude, longitude, ...address } = data;
+  return {
+    display: formatAddressDisplayName(address),
+    latitude: latitude ? safeToFloat(latitude) : null,
+    longitude: longitude ? safeToFloat(longitude) : null,
+    ...address,
+  };
+}
+
+export function formatCustomerAddress(data: CustomerAddressApiData) {
+  if (!data) return null;
+  // we don't want to keep customer_id prop in address
+  const { customer_id, ...addressWithoutCustomerId } = data;
+  return {
+    display: formatAddressDisplayName(addressWithoutCustomerId),
+    ...addressWithoutCustomerId,
+  };
+}
+
 export function formatPersonDisplayValue(person: {
   id: string | number;
   firstName?: string;
@@ -12,7 +40,7 @@ export function formatPersonDisplayValue(person: {
   return person.id.toString();
 }
 
-export function formatAddressDisplayName(address, withName = true, withCompany = true) {
+function formatAddressDisplayName(address, withName = true, withCompany = true) {
   const parts = [
     withName ? [address?.first_name, address?.last_name].filter((p) => p && p !== '').join(' ') : undefined,
     withCompany ? address?.company : undefined,

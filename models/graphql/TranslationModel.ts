@@ -269,24 +269,19 @@ export class TranslationModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): TranslationRow {
-    const { data, fullId } = this;
+    const { fullId } = this;
+    const { resourceGid, ...data } = this.data;
 
     let obj: Partial<TranslationRow> = {
-      key: data.key,
-      locale: data.locale,
-      outdated: data.outdated,
-      updated_at: data.updatedAt,
-      translatedValue: data.translatedValue,
+      ...data,
     };
 
     if (fullId) {
       obj.id = fullId;
-      obj.resourceId = graphQlGidToId(data.resourceGid);
-      obj.resourceType = toConstantCase(graphQlGidToResourceName(data.resourceGid));
+      obj.resourceId = graphQlGidToId(resourceGid);
+      obj.resourceType = toConstantCase(graphQlGidToResourceName(resourceGid));
     }
-    if (data.originalValue) {
-      obj.originalValue = data.originalValue;
-    }
+
     // if (data.resourceType) {
     //   obj.resourceType = data.resourceType;
 
@@ -298,9 +293,6 @@ export class TranslationModel extends AbstractModelGraphQl {
     //     }
     //   } catch (error) {}
     // }
-    if (data.type) {
-      obj.type = data.type;
-    }
 
     // if (data.resourceType && data.resourceGid) {
     //   obj.admin_url = `${

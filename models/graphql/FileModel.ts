@@ -5,6 +5,7 @@ import { ResultOf } from '../../graphql/utils/graphql-utils';
 import { FileClient } from '../../Clients/GraphQlClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlFileTypes } from '../../constants/resourceNames-constants';
 import { FULL_SIZE } from '../../constants/strings-constants';
 import {
   fileFieldsFragment,
@@ -14,7 +15,6 @@ import {
 } from '../../graphql/files-graphql';
 import { FileRow } from '../../schemas/CodaRows.types';
 import { isNullishOrEmpty } from '../../utils/helpers';
-import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
@@ -26,7 +26,7 @@ export type FileApiData = BaseApiDataGraphQl &
   ResultOf<typeof videoFieldsFragment> &
   ResultOf<typeof mediaImageFieldsFragment>;
 
-export type FileModelData = BaseModelDataGraphQl & FileApiData & ModelWithDeletedFlag;
+export type FileModelData = BaseModelDataGraphQl & FileApiData;
 // #endregion
 
 export class FileModel extends AbstractModelGraphQl {
@@ -37,7 +37,7 @@ export class FileModel extends AbstractModelGraphQl {
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: FileRow) {
     let data: Partial<FileModelData> = {
-      __typename: row.type as any,
+      __typename: row.type as GraphQlFileTypes,
       id: row.id,
       alt: row.alt,
       createdAt: row.createdAt,
@@ -116,42 +116,40 @@ export class FileModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): FileRow {
-    const { data } = this;
+    const { image, originalFileSize, duration, filename, originalSource, preview, mimeType, url, __typename, ...data } =
+      this.data;
 
-    let obj: Partial<FileRow> = {
-      id: data.id,
-      alt: data.alt,
-      createdAt: data.createdAt,
+    let obj: FileRow = {
+      ...data,
       name: '',
-      preview: FileModel.getThumbnailUrl(data.preview?.image.url, this.previewSize),
-      type: data.__typename,
-      updatedAt: data.updatedAt,
+      preview: FileModel.getThumbnailUrl(preview?.image.url, this.previewSize),
+      type: __typename,
     };
 
-    if (data.__typename === 'GenericFile') {
-      obj.fileSize = data.originalFileSize;
-      obj.mimeType = data.mimeType;
-      obj.name = FileModel.getNameFromUrl(data.url);
-      obj.url = data.url;
+    if (__typename === 'GenericFile') {
+      obj.fileSize = originalFileSize;
+      obj.mimeType = mimeType;
+      obj.name = FileModel.getNameFromUrl(url);
+      obj.url = url;
     }
 
-    if (data.__typename === 'MediaImage') {
-      obj.fileSize = data.originalSource?.fileSize;
-      obj.height = data.image?.height;
-      obj.mimeType = data.mimeType;
-      obj.name = FileModel.getNameFromUrl(data.image.url);
-      obj.url = data.image?.url;
-      obj.width = data.image?.width;
+    if (__typename === 'MediaImage') {
+      obj.fileSize = originalSource?.fileSize;
+      obj.height = image?.height;
+      obj.mimeType = mimeType;
+      obj.name = FileModel.getNameFromUrl(image?.url);
+      obj.url = image?.url;
+      obj.width = image?.width;
     }
 
-    if (data.__typename === 'Video') {
-      obj.duration = data.duration;
-      obj.fileSize = data.originalSource?.fileSize;
-      obj.height = data.originalSource?.height;
-      obj.mimeType = data.originalSource?.mimeType;
-      obj.name = data.filename;
-      obj.url = data.originalSource?.url;
-      obj.width = data.originalSource?.width;
+    if (__typename === 'Video') {
+      obj.duration = duration;
+      obj.fileSize = originalSource?.fileSize;
+      obj.height = originalSource?.height;
+      obj.mimeType = originalSource?.mimeType;
+      obj.name = filename;
+      obj.url = originalSource?.url;
+      obj.width = originalSource?.width;
     }
 
     return obj as FileRow;

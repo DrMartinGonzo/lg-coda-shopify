@@ -82,7 +82,7 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): ProductRow {
-    const { metafields, ...data } = this.data;
+    const { featuredImage, images, metafields, options, tags, ...data } = this.data;
 
     let obj: ProductRow = {
       id: this.restId,
@@ -98,19 +98,19 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields {
       updated_at: data.updatedAt,
       handle: data.handle,
       product_type: data.productType,
-      tags: data.tags ? data.tags.join(', ') : undefined,
+      tags: tags ? tags.join(', ') : undefined,
       template_suffix: data.templateSuffix,
       vendor: data.vendor,
       storeUrl: data.onlineStoreUrl,
-      featuredImage: data.featuredImage ? data.featuredImage.url : undefined,
+      featuredImage: featuredImage?.url,
       giftCard: data.isGiftCard,
     };
 
-    if (data.options && Array.isArray(data.options)) {
-      obj.options = data.options.map((option) => option.name).join(',');
+    if (options && Array.isArray(options)) {
+      obj.options = options.map((option) => option.name).join(',');
     }
-    if (data.images?.nodes && Array.isArray(data.images.nodes)) {
-      obj.images = data.images.nodes.map((image) => image.url);
+    if (images?.nodes && Array.isArray(images.nodes)) {
+      obj.images = images.nodes.map((image) => image.url);
     }
 
     if (metafields) {

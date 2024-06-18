@@ -85,7 +85,7 @@ export class MetaobjectModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): MetaobjectRow {
-    const { data } = this;
+    const { fields, ...data } = this.data;
 
     let obj: Partial<MetaobjectRow> = {
       id: this.restId,
@@ -96,12 +96,8 @@ export class MetaobjectModel extends AbstractModelGraphQl {
       updatedAt: data.updatedAt,
     };
 
-    if (data.capabilities?.publishable?.status) {
-      obj.status = data.capabilities.publishable.status;
-    }
-
-    if (data.fields.length) {
-      data.fields
+    if (fields && fields.length) {
+      fields
         .filter((field) => shouldUpdateSyncTableMetafieldValue(field.type))
         .forEach((field) => {
           obj[field.key] = formatMetaFieldValueForSchema({

@@ -216,9 +216,9 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(includeHelperColumns = true): MetafieldRow {
-    const { data } = this;
-    const ownerId = graphQlGidToId(data.parentNode?.id);
-    const parentOwnerId = graphQlGidToId(data.parentNode?.parentOwner?.id);
+    const { definition, parentNode, ...data } = this.data;
+    const ownerId = graphQlGidToId(parentNode?.id);
+    const parentOwnerId = graphQlGidToId(parentNode?.parentOwner?.id);
 
     let obj: Partial<MetafieldRow> = {
       label: this.fullKey + (data.isDeletedFlag ? METAFIELD_DELETED_SUFFIX : ''),
@@ -252,15 +252,15 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
         id: ownerId,
         parentId: parentOwnerId,
         singular: ownerTypeToRestOwnerName(data.ownerType as MetafieldOwnerType),
-        hasMetafieldDefinition: !!data.definition?.id,
+        hasMetafieldDefinition: !!definition?.id,
       });
       if (maybeAdminUrl) {
         obj.admin_url = maybeAdminUrl;
       }
     }
 
-    if (data.definition?.id && !data.definition.id.startsWith(PREFIX_FAKE)) {
-      const definitionId = graphQlGidToId(data.definition.id);
+    if (definition?.id && !definition.id.startsWith(PREFIX_FAKE)) {
+      const definitionId = graphQlGidToId(definition.id);
       obj.definition_id = definitionId;
       obj.definition = formatMetafieldDefinitionReference(definitionId);
     }
