@@ -23,6 +23,7 @@ export const orderLineItemDutiesProp = {
   description: 'A list of duty objects, each containing information about a duty on the line item.',
 } as coda.ArraySchema<typeof DutySchema> & coda.ObjectSchemaProperty;
 
+// TODO: support applied_discount ?
 export const OrderLineItemSchema = coda.makeObjectSchema({
   properties: {
     id: PROPS.makeRequiredIdNumberProp('line item'),

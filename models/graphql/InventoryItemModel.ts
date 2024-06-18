@@ -10,6 +10,7 @@ import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
+import { safeToFloat } from '../../utils/helpers';
 
 // #endregion
 
@@ -60,7 +61,7 @@ export class InventoryItemModel extends AbstractModelGraphQl {
     let obj: Partial<InventoryItemRow> = {
       admin_graphql_api_id: data.id,
       id: graphQlGidToId(data.id),
-      cost: data.unitCost?.amount ? parseFloat(data.unitCost?.amount) : undefined,
+      cost: safeToFloat(data.unitCost?.amount),
       country_code_of_origin: data.countryCodeOfOrigin,
       created_at: data.createdAt,
       harmonized_system_code: data.harmonizedSystemCode,

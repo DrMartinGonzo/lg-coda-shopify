@@ -8,8 +8,9 @@ import { DraftOrderRow } from '../../schemas/CodaRows.types';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { safeToString } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatOrderLineItemPropertyForDraftOrder } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -126,10 +127,10 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
     const obj: DraftOrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/draft_orders/${data.id}`,
-      subtotal_price: parseFloat(data.subtotal_price),
-      total_price: parseFloat(data.total_price),
-      total_tax: parseFloat(data.total_tax),
-      line_items: data.line_items,
+      subtotal_price: safeToFloat(data.subtotal_price),
+      total_price: safeToFloat(data.total_price),
+      total_tax: safeToFloat(data.total_tax),
+      line_items: data.line_items.map(formatOrderLineItemPropertyForDraftOrder),
       order_id,
     };
 

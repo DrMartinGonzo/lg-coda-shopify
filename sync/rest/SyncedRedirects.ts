@@ -10,6 +10,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncRedirectsParams = CodaSyncParams<typeof Sync_Redirects>;
+// #endregion
+
 export class SyncedRedirects extends AbstractSyncedRestResources<RedirectModel> {
   public static schemaDependencies: FieldDependency<typeof RedirectSyncTableSchema.properties>[] = [
     {
@@ -25,7 +29,7 @@ export class SyncedRedirects extends AbstractSyncedRestResources<RedirectModel> 
   public static staticSchema = RedirectSyncTableSchema;
 
   public get codaParamsMap() {
-    const [path, target] = this.codaParams as CodaSyncParams<typeof Sync_Redirects>;
+    const [path, target] = this.codaParams as SyncRedirectsParams;
     return {
       path,
       target,

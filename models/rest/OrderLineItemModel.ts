@@ -8,13 +8,15 @@ import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
-import { DutyApiData } from './OrderModel';
+import { DutyApiData, PriceSetApiData } from './OrderModel';
 
 // #endregion
 
 // #region Types
 export interface OrderLineItemApiData extends BaseApiDataRest, TypeFromCodaSchema<typeof OrderLineItemSchema> {
   duties: DutyApiData[] | null;
+  price_set: PriceSetApiData;
+  total_discount_set: PriceSetApiData;
 }
 
 export interface OrderLineItemModelData extends OrderLineItemApiData {
@@ -38,7 +40,6 @@ export class OrderLineItemModel extends AbstractModelRest {
     const { data } = this;
     const obj: OrderLineItemRow = {
       ...data,
-      order_id: data.order_id,
       order: formatOrderReference(data.order_id, data.order_name),
       variant: formatProductVariantReference(data.variant_id, data.variant_title),
     };

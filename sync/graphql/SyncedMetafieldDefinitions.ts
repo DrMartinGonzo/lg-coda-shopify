@@ -10,11 +10,15 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncMetafieldDefinitionsParams = CodaSyncParams<typeof Sync_MetafieldDefinitions>;
+// #endregion
+
 export class SyncedMetafieldDefinitions extends AbstractSyncedGraphQlResources<MetafieldDefinitionModel> {
   public static staticSchema = MetafieldDefinitionSyncTableSchema;
 
   public get codaParamsMap() {
-    const [ownerType] = this.codaParams as CodaSyncParams<typeof Sync_MetafieldDefinitions>;
+    const [ownerType] = this.codaParams as SyncMetafieldDefinitionsParams;
     return {
       ownerType,
     };

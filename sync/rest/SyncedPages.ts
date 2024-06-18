@@ -14,6 +14,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncPagesParams = CodaSyncParams<typeof Sync_Pages>;
+// #endregion
+
 export class SyncedPages extends AbstractSyncedRestResources<PageModel> {
   public static schemaDependencies: FieldDependency<typeof PageSyncTableSchema.properties>[] = [
     {
@@ -37,7 +41,7 @@ export class SyncedPages extends AbstractSyncedRestResources<PageModel> {
   public static staticSchema = PageSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Pages>;
+    const [syncMetafields] = codaSyncParams as SyncPagesParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Page, context);
@@ -49,7 +53,7 @@ export class SyncedPages extends AbstractSyncedRestResources<PageModel> {
 
   public get codaParamsMap() {
     const [syncMetafields, createdAtRange, updatedAtRange, publishedAtRange, handle, publishedStatus, sinceId, title] =
-      this.codaParams as CodaSyncParams<typeof Sync_Pages>;
+      this.codaParams as SyncPagesParams;
     return {
       syncMetafields,
       createdAtRange,

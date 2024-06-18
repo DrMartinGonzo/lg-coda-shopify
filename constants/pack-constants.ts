@@ -5,6 +5,7 @@ import { SupportedResource } from './resourceNames-constants';
 
 const PACK_PREFIX_KEY = 'lgs_';
 export const CUSTOM_FIELD_PREFIX_KEY = `${PACK_PREFIX_KEY}meta__`;
+export const PACK_TEST_ENDPOINT = 'https://coda-pack-test.myshopify.com';
 
 /**
  * Coda Identities. Also used as diplay name

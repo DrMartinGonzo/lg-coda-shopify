@@ -231,7 +231,7 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         ...PROPS.NUMBER,
         // codaType: coda.ValueHintType.Scale,
-        // maximum: maximumStr ? parseFloat(maximumStr) : undefined,
+        // maximum: safeToFloat(maximumStr),
         mutable: true,
       };
     case METAFIELD_TYPES.list_rating:

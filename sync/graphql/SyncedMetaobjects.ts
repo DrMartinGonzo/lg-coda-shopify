@@ -6,6 +6,7 @@ import { graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-util
 
 import { ListMetaobjectsArgs, MetaobjectDefinitionClient, MetaobjectFieldsArgs } from '../../Clients/GraphQlClients';
 import { ShopClient } from '../../Clients/RestClients';
+import { Sync_Metaobjects } from '../../coda/setup/metaobjects-setup';
 import { optionValues } from '../../coda/utils/coda-utils';
 import { CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { METAFIELD_TYPES, MetafieldType } from '../../constants/metafields-constants';
@@ -20,9 +21,13 @@ import { getObjectSchemaRowKeys, mapMetaFieldToSchemaProperty } from '../../sche
 import { MetaObjectSyncTableBaseSchema } from '../../schemas/syncTable/MetaObjectSchema';
 import { CurrencyCode } from '../../types/admin.types';
 import { deepCopy } from '../../utils/helpers';
-import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { CodaSyncParams, GetSchemaArgs } from '../AbstractSyncedResources';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
 
+// #endregion
+
+// #region Types
+export type SyncMetaobjectsParams = CodaSyncParams<typeof Sync_Metaobjects>;
 // #endregion
 
 export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<MetaobjectModel> {
@@ -79,7 +84,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
     return augmentedSchema;
   }
 
-  public static encodeDynamicUrl(metaobjectDefinition: MetaobjectDefinitionApiData): string {
+  public static encodeDynamicUrl(metaobjectDefinition: Pick<MetaobjectDefinitionApiData, 'id'>): string {
     return graphQlGidToId(metaobjectDefinition.id).toString();
   }
 
@@ -96,6 +101,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
   }
 
   public get codaParamsMap() {
+    // const [] = this.codaParams as SyncMetaobjectsParams;
     return {};
   }
 

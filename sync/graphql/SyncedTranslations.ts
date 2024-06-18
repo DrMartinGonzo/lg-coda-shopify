@@ -11,6 +11,10 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncTranslationsParams = CodaSyncParams<typeof Sync_Translations>;
+// #endregion
+
 export class SyncedTranslations extends AbstractSyncedGraphQlResources<TranslationModel> {
   public static staticSchema = TranslationSyncTableSchema;
 
@@ -40,7 +44,7 @@ export class SyncedTranslations extends AbstractSyncedGraphQlResources<Translati
   }
 
   public get codaParamsMap() {
-    const [locale, resourceType] = this.codaParams as CodaSyncParams<typeof Sync_Translations>;
+    const [locale, resourceType] = this.codaParams as SyncTranslationsParams;
     return { locale, resourceType };
   }
 

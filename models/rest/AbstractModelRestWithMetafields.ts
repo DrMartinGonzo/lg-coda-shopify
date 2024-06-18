@@ -43,7 +43,7 @@ abstract class AbstractModelRestWithMetafields extends AbstractModelRest {
     const apiData = this.getApiData<BaseModelDataRestWithMetafields>();
     const metafieldInstances = this.data.metafields;
 
-    const isUpdate = this.data[this.primaryKey];
+    const isUpdate = !!this.data[this.primaryKey];
     if (isUpdate) {
       /** Il faut séparer les metafields de l'objet d'origine pour ne pas les
        * sauvegarder lors d'une update. Ils seront sauvegardés séparément */

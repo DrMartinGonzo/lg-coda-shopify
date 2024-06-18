@@ -43,7 +43,7 @@ export abstract class AbstractModelRest extends AbstractModel {
 
   public async save(): Promise<void> {
     let response: RestRequestReturn<BaseApiDataRest>;
-    const isUpdate = this.data[this.primaryKey];
+    const isUpdate = !!this.data[this.primaryKey];
     const apiData = this.getApiData();
     if (isUpdate) {
       response = await this.client.update(apiData);

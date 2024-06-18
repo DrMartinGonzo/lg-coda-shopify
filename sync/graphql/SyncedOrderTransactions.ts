@@ -12,6 +12,10 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncOrderTransactionsParams = CodaSyncParams<typeof Sync_OrderTransactions>;
+// #endregion
+
 export class SyncedOrderTransactions extends AbstractSyncedGraphQlResources<OrderTransactionModel> {
   public static staticSchema = OrderTransactionSyncTableSchema;
 
@@ -31,7 +35,7 @@ export class SyncedOrderTransactions extends AbstractSyncedGraphQlResources<Orde
       orderFulfillmentStatus,
       orderStatus,
       gateways,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_OrderTransactions>;
+    ] = this.codaParams as SyncOrderTransactionsParams;
     return {
       orderCreatedAtRange,
       orderUpdatedAtRange,

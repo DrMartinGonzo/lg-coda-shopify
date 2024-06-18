@@ -10,11 +10,15 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncInventoryLevelsParams = CodaSyncParams<typeof Sync_InventoryLevels>;
+// #endregion
+
 export class SyncedInventoryLevels extends AbstractSyncedRestResources<InventoryLevelModel> {
   public static staticSchema = InventoryLevelSyncTableSchema;
 
   public get codaParamsMap() {
-    const [locationIds, updatedAtMin] = this.codaParams as CodaSyncParams<typeof Sync_InventoryLevels>;
+    const [locationIds, updatedAtMin] = this.codaParams as SyncInventoryLevelsParams;
     return {
       locationIds,
       updatedAtMin,

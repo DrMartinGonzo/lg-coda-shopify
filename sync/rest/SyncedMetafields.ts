@@ -17,6 +17,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncMetafieldsParams = CodaSyncParams<typeof Sync_Metafields>;
+// #endregion
+
 export class SyncedMetafields<
   OwnerT extends AbstractModelRestWithRestMetafields
 > extends AbstractSyncedRestResources<OwnerT> {
@@ -34,7 +38,7 @@ export class SyncedMetafields<
   }
 
   public get codaParamsMap() {
-    const [metafieldKeys] = this.codaParams as CodaSyncParams<typeof Sync_Metafields>;
+    const [metafieldKeys] = this.codaParams as SyncMetafieldsParams;
     return { metafieldKeys };
   }
 

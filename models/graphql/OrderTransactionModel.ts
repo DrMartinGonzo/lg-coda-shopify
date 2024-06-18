@@ -11,6 +11,7 @@ import { OrderTransactionRow } from '../../schemas/CodaRows.types';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReference } from '../../schemas/syncTable/OrderTransactionSchema';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
+import { safeToFloat } from '../../utils/helpers';
 
 // #endregion
 
@@ -44,7 +45,7 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): OrderTransactionRow {
-    const { data } = this;
+    const { parentTransaction, ...data } = this.data;
     if (data.parentOrder === undefined) {
       throw new Error('parentOrder is undefined');
     }
@@ -76,19 +77,16 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
       settlementCurrencyRate: data.settlementCurrencyRate,
       status: data.status,
       test: data.test,
+      amount: safeToFloat(data.amountSet?.shopMoney?.amount),
+      totalUnsettled: safeToFloat(data.totalUnsettledSet?.shopMoney?.amount),
     };
 
-    if (data.parentTransaction?.id) {
-      const parentTransactionId = graphQlGidToId(data.parentTransaction.id);
+    if (parentTransaction?.id) {
+      const parentTransactionId = graphQlGidToId(parentTransaction.id);
       obj.parentTransactionId = parentTransactionId;
       obj.parentTransaction = formatOrderTransactionReference(parentTransactionId);
     }
-    if (data.amountSet?.shopMoney?.amount) {
-      obj.amount = parseFloat(data.amountSet.shopMoney.amount);
-    }
-    if (data.totalUnsettledSet?.shopMoney?.amount) {
-      obj.totalUnsettled = parseFloat(data.totalUnsettledSet.shopMoney.amount);
-    }
+
     /**
      * Unused. see comment in {@link OrderTransactionSyncTableSchema}
      */

@@ -22,6 +22,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncArticlesParams = CodaSyncParams<typeof Sync_Articles>;
+// #endregion
+
 export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
   private currentBlogId: number | null;
   private blogIdsLeft: number[];
@@ -56,7 +60,7 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
   public static staticSchema = ArticleSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Articles>;
+    const [syncMetafields] = codaSyncParams as SyncArticlesParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Article, context);
@@ -77,7 +81,7 @@ export class SyncedArticles extends AbstractSyncedRestResources<ArticleModel> {
       handle,
       published_status,
       tags,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_Articles>;
+    ] = this.codaParams as SyncArticlesParams;
     return {
       syncMetafields,
       restrictToBlogIds,

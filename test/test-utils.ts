@@ -2,7 +2,11 @@ import * as coda from '@codahq/packs-sdk';
 import { normalizeSchema, normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { pack } from '../pack';
 
-import { MockExecutionContext, executeSyncFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
+import {
+  MockExecutionContext,
+  executeSyncFormulaFromPackDef,
+  newRealFetcherSyncExecutionContext,
+} from '@codahq/packs-sdk/dist/development';
 import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { newJsonFetchResponse } from '@codahq/packs-sdk/dist/development';
 import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
@@ -17,7 +21,7 @@ import { METAFIELD_TYPES } from '../constants/metafields-constants';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({
-//   endpoint: 'https://coda-pack-test.myshopify.com',
+//   endpoint: PACK_TEST_ENDPOINT,
 // });
 
 const defaultExecuteOptions = {
@@ -56,7 +60,14 @@ export function doSync(SyncFormulaName: string, args: any[]) {
     SyncFormulaName,
     args as coda.ParamValues<coda.ParamDefs>,
     undefined,
-    { useDeprecatedResultNormalization: true },
+    { useDeprecatedResultNormalization: true, validateParams: true },
     defaultExecuteOptions
   );
+}
+
+export function getSyncContextWithDynamicUrl(dynamicUrl: string) {
+  const syncContext = newRealFetcherSyncExecutionContext(pack, require.resolve('../pack.ts'));
+  // @ts-expect-error
+  syncContext.sync = { dynamicUrl };
+  return syncContext;
 }

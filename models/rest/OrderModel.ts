@@ -18,8 +18,9 @@ import { RefundSchema } from '../../schemas/basic/RefundSchema';
 import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { safeToString } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatOrderLineItemPropertyForOrder } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -44,9 +45,7 @@ type FulfillmentApiData = TypeFromCodaSchema<typeof FulfillmentSchema> & {
 
 type OrderAdjustmentApiData = TypeFromCodaSchema<typeof OrderAdjustmentSchema>;
 
-type PriceSetApiData = TypeFromCodaSchema<typeof PriceSetSchema> & {
-  transactions: TransactionApiData[] | null;
-};
+export type PriceSetApiData = TypeFromCodaSchema<typeof PriceSetSchema>;
 
 type RefundLineItemApiData = TypeFromCodaSchema<typeof RefundLineItemSchema>;
 
@@ -209,23 +208,36 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): OrderRow {
-    const { metafields, customer, ...data } = this.data;
+    const {
+      metafields,
+      billing_address,
+      client_details,
+      current_total_additional_fees_set,
+      current_total_duties_set,
+      customer,
+      original_total_additional_fees_set,
+      original_total_duties_set,
+      refunds,
+      shipping_address,
+      total_shipping_price_set,
+      ...data
+    } = this.data;
     const obj: OrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/orders/${data.id}`,
-      current_total_discounts: parseFloat(data.current_total_discounts),
-      current_total_price: parseFloat(data.current_total_price),
-      current_subtotal_price: parseFloat(data.current_subtotal_price),
-      current_total_tax: parseFloat(data.current_total_tax),
-      subtotal_price: parseFloat(data.subtotal_price),
-      total_discounts: parseFloat(data.total_discounts),
-      total_line_items_price: parseFloat(data.total_line_items_price),
-      total_outstanding: parseFloat(data.total_outstanding),
-      total_price: parseFloat(data.total_price),
-      total_tax: parseFloat(data.total_tax),
-      total_tip_received: parseFloat(data.total_tip_received),
+      current_total_discounts: safeToFloat(data.current_total_discounts),
+      current_total_price: safeToFloat(data.current_total_price),
+      current_subtotal_price: safeToFloat(data.current_subtotal_price),
+      current_total_tax: safeToFloat(data.current_total_tax),
+      subtotal_price: safeToFloat(data.subtotal_price),
+      total_discounts: safeToFloat(data.total_discounts),
+      total_line_items_price: safeToFloat(data.total_line_items_price),
+      total_outstanding: safeToFloat(data.total_outstanding),
+      total_price: safeToFloat(data.total_price),
+      total_tax: safeToFloat(data.total_tax),
+      total_tip_received: safeToFloat(data.total_tip_received),
       fulfillments: data.fulfillments,
-      line_items: data.line_items as any,
+      line_items: data.line_items.map(formatOrderLineItemPropertyForOrder),
     };
 
     if (customer) {
@@ -239,39 +251,39 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
         })
       );
     }
-    if (data.billing_address) {
+    if (billing_address) {
       obj.billing_address = {
-        display: formatAddressDisplayName(data.billing_address),
-        ...data.billing_address,
+        display: formatAddressDisplayName(billing_address),
+        ...billing_address,
       };
     }
-    if (data.shipping_address) {
+    if (shipping_address) {
       obj.shipping_address = {
-        display: formatAddressDisplayName(data.shipping_address),
-        ...data.shipping_address,
+        display: formatAddressDisplayName(shipping_address),
+        ...shipping_address,
       };
     }
-    if (data.current_total_duties_set) {
-      obj.current_total_duties = data.current_total_duties_set?.shop_money?.amount;
+    if (current_total_duties_set) {
+      obj.current_total_duties = safeToFloat(current_total_duties_set?.shop_money?.amount);
     }
-    if (data.current_total_additional_fees_set) {
-      obj.current_total_additional_fees = data.current_total_additional_fees_set?.shop_money?.amount;
+    if (current_total_additional_fees_set) {
+      obj.current_total_additional_fees = safeToFloat(current_total_additional_fees_set?.shop_money?.amount);
     }
-    if (data.original_total_additional_fees_set) {
-      obj.original_total_additional_fees = data.original_total_additional_fees_set?.shop_money?.amount;
+    if (original_total_additional_fees_set) {
+      obj.original_total_additional_fees = safeToFloat(original_total_additional_fees_set?.shop_money?.amount);
     }
-    if (data.original_total_duties_set) {
-      obj.original_total_duties = data.original_total_duties_set?.shop_money?.amount;
+    if (original_total_duties_set) {
+      obj.original_total_duties = safeToFloat(original_total_duties_set?.shop_money?.amount);
     }
-    if (data.total_shipping_price_set) {
-      obj.total_shipping_price = data.total_shipping_price_set?.shop_money?.amount;
+    if (total_shipping_price_set) {
+      obj.total_shipping_price = safeToFloat(total_shipping_price_set?.shop_money?.amount);
     }
-    if (data.client_details) {
-      obj.browser_user_agent = data.client_details?.user_agent as string;
-      obj.browser_accept_language = data.client_details?.accept_language as string;
+    if (client_details) {
+      obj.browser_user_agent = client_details?.user_agent as string;
+      obj.browser_accept_language = client_details?.accept_language as string;
     }
-    if (data.refunds) {
-      obj.refunds = data.refunds.map((refund) => {
+    if (refunds) {
+      obj.refunds = refunds.map((refund) => {
         return {
           ...refund,
           transactions: refund.transactions.map((transaction) => {

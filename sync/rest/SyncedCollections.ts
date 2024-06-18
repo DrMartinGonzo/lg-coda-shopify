@@ -15,6 +15,10 @@ import { AbstractSyncedRestResourcesWithGraphQlMetafields } from './AbstractSync
 
 // #endregion
 
+// #region Types
+export type SyncCollectionsParams = CodaSyncParams<typeof Sync_Collections>;
+// #endregion
+
 export class SyncedCollections<
   T extends CustomCollectionModel | SmartCollectionModel
 > extends AbstractSyncedRestResourcesWithGraphQlMetafields<T> {
@@ -32,7 +36,7 @@ export class SyncedCollections<
   public static staticSchema = CollectionSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Collections>;
+    const [syncMetafields] = codaSyncParams as SyncCollectionsParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Collection, context);
@@ -44,7 +48,7 @@ export class SyncedCollections<
 
   public get codaParamsMap() {
     const [syncMetafields, updatedAtRange, publishedAtRange, handle, collectionIds, productId, publishedStatus, title] =
-      this.codaParams as CodaSyncParams<typeof Sync_Collections>;
+      this.codaParams as SyncCollectionsParams;
     return {
       syncMetafields,
       updatedAtRange,

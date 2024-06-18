@@ -52,7 +52,7 @@ export abstract class AbstractModelGraphQlWithMetafields extends AbstractModelGr
   }
 
   public async save() {
-    const isUpdate = this.data[this.primaryKey];
+    const isUpdate = !!this.data[this.primaryKey];
     const metafields = this.data.metafields;
     await super.save();
 

@@ -10,6 +10,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncCollectsParams = CodaSyncParams<typeof Sync_Collects>;
+// #endregion
+
 export class SyncedCollects extends AbstractSyncedRestResources<CollectModel> {
   public static schemaDependencies: FieldDependency<typeof CollectSyncTableSchema.properties>[] = [
     {
@@ -29,7 +33,7 @@ export class SyncedCollects extends AbstractSyncedRestResources<CollectModel> {
   public static staticSchema = CollectSyncTableSchema;
 
   public get codaParamsMap() {
-    const [collectionId] = this.codaParams as CodaSyncParams<typeof Sync_Collects>;
+    const [collectionId] = this.codaParams as SyncCollectsParams;
     return {
       collectionId,
     };

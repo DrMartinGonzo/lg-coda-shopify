@@ -14,6 +14,10 @@ import { AbstractSyncedRestResourcesWithGraphQlMetafields } from './AbstractSync
 
 // #endregion
 
+// #region Types
+export type SyncOrdersParams = CodaSyncParams<typeof Sync_Orders>;
+// #endregion
+
 export class SyncedOrders extends AbstractSyncedRestResourcesWithGraphQlMetafields<OrderModel> {
   public static schemaDependencies: FieldDependency<typeof OrderSyncTableSchema.properties>[] = [
     //   {
@@ -53,7 +57,7 @@ export class SyncedOrders extends AbstractSyncedRestResourcesWithGraphQlMetafiel
   public static staticSchema = OrderSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [, syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Orders>;
+    const [, syncMetafields] = codaSyncParams as SyncOrdersParams;
 
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
@@ -79,7 +83,7 @@ export class SyncedOrders extends AbstractSyncedRestResourcesWithGraphQlMetafiel
       sinceId,
       customerTags,
       orderTags,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_Orders>;
+    ] = this.codaParams as SyncOrdersParams;
     return {
       status,
       syncMetafields,

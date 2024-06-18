@@ -13,11 +13,15 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncLocationsParams = CodaSyncParams<typeof Sync_Locations>;
+// #endregion
+
 export class SyncedLocations extends AbstractSyncedGraphQlResources<LocationModel> {
   public static staticSchema = LocationSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Locations>;
+    const [syncMetafields] = codaSyncParams as SyncLocationsParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Location, context);
@@ -28,7 +32,7 @@ export class SyncedLocations extends AbstractSyncedGraphQlResources<LocationMode
   }
 
   public get codaParamsMap() {
-    const [syncMetafields] = this.codaParams as CodaSyncParams<typeof Sync_Locations>;
+    const [syncMetafields] = this.codaParams as SyncLocationsParams;
     return { syncMetafields };
   }
 

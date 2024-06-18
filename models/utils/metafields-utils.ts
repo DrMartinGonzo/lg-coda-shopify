@@ -49,6 +49,7 @@ import {
   logAdmin,
   maybeParseJson,
   reverseMap,
+  safeToFloat,
   splitAndTrimValues,
   unitToShortName,
 } from '../../utils/helpers';
@@ -279,23 +280,21 @@ export async function deleteMetafield<T extends MetafieldModel | MetafieldGraphQ
   instance: T,
   baseDelete: () => Promise<void>
 ) {
-  const { data } = instance;
-
   /** We dont always have the metafield ID but it could still be an existing Metafield, so we need to retrieve its Id */
-  if (!data.id) await instance.refreshData();
+  if (!instance.data.id) await instance.refreshData();
 
   /** If we have the metafield ID, we can delete it, else it probably means it has already been deleted */
-  if (data.id) {
+  if (instance.data.id) {
     await baseDelete();
   } else {
     logAdmin(`Metafield already deleted.`);
   }
 
   // make sure to nullify metafield value
-  data.value = null;
-  data.isDeletedFlag = true;
+  instance.data.value = null;
+  instance.data.isDeletedFlag = true;
 
-  return data as T extends MetafieldModel ? MetafieldModelData : MetafieldGraphQlModelData;
+  return instance.data as T extends MetafieldModel ? MetafieldModelData : MetafieldGraphQlModelData;
 }
 
 /**
@@ -382,8 +381,8 @@ function formatRatingField(
     throw new Error('Validations are required to format a rating field');
   }
   return {
-    scale_min: parseFloat(validations.find((v) => v.name === 'scale_min').value),
-    scale_max: parseFloat(validations.find((v) => v.name === 'scale_max').value),
+    scale_min: safeToFloat(validations.find((v) => v.name === 'scale_min').value),
+    scale_max: safeToFloat(validations.find((v) => v.name === 'scale_max').value),
     value: value,
   };
 }
@@ -573,7 +572,9 @@ function formatIntegerFieldsForSchema(parsedValue: string | string[]) {
   return Array.isArray(parsedValue) ? parsedValue.map((v) => formatIntegerFieldsForSchema(v)) : parseInt(parsedValue);
 }
 function formatDecimalFieldsForSchema(parsedValue: string | string[]) {
-  return Array.isArray(parsedValue) ? parsedValue.map((v) => formatDecimalFieldsForSchema(v)) : parseFloat(parsedValue);
+  return Array.isArray(parsedValue)
+    ? parsedValue.map((v) => formatDecimalFieldsForSchema(v))
+    : safeToFloat(parsedValue);
 }
 function formatMeasurementFieldsForSchema(
   parsedValue: { value: string; unit: string } | { value: string; unit: string }[]
@@ -585,10 +586,10 @@ function formatMeasurementFieldsForSchema(
 function formatRatingFieldsForSchema(parsedValue: { value: string } | { value: string }[]) {
   return Array.isArray(parsedValue)
     ? parsedValue.map((v) => formatRatingFieldsForSchema(v))
-    : parseFloat(parsedValue.value);
+    : safeToFloat(parsedValue.value);
 }
 function formatMoneyFieldForSchema(parsedValue: { amount: string }) {
-  return parseFloat(parsedValue.amount);
+  return safeToFloat(parsedValue.amount);
 }
 
 // TODO: maybe we could return string arrays as a single string with delimiter, like '\n;;;\n' for easier editing inside Coda ?

@@ -14,6 +14,10 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncProductsParams = CodaSyncParams<typeof Sync_Products>;
+// #endregion
+
 export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel> {
   public static schemaDependencies: FieldDependency<typeof ProductSyncTableSchema.properties>[] = [
     {
@@ -33,7 +37,7 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
   public static staticSchema = ProductSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Products>;
+    const [syncMetafields] = codaSyncParams as SyncProductsParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Product, context);
@@ -54,7 +58,7 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
       vendorsArray,
       idArray,
       tagsArray,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_Products>;
+    ] = this.codaParams as SyncProductsParams;
     return {
       syncMetafields,
       productTypesArray,

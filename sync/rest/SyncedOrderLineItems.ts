@@ -12,6 +12,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncOrderLineItemsParams = CodaSyncParams<typeof Sync_OrderLineItems>;
+// #endregion
+
 export class SyncedOrderLineItems extends AbstractSyncedRestResources<OrderLineItemModel> {
   public static staticSchema = OrderLineItemSyncTableSchema;
 
@@ -31,7 +35,7 @@ export class SyncedOrderLineItems extends AbstractSyncedRestResources<OrderLineI
       orderFulfillmentStatus,
       orderIds,
       sinceOrderId,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_OrderLineItems>;
+    ] = this.codaParams as SyncOrderLineItemsParams;
     return {
       orderStatus,
       orderCreatedAt,

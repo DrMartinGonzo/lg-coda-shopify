@@ -341,6 +341,9 @@ function trimStringWithEllipsis(inputString: string, maxLength: number) {
 export function safeToString(value?: any): string | undefined {
   return isNullish(value) ? undefined : value.toString();
 }
+export function safeToFloat(value?: any): number | undefined {
+  return isNullish(value) ? undefined : parseFloat(value);
+}
 
 export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
   if (values) {

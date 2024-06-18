@@ -7,7 +7,7 @@ import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { safeToString } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 import { formatAddressDisplayName, formatPersonDisplayValue } from '../utils/address-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
@@ -116,7 +116,7 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
         lastName: data.last_name,
         email: data.email,
       }),
-      total_spent: parseFloat(data.total_spent),
+      total_spent: safeToFloat(data.total_spent),
 
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),

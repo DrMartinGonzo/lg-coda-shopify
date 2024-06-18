@@ -68,7 +68,7 @@ export const Sync_Translations = coda.makeSyncTable({
   },
 });
 
-export const Sync_TranslatableContent = coda.makeSyncTable({
+export const Sync_TranslatableContents = coda.makeSyncTable({
   name: 'TranslatableContents',
   description: 'Return TranslatableContent from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,

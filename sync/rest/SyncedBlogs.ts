@@ -14,6 +14,10 @@ import { AbstractSyncedRestResources } from './AbstractSyncedRestResources';
 
 // #endregion
 
+// #region Types
+export type SyncBlogsParams = CodaSyncParams<typeof Sync_Blogs>;
+// #endregion
+
 export class SyncedBlogs extends AbstractSyncedRestResources<BlogModel> {
   public static schemaDependencies: FieldDependency<typeof BlogSyncTableSchema.properties>[] = [
     {
@@ -25,7 +29,7 @@ export class SyncedBlogs extends AbstractSyncedRestResources<BlogModel> {
   public static staticSchema = BlogSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_Blogs>;
+    const [syncMetafields] = codaSyncParams as SyncBlogsParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Blog, context);
@@ -36,7 +40,7 @@ export class SyncedBlogs extends AbstractSyncedRestResources<BlogModel> {
   }
 
   public get codaParamsMap() {
-    const [syncMetafields] = this.codaParams as CodaSyncParams<typeof Sync_Blogs>;
+    const [syncMetafields] = this.codaParams as SyncBlogsParams;
     return { syncMetafields };
   }
 

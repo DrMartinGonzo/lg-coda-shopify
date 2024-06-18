@@ -10,11 +10,15 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncFilesParams = CodaSyncParams<typeof Sync_Files>;
+// #endregion
+
 export class SyncedFiles extends AbstractSyncedGraphQlResources<FileModel> {
   public static staticSchema = FileSyncTableSchema;
 
   public get codaParamsMap() {
-    const [type, previewSize] = this.codaParams as CodaSyncParams<typeof Sync_Files>;
+    const [type, previewSize] = this.codaParams as SyncFilesParams;
     return {
       type,
       previewSize,

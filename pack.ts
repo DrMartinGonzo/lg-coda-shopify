@@ -146,7 +146,7 @@ import { Formula_Shop, Sync_Shops } from './coda/setup/shop-setup';
 import {
   Action_DeleteTranslation,
   Action_SetTranslation,
-  Sync_TranslatableContent,
+  Sync_TranslatableContents,
   Sync_Translations,
 } from './coda/setup/translations-setup';
 
@@ -194,7 +194,7 @@ pack.syncTables.push(Sync_Redirects);
 pack.syncTables.push(Sync_Shops);
 pack.syncTables.push(Sync_Translations);
 if (IS_ADMIN_RELEASE) {
-  pack.syncTables.push(Sync_TranslatableContent);
+  pack.syncTables.push(Sync_TranslatableContents);
 }
 // #endregion
 

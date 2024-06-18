@@ -11,6 +11,7 @@ import { CollectionRow } from '../schemas/CodaRows.types';
 import { SyncTableMixedContinuation } from '../sync/rest/AbstractSyncedRestResourcesWithGraphQlMetafields';
 import { RestItemsBatch } from '../sync/rest/RestItemsBatch';
 import { stringifyContinuationProperty } from '../sync/utils/sync-utils';
+import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 
 // #endregion
 
@@ -80,7 +81,7 @@ test('Update missing data on row update', async () => {
 
 let context: MockExecutionContext;
 context = newMockExecutionContext({
-  endpoint: 'https://coda-pack-test.myshopify.com',
+  endpoint: PACK_TEST_ENDPOINT,
 });
 
 function getRestItemsBatchItems(count: number) {

@@ -43,7 +43,7 @@ export abstract class AbstractModelGraphQl extends AbstractModel {
   }
 
   public async save(): Promise<void> {
-    const isUpdate = this.data[this.primaryKey];
+    const isUpdate = !!this.data[this.primaryKey];
     const response = await (isUpdate ? this.client.update(this.data) : this.client.create(this.data));
     if (response) {
       this.setData(response.body);

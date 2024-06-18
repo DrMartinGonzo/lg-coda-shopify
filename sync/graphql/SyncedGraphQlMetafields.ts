@@ -2,13 +2,13 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlClients';
-import { Sync_Metafields } from '../../coda/setup/metafields-setup';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { getMetafieldsDynamicSchema } from '../../models/utils/metafields-utils';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { CodaSyncParams, GetSchemaArgs } from '../AbstractSyncedResources';
+import { GetSchemaArgs } from '../AbstractSyncedResources';
+import { SyncMetafieldsParams } from '../rest/SyncedMetafields';
 import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources';
 
 // #endregion
@@ -29,7 +29,7 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
 
   public get codaParamsMap() {
     const ownerType = this.context.sync.dynamicUrl as MetafieldOwnerType;
-    const [metafieldKeys] = this.codaParams as CodaSyncParams<typeof Sync_Metafields>;
+    const [metafieldKeys] = this.codaParams as SyncMetafieldsParams;
     return { metafieldKeys, ownerType };
   }
 

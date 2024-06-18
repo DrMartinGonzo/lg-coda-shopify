@@ -9,7 +9,7 @@ import { productVariantFieldsFragment } from '../../graphql/productVariants-grap
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { getUnitMap, unitToShortName, weightUnitsMap } from '../../utils/helpers';
+import { getUnitMap, safeToFloat, unitToShortName, weightUnitsMap } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import {
   AbstractModelGraphQlWithMetafields,
@@ -123,7 +123,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
     let obj: ProductVariantRow = {
       admin_graphql_api_id: this.graphQlGid,
       barcode: data.barcode,
-      compare_at_price: data.compareAtPrice ? parseFloat(data.compareAtPrice) : undefined,
+      compare_at_price: safeToFloat(data.compareAtPrice),
       created_at: data.createdAt,
       displayTitle: data.displayName,
       id: this.restId,
@@ -131,7 +131,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       inventory_policy: data.inventoryPolicy,
       inventory_quantity: data.inventoryQuantity,
       position: data.position,
-      price: data.price ? parseFloat(data.price) : undefined,
+      price: safeToFloat(data.price),
       sku: data.sku,
       tax_code: data.taxCode,
       taxable: data.taxable,

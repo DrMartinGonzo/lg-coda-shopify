@@ -15,6 +15,10 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncVariantsParams = CodaSyncParams<typeof Sync_ProductVariants>;
+// #endregion
+
 export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel> {
   public static schemaDependencies: FieldDependency<typeof ProductVariantSyncTableSchema.properties>[] = [
     {
@@ -38,7 +42,7 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
   public static staticSchema = ProductVariantSyncTableSchema;
 
   public static async getDynamicSchema({ codaSyncParams, context }: GetSchemaArgs) {
-    const [syncMetafields] = codaSyncParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    const [syncMetafields] = codaSyncParams as SyncVariantsParams;
     let augmentedSchema = deepCopy(this.staticSchema);
     if (syncMetafields) {
       augmentedSchema = await augmentSchemaWithMetafields(augmentedSchema, MetafieldOwnerType.Productvariant, context);
@@ -62,7 +66,7 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
       vendors,
       skus,
       productIds,
-    ] = this.codaParams as CodaSyncParams<typeof Sync_ProductVariants>;
+    ] = this.codaParams as SyncVariantsParams;
     return {
       syncMetafields,
       productTypes,

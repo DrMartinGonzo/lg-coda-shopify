@@ -12,6 +12,10 @@ import { AbstractSyncedGraphQlResources } from './AbstractSyncedGraphQlResources
 
 // #endregion
 
+// #region Types
+export type SyncInventoryItemsParams = CodaSyncParams<typeof Sync_InventoryItems>;
+// #endregion
+
 export class SyncedInventoryItems extends AbstractSyncedGraphQlResources<InventoryItemModel> {
   public static staticSchema = InventoryItemSyncTableSchema;
 
@@ -23,7 +27,7 @@ export class SyncedInventoryItems extends AbstractSyncedGraphQlResources<Invento
   }
 
   public get codaParamsMap() {
-    const [createdAtRange, updatedAtRange, skus] = this.codaParams as CodaSyncParams<typeof Sync_InventoryItems>;
+    const [createdAtRange, updatedAtRange, skus] = this.codaParams as SyncInventoryItemsParams;
     return {
       createdAtRange,
       updatedAtRange,
