@@ -1,5 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
-import { TranslationSchema } from '../basic/TranslationSchema';
+import { TranslationSchema } from '../basic/TranslationSchema.unused';
 
 export const TranslatableResourceSyncTableSchema = coda.makeObjectSchema({
   properties: {

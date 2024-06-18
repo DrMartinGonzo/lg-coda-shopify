@@ -16,6 +16,7 @@ import { ProductReference, formatProductReference } from '../schemas/syncTable/P
 import { ProductVariantReference, formatProductVariantReference } from '../schemas/syncTable/ProductVariantSchema';
 import { ShopReference, formatShopReference } from '../schemas/syncTable/ShopSchema';
 import { MetafieldOwnerType } from '../types/admin.types';
+import { FormatRowReferenceFn } from '../schemas/CodaRows.types';
 
 // #endregion
 
@@ -27,7 +28,7 @@ export class SupportedMetafieldSyncTable {
   public readonly display: string;
   public readonly singular: string;
   public readonly ownerReference?: OwnerReference | undefined;
-  public readonly formatOwnerReference?: CallableFunction | undefined;
+  public readonly formatOwnerReference?: FormatRowReferenceFn<any, any> | undefined;
   public readonly ownerType: SupportedMetafieldOwnerType;
   public readonly supportDefinition: boolean;
 

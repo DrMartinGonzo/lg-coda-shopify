@@ -3,20 +3,18 @@
 import { OrderLineItemClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { OrderLineItemRow } from '../../schemas/CodaRows.types';
-import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
+import { TypeFromCodaSchema } from '../../schemas/Schema.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
-import { Duty } from './OrderModel';
+import { DutyApiData } from './OrderModel';
 
 // #endregion
 
 // #region Types
-export interface OrderLineItemApiData
-  extends BaseApiDataRest,
-    TypeFromCodaSchemaProps<(typeof OrderLineItemSchema)['properties']> {
-  duties: Duty[] | null;
+export interface OrderLineItemApiData extends BaseApiDataRest, TypeFromCodaSchema<typeof OrderLineItemSchema> {
+  duties: DutyApiData[] | null;
 }
 
 export interface OrderLineItemModelData extends OrderLineItemApiData {

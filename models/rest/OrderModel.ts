@@ -5,7 +5,7 @@ import { CancelOrderArgs, OrderClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { OrderRow } from '../../schemas/CodaRows.types';
-import { TypeFromCodaSchemaProps } from '../../schemas/Schema.types';
+import { TypeFromCodaSchema } from '../../schemas/Schema.types';
 import { CompanySchema } from '../../schemas/basic/CompanySchema';
 import { DiscountCodeSchema } from '../../schemas/basic/DiscountCodeSchema';
 import { DutySchema } from '../../schemas/basic/DutySchema';
@@ -32,45 +32,34 @@ import { OrderLineItemApiData } from './OrderLineItemModel';
 // #endregion
 
 // #region Types
-type Company = TypeFromCodaSchemaProps<(typeof CompanySchema)['properties']>;
+type CompanyApiData = TypeFromCodaSchema<typeof CompanySchema>;
 
-type DiscountCode = TypeFromCodaSchemaProps<(typeof DiscountCodeSchema)['properties']>;
+type DiscountCodeApiData = TypeFromCodaSchema<typeof DiscountCodeSchema>;
 
-export type Duty = TypeFromCodaSchemaProps<(typeof DutySchema)['properties']>;
+export type DutyApiData = TypeFromCodaSchema<typeof DutySchema>;
 
-type Fulfillment = TypeFromCodaSchemaProps<(typeof FulfillmentSchema)['properties']> & {
+type FulfillmentApiData = TypeFromCodaSchema<typeof FulfillmentSchema> & {
   line_items: OrderLineItemApiData[] | null;
 };
 
-type OrderAdjustment = TypeFromCodaSchemaProps<(typeof OrderAdjustmentSchema)['properties']>;
+type OrderAdjustmentApiData = TypeFromCodaSchema<typeof OrderAdjustmentSchema>;
 
-type PriceSet = TypeFromCodaSchemaProps<(typeof PriceSetSchema)['properties']> & {
-  transactions: Transaction[] | null;
+type PriceSetApiData = TypeFromCodaSchema<typeof PriceSetSchema> & {
+  transactions: TransactionApiData[] | null;
 };
 
-type RefundLineItem = TypeFromCodaSchemaProps<(typeof RefundLineItemSchema)['properties']>;
+type RefundLineItemApiData = TypeFromCodaSchema<typeof RefundLineItemSchema>;
 
-export type ShippingLine = TypeFromCodaSchemaProps<(typeof ShippingLineSchema)['properties']>;
+export type ShippingLineApiData = TypeFromCodaSchema<typeof ShippingLineSchema>;
 
-type Transaction = TypeFromCodaSchemaProps<(typeof OrderTransactionSchema)['properties']>;
+type TransactionApiData = TypeFromCodaSchema<typeof OrderTransactionSchema>;
 
-// TODO: can we make this more recursive to avoid adding manually the coda.SchemaType of subproperties?
-type Refund = TypeFromCodaSchemaProps<(typeof RefundSchema)['properties']> & {
-  duties: Duty[] | null;
-  transactions: Transaction[] | null;
-  order_adjustments: OrderAdjustment[] | null;
-  refund_line_items: RefundLineItem[] | null;
+type RefundApiData = TypeFromCodaSchema<typeof RefundSchema> & {
+  duties: DutyApiData[] | null;
+  transactions: TransactionApiData[] | null;
+  order_adjustments: OrderAdjustmentApiData[] | null;
+  refund_line_items: RefundLineItemApiData[] | null;
 };
-
-// Testing better types
-/*
-// let pp: Refund['duties'];
-// pp[0].id;
-
-type RefundNew = CulNew<(typeof RefundSchema)['properties']>;
-// let ff: RefundNew['duties'];
-// ff[0].
-*/
 
 export interface OrderApiData extends BaseApiDataRest {
   admin_graphql_api_id: string | null;
@@ -83,29 +72,29 @@ export interface OrderApiData extends BaseApiDataRest {
   cancelled_at: string | null;
   client_details: { [key: string]: unknown } | null;
   closed_at: string | null;
-  company: Company | null;
+  company: CompanyApiData | null;
   confirmation_number: string | null;
   created_at: string | null;
   currency: string | null;
   current_subtotal_price: string | null;
-  current_subtotal_price_set: PriceSet | null;
-  current_total_additional_fees_set: PriceSet | null;
+  current_subtotal_price_set: PriceSetApiData | null;
+  current_total_additional_fees_set: PriceSetApiData | null;
   current_total_discounts: string | null;
-  current_total_discounts_set: PriceSet | null;
-  current_total_duties_set: PriceSet | null;
+  current_total_discounts_set: PriceSetApiData | null;
+  current_total_duties_set: PriceSetApiData | null;
   current_total_price: string | null;
-  current_total_price_set: PriceSet | null;
+  current_total_price_set: PriceSetApiData | null;
   current_total_tax: string | null;
-  current_total_tax_set: PriceSet | null;
+  current_total_tax_set: PriceSetApiData | null;
   customer: Partial<CustomerApiData> | null;
   customer_locale: string | null;
   discount_applications: { [key: string]: unknown }[] | null;
-  discount_codes: DiscountCode[] | null;
+  discount_codes: DiscountCodeApiData[] | null;
   email: string | null;
   estimated_taxes: boolean | null;
   financial_status: string | null;
   fulfillment_status: string | null;
-  fulfillments: Fulfillment[] | null;
+  fulfillments: FulfillmentApiData[] | null;
   id: number | null;
   landing_site: string | null;
   merchant_of_record_app_id: number | null;
@@ -115,8 +104,8 @@ export interface OrderApiData extends BaseApiDataRest {
   number: number | null;
   order_number: number | null;
   order_status_url: string | null;
-  original_total_additional_fees_set: PriceSet | null;
-  original_total_duties_set: PriceSet | null;
+  original_total_additional_fees_set: PriceSetApiData | null;
+  original_total_duties_set: PriceSetApiData | null;
   payment_gateway_names: string[] | null;
   payment_terms: { [key: string]: unknown } | null;
   phone: string | null;
@@ -124,29 +113,28 @@ export interface OrderApiData extends BaseApiDataRest {
   presentment_currency: string | null;
   processed_at: string | null;
   referring_site: string | null;
-  refunds: Refund[] | null;
-  // refunds: RefundNew[] | null;
+  refunds: RefundApiData[] | null;
   shipping_address: { [key: string]: unknown } | null;
-  shipping_lines: ShippingLine[] | null;
+  shipping_lines: ShippingLineApiData[] | null;
   source_identifier: string | null;
   source_name: string | null;
   source_url: string | null;
   subtotal_price: string | null;
-  subtotal_price_set: PriceSet | null;
+  subtotal_price_set: PriceSetApiData | null;
   tags: string | null;
   tax_lines: { [key: string]: unknown }[] | null;
   taxes_included: boolean | null;
   test: boolean | null;
   total_discounts: string | null;
-  total_discounts_set: PriceSet | null;
+  total_discounts_set: PriceSetApiData | null;
   total_line_items_price: string | null;
-  total_line_items_price_set: PriceSet | null;
+  total_line_items_price_set: PriceSetApiData | null;
   total_outstanding: string | null;
   total_price: string | null;
-  total_price_set: PriceSet | null;
-  total_shipping_price_set: PriceSet | null;
+  total_price_set: PriceSetApiData | null;
+  total_shipping_price_set: PriceSetApiData | null;
   total_tax: string | null;
-  total_tax_set: PriceSet | null;
+  total_tax_set: PriceSetApiData | null;
   total_tip_received: string | null;
   total_weight: number | null;
   updated_at: string | null;
@@ -186,13 +174,13 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       total_tax: safeToString(row.total_tax),
       total_tip_received: safeToString(row.total_tip_received),
 
-      company: row.company as Company,
+      company: row.company as CompanyApiData,
       customer: row.customer?.id ? { id: row.customer.id } : undefined,
-      discount_codes: row.discount_codes as DiscountCode[],
-      fulfillments: row.fulfillments as Fulfillment[],
+      discount_codes: row.discount_codes as DiscountCodeApiData[],
+      fulfillments: row.fulfillments as FulfillmentApiData[],
       line_items: row.line_items as OrderLineItemApiData[],
-      refunds: row.refunds as Refund[],
-      shipping_lines: row.shipping_lines as ShippingLine[],
+      refunds: row.refunds as RefundApiData[],
+      shipping_lines: row.shipping_lines as ShippingLineApiData[],
     };
 
     return this.createInstance(context, data);

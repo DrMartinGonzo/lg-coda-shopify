@@ -18,7 +18,7 @@ import {
 import { CustomerApiData } from './CustomerModel';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { OrderLineItemApiData } from './OrderLineItemModel';
-import { ShippingLine } from './OrderModel';
+import { ShippingLineApiData } from './OrderModel';
 
 // #endregion
 
@@ -41,7 +41,7 @@ export interface DraftOrderApiData extends BaseApiDataRest {
   order_id: number | null;
   payment_terms: { [key: string]: unknown } | null;
   shipping_address: { [key: string]: unknown } | null;
-  shipping_line: ShippingLine | null;
+  shipping_line: ShippingLineApiData | null;
   status: string | null;
   subtotal_price: string | null;
   tags: string | null;
@@ -88,7 +88,7 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
       order_id: row.order_id,
       payment_terms: row.payment_terms,
       shipping_address: row.shipping_address,
-      shipping_line: row.shipping_line as ShippingLine,
+      shipping_line: row.shipping_line as ShippingLineApiData,
       status: row.status,
       subtotal_price: safeToString(row.subtotal_price),
       tags: row.tags,

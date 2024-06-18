@@ -9,6 +9,6 @@ export interface FieldDependency<T extends coda.ObjectSchemaProperties> {
   dependencies: (keyof T)[] | string[];
 }
 
-export type TypeFromCodaSchemaProps<PropsT extends Record<string, coda.Schema>> = {
-  [K in keyof PropsT]: coda.SchemaType<PropsT[K]>;
+export type TypeFromCodaSchema<SchemaT extends ReturnType<typeof coda.makeObjectSchema>> = {
+  [K in keyof SchemaT['properties']]: coda.SchemaType<SchemaT['properties'][K]>;
 };

@@ -535,7 +535,7 @@ export class CustomerClient extends AbstractRestClient<
   async list({ tags: filterTags = [], options, ...otherArgs }: ListCustomersArgs) {
     const response = await super.list({ options, ...otherArgs });
 
-    // TODO: implement using search endpoint
+    // INVESTIGATE: maybe implement using search endpoint ?
     return {
       ...response,
       body: response.body.filter((data) => {

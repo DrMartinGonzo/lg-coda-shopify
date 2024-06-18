@@ -716,7 +716,6 @@ export interface ListFilesArgs extends BaseListArgs {
   type?: string;
   fields?: FileFieldsArgs;
 }
-// TODO: recursively flatten connections
 
 export class FileClient extends AbstractGraphQlClient<FileModelData> {
   async single({ id, fields = {}, forceAllFields, options }: SingleFileArgs) {
@@ -2063,7 +2062,7 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
   }
 
-  // TODO: should we handle metafields here ?
+  // Est-ce qu'il faudrait gérer les metafields ici ?
   // ! NON !! Parceque c'est vraiment pas pratique quand on doit choisir si on update/delete/create un metafield !!!
   private formatUpdateInput(modelData: ProductModelData): ProductInput | undefined {
     const input = {
@@ -2343,7 +2342,7 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
     const documentNode = getSingleProductVariantQuery;
     const variables = {
       id,
-      // TODO: retrieve metafields ?
+
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       countMetafields: 0,
       metafieldKeys: [],
