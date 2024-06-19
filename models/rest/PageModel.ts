@@ -8,6 +8,7 @@ import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/res
 import { PageRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithRestMetafields,
@@ -67,22 +68,17 @@ export class PageModel extends AbstractModelRestWithRestMetafields {
   }
 
   public toCodaRow(): PageRow {
-    const { metafields, ...data } = this.data;
+    const { metafields = [], ...data } = this.data;
     const obj: PageRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/pages/${data.id}`,
       body: striptags(data.body_html),
       published: !!data.published_at,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (!!data.published_at && data.handle) {
       obj.shop_url = `${this.context.endpoint}/pages/${data.handle}`;
-    }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
     }
 
     return obj as PageRow;

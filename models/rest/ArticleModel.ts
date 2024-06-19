@@ -9,6 +9,7 @@ import { ArticleRow } from '../../schemas/CodaRows.types';
 import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { formatImageForRow } from '../utils/restModel-utils';
 import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
@@ -83,24 +84,19 @@ export class ArticleModel extends AbstractModelRestWithRestMetafields {
   }
 
   public toCodaRow(): ArticleRow {
-    const { metafields, image, ...data } = this.data;
-    const obj: ArticleRow = {
+    const { metafields = [], image, ...data } = this.data;
+    let obj: ArticleRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/articles/${data.id}`,
       body: striptags(data.body_html),
       published: !!data.published_at,
       summary: striptags(data.summary_html),
       ...formatImageForRow(image),
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (data.blog_id) {
       obj.blog = formatBlogReference(data.blog_id);
-    }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
     }
 
     return obj as ArticleRow;

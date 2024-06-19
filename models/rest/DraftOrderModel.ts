@@ -9,7 +9,8 @@ import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema'
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddress, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatAddressToRow, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { formatOrderLineItemPropertyForDraftOrder } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
@@ -123,7 +124,7 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): DraftOrderRow {
-    const { metafields, customer, billing_address, shipping_address, order_id, ...data } = this.data;
+    const { metafields = [], customer, billing_address, shipping_address, order_id, ...data } = this.data;
     const obj: DraftOrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/draft_orders/${data.id}`,
@@ -132,8 +133,9 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
       total_tax: safeToFloat(data.total_tax),
       line_items: data.line_items.map(formatOrderLineItemPropertyForDraftOrder),
       order_id,
-      billing_address: formatAddress(billing_address),
-      shipping_address: formatAddress(shipping_address),
+      billing_address: formatAddressToRow(billing_address),
+      shipping_address: formatAddressToRow(shipping_address),
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (customer) {
@@ -149,12 +151,6 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
     }
     if (order_id) {
       obj.order = formatOrderReference(order_id);
-    }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
     }
 
     return obj as DraftOrderRow;

@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop, TranslatableContent, Translation
- * Last generated: 2024-06-18T20:35:13.238Z
+ * Last generated: 2024-06-18T21:18:40.557Z
  *
  */
 
@@ -1003,6 +1003,7 @@ export interface OrderTransactionRow extends BaseRow {
   status?: string;
   test?: boolean;
   total_unsettled?: number;
+  label: string;
   accountNumber?: string;
   authorizationCode?: string;
   authorizationExpiresAt?: string | number | Date;

@@ -5,6 +5,7 @@ import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { ShopRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -88,17 +89,12 @@ export class ShopModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): ShopRow {
-    const { metafields, ...data } = this.data;
+    const { metafields = [], ...data } = this.data;
     const obj: ShopRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin`,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
 
     return obj as ShopRow;
   }

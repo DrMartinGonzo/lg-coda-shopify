@@ -7,6 +7,7 @@ import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/res
 import { BlogRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithRestMetafields,
@@ -65,17 +66,12 @@ export class BlogModel extends AbstractModelRestWithRestMetafields {
   }
 
   public toCodaRow(): BlogRow {
-    const { metafields, ...data } = this.data;
+    const { metafields = [], ...data } = this.data;
     const obj: BlogRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/blogs/${data.id}`,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
 
     return obj as BlogRow;
   }

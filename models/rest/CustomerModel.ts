@@ -8,8 +8,9 @@ import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/res
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatCustomerAddress, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatCustomerAddressToRow, formatPersonDisplayValue } from '../utils/address-utils';
 import { formatCustomerConsent } from '../utils/customers-utils';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -118,8 +119,14 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): CustomerRow {
-    const { metafields, addresses, email_marketing_consent, sms_marketing_consent, default_address, ...data } =
-      this.data;
+    const {
+      metafields = [],
+      addresses = [],
+      email_marketing_consent,
+      sms_marketing_consent,
+      default_address,
+      ...data
+    } = this.data;
     const obj: CustomerRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/customers/${data.id}`,
@@ -130,21 +137,16 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
         email: data.email,
       }),
       total_spent: safeToFloat(data.total_spent),
-      default_address: formatCustomerAddress(default_address),
-      addresses: (addresses ?? []).map(formatCustomerAddress),
+      default_address: formatCustomerAddressToRow(default_address),
+      addresses: addresses.map(formatCustomerAddressToRow),
       accepts_email_marketing: formatCustomerConsent(email_marketing_consent),
       accepts_sms_marketing: formatCustomerConsent(sms_marketing_consent),
+      ...formatMetafieldsForOwnerRow(metafields),
 
       // Disabled for now, prefer to use simple checkboxes
       // email_marketing_consent: formatEmailMarketingConsent(customer.email_marketing_consent),
       // sms_marketing_consent: formatEmailMarketingConsent(customer.sms_marketing_consent),
     };
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
 
     return obj as CustomerRow;
   }

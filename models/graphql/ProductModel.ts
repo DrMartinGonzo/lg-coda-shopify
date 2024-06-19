@@ -12,6 +12,7 @@ import { ProductRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString, splitAndTrimValues } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,
@@ -82,7 +83,7 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): ProductRow {
-    const { featuredImage, images, metafields, options, tags, ...data } = this.data;
+    const { featuredImage, images, metafields = [], options, tags, ...data } = this.data;
 
     let obj: ProductRow = {
       id: this.restId,
@@ -104,6 +105,7 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields {
       storeUrl: data.onlineStoreUrl,
       featuredImage: featuredImage?.url,
       giftCard: data.isGiftCard,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (options && Array.isArray(options)) {
@@ -111,12 +113,6 @@ export class ProductModel extends AbstractModelGraphQlWithMetafields {
     }
     if (images?.nodes && Array.isArray(images.nodes)) {
       obj.images = images.nodes.map((image) => image.url);
-    }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
     }
 
     return obj as ProductRow;

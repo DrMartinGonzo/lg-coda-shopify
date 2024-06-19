@@ -1,11 +1,11 @@
 // #region Imports
 
-import { safeToFloat } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 import { CustomerAddressApiData } from '../rest/CustomerModel';
 import { AddressApiData } from '../rest/OrderModel';
 // #endregion
 
-export function formatAddress(data: AddressApiData) {
+export function formatAddressToRow(data: AddressApiData) {
   if (!data) return null;
   const { latitude, longitude, ...address } = data;
   return {
@@ -16,7 +16,17 @@ export function formatAddress(data: AddressApiData) {
   };
 }
 
-export function formatCustomerAddress(data: CustomerAddressApiData) {
+export function formatRowAddressToApi(rowData: Partial<ReturnType<typeof formatAddressToRow>>): AddressApiData {
+  if (!rowData) return null;
+  const { display, latitude, longitude, ...address } = rowData;
+  return {
+    ...address,
+    latitude: latitude ? safeToString(latitude) : null,
+    longitude: longitude ? safeToString(longitude) : null,
+  };
+}
+
+export function formatCustomerAddressToRow(data: CustomerAddressApiData) {
   if (!data) return null;
   // we don't want to keep customer_id prop in address
   const { customer_id, ...addressWithoutCustomerId } = data;

@@ -11,6 +11,7 @@ import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { getUnitMap, safeToFloat, unitToShortName, weightUnitsMap } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import {
   AbstractModelGraphQlWithMetafields,
   BaseModelDataGraphQlWithMetafields,
@@ -115,7 +116,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): ProductVariantRow {
-    const { image, inventoryItem, metafields, product, selectedOptions, ...data } = this.data;
+    const { image, inventoryItem, metafields = [], product, selectedOptions, ...data } = this.data;
 
     const productId = graphQlGidToId(product?.id);
     const inventoryItemId = graphQlGidToId(inventoryItem?.id);
@@ -135,6 +136,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       tax_code: data.taxCode,
       updated_at: data.updatedAt,
       inventory_item_id: inventoryItemId,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (selectedOptions) {
@@ -170,12 +172,6 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
 
     if (product?.onlineStoreUrl) {
       obj.storeUrl = `${product.onlineStoreUrl}?variant=${this.restId}`;
-    }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
     }
 
     return obj as ProductVariantRow;

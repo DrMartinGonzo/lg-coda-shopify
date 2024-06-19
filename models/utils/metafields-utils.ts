@@ -686,6 +686,16 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
     }
   }
 }
+
+export function formatMetafieldsForOwnerRow(metafields = []) {
+  return metafields.reduce(
+    (acc, metafield) => ({
+      ...acc,
+      [metafield.prefixedFullKey]: metafield.formatValueForOwnerRow(),
+    }),
+    {}
+  );
+}
 // #endregion
 
 // #region Metafield key utils

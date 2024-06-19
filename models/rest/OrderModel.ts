@@ -17,7 +17,8 @@ import { ShippingLineSchema } from '../../schemas/basic/ShippingLineSchema';
 import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddress, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatAddressToRow, formatPersonDisplayValue, formatRowAddressToApi } from '../utils/address-utils';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { formatOrderLineItemPropertyForOrder, formatRefundProperty } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
 import {
@@ -57,7 +58,7 @@ export interface TransactionApiData {
   currency: string;
   device_id: number;
   error_code: string;
-  extended_authorization_attributes: ExtendedAuthorizationAttributes;
+  extended_authorization_attributes: ExtendedAuthorizationAttributesApiData;
   gateway: string;
   id: number;
   kind: string;
@@ -69,23 +70,23 @@ export interface TransactionApiData {
   payment_details: PaymentDetailsApiData;
   payment_id: string;
   parent_id: number;
-  payments_refund_attributes: PaymentsRefundAttributes;
+  payments_refund_attributes: PaymentsRefundAttributesApiData;
   processed_at: string;
-  receipt: Receipt;
+  receipt: ReceiptApiData;
   source_name: string;
   status: string;
   total_unsettled_set: PriceSetApiData;
   test: boolean;
   user_id: number;
-  currency_exchange_adjustment: CurrencyExchangeAdjustment;
+  currency_exchange_adjustment: CurrencyExchangeAdjustmentApiData;
 }
 
-interface PaymentsRefundAttributes {
+interface PaymentsRefundAttributesApiData {
   status: string;
   acquirer_reference_number: string;
 }
 
-interface ExtendedAuthorizationAttributes {
+interface ExtendedAuthorizationAttributesApiData {
   standard_authorization_expires_at: string;
   extended_authorization_expires_at: string;
 }
@@ -100,19 +101,19 @@ interface PaymentDetailsApiData {
   credit_card_wallet: string;
   credit_card_expiration_month: number;
   credit_card_expiration_year: number;
-  buyer_action_info: BuyerActionInfo;
+  buyer_action_info: BuyerActionInfoApiData;
   payment_method_name: string;
 }
-interface BuyerActionInfo {
+interface BuyerActionInfoApiData {
   multibanco: {
     Entity: string;
     Reference: string;
   };
 }
 
-interface Receipt {}
+interface ReceiptApiData {}
 
-interface CurrencyExchangeAdjustment {
+interface CurrencyExchangeAdjustmentApiData {
   id: number;
   adjustment: string;
   original_amount: string;
@@ -277,8 +278,8 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       refunds: row.refunds as unknown as RefundApiData[],
       shipping_lines: row.shipping_lines as ShippingLineApiData[],
 
-      billing_address: row.billing_address as unknown as AddressApiData,
-      shipping_address: row.shipping_address as unknown as AddressApiData,
+      billing_address: formatRowAddressToApi(row.billing_address),
+      shipping_address: formatRowAddressToApi(row.shipping_address),
     };
 
     return this.createInstance(context, data);
@@ -308,12 +309,13 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
 
   public toCodaRow(): OrderRow {
     const {
-      metafields,
+      metafields = [],
       billing_address,
       client_details,
       current_total_additional_fees_set,
       current_total_duties_set,
       customer,
+      line_items = [],
       original_total_additional_fees_set,
       original_total_duties_set,
       refunds,
@@ -324,14 +326,13 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
     const obj: OrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/orders/${data.id}`,
+
       current_subtotal_price: safeToFloat(data.current_subtotal_price),
       current_total_additional_fees: safeToFloat(current_total_additional_fees_set?.shop_money?.amount),
       current_total_discounts: safeToFloat(data.current_total_discounts),
       current_total_duties: safeToFloat(current_total_duties_set?.shop_money?.amount),
       current_total_price: safeToFloat(data.current_total_price),
       current_total_tax: safeToFloat(data.current_total_tax),
-      fulfillments: data.fulfillments,
-      line_items: data.line_items.map(formatOrderLineItemPropertyForOrder),
       original_total_additional_fees: safeToFloat(original_total_additional_fees_set?.shop_money?.amount),
       original_total_duties: safeToFloat(original_total_duties_set?.shop_money?.amount),
       subtotal_price: safeToFloat(data.subtotal_price),
@@ -342,8 +343,13 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       total_shipping_price: safeToFloat(total_shipping_price_set?.shop_money?.amount),
       total_tax: safeToFloat(data.total_tax),
       total_tip_received: safeToFloat(data.total_tip_received),
-      billing_address: formatAddress(billing_address),
-      shipping_address: formatAddress(shipping_address),
+
+      fulfillments: data.fulfillments,
+      line_items: line_items.map(formatOrderLineItemPropertyForOrder),
+      billing_address: formatAddressToRow(billing_address),
+      shipping_address: formatAddressToRow(shipping_address),
+
+      ...formatMetafieldsForOwnerRow(metafields),
     };
 
     if (customer) {
@@ -373,12 +379,6 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
     //     };
     //   });
     // }
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
 
     return obj as OrderRow;
   }

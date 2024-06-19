@@ -9,6 +9,7 @@ import { locationFragment } from '../../graphql/locations-graphql';
 import { LocationRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataGraphQl } from './AbstractModelGraphQl';
 import {
   AbstractModelGraphQlWithMetafields,
@@ -68,7 +69,7 @@ export class LocationModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): LocationRow {
-    const { metafields, ...data } = this.data;
+    const { metafields = [], ...data } = this.data;
 
     let obj: Partial<LocationRow> = {
       id: this.restId,
@@ -92,13 +93,8 @@ export class LocationModel extends AbstractModelGraphQlWithMetafields {
       province: data.address?.province,
       province_code: data.address?.provinceCode,
       zip: data.address?.zip,
+      ...formatMetafieldsForOwnerRow(metafields),
     };
-
-    if (metafields) {
-      metafields.forEach((metafield) => {
-        obj[metafield.prefixedFullKey] = metafield.formatValueForOwnerRow();
-      });
-    }
 
     return obj as LocationRow;
   }
