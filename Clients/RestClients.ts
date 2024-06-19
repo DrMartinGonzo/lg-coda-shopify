@@ -207,11 +207,7 @@ class RestFetcher {
       }
       return response;
     } catch (error) {
-      if (method === 'DELETE') {
-        console.error(`Not found at path : '${path}'. Possibly already deleted.`);
-      } else {
-        throw new coda.UserVisibleError(`${name} error. ${error}`);
-      }
+      throw new coda.UserVisibleError(`${name} error. ${error}`);
     }
   }
 
