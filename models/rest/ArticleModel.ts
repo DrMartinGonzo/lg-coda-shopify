@@ -10,13 +10,14 @@ import { formatBlogReference } from '../../schemas/syncTable/BlogSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
 import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
-import { formatImageForRow } from '../utils/restModel-utils';
+import { formatImageForData, formatImageForRow } from '../utils/restModel-utils';
 import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
   AbstractModelRestWithRestMetafields,
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
+import { PartialBy } from '../../types/utilities';
 
 // #endregion
 
@@ -51,27 +52,17 @@ export class ArticleModel extends AbstractModelRestWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Article;
   protected static readonly graphQlName = GraphQlResourceNames.Article;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: ArticleRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { admin_url, image_url, image_alt_text, ...row }: ArticleRow
+  ) {
     const data: Partial<ArticleModelData> = {
-      admin_graphql_api_id: row.admin_graphql_api_id,
-      author: row.author,
+      ...row,
       blog_id: row.blog?.id || row.blog_id,
-      body_html: row.body_html,
       created_at: safeToString(row.created_at),
-      handle: row.handle,
-      id: row.id,
-      image: {
-        alt: row.image_alt_text,
-        src: row.image_url,
-      },
+      image: formatImageForData({ image_url, image_alt_text }),
       published_at: safeToString(row.published_at),
-      published: row.published,
-      summary_html: row.summary_html,
-      tags: row.tags,
-      template_suffix: row.template_suffix,
-      title: row.title,
       updated_at: safeToString(row.updated_at),
-      user_id: row.user_id,
     };
     return this.createInstance(context, data);
   }

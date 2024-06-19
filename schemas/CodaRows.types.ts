@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryItem, InventoryLevel, Location, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop, TranslatableContent, Translation
- * Last generated: 2024-06-18T21:18:40.557Z
+ * Last generated: 2024-06-19T06:38:22.065Z
  *
  */
 
@@ -139,7 +139,7 @@ export interface DraftOrderRow extends BaseRow {
     value_type?: string;
   };
   billing_address?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;
@@ -250,7 +250,7 @@ export interface DraftOrderRow extends BaseRow {
     }[];
   };
   shipping_address?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;
@@ -310,7 +310,7 @@ export interface CustomerRow extends BaseRow {
   id: number;
   display: string;
   addresses?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;
@@ -328,11 +328,11 @@ export interface CustomerRow extends BaseRow {
     province_code?: string;
     zip?: string;
     id: number;
-    default?: boolean;
+    default: boolean;
   }[];
   created_at?: string | number | Date;
   default_address?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;
@@ -350,7 +350,7 @@ export interface CustomerRow extends BaseRow {
     province_code?: string;
     zip?: string;
     id: number;
-    default?: boolean;
+    default: boolean;
   };
   email?: string;
   accepts_email_marketing?: boolean;
@@ -565,7 +565,7 @@ export interface OrderRow extends BaseRow {
   id: number;
   app_id?: number;
   billing_address?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;
@@ -857,7 +857,7 @@ export interface OrderRow extends BaseRow {
     user_id?: number;
   }[];
   shipping_address?: {
-    display?: string;
+    display: string;
     address1?: string;
     address2?: string;
     city?: string;

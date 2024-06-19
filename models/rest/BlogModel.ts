@@ -43,16 +43,10 @@ export class BlogModel extends AbstractModelRestWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Blog;
   protected static readonly graphQlName = GraphQlResourceNames.Blog;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: BlogRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, ...row }: BlogRow) {
     const data: Partial<BlogModelData> = {
-      admin_graphql_api_id: row.admin_graphql_api_id,
-      commentable: row.commentable,
+      ...row,
       created_at: safeToString(row.created_at),
-      handle: row.handle,
-      id: row.id,
-      tags: row.tags,
-      template_suffix: row.template_suffix,
-      title: row.title,
       updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);

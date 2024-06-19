@@ -2,12 +2,13 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { OrderSmartCollectionArgs, SmartCollectionClient } from '../../Clients/RestClients';
-import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
 import { safeToString } from '../../utils/helpers';
+import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
+import { formatImageForData } from '../utils/restModel-utils';
 import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -50,22 +51,15 @@ export class SmartCollectionModel extends AbstractModelRestWithGraphQlMetafields
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: CollectionRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { admin_url, image_alt_text, image_url, ...row }: CollectionRow
+  ) {
     const data: Partial<SmartCollectionModelData> = {
-      body_html: row.body_html,
-      disjunctive: row.disjunctive,
-      handle: row.handle,
-      id: row.id,
-      image: {
-        src: row.image_url,
-        alt: row.image_alt_text,
-      },
+      ...row,
+      image: formatImageForData({ image_url, image_alt_text }),
       published_at: safeToString(row.published_at),
-      published_scope: row.published_scope,
       rules: row.rules as SmartCollectionRule[],
-      sort_order: row.sort_order,
-      template_suffix: row.template_suffix,
-      title: row.title,
       updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);

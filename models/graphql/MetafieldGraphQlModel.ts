@@ -37,7 +37,7 @@ import { PREFIX_FAKE } from '../../constants/strings-constants';
 import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
 import { MetafieldOwnerType, Node } from '../../types/admin.types';
-import { isNullish } from '../../utils/helpers';
+import { isNullish, safeToString } from '../../utils/helpers';
 import { CreateMetafieldInstancesFromRowArgs } from '../rest/MetafieldModel';
 
 // #endregion
@@ -104,24 +104,33 @@ export class MetafieldGraphQlModel extends AbstractModelGraphQl {
     context: coda.ExecutionContext;
     normalizedData: MetafieldNormalizedData;
   }) {
+    const {
+      parentOwnerId,
+      gid,
+      ownerId,
+      ownerGid,
+      definitionGid,
+      parentOwnerGid,
+      ownerResource,
+      createdAt,
+      updatedAt,
+      definitionId,
+      id,
+      ...data
+    } = normalizedData;
     return MetafieldGraphQlModel.createInstance(context, {
+      ...data,
       __typename: 'Metafield',
-      id: normalizedData.gid,
-      namespace: normalizedData.namespace,
-      key: normalizedData.key,
-      type: normalizedData.type,
-      value: normalizedData.value,
-      parentNode: normalizedData.ownerGid
+      id: gid,
+      parentNode: ownerGid
         ? {
-            id: normalizedData.ownerGid,
-            parentOwner: normalizedData.parentOwnerGid ? { id: normalizedData.parentOwnerGid } : undefined,
+            id: ownerGid,
+            parentOwner: parentOwnerGid ? { id: parentOwnerGid } : undefined,
           }
         : undefined,
-      ownerType: normalizedData.ownerType,
-      createdAt: normalizedData.createdAt,
-      updatedAt: normalizedData.updatedAt,
-      definition: normalizedData.definitionGid ? { id: normalizedData.definitionGid } : undefined,
-      isDeletedFlag: normalizedData.isDeletedFlag,
+      createdAt: safeToString(createdAt),
+      updatedAt: safeToString(updatedAt),
+      definition: definitionGid ? { id: definitionGid } : undefined,
     } as MetafieldModelData);
   }
 

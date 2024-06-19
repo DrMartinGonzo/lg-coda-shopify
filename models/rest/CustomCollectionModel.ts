@@ -8,6 +8,7 @@ import { CollectionRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToString } from '../../utils/helpers';
 import { CollectionModelData, collectionModelToCodaRow } from '../utils/collections-utils';
+import { formatImageForData } from '../utils/restModel-utils';
 import { BaseApiDataRest, ImageApiData } from './AbstractModelRest';
 import {
   AbstractModelRestWithGraphQlMetafields,
@@ -44,22 +45,14 @@ export class CustomCollectionModel extends AbstractModelRestWithGraphQlMetafield
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Collection;
   protected static readonly graphQlName = GraphQlResourceNames.Collection;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: CollectionRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { admin_url, image_url, image_alt_text, ...row }: CollectionRow
+  ) {
     const data: Partial<CustomCollectionModelData> = {
-      body_html: row.body_html,
-      handle: row.handle,
-      admin_graphql_api_id: row.admin_graphql_api_id,
-      id: row.id,
-      image: {
-        src: row.image_url,
-        alt: row.image_alt_text,
-      },
-      published: row.published,
+      ...row,
+      image: formatImageForData({ image_url, image_alt_text }),
       published_at: safeToString(row.published_at),
-      published_scope: row.published_scope,
-      sort_order: row.sort_order,
-      template_suffix: row.template_suffix,
-      title: row.title,
       updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);

@@ -1,5 +1,6 @@
 // #region Imports
 
+import { PartialBy } from '../../types/utilities';
 import { safeToFloat, safeToString } from '../../utils/helpers';
 import { CustomerAddressApiData } from '../rest/CustomerModel';
 import { AddressApiData } from '../rest/OrderModel';
@@ -15,8 +16,9 @@ export function formatAddressToRow(data: AddressApiData) {
     ...address,
   };
 }
-
-export function formatRowAddressToApi(rowData: Partial<ReturnType<typeof formatAddressToRow>>): AddressApiData {
+export function formatRowAddressToApi(
+  rowData: PartialBy<ReturnType<typeof formatAddressToRow>, 'latitude' | 'longitude'>
+): AddressApiData {
   if (!rowData) return null;
   const { display, latitude, longitude, ...address } = rowData;
   return {
@@ -33,6 +35,17 @@ export function formatCustomerAddressToRow(data: CustomerAddressApiData) {
   return {
     display: formatAddressDisplayName(addressWithoutCustomerId),
     ...addressWithoutCustomerId,
+  };
+}
+export function formatCustomerRowAddressToApi(
+  rowData: ReturnType<typeof formatCustomerAddressToRow>,
+  customer_id?: number
+): CustomerAddressApiData {
+  if (!rowData) return null;
+  const { display, ...address } = rowData;
+  return {
+    ...address,
+    customer_id,
   };
 }
 

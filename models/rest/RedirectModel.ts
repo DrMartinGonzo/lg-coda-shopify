@@ -22,12 +22,8 @@ export class RedirectModel extends AbstractModelRest {
   public data: RedirectModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.Redirect;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: RedirectRow) {
-    return this.createInstance(context, {
-      id: row.id,
-      path: row.path,
-      target: row.target,
-    } as RedirectModelData);
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, test_url, ...row }: RedirectRow) {
+    return this.createInstance(context, row as RedirectModelData);
   }
 
   /**====================================================================================================================

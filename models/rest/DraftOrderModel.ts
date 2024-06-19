@@ -9,7 +9,7 @@ import { formatCustomerReference } from '../../schemas/syncTable/CustomerSchema'
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatAddressToRow, formatPersonDisplayValue } from '../utils/address-utils';
+import { formatAddressToRow, formatPersonDisplayValue, formatRowAddressToApi } from '../utils/address-utils';
 import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { formatOrderLineItemPropertyForDraftOrder } from '../utils/orders-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
@@ -20,14 +20,14 @@ import {
 import { CustomerApiData } from './CustomerModel';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
 import { OrderLineItemApiData } from './OrderLineItemModel';
-import { ShippingLineApiData } from './OrderModel';
+import { AddressApiData, ShippingLineApiData } from './OrderModel';
 
 // #endregion
 
 // #region Types
 export interface DraftOrderApiData extends BaseApiDataRest {
   applied_discount: { [key: string]: unknown } | null;
-  billing_address: { [key: string]: unknown } | null;
+  billing_address: AddressApiData | null;
   completed_at: string | null;
   created_at: string | null;
   currency: string | null;
@@ -42,7 +42,7 @@ export interface DraftOrderApiData extends BaseApiDataRest {
   note_attributes: { [key: string]: unknown }[] | null;
   order_id: number | null;
   payment_terms: { [key: string]: unknown } | null;
-  shipping_address: { [key: string]: unknown } | null;
+  shipping_address: AddressApiData | null;
   shipping_line: ShippingLineApiData | null;
   status: string | null;
   subtotal_price: string | null;
@@ -67,37 +67,24 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Draftorder;
   protected static readonly graphQlName = GraphQlResourceNames.DraftOrder;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: DraftOrderRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, ...row }: DraftOrderRow) {
     const data: Partial<DraftOrderModelData> = {
-      applied_discount: row.applied_discount,
-      billing_address: row.billing_address,
+      ...row,
+      billing_address: formatRowAddressToApi(row.billing_address),
       completed_at: safeToString(row.completed_at),
       created_at: safeToString(row.created_at),
-      currency: row.currency,
       customer: row.customer?.id
         ? {
             id: row.customer.id,
           }
         : undefined,
-      email: row.email,
-      id: row.id,
       invoice_sent_at: safeToString(row.invoice_sent_at),
-      invoice_url: row.invoice_url,
       line_items: row.line_items as OrderLineItemApiData[],
-      name: row.name,
-      note_attributes: row.note_attributes,
-      note: row.note,
-      order_id: row.order_id,
-      payment_terms: row.payment_terms,
-      shipping_address: row.shipping_address,
+      shipping_address: formatRowAddressToApi(row.shipping_address),
       shipping_line: row.shipping_line as ShippingLineApiData,
-      status: row.status,
       subtotal_price: safeToString(row.subtotal_price),
-      tags: row.tags,
-      tax_exempt: row.tax_exempt,
-      tax_exemptions: row.tax_exemptions,
+      // TODO: format function ?
       tax_lines: row.tax_lines,
-      taxes_included: row.taxes_included,
       total_price: safeToString(row.total_price),
       total_tax: safeToString(row.total_tax),
       updated_at: safeToString(row.updated_at),
@@ -124,14 +111,22 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
   }
 
   public toCodaRow(): DraftOrderRow {
-    const { metafields = [], customer, billing_address, shipping_address, order_id, ...data } = this.data;
+    const {
+      metafields = [],
+      customer,
+      line_items = [],
+      billing_address,
+      shipping_address,
+      order_id,
+      ...data
+    } = this.data;
     const obj: DraftOrderRow = {
       ...data,
       admin_url: `${this.context.endpoint}/admin/draft_orders/${data.id}`,
       subtotal_price: safeToFloat(data.subtotal_price),
       total_price: safeToFloat(data.total_price),
       total_tax: safeToFloat(data.total_tax),
-      line_items: data.line_items.map(formatOrderLineItemPropertyForDraftOrder),
+      line_items: line_items.map(formatOrderLineItemPropertyForDraftOrder),
       order_id,
       billing_address: formatAddressToRow(billing_address),
       shipping_address: formatAddressToRow(shipping_address),

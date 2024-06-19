@@ -45,38 +45,22 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): OrderTransactionRow {
-    const { amountSet, parentTransaction, totalUnsettledSet, ...data } = this.data;
-    if (data.parentOrder === undefined) {
+    const { amountSet, parentOrder, parentTransaction, paymentIcon, totalUnsettledSet, ...data } = this.data;
+    if (parentOrder === undefined) {
       throw new Error('parentOrder is undefined');
     }
 
-    const parentOrderId = graphQlGidToId(data.parentOrder.id);
+    const parentOrderId = graphQlGidToId(parentOrder.id);
     let obj: Partial<OrderTransactionRow> = {
+      ...data,
       admin_graphql_api_id: this.graphQlGid,
       id: this.restId,
-      label: `Order ${data.parentOrder.name} - ${toSentenceCase(data.kind)}`,
-
+      label: `Order ${parentOrder.name} - ${toSentenceCase(data.kind)}`,
       admin_url: `${this.context.endpoint}/admin/orders/${parentOrderId}`,
       orderId: parentOrderId,
-      order: formatOrderReference(parentOrderId, data.parentOrder.name),
-
-      accountNumber: data.accountNumber,
-      authorizationCode: data.authorizationCode,
-      authorizationExpiresAt: data.authorizationExpiresAt,
-      createdAt: data.createdAt,
+      order: formatOrderReference(parentOrderId, parentOrder.name),
       currency: amountSet?.presentmentMoney?.currencyCode,
-      errorCode: data.errorCode,
-      gateway: data.gateway,
-      kind: data.kind,
-      paymentDetails: data.paymentDetails,
-      paymentIcon: data.paymentIcon?.url,
-      paymentId: data.paymentId,
-      processedAt: data.processedAt,
-      receiptJson: data.receiptJson,
-      settlementCurrency: data.settlementCurrency,
-      settlementCurrencyRate: data.settlementCurrencyRate,
-      status: data.status,
-      test: data.test,
+      paymentIcon: paymentIcon?.url,
       amount: safeToFloat(amountSet?.shopMoney?.amount),
       totalUnsettled: safeToFloat(totalUnsettledSet?.shopMoney?.amount),
     };

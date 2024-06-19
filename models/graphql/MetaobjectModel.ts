@@ -9,7 +9,7 @@ import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { metaobjectFragment } from '../../graphql/metaobjects-graphql';
 import { MetaobjectRow } from '../../schemas/CodaRows.types';
 import { MetaobjectStatus } from '../../types/admin.types';
-import { isNullishOrEmpty, isString } from '../../utils/helpers';
+import { isNullishOrEmpty, isString, safeToString } from '../../utils/helpers';
 import { formatMetaFieldValueForSchema, shouldUpdateSyncTableMetafieldValue } from '../utils/metafields-utils';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
@@ -28,10 +28,10 @@ export class MetaobjectModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.Metaobject;
   protected static readonly graphQlName = GraphQlResourceNames.Metaobject;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: MetaobjectRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, ...row }: MetaobjectRow) {
     let data: Partial<MetaobjectModelData> = {
       id: idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id),
-      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      updatedAt: safeToString(row.updated_at),
       // must be set via setCustomFields
       // fields: metaobjectFields,
       type: row.type,

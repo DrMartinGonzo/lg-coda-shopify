@@ -8,7 +8,11 @@ import { GraphQlResourceNames, RestResourcesSingular } from '../../constants/res
 import { CustomerRow } from '../../schemas/CodaRows.types';
 import { MetafieldOwnerType } from '../../types/admin.types';
 import { safeToFloat, safeToString } from '../../utils/helpers';
-import { formatCustomerAddressToRow, formatPersonDisplayValue } from '../utils/address-utils';
+import {
+  formatCustomerAddressToRow,
+  formatCustomerRowAddressToApi,
+  formatPersonDisplayValue,
+} from '../utils/address-utils';
 import { formatCustomerConsent } from '../utils/customers-utils';
 import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import { BaseApiDataRest } from './AbstractModelRest';
@@ -77,35 +81,31 @@ export class CustomerModel extends AbstractModelRestWithGraphQlMetafields {
     };
   }
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: Omit<CustomerRow, 'display'>) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    {
+      addresses = [],
+      display,
+      admin_url,
+      accepts_email_marketing,
+      accepts_sms_marketing,
+      ...row
+    }: Omit<CustomerRow, 'display'>
+  ) {
     const data: Partial<CustomerModelData> = {
-      id: row.id,
-      addresses: row.addresses,
+      ...row,
+      addresses: addresses.map((address) => formatCustomerRowAddressToApi(address, row.id)),
       created_at: safeToString(row.created_at),
-      default_address: row.default_address,
-      email: row.email,
-      first_name: row.first_name,
-      last_name: row.last_name,
-      last_order_id: row.last_order_id,
-      last_order_name: row.last_order_name,
-      multipass_identifier: row.multipass_identifier,
-      note: row.note,
-      orders_count: row.orders_count,
-      phone: row.phone,
-      state: row.state,
-      tags: row.tags,
-      tax_exempt: row.tax_exempt,
-      tax_exemptions: row.tax_exemptions,
+      default_address: formatCustomerRowAddressToApi(row.default_address, row.id),
       total_spent: safeToString(row.total_spent),
       updated_at: safeToString(row.updated_at),
-      verified_email: row.verified_email,
     };
 
-    if (row.accepts_email_marketing !== undefined) {
-      data.email_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(row.accepts_email_marketing);
+    if (accepts_email_marketing !== undefined) {
+      data.email_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(accepts_email_marketing);
     }
-    if (row.accepts_sms_marketing !== undefined) {
-      data.sms_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(row.accepts_sms_marketing);
+    if (accepts_sms_marketing !== undefined) {
+      data.sms_marketing_consent = CustomerModel.formatSingleOptInMarketingConsent(accepts_sms_marketing);
     }
 
     return this.createInstance(context, data);

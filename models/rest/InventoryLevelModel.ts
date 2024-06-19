@@ -6,6 +6,7 @@ import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
 import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
+import { safeToString } from '../../utils/helpers';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 
 // #endregion
@@ -26,16 +27,18 @@ export class InventoryLevelModel extends AbstractModelRest {
   public data: InventoryLevelModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryLevel;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: InventoryLevelRow) {
-    const splitIds = row.id.split(',');
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { id, inventory_history_url, inventory_item, location, ...row }: InventoryLevelRow
+  ) {
+    const splitIds = id.split(',');
     const inventoryItemId = parseInt(splitIds[0], 10);
     const locationId = parseInt(splitIds[1], 10);
     const data: Partial<InventoryLevelModelData> = {
-      admin_graphql_api_id: row.admin_graphql_api_id,
-      available: row.available,
+      ...row,
       inventory_item_id: inventoryItemId,
       location_id: locationId,
-      updated_at: row.updated_at ? row.updated_at.toString() : undefined,
+      updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);
   }

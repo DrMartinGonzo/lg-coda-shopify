@@ -44,16 +44,10 @@ export class PageModel extends AbstractModelRestWithRestMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Page;
   protected static readonly graphQlName = GraphQlResourceNames.Page;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: PageRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, published, ...row }: PageRow) {
     const data: Partial<PageModelData> = {
-      id: row.id,
-      author: row.author,
-      body_html: row.body_html,
-      handle: row.handle,
+      ...row,
       published_at: safeToString(row.published_at),
-      title: row.title,
-      template_suffix: row.template_suffix,
-      admin_graphql_api_id: row.admin_graphql_api_id,
       created_at: safeToString(row.created_at),
       updated_at: safeToString(row.updated_at),
     };

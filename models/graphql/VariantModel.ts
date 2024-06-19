@@ -9,7 +9,7 @@ import { productVariantFieldsFragment } from '../../graphql/productVariants-grap
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { getUnitMap, safeToFloat, unitToShortName, weightUnitsMap } from '../../utils/helpers';
+import { getUnitMap, safeToFloat, safeToString, unitToShortName, weightUnitsMap } from '../../utils/helpers';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import {
@@ -39,12 +39,12 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.ProductVariant;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Productvariant;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: ProductVariantRow) {
+  public static createInstanceFromRow(context: coda.ExecutionContext, { admin_url, id, ...row }: ProductVariantRow) {
     let data: Partial<VariantModelData> = {
-      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.id),
+      id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, id),
       barcode: row.barcode,
       compareAtPrice: row.compare_at_price,
-      createdAt: row.created_at ? row.created_at.toString() : undefined,
+      createdAt: safeToString(row.created_at),
       displayName: row.displayTitle,
       inventoryPolicy: row.inventory_policy as any,
       inventoryQuantity: row.inventory_quantity,
@@ -60,7 +60,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       taxCode: row.tax_code,
       taxable: row.taxable,
       title: row.title,
-      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      updatedAt: safeToString(row.updated_at),
       image: row.image
         ? {
             url: row.image,

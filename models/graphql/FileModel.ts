@@ -14,7 +14,7 @@ import {
   videoFieldsFragment,
 } from '../../graphql/files-graphql';
 import { FileRow } from '../../schemas/CodaRows.types';
-import { isNullishOrEmpty } from '../../utils/helpers';
+import { isNullishOrEmpty, safeToString } from '../../utils/helpers';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 
 // #endregion
@@ -35,49 +35,34 @@ export class FileModel extends AbstractModelGraphQl {
 
   public static readonly displayName: Identity = PACK_IDENTITIES.File;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: FileRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { duration, fileSize, height, width, name, mimeType, preview, type, url, ...row }: FileRow
+  ) {
     let data: Partial<FileModelData> = {
-      __typename: row.type as GraphQlFileTypes,
-      id: row.id,
-      alt: row.alt,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      ...row,
+      __typename: type as GraphQlFileTypes,
+      createdAt: safeToString(row.createdAt),
+      updatedAt: safeToString(row.updatedAt),
     };
 
-    if (row.type === 'GenericFile') {
-      data.mimeType = row.mimeType;
-      data.originalFileSize = row.fileSize;
-      data.url = row.url;
+    if (type === 'GenericFile') {
+      data = { ...data, originalFileSize: fileSize, mimeType, url };
     }
 
-    if (data.__typename === 'MediaImage') {
-      data.image = {
-        height: row.height,
-        width: row.width,
-        url: row.url,
-      };
-      data.mimeType = row.mimeType;
-      data.originalSource = {
-        fileSize: row.fileSize,
-      };
+    if (type === 'MediaImage') {
+      data = { ...data, image: { height, width, url }, mimeType, originalSource: { fileSize } };
     }
 
-    if (data.__typename === 'Video') {
-      data.duration = row.duration;
-      data.originalSource = {
-        fileSize: row.fileSize,
-        height: row.height,
-        width: row.width,
-        mimeType: row.mimeType,
-        url: row.url,
-      };
+    if (type === 'Video') {
+      data = { ...data, duration, originalSource: { fileSize, height, width, mimeType, url } };
     }
 
-    if (row.name !== undefined) {
-      if (isNullishOrEmpty(row.name)) {
+    if (name !== undefined) {
+      if (isNullishOrEmpty(name)) {
         throw new coda.UserVisibleError("File name can't be empty");
       }
-      data.filename = row.name;
+      data.filename = name;
     }
 
     return FileModel.createInstance(context, data);

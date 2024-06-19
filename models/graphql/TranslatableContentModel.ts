@@ -55,14 +55,13 @@ export class TranslatableContentModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): TranslatableContentRow {
-    const { data, fullId } = this;
+    const { fullId } = this;
+    const { resourceGid, ...data } = this.data;
 
     let obj: Partial<TranslatableContentRow> = {
+      ...data,
       id: fullId,
-      key: data.key,
-      value: data.value,
-      resourceType: data.resourceType,
-      resourceId: graphQlGidToId(data.resourceGid),
+      resourceId: graphQlGidToId(resourceGid),
       // TODO
     };
 

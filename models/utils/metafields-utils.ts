@@ -50,6 +50,7 @@ import {
   maybeParseJson,
   reverseMap,
   safeToFloat,
+  safeToString,
   splitAndTrimValues,
   unitToShortName,
 } from '../../utils/helpers';
@@ -237,8 +238,8 @@ export function normalizeMetafieldRow(row: MetafieldRow): MetafieldNormalizedDat
     ownerResource: ownerTypeToRestOwnerName(row.owner_type as SupportedMetafieldOwnerType),
     definitionId,
     definitionGid: idToGraphQlGid(GraphQlResourceNames.MetafieldDefinition, definitionId),
-    createdAt: row.created_at ? row.created_at.toString() : undefined,
-    updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+    createdAt: safeToString(row.created_at),
+    updatedAt: safeToString(row.updated_at),
     parentOwnerGid: undefined,
     parentOwnerId: undefined,
 

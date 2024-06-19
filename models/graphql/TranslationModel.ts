@@ -9,7 +9,7 @@ import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { TranslationRow } from '../../schemas/CodaRows.types';
 import { LocalizableContentType, TranslatableResourceType } from '../../types/admin.types';
-import { isNullishOrEmpty } from '../../utils/helpers';
+import { isNullishOrEmpty, safeToString } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
 import { TranslatableContentApiData } from './TranslatableContentModel';
@@ -53,19 +53,16 @@ export class TranslationModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.Translation;
   protected static readonly graphQlName = GraphQlResourceNames.Translation;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: TranslationRow) {
-    const isDeletedFlag = row.id.includes(TranslationModel.DELETED_SUFFIX);
-    const resourceGid = TranslationModel.extractResourceGidFromFullId(row.id);
+  public static createInstanceFromRow(context: coda.ExecutionContext, { id, resourceType, ...row }: TranslationRow) {
+    const isDeletedFlag = id.includes(TranslationModel.DELETED_SUFFIX);
+    const resourceGid = TranslationModel.extractResourceGidFromFullId(id);
 
     let data: Partial<TranslationModelData> = {
-      key: TranslationModel.extractKeyFromFullId(row.id),
-      locale: TranslationModel.extractLocaleFromFullId(row.id),
-      originalValue: row.originalValue,
-      outdated: row.outdated,
+      ...row,
+      key: TranslationModel.extractKeyFromFullId(id),
+      locale: TranslationModel.extractLocaleFromFullId(id),
       resourceGid,
-      type: row.type as LocalizableContentType,
-      translatedValue: row.translatedValue,
-      updatedAt: row.updated_at ? row.updated_at.toString() : undefined,
+      updatedAt: safeToString(row.updated_at),
       isDeletedFlag: isDeletedFlag ?? false,
     };
 

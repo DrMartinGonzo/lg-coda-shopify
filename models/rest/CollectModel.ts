@@ -33,11 +33,8 @@ export class CollectModel extends AbstractModelRest {
 
   public static createInstanceFromRow(context: coda.ExecutionContext, row: CollectRow) {
     const data: Partial<CollectModelData> = {
-      collection_id: row.collection_id,
+      ...row,
       created_at: safeToString(row.created_at),
-      id: row.id,
-      position: row.position,
-      product_id: row.product_id,
       updated_at: safeToString(row.updated_at),
     };
     return this.createInstance(context, data);

@@ -10,7 +10,7 @@ import { InventoryItemRow } from '../../schemas/CodaRows.types';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
 import { CountryCode } from '../../types/admin.types';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { safeToFloat } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 
 // #endregion
 
@@ -26,15 +26,18 @@ export class InventoryItemModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryItem;
   protected static readonly graphQlName = GraphQlResourceNames.InventoryItem;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: InventoryItemRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { variant, variant_id, ...row }: InventoryItemRow
+  ) {
     let data: Partial<InventoryItemModelData> = {
       id: idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.id),
-      createdAt: row.created_at,
+      createdAt: safeToString(row.created_at),
       inventoryHistoryUrl: row.inventory_history_url,
       requiresShipping: row.requires_shipping,
       sku: row.sku,
       tracked: row.tracked,
-      updatedAt: row.updated_at,
+      updatedAt: safeToString(row.updated_at),
       countryCodeOfOrigin: row.country_code_of_origin as CountryCode,
       harmonizedSystemCode: row.harmonized_system_code,
       provinceCodeOfOrigin: row.province_code_of_origin,
@@ -42,7 +45,7 @@ export class InventoryItemModel extends AbstractModelGraphQl {
         amount: row.cost,
         currencyCode: undefined,
       },
-      variant: { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, row.variant_id) },
+      variant: { id: idToGraphQlGid(GraphQlResourceNames.ProductVariant, variant_id) },
     };
 
     return InventoryItemModel.createInstance(context, data);
@@ -63,13 +66,13 @@ export class InventoryItemModel extends AbstractModelGraphQl {
       id: graphQlGidToId(data.id),
       cost: safeToFloat(data.unitCost?.amount),
       country_code_of_origin: data.countryCodeOfOrigin,
-      created_at: data.createdAt,
+      created_at: safeToString(data.createdAt),
       harmonized_system_code: data.harmonizedSystemCode,
       province_code_of_origin: data.provinceCodeOfOrigin,
       requires_shipping: data.requiresShipping,
       sku: data.sku,
       tracked: data.tracked,
-      updated_at: data.updatedAt,
+      updated_at: safeToString(data.updatedAt),
       inventory_history_url: data.inventoryHistoryUrl,
     };
 

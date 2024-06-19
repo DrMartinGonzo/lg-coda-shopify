@@ -6,7 +6,7 @@ export const CustomerAddressSchema = coda.makeObjectSchema({
   properties: {
     ...AddressSchema.properties,
     id: PROPS.makeRequiredIdNumberProp('address'),
-    default: { type: coda.ValueType.Boolean, description: 'Returns true for each default address.' },
+    default: { type: coda.ValueType.Boolean, description: 'Returns true for each default address.', required: true },
   },
   displayProperty: 'display',
 });

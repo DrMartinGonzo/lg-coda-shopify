@@ -32,3 +32,19 @@ export function formatImageForRow(image: ImageApiData) {
     image_url: image?.src ?? null,
   };
 }
+
+export function formatImageForData({
+  image_alt_text,
+  image_url,
+}: {
+  image_alt_text?: string;
+  image_url?: string;
+}): ImageApiData | null {
+  if (image_alt_text || image_url) {
+    return {
+      alt: image_alt_text,
+      src: image_url,
+    };
+  }
+  return null;
+}

@@ -101,7 +101,7 @@ const addressPersonFullNameProp = {
 
 export const AddressSchema = coda.makeObjectSchema({
   properties: {
-    display: { type: coda.ValueType.String, description: 'Formatted display name of the address.' },
+    display: { type: coda.ValueType.String, description: 'Formatted display name of the address.', required: true },
     address1: addressAddress1,
     address2: addressAddress2,
     city: addressCityProp,

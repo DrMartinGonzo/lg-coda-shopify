@@ -248,7 +248,10 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Order;
   protected static readonly graphQlName = GraphQlResourceNames.Order;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: OrderRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { admin_url, browser_user_agent, browser_accept_language, customer, ...row }: OrderRow
+  ) {
     const data: Partial<OrderModelData> = {
       ...row,
 
@@ -271,7 +274,7 @@ export class OrderModel extends AbstractModelRestWithGraphQlMetafields {
       total_tip_received: safeToString(row.total_tip_received),
 
       company: row.company as CompanyApiData,
-      customer: row.customer?.id ? { id: row.customer.id } : undefined,
+      customer: customer?.id ? { id: customer.id } : undefined,
       discount_codes: row.discount_codes as DiscountCodeApiData[],
       fulfillments: row.fulfillments as FulfillmentApiData[],
       line_items: row.line_items as OrderLineItemApiData[],

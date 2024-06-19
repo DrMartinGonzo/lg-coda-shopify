@@ -32,18 +32,21 @@ export class LocationModel extends AbstractModelGraphQlWithMetafields {
   public static readonly metafieldRestOwnerType: SupportedMetafieldOwnerResource = RestResourcesSingular.Location;
   public static readonly metafieldGraphQlOwnerType = MetafieldOwnerType.Location;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, row: LocationRow) {
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { address1, address2, city, country, country_code, phone, province, province_code, zip, ...row }: LocationRow
+  ) {
     let data: Partial<LocationModelData> = {
       address: {
-        address1: row.address1,
-        address2: row.address2,
-        city: row.city,
-        country: row.country,
-        countryCode: row.country_code,
-        phone: row.phone,
-        province: row.province,
-        provinceCode: row.province_code,
-        zip: row.zip,
+        address1,
+        address2,
+        city,
+        country,
+        countryCode: country_code,
+        phone,
+        province,
+        provinceCode: province_code,
+        zip,
       },
       fulfillsOnlineOrders: row.fulfills_online_orders,
       hasActiveInventory: row.has_active_inventory,
@@ -69,7 +72,7 @@ export class LocationModel extends AbstractModelGraphQlWithMetafields {
   }
 
   public toCodaRow(): LocationRow {
-    const { metafields = [], ...data } = this.data;
+    const { metafields = [], address, ...data } = this.data;
 
     let obj: Partial<LocationRow> = {
       id: this.restId,
@@ -83,16 +86,16 @@ export class LocationModel extends AbstractModelGraphQlWithMetafields {
       local_pickup_settings: data.localPickupSettingsV2,
       ships_inventory: data.shipsInventory,
 
-      address1: data.address?.address1,
-      address2: data.address?.address2,
-      city: data.address?.city,
-      country: data.address?.country,
-      country_code: data.address?.countryCode,
+      address1: address?.address1,
+      address2: address?.address2,
+      city: address?.city,
+      country: address?.country,
+      country_code: address?.countryCode,
       name: data.name,
-      phone: data.address?.phone,
-      province: data.address?.province,
-      province_code: data.address?.provinceCode,
-      zip: data.address?.zip,
+      phone: address?.phone,
+      province: address?.province,
+      province_code: address?.provinceCode,
+      zip: address?.zip,
       ...formatMetafieldsForOwnerRow(metafields),
     };
 

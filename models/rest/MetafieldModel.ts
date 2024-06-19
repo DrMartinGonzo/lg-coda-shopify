@@ -11,7 +11,7 @@ import { BaseRow, MetafieldRow } from '../../schemas/CodaRows.types';
 import { formatMetafieldDefinitionReference } from '../../schemas/syncTable/MetafieldDefinitionSchema';
 import { metafieldSyncTableHelperEditColumns } from '../../schemas/syncTable/MetafieldSchema';
 import { getSupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTable';
-import { isNullish } from '../../utils/helpers';
+import { isNullish, safeToString } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
 import {
@@ -84,19 +84,28 @@ export class MetafieldModel extends AbstractModelRest {
     context: coda.ExecutionContext;
     normalizedData: MetafieldNormalizedData;
   }) {
+    const {
+      parentOwnerId,
+      gid,
+      ownerId,
+      ownerGid,
+      definitionGid,
+      ownerType,
+      parentOwnerGid,
+      ownerResource,
+      createdAt,
+      updatedAt,
+      definitionId,
+      ...data
+    } = normalizedData;
     return MetafieldModel.createInstance(context, {
-      admin_graphql_api_id: normalizedData.gid,
-      id: normalizedData.id,
-      namespace: normalizedData.namespace,
-      key: normalizedData.key,
-      type: normalizedData.type,
-      value: normalizedData.value,
-      owner_id: normalizedData.ownerId,
-      owner_resource: normalizedData.ownerResource,
-      created_at: normalizedData.createdAt,
-      updated_at: normalizedData.updatedAt,
-      definition_id: normalizedData.definitionId,
-      isDeletedFlag: normalizedData.isDeletedFlag,
+      ...data,
+      admin_graphql_api_id: gid,
+      owner_id: ownerId,
+      owner_resource: ownerResource,
+      created_at: safeToString(createdAt),
+      updated_at: safeToString(updatedAt),
+      definition_id: definitionId,
     } as MetafieldModelData);
   }
 
