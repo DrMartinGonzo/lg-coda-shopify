@@ -2489,6 +2489,9 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       inventoryPolicy: modelData.inventoryPolicy as any,
       position: modelData.position,
       price: modelData.price,
+      // TODO: Shopify doc tells us to use inventoryItem.sku instead. But InventoryItemInput doesn't seem to support it ??
+      // TODO: Should be available in next api version : 2024-07
+      // @ts-expect-error
       sku: modelData.sku,
       taxable: modelData.taxable,
       taxCode: modelData.taxCode,

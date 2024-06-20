@@ -19,7 +19,9 @@ import { SyncCollectionsParams } from '../sync/rest/SyncedCollections';
 import { SyncCollectsParams } from '../sync/rest/SyncedCollects';
 import { SyncCustomersParams } from '../sync/rest/SyncedCustomers';
 import { SyncDraftOrdersParams } from '../sync/rest/SyncedDraftOrders';
+import { SyncInventoryLevelsParams } from '../sync/rest/SyncedInventoryLevels';
 import { SyncMetafieldsParams } from '../sync/rest/SyncedMetafields';
+import { SyncOrderLineItemsParams } from '../sync/rest/SyncedOrderLineItems';
 import { SyncOrdersParams } from '../sync/rest/SyncedOrders';
 import { SyncPagesParams } from '../sync/rest/SyncedPages';
 import { SyncRedirectsParams } from '../sync/rest/SyncedRedirects';
@@ -142,6 +144,19 @@ test('Sync Files', async () => {
   compareToExpectedRow(
     result.find((res) => res.GraphqlGid === expected.id),
     normalizeExpectedRowKeys(expected)
+  );
+});
+
+test('Sync InventoryLevels', async () => {
+  const expected = expectedRows.inventoryLevel;
+  const result = await doSync('InventoryLevels', [
+    ['Vitest Location (74534912256)'], // locationIds
+    undefined, // updatedAtMin
+  ] as SyncInventoryLevelsParams);
+
+  compareToExpectedRow(
+    result.find((res) => res.UniqueId === expected.unique_id),
+    normalizeExpectedRowKeys(expected) // No need to normalize because dynamic schema will not be normalized in CLI context
   );
 });
 
@@ -273,11 +288,28 @@ test('Sync Orders with Metafields', async () => {
     undefined, // customerTags
     undefined, // orderTags
   ] as SyncOrdersParams);
-  // console.log('result', result[0].line_items);
-  // throw new Error('Not implemented');
 
   compareToExpectedRow(
     result.find((res) => res.id === expected.id),
+    expected // No need to normalize because dynamic schema will not be normalized in CLI context
+  );
+});
+
+test('Sync OrderLineItems', async () => {
+  const expected = expectedRows.orderLineItems;
+  const result = await doSync('OrderLineItems', [
+    'any', // orderStatus
+    undefined, // orderCreatedAt
+    undefined, // orderUpdatedAt
+    undefined, // orderProcessedAt
+    undefined, // orderFinancialStatus
+    undefined, // orderFulfillmentStatus
+    ['5516156698880'], // idArray
+    undefined, // sinceOrderId
+  ] as SyncOrderLineItemsParams);
+
+  compareToExpectedRow(
+    result,
     expected // No need to normalize because dynamic schema will not be normalized in CLI context
   );
 });

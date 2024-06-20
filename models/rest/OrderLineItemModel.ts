@@ -7,6 +7,7 @@ import { TypeFromCodaSchema } from '../../schemas/Schema.types';
 import { OrderLineItemSchema } from '../../schemas/basic/OrderLineItemSchema';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatProductVariantReference } from '../../schemas/syncTable/ProductVariantSchema';
+import { formatOrderLineItemPropertyForOrder } from '../utils/orders-utils';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
 import { DutyApiData, PriceSetApiData } from './OrderModel';
 
@@ -39,7 +40,7 @@ export class OrderLineItemModel extends AbstractModelRest {
   public toCodaRow(): OrderLineItemRow {
     const { data } = this;
     const obj: OrderLineItemRow = {
-      ...data,
+      ...formatOrderLineItemPropertyForOrder(data),
       order: formatOrderReference(data.order_id, data.order_name),
       variant: formatProductVariantReference(data.variant_id, data.variant_title),
     };

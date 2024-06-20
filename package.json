@@ -12,7 +12,7 @@
     "check:circular-dependencies:test": "dpdm --no-warning --no-tree -T ./test/*",
     "check:types": "tsc --noEmit",
     "check:size": "coda build pack.ts -o ./buildTest && source-map-explorer --only-mapped ./buildTest/bundle.js ./buildTest/bundle.js.map && rm -rf ./buildTest",
-    "check:unused": "knip --production --strict",
+    "check:unused": "knip",
     "------------------ CODE GENERATION ------------------": "",
     "regen:all": "yarn regen:graphql && yarn regen:constants && yarn regen:interfaces",
     "regen:constants": "ts-node --esm ./_buildScripts/regen-constants-from-admin-types.ts",
@@ -56,8 +56,6 @@
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.6.0",
     "@graphql-codegen/cli": "^5.0.2",
-    "@graphql-codegen/client-preset": "^4.1.0",
-    "@graphql-codegen/introspection": "4.0.0",
     "@graphql-codegen/typescript": "4.0.1",
     "@types/node": "^18",
     "@types/url-parse": "^1.4.11",
