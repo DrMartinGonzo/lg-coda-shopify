@@ -599,7 +599,7 @@ function formatMoneyFieldForSchema(parsedValue: { amount: string }) {
  */
 export function formatMetaFieldValueForSchema({ value, type }: { value: string; type: string }) {
   const parsedValue = maybeParseJson(value);
-  if (typeof parsedValue === 'undefined' || parsedValue === null || parsedValue === '') return;
+  if (isNullishOrEmpty(parsedValue)) return null;
 
   switch (type) {
     case METAFIELD_TYPES.single_line_text_field:

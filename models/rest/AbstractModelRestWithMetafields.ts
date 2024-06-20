@@ -47,8 +47,8 @@ abstract class AbstractModelRestWithMetafields extends AbstractModelRest {
     if (isUpdate) {
       /** Il faut séparer les metafields de l'objet d'origine pour ne pas les
        * sauvegarder lors d'une update. Ils seront sauvegardés séparément */
-      const { metafields, ...data } = apiData;
-      response = await this.client.update(data);
+      const { metafields, ...dataWithoutMetafields } = apiData;
+      response = await this.client.update(dataWithoutMetafields);
     } else {
       response = await this.client.create(apiData);
     }
