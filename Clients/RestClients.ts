@@ -671,7 +671,7 @@ export class DraftOrderClient extends AbstractRestClient<
 
   async complete({ id, payment_gateway_id = null, payment_pending = null }: CompleteDraftOrderArgs) {
     return this.fetcher.put<DraftOrderApiData>({
-      path: `${this.plural}.json/${id}/complete.json`,
+      path: `${this.plural}/${id}/complete.json`,
       body: {
         payment_gateway_id,
         payment_pending,
@@ -683,7 +683,7 @@ export class DraftOrderClient extends AbstractRestClient<
 
   async send_invoice({ id, bcc, custom_message, from, subject, to }: SendDraftOrderInvoiceArgs) {
     return this.fetcher.post<DraftOrderApiData>({
-      path: `${this.plural}.json/${id}/send_invoice.json`,
+      path: `${this.plural}/${id}/send_invoice.json`,
       body: {
         draft_order_invoice: excludeNullishObjectKeys({ to, from, bcc, subject, custom_message }),
       },
@@ -997,7 +997,7 @@ export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersAr
     refund = null,
   }: CancelOrderArgs): Promise<RestRequestReturn<OrderApiData>> {
     return this.fetcher.post<OrderApiData>({
-      path: `${this.plural}.json/${id}/cancel.json`,
+      path: `${this.plural}/${id}/cancel.json`,
       body: {
         amount,
         currency,
@@ -1013,7 +1013,7 @@ export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersAr
 
   async close(id: number): Promise<RestRequestReturn<OrderApiData>> {
     return this.fetcher.post<OrderApiData>({
-      path: `${this.plural}.json/${id}/close.json`,
+      path: `${this.plural}/${id}/close.json`,
       body: {},
       name: `close ${this.singular}`,
       transformResponseBody: this.transformResponseBodySingle.bind(this),
@@ -1022,7 +1022,7 @@ export class OrderClient extends AbstractRestClient<BaseSingleArgs, ListOrdersAr
 
   async open(id: number): Promise<RestRequestReturn<OrderApiData>> {
     return this.fetcher.post<OrderApiData>({
-      path: `${this.plural}.json/${id}/open.json`,
+      path: `${this.plural}/${id}/open.json`,
       body: {},
       name: `re-open ${this.singular}`,
       transformResponseBody: this.transformResponseBodySingle.bind(this),

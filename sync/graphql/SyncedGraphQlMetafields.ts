@@ -4,6 +4,7 @@ import * as coda from '@codahq/packs-sdk';
 import { ListMetafieldsByOwnerTypeArgs, MetafieldClient } from '../../Clients/GraphQlClients';
 import { MetafieldGraphQlModel } from '../../models/graphql/MetafieldGraphQlModel';
 import { getMetafieldsDynamicSchema } from '../../models/utils/metafields-utils';
+import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -33,6 +34,13 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
     return { metafieldKeys, ownerType };
   }
 
+  protected async createInstanceFromRow(row: MetafieldRow) {
+    return super.createInstanceFromRow({
+      ...row,
+      owner_type: this.context.sync.dynamicUrl,
+    });
+  }
+
   protected async sync() {
     return (this.client as MetafieldClient).listByOwnerType(this.getListParams());
   }
@@ -53,10 +61,7 @@ export class SyncedGraphQlMetafields extends AbstractSyncedGraphQlResources<Meta
    * - owner_id if not a Shop metafield
    */
   protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const additionalKeys = ['label', 'type', 'owner_type'];
-    if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
-      additionalKeys.push('owner_id');
-    }
+    const additionalKeys = ['label', 'type', 'owner_id'];
     return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
   }
 }

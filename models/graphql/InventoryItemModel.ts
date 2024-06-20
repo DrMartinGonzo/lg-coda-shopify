@@ -64,7 +64,7 @@ export class InventoryItemModel extends AbstractModelGraphQl {
     let obj: Partial<InventoryItemRow> = {
       admin_graphql_api_id: data.id,
       id: graphQlGidToId(data.id),
-      cost: safeToFloat(data.unitCost?.amount),
+      cost: safeToFloat(data.unitCost?.amount) ?? null,
       country_code_of_origin: data.countryCodeOfOrigin,
       created_at: safeToString(data.createdAt),
       harmonized_system_code: data.harmonizedSystemCode,

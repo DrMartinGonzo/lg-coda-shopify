@@ -19,7 +19,7 @@ export function formatAddressToRow(data: AddressApiData) {
 export function formatRowAddressToApi(
   rowData: PartialBy<ReturnType<typeof formatAddressToRow>, 'latitude' | 'longitude'>
 ): AddressApiData {
-  if (!rowData) return null;
+  if (!rowData) return undefined;
   const { display, latitude, longitude, ...address } = rowData;
   return {
     ...address,
@@ -41,7 +41,7 @@ export function formatCustomerRowAddressToApi(
   rowData: ReturnType<typeof formatCustomerAddressToRow>,
   customer_id?: number
 ): CustomerAddressApiData {
-  if (!rowData) return null;
+  if (!rowData) return undefined;
   const { display, ...address } = rowData;
   return {
     ...address,

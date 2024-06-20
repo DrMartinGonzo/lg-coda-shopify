@@ -815,7 +815,7 @@ export class FileClient extends AbstractGraphQlClient<FileModelData> {
     const input: VariablesOf<typeof updateFilesMutation>['files'][number] = {
       id: modelData.id,
       filename: modelData.filename,
-      alt: modelData.alt,
+      alt: modelData.alt ?? '',
     };
     const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
 

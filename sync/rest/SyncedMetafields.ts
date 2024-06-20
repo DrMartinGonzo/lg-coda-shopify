@@ -6,8 +6,8 @@ import { PREFIX_FAKE } from '../../constants/strings-constants';
 import { graphQlGidToId } from '../../graphql/utils/graphql-utils';
 import { MetafieldDefinitionModelData } from '../../models/graphql/MetafieldDefinitionModel';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
-import { getMetafieldsDynamicSchema } from '../../models/utils/metafields-utils';
-import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
+import { getMetaFieldFullKey, getMetafieldsDynamicSchema } from '../../models/utils/metafields-utils';
+import { MetafieldRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { MetafieldSyncTableSchema } from '../../schemas/syncTable/MetafieldSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
@@ -40,6 +40,13 @@ export class SyncedMetafields<
   public get codaParamsMap() {
     const [metafieldKeys] = this.codaParams as SyncMetafieldsParams;
     return { metafieldKeys };
+  }
+
+  protected async createInstanceFromRow(row: MetafieldRow) {
+    return super.createInstanceFromRow({
+      ...row,
+      owner_type: this.context.sync.dynamicUrl,
+    });
   }
 
   protected async beforeSync(): Promise<void> {
@@ -106,8 +113,9 @@ export class SyncedMetafields<
    * - owner_id if not a Shop metafield
    */
   protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const additionalKeys = ['label', 'type', 'owner_type'];
-    if (update.newValue.owner_type !== MetafieldOwnerType.Shop) {
+    const additionalKeys = ['label', 'type'];
+    const ownerType = this.context.sync.dynamicUrl;
+    if (ownerType !== MetafieldOwnerType.Shop) {
       additionalKeys.push('owner_id');
     }
     return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
