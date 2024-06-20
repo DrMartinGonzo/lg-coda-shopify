@@ -12,9 +12,12 @@ import {
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import {
   METAFIELD_LEGACY_TYPES,
+  METAFIELD_LIST_PREFIX,
   METAFIELD_TYPES,
   MeasurementField,
   MetafieldLegacyType,
+  MetafieldListMeasurementType,
+  MetafieldMeasurementType,
   MetafieldReferenceType,
   MetafieldType,
   MoneyField,
@@ -44,7 +47,6 @@ import { SupportedMetafieldSyncTable } from '../../sync/SupportedMetafieldSyncTa
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import {
   deepCopy,
-  extractValueAndUnitFromMeasurementString,
   isNullishOrEmpty,
   logAdmin,
   maybeParseJson,
@@ -52,7 +54,6 @@ import {
   safeToFloat,
   safeToString,
   splitAndTrimValues,
-  unitToShortName,
 } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { MetafieldDefinitionModel } from '../graphql/MetafieldDefinitionModel';
@@ -64,6 +65,7 @@ import {
 } from '../graphql/MetafieldGraphQlModel';
 import { BaseModelDataRest } from '../rest/AbstractModelRest';
 import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
+import { extractValueAndUnitFromMeasurementString, measurementUnitToLabel } from './measurements-utils';
 import { singularToPlural } from './restModel-utils';
 
 // #endregion
@@ -419,12 +421,17 @@ function formatMoneyFieldsForApi(amount: number, currency_code: CurrencyCode): s
  * @param measurementValue the string entered by user in format "{value}{unit}" with eventual spaces between
  * @param metafieldType the type of metafield
  */
-function formatMeasurementField(measurementValue: string, metafieldType: MetafieldType): MeasurementField {
-  const measurementType = metafieldType.replace('list.', '');
-  const { value, unitFull } = extractValueAndUnitFromMeasurementString(measurementValue, measurementType);
+function formatMeasurementField(
+  measurementValue: string,
+  metafieldType: MetafieldMeasurementType | MetafieldListMeasurementType
+): MeasurementField {
+  const { value, label } = extractValueAndUnitFromMeasurementString(
+    measurementValue,
+    removeMetafieldTypeListPrefix(metafieldType) as MetafieldMeasurementType
+  );
   return {
     value,
-    unit: unitFull,
+    unit: label,
   };
 }
 
@@ -433,7 +440,10 @@ function formatMeasurementField(measurementValue: string, metafieldType: Metafie
  * @param measurementValue the string or list of strings entered by user in format "{value}{unit}" with eventual spaces between
  * @param metafieldType the type of metafield
  */
-function formatMeasurementFieldsForApi(measurementValue: string | string[], metafieldType: MetafieldType): string {
+function formatMeasurementFieldsForApi(
+  measurementValue: string | string[],
+  metafieldType: MetafieldMeasurementType | MetafieldListMeasurementType
+): string {
   return Array.isArray(measurementValue)
     ? JSON.stringify(measurementValue.map((v) => formatMeasurementFieldsForApi(v, metafieldType)))
     : JSON.stringify(formatMeasurementField(measurementValue, metafieldType));
@@ -560,6 +570,18 @@ export function formatMetafieldValueForApi(
 // #endregion
 
 // #region Format for Schema
+export function removeMetafieldTypeListPrefix(metafieldType: MetafieldType) {
+  return metafieldType.replace(METAFIELD_LIST_PREFIX, '') as MetafieldType;
+}
+export function prependMetafieldTypeListPrefix(metafieldType: MetafieldType) {
+  return isListMetaFieldType(metafieldType)
+    ? metafieldType
+    : ((METAFIELD_LIST_PREFIX + metafieldType) as MetafieldType);
+}
+function isListMetaFieldType(metafieldType: MetafieldType): boolean {
+  return metafieldType.startsWith(METAFIELD_LIST_PREFIX);
+}
+
 function formatReferenceFieldsForSchema(
   parsedValue: string | string[],
   formatReference: FormatRowReferenceFn<string | number, any>,
@@ -582,7 +604,7 @@ function formatMeasurementFieldsForSchema(
 ) {
   return Array.isArray(parsedValue)
     ? parsedValue.map((v) => formatMeasurementFieldsForSchema(v))
-    : `${parsedValue.value}${unitToShortName(parsedValue.unit)}`;
+    : `${parsedValue.value}${measurementUnitToLabel(parsedValue.unit)}`;
 }
 function formatRatingFieldsForSchema(parsedValue: { value: string } | { value: string }[]) {
   return Array.isArray(parsedValue)
@@ -736,7 +758,7 @@ function maybeHasMetaFieldKeys(keys: string[]) {
  * This allows us to detect if a coda column key is a metafield column to handle updates
  */
 export function preprendPrefixToMetaFieldKey(fullKey: string): string {
-  return CUSTOM_FIELD_PREFIX_KEY + fullKey;
+  return isPrefixedMetaFieldKey(fullKey) ? fullKey : CUSTOM_FIELD_PREFIX_KEY + fullKey;
 }
 
 /**

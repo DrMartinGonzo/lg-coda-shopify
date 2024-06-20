@@ -3,7 +3,7 @@ import * as coda from '@codahq/packs-sdk';
 
 import { CACHE_DEFAULT, CACHE_MAX } from '../../constants/cacheDurations-constants';
 import { OPTIONS_PRODUCT_STATUS_GRAPHQL } from '../../constants/options-constants';
-import { getUnitMap } from '../../utils/helpers';
+import { weightUnitsToLabelMap } from '../../models/utils/measurements-utils';
 
 import { filters, inputs } from '../utils/coda-parameters';
 
@@ -18,19 +18,16 @@ export const Formula_WeightUnit = coda.makeFormula({
       type: coda.ParameterType.String,
       name: 'unit',
       description: 'Shopify supported weight unit type.',
-      autocomplete: Object.keys(getUnitMap('weight')),
+      autocomplete: Object.keys(weightUnitsToLabelMap),
       suggestedValue: 'GRAMS',
     }),
   ],
   cacheTtlSecs: CACHE_MAX,
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
-  execute: async ([unit]) => {
-    const unitMap = getUnitMap('weight');
-    if (!unitMap.hasOwnProperty(unit)) {
-      throw new coda.UserVisibleError('Unsupported unit: ' + unit);
-    }
-    return unitMap[unit];
+  execute: async ([weightUnit]) => {
+    if (weightUnit in weightUnitsToLabelMap) return weightUnitsToLabelMap[weightUnit];
+    throw new coda.UserVisibleError('Unsupported unit: ' + weightUnit);
   },
 });
 

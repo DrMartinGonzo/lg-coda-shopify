@@ -3,7 +3,6 @@ import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
 import { IS_ADMIN_RELEASE } from '../pack-config.json';
-import { LengthUnit, WeightUnit } from '../types/admin.types';
 
 // #endregion
 
@@ -18,88 +17,6 @@ export function capitalizeFirstChar(str: string) {
 export const convertTTCtoHT = (price, taxRate) => {
   return taxRate ? price / (1 + taxRate) : price;
 };
-
-// #region measurement units helpers
-export const weightUnitsMap: { [key in WeightUnit]: string } = {
-  // WEIGHT
-  GRAMS: 'g',
-  KILOGRAMS: 'kg',
-  OUNCES: 'oz',
-  POUNDS: 'lb',
-};
-const dimensionUnitsMap: { [key in LengthUnit]: string } = {
-  CENTIMETERS: 'cm',
-  FEET: 'pi',
-  INCHES: 'po',
-  METERS: 'm',
-  MILLIMETERS: 'mm',
-  YARDS: 'yd',
-};
-const volumeUnitsMap = {
-  MILLILITERS: 'ml',
-  CENTILITERS: 'cl',
-  LITERS: 'l',
-  CUBIC_METERS: 'm³',
-  FLUID_OUNCES: 'oz liq.',
-  PINTS: 'pt',
-  QUARTS: 'qt',
-  GALLONS: 'gal',
-  IMPERIAL_FLUID_OUNCES: 'oz liq. imp.',
-  IMPERIAL_PINTS: 'pt imp.',
-  IMPERIAL_QUARTS: 'qt imp.',
-  IMPERIAL_GALLONS: 'gal imp.',
-};
-export function getUnitMap(measurementType: string) {
-  switch (measurementType) {
-    case 'weight':
-      return weightUnitsMap;
-    case 'dimension':
-      return dimensionUnitsMap;
-    case 'volume':
-      return volumeUnitsMap;
-    default:
-      throw new coda.UserVisibleError(`Invalid measurement type: ${measurementType}`);
-  }
-}
-
-export function unitToShortName(unit: string) {
-  const allUnitsMap = { ...weightUnitsMap, ...dimensionUnitsMap, ...volumeUnitsMap };
-  const unitShortName = allUnitsMap[unit];
-  if (!unitShortName) {
-    console.error(`Unknown unit: ${unit}`);
-    return '';
-  }
-  return unitShortName;
-}
-
-export function extractValueAndUnitFromMeasurementString(
-  measurementString: string,
-  measurementType: string
-): {
-  value: number;
-  unit: WeightUnit | LengthUnit | string;
-  unitFull: string;
-} {
-  const unitsMap = getUnitMap(measurementType);
-  const possibleUnits = Object.values(unitsMap);
-  const measurementRegex = /^(\d+(\.\d+)?)\s*([a-zA-Z²³µ]*)$/;
-
-  const match = measurementString.match(measurementRegex);
-  if (match) {
-    const value = parseFloat(match[1]);
-    const unit = match[3];
-
-    if (possibleUnits.includes(unit)) {
-      const unitFull = Object.keys(unitsMap)[possibleUnits.indexOf(unit)];
-      return { value, unit, unitFull };
-    } else {
-      throw new coda.UserVisibleError(`Invalid unit: ${unit}`);
-    }
-  } else {
-    throw new coda.UserVisibleError(`Invalid measurement string: ${measurementString}`);
-  }
-}
-// #endregion
 
 // #region Log helpers
 export function logAdmin(msg: any) {

@@ -9,7 +9,8 @@ import { productVariantFieldsFragment } from '../../graphql/productVariants-grap
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { getUnitMap, safeToFloat, safeToString, unitToShortName, weightUnitsMap } from '../../utils/helpers';
+import { safeToFloat, safeToString } from '../../utils/helpers';
+import { measurementUnitToLabel, weightUnitsToLabelMap } from '../utils/measurements-utils';
 import { SupportedMetafieldOwnerResource } from '../rest/MetafieldModel';
 import { formatMetafieldsForOwnerRow } from '../utils/metafields-utils';
 import {
@@ -98,7 +99,7 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
         /** Only add weight_unit if it's not undefined.
          * If needed by an update, {@link AbstractResource.addMissingData} will fill in the rest */
         if (row.weight_unit) {
-          data.inventoryItem.measurement.weight.unit = Object.entries(getUnitMap('weight')).find(([key, value]) => {
+          data.inventoryItem.measurement.weight.unit = Object.entries(weightUnitsToLabelMap).find(([key, value]) => {
             return value === row.weight_unit;
           })[0] as any;
         }
@@ -147,18 +148,18 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
 
     if (inventoryItem?.measurement?.weight) {
       obj.weight = inventoryItem.measurement.weight?.value;
-      obj.weight_unit = unitToShortName(inventoryItem.measurement.weight?.unit);
+      obj.weight_unit = measurementUnitToLabel(inventoryItem.measurement.weight?.unit);
       switch (obj.weight_unit) {
-        case weightUnitsMap.GRAMS:
+        case weightUnitsToLabelMap.GRAMS:
           obj.grams = obj.weight;
           break;
-        case weightUnitsMap.KILOGRAMS:
+        case weightUnitsToLabelMap.KILOGRAMS:
           obj.grams = obj.weight * 1000;
           break;
-        case weightUnitsMap.OUNCES:
+        case weightUnitsToLabelMap.OUNCES:
           obj.grams = obj.weight * 28.34952;
           break;
-        case weightUnitsMap.POUNDS:
+        case weightUnitsToLabelMap.POUNDS:
           obj.grams = obj.weight * 453.59237;
           break;
       }

@@ -9,12 +9,23 @@ import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { MetafieldDefinitionClient } from '../Clients/GraphQlClients';
 import { ShopClient } from '../Clients/RestClients';
 import { InvalidValueError, UnsupportedValueError } from '../Errors/Errors';
+import {
+  METAFIELD_LEGACY_TYPES,
+  METAFIELD_TYPES,
+  MetafieldLegacyType,
+  MetafieldMeasurementType,
+  MetafieldType,
+} from '../constants/metafields-constants';
 import { metafieldDefinitionFragment } from '../graphql/metafieldDefinitions-graphql';
 import { metaobjectFieldDefinitionFragment } from '../graphql/metaobjectDefinition-graphql';
-import { METAFIELD_LEGACY_TYPES, METAFIELD_TYPES } from '../constants/metafields-constants';
-import { getMetaFieldFullKey, preprendPrefixToMetaFieldKey } from '../models/utils/metafields-utils';
+import { getUnitToLabelMapByMeasurementType } from '../models/utils/measurements-utils';
+import {
+  getMetaFieldFullKey,
+  preprendPrefixToMetaFieldKey,
+  removeMetafieldTypeListPrefix,
+} from '../models/utils/metafields-utils';
 import { CurrencyCode, MetafieldDefinition as MetafieldDefinitionType, MetafieldOwnerType } from '../types/admin.types';
-import { capitalizeFirstChar, getUnitMap } from '../utils/helpers';
+import { capitalizeFirstChar } from '../utils/helpers';
 import { CollectionReference } from './syncTable/CollectionSchema';
 import { FileReference } from './syncTable/FileSchema';
 import { getMetaobjectReferenceSchema } from './syncTable/MetaObjectSchema';
@@ -122,7 +133,7 @@ export async function augmentSchemaWithMetafields<
 export function mapMetaFieldToSchemaProperty(
   fieldDefinition: ResultOf<typeof metafieldDefinitionFragment> | ResultOf<typeof metaobjectFieldDefinitionFragment>
 ): coda.Schema & coda.ObjectSchemaProperty {
-  const type = fieldDefinition.type.name;
+  const type = fieldDefinition.type.name as MetafieldType | MetafieldLegacyType;
   /** description can be null for metaobjects and coda will complain the schema is invalid. I fnull we must set it to undefined */
   let description = fieldDefinition.description ?? undefined;
   const isMetaobjectFieldDefinition = !fieldDefinition.hasOwnProperty('namespace');
@@ -195,9 +206,9 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         ...PROPS.STRING,
         mutable: true,
-        description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(getUnitMap(type)).join(
-          ', '
-        )}.`,
+        description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
+          getUnitToLabelMapByMeasurementType(type)
+        ).join(', ')}.`,
       };
     case METAFIELD_TYPES.list_weight:
     case METAFIELD_TYPES.list_dimension:
@@ -207,7 +218,7 @@ export function mapMetaFieldToSchemaProperty(
         type: coda.ValueType.Array,
         items: PROPS.STRING,
         description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
-          getUnitMap(type.replace('list.', ''))
+          getUnitToLabelMapByMeasurementType(removeMetafieldTypeListPrefix(type) as MetafieldMeasurementType)
         ).join(', ')}.`,
       };
 

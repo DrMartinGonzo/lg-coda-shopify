@@ -1,9 +1,9 @@
 // #region Imports
 
 import { InvalidValueError, InvalidValueVisibleError, RequiredParameterMissingVisibleError } from '../Errors/Errors';
-import { MetafieldType } from '../constants/metafields-constants';
-import { METAFIELD_TYPES } from '../constants/metafields-constants';
-import { getUnitMap, isNullishOrEmpty } from '../utils/helpers';
+import { METAFIELD_TYPES, MetafieldMeasurementType, MetafieldType } from '../constants/metafields-constants';
+import { getUnitToLabelMapByMeasurementType } from '../models/utils/measurements-utils';
+import { isNullishOrEmpty } from '../utils/helpers';
 
 // #endregion
 
@@ -48,7 +48,11 @@ export class CodaMetafieldValue {
       [METAFIELD_TYPES.dimension, METAFIELD_TYPES.volume, METAFIELD_TYPES.weight].includes(this.type as any) &&
       this.value !== null
     ) {
-      if (!Object.keys(getUnitMap(this.type)).includes(this.value.unit)) {
+      if (
+        !Object.keys(getUnitToLabelMapByMeasurementType(this.type as MetafieldMeasurementType)).includes(
+          this.value.unit
+        )
+      ) {
         throw new InvalidValueVisibleError(this.value.unit);
       }
     }

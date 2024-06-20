@@ -2,7 +2,7 @@ import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { NOT_FOUND } from '../../constants/strings-constants';
-import { getUnitMap } from '../../utils/helpers';
+import { weightUnitsToLabelMap } from '../../models/utils/measurements-utils';
 import { FormatRowReferenceFn } from '../CodaRows.types';
 import { ProductReference } from './ProductSchema';
 
@@ -172,7 +172,7 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'weight_unit',
       mutable: true,
       requireForUpdates: true,
-      options: Object.values(getUnitMap('weight')),
+      options: Object.values(weightUnitsToLabelMap),
       description:
         "The unit of measurement that applies to the product variant's weight. If you don't specify a value for weight_unit, then the shop's default unit of measurement is applied. Valid values: g, kg, oz, and lb.",
     },

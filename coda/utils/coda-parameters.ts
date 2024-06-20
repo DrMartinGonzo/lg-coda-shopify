@@ -36,7 +36,12 @@ import {
   getSupportedMetafieldSyncTables,
 } from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
-import { compareByDisplayKey, formatOptionNameId, getUnitMap, weightUnitsMap } from '../../utils/helpers';
+import { compareByDisplayKey, formatOptionNameId } from '../../utils/helpers';
+import {
+  dimensionUnitsToLabelMap,
+  volumeUnitsToLabelMap,
+  weightUnitsToLabelMap,
+} from '../../models/utils/measurements-utils';
 
 // #endregion
 
@@ -616,19 +621,19 @@ const metafieldInputs = {
     type: coda.ParameterType.String,
     name: 'unit',
     description: 'The dimension unit supported by Shopify.',
-    autocomplete: Object.keys(getUnitMap('dimension')),
+    autocomplete: Object.keys(dimensionUnitsToLabelMap),
   }),
   volumeUnitGraphQl: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'unit',
     description: 'The volume unit supported by Shopify.',
-    autocomplete: Object.keys(getUnitMap('volume')),
+    autocomplete: Object.keys(volumeUnitsToLabelMap),
   }),
   weightUnitGraphQl: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'unit',
     description: 'The weight unit supported by Shopify.',
-    autocomplete: Object.keys(getUnitMap('weight')),
+    autocomplete: Object.keys(weightUnitsToLabelMap),
   }),
 };
 // #endregion
@@ -805,7 +810,7 @@ const productVariantInputs = {
   weightUnit: coda.makeParameter({
     type: coda.ParameterType.String,
     name: 'weightUnit',
-    autocomplete: Object.values(weightUnitsMap),
+    autocomplete: Object.values(weightUnitsToLabelMap),
     description:
       "The unit of measurement that applies to the product variant's weight. If you don't specify a value for weight_unit, then the shop's default unit of measurement is applied.",
   }),

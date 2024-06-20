@@ -3,6 +3,8 @@ import { CurrencyCode } from '../types/admin.types';
 
 // #endregion
 
+export const METAFIELD_LIST_PREFIX = 'list.';
+
 export const METAFIELD_TYPES = {
   boolean: 'boolean',
   collection_reference: 'collection_reference',
@@ -60,6 +62,15 @@ export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPE
 
 /** All supported legacy `metafield.type`s */
 export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];
+
+export type MetafieldMeasurementType =
+  | (typeof METAFIELD_TYPES)['dimension']
+  | (typeof METAFIELD_TYPES)['volume']
+  | (typeof METAFIELD_TYPES)['weight'];
+export type MetafieldListMeasurementType =
+  | (typeof METAFIELD_TYPES)['list_dimension']
+  | (typeof METAFIELD_TYPES)['list_volume']
+  | (typeof METAFIELD_TYPES)['list_weight'];
 
 export type MetafieldReferenceType =
   | (typeof METAFIELD_TYPES)['collection_reference']

@@ -2,15 +2,18 @@
 import * as coda from '@codahq/packs-sdk';
 
 import { InvalidValueVisibleError } from '../Errors/Errors';
+import { METAFIELD_TYPES, MetafieldType } from '../constants/metafields-constants';
 import {
   MetafieldGraphQlModel,
   MetafieldModelData as MetafieldGraphQlModelData,
   SupportedMetafieldOwnerType,
 } from '../models/graphql/MetafieldGraphQlModel';
 import { MetafieldModel, MetafieldModelData, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
-import { MetafieldType } from '../constants/metafields-constants';
-import { METAFIELD_TYPES } from '../constants/metafields-constants';
-import { getMetaFieldFullKey, splitMetaFieldFullKey } from '../models/utils/metafields-utils';
+import {
+  getMetaFieldFullKey,
+  prependMetafieldTypeListPrefix,
+  splitMetaFieldFullKey,
+} from '../models/utils/metafields-utils';
 import { arrayUnique } from '../utils/helpers';
 import { CodaMetafieldValue } from './CodaMetafieldValue';
 
@@ -136,7 +139,7 @@ export class CodaMetafieldSet {
       }
 
       if (parsedValues.length > 0) {
-        type = ('list.' + uniqueTypes[0]) as MetafieldType;
+        type = prependMetafieldTypeListPrefix(uniqueTypes[0]);
         if (!Object.values(METAFIELD_TYPES).includes(type)) {
           throw new coda.UserVisibleError(`Shopify doesn't support metafields of type: \`${type}\`.`);
         }

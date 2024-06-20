@@ -1,23 +1,15 @@
 import * as coda from '@codahq/packs-sdk';
-import { normalizeSchema, normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
+import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { pack } from '../pack';
 
 import {
-  MockExecutionContext,
+  executeFormulaFromPackDef,
   executeSyncFormulaFromPackDef,
   newRealFetcherSyncExecutionContext,
 } from '@codahq/packs-sdk/dist/development';
-import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
-import { newJsonFetchResponse } from '@codahq/packs-sdk/dist/development';
-import { newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 
-import { expect, test, describe } from 'vitest';
-import { expectedRows } from './expectedRows';
-import { untransformKeys } from '@codahq/packs-sdk/dist/handler_templates';
-import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
-import { getUnitMap, isObject } from '../utils/helpers';
-import { Action_UpdateArticle } from '../coda/setup/articles-setup';
-import { METAFIELD_TYPES } from '../constants/metafields-constants';
+import { expect } from 'vitest';
+import { isObject } from '../utils/helpers';
 
 // let context: MockExecutionContext;
 // context = newMockExecutionContext({
