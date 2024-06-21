@@ -1,0 +1,21 @@
+{
+  "id": "gid://shopify/Location/74534912256",
+  "name": "Vitest location",
+  "isActive": true,
+  "fulfillsOnlineOrders": true,
+  "hasActiveInventory": true,
+  "shipsInventory": true,
+  "address": {
+    "address1": "3 Avenue Victoria",
+    "address2": "",
+    "city": "Paris",
+    "country": "France",
+    "countryCode": "FR",
+    "phone": "+33154748433",
+    "zip": "75001",
+    "province": null,
+    "provinceCode": null
+  },
+  "fulfillmentService": null,
+  "localPickupSettingsV2": null
+}

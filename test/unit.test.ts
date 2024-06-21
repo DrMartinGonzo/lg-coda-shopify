@@ -2,18 +2,36 @@
 
 import { MockExecutionContext, newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 import { describe, expect, test } from 'vitest';
+import { GraphQlFetcher } from '../Clients/GraphQlClients';
+import { calcGraphQlWaitTime } from '../Clients/utils/client-utils';
 import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors';
 import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
 import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
+import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
 import { CustomCollectionModel } from '../models/rest/CustomCollectionModel';
 import { CollectionRow } from '../schemas/CodaRows.types';
 import { SyncTableMixedContinuation } from '../sync/rest/AbstractSyncedRestResourcesWithGraphQlMetafields';
 import { RestItemsBatch } from '../sync/rest/RestItemsBatch';
 import { stringifyContinuationProperty } from '../sync/utils/sync-utils';
-import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 
 // #endregion
+
+function getRestItemsBatchItems(context: MockExecutionContext, count: number) {
+  const baseRow: CollectionRow = {
+    id: 1,
+    title: 'un titre',
+    body_html: '<p>un body</p>',
+    handle: 'un-handle',
+    published: true,
+    template_suffix: undefined,
+  };
+  const rows: CollectionRow[] = [];
+  for (let i = 0; i < count; i++) {
+    rows.push({ ...baseRow, id: i + 1 });
+  }
+  return rows.map((row) => CustomCollectionModel.createInstanceFromRow(context, row));
+}
 
 /**
  * On trigger une mise à jour de variant sur weight et option2,
@@ -79,29 +97,71 @@ test('Update missing data on row update', async () => {
   }
 });
 
-let context: MockExecutionContext;
-context = newMockExecutionContext({
-  endpoint: PACK_TEST_ENDPOINT,
+test('calcGraphQlMaxLimit', async () => {
+  const limit = GraphQlFetcher.calcGraphQlMaxLimit({
+    lastCost: {
+      requestedQueryCost: 100,
+    },
+    lastLimit: 250,
+    throttleStatus: {
+      currentlyAvailable: 2000,
+      maximumAvailable: 2000,
+      restoreRate: 100,
+    },
+  });
+  expect(limit).toBe(250);
+
+  const limit2 = GraphQlFetcher.calcGraphQlMaxLimit({
+    lastCost: {
+      requestedQueryCost: 100,
+    },
+    lastLimit: 10,
+    throttleStatus: {
+      currentlyAvailable: 2000,
+      maximumAvailable: 2000,
+      restoreRate: 100,
+    },
+  });
+  expect(limit2).toBe(90);
+
+  const limit3 = GraphQlFetcher.calcGraphQlMaxLimit({
+    lastCost: {
+      requestedQueryCost: 100,
+    },
+    lastLimit: 250,
+    throttleStatus: {
+      currentlyAvailable: 10,
+      maximumAvailable: 2000,
+      restoreRate: 100,
+    },
+  });
+  expect(limit3).toBe(25);
 });
 
-function getRestItemsBatchItems(count: number) {
-  const baseRow: CollectionRow = {
-    id: 1,
-    title: 'un titre',
-    body_html: '<p>un body</p>',
-    handle: 'un-handle',
-    published: true,
-    template_suffix: undefined,
-  };
-  const rows: CollectionRow[] = [];
-  for (let i = 0; i < count; i++) {
-    rows.push({ ...baseRow, id: i + 1 });
-  }
-  return rows.map((row) => CustomCollectionModel.createInstanceFromRow(context, row));
-}
+test('calcGraphQlWaitTime', async () => {
+  const waiTime = calcGraphQlWaitTime({
+    currentlyAvailable: 10,
+    maximumAvailable: 2000,
+    restoreRate: 100,
+  });
+  expect(waiTime).toBe(3000);
+
+  const waiTime2 = calcGraphQlWaitTime({
+    currentlyAvailable: 1999,
+    maximumAvailable: 2000,
+    restoreRate: 100,
+  });
+  expect(waiTime2).toBe(0);
+});
+
 describe.concurrent('RestItemsBatch', () => {
+  let context: MockExecutionContext;
+  context = newMockExecutionContext({
+    endpoint: PACK_TEST_ENDPOINT,
+  });
+
   test('RestItemsBatch without continuation', async () => {
-    const currentItems = getRestItemsBatchItems(500);
+    const currentItems = getRestItemsBatchItems(context, 500);
     const limit = 10;
 
     const restItemsBatch = new RestItemsBatch({
@@ -124,7 +184,7 @@ describe.concurrent('RestItemsBatch', () => {
 
   test('RestItemsBatch with continuation, no cursor', async () => {
     const markedId = 999;
-    const prevRestItems = getRestItemsBatchItems(10);
+    const prevRestItems = getRestItemsBatchItems(context, 10);
     const limit = 6;
     const lastCost: ShopifyGraphQlRequestCost = {
       actualQueryCost: 240,
@@ -156,7 +216,7 @@ describe.concurrent('RestItemsBatch', () => {
         batch: previousRestItemsBatch.toString(),
       },
     };
-    const currentItems = getRestItemsBatchItems(30);
+    const currentItems = getRestItemsBatchItems(context, 30);
     const restItemsBatch = new RestItemsBatch({
       prevContinuation: prevContinuation,
       items: currentItems,
@@ -173,7 +233,7 @@ describe.concurrent('RestItemsBatch', () => {
 
   test('RestItemsBatch with continuation, with cursor', async () => {
     const markedId = 999;
-    const prevRestItems = getRestItemsBatchItems(10);
+    const prevRestItems = getRestItemsBatchItems(context, 10);
     const limit = 6;
     const lastCost: ShopifyGraphQlRequestCost = {
       actualQueryCost: 240,
@@ -205,7 +265,7 @@ describe.concurrent('RestItemsBatch', () => {
         batch: previousRestItemsBatch.toString(),
       },
     };
-    const currentItems = getRestItemsBatchItems(30);
+    const currentItems = getRestItemsBatchItems(context, 30);
     const restItemsBatch = new RestItemsBatch({
       prevContinuation: prevContinuation,
       items: currentItems,

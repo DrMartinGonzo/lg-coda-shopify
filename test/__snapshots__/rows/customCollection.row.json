@@ -1,0 +1,17 @@
+{
+  "Id": 413874323712,
+  "Handle": "vitest-custom",
+  "Title": "Vitest Custom Collection",
+  "BodyHtml": "body_html",
+  "PublishedAt": "2024-04-22T03:45:24-04:00",
+  "SortOrder": "best-selling",
+  "TemplateSuffix": null,
+  "PublishedScope": "web",
+  "GraphqlGid": "gid://shopify/Collection/413874323712",
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/collections/413874323712",
+  "Body": "body_html",
+  "Published": true,
+  "Disjunctive": false,
+  "ImageAltText": null,
+  "ImageUrl": null
+}

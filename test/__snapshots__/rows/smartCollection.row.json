@@ -1,0 +1,24 @@
+{
+  "Id": 413086843136,
+  "Handle": "vitest-smart",
+  "Title": "Vitest Smart Collection",
+  "BodyHtml": "<p>Vitest collection</p>",
+  "PublishedAt": "2024-02-20T13:23:12-05:00",
+  "SortOrder": "best-selling",
+  "TemplateSuffix": null,
+  "Disjunctive": false,
+  "Rules": [
+    {
+      "Column": "title",
+      "Relation": "contains",
+      "Condition": "VANS"
+    }
+  ],
+  "PublishedScope": "web",
+  "GraphqlGid": "gid://shopify/Collection/413086843136",
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/collections/413086843136",
+  "Body": "Vitest collection",
+  "Published": true,
+  "ImageAltText": null,
+  "ImageUrl": "https://cdn.shopify.com/s/files/1/0690/5400/5504/collections/a340ce89e0298e52c438ae79591e3284.jpg?v=1718718962"
+}

@@ -1,0 +1,13 @@
+{
+  "Label": "custom.test",
+  "GraphqlGid": "gid://shopify/Metafield/27141965611264",
+  "Id": 27141965611264,
+  "Key": "test",
+  "Namespace": "custom",
+  "Type": "single_line_text_field",
+  "RawValue": "vitest",
+  "CreatedAt": "2024-06-18T04:00:25-04:00",
+  "OwnerType": "ARTICLE",
+  "OwnerId": 589065715968,
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/articles/589065715968/metafields/unstructured"
+}

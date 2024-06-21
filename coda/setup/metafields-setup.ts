@@ -31,7 +31,7 @@ import { SyncedMetafields } from '../../sync/rest/SyncedMetafields';
 import { CurrencyCode, MetafieldOwnerType } from '../../types/admin.types';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { CodaMetafieldValue } from '../CodaMetafieldValue';
-import { autoCompleteMetafieldOwnerTypes, filters, inputs } from '../utils/coda-parameters';
+import { filters, getMetafieldOwnerTypesAutocompleteOptions, inputs } from '../utils/coda-parameters';
 import { makeDeleteRestResourceAction } from '../utils/coda-utils';
 
 // #endregion
@@ -100,7 +100,8 @@ export const Sync_Metafields = coda.makeDynamicSyncTable({
   description: 'Return Metafields from this shop.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   identityName: PACK_IDENTITIES.Metafield,
-  listDynamicUrls: async (context) => autoCompleteMetafieldOwnerTypes().map((r) => ({ ...r, hasChildren: false })),
+  listDynamicUrls: async (context) =>
+    getMetafieldOwnerTypesAutocompleteOptions().map((r) => ({ ...r, hasChildren: false })),
   getName: async function (context) {
     const metafieldOwnerType = context.sync.dynamicUrl as SupportedMetafieldOwnerType;
     const supportedSyncTable = new SupportedMetafieldSyncTable(metafieldOwnerType);

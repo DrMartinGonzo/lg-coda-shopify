@@ -1,0 +1,85 @@
+[
+  {
+    "id": "gid://shopify/Location/74534912256",
+    "name": "Vitest location",
+    "isActive": true,
+    "fulfillsOnlineOrders": true,
+    "hasActiveInventory": true,
+    "shipsInventory": true,
+    "address": {
+      "address1": "3 Avenue Victoria",
+      "address2": "",
+      "city": "Paris",
+      "country": "France",
+      "countryCode": "FR",
+      "phone": "+33154748433",
+      "zip": "75001",
+      "province": null,
+      "provinceCode": null
+    },
+    "fulfillmentService": null,
+    "localPickupSettingsV2": null,
+    "metafields": {
+      "nodes": [
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/25230921302272",
+          "namespace": "custom",
+          "key": "test_metafield",
+          "type": "single_line_text_field",
+          "value": "un-test-encore NEW NEW",
+          "ownerType": "LOCATION",
+          "createdAt": "2024-02-27T07:51:41Z",
+          "updatedAt": "2024-06-17T05:31:10Z"
+        },
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/25230926446848",
+          "namespace": "custom",
+          "key": "product_relation",
+          "type": "product_reference",
+          "value": "gid://shopify/Product/8406091235584",
+          "ownerType": "LOCATION",
+          "createdAt": "2024-02-27T07:56:22Z",
+          "updatedAt": "2024-05-12T11:52:43Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "gid://shopify/Location/75501109504",
+    "name": "Shop location",
+    "isActive": true,
+    "fulfillsOnlineOrders": true,
+    "hasActiveInventory": false,
+    "shipsInventory": false,
+    "address": {
+      "address1": "51 Rue Montorgueil",
+      "address2": null,
+      "city": "Paris",
+      "country": "France",
+      "countryCode": "FR",
+      "phone": "+3354748741",
+      "zip": "75002",
+      "province": null,
+      "provinceCode": null
+    },
+    "fulfillmentService": null,
+    "localPickupSettingsV2": null,
+    "metafields": {
+      "nodes": [
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/26591707922688",
+          "namespace": "custom",
+          "key": "test_metafield",
+          "type": "single_line_text_field",
+          "value": "test",
+          "ownerType": "LOCATION",
+          "createdAt": "2024-04-26T07:13:59Z",
+          "updatedAt": "2024-06-20T07:30:07Z"
+        }
+      ]
+    }
+  }
+]

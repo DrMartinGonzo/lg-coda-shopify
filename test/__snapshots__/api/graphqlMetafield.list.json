@@ -1,0 +1,712 @@
+[
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178713227520",
+    "namespace": "custom",
+    "key": "list_weight",
+    "type": "list.weight",
+    "value": "[{\"value\":520.0,\"unit\":\"GRAMS\"},{\"value\":60.0,\"unit\":\"GRAMS\"},{\"value\":700.0,\"unit\":\"GRAMS\"}]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:15:01Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685184768"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178713260288",
+    "namespace": "custom",
+    "key": "list_volume",
+    "type": "list.volume",
+    "value": "[{\"value\":14.0,\"unit\":\"MILLILITERS\"},{\"value\":26.0,\"unit\":\"CUBIC_METERS\"}]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:15:01Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685152000"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178713325824",
+    "namespace": "custom",
+    "key": "list_url",
+    "type": "list.url",
+    "value": "[\"https://coda.io/\",\"https://community.coda.io/\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:15:01Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685086464"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178713358592",
+    "namespace": "custom",
+    "key": "list_single_line_text_field",
+    "type": "list.single_line_text_field",
+    "value": "[\"one\",\"two\",\"three\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:15:01Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685053696"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816643328",
+    "namespace": "custom",
+    "key": "list_rating",
+    "type": "list.rating",
+    "value": "[{\"scale_min\":\"0.0\",\"scale_max\":\"5.0\",\"value\":\"2.0\"},{\"scale_min\":\"0.0\",\"scale_max\":\"5.0\",\"value\":\"1.25\"}]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685020928"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816676096",
+    "namespace": "custom",
+    "key": "list_product_reference",
+    "type": "list.product_reference",
+    "value": "[\"gid://shopify/Product/8406088089856\",\"gid://shopify/Product/8406088220928\",\"gid://shopify/Product/8406089629952\",\"gid://shopify/Product/8406088843520\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684988160"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816741632",
+    "namespace": "custom",
+    "key": "list_number_decimal",
+    "type": "list.number_decimal",
+    "value": "[\"1.14\",\"4.41\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684922624"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816774400",
+    "namespace": "custom",
+    "key": "list_number_integer",
+    "type": "list.number_integer",
+    "value": "[1,2,3]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684889856"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816807168",
+    "namespace": "custom",
+    "key": "list_mixed_reference",
+    "type": "list.mixed_reference",
+    "value": "[\"gid://shopify/Metaobject/49386356992\",\"gid://shopify/Metaobject/49393139968\",\"gid://shopify/Metaobject/49393172736\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684857088"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178816839936",
+    "namespace": "custom",
+    "key": "list_metaobject_reference",
+    "type": "list.metaobject_reference",
+    "value": "[\"gid://shopify/Metaobject/49388814592\",\"gid://shopify/Metaobject/49393041664\",\"gid://shopify/Metaobject/49393205504\",\"gid://shopify/Metaobject/49393172736\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:16:12Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684824320"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957119744",
+    "namespace": "custom",
+    "key": "list_file_reference",
+    "type": "list.file_reference",
+    "value": "[\"gid://shopify/MediaImage/32761424478464\",\"gid://shopify/MediaImage/32761426313472\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684791552"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957152512",
+    "namespace": "custom",
+    "key": "list_dimension",
+    "type": "list.dimension",
+    "value": "[{\"value\":1.0,\"unit\":\"MILLIMETERS\"},{\"value\":54.0,\"unit\":\"CENTIMETERS\"}]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684758784"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957185280",
+    "namespace": "custom",
+    "key": "list_date",
+    "type": "list.date",
+    "value": "[\"2024-02-08\",\"2024-04-06\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684726016"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957218048",
+    "namespace": "custom",
+    "key": "list_color",
+    "type": "list.color",
+    "value": "[\"#ff0000\",\"#dddddd\",\"#fa7412\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684693248"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957250816",
+    "namespace": "custom",
+    "key": "list_collection_reference",
+    "type": "list.collection_reference",
+    "value": "[\"gid://shopify/Collection/413087301888\",\"gid://shopify/Collection/413087105280\",\"gid://shopify/Collection/413087039744\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684660480"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957283584",
+    "namespace": "custom",
+    "key": "weight",
+    "type": "weight",
+    "value": "{\"value\":687.0,\"unit\":\"GRAMS\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684627712"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25178957316352",
+    "namespace": "custom",
+    "key": "volume",
+    "type": "volume",
+    "value": "{\"value\":12.0,\"unit\":\"MILLILITERS\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:17:07Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684594944"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179242660096",
+    "namespace": "custom",
+    "key": "url",
+    "type": "url",
+    "value": "https://coda.io",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:19:06Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684529408"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179651375360",
+    "namespace": "custom",
+    "key": "boolean",
+    "type": "boolean",
+    "value": "true",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:21:03Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17683939584"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179652751616",
+    "namespace": "custom",
+    "key": "date_time",
+    "type": "date_time",
+    "value": "2024-02-01T22:30:00+01:00",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:21:22Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684037888"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179652784384",
+    "namespace": "custom",
+    "key": "date",
+    "type": "date",
+    "value": "2024-01-03",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:21:22Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684070656"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179685224704",
+    "namespace": "custom",
+    "key": "money",
+    "type": "money",
+    "value": "{\"amount\":\"1000.00\",\"currency_code\":\"EUR\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:21:50Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684267264"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179783495936",
+    "namespace": "custom",
+    "key": "multi_line_text_field",
+    "type": "multi_line_text_field",
+    "value": "multiple\nlines\nof\ntext",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:22:31Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684300032"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179783528704",
+    "namespace": "custom",
+    "key": "number_decimal",
+    "type": "number_decimal",
+    "value": "154.112",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:22:31Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684332800"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179806597376",
+    "namespace": "custom",
+    "key": "rating",
+    "type": "rating",
+    "value": "{\"scale_min\":\"0.0\",\"scale_max\":\"5.0\",\"value\":\"4.08\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:22:46Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684463872"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179829272832",
+    "namespace": "custom",
+    "key": "file_reference",
+    "type": "file_reference",
+    "value": "gid://shopify/MediaImage/32761422512384",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:23:28Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684136192"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179839267072",
+    "namespace": "custom",
+    "key": "page_reference",
+    "type": "page_reference",
+    "value": "gid://shopify/OnlineStorePage/106374332672",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:23:44Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684398336"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179839299840",
+    "namespace": "custom",
+    "key": "product_reference",
+    "type": "product_reference",
+    "value": "gid://shopify/Product/8406091038976",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:23:44Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684431104"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179876950272",
+    "namespace": "global",
+    "key": "description_tag",
+    "type": "single_line_text_field",
+    "value": "Test meta description for product",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:24:12Z",
+    "definition": null,
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179876983040",
+    "namespace": "global",
+    "key": "title_tag",
+    "type": "single_line_text_field",
+    "value": "Test meta title for product",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:24:12Z",
+    "definition": null,
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25220364468480",
+    "namespace": "custom",
+    "key": "mixed_reference",
+    "type": "mixed_reference",
+    "value": "gid://shopify/Metaobject/49393172736",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-25T22:12:17Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684234496"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25962929160448",
+    "namespace": "custom",
+    "key": "color",
+    "type": "color",
+    "value": "#a75151",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-03-27T21:39:40Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684005120"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25967598534912",
+    "namespace": "custom",
+    "key": "collection_reference",
+    "type": "collection_reference",
+    "value": "gid://shopify/Collection/413087269120",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-03-28T07:58:47Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17683972352"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25974054813952",
+    "namespace": "custom",
+    "key": "number_integer",
+    "type": "number_integer",
+    "value": "19",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-03-28T15:10:21Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684365568"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26493801267456",
+    "namespace": "custom",
+    "key": "list_variant_reference",
+    "type": "list.variant_reference",
+    "value": "[\"gid://shopify/ProductVariant/44365631553792\",\"gid://shopify/ProductVariant/44365631586560\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-04-18T12:57:23Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17685119232"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26501022908672",
+    "namespace": "custom",
+    "key": "variant_reference",
+    "type": "variant_reference",
+    "value": "gid://shopify/ProductVariant/44365631881472",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-04-18T22:03:11Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684562176"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26532444176640",
+    "namespace": "custom",
+    "key": "list_page_reference",
+    "type": "list.page_reference",
+    "value": "[\"gid://shopify/OnlineStorePage/106374332672\"]",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-04-20T20:57:53Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684955392"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091235584"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179901526272",
+    "namespace": "custom",
+    "key": "boolean",
+    "type": "boolean",
+    "value": "true",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:24:38Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17683939584"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091333888"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25179903099136",
+    "namespace": "custom",
+    "key": "date_time",
+    "type": "date_time",
+    "value": "2024-01-03T01:30:00+01:00",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-02-20T22:25:00Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684037888"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091333888"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25730257256704",
+    "namespace": "global",
+    "key": "description_tag",
+    "type": "single_line_text_field",
+    "value": "test description",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-03-15T11:47:32Z",
+    "definition": null,
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091333888"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/25730257289472",
+    "namespace": "global",
+    "key": "title_tag",
+    "type": "single_line_text_field",
+    "value": "vitest",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-03-15T11:47:32Z",
+    "definition": null,
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091333888"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26946637824256",
+    "namespace": "custom",
+    "key": "color",
+    "type": "color",
+    "value": "#cccccc",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-06-01T22:33:22Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684005120"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8406091333888"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26369217036544",
+    "namespace": "custom",
+    "key": "single_line_text_field",
+    "type": "single_line_text_field",
+    "value": "test",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-04-10T11:34:00Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17683906816"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8433407262976"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26950347555072",
+    "namespace": "custom",
+    "key": "custom.money",
+    "type": "money",
+    "value": "{\"amount\":\"612.00\",\"currency_code\":\"EUR\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-06-02T12:30:15Z",
+    "definition": null,
+    "parentNode": {
+      "id": "gid://shopify/Product/8433407262976"
+    }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/26950556778752",
+    "namespace": "custom",
+    "key": "money",
+    "type": "money",
+    "value": "{\"amount\":\"6120.00\",\"currency_code\":\"EUR\"}",
+    "ownerType": "PRODUCT",
+    "createdAt": "2024-06-02T13:31:16Z",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17684267264"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8433407262976"
+    }
+  }
+]

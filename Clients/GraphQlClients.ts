@@ -2,7 +2,7 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { VariablesOf, graphQlGidToResourceName } from '../graphql/utils/graphql-utils';
+import { VariablesOf, getKindAndOperationNames, graphQlGidToResourceName } from '../graphql/utils/graphql-utils';
 
 import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
 import { FileApiData, FileModelData } from '../models/graphql/FileModel';
@@ -142,6 +142,7 @@ import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCac
 // #endregion
 
 export const GRAPHQL_NODES_LIMIT = 250;
+export const GRAPHQL_MAX_REQUEST_METAFIELDS = 250;
 
 // Synctable doesn't handle retries, only GraphQLClient for simplicity
 // Le seul probleme serait de dépasser le seuil de temps d'execution pour un run
@@ -149,7 +150,7 @@ export const GRAPHQL_NODES_LIMIT = 250;
 // comme la requete graphql est elle même rapide, ça devrait passer ?
 
 // #region Types
-interface GraphQlData<T extends any> {
+export interface GraphQlData<T extends any> {
   data: T;
   errors: any;
   extensions: {
@@ -324,14 +325,7 @@ export class GraphQlFetcher {
 
     logAdmin('');
     logAdmin('—————————— GRAPHQL REQUEST CONTENT ——————————');
-    logAdmin(
-      documentNode.definitions
-        .map((def) => {
-          if ('name' in def) return `kind: ${def.kind}: ${def.name?.value}`;
-        })
-        .filter(Boolean)
-        .join('\n')
-    );
+    logAdmin(getKindAndOperationNames(documentNode).join('\n'));
     // logAdmin(printGql(documentNode));
     dumpToConsole(variables);
     dumpToConsole(options);
@@ -1087,7 +1081,7 @@ interface MetafieldOwnerNodeWithMetafieldsApidata extends MetafieldOwnerNodeApid
 interface SingleMetafieldResponse {
   node: MetafieldWithDefinitionWithOwnerApiData;
 }
-interface SingleMetafieldByKeyResponse {
+export interface SingleMetafieldByKeyResponse {
   node: MetafieldOwnerNodeWithMetafieldsApidata;
 }
 
@@ -2086,7 +2080,6 @@ interface RegisterTranslationsResponse {
 }
 
 interface SingleTranslationArgs extends BaseSingleArgs {
-  id: string;
   locale: string;
   key: string;
 }

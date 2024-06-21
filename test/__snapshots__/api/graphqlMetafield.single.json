@@ -1,0 +1,18 @@
+{
+  "__typename": "Metafield",
+  "id": "gid://shopify/Metafield/25730257289472",
+  "namespace": "global",
+  "key": "title_tag",
+  "type": "single_line_text_field",
+  "value": "vitest",
+  "ownerType": "PRODUCT",
+  "createdAt": "2024-03-15T11:47:32Z",
+  "definition": null,
+  "owner": {
+    "id": "gid://shopify/Product/8406091333888",
+    "__typename": "Product"
+  },
+  "parentNode": {
+    "id": "gid://shopify/Product/8406091333888"
+  }
+}

@@ -1,0 +1,196 @@
+[
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/34028708233472",
+    "alt": "test alt",
+    "createdAt": "2024-06-18T13:10:31Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/vitest.png?v=1718716233"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/vitest.png?v=1718716233",
+      "width": 330,
+      "height": 330
+    },
+    "mimeType": "image/png",
+    "originalSource": {
+      "fileSize": 5328
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33644409127168",
+    "alt": "",
+    "createdAt": "2024-05-06T15:11:42Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/ad50775123e20f3d1af2bd07046b777d.jpg?v=1718868021"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/ad50775123e20f3d1af2bd07046b777d.jpg?v=1718868021",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 22389
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33644409094400",
+    "alt": "",
+    "createdAt": "2024-05-06T15:11:42Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/8a029d2035bfb80e473361dfc08449be.jpg?v=1715008302"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/8a029d2035bfb80e473361dfc08449be.jpg?v=1715008302",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 37159
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33644409061632",
+    "alt": "",
+    "createdAt": "2024-05-06T15:11:42Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/85cc58608bf138a50036bcfe86a3a362.jpg?v=1715008302"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/85cc58608bf138a50036bcfe86a3a362.jpg?v=1715008302",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 28455
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33640782987520",
+    "alt": "",
+    "createdAt": "2024-05-05T23:11:00Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/044f848776141f1024eae6c610a28d12_64565eed-14b5-4b9c-ae48-e4857e2b994b.jpg?v=1714950660"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/044f848776141f1024eae6c610a28d12_64565eed-14b5-4b9c-ae48-e4857e2b994b.jpg?v=1714950660",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 20289
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33640782954752",
+    "alt": "",
+    "createdAt": "2024-05-05T23:11:00Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/32b3863554f4686d825d9da18a24cfc6_8424182b-46f7-432b-8878-6d6bfbd35d8d.jpg?v=1714950660"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/32b3863554f4686d825d9da18a24cfc6_8424182b-46f7-432b-8878-6d6bfbd35d8d.jpg?v=1714950660",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 30158
+    }
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/33640782921984",
+    "alt": "",
+    "createdAt": "2024-05-05T23:11:00Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/8072c8b5718306d4be25aac21836ce16_4f2bddbf-7c4a-440e-b5a4-062301677092.jpg?v=1714950660"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/8072c8b5718306d4be25aac21836ce16_4f2bddbf-7c4a-440e-b5a4-062301677092.jpg?v=1714950660",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 33658
+    }
+  },
+  {
+    "__typename": "Video",
+    "id": "gid://shopify/Video/33100330893568",
+    "alt": "test alt",
+    "createdAt": "2024-03-20T11:36:11Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/preview_images/272b8b643a4b4839a4e84e71c48af240.thumbnail.0000000000.jpg?v=1710934586"
+      }
+    },
+    "filename": "file_example_MP4_1280_10MG.mp4",
+    "duration": 31000,
+    "originalSource": {
+      "fileSize": 9840497,
+      "height": 720,
+      "width": 1280,
+      "mimeType": "video/mp4",
+      "url": "https://cdn.shopify.com/videos/c/o/v/272b8b643a4b4839a4e84e71c48af240.mp4"
+    }
+  },
+  {
+    "__typename": "GenericFile",
+    "id": "gid://shopify/GenericFile/33100326764800",
+    "alt": "",
+    "createdAt": "2024-03-20T11:35:32Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/preview_images/sheet-b4a0a9a3c9c728732a43738283b5a1f59bfd5008ac5e5d0b33b5a0bd1184ad92.png?v=1710934534"
+      }
+    },
+    "mimeType": "text/csv",
+    "originalFileSize": 156,
+    "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/crash_catalonia.csv?v=1710934533"
+  },
+  {
+    "__typename": "MediaImage",
+    "id": "gid://shopify/MediaImage/32761426903296",
+    "alt": "",
+    "createdAt": "2024-02-20T18:22:10Z",
+    "preview": {
+      "image": {
+        "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/products/85cc58608bf138a50036bcfe86a3a362.jpg?v=1708453330"
+      }
+    },
+    "image": {
+      "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/products/85cc58608bf138a50036bcfe86a3a362.jpg?v=1708453330",
+      "width": 635,
+      "height": 560
+    },
+    "mimeType": "image/jpeg",
+    "originalSource": {
+      "fileSize": 28408
+    }
+  }
+]

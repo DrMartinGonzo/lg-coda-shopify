@@ -1,0 +1,65 @@
+[
+  {
+    "barcode": "123456789",
+    "compareAtPrice": "60.00",
+    "createdAt": "2024-02-20T18:22:14Z",
+    "displayName": "Vitest Product - Vitest / ProductVariant",
+    "id": "gid://shopify/ProductVariant/44365639713024",
+    "inventoryPolicy": "DENY",
+    "inventoryQuantity": 12,
+    "position": 1,
+    "price": "50.00",
+    "sku": "vitest",
+    "taxable": true,
+    "taxCode": "",
+    "title": "Vitest / ProductVariant",
+    "image": null,
+    "inventoryItem": {
+      "id": "gid://shopify/InventoryItem/46469099815168",
+      "measurement": {
+        "weight": {
+          "unit": "GRAMS",
+          "value": 850
+        }
+      }
+    },
+    "metafields": {
+      "nodes": [
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/25867424858368",
+          "namespace": "custom",
+          "key": "test_money_field",
+          "type": "money",
+          "value": "{\"amount\":\"965.00\",\"currency_code\":\"EUR\"}",
+          "ownerType": "PRODUCTVARIANT",
+          "createdAt": "2024-03-20T12:59:24Z",
+          "updatedAt": "2024-06-18T13:22:47Z"
+        },
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/27125930590464",
+          "namespace": "custom",
+          "key": "test",
+          "type": "single_line_text_field",
+          "value": "vitest",
+          "ownerType": "PRODUCTVARIANT",
+          "createdAt": "2024-06-16T21:06:30Z",
+          "updatedAt": "2024-06-16T21:06:30Z"
+        }
+      ]
+    },
+    "product": {
+      "id": "gid://shopify/Product/8406091333888",
+      "onlineStoreUrl": null
+    },
+    "selectedOptions": [
+      {
+        "value": "Vitest"
+      },
+      {
+        "value": "ProductVariant"
+      }
+    ]
+  }
+]

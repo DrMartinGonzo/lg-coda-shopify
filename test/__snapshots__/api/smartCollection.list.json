@@ -1,0 +1,28 @@
+[
+  {
+    "id": 413086843136,
+    "handle": "vitest-smart",
+    "title": "Vitest Smart Collection",
+    "body_html": "<p>Vitest collection</p>",
+    "published_at": "2024-02-20T13:23:12-05:00",
+    "sort_order": "best-selling",
+    "template_suffix": "",
+    "disjunctive": false,
+    "rules": [
+      {
+        "column": "title",
+        "relation": "contains",
+        "condition": "VANS"
+      }
+    ],
+    "published_scope": "web",
+    "admin_graphql_api_id": "gid://shopify/Collection/413086843136",
+    "image": {
+      "created_at": "2024-02-20T13:23:13-05:00",
+      "alt": null,
+      "width": 330,
+      "height": 330,
+      "src": "https://cdn.shopify.com/s/files/1/0690/5400/5504/collections/a340ce89e0298e52c438ae79591e3284.jpg?v=1718718962"
+    }
+  }
+]

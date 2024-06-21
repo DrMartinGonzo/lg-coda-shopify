@@ -1,0 +1,137 @@
+{
+  "id": "gid://shopify/Metaobject/62614470912",
+  "handle": "vitest",
+  "type": "test",
+  "fields": [
+    {
+      "key": "name",
+      "type": "single_line_text_field",
+      "value": "Vitest"
+    },
+    {
+      "key": "single_line_text",
+      "type": "single_line_text_field",
+      "value": "single line test NEW2"
+    },
+    {
+      "key": "multiple_line_text",
+      "type": "multi_line_text_field",
+      "value": "multiple\nlines\ntest"
+    },
+    {
+      "key": "integer",
+      "type": "number_integer",
+      "value": "50"
+    },
+    {
+      "key": "decimal",
+      "type": "number_decimal",
+      "value": "12.4"
+    },
+    {
+      "key": "date_time",
+      "type": "date_time",
+      "value": "2024-02-23T04:00:00+01:00"
+    },
+    {
+      "key": "date",
+      "type": "date",
+      "value": "2024-02-10"
+    },
+    {
+      "key": "dimension",
+      "type": "dimension",
+      "value": "{\"value\":10.0,\"unit\":\"MILLIMETERS\"}"
+    },
+    {
+      "key": "volume",
+      "type": "volume",
+      "value": "{\"value\":50.0,\"unit\":\"MILLILITERS\"}"
+    },
+    {
+      "key": "weight",
+      "type": "weight",
+      "value": "{\"value\":2.3,\"unit\":\"KILOGRAMS\"}"
+    },
+    {
+      "key": "rich_text",
+      "type": "rich_text_field",
+      "value": null
+    },
+    {
+      "key": "boolean",
+      "type": "boolean",
+      "value": "true"
+    },
+    {
+      "key": "color",
+      "type": "color",
+      "value": "#ffffff"
+    },
+    {
+      "key": "rating",
+      "type": "rating",
+      "value": "{\"scale_min\":\"0.0\",\"scale_max\":\"10.0\",\"value\":\"4.12\"}"
+    },
+    {
+      "key": "url",
+      "type": "url",
+      "value": "https://coda.io/"
+    },
+    {
+      "key": "money",
+      "type": "money",
+      "value": "{\"amount\":\"12.00\",\"currency_code\":\"EUR\"}"
+    },
+    {
+      "key": "json",
+      "type": "json",
+      "value": null
+    },
+    {
+      "key": "file",
+      "type": "file_reference",
+      "value": "gid://shopify/MediaImage/32761426903296"
+    },
+    {
+      "key": "collection_reference",
+      "type": "collection_reference",
+      "value": "gid://shopify/Collection/413087301888"
+    },
+    {
+      "key": "metaobject_reference",
+      "type": "metaobject_reference",
+      "value": "gid://shopify/Metaobject/49386356992"
+    },
+    {
+      "key": "mixed_reference",
+      "type": "mixed_reference",
+      "value": null
+    },
+    {
+      "key": "list_mixed_reference",
+      "type": "list.mixed_reference",
+      "value": "[\"gid://shopify/Metaobject/49386356992\",\"gid://shopify/Metaobject/49393238272\"]"
+    },
+    {
+      "key": "page_reference",
+      "type": "page_reference",
+      "value": "gid://shopify/OnlineStorePage/106374332672"
+    },
+    {
+      "key": "product_reference",
+      "type": "product_reference",
+      "value": "gid://shopify/Product/8406089072896"
+    },
+    {
+      "key": "list_product_reference",
+      "type": "list.product_reference",
+      "value": "[\"gid://shopify/Product/8406090776832\",\"gid://shopify/Product/8406088941824\",\"gid://shopify/Product/8406091333888\"]"
+    },
+    {
+      "key": "product_variant_reference",
+      "type": "variant_reference",
+      "value": "gid://shopify/ProductVariant/44365631586560"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "Id": 35236133667072,
+    "CollectionId": 413874323712,
+    "ProductId": 8406091235584,
+    "CreatedAt": "2024-04-29T08:05:13-04:00",
+    "Position": 2,
+    "Collection": {
+      "Id": 413874323712,
+      "Title": "NOT_FOUND"
+    },
+    "Product": {
+      "Id": 8406091235584,
+      "Title": "NOT_FOUND"
+    }
+  },
+  {
+    "Id": 35236131275008,
+    "CollectionId": 413874323712,
+    "ProductId": 8406088646912,
+    "CreatedAt": "2024-04-29T08:04:21-04:00",
+    "Position": 1,
+    "Collection": {
+      "Id": 413874323712,
+      "Title": "NOT_FOUND"
+    },
+    "Product": {
+      "Id": 8406088646912,
+      "Title": "NOT_FOUND"
+    }
+  }
+]

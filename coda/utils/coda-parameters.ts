@@ -68,16 +68,17 @@ async function autocompleteBlogIdParameter(context: coda.ExecutionContext, searc
   return coda.autocompleteSearchObjects(search, response?.body, 'title', 'id');
 }
 
-async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
+export async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
   const params: ListBlogsArgs = {
     limit: REST_DEFAULT_LIMIT,
     fields: ['id', 'title'].join(','),
   };
   const response = await BlogClient.createInstance(context).list(params);
-  return response?.body.map((blog) => formatOptionNameId(blog.title, blog.id));
+  const results = response?.body.map((blog) => formatOptionNameId(blog.title, blog.id));
+  return coda.simpleAutocomplete(search, results);
 }
 
-async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string): Promise<Array<string>> {
+export async function autocompleteLocationsWithName(context: coda.ExecutionContext, search: string) {
   const response = await LocationClient.createInstance(context).list({
     limit: GRAPHQL_NODES_LIMIT,
     fields: {
@@ -88,7 +89,8 @@ async function autocompleteLocationsWithName(context: coda.ExecutionContext, sea
     options: {},
   });
 
-  return response.body.map((location) => formatOptionNameId(location.name, graphQlGidToId(location.id)));
+  const results = response.body.map((location) => formatOptionNameId(location.name, graphQlGidToId(location.id)));
+  return coda.simpleAutocomplete(search, results);
 }
 
 function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOwnerType) {
@@ -99,19 +101,15 @@ function makeAutocompleteMetafieldNameKeysWithDefinitions(ownerType: MetafieldOw
   };
 }
 
-export function autoCompleteMetafieldOwnerTypes() {
-  return getSupportedMetafieldSyncTables()
+export function getMetafieldOwnerTypesAutocompleteOptions(
+  supportDefinitions = false
+): coda.SimpleAutocompleteOption<coda.ParameterType.String>[] {
+  return (supportDefinitions ? getAllSupportDefinitionMetafieldSyncTables() : getSupportedMetafieldSyncTables())
     .map((r) => ({ display: r.display, value: r.ownerType }))
     .sort(compareByDisplayKey);
 }
 
-export function autoCompleteMetafieldWithDefinitionOwnerTypes() {
-  return getAllSupportDefinitionMetafieldSyncTables()
-    .map((r) => ({ display: r.display, value: r.ownerType }))
-    .sort(compareByDisplayKey);
-}
-
-function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
+export function makeAutocompleteMetafieldKeysWithDefinitions(ownerType: MetafieldOwnerType) {
   return async function (context: coda.ExecutionContext, search: string, args: any) {
     const defsData = await MetafieldDefinitionClient.createInstance(context).listForOwner({ ownerType });
     const keys = defsData.map((m) => getMetaFieldFullKey(m)).sort();
@@ -567,7 +565,7 @@ const metafieldInputs = {
     type: coda.ParameterType.String,
     name: 'ownerType',
     description: 'The type of resource owning the metafield.',
-    autocomplete: autoCompleteMetafieldOwnerTypes(),
+    autocomplete: getMetafieldOwnerTypesAutocompleteOptions(),
   }),
   value: coda.makeParameter({
     type: coda.ParameterType.String,
@@ -649,7 +647,7 @@ const metafieldDefinitionInputs = {
     type: coda.ParameterType.String,
     name: 'ownerType',
     description: 'The type of resource owning the metafield.',
-    autocomplete: autoCompleteMetafieldWithDefinitionOwnerTypes(),
+    autocomplete: getMetafieldOwnerTypesAutocompleteOptions(true),
   }),
 };
 // #endregion

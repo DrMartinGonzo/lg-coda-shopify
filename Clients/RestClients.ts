@@ -36,6 +36,7 @@ import { getShopifyRequestHeaders } from './utils/client-utils';
 // #endregion
 
 export const REST_DEFAULT_LIMIT = 250;
+export const REST_SYNC_OWNER_METAFIELDS_LIMIT = 30;
 const SHOPIFY_RETRIABLE_STATUS_CODES = [429, 503];
 
 // #region Types
@@ -1137,10 +1138,10 @@ export class ShopClient extends AbstractRestClient<BaseSingleArgs, ListShopsArgs
   }
 
   async list(params: ListShopsArgs) {
-    const singleResponse = (await super.list(params)) as unknown as RestRequestReturn<ShopModelData>;
+    const { body, ...singleResponse } = (await super.list(params)) as unknown as RestRequestReturn<ShopModelData>;
     return {
       ...singleResponse,
-      body: [singleResponse?.body],
+      body: [body],
     };
   }
 

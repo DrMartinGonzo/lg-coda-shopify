@@ -40,11 +40,11 @@ export function formatImageForData({
   image_alt_text?: string;
   image_url?: string;
 }): ImageApiData | null {
-  if (image_alt_text || image_url) {
+  if (image_alt_text != undefined || image_url != undefined) {
     return {
       alt: image_alt_text,
       src: image_url,
     };
   }
-  return null;
+  return undefined;
 }

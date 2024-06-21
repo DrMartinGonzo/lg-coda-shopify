@@ -1,7 +1,7 @@
 // #region Imports
 
 import { SearchParams } from '../../Clients/Client.types';
-import { AbstractRestClient } from '../../Clients/RestClients';
+import { AbstractRestClient, REST_SYNC_OWNER_METAFIELDS_LIMIT } from '../../Clients/RestClients';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
@@ -50,7 +50,7 @@ export abstract class AbstractSyncedRestResources<
   }
 
   protected get currentLimit() {
-    return this.shouldSyncMetafields ? 30 : this.client.defaultLimit;
+    return this.shouldSyncMetafields ? REST_SYNC_OWNER_METAFIELDS_LIMIT : this.client.defaultLimit;
   }
 
   protected get skipNextSync(): boolean {

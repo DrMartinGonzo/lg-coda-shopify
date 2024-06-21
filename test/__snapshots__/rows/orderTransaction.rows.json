@@ -1,0 +1,43 @@
+[
+  {
+    "id": 6478742913280,
+    "kind": "SALE",
+    "status": "SUCCESS",
+    "gateway": "bogus",
+    "createdAt": "2024-02-22T09:12:06Z",
+    "authorizationCode": "53433",
+    "authorizationExpiresAt": null,
+    "accountNumber": "•••• •••• •••• 1",
+    "receiptJson": "{\"paid_amount\":\"50.00\"}",
+    "settlementCurrency": null,
+    "settlementCurrencyRate": null,
+    "errorCode": null,
+    "processedAt": "2024-02-22T09:12:06Z",
+    "test": true,
+    "paymentId": "rtYGgDZoR6f3m20ftoswzZ6Mk",
+    "paymentDetails": {
+      "paymentMethodName": "card",
+      "avsResultCode": null,
+      "bin": "1",
+      "company": "Bogus",
+      "cvvResultCode": null,
+      "expirationMonth": 6,
+      "expirationYear": 2026,
+      "name": "Bogus Gateway",
+      "number": "•••• •••• •••• 1",
+      "wallet": null
+    },
+    "admin_graphql_api_id": "gid://shopify/OrderTransaction/6478742913280",
+    "label": "Order #1021 - Sale",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/orders/5516156698880",
+    "orderId": 5516156698880,
+    "order": {
+      "id": 5516156698880,
+      "name": "#1021"
+    },
+    "currency": "EUR",
+    "paymentIcon": "https://cdn.shopify.com/shopifycloud/shopify/assets/payment_icons/bogus-13c83bc142b1d1b69905f99e38a897f75581e477a1233254ce01e64b3e3ae2b8.svg.png",
+    "amount": 50,
+    "totalUnsettled": 0
+  }
+]

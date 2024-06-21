@@ -1,0 +1,24 @@
+[
+  {
+    "resourceGid": "gid://shopify/Collection/413086843136",
+    "locale": "fr",
+    "digest": "647391c936b2b25d1fb895562fa66120fb8bd4d0396d7d836530d5bef9206a77",
+    "originalValue": "Vitest Smart Collection",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "isDeletedFlag": false,
+    "key": "title",
+    "translatedValue": "Vitest (FR)",
+    "outdated": false
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086875904",
+    "locale": "fr",
+    "digest": "2d99a0e0343c6b3f7c17f91d99b256b915a2f27ceb9d50b1764bb6423e02f842",
+    "originalValue": "ADIDAS",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "isDeletedFlag": false,
+    "key": "title",
+    "translatedValue": "ADIDAS (FR)",
+    "outdated": false
+  }
+]

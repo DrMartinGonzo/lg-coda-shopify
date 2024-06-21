@@ -1,0 +1,12 @@
+{
+  "id": 109215252736,
+  "title": "Vitest",
+  "shop_id": 69054005504,
+  "handle": "vitest",
+  "body_html": "<p>Lorem ipsum dolor sit amet. Est beatae rerum ex explicabo quod <strong>Sit explicabo in numquam dolore ab iure impedit sed exercitationem deleniti</strong>. Est laboriosam error <em>Hic omnis vel placeat repudiandae sit suscipit iusto ad laboriosam fugit</em>.</p>\n<dl></dl>",
+  "author": "Martin Portevin [DEV]",
+  "created_at": "2024-06-18T04:09:46-04:00",
+  "published_at": "2024-06-18T04:09:46-04:00",
+  "template_suffix": "contact",
+  "admin_graphql_api_id": "gid://shopify/OnlineStorePage/109215252736"
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "key": "test",
+    "id": "gid://shopify/MetafieldDefinition/23842259200",
+    "namespace": "custom",
+    "name": "Test",
+    "description": "",
+    "metafieldsCount": 3,
+    "ownerType": "ARTICLE",
+    "pinnedPosition": 1,
+    "type": {
+      "name": "single_line_text_field"
+    },
+    "validations": [],
+    "validationStatus": "ALL_VALID",
+    "visibleToStorefrontApi": true
+  }
+]

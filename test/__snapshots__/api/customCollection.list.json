@@ -1,0 +1,13 @@
+[
+  {
+    "id": 413874323712,
+    "handle": "vitest-custom",
+    "title": "Vitest Custom Collection",
+    "body_html": "body_html",
+    "published_at": "2024-04-22T03:45:24-04:00",
+    "sort_order": "best-selling",
+    "template_suffix": "",
+    "published_scope": "web",
+    "admin_graphql_api_id": "gid://shopify/Collection/413874323712"
+  }
+]

@@ -1,0 +1,556 @@
+{
+  "id": "gid://shopify/MetaobjectDefinition/967475456",
+  "name": "Test",
+  "displayNameKey": "name",
+  "type": "test",
+  "capabilities": {
+    "publishable": {
+      "enabled": true
+    }
+  },
+  "fieldDefinitions": [
+    {
+      "key": "name",
+      "description": "",
+      "name": "Name",
+      "required": true,
+      "type": {
+        "category": "TEXT",
+        "name": "single_line_text_field",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "number_integer"
+          },
+          {
+            "name": "max",
+            "type": "number_integer"
+          },
+          {
+            "name": "regex",
+            "type": "single_line_text_field"
+          },
+          {
+            "name": "choices",
+            "type": "list.single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "single_line_text",
+      "description": "",
+      "name": "single line text",
+      "required": false,
+      "type": {
+        "category": "TEXT",
+        "name": "single_line_text_field",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "number_integer"
+          },
+          {
+            "name": "max",
+            "type": "number_integer"
+          },
+          {
+            "name": "regex",
+            "type": "single_line_text_field"
+          },
+          {
+            "name": "choices",
+            "type": "list.single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "multiple_line_text",
+      "description": "",
+      "name": "multiple line text",
+      "required": false,
+      "type": {
+        "category": "TEXT",
+        "name": "multi_line_text_field",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "number_integer"
+          },
+          {
+            "name": "max",
+            "type": "number_integer"
+          },
+          {
+            "name": "regex",
+            "type": "single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "integer",
+      "description": "",
+      "name": "Integer",
+      "required": false,
+      "type": {
+        "category": "NUMBER",
+        "name": "number_integer",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "number_integer"
+          },
+          {
+            "name": "max",
+            "type": "number_integer"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "decimal",
+      "description": "",
+      "name": "Decimal",
+      "required": false,
+      "type": {
+        "category": "NUMBER",
+        "name": "number_decimal",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "number_decimal"
+          },
+          {
+            "name": "max",
+            "type": "number_decimal"
+          },
+          {
+            "name": "max_precision",
+            "type": "number_integer"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "date_time",
+      "description": "",
+      "name": "DateTime",
+      "required": false,
+      "type": {
+        "category": "DATE_TIME",
+        "name": "date_time",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "date_time"
+          },
+          {
+            "name": "max",
+            "type": "date_time"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "date",
+      "description": "",
+      "name": "Date",
+      "required": false,
+      "type": {
+        "category": "DATE_TIME",
+        "name": "date",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "date"
+          },
+          {
+            "name": "max",
+            "type": "date"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "dimension",
+      "description": "",
+      "name": "Dimension",
+      "required": false,
+      "type": {
+        "category": "MEASUREMENT",
+        "name": "dimension",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "dimension"
+          },
+          {
+            "name": "max",
+            "type": "dimension"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "volume",
+      "description": "",
+      "name": "Volume",
+      "required": false,
+      "type": {
+        "category": "MEASUREMENT",
+        "name": "volume",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "volume"
+          },
+          {
+            "name": "max",
+            "type": "volume"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "weight",
+      "description": "",
+      "name": "Weight",
+      "required": false,
+      "type": {
+        "category": "MEASUREMENT",
+        "name": "weight",
+        "supportedValidations": [
+          {
+            "name": "min",
+            "type": "weight"
+          },
+          {
+            "name": "max",
+            "type": "weight"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "rich_text",
+      "description": "",
+      "name": "Rich text",
+      "required": false,
+      "type": {
+        "category": "TEXT",
+        "name": "rich_text_field",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "boolean",
+      "description": "",
+      "name": "Boolean",
+      "required": false,
+      "type": {
+        "category": "TRUE_FALSE",
+        "name": "boolean",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "color",
+      "description": "",
+      "name": "Color",
+      "required": false,
+      "type": {
+        "category": "COLOR",
+        "name": "color",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "rating",
+      "description": "",
+      "name": "Rating",
+      "required": false,
+      "type": {
+        "category": "RATING",
+        "name": "rating",
+        "supportedValidations": [
+          {
+            "name": "scale_min",
+            "type": "number_decimal"
+          },
+          {
+            "name": "scale_max",
+            "type": "number_decimal"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": [
+        {
+          "name": "scale_min",
+          "type": "number_decimal",
+          "value": "0.0"
+        },
+        {
+          "name": "scale_max",
+          "type": "number_decimal",
+          "value": "10.0"
+        }
+      ]
+    },
+    {
+      "key": "url",
+      "description": "",
+      "name": "Url",
+      "required": false,
+      "type": {
+        "category": "URL",
+        "name": "url",
+        "supportedValidations": [
+          {
+            "name": "allowed_domains",
+            "type": "list.single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "money",
+      "description": "",
+      "name": "Money",
+      "required": false,
+      "type": {
+        "category": "MONEY",
+        "name": "money",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "json",
+      "description": "",
+      "name": "Json",
+      "required": false,
+      "type": {
+        "category": "JSON",
+        "name": "json",
+        "supportedValidations": [
+          {
+            "name": "schema",
+            "type": "json"
+          }
+        ],
+        "supportsDefinitionMigrations": true
+      },
+      "validations": []
+    },
+    {
+      "key": "file",
+      "description": "",
+      "name": "File Reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "file_reference",
+        "supportedValidations": [
+          {
+            "name": "file_type_options",
+            "type": "list.single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": [
+        {
+          "name": "file_type_options",
+          "type": "list.single_line_text_field",
+          "value": "[\"Image\",\"Video\"]"
+        }
+      ]
+    },
+    {
+      "key": "collection_reference",
+      "description": "",
+      "name": "Collection reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "collection_reference",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "metaobject_reference",
+      "description": "",
+      "name": "Metaobject reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "metaobject_reference",
+        "supportedValidations": [
+          {
+            "name": "metaobject_definition_id",
+            "type": "single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": [
+        {
+          "name": "metaobject_definition_id",
+          "type": "single_line_text_field",
+          "value": "gid://shopify/MetaobjectDefinition/967475456"
+        }
+      ]
+    },
+    {
+      "key": "mixed_reference",
+      "description": "",
+      "name": "Mixed Reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "mixed_reference",
+        "supportedValidations": [
+          {
+            "name": "metaobject_definition_ids",
+            "type": "list.single_line_text_field"
+          }
+        ],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": [
+        {
+          "name": "metaobject_definition_ids",
+          "type": "list.single_line_text_field",
+          "value": "[\"gid://shopify/MetaobjectDefinition/967475456\",\"gid://shopify/MetaobjectDefinition/967540992\"]"
+        }
+      ]
+    },
+    {
+      "key": "list_mixed_reference",
+      "description": "",
+      "name": "List Mixed reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "list.mixed_reference",
+        "supportedValidations": [
+          {
+            "name": "metaobject_definition_ids",
+            "type": "list.single_line_text_field"
+          },
+          {
+            "name": "list.min",
+            "type": "number_integer"
+          },
+          {
+            "name": "list.max",
+            "type": "number_integer"
+          }
+        ],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": [
+        {
+          "name": "metaobject_definition_ids",
+          "type": "list.single_line_text_field",
+          "value": "[\"gid://shopify/MetaobjectDefinition/967475456\",\"gid://shopify/MetaobjectDefinition/967540992\"]"
+        }
+      ]
+    },
+    {
+      "key": "page_reference",
+      "description": "",
+      "name": "Page reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "page_reference",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "product_reference",
+      "description": "",
+      "name": "Product reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "product_reference",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "list_product_reference",
+      "description": "",
+      "name": "List Product reference ",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "list.product_reference",
+        "supportedValidations": [
+          {
+            "name": "list.min",
+            "type": "number_integer"
+          },
+          {
+            "name": "list.max",
+            "type": "number_integer"
+          }
+        ],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    },
+    {
+      "key": "product_variant_reference",
+      "description": "",
+      "name": "Product variant reference",
+      "required": false,
+      "type": {
+        "category": "REFERENCE",
+        "name": "variant_reference",
+        "supportedValidations": [],
+        "supportsDefinitionMigrations": false
+      },
+      "validations": []
+    }
+  ]
+}

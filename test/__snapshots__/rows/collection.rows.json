@@ -1,0 +1,43 @@
+[
+  {
+    "id": 413874323712,
+    "handle": "vitest-custom",
+    "title": "Vitest Custom Collection",
+    "body_html": "body_html",
+    "published_at": "2024-04-22T03:45:24-04:00",
+    "sort_order": "best-selling",
+    "template_suffix": null,
+    "published_scope": "web",
+    "admin_graphql_api_id": "gid://shopify/Collection/413874323712",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/collections/413874323712",
+    "body": "body_html",
+    "published": true,
+    "disjunctive": false,
+    "image_alt_text": null,
+    "image_url": null
+  },
+  {
+    "id": 413086843136,
+    "handle": "vitest-smart",
+    "title": "Vitest Smart Collection",
+    "body_html": "<p>Vitest collection</p>",
+    "published_at": "2024-02-20T13:23:12-05:00",
+    "sort_order": "best-selling",
+    "template_suffix": null,
+    "disjunctive": false,
+    "rules": [
+      {
+        "column": "title",
+        "relation": "contains",
+        "condition": "VANS"
+      }
+    ],
+    "published_scope": "web",
+    "admin_graphql_api_id": "gid://shopify/Collection/413086843136",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/collections/413086843136",
+    "body": "Vitest collection",
+    "published": true,
+    "image_alt_text": null,
+    "image_url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/collections/a340ce89e0298e52c438ae79591e3284.jpg?v=1718718962"
+  }
+]

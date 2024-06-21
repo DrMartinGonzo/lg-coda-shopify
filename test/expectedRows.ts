@@ -411,20 +411,20 @@ export const expectedRows = {
   } as MetafieldRow,
 
   metafieldDefinition: {
-    key: 'metafield_test',
-    id: 18074140928,
+    key: 'test',
+    id: 23842259200,
     namespace: 'custom',
-    name: 'Metafield test',
-    description: 'Vitest description. A single_line_text metafield.',
-    metafieldsCount: 1,
-    ownerType: 'PAGE',
+    name: 'Test',
+    description: null,
+    metafieldsCount: 3,
+    ownerType: 'ARTICLE',
     pinnedPosition: 1,
     type: 'single_line_text_field',
     validations: [],
     validationStatus: 'ALL_VALID',
     visibleToStorefrontApi: true,
-    admin_graphql_api_id: 'gid://shopify/MetafieldDefinition/18074140928',
-    admin_url: `${PACK_TEST_ENDPOINT}/admin/settings/custom_data/page/metafields/18074140928`,
+    admin_graphql_api_id: 'gid://shopify/MetafieldDefinition/23842259200',
+    admin_url: `${PACK_TEST_ENDPOINT}/admin/settings/custom_data/article/metafields/23842259200`,
   } as MetafieldDefinitionRow,
 
   metafieldGraphQl: {

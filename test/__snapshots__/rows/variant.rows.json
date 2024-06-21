@@ -1,0 +1,39 @@
+[
+  {
+    "barcode": "123456789",
+    "compareAtPrice": "60.00",
+    "createdAt": "2024-02-20T18:22:14Z",
+    "displayName": "Vitest Product - Vitest / ProductVariant",
+    "id": 44365639713024,
+    "inventoryPolicy": "DENY",
+    "inventoryQuantity": 12,
+    "position": 1,
+    "price": 50,
+    "sku": "vitest",
+    "taxable": true,
+    "taxCode": null,
+    "title": "Vitest / ProductVariant",
+    "admin_graphql_api_id": "gid://shopify/ProductVariant/44365639713024",
+    "compare_at_price": 60,
+    "created_at": "2024-02-20T18:22:14Z",
+    "displayTitle": "Vitest Product - Vitest / ProductVariant",
+    "inventory_policy": "DENY",
+    "inventory_quantity": 12,
+    "tax_code": null,
+    "inventory_item_id": 46469099815168,
+    "lgs_meta__custom.test_money_field": 965,
+    "lgs_meta__custom.test": "vitest",
+    "option1": "Vitest",
+    "option2": "ProductVariant",
+    "option3": null,
+    "weight": 850,
+    "weight_unit": "g",
+    "grams": 850,
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/products/8406091333888/variants/44365639713024",
+    "product_id": 8406091333888,
+    "product": {
+      "id": 8406091333888,
+      "title": "NOT_FOUND"
+    }
+  }
+]

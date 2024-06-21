@@ -1,0 +1,62 @@
+[
+  {
+    "inventory_item_id": 46469091655936,
+    "location_id": 74534912256,
+    "available": 80,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091655936"
+  },
+  {
+    "inventory_item_id": 46469091688704,
+    "location_id": 74534912256,
+    "available": 3,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091688704"
+  },
+  {
+    "inventory_item_id": 46469091721472,
+    "location_id": 74534912256,
+    "available": 15,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091721472"
+  },
+  {
+    "inventory_item_id": 46469091983616,
+    "location_id": 74534912256,
+    "available": 20,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091983616"
+  },
+  {
+    "inventory_item_id": 46469092016384,
+    "location_id": 74534912256,
+    "available": 17,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092016384"
+  },
+  {
+    "inventory_item_id": 46469092049152,
+    "location_id": 74534912256,
+    "available": 6,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092049152"
+  },
+  {
+    "inventory_item_id": 46469092081920,
+    "location_id": 74534912256,
+    "available": 3,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092081920"
+  },
+  {
+    "inventory_item_id": 46469092114688,
+    "location_id": 74534912256,
+    "available": 17,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092114688"
+  },
+  {
+    "inventory_item_id": 46469092212992,
+    "location_id": 74534912256,
+    "available": 7,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092212992"
+  },
+  {
+    "inventory_item_id": 46469092245760,
+    "location_id": 74534912256,
+    "available": 9,
+    "admin_graphql_api_id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092245760"
+  }
+]

@@ -1,5 +1,5 @@
 // #region Imports
-import { FragmentOf, initGraphQLTada, readFragment } from 'gql.tada';
+import { FragmentOf, TadaDocumentNode, initGraphQLTada, readFragment } from 'gql.tada';
 
 import { FormattingError, InvalidValueError } from '../../Errors/Errors';
 import { GraphQlResourceName } from '../../constants/resourceNames-constants';
@@ -77,5 +77,29 @@ export function graphQlGidToResourceName(gid: string): GraphQlResourceName | und
   if (isNullish(gid)) return undefined;
   if (!isGraphQlGid(gid)) throw new InvalidValueError('GID', gid);
   return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
+}
+
+export function getOperationDefinitionQueryNames<T extends TadaDocumentNode>(documentNode: T): string[] {
+  return documentNode.definitions
+    .map((def) => {
+      if ('name' in def && def.kind === 'OperationDefinition') return def.name?.value;
+    })
+    .filter(Boolean);
+}
+
+export function getKindAndOperationNames<T extends TadaDocumentNode>(documentNode: T): string[] {
+  return documentNode.definitions
+    .map((def) => {
+      if ('name' in def) return `kind: ${def.kind}: ${def.name?.value}`;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Checks if a given query string starts with the name of any operation defined
+ * in the provided GraphQL document node.
+ */
+export function isQueryFromDocumentNode<T extends TadaDocumentNode>(documentNode: T, query: string) {
+  return getOperationDefinitionQueryNames(documentNode).some((name) => query.startsWith(`query ${name}`));
 }
 // #endregion

@@ -1,0 +1,21 @@
+{
+  "Id": 74534912256,
+  "GraphqlGid": "gid://shopify/Location/74534912256",
+  "Active": true,
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/settings/locations/74534912256",
+  "StockUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory?location_id=74534912256",
+  "FulfillsOnlineOrders": true,
+  "HasActiveInventory": true,
+  "LocalPickupSettings": {},
+  "ShipsInventory": true,
+  "Address1": "3 Avenue Victoria",
+  "Address2": null,
+  "City": "Paris",
+  "Country": "France",
+  "CountryCode": "FR",
+  "Name": "Vitest location",
+  "Phone": "+33154748433",
+  "Province": null,
+  "ProvinceCode": null,
+  "Zip": "75001"
+}

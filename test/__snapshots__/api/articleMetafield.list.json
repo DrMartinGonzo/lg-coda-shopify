@@ -1,0 +1,38 @@
+[
+  {
+    "id": 27141965021440,
+    "namespace": "global",
+    "key": "description_tag",
+    "value": "SEO description",
+    "description": null,
+    "owner_id": 589065715968,
+    "created_at": "2024-06-18T04:00:13-04:00",
+    "owner_resource": "article",
+    "type": "single_line_text_field",
+    "admin_graphql_api_id": "gid://shopify/Metafield/27141965021440"
+  },
+  {
+    "id": 27141965054208,
+    "namespace": "global",
+    "key": "title_tag",
+    "value": "SEO title",
+    "description": null,
+    "owner_id": 589065715968,
+    "created_at": "2024-06-18T04:00:14-04:00",
+    "owner_resource": "article",
+    "type": "single_line_text_field",
+    "admin_graphql_api_id": "gid://shopify/Metafield/27141965054208"
+  },
+  {
+    "id": 27141965611264,
+    "namespace": "custom",
+    "key": "test",
+    "value": "vitest",
+    "description": null,
+    "owner_id": 589065715968,
+    "created_at": "2024-06-18T04:00:25-04:00",
+    "owner_resource": "article",
+    "type": "single_line_text_field",
+    "admin_graphql_api_id": "gid://shopify/Metafield/27141965611264"
+  }
+]
