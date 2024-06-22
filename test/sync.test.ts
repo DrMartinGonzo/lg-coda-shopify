@@ -23,17 +23,18 @@ import { throttleStatusQuery } from '../graphql/shop-graphql';
 import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { pack } from '../pack';
 import { MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
-import { excludeObjectKeys, formatOptionNameId } from '../utils/helpers';
-import { excludeVolatileProperties, referenceIds } from './utils/test-utils';
+import { formatOptionNameId } from '../utils/helpers';
 import {
   defaultIntegrationSyncExecuteOptions,
   defaultMockSyncExecuteOptions,
+  excludeVolatileProperties,
   getCurrentShopCurrencyMockResponse,
   getSyncContextWithDynamicUrl,
   getThrottleStatusMockResponse,
   isSameGraphQlQueryRequest,
   manifestPath,
   newGraphqlFetchResponse,
+  referenceIds,
 } from './utils/test-utils';
 
 import { SyncFilesParams } from '../sync/graphql/SyncedFiles';
@@ -45,7 +46,6 @@ import { SyncOrderTransactionsParams } from '../sync/graphql/SyncedOrderTransact
 import { SyncProductsParams } from '../sync/graphql/SyncedProducts';
 import { SyncTranslationsParams } from '../sync/graphql/SyncedTranslations';
 import { SyncVariantsParams } from '../sync/graphql/SyncedVariants';
-
 import { SyncArticlesParams } from '../sync/rest/SyncedArticles';
 import { SyncBlogsParams } from '../sync/rest/SyncedBlogs';
 import { SyncCollectionsParams } from '../sync/rest/SyncedCollections';
@@ -59,55 +59,15 @@ import { SyncOrdersParams } from '../sync/rest/SyncedOrders';
 import { SyncPagesParams } from '../sync/rest/SyncedPages';
 import { SyncRedirectsParams } from '../sync/rest/SyncedRedirects';
 import { SyncShopsParams } from '../sync/rest/SyncedShops';
-
-import listArticleApiData from './__snapshots__/api/article.list.json';
-import listArticleMetafieldApiData from './__snapshots__/api/articleMetafield.list.json';
-import listArticleMetafieldDefinitionApiData from './__snapshots__/api/articleMetafieldDefinition.list.json';
-import listBlogApiData from './__snapshots__/api/blog.list.json';
-import listCollectApiData from './__snapshots__/api/collect.list.json';
-import listCustomCollectionApiData from './__snapshots__/api/customCollection.list.json';
-import listCustomerApiData from './__snapshots__/api/customer.list.json';
-import listDraftOrderApiData from './__snapshots__/api/draftOrder.list.json';
-import listFileApiData from './__snapshots__/api/file.list.json';
-import listProductMetafieldApiData from './__snapshots__/api/graphqlMetafield.list.json';
-import {
-  default as ListInventoryItemApiData,
-  default as listInventoryItemApiData,
-} from './__snapshots__/api/inventoryItem.list.json';
-import listInventoryLevelApiData from './__snapshots__/api/inventoryLevel.list.json';
-import listLocationApiData from './__snapshots__/api/location.list.json';
-import listMetaobjectApiData from './__snapshots__/api/metaobject.list.json';
-import listOrderApiData from './__snapshots__/api/order.list.json';
-import listOrderTransactionApiData from './__snapshots__/api/orderTransaction.list.json';
-import listPageApiData from './__snapshots__/api/page.list.json';
-import listProductApiData from './__snapshots__/api/product.list.json';
-import listRedirectApiData from './__snapshots__/api/redirect.list.json';
-import listSmartCollectionApiData from './__snapshots__/api/smartCollection.list.json';
-import listVariantApiData from './__snapshots__/api/variant.list.json';
-
-import singleArticleApiData from './__snapshots__/api/article.single.json';
-import singleBlogApiData from './__snapshots__/api/blog.single.json';
-import SingleCollectApiData from './__snapshots__/api/collect.single.json';
-import singleCustomerApiData from './__snapshots__/api/customer.single.json';
-import singleDraftOrderApiData from './__snapshots__/api/draftOrder.single.json';
-import singleFileApiData from './__snapshots__/api/file.single.json';
-import singleLocationApiData from './__snapshots__/api/location.single.json';
-import singleTestMetaobjectApiData from './__snapshots__/api/metaobject.single.json';
-import singleOrderApiData from './__snapshots__/api/order.single.json';
-import singlePageApiData from './__snapshots__/api/page.single.json';
-import singleProductApiData from './__snapshots__/api/product.single.json';
-import singleRedirectApiData from './__snapshots__/api/redirect.single.json';
-import SingleShopApiData from './__snapshots__/api/shop.single.json';
-import singleSmartCollectionApiData from './__snapshots__/api/smartCollection.single.json';
-import singleTestMetaobjectDefinitionApiData from './__snapshots__/api/testMetaobjectDefinition.single.json';
-import singleTranslationApiData from './__snapshots__/api/translation.single.json';
+import * as listData from './__snapshots__/api/list';
+import * as singleData from './__snapshots__/api/single';
 
 // #endregion
 
 // #region Default Sync Parameters
 const defaultArticleParams = [
   false, // syncMetafields
-  [formatOptionNameId(singleBlogApiData.title, singleArticleApiData.blog_id)], // blog idArray
+  [formatOptionNameId(singleData.blog.title, singleData.article.blog_id)], // blog idArray
   undefined, // author
   undefined, // createdAtRange
   undefined, // updatedAtRange
@@ -125,7 +85,7 @@ const defaultSmartCollectionParams = [
   false, // syncMetafields
   undefined, // updatedAtRange
   undefined, // publishedAtRange
-  singleSmartCollectionApiData.handle, // handle
+  singleData.smartCollection.handle, // handle
   undefined, // idArray
   undefined, // productId
   undefined, // publishedStatus
@@ -133,14 +93,14 @@ const defaultSmartCollectionParams = [
 ] as SyncCollectionsParams;
 
 const defaultCollectParams = [
-  SingleCollectApiData.collection_id, // collectionId
+  singleData.collect.collection_id, // collectionId
 ] as SyncCollectsParams;
 
 const defaultDraftOrdersParams = [
   false, // syncMetafields
   undefined, // status
   undefined, // updatedAtRange
-  [singleDraftOrderApiData.id.toString()], // idArray
+  [singleData.draftOrder.id.toString()], // idArray
   undefined, // sinceId
 ] as SyncDraftOrdersParams;
 
@@ -148,7 +108,7 @@ const defaultCustomersParams = [
   false, // syncMetafields
   undefined, // createdAtRange
   undefined, // updatedAtRange
-  [singleCustomerApiData.id.toString()], // idArray
+  [singleData.customer.id.toString()], // idArray
   undefined, // tags
 ] as SyncCustomersParams;
 
@@ -158,14 +118,14 @@ const defaultFilesParams = [
 ] as SyncFilesParams;
 
 const defaultInventoryLevelsParams = [
-  [`Vitest Location (${graphQlGidToId(singleLocationApiData.id)})`], // locationIds
+  [`Vitest Location (${graphQlGidToId(singleData.location.id)})`], // locationIds
   undefined, // updatedAtMin
 ] as SyncInventoryLevelsParams;
 
 const defaultInventoryItemsParams = [
   undefined, // createdAtRange
   undefined, // updatedAtRange
-  ListInventoryItemApiData.map((i) => i.sku), // skuArray
+  listData.inventoryItems.map((i) => i.sku), // skuArray
 ] as SyncInventoryItemsParams;
 
 const defaultLocationsParams = [
@@ -194,7 +154,7 @@ const defaultOrdersParams = [
   undefined, // processedAtRange
   undefined, // financialStatus
   undefined, // fulfillmentStatus
-  [singleOrderApiData.id.toString()], // idArray
+  [singleData.order.id.toString()], // idArray
   undefined, // sinceId
   undefined, // customerTags
   undefined, // orderTags
@@ -207,7 +167,7 @@ const defaultOrderLineItemsParams = [
   undefined, // orderProcessedAt
   undefined, // orderFinancialStatus
   undefined, // orderFulfillmentStatus
-  [singleOrderApiData.id.toString()], // idArray
+  [singleData.order.id.toString()], // idArray
   undefined, // sinceOrderId
 ] as SyncOrderLineItemsParams;
 
@@ -226,7 +186,7 @@ const defaultPagesParams = [
   undefined, // createdAtRange
   undefined, // updatedAtRange
   undefined, // publishedAtRange
-  singlePageApiData.handle, // handle
+  singleData.page.handle, // handle
   undefined, // publishedStatus
   undefined, // sinceId
   undefined, // title
@@ -240,7 +200,7 @@ const defaultProductsParams = [
   undefined, // statusArray
   undefined, // publishedStatus
   undefined, // vendorsArray
-  [graphQlGidToId(singleProductApiData.id).toString()], // idArray
+  [graphQlGidToId(singleData.product.id).toString()], // idArray
   undefined, // tagsArray
 ] as SyncProductsParams;
 
@@ -253,18 +213,18 @@ const defaultVariantsParams = [
   undefined, // publishedStatus
   undefined, // vendorsArray
   undefined, // skuArray
-  [graphQlGidToId(singleProductApiData.id).toString()], // idArray
+  [graphQlGidToId(singleData.product.id).toString()], // idArray
 ] as SyncVariantsParams;
 
 const defaultRedirectsParams = [
-  singleRedirectApiData.path, // path
+  singleData.redirect.path, // path
   undefined, // target
 ] as SyncRedirectsParams;
 
 const defaultShopsParams = [] as SyncShopsParams;
 
 const defaultTranslationsParams = [
-  singleTranslationApiData.locale, // locale
+  singleData.translation.locale, // locale
   TranslatableResourceType.Collection, // resourceType
 ] as SyncTranslationsParams;
 // #endregion
@@ -332,7 +292,7 @@ describe('Sync resources', () => {
   });
 
   test.skip('Article', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Article]: listArticleApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Article]: listData.articles }));
 
     const result = await doSync('Articles', defaultArticleParams);
     await matchRowsSnapshot(expect, result, 'articles');
@@ -342,7 +302,7 @@ describe('Sync resources', () => {
   test('Article with metafields', async ({ expect }) => {
     context.fetcher.fetch.withArgs(isMetafieldDefinitionRequest).callsFake(function fakeFn() {
       return newGraphqlFetchResponse({
-        metafieldDefinitions: { nodes: listArticleMetafieldDefinitionApiData },
+        metafieldDefinitions: { nodes: listData.articleMetafieldDefinitions },
       });
     });
     context.fetcher.fetch.withArgs(isRestMetafieldsRequest).callsFake(function fakeFn(fetchRequest: coda.FetchRequest) {
@@ -350,13 +310,13 @@ describe('Sync resources', () => {
       const parsedUrl = new UrlParse(decodedUrl, true);
       const ownerId = parseInt(parsedUrl.query['metafield[owner_id]']);
       return newJsonFetchResponse({
-        [RestResourcesPlural.Metafield]: listArticleMetafieldApiData.filter((m) => m.owner_id === ownerId),
+        [RestResourcesPlural.Metafield]: listData.articleMetafields.filter((m) => m.owner_id === ownerId),
       });
     });
     context.sync.dynamicUrl = MetafieldOwnerType.Article;
 
     const [syncMetafieldsDefault, ...params] = defaultArticleParams;
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Article]: listArticleApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Article]: listData.articles }));
     const result = await doSync('Articles', [
       true, // syncMetafields
       ...params,
@@ -365,7 +325,7 @@ describe('Sync resources', () => {
   });
 
   test('Blog', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Blog]: listBlogApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Blog]: listData.blogs }));
     const result = await doSync('Blogs', defaultBlogParams);
     await matchRowsSnapshot(expect, result, 'blogs');
   });
@@ -373,55 +333,55 @@ describe('Sync resources', () => {
   test('Collection', async ({ expect }) => {
     context.fetcher.fetch
       .onFirstCall()
-      .returns(newJsonFetchResponse({ [RestResourcesPlural.CustomCollection]: listCustomCollectionApiData }));
+      .returns(newJsonFetchResponse({ [RestResourcesPlural.CustomCollection]: listData.customCollections }));
     context.fetcher.fetch
       .onSecondCall()
-      .returns(newJsonFetchResponse({ [RestResourcesPlural.SmartCollection]: listSmartCollectionApiData }));
+      .returns(newJsonFetchResponse({ [RestResourcesPlural.SmartCollection]: listData.smartCollections }));
     const result = await doSync('Collections', defaultSmartCollectionParams);
     await matchRowsSnapshot(expect, result, 'collections');
   });
 
   test('Collect', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Collect]: listCollectApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Collect]: listData.collects }));
     const result = await doSync('Collects', defaultCollectParams);
     await matchRowsSnapshot(expect, result, 'collects');
   });
 
   test('Customer', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Customer]: listCustomerApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Customer]: listData.customers }));
     const result = await doSync('Customers', defaultCustomersParams);
     await matchRowsSnapshot(expect, result, 'customers');
   });
 
   test('DraftOrder', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.DraftOrder]: listDraftOrderApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.DraftOrder]: listData.draftOrders }));
     const result = await doSync('DraftOrders', defaultDraftOrdersParams);
     await matchRowsSnapshot(expect, result, 'draftOrders');
   });
 
   test('File', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ files: { nodes: listFileApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ files: { nodes: listData.files } }));
     const result = await doSync('Files', defaultFilesParams);
     await matchRowsSnapshot(expect, result, 'files');
   });
 
   test('InventoryLevel', async ({ expect }) => {
     context.fetcher.fetch.returns(
-      newJsonFetchResponse({ [RestResourcesPlural.InventoryLevel]: listInventoryLevelApiData })
+      newJsonFetchResponse({ [RestResourcesPlural.InventoryLevel]: listData.inventoryLevels })
     );
     const result = await doSync('InventoryLevels', defaultInventoryLevelsParams);
     await matchRowsSnapshot(expect, result, 'inventoryLevels');
   });
 
   test('InventoryItem', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ inventoryItems: { nodes: listInventoryItemApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ inventoryItems: { nodes: listData.inventoryItems } }));
 
     const result = await doSync('InventoryItems', defaultInventoryItemsParams);
     await matchRowsSnapshot(expect, result, 'inventoryItems');
   });
 
   test('Location', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ locations: { nodes: listLocationApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ locations: { nodes: listData.locations } }));
     const result = await doSync('Locations', defaultLocationsParams);
     await matchRowsSnapshot(expect, result, 'locations');
   });
@@ -436,19 +396,19 @@ describe('Sync resources', () => {
     context.sync.dynamicUrl = MetafieldOwnerType.Article;
     context.fetcher.fetch.withArgs(isRestMetafieldsArticleRequest).returns(
       newJsonFetchResponse({
-        [RestResourcesPlural.Article]: listArticleApiData.map((article) => ({ id: article.id })),
+        [RestResourcesPlural.Article]: listData.articles.map((article) => ({ id: article.id })),
       })
     );
     // On doit utiliser une fonction de callback sinon on dirait que la réponse se 'détériore' à chaque run…
     // L'object ne doit pas être immutable quelque part…
     context.fetcher.fetch.withArgs(isRestMetafieldsRequest).callsFake(function fakeFn() {
       return newJsonFetchResponse({
-        [RestResourcesPlural.Metafield]: listArticleMetafieldApiData,
+        [RestResourcesPlural.Metafield]: listData.articleMetafields,
       });
     });
     context.fetcher.fetch.withArgs(isMetafieldDefinitionRequest).callsFake(function fakeFn() {
       return newGraphqlFetchResponse({
-        metafieldDefinitions: { nodes: listArticleMetafieldDefinitionApiData },
+        metafieldDefinitions: { nodes: listData.articleMetafieldDefinitions },
       });
     });
 
@@ -463,9 +423,9 @@ describe('Sync resources', () => {
         products: {
           nodes: [
             {
-              id: listProductMetafieldApiData[0].parentNode.id,
+              id: listData.productMetafields[0].parentNode.id,
               __typename: 'Product',
-              metafields: { nodes: listProductMetafieldApiData },
+              metafields: { nodes: listData.productMetafields },
             },
           ],
         },
@@ -480,7 +440,7 @@ describe('Sync resources', () => {
     context.fetcher.fetch.returns(
       newGraphqlFetchResponse({
         metafieldDefinitions: {
-          nodes: listArticleMetafieldDefinitionApiData,
+          nodes: listData.articleMetafieldDefinitions,
         },
       })
     );
@@ -489,23 +449,25 @@ describe('Sync resources', () => {
   });
 
   test('Metaobjects', async ({ expect }) => {
-    context.sync.dynamicUrl = SyncedMetaobjects.encodeDynamicUrl({ id: listMetaobjectApiData[0].definition.id });
+    context.sync.dynamicUrl = SyncedMetaobjects.encodeDynamicUrl({
+      id: listData.metaobjects[0].definition.id,
+    });
     context.fetcher.fetch
       .withArgs(isSingleMetaobjectDefinitionRequest)
-      .returns(newGraphqlFetchResponse({ metaobjectDefinition: singleTestMetaobjectDefinitionApiData }));
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ metaobjects: { nodes: listMetaobjectApiData } }));
+      .returns(newGraphqlFetchResponse({ metaobjectDefinition: singleData.testMetaobjectDefinition }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ metaobjects: { nodes: listData.metaobjects } }));
     const result = await doSync('Metaobjects', defaultMetaobjectsParams);
     await matchRowsSnapshot(expect, result, 'metaobjects');
   });
 
   test('Order', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listOrderApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listData.orders }));
     const result = await doSync('Orders', defaultOrdersParams);
     await matchRowsSnapshot(expect, result, 'orders');
   });
 
   test('OrderLineItem', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listOrderApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listData.orders }));
     const result = await doSync('OrderLineItems', defaultOrderLineItemsParams);
     await matchRowsSnapshot(expect, result, 'orderLineItems');
   });
@@ -518,7 +480,7 @@ describe('Sync resources', () => {
             {
               id: 'gid://shopify/Order/5516156698880',
               name: '#1021',
-              transactions: listOrderTransactionApiData,
+              transactions: listData.orderTransactions,
             },
           ],
         },
@@ -530,38 +492,38 @@ describe('Sync resources', () => {
   });
 
   test('Page', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Page]: listPageApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Page]: listData.pages }));
     const result = await doSync('Pages', defaultPagesParams);
     await matchRowsSnapshot(expect, result, 'pages');
   });
 
   test('Product', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listProductApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listData.products } }));
     const result = await doSync('Products', defaultProductsParams);
     await matchRowsSnapshot(expect, result, 'products');
   });
 
   test('Redirect', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Redirect]: listRedirectApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Redirect]: listData.redirects }));
     const result = await doSync('Redirects', defaultRedirectsParams);
     await matchRowsSnapshot(expect, result, 'redirects');
   });
 
   test('Shop', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Shop]: SingleShopApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Shop]: singleData.shop }));
     const result = await doSync('Shops', defaultShopsParams);
     await matchRowsSnapshot(expect, result, 'shops');
   });
 
   test('Variant', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ productVariants: { nodes: listVariantApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ productVariants: { nodes: listData.variants } }));
     const result = await doSync('ProductVariants', defaultVariantsParams);
     await matchRowsSnapshot(expect, result, 'variants');
   });
 
   test('GraphQl not enough points', async () => {
     context.fetcher.fetch.withArgs(isCheckThrottleStatusRequest).returns(getThrottleStatusMockResponse(100));
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listProductApiData } }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listData.products } }));
     const result = await executeSyncFormulaFromPackDefSingleIteration(
       pack,
       'Products',
@@ -649,7 +611,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     const result = await doSync('Files', defaultFilesParams);
     await matchRowsIntegrationSnapshot(
       expect,
-      result.filter((res) => res.GraphqlGid === singleFileApiData.id),
+      result.filter((res) => res.GraphqlGid === singleData.file.id),
       'files'
     );
   });
@@ -677,7 +639,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     ] as SyncLocationsParams);
     await matchRowsIntegrationSnapshot(
       expect,
-      result.filter((res) => res.id === graphQlGidToId(singleLocationApiData.id)),
+      result.filter((res) => res.id === graphQlGidToId(singleData.location.id)),
       'locationsWithMetafields'
     );
   });
@@ -690,7 +652,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
     await matchRowsIntegrationSnapshot(
       expect,
-      result.filter((res) => res.owner_id === listArticleMetafieldApiData[0].owner_id),
+      result.filter((res) => res.owner_id === listData.articleMetafields[0].owner_id),
       'restMetafields'
     );
   });
@@ -703,7 +665,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
     await matchRowsIntegrationSnapshot(
       expect,
-      result.filter((res) => res.owner_id === graphQlGidToId(listProductMetafieldApiData[0].parentNode.id)),
+      result.filter((res) => res.owner_id === graphQlGidToId(listData.productMetafields[0].parentNode.id)),
       'graphqlMetafields'
     );
   });
@@ -721,7 +683,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
     await matchRowsIntegrationSnapshot(
       expect,
-      result.filter((res) => res.id === graphQlGidToId(singleTestMetaobjectApiData.id)),
+      result.filter((res) => res.id === graphQlGidToId(singleData.testMetaobject.id)),
       'testMetaobjects'
     );
   });

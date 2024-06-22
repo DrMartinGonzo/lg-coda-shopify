@@ -224,14 +224,6 @@ class RestFetcher {
   public async delete<T>(params: DeleteRequestParams<T>) {
     return this.request<T>({ method: 'DELETE', ...params });
   }
-  // public async putNew<T extends any = {}>({ body, ...params }: PutRequestParams) {
-  //   if (isDefinedEmpty(body)) return;
-  //   return this.request<T>({
-  //     method: 'PUT',
-  //     body: { [this.singular]: body },
-  //     ...params,
-  //   });
-  // }
 }
 // #endregion
 

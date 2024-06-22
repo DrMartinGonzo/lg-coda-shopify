@@ -83,7 +83,6 @@ export class DraftOrderModel extends AbstractModelRestWithGraphQlMetafields {
       shipping_address: formatRowAddressToApi(row.shipping_address),
       shipping_line: row.shipping_line as ShippingLineApiData,
       subtotal_price: safeToString(row.subtotal_price),
-      // TODO: format function ?
       tax_lines: row.tax_lines,
       total_price: safeToString(row.total_price),
       total_tax: safeToString(row.total_tax),

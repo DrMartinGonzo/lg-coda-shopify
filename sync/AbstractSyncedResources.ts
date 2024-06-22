@@ -61,7 +61,6 @@ export interface SyncTableContinuation extends coda.Continuation {
 export interface GetSchemaArgs {
   context: coda.ExecutionContext;
   codaSyncParams?: coda.ParamValues<coda.ParamDefs>;
-  normalized?: boolean;
 }
 
 export interface ModelType<T> {
@@ -132,16 +131,13 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   /**
    * Get the current Array Schema for the resource. Dynamic if it exists, else static.
    * Keep the schema in a cache to avoid refetching dynamic schema
-   // TODO: Pourquoi est-ce qu'on utilisait normalizeObjectSchema ?
    */
-  static async getSchema({ context, codaSyncParams = [], normalized = true }: GetSchemaArgs) {
+  static async getSchema({ context, codaSyncParams = [] }: GetSchemaArgs) {
     if (context.sync?.schema) {
       this._schemaCache = context.sync.schema as coda.ArraySchema<coda.ObjectSchema<string, string>>;
     }
     if (!this._schemaCache) {
       const dynamicSchema = await this.getDynamicSchema({ context, codaSyncParams });
-      // console.log('dynamicSchema', dynamicSchema);
-      // const schema = dynamicSchema ? normalizeObjectSchema(dynamicSchema) : this.staticSchema;
       const schema = dynamicSchema ? dynamicSchema : this.staticSchema;
       this._schemaCache = transformToArraySchema(schema);
     }

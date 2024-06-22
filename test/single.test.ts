@@ -17,6 +17,7 @@ import { RestResourcesPlural, RestResourcesSingular } from '../constants/resourc
 import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { pack } from '../pack';
 import { MetafieldOwnerType } from '../types/admin.types';
+import * as singleData from './__snapshots__/api/single';
 import {
   defaultIntegrationContextOptions,
   defaultMockExecuteOptions,
@@ -24,23 +25,6 @@ import {
   newGraphqlFetchResponse,
   referenceIds,
 } from './utils/test-utils';
-
-import singleArticleApiData from './__snapshots__/api/article.single.json';
-import singleBlogApiData from './__snapshots__/api/blog.single.json';
-import singleCustomCollectionApiData from './__snapshots__/api/customCollection.single.json';
-import singleCustomerApiData from './__snapshots__/api/customer.single.json';
-import singleDraftOrderApiData from './__snapshots__/api/draftOrder.single.json';
-import singleFileApiData from './__snapshots__/api/file.single.json';
-import singleGraphqlMetafieldApiData from './__snapshots__/api/graphqlMetafield.single.json';
-import singleLocationApiData from './__snapshots__/api/location.single.json';
-import singleOrderApiData from './__snapshots__/api/order.single.json';
-import singlePageApiData from './__snapshots__/api/page.single.json';
-import singleProductApiData from './__snapshots__/api/product.single.json';
-import singleRedirectApiData from './__snapshots__/api/redirect.single.json';
-import singleRestMetafieldApiData from './__snapshots__/api/restMetafield.single.json';
-import singleShopApiData from './__snapshots__/api/shop.single.json';
-import singleSmartCollectionApiData from './__snapshots__/api/smartCollection.single.json';
-import singleVariantApiData from './__snapshots__/api/variant.single.json';
 
 // #endregion
 
@@ -84,13 +68,13 @@ describe('Fetch single resource', () => {
   });
 
   test('Article', async ({ expect }) => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Article]: singleArticleApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Article]: singleData.article }));
     const result = await doFetch('Article', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'article');
   });
 
   test('Blog', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Blog]: singleBlogApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Blog]: singleData.blog }));
     const result = await doFetch('Blog', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'blog');
   });
@@ -98,7 +82,7 @@ describe('Fetch single resource', () => {
   test('CustomCollection', async () => {
     const collectionTypeResponse = newGraphqlFetchResponse({ collection: { isSmartCollection: undefined } });
     const customCollectionResponse = newJsonFetchResponse({
-      [RestResourcesSingular.CustomCollection]: singleCustomCollectionApiData,
+      [RestResourcesSingular.CustomCollection]: singleData.customCollection,
     });
     context.fetcher.fetch.onFirstCall().returns(collectionTypeResponse);
     context.fetcher.fetch.onSecondCall().returns(customCollectionResponse);
@@ -107,21 +91,19 @@ describe('Fetch single resource', () => {
   });
 
   test('Customer', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Customer]: singleCustomerApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Customer]: singleData.customer }));
     const result = await doFetch('Customer', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'customer');
   });
 
   test('DraftOrder', async () => {
-    context.fetcher.fetch.returns(
-      newJsonFetchResponse({ [RestResourcesSingular.DraftOrder]: singleDraftOrderApiData })
-    );
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.DraftOrder]: singleData.draftOrder }));
     const result = await doFetch('DraftOrder', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'draftOrder');
   });
 
   test('File', async () => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ node: singleFileApiData }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ node: singleData.file }));
     const result = await doFetch('File', [FAKE_GID]);
     await matchSingleRowSnapshot(expect, result, 'file');
   });
@@ -136,7 +118,7 @@ describe('Fetch single resource', () => {
             id: referenceIds.sync.product,
           },
           metafields: {
-            nodes: [singleGraphqlMetafieldApiData as any],
+            nodes: [singleData.graphqlMetafield as any],
           },
         },
       } as SingleMetafieldByKeyResponse)
@@ -150,38 +132,38 @@ describe('Fetch single resource', () => {
   });
 
   test('Location', async () => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ location: singleLocationApiData }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ location: singleData.location }));
     const result = await doFetch('Location', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'location');
   });
 
   test('Order', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Order]: singleOrderApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Order]: singleData.order }));
     const result = await doFetch('Order', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'order');
   });
 
   test('Page', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Page]: singlePageApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Page]: singleData.page }));
     const result = await doFetch('Page', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'page');
   });
 
   test('Product', async () => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ product: singleProductApiData }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ product: singleData.product }));
     const result = await doFetch('Product', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'product');
   });
 
   test('Redirect', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Redirect]: singleRedirectApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Redirect]: singleData.redirect }));
     const result = await doFetch('Redirect', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'redirect');
   });
 
   test('Rest Metafield', async () => {
     context.fetcher.fetch.returns(
-      newJsonFetchResponse({ [RestResourcesPlural.Metafield]: [singleRestMetafieldApiData] })
+      newJsonFetchResponse({ [RestResourcesPlural.Metafield]: [singleData.restMetafield] })
     );
     const result = await doFetch('Metafield', [
       MetafieldOwnerType.Article,
@@ -192,7 +174,7 @@ describe('Fetch single resource', () => {
   });
 
   test('Shop', async () => {
-    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Shop]: singleShopApiData }));
+    context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Shop]: singleData.shop }));
     const result = await doFetch('Shop', []);
     await matchSingleRowSnapshot(expect, result, 'shop');
   });
@@ -202,7 +184,7 @@ describe('Fetch single resource', () => {
       collection: { isSmartCollection: { appliedDisjunctively: undefined } },
     });
     const smartCollectionResponse = newJsonFetchResponse({
-      [RestResourcesSingular.SmartCollection]: singleSmartCollectionApiData,
+      [RestResourcesSingular.SmartCollection]: singleData.smartCollection,
     });
     context.fetcher.fetch.onFirstCall().returns(collectionTypeResponse);
     context.fetcher.fetch.onSecondCall().returns(smartCollectionResponse);
@@ -211,7 +193,7 @@ describe('Fetch single resource', () => {
   });
 
   test('Variant', async () => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ productVariant: singleVariantApiData }));
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ productVariant: singleData.variant }));
     const result = await doFetch('ProductVariant', [FAKE_ID]);
     await matchSingleRowSnapshot(expect, result, 'variant');
   });

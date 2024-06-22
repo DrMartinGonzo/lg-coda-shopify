@@ -24,6 +24,7 @@ import SingleShopApiData from '../__snapshots__/api/shop.single.json';
 
 export const manifestPath = require.resolve('../../pack.ts');
 
+// #region Context and Execute Options
 export const defaultIntegrationContextOptions: ContextOptions = {
   useRealFetcher: true,
   manifestPath,
@@ -52,6 +53,7 @@ export const defaultIntegrationUpdateExecuteOptions: ExecuteOptions = {
   validateParams: true,
   validateResult: false,
 };
+// #endregion
 
 export const referenceIds = {
   update: {
@@ -85,7 +87,44 @@ export function getRealContext() {
   return newRealFetcherExecutionContext(pack, manifestPath);
 }
 
-export function normalizeExpectedRowKeys(obj) {
+export function getSyncContextWithDynamicUrl(dynamicUrl: string) {
+  const syncContext = newRealFetcherSyncExecutionContext(pack, manifestPath);
+  // @ts-expect-error
+  syncContext.sync = { dynamicUrl };
+  return syncContext;
+}
+
+export function excludeVolatileProperties(data: any) {
+  const keysToExclude = ['created_at', 'CreatedAt', 'createdAt', 'updated_at', 'UpdatedAt', 'updatedAt'];
+
+  if (typeof data !== 'object' || data === null) return data;
+  if (Array.isArray(data)) return data.map((item) => excludeVolatileProperties(item));
+
+  const result: { [key: string]: any } = {};
+  for (const key in data) {
+    if (keysToExclude.includes(key)) continue;
+    result[key] = excludeVolatileProperties(data[key]);
+  }
+
+  return result;
+}
+
+function isGraphQlUrl(url: string) {
+  const regex = new RegExp(`^https:\/\/.*.myshopify.com\/admin\/api/(\\d{4}-\\d{2})/graphql\\\.json$`, '');
+  return regex.test(url);
+}
+
+export function isSameGraphQlQueryRequest(documentNode: TadaDocumentNode, fetchRequest: coda.FetchRequest) {
+  try {
+    const body = JSON.parse(fetchRequest?.body as string);
+    const isSameQuery = isQueryFromDocumentNode(documentNode, body?.query ?? '');
+    return isGraphQlUrl(fetchRequest?.url) && isSameQuery;
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizeExpectedRowKeys(obj) {
   if (Array.isArray(obj)) {
     return obj.map((item) => normalizeExpectedRowKeys(item));
   } else if (obj !== null && typeof obj === 'object') {
@@ -98,7 +137,7 @@ export function normalizeExpectedRowKeys(obj) {
   return obj;
 }
 
-export function compareToExpectedRow(result: any, expected: any) {
+function compareToExpectedRow(result: any, expected: any) {
   Object.keys(result).forEach((key) => {
     if (key in expected) {
       if (Array.isArray(expected[key]) || isObject(expected[key])) {
@@ -108,13 +147,6 @@ export function compareToExpectedRow(result: any, expected: any) {
       }
     }
   });
-}
-
-export function getSyncContextWithDynamicUrl(dynamicUrl: string) {
-  const syncContext = newRealFetcherSyncExecutionContext(pack, manifestPath);
-  // @ts-expect-error
-  syncContext.sync = { dynamicUrl };
-  return syncContext;
 }
 
 export function newGraphqlFetchResponse<T>(data: T, currentlyAvailable = 1999) {
@@ -166,43 +198,4 @@ export async function formatMetafieldSingleLineTextInput(value: string): Promise
 
 export async function deleteRestResource(formulaName: string, id: number): Promise<string> {
   return executeFormulaFromPackDef(pack, formulaName, [id], undefined, undefined, defaultIntegrationContextOptions);
-}
-
-function isGraphQlUrl(url: string) {
-  const regex = new RegExp(`^https:\/\/.*.myshopify.com\/admin\/api/(\\d{4}-\\d{2})/graphql\\\.json$`, '');
-  return regex.test(url);
-}
-
-export function isSameGraphQlQueryRequest(documentNode: TadaDocumentNode, fetchRequest: coda.FetchRequest) {
-  try {
-    const body = JSON.parse(fetchRequest?.body as string);
-    const isSameQuery = isQueryFromDocumentNode(documentNode, body?.query ?? '');
-    return isGraphQlUrl(fetchRequest?.url) && isSameQuery;
-  } catch (error) {
-    return false;
-  }
-}
-
-export function excludeVolatileProperties(data: any) {
-  const keysToExclude = ['created_at', 'CreatedAt', 'createdAt', 'updated_at', 'UpdatedAt', 'updatedAt'];
-
-  if (typeof data !== 'object' || data === null) {
-    return data;
-  }
-
-  if (Array.isArray(data)) {
-    return data.map((item) => excludeVolatileProperties(item));
-  }
-
-  const result: { [key: string]: any } = {};
-  for (const key in data) {
-    if (keysToExclude.includes(key)) {
-      continue;
-    }
-    result[key] = excludeVolatileProperties(data[key]);
-  }
-
-  return result;
-
-  // return excludeObjectKeys(data, ['updated_at', 'UpdatedAt', 'updatedAt']);
 }

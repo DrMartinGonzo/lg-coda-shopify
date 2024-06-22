@@ -14,6 +14,7 @@ import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 import { getMetaFieldFullKey } from '../models/utils/metafields-utils';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { formatOptionNameId } from '../utils/helpers';
+import * as singleData from './__snapshots__/api/single';
 import {
   defaultIntegrationContextOptions,
   defaultIntegrationUpdateExecuteOptions,
@@ -22,8 +23,6 @@ import {
   formatMetafieldSingleLineTextInput,
 } from './utils/test-utils';
 
-import singleBlogApiData from './__snapshots__/api/blog.single.json';
-
 // #endregion
 
 type CreateArticleParams = coda.ParamValues<(typeof Action_CreateArticle)['parameters']>;
@@ -31,7 +30,7 @@ type CreateCollectionParams = coda.ParamValues<(typeof Action_CreateCollection)[
 type CreatePageParams = coda.ParamValues<(typeof Action_CreatePage)['parameters']>;
 type CreateBlogParams = coda.ParamValues<(typeof Action_CreateBlog)['parameters']>;
 
-describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
+describe('INTEGRATION: Create, Fetch and Delete Actions', () => {
   test('Article', async () => {
     const author = 'author';
     const bodyHtml = '<p>bodyHtml</p>';
@@ -49,7 +48,7 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       pack,
       'CreateArticle',
       [
-        formatOptionNameId(singleBlogApiData.title, singleBlogApiData.id), // blog
+        formatOptionNameId(singleData.blog.title, singleData.blog.id), // blog
         title,
         author,
         bodyHtml,

@@ -16,10 +16,7 @@ import {
   formatMetafieldSingleLineTextInput,
   referenceIds,
 } from './utils/test-utils';
-
-import singleGraphQlMetafieldApiData from './__snapshots__/api/graphqlMetafield.single.json';
-import singleRestMetafieldApiData from './__snapshots__/api/restMetafield.single.json';
-import singleTranslationApiData from './__snapshots__/api/translation.single.json';
+import * as singleData from './__snapshots__/api/single';
 
 // #endregion
 
@@ -111,7 +108,7 @@ describe.skip('INTEGRATION: Update Action', () => {
   });
 
   test('GraphQl Metafield', async () => {
-    const original = singleGraphQlMetafieldApiData;
+    const original = singleData.graphqlMetafield;
     const originalValue = original.value;
     const newValue = originalValue + UPDATED;
 
@@ -143,7 +140,7 @@ describe.skip('INTEGRATION: Update Action', () => {
   });
 
   test('Rest Metafield', async () => {
-    const original = singleRestMetafieldApiData;
+    const original = singleData.restMetafield;
     const originalValue = original.value;
     const newValue = originalValue + UPDATED;
 
@@ -175,7 +172,7 @@ describe.skip('INTEGRATION: Update Action', () => {
   });
 
   test('Translation', async () => {
-    const original = singleTranslationApiData;
+    const original = singleData.translation;
     const originalValue = original.translatedValue;
     const newValue = originalValue + UPDATED;
 

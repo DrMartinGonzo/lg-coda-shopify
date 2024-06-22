@@ -6,13 +6,47 @@ import { IS_ADMIN_RELEASE } from '../pack-config.json';
 
 // #endregion
 
+// #region Predicates
 export function isString(value: any) {
   return typeof value === 'string' || value instanceof String;
 }
 
-export function capitalizeFirstChar(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+export function isObject(value: any) {
+  return (typeof value === 'object' && value !== null) || typeof value === 'function';
 }
+
+/**
+ * Checks if a value is nullish.
+ * @param value The value to be checked for nullishness
+ * @returns Returns true if the value is nullish; otherwise, returns false.
+ */
+export function isNullish(value: any) {
+  return value === null || value === undefined;
+}
+
+/**
+ * Checks if a value is defined but empty, taking into account all possible value types.
+ * @param value The value to be checked for emptiness.
+ * @returns Returns true if the value is empty; otherwise, returns false.
+ */
+export function isDefinedEmpty(value: any) {
+  if (value === null) return true;
+  if (typeof value === 'string' && value.trim() === '') return true;
+  if (Array.isArray(value) && value.length === 0) return true;
+  if (typeof value === 'object' && Object.keys(value).length === 0 && !(value instanceof Date)) return true;
+
+  return false;
+}
+
+/**
+ * Checks if a value is nullish or empty, taking into account all possible value types.
+ * @param value The value to be checked for nullishness or emptiness.
+ * @returns Returns true if the value is nullish or empty; otherwise, returns false.
+ */
+export function isNullishOrEmpty(value: any) {
+  return isNullish(value) || isDefinedEmpty(value);
+}
+// #endregion
 
 // #region Log helpers
 export function logAdmin(msg: any) {
@@ -69,40 +103,6 @@ export function parseOptionId(label: string): number {
 
 export function formatOptionNameId(name: string, id: number): string {
   return `${trimStringWithEllipsis(name, 25)} (${id})`;
-}
-// #endregion
-
-// #region null/defined etc checks
-/**
- * Checks if a value is nullish.
- * @param value The value to be checked for nullishness
- * @returns Returns true if the value is nullish; otherwise, returns false.
- */
-export function isNullish(value: any) {
-  return value === null || value === undefined;
-}
-
-/**
- * Checks if a value is defined but empty, taking into account all possible value types.
- * @param value The value to be checked for emptiness.
- * @returns Returns true if the value is empty; otherwise, returns false.
- */
-export function isDefinedEmpty(value: any) {
-  if (value === null) return true;
-  if (typeof value === 'string' && value.trim() === '') return true;
-  if (Array.isArray(value) && value.length === 0) return true;
-  if (typeof value === 'object' && Object.keys(value).length === 0 && !(value instanceof Date)) return true;
-
-  return false;
-}
-
-/**
- * Checks if a value is nullish or empty, taking into account all possible value types.
- * @param value The value to be checked for nullishness or emptiness.
- * @returns Returns true if the value is nullish or empty; otherwise, returns false.
- */
-export function isNullishOrEmpty(value: any) {
-  return isNullish(value) || isDefinedEmpty(value);
 }
 // #endregion
 
@@ -201,6 +201,19 @@ export function splitAndTrimValues(values = '', delimiter = ','): string[] {
 }
 // #endregion
 
+// #region String helpers
+export function capitalizeFirstChar(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function trimStringWithEllipsis(inputString: string, maxLength: number) {
+  if (inputString.length > maxLength) {
+    return inputString.substring(0, maxLength - 1) + '…';
+  }
+  return inputString;
+}
+// #endregion
+
 /**
  * Try to parse a json string, if it fails return the original value
  */
@@ -221,15 +234,7 @@ export function deepCopy<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export function isObject(value: any) {
-  return (typeof value === 'object' && value !== null) || typeof value === 'function';
-}
-
-/**
- * Takes an object and returns the key associated with the given value in the object
- * @param obj
- * @param value
- */
+/** Takes an object and returns the key associated with the given value in the object */
 export function getKeyFromValue<T extends object>(obj: T, value: T[keyof T]): keyof T {
   return Object.keys(obj).find((key) => obj[key] === value) as keyof T;
 }
@@ -243,13 +248,6 @@ export function compareByValueKey(a: any, b: any) {
 
 const overwriteMerge = (destinationArray: any[], sourceArray: any[], options: deepmerge.ArrayMergeOptions) =>
   sourceArray;
-
-function trimStringWithEllipsis(inputString: string, maxLength: number) {
-  if (inputString.length > maxLength) {
-    return inputString.substring(0, maxLength - 1) + '…';
-  }
-  return inputString;
-}
 
 export function safeToString(value?: any): string | undefined {
   return isNullish(value) ? undefined : value.toString();
@@ -265,10 +263,6 @@ export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
 }
 export function assertNotBlank(value: any) {
   return !isDefinedEmpty(value);
-}
-
-function handleDeleteNotFound(path: string | string) {
-  console.error(`Not found at path : '${path}'. Possibly already deleted.`);
 }
 
 export function reverseMap<T extends string | number | symbol, K extends string | number | symbol>(
