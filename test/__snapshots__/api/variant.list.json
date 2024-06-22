@@ -2,7 +2,6 @@
   {
     "barcode": "123456789",
     "compareAtPrice": "60.00",
-    "createdAt": "2024-02-20T18:22:14Z",
     "displayName": "Vitest Product - Vitest / ProductVariant",
     "id": "gid://shopify/ProductVariant/44365639713024",
     "inventoryPolicy": "DENY",
@@ -32,9 +31,7 @@
           "key": "test_money_field",
           "type": "money",
           "value": "{\"amount\":\"965.00\",\"currency_code\":\"EUR\"}",
-          "ownerType": "PRODUCTVARIANT",
-          "createdAt": "2024-03-20T12:59:24Z",
-          "updatedAt": "2024-06-18T13:22:47Z"
+          "ownerType": "PRODUCTVARIANT"
         },
         {
           "__typename": "Metafield",
@@ -43,9 +40,7 @@
           "key": "test",
           "type": "single_line_text_field",
           "value": "vitest",
-          "ownerType": "PRODUCTVARIANT",
-          "createdAt": "2024-06-16T21:06:30Z",
-          "updatedAt": "2024-06-16T21:06:30Z"
+          "ownerType": "PRODUCTVARIANT"
         }
       ]
     },

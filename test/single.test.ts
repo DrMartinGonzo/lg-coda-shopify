@@ -9,19 +9,20 @@ import {
   newMockExecutionContext,
 } from '@codahq/packs-sdk/dist/development';
 import { ExpectStatic, beforeEach, describe, expect, test } from 'vitest';
+
 import { SingleMetafieldByKeyResponse } from '../Clients/GraphQlClients';
 import { Formula_Metafield } from '../coda/setup/metafields-setup';
 import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 import { RestResourcesPlural, RestResourcesSingular } from '../constants/resourceNames-constants';
+import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { pack } from '../pack';
 import { MetafieldOwnerType } from '../types/admin.types';
-import { expectedRows } from './expectedRows';
 import {
-  compareToExpectedRow,
   defaultIntegrationContextOptions,
   defaultMockExecuteOptions,
+  excludeVolatileProperties,
   newGraphqlFetchResponse,
-  normalizeExpectedRowKeys,
+  referenceIds,
 } from './utils/test-utils';
 
 import singleArticleApiData from './__snapshots__/api/article.single.json';
@@ -47,7 +48,14 @@ const FAKE_ID = 123456789;
 const FAKE_GID = 'gid://shopify/Fake/34028708233472';
 
 async function matchSingleRowSnapshot(expect: ExpectStatic, result: any, name: string) {
-  await expect(JSON.stringify(result, null, 2)).toMatchFileSnapshot(`./__snapshots__/rows/${name}.row.json`);
+  await expect(JSON.stringify(excludeVolatileProperties(result), null, 2)).toMatchFileSnapshot(
+    `./__snapshots__/rows/mock/${name}.row.json`
+  );
+}
+async function matchSingleIntegrationRowSnapshot(expect: ExpectStatic, result: any, name: string) {
+  await expect(JSON.stringify(excludeVolatileProperties(result), null, 2)).toMatchFileSnapshot(
+    `./__snapshots__/rows/integration/${name}.row.json`
+  );
 }
 
 describe('Fetch single resource', () => {
@@ -123,9 +131,9 @@ describe('Fetch single resource', () => {
       newGraphqlFetchResponse({
         node: {
           __typename: 'Product',
-          id: 'gid://shopify/Product/8406091333888',
+          id: referenceIds.sync.product,
           parentOwner: {
-            id: 'gid://shopify/Product/8406091333888',
+            id: referenceIds.sync.product,
           },
           metafields: {
             nodes: [singleGraphqlMetafieldApiData as any],
@@ -136,7 +144,7 @@ describe('Fetch single resource', () => {
     const result = await doFetch('Metafield', [
       MetafieldOwnerType.Product,
       'global.title_tag',
-      8406091333888,
+      graphQlGidToId(referenceIds.sync.product),
     ] as coda.ParamValues<(typeof Formula_Metafield)['parameters']>);
     await matchSingleRowSnapshot(expect, result, 'graphqlMetafield');
   });
@@ -178,7 +186,7 @@ describe('Fetch single resource', () => {
     const result = await doFetch('Metafield', [
       MetafieldOwnerType.Article,
       'custom.test',
-      589065715968,
+      referenceIds.sync.article,
     ] as coda.ParamValues<(typeof Formula_Metafield)['parameters']>);
     await matchSingleRowSnapshot(expect, result, 'restMetafield');
   });
@@ -211,93 +219,86 @@ describe('Fetch single resource', () => {
 
 describe.skip('INTEGRATION: Fetch single resource', () => {
   test('Article', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.article);
     const result = await executeFormulaFromPackDef(
       pack,
       'Article',
-      [expected.Id],
+      [referenceIds.sync.article],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'article');
   });
 
   test('Blog', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.blog);
     const result = await executeFormulaFromPackDef(
       pack,
       'Blog',
-      [expected.Id],
+      [referenceIds.sync.blog],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'blog');
   });
 
   test('Customer', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.customer);
     const result = await executeFormulaFromPackDef(
       pack,
       'Customer',
-      [expected.Id],
+      [referenceIds.sync.customer],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'customer');
   });
 
   test('MetafieldDefinition', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.metafieldDefinition);
     const result = await executeFormulaFromPackDef(
       pack,
       'MetafieldDefinition',
-      [expected.Id],
+      [referenceIds.sync.metafieldDefinition],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'metafieldDefinition');
   });
 
   test('Page', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.page);
     const result = await executeFormulaFromPackDef(
       pack,
       'Page',
-      [expected.Id],
+      [referenceIds.sync.page],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'page');
   });
 
   test('Product', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.product);
     const result = await executeFormulaFromPackDef(
       pack,
       'Product',
-      [expected.Id],
+      [graphQlGidToId(referenceIds.sync.product)],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'product');
   });
 
   test('ProductVariant', async () => {
-    const expected = normalizeExpectedRowKeys(expectedRows.productVariant);
     const result = await executeFormulaFromPackDef(
       pack,
       'ProductVariant',
-      [expected.Id],
+      [graphQlGidToId(referenceIds.sync.variant)],
       undefined,
       undefined,
       defaultIntegrationContextOptions
     );
-    compareToExpectedRow(result, expected);
+    await matchSingleIntegrationRowSnapshot(expect, result, 'variant');
   });
 });

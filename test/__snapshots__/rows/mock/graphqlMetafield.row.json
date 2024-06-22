@@ -1,0 +1,12 @@
+{
+  "Label": "global.title_tag",
+  "GraphqlGid": "gid://shopify/Metafield/25730257289472",
+  "Id": 25730257289472,
+  "Key": "title_tag",
+  "Namespace": "global",
+  "Type": "single_line_text_field",
+  "RawValue": "vitest",
+  "OwnerType": "PRODUCT",
+  "OwnerId": 8406091333888,
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/products/8406091333888/metafields/unstructured"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 92282224896,
+    "handle": "another-blog",
+    "title": "Another blog",
+    "commentable": "no",
+    "feedburner": null,
+    "feedburner_location": null,
+    "template_suffix": null,
+    "tags": "tag1, tag2",
+    "admin_graphql_api_id": "gid://shopify/OnlineStoreBlog/92282224896",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/blogs/92282224896"
+  },
+  {
+    "id": 92793504000,
+    "handle": "handle",
+    "title": "Third",
+    "commentable": "no",
+    "feedburner": null,
+    "feedburner_location": null,
+    "template_suffix": null,
+    "tags": "tag1, tag2",
+    "admin_graphql_api_id": "gid://shopify/OnlineStoreBlog/92793504000",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/blogs/92793504000"
+  },
+  {
+    "id": 91627159808,
+    "handle": "vitest",
+    "title": "Vitest",
+    "commentable": "no",
+    "feedburner": null,
+    "feedburner_location": null,
+    "template_suffix": null,
+    "tags": "tag1, tag2, test, test2",
+    "admin_graphql_api_id": "gid://shopify/OnlineStoreBlog/91627159808",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/blogs/91627159808"
+  }
+]

@@ -2,7 +2,6 @@
   "__typename": "MediaImage",
   "id": "gid://shopify/MediaImage/34028708233472",
   "alt": "test alt",
-  "createdAt": "2024-06-18T13:10:31Z",
   "preview": {
     "image": {
       "url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/files/vitest.png?v=1718716233"

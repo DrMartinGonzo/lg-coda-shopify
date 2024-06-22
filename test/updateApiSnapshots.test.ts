@@ -30,8 +30,9 @@ import {
   SmartCollectionClient,
 } from '../Clients/RestClients';
 import { RestResourcesSingular } from '../constants/resourceNames-constants';
+import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
-import { getRealContext } from './utils/test-utils';
+import { excludeVolatileProperties, getRealContext, referenceIds } from './utils/test-utils';
 
 // #endregion
 
@@ -44,61 +45,62 @@ import { getRealContext } from './utils/test-utils';
 const DEFAULT_LIMIT = 10;
 
 async function snapSingleData(expect: ExpectStatic, data: any, name: string) {
-  await expect(JSON.stringify(data, null, 2)).toMatchFileSnapshot(`./__snapshots__/api/${name}.single.json`);
+  await expect(JSON.stringify(excludeVolatileProperties(data), null, 2)).toMatchFileSnapshot(
+    `./__snapshots__/api/${name}.single.json`
+  );
 }
-async function snapListData(expect: ExpectStatic, data: any, name: string) {
-  await expect(JSON.stringify(data, null, 2)).toMatchFileSnapshot(`./__snapshots__/api/${name}.list.json`);
+async function snapListData(expect: ExpectStatic, data: any[], name: string) {
+  await expect(JSON.stringify(data.map(excludeVolatileProperties), null, 2)).toMatchFileSnapshot(
+    `./__snapshots__/api/${name}.list.json`
+  );
 }
 
 describe('Dump Single API Data', () => {
   test('Article', async ({ expect }) => {
-    const response = await ArticleClient.createInstance(getRealContext()).single({ id: 588854919424 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'article');
+    const response = await ArticleClient.createInstance(getRealContext()).single({ id: referenceIds.sync.article });
+    await snapSingleData(expect, response.body, 'article');
   });
 
   test('Blog', async ({ expect }) => {
-    const response = await BlogClient.createInstance(getRealContext()).single({ id: 91627159808 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'blog');
+    const response = await BlogClient.createInstance(getRealContext()).single({ id: referenceIds.sync.blog });
+    await snapSingleData(expect, response.body, 'blog');
   });
 
   test('Collect', async ({ expect }) => {
-    const response = await CollectClient.createInstance(getRealContext()).single({ id: 35236133667072 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'collect');
+    const response = await CollectClient.createInstance(getRealContext()).single({ id: referenceIds.sync.collect });
+    await snapSingleData(expect, response.body, 'collect');
   });
 
   test('Customer', async ({ expect }) => {
-    const response = await CustomerClient.createInstance(getRealContext()).single({ id: 7199674794240 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'customer');
+    const response = await CustomerClient.createInstance(getRealContext()).single({ id: referenceIds.sync.customer });
+    await snapSingleData(expect, response.body, 'customer');
   });
 
   test('Custom Collection', async ({ expect }) => {
-    const response = await CustomCollectionClient.createInstance(getRealContext()).single({ id: 413874323712 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'customCollection');
+    const response = await CustomCollectionClient.createInstance(getRealContext()).single({
+      id: referenceIds.sync.customCollection,
+    });
+    await snapSingleData(expect, response.body, 'customCollection');
   });
 
   test('Draft Order', async ({ expect }) => {
-    const response = await DraftOrderClient.createInstance(getRealContext()).single({ id: 1143039000832 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'draftOrder');
+    const response = await DraftOrderClient.createInstance(getRealContext()).single({
+      id: referenceIds.sync.draftOrder,
+    });
+    await snapSingleData(expect, response.body, 'draftOrder');
   });
 
   test('File', async ({ expect }) => {
     const response = await FileClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/MediaImage/34028708233472',
+      id: referenceIds.sync.file,
       forceAllFields: undefined,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'file');
+    await snapSingleData(expect, response.body, 'file');
   });
 
   test('Location', async ({ expect }) => {
     const response = await LocationClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/Location/74534912256',
+      id: referenceIds.sync.location,
       forceAllFields: undefined,
     });
     const { ...data } = response.body;
@@ -106,85 +108,78 @@ describe('Dump Single API Data', () => {
   });
 
   test('Rest Metafield', async ({ expect }) => {
-    const response = await MetafieldClient.createInstance(getRealContext()).single({ id: 27141965611264 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'restMetafield');
+    const response = await MetafieldClient.createInstance(getRealContext()).single({
+      id: referenceIds.sync.restMetafield,
+    });
+    await snapSingleData(expect, response.body, 'restMetafield');
   });
 
   test('GraphQl Metafield', async ({ expect }) => {
     const response = await MetafieldGraphQlClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/Metafield/25730257289472',
+      id: referenceIds.sync.graphQlMetafield,
       forceAllFields: undefined,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'graphqlMetafield');
+    await snapSingleData(expect, response.body, 'graphqlMetafield');
   });
 
   test('Metaobject', async ({ expect }) => {
     const response = await MetaobjectClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/Metaobject/62614470912',
+      id: referenceIds.sync.metaobject,
       forceAllFields: undefined,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'metaobject');
+    await snapSingleData(expect, response.body, 'metaobject');
   });
 
   test('MetaobjectDefinition', async ({ expect }) => {
-    const metaobjectDefinitionId = 'gid://shopify/MetaobjectDefinition/967475456';
     const response = await MetaobjectDefinitionClient.createInstance(getRealContext()).single({
-      id: metaobjectDefinitionId,
+      id: referenceIds.sync.metaobjectDefinition,
       forceAllFields: true,
     });
-    const data = response.body;
-    await snapSingleData(expect, data, 'testMetaobjectDefinition');
+    await snapSingleData(expect, response.body, 'testMetaobjectDefinition');
   });
 
   test('Order', async ({ expect }) => {
-    const response = await OrderClient.createInstance(getRealContext()).single({ id: 5586624381184 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'order');
+    const response = await OrderClient.createInstance(getRealContext()).single({ id: referenceIds.sync.order });
+    await snapSingleData(expect, response.body, 'order');
   });
 
   test('Page', async ({ expect }) => {
-    const response = await PageClient.createInstance(getRealContext()).single({ id: 109215252736 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'page');
+    const response = await PageClient.createInstance(getRealContext()).single({ id: referenceIds.sync.page });
+    await snapSingleData(expect, response.body, 'page');
   });
 
   test('Product', async ({ expect }) => {
     const response = await ProductClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/Product/8406091333888',
+      id: referenceIds.sync.product,
       forceAllFields: undefined,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'product');
+    await snapSingleData(expect, response.body, 'product');
   });
 
   test('Product Variant', async ({ expect }) => {
     const response = await VariantClient.createInstance(getRealContext()).single({
-      id: 'gid://shopify/ProductVariant/44365639713024',
+      id: referenceIds.sync.variant,
       forceAllFields: undefined,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'variant');
+    await snapSingleData(expect, response.body, 'variant');
   });
 
   test('Redirect', async ({ expect }) => {
-    const response = await RedirectClient.createInstance(getRealContext()).single({ id: 417021952256 });
+    const response = await RedirectClient.createInstance(getRealContext()).single({ id: referenceIds.sync.redirect });
     const { ...data } = response.body;
     await snapSingleData(expect, data, 'redirect');
   });
 
   test('Smart Collection', async ({ expect }) => {
-    const response = await SmartCollectionClient.createInstance(getRealContext()).single({ id: 413086843136 });
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'smartCollection');
+    const response = await SmartCollectionClient.createInstance(getRealContext()).single({
+      id: referenceIds.sync.smartCollection,
+    });
+    await snapSingleData(expect, response.body, 'smartCollection');
   });
 
   test('Shop', async ({ expect }) => {
     const response = await ShopClient.createInstance(getRealContext()).current({});
-    const { updated_at, ...data } = response.body;
-    await snapSingleData(expect, data, 'shop');
+    await snapSingleData(expect, response.body, 'shop');
   });
 
   test('Translation', async ({ expect }) => {
@@ -192,54 +187,37 @@ describe('Dump Single API Data', () => {
       key: 'title',
       locale: 'fr',
       forceAllFields: undefined,
-      id: 'gid://shopify/Collection/413086843136',
+      id: referenceIds.sync.translationOwner,
     });
-    const { updatedAt, ...data } = response.body;
-    await snapSingleData(expect, data, 'translation');
+    await snapSingleData(expect, response.body, 'translation');
   });
 });
 
 describe('Dump List API Data', () => {
   test('Articles', async ({ expect }) => {
     const response = await ArticleClient.createInstance(getRealContext()).list({
-      blog_id: 91627159808,
+      blog_id: referenceIds.sync.blog,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((article) => {
-      const { updated_at, ...data } = article;
-      return data;
-    });
-    await snapListData(expect, listData, 'article');
+    await snapListData(expect, response.body, 'article');
   });
 
   test('Blog', async ({ expect }) => {
     const response = await BlogClient.createInstance(getRealContext()).list({ limit: DEFAULT_LIMIT });
-    const listData = response.body.map((blog) => {
-      const { updated_at, ...data } = blog;
-      return data;
-    });
-    await snapListData(expect, listData, 'blog');
+    await snapListData(expect, response.body, 'blog');
   });
 
   test('Collect', async ({ expect }) => {
     const response = await CollectClient.createInstance(getRealContext()).list({
-      collection_id: 413874323712,
+      collection_id: referenceIds.sync.customCollection,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((collect) => {
-      const { updated_at, ...data } = collect;
-      return data;
-    });
-    await snapListData(expect, listData, 'collect');
+    await snapListData(expect, response.body, 'collect');
   });
 
   test('Customer', async ({ expect }) => {
     const response = await CustomerClient.createInstance(getRealContext()).list({ limit: DEFAULT_LIMIT });
-    const listData = response.body.map((customer) => {
-      const { updated_at, ...data } = customer;
-      return data;
-    });
-    await snapListData(expect, listData, 'customer');
+    await snapListData(expect, response.body, 'customer');
   });
 
   test('Custom Collection', async ({ expect }) => {
@@ -247,23 +225,15 @@ describe('Dump List API Data', () => {
       handle: 'vitest-custom',
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((customCollection) => {
-      const { updated_at, ...data } = customCollection;
-      return data;
-    });
-    await snapListData(expect, listData, 'customCollection');
+    await snapListData(expect, response.body, 'customCollection');
   });
 
   test('Draft Order', async ({ expect }) => {
     const response = await DraftOrderClient.createInstance(getRealContext()).list({
-      ids: '1143039000832',
+      ids: `${referenceIds.sync.draftOrder}`,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((draftOrder) => {
-      const { updated_at, ...data } = draftOrder;
-      return data;
-    });
-    await snapListData(expect, listData, 'draftOrder');
+    await snapListData(expect, response.body, 'draftOrder');
   });
 
   test('File', async ({ expect }) => {
@@ -271,23 +241,15 @@ describe('Dump List API Data', () => {
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((file) => {
-      const { updatedAt, ...data } = file;
-      return data;
-    });
-    await snapListData(expect, listData, 'file');
+    await snapListData(expect, response.body, 'file');
   });
 
   test('InventoryLevels', async ({ expect }) => {
     const response = await InventoryLevelClient.createInstance(getRealContext()).list({
-      location_ids: '74534912256',
+      location_ids: graphQlGidToId(referenceIds.sync.location).toString(),
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((inventoryLevel) => {
-      const { updated_at, ...data } = inventoryLevel;
-      return data;
-    });
-    await snapListData(expect, listData, 'inventoryLevel');
+    await snapListData(expect, response.body, 'inventoryLevel');
   });
 
   test('InventoryItems', async ({ expect }) => {
@@ -295,11 +257,7 @@ describe('Dump List API Data', () => {
       skus: ['vitest'],
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((inventoryItem) => {
-      const { updatedAt, ...data } = inventoryItem;
-      return data;
-    });
-    await snapListData(expect, listData, 'inventoryItem');
+    await snapListData(expect, response.body, 'inventoryItem');
   });
 
   test('Location', async ({ expect }) => {
@@ -307,32 +265,23 @@ describe('Dump List API Data', () => {
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body;
-    await snapListData(expect, listData, 'location');
+    await snapListData(expect, response.body, 'location');
   });
 
-  test('Article Metafields', async ({ expect }) => {
+  test('Article (Rest) Metafields', async ({ expect }) => {
     const response = await MetafieldClient.createInstance(getRealContext()).list({
-      owner_id: 589065715968,
+      owner_id: referenceIds.sync.article,
       owner_resource: RestResourcesSingular.Article,
     });
-    const listData = response.body.map((metafield) => {
-      const { updated_at, ...data } = metafield;
-      return data;
-    });
-    await snapListData(expect, listData, 'articleMetafield');
+    await snapListData(expect, response.body, 'articleMetafield');
   });
 
-  test('GraphQl Metafield', async ({ expect }) => {
+  test('Product (GraphQl) Metafield', async ({ expect }) => {
     const response = await MetafieldGraphQlClient.createInstance(getRealContext()).list({
       ownerType: MetafieldOwnerType.Product,
       forceAllFields: true,
     });
-    const listData = response.body.map((metafield) => {
-      const { updatedAt, ...data } = metafield;
-      return data;
-    });
-    await snapListData(expect, listData, 'graphqlMetafield');
+    await snapListData(expect, response.body, 'graphqlMetafield');
   });
 
   test('MetafieldDefinition', async ({ expect }) => {
@@ -340,8 +289,7 @@ describe('Dump List API Data', () => {
       ownerType: MetafieldOwnerType.Article,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body;
-    await snapListData(expect, listData, 'articleMetafieldDefinition');
+    await snapListData(expect, response.body, 'articleMetafieldDefinition');
   });
 
   test('Metaobject', async ({ expect }) => {
@@ -350,23 +298,15 @@ describe('Dump List API Data', () => {
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((metaobject) => {
-      const { updatedAt, ...data } = metaobject;
-      return data;
-    });
-    await snapListData(expect, listData, 'metaobject');
+    await snapListData(expect, response.body, 'metaobject');
   });
 
   test('Order', async ({ expect }) => {
     const response = await OrderClient.createInstance(getRealContext()).list({
-      ids: '5586624381184',
+      ids: `${referenceIds.sync.order}`,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((order) => {
-      const { updated_at, ...data } = order;
-      return data;
-    });
-    await snapListData(expect, listData, 'order');
+    await snapListData(expect, response.body, 'order');
   });
 
   test('OrderTransaction', async ({ expect }) => {
@@ -379,8 +319,7 @@ describe('Dump List API Data', () => {
       gateways: ['bogus'],
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body;
-    await snapListData(expect, listData, 'orderTransaction');
+    await snapListData(expect, response.body, 'orderTransaction');
   });
 
   test('Page', async ({ expect }) => {
@@ -388,37 +327,25 @@ describe('Dump List API Data', () => {
       handle: 'vitest',
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((page) => {
-      const { updated_at, ...data } = page;
-      return data;
-    });
-    await snapListData(expect, listData, 'page');
+    await snapListData(expect, response.body, 'page');
   });
 
   test('Product', async ({ expect }) => {
     const response = await ProductClient.createInstance(getRealContext()).list({
-      ids: ['8406091333888'],
+      ids: [graphQlGidToId(referenceIds.sync.product).toString()],
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((product) => {
-      const { updatedAt, ...data } = product;
-      return data;
-    });
-    await snapListData(expect, listData, 'product');
+    await snapListData(expect, response.body, 'product');
   });
 
   test('Product Variant', async ({ expect }) => {
     const response = await VariantClient.createInstance(getRealContext()).list({
-      product_ids: ['8406091333888'],
+      product_ids: [graphQlGidToId(referenceIds.sync.product).toString()],
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((variant) => {
-      const { updatedAt, ...data } = variant;
-      return data;
-    });
-    await snapListData(expect, listData, 'variant');
+    await snapListData(expect, response.body, 'variant');
   });
 
   test('Redirect', async ({ expect }) => {
@@ -426,8 +353,7 @@ describe('Dump List API Data', () => {
       path: '/vitest',
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body;
-    await snapListData(expect, listData, 'redirect');
+    await snapListData(expect, response.body, 'redirect');
   });
 
   test('Smart Collection', async ({ expect }) => {
@@ -435,20 +361,12 @@ describe('Dump List API Data', () => {
       handle: 'vitest-smart',
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((smartCollection) => {
-      const { updated_at, ...data } = smartCollection;
-      return data;
-    });
-    await snapListData(expect, listData, 'smartCollection');
+    await snapListData(expect, response.body, 'smartCollection');
   });
 
   test('Shop', async ({ expect }) => {
     const response = await ShopClient.createInstance(getRealContext()).list({ limit: DEFAULT_LIMIT });
-    const listData = response.body.map((shop) => {
-      const { updated_at, ...data } = shop;
-      return data;
-    });
-    await snapListData(expect, listData, 'shop');
+    await snapListData(expect, response.body, 'shop');
   });
 
   test('Translation', async ({ expect }) => {
@@ -458,10 +376,6 @@ describe('Dump List API Data', () => {
       forceAllFields: true,
       limit: DEFAULT_LIMIT,
     });
-    const listData = response.body.map((translation) => {
-      const { updatedAt, ...data } = translation;
-      return data;
-    });
-    await snapListData(expect, listData, 'translation');
+    await snapListData(expect, response.body, 'translation');
   });
 });

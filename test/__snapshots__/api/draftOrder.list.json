@@ -6,7 +6,6 @@
     "taxes_included": true,
     "currency": "EUR",
     "invoice_sent_at": null,
-    "created_at": "2024-04-11T12:57:23-04:00",
     "tax_exempt": false,
     "completed_at": "2024-04-11T12:59:09-04:00",
     "name": "#D7",
@@ -128,8 +127,6 @@
     "customer": {
       "id": 7203930865920,
       "email": "test@test.com",
-      "created_at": "2024-02-22T04:12:06-05:00",
-      "updated_at": "2024-06-20T03:18:40-04:00",
       "first_name": "Martin",
       "last_name": "Portevin",
       "orders_count": 5,

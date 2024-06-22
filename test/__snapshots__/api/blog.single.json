@@ -5,8 +5,7 @@
   "commentable": "no",
   "feedburner": null,
   "feedburner_location": null,
-  "created_at": "2024-02-20T13:18:08-05:00",
   "template_suffix": null,
-  "tags": "tag1, tag2",
+  "tags": "tag1, tag2, test, test2",
   "admin_graphql_api_id": "gid://shopify/OnlineStoreBlog/91627159808"
 }

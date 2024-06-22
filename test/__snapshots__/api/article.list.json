@@ -2,7 +2,6 @@
   {
     "id": 589065715968,
     "title": "Vitest",
-    "created_at": "2024-04-01T17:33:21-04:00",
     "body_html": "<p>test body html</p>",
     "blog_id": 91627159808,
     "author": "Martin",
@@ -14,33 +13,30 @@
     "tags": "tag1, tag2",
     "admin_graphql_api_id": "gid://shopify/OnlineStoreArticle/589065715968",
     "image": {
-      "created_at": "2024-04-01T17:33:21-04:00",
       "alt": "alt text",
-      "width": 520,
-      "height": 360,
-      "src": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/360_F_143428338_gcxw3Jcd0tJpkvvb53pfEztwtU9sxsgT.jpg?v=1718697602"
+      "width": 512,
+      "height": 512,
+      "src": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/9908191.png?v=1719056218"
     }
   },
   {
     "id": 588854919424,
     "title": "Vitest",
-    "created_at": "2024-02-20T13:35:27-05:00",
     "body_html": "<p>test body html</p>",
     "blog_id": 91627159808,
     "author": "Martin",
     "user_id": null,
-    "published_at": "2024-05-12T13:39:52-04:00",
+    "published_at": "2024-06-22T17:34:08-04:00",
     "summary_html": "<p>summary_html test</p>",
     "template_suffix": null,
     "handle": "vitest-update-test",
-    "tags": "tag1, tag2",
+    "tags": "test, test2",
     "admin_graphql_api_id": "gid://shopify/OnlineStoreArticle/588854919424",
     "image": {
-      "created_at": "2024-06-20T13:00:33-04:00",
-      "alt": "alt text",
-      "width": 520,
-      "height": 360,
-      "src": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/360_F_143428338_gcxw3Jcd0tJpkvvb53pfEztwtU9sxsgT_b4fd6e66-9d6e-4205-9f0f-99b5abb02d27.jpg?v=1718902834"
+      "alt": "dummy",
+      "width": 2560,
+      "height": 1920,
+      "src": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/450cb81032f06cb5d3ce8430e41dcc10a2d8a558a6c76f86beeb2c070ec579ee.jpg?v=1719091765"
     }
   }
 ]

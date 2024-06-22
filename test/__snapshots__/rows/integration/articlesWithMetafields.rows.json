@@ -1,0 +1,53 @@
+[
+  {
+    "id": 589065715968,
+    "title": "Vitest",
+    "body_html": "<p>test body html</p>",
+    "blog_id": 91627159808,
+    "author": "Martin",
+    "user_id": null,
+    "published_at": "2024-05-12T13:39:52-04:00",
+    "summary_html": "<p>summary_html test</p>",
+    "template_suffix": null,
+    "handle": "vitest",
+    "tags": "tag1, tag2",
+    "admin_graphql_api_id": "gid://shopify/OnlineStoreArticle/589065715968",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/articles/589065715968",
+    "body": "test body html",
+    "published": true,
+    "summary": "summary_html test",
+    "image_alt_text": "alt text",
+    "image_url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/9908191.png?v=1719056218",
+    "lgs_meta__global.description_tag": "SEO description",
+    "lgs_meta__global.title_tag": "vitest",
+    "lgs_meta__custom.test": "vitest",
+    "blog": {
+      "id": 91627159808,
+      "title": "NOT_FOUND"
+    }
+  },
+  {
+    "id": 588854919424,
+    "title": "Vitest",
+    "body_html": "<p>test body html</p>",
+    "blog_id": 91627159808,
+    "author": "Martin",
+    "user_id": null,
+    "published_at": "2024-06-22T17:34:08-04:00",
+    "summary_html": "<p>summary_html test</p>",
+    "template_suffix": null,
+    "handle": "vitest-update-test",
+    "tags": "test, test2",
+    "admin_graphql_api_id": "gid://shopify/OnlineStoreArticle/588854919424",
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/articles/588854919424",
+    "body": "test body html",
+    "published": true,
+    "summary": "summary_html test",
+    "image_alt_text": "dummy",
+    "image_url": "https://cdn.shopify.com/s/files/1/0690/5400/5504/articles/450cb81032f06cb5d3ce8430e41dcc10a2d8a558a6c76f86beeb2c070ec579ee.jpg?v=1719091765",
+    "blog": {
+      "id": 91627159808,
+      "title": "NOT_FOUND"
+    }
+  }
+]

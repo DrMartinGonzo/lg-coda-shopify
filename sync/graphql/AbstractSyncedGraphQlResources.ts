@@ -111,7 +111,8 @@ export abstract class AbstractSyncedGraphQlResources<
 
     this.throttleStatus = await GraphQlFetcher.createInstance(this.context).checkThrottleStatus();
     const deferByMs = this.getDeferWaitTime();
-    if (deferByMs > 0) return this.skipRun(deferByMs);
+    // Don't wait when running inside test
+    if (deferByMs > 0) return this.skipRun(process.env.VITEST ? 0 : deferByMs);
 
     logAdmin(`🚀  GraphQL Admin API: Starting sync…`);
 

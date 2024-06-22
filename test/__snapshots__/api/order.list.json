@@ -23,7 +23,6 @@
     "confirmation_number": "LFWY0R5U0",
     "confirmed": true,
     "contact_email": "test@example.com",
-    "created_at": "2024-04-11T12:59:09-04:00",
     "currency": "EUR",
     "current_subtotal_price": "893.95",
     "current_subtotal_price_set": {
@@ -197,8 +196,6 @@
     "customer": {
       "id": 7203930865920,
       "email": "test@test.com",
-      "created_at": "2024-02-22T04:12:06-05:00",
-      "updated_at": "2024-06-20T03:18:40-04:00",
       "first_name": "Martin",
       "last_name": "Portevin",
       "state": "disabled",

@@ -1,0 +1,293 @@
+[
+  {
+    "id": 5586624381184,
+    "admin_graphql_api_id": "gid://shopify/Order/5586624381184",
+    "app_id": 89747423233,
+    "browser_ip": "127.0.0.1",
+    "buyer_accepts_marketing": false,
+    "cancel_reason": null,
+    "cancelled_at": null,
+    "cart_token": null,
+    "checkout_id": 35112345075968,
+    "checkout_token": "9b3286259a5993f3b5400a127cf28e4a",
+    "closed_at": null,
+    "company": null,
+    "confirmation_number": "LFWY0R5U0",
+    "confirmed": true,
+    "contact_email": "test@example.com",
+    "currency": "EUR",
+    "current_subtotal_price": 893.95,
+    "current_subtotal_price_set": {
+      "shop_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      }
+    },
+    "current_total_discounts": 0,
+    "current_total_discounts_set": {
+      "shop_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      }
+    },
+    "current_total_price": 893.95,
+    "current_total_price_set": {
+      "shop_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      }
+    },
+    "current_total_tax": 0,
+    "current_total_tax_set": {
+      "shop_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      }
+    },
+    "customer_locale": "en-FR",
+    "device_id": null,
+    "discount_codes": [],
+    "email": "test@example.com",
+    "estimated_taxes": false,
+    "financial_status": "paid",
+    "fulfillment_status": null,
+    "landing_site": null,
+    "landing_site_ref": null,
+    "location_id": null,
+    "merchant_of_record_app_id": null,
+    "name": "#1026",
+    "note": "A test note",
+    "note_attributes": [],
+    "number": 26,
+    "order_number": 1026,
+    "order_status_url": "https://coda-pack-test.myshopify.com/69054005504/orders/a0a837d859da79008efcd26faeb2406a/authenticate?key=b11f92848901c88dfbb90ec9aff7c55c&none=XA1SBlFGVltRRFc",
+    "payment_gateway_names": [
+      "manual"
+    ],
+    "phone": "+33611111111",
+    "po_number": null,
+    "presentment_currency": "EUR",
+    "processed_at": "2024-04-11T12:59:09-04:00",
+    "reference": "06e9166a7075e4b39061b2a47c8e58a4",
+    "referring_site": null,
+    "source_identifier": "06e9166a7075e4b39061b2a47c8e58a4",
+    "source_name": "89747423233",
+    "source_url": null,
+    "subtotal_price": 893.95,
+    "subtotal_price_set": {
+      "shop_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      }
+    },
+    "tags": "random, sample, test",
+    "tax_exempt": false,
+    "tax_lines": [],
+    "taxes_included": true,
+    "test": false,
+    "token": "a0a837d859da79008efcd26faeb2406a",
+    "total_discounts": 0,
+    "total_discounts_set": {
+      "shop_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      }
+    },
+    "total_line_items_price": 893.95,
+    "total_line_items_price_set": {
+      "shop_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      }
+    },
+    "total_outstanding": 0,
+    "total_price": 893.95,
+    "total_price_set": {
+      "shop_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "893.95",
+        "currency_code": "EUR"
+      }
+    },
+    "total_tax": 0,
+    "total_tax_set": {
+      "shop_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      },
+      "presentment_money": {
+        "amount": "0.00",
+        "currency_code": "EUR"
+      }
+    },
+    "total_tip_received": 0,
+    "total_weight": 555000,
+    "user_id": 89783206144,
+    "discount_applications": [],
+    "fulfillments": [],
+    "payment_terms": null,
+    "shipping_lines": [],
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/orders/5586624381184",
+    "total_shipping_price": 0,
+    "line_items": [
+      {
+        "id": 13835269636352,
+        "admin_graphql_api_id": "gid://shopify/LineItem/13835269636352",
+        "attributed_staffs": [],
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 555000,
+        "name": "ADIDAS | CLASSIC BACKPACK - OS / black",
+        "price": 454,
+        "product_exists": true,
+        "product_id": 8406091235584,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sku": "AD-03-black-OS",
+        "taxable": true,
+        "title": "ADIDAS | CLASSIC BACKPACK",
+        "total_discount": 0,
+        "variant_id": 44365639614720,
+        "variant_inventory_management": "shopify",
+        "variant_title": "OS / black",
+        "vendor": "ADIDAS",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      },
+      {
+        "id": 13835269669120,
+        "admin_graphql_api_id": "gid://shopify/LineItem/13835269669120",
+        "attributed_staffs": [],
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 0,
+        "name": "CONVERSE | CHUCK TAYLOR ALL STAR II HI - 6 / black",
+        "price": 140,
+        "product_exists": true,
+        "product_id": 8406090383616,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sku": "C-02-black-6",
+        "taxable": true,
+        "title": "CONVERSE | CHUCK TAYLOR ALL STAR II HI",
+        "total_discount": 0,
+        "variant_id": 44365638172928,
+        "variant_inventory_management": "shopify",
+        "variant_title": "6 / black",
+        "vendor": "CONVERSE",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      },
+      {
+        "id": 13835269701888,
+        "admin_graphql_api_id": "gid://shopify/LineItem/13835269701888",
+        "attributed_staffs": [],
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 0,
+        "name": "TIMBERLAND | MENS 6 INCH PREMIUM BOOT - 11 / yellow",
+        "price": 299.95,
+        "product_exists": true,
+        "product_id": 8406089629952,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sku": "TM-01-yellow-11",
+        "taxable": true,
+        "title": "TIMBERLAND | MENS 6 INCH PREMIUM BOOT",
+        "total_discount": 0,
+        "variant_id": 44365635977472,
+        "variant_inventory_management": "shopify",
+        "variant_title": "11 / yellow",
+        "vendor": "TIMBERLAND",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      }
+    ],
+    "billing_address": {
+      "display": "Martin Portevin, 3 Rue Fleischhauer, Colmar, France",
+      "latitude": null,
+      "longitude": null,
+      "first_name": "Martin",
+      "address1": "3 Rue Fleischhauer",
+      "phone": null,
+      "city": "Colmar",
+      "zip": "68000",
+      "province": null,
+      "country": "France",
+      "last_name": "Portevin",
+      "address2": null,
+      "company": null,
+      "name": "Martin Portevin",
+      "country_code": "FR",
+      "province_code": null
+    },
+    "shipping_address": {
+      "display": "Martin Portevin, 3 Rue Fleischhauer, Colmar, France",
+      "latitude": 48.084281,
+      "longitude": 7.3592755,
+      "first_name": "Martin",
+      "address1": "3 Rue Fleischhauer",
+      "phone": null,
+      "city": "Colmar",
+      "zip": "68000",
+      "province": null,
+      "country": "France",
+      "last_name": "Portevin",
+      "address2": null,
+      "company": null,
+      "name": "Martin Portevin",
+      "country_code": "FR",
+      "province_code": null
+    },
+    "customer": {
+      "id": 7203930865920,
+      "display": "Martin Portevin"
+    },
+    "browser_user_agent": null,
+    "browser_accept_language": null,
+    "refunds": []
+  }
+]

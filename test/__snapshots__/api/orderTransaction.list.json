@@ -4,7 +4,6 @@
     "kind": "SALE",
     "status": "SUCCESS",
     "gateway": "bogus",
-    "createdAt": "2024-02-22T09:12:06Z",
     "authorizationCode": "53433",
     "authorizationExpiresAt": null,
     "accountNumber": "•••• •••• •••• 1",

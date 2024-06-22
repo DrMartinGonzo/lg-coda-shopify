@@ -1,0 +1,16 @@
+{
+  "Key": "test",
+  "Id": 23842259200,
+  "Namespace": "custom",
+  "Name": "Test",
+  "Description": null,
+  "MetafieldsCount": 3,
+  "OwnerType": "ARTICLE",
+  "PinnedPosition": 1,
+  "Type": "single_line_text_field",
+  "Validations": [],
+  "ValidationStatus": "ALL_VALID",
+  "VisibleToStorefrontApi": true,
+  "GraphqlGid": "gid://shopify/MetafieldDefinition/23842259200",
+  "AdminUrl": "https://coda-pack-test.myshopify.com/admin/settings/custom_data/article/metafields/23842259200"
+}

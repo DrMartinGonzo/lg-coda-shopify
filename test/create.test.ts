@@ -5,26 +5,26 @@ import { executeFormulaFromPackDef } from '@codahq/packs-sdk/dist/development';
 import { pack } from '../pack';
 
 import { describe, expect, test } from 'vitest';
+import { Action_CreateArticle } from '../coda/setup/articles-setup';
+import { Action_CreateBlog } from '../coda/setup/blogs-setup';
+import { Action_CreateCollection } from '../coda/setup/collections-setup';
+import { Action_CreatePage } from '../coda/setup/pages-setup';
 import { METAFIELD_TYPES } from '../constants/metafields-constants';
+import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
+import { getMetaFieldFullKey } from '../models/utils/metafields-utils';
 import { MetafieldOwnerType } from '../types/admin.types';
+import { formatOptionNameId } from '../utils/helpers';
 import {
+  defaultIntegrationContextOptions,
+  defaultIntegrationUpdateExecuteOptions,
   deleteRestResource,
   formatMetafieldInput,
   formatMetafieldSingleLineTextInput,
-  manifestPath,
 } from './utils/test-utils';
-import { CodaSyncParams } from '../sync/AbstractSyncedResources';
-import { Action_CreateArticle } from '../coda/setup/articles-setup';
-import { Action_CreateCollection } from '../coda/setup/collections-setup';
-import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
-import { Action_CreatePage } from '../coda/setup/pages-setup';
-import { Action_CreateBlog } from '../coda/setup/blogs-setup';
+
+import singleBlogApiData from './__snapshots__/api/blog.single.json';
 
 // #endregion
-const defaultExecuteOptions = {
-  useRealFetcher: true,
-  manifestPath,
-};
 
 type CreateArticleParams = coda.ParamValues<(typeof Action_CreateArticle)['parameters']>;
 type CreateCollectionParams = coda.ParamValues<(typeof Action_CreateCollection)['parameters']>;
@@ -49,7 +49,7 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       pack,
       'CreateArticle',
       [
-        'Vitest (91627159808)', // blog
+        formatOptionNameId(singleBlogApiData.title, singleBlogApiData.id), // blog
         title,
         author,
         bodyHtml,
@@ -64,8 +64,8 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
         [metafieldInput], // metafields
       ] as CreateArticleParams,
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
     const fetchResult = await executeFormulaFromPackDef(
@@ -73,19 +73,19 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       'Article',
       [newArticleId],
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
-    expect.soft(fetchResult.AdminUrl).toEqual(`${PACK_TEST_ENDPOINT}/admin/articles/${newArticleId}`);
-    expect.soft(fetchResult.GraphqlGid).toEqual(`gid://shopify/OnlineStoreArticle/${newArticleId}`);
-    expect.soft(fetchResult.BodyHtml).toEqual(bodyHtml);
-    expect.soft(fetchResult.Title).toEqual(title);
-    expect.soft(fetchResult.Author).toEqual(author);
-    expect.soft(fetchResult.Handle).toEqual(handle);
-    expect.soft(fetchResult.Published).toEqual(published);
-    expect.soft(fetchResult.SummaryHtml).toEqual(summaryHtml);
-    expect.soft(fetchResult.Tags).toEqual(tagsArray.sort().join(', '));
+    expect.soft(fetchResult.admin_url).toEqual(`${PACK_TEST_ENDPOINT}/admin/articles/${newArticleId}`);
+    expect.soft(fetchResult.admin_graphql_api_id).toEqual(`gid://shopify/OnlineStoreArticle/${newArticleId}`);
+    expect.soft(fetchResult.body_html).toEqual(bodyHtml);
+    expect.soft(fetchResult.title).toEqual(title);
+    expect.soft(fetchResult.author).toEqual(author);
+    expect.soft(fetchResult.handle).toEqual(handle);
+    expect.soft(fetchResult.published).toEqual(published);
+    expect.soft(fetchResult.summary_html).toEqual(summaryHtml);
+    expect.soft(fetchResult.tags).toEqual(tagsArray.sort().join(', '));
 
     const deleteResult = await deleteRestResource('DeleteArticle', newArticleId);
     expect(deleteResult).toEqual(true);
@@ -110,8 +110,8 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
         [metafieldInput], // metafields
       ] as CreateBlogParams,
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
     const fetchResult = await executeFormulaFromPackDef(
@@ -119,16 +119,17 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       'Blog',
       [newBlogId],
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
-    expect.soft(fetchResult.AdminUrl).toEqual(`${PACK_TEST_ENDPOINT}/admin/blogs/${newBlogId}`);
-    expect.soft(fetchResult.GraphqlGid).toEqual(`gid://shopify/OnlineStoreBlog/${newBlogId}`);
-    expect.soft(fetchResult.Handle).toEqual(handle);
-    expect.soft(fetchResult.Tags).toEqual(null);
-    expect.soft(fetchResult.TemplateSuffix).toEqual(null);
-    expect.soft(fetchResult.Title).toEqual(title);
+    console.log('fetchResult', fetchResult);
+    expect.soft(fetchResult.admin_url).toEqual(`${PACK_TEST_ENDPOINT}/admin/blogs/${newBlogId}`);
+    expect.soft(fetchResult.admin_graphql_api_id).toEqual(`gid://shopify/OnlineStoreBlog/${newBlogId}`);
+    expect.soft(fetchResult.handle).toEqual(handle);
+    expect.soft(fetchResult.tags).toEqual(null);
+    expect.soft(fetchResult.template_suffix).toEqual(null);
+    expect.soft(fetchResult.title).toEqual(title);
 
     const deleteResult = await deleteRestResource('DeleteBlog', newBlogId);
     expect(deleteResult).toEqual(true);
@@ -159,8 +160,8 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
         [metafieldInput], // metafields
       ] as CreateCollectionParams,
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
     const fetchResult = await executeFormulaFromPackDef(
@@ -168,17 +169,17 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       'Collection',
       [newCollectionId],
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
-    expect.soft(fetchResult.BodyHtml).toEqual(bodyHtml);
-    expect.soft(fetchResult.Title).toEqual(title);
-    expect.soft(fetchResult.Handle).toEqual(handle);
-    expect.soft(fetchResult.Published).toEqual(published);
-    expect.soft(fetchResult.TemplateSuffix).toEqual(templateSuffix);
-    expect.soft(fetchResult.PublishedScope).toEqual('web');
-    expect.soft(fetchResult.AdminUrl).toEqual(`${PACK_TEST_ENDPOINT}/admin/collections/${newCollectionId}`);
+    expect.soft(fetchResult.body_html).toEqual(bodyHtml);
+    expect.soft(fetchResult.title).toEqual(title);
+    expect.soft(fetchResult.handle).toEqual(handle);
+    expect.soft(fetchResult.published).toEqual(published);
+    expect.soft(fetchResult.template_suffix).toEqual(templateSuffix);
+    expect.soft(fetchResult.published_scope).toEqual('web');
+    expect.soft(fetchResult.admin_url).toEqual(`${PACK_TEST_ENDPOINT}/admin/collections/${newCollectionId}`);
 
     const deleteResult = await deleteRestResource('DeleteCollection', newCollectionId);
     expect(deleteResult).toEqual(true);
@@ -209,8 +210,8 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
         [metafieldInput], // metafields
       ] as CreatePageParams,
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
     const fetchResult = await executeFormulaFromPackDef(
@@ -218,117 +219,65 @@ describe.skip('INTEGRATION: Create, Fetch and Delete Actions', () => {
       'Page',
       [newPageId],
       undefined,
-      undefined,
-      defaultExecuteOptions
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
     );
 
-    expect.soft(fetchResult.AdminUrl).toEqual(`${PACK_TEST_ENDPOINT}/admin/pages/${newPageId}`);
-    expect.soft(fetchResult.GraphqlGid).toEqual(`gid://shopify/OnlineStorePage/${newPageId}`);
-    expect.soft(fetchResult.BodyHtml).toEqual(bodyHtml);
-    expect.soft(fetchResult.Title).toEqual(title);
-    expect.soft(fetchResult.Author).toEqual(author);
-    expect.soft(fetchResult.Handle).toEqual(handle);
-    expect.soft(fetchResult.Published).toEqual(published);
-    expect.soft(fetchResult.TemplateSuffix).toEqual(null);
-    expect.soft(fetchResult.ShopUrl).toEqual(`${PACK_TEST_ENDPOINT}/pages/${handle}`);
+    expect.soft(fetchResult.admin_url).toEqual(`${PACK_TEST_ENDPOINT}/admin/pages/${newPageId}`);
+    expect.soft(fetchResult.admin_graphql_api_id).toEqual(`gid://shopify/OnlineStorePage/${newPageId}`);
+    expect.soft(fetchResult.body_html).toEqual(bodyHtml);
+    expect.soft(fetchResult.title).toEqual(title);
+    expect.soft(fetchResult.author).toEqual(author);
+    expect.soft(fetchResult.handle).toEqual(handle);
+    expect.soft(fetchResult.published).toEqual(published);
+    expect.soft(fetchResult.template_suffix).toEqual(null);
+    expect.soft(fetchResult.shop_url).toEqual(`${PACK_TEST_ENDPOINT}/pages/${handle}`);
 
     const deleteResult = await deleteRestResource('DeletePage', newPageId);
     expect(deleteResult).toEqual(true);
   });
+
+  test('Shop Metafield', async () => {
+    const namespace = 'custom';
+    const key = 'test_metafield';
+
+    const result = await executeFormulaFromPackDef(
+      pack,
+      'SetMetafield',
+      [
+        MetafieldOwnerType.Shop, // ownerType
+        await formatMetafieldInput(
+          getMetaFieldFullKey({ namespace, key }),
+          await formatMetafieldSingleLineTextInput('pouet !')
+        ), // metafieldValue
+        // 589145866496, // ownerID
+      ],
+      undefined,
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
+    );
+    expect.soft(result.label).toEqual(getMetaFieldFullKey({ namespace, key }));
+    expect.soft(result.namespace).toEqual(namespace);
+    expect.soft(result.key).toEqual(key);
+    expect.soft(result.type).toEqual(METAFIELD_TYPES.single_line_text_field);
+    expect.soft(result.rawValue).toEqual('pouet !');
+    expect.soft(result.owner_type).toEqual(MetafieldOwnerType.Shop);
+
+    const removeResult = await executeFormulaFromPackDef(
+      pack,
+      'SetMetafield',
+      [
+        MetafieldOwnerType.Shop, // ownerType
+        await formatMetafieldInput(
+          getMetaFieldFullKey({ namespace, key }),
+          await formatMetafieldSingleLineTextInput('')
+        ), // metafieldValue
+        // 589145866496, // ownerID
+      ],
+      undefined,
+      defaultIntegrationUpdateExecuteOptions,
+      defaultIntegrationContextOptions
+    );
+    expect.soft(removeResult.rawValue).toEqual(null);
+  });
 });
-
-// test('UpdateArticle', async () => {
-//   const input = await executeFormulaFromPackDef(
-//     pack,
-//     'FormatMetafield',
-//     [
-//       'global.title_tag', // fullKey
-//       await executeFormulaFromPackDef(
-//         pack,
-//         'MetaSingleLineText',
-//         [
-//           'vitest999', // string
-//         ],
-//         undefined,
-//         undefined,
-//         defaultExecuteOptions
-//       ), // value
-//     ],
-//     undefined,
-//     undefined,
-//     defaultExecuteOptions
-//   );
-//   console.log('input', input);
-
-//   const result = await executeFormulaFromPackDef(
-//     pack,
-//     'UpdateArticle',
-//     [
-//       588854919424, // id
-//       undefined, // author
-//       undefined, // blog
-//       'bonjour', // bodyHtml
-//       undefined, // summaryHtml
-//       undefined, // handle
-//       undefined, // imageUrl
-//       undefined, // imageAlt
-//       undefined, // published
-//       undefined, // publishedAt
-//       undefined, // tags
-//       undefined, // templateSuffix
-//       undefined, // title
-//       [input], // metafields
-//     ],
-//     undefined,
-//     undefined,
-//     defaultExecuteOptions
-//   );
-
-//   expect(result.BodyHtml).toEqual('bonjour');
-
-//   // const reset = await executeFormulaFromPackDef(
-//   //   pack,
-//   //   'UpdateArticle',
-//   //   [588854919424, undefined, undefined, 'un-test-encore'],
-//   //   undefined,
-//   //   undefined,
-//   //   defaultExecuteOptions
-//   // );
-//   // expect(reset.BodyHtml).toEqual('un-test-encore');
-// });
-
-// test('SetMetafield', async () => {
-//   const input = await executeFormulaFromPackDef(
-//     pack,
-//     'FormatMetafield',
-//     [
-//       'global.title_tag', // fullKey
-//       await executeFormulaFromPackDef(
-//         pack,
-//         'MetaSingleLineText',
-//         [
-//           'TEST SET', // string
-//         ],
-//         undefined,
-//         undefined,
-//         defaultExecuteOptions
-//       ), // value
-//     ],
-//     undefined,
-//     undefined,
-//     defaultExecuteOptions
-//   );
-
-//   const result = await executeFormulaFromPackDef(
-//     pack,
-//     'SetMetafield',
-//     [
-//       MetafieldOwnerType.Article, // ownerType
-//       input, // metafieldValue
-//       589145866496, // ownerID
-//     ],
-//     undefined,
-//     undefined,
-//     defaultExecuteOptions
-//   );
-// });

@@ -28,9 +28,7 @@
           "key": "test_metafield",
           "type": "single_line_text_field",
           "value": "un-test-encore NEW NEW",
-          "ownerType": "LOCATION",
-          "createdAt": "2024-02-27T07:51:41Z",
-          "updatedAt": "2024-06-17T05:31:10Z"
+          "ownerType": "LOCATION"
         },
         {
           "__typename": "Metafield",
@@ -39,9 +37,7 @@
           "key": "product_relation",
           "type": "product_reference",
           "value": "gid://shopify/Product/8406091235584",
-          "ownerType": "LOCATION",
-          "createdAt": "2024-02-27T07:56:22Z",
-          "updatedAt": "2024-05-12T11:52:43Z"
+          "ownerType": "LOCATION"
         }
       ]
     }
@@ -75,9 +71,7 @@
           "key": "test_metafield",
           "type": "single_line_text_field",
           "value": "test",
-          "ownerType": "LOCATION",
-          "createdAt": "2024-04-26T07:13:59Z",
-          "updatedAt": "2024-06-20T07:30:07Z"
+          "ownerType": "LOCATION"
         }
       ]
     }

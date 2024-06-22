@@ -1,0 +1,113 @@
+[
+  {
+    "order_id": 5586624381184,
+    "order_name": "#1026",
+    "id": 13835269636352,
+    "admin_graphql_api_id": "gid://shopify/LineItem/13835269636352",
+    "fulfillable_quantity": 1,
+    "fulfillment_service": "manual",
+    "fulfillment_status": null,
+    "gift_card": false,
+    "grams": 555000,
+    "name": "ADIDAS | CLASSIC BACKPACK - OS / black",
+    "price": 454,
+    "product_exists": true,
+    "product_id": 8406091235584,
+    "properties": [],
+    "quantity": 1,
+    "requires_shipping": true,
+    "sku": "AD-03-black-OS",
+    "taxable": true,
+    "title": "ADIDAS | CLASSIC BACKPACK",
+    "total_discount": 0,
+    "variant_id": 44365639614720,
+    "variant_inventory_management": "shopify",
+    "variant_title": "OS / black",
+    "vendor": "ADIDAS",
+    "tax_lines": [],
+    "duties": [],
+    "discount_allocations": [],
+    "order": {
+      "id": 5586624381184,
+      "name": "#1026"
+    },
+    "variant": {
+      "id": 44365639614720,
+      "title": "OS / black"
+    }
+  },
+  {
+    "order_id": 5586624381184,
+    "order_name": "#1026",
+    "id": 13835269669120,
+    "admin_graphql_api_id": "gid://shopify/LineItem/13835269669120",
+    "fulfillable_quantity": 1,
+    "fulfillment_service": "manual",
+    "fulfillment_status": null,
+    "gift_card": false,
+    "grams": 0,
+    "name": "CONVERSE | CHUCK TAYLOR ALL STAR II HI - 6 / black",
+    "price": 140,
+    "product_exists": true,
+    "product_id": 8406090383616,
+    "properties": [],
+    "quantity": 1,
+    "requires_shipping": true,
+    "sku": "C-02-black-6",
+    "taxable": true,
+    "title": "CONVERSE | CHUCK TAYLOR ALL STAR II HI",
+    "total_discount": 0,
+    "variant_id": 44365638172928,
+    "variant_inventory_management": "shopify",
+    "variant_title": "6 / black",
+    "vendor": "CONVERSE",
+    "tax_lines": [],
+    "duties": [],
+    "discount_allocations": [],
+    "order": {
+      "id": 5586624381184,
+      "name": "#1026"
+    },
+    "variant": {
+      "id": 44365638172928,
+      "title": "6 / black"
+    }
+  },
+  {
+    "order_id": 5586624381184,
+    "order_name": "#1026",
+    "id": 13835269701888,
+    "admin_graphql_api_id": "gid://shopify/LineItem/13835269701888",
+    "fulfillable_quantity": 1,
+    "fulfillment_service": "manual",
+    "fulfillment_status": null,
+    "gift_card": false,
+    "grams": 0,
+    "name": "TIMBERLAND | MENS 6 INCH PREMIUM BOOT - 11 / yellow",
+    "price": 299.95,
+    "product_exists": true,
+    "product_id": 8406089629952,
+    "properties": [],
+    "quantity": 1,
+    "requires_shipping": true,
+    "sku": "TM-01-yellow-11",
+    "taxable": true,
+    "title": "TIMBERLAND | MENS 6 INCH PREMIUM BOOT",
+    "total_discount": 0,
+    "variant_id": 44365635977472,
+    "variant_inventory_management": "shopify",
+    "variant_title": "11 / yellow",
+    "vendor": "TIMBERLAND",
+    "tax_lines": [],
+    "duties": [],
+    "discount_allocations": [],
+    "order": {
+      "id": 5586624381184,
+      "name": "#1026"
+    },
+    "variant": {
+      "id": 44365635977472,
+      "title": "11 / yellow"
+    }
+  }
+]

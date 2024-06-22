@@ -142,7 +142,7 @@ import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCac
 // #endregion
 
 export const GRAPHQL_NODES_LIMIT = 250;
-export const GRAPHQL_MAX_REQUEST_METAFIELDS = 250;
+const GRAPHQL_MAX_REQUEST_METAFIELDS = 250;
 
 // Synctable doesn't handle retries, only GraphQLClient for simplicity
 // Le seul probleme serait de dépasser le seuil de temps d'execution pour un run
@@ -152,7 +152,7 @@ export const GRAPHQL_MAX_REQUEST_METAFIELDS = 250;
 // #region Types
 export interface GraphQlData<T extends any> {
   data: T;
-  errors: any;
+  errors?: any;
   extensions: {
     cost: ShopifyGraphQlRequestCost;
   };
@@ -224,7 +224,7 @@ export class GraphQlFetcher {
     lastLimit,
     throttleStatus,
   }: {
-    lastCost: ShopifyGraphQlRequestCost | undefined;
+    lastCost: Omit<ShopifyGraphQlRequestCost, 'throttleStatus' | 'actualQueryCost'> | undefined;
     lastLimit: number | undefined;
     throttleStatus: ShopifyGraphQlThrottleStatus;
   }) {
@@ -992,7 +992,7 @@ export class LocationClient extends AbstractGraphQlClient<LocationModelData> {
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       includeFulfillmentService: forceAllFields ?? fields?.fulfillment_service ?? true,
       includeLocalPickupSettings: forceAllFields ?? fields?.local_pickup_settings ?? true,
-      countMetafields: metafieldKeys.length,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
       metafieldKeys,
     } as VariablesOf<typeof getLocationsQuery>;
 
@@ -1179,13 +1179,13 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
     if (isShopQuery) {
       documentNode = getShopMetafieldsByKeysQuery;
       variables = {
-        countMetafields: metafieldKeys.length,
+        countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
         metafieldKeys,
       } as VariablesOf<typeof getShopMetafieldsByKeysQuery>;
     } else {
       documentNode = getSingleNodeMetafieldsByKeyQuery;
       variables = {
-        countMetafields: metafieldKeys.length,
+        countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
         ownerGid: ownerGid,
         metafieldKeys,
       } as VariablesOf<typeof getSingleNodeMetafieldsByKeyQuery>;
@@ -1223,7 +1223,7 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
           cursor,
           ids: ownerIds,
           metafieldKeys,
-          countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
+          countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
           ...otherArgs,
         } as VariablesOf<typeof getNodesMetafieldsByKeyQuery>,
         transformBodyResponse: (response: MultipleMetafieldsByOwnerIdsResponse) =>
@@ -1245,7 +1245,7 @@ export class MetafieldClient extends AbstractGraphQlClient<MetafieldModelData> {
       limit: limit ?? MetafieldClient.defaultLimit,
       cursor,
       metafieldKeys,
-      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_NODES_LIMIT,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
       ...otherArgs,
     } as VariablesOf<ReturnType<typeof getResourceMetafieldsByKeysQueryFromOwnerType>>;
 
@@ -1941,7 +1941,7 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       includeImages: forceAllFields ?? fields?.images ?? false,
       metafieldKeys,
-      countMetafields: metafieldKeys.length,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
       includeOptions: forceAllFields ?? fields?.options ?? false,
 
       ...otherArgs,
@@ -2409,7 +2409,7 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       includeOptions: forceAllFields ?? fields?.options ?? false,
       includeProduct: forceAllFields ?? fields?.product ?? false,
       includeWeight: forceAllFields ?? fields?.weight ?? false,
-      countMetafields: metafieldKeys.length,
+      countMetafields: metafieldKeys.length ? metafieldKeys.length : GRAPHQL_MAX_REQUEST_METAFIELDS,
       metafieldKeys,
     } as VariablesOf<typeof getProductVariantsQuery>;
     return this.request(

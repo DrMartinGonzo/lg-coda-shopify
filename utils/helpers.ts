@@ -14,10 +14,6 @@ export function capitalizeFirstChar(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export const convertTTCtoHT = (price, taxRate) => {
-  return taxRate ? price / (1 + taxRate) : price;
-};
-
 // #region Log helpers
 export function logAdmin(msg: any) {
   if (IS_ADMIN_RELEASE) {

@@ -10,9 +10,11 @@ import {
   autocompleteLocationsWithName,
   makeAutocompleteMetafieldKeysWithDefinitions,
 } from '../coda/utils/coda-parameters';
+import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { pack } from '../pack';
 import { MetafieldOwnerType } from '../types/admin.types';
 import { formatOptionNameId } from '../utils/helpers';
+import { referenceIds } from './utils/test-utils';
 import { manifestPath } from './utils/test-utils';
 
 // #endregion
@@ -31,7 +33,7 @@ describe('INTEGRATION: Autocomplete', () => {
       context
     );
 
-    expect(result[0].value).toEqual(formatOptionNameId('Vitest location', 74534912256));
+    expect(result[0].value).toEqual(formatOptionNameId('Vitest location', graphQlGidToId(referenceIds.sync.location)));
   });
 
   test('Blogs', async () => {
@@ -41,7 +43,7 @@ describe('INTEGRATION: Autocomplete', () => {
       context
     );
 
-    expect(result[0].value).toEqual(formatOptionNameId('Vitest', 91627159808));
+    expect(result[0].value).toEqual(formatOptionNameId('Vitest', referenceIds.sync.blog));
   });
 
   test('MetafieldWithDefinitionFullKeys', async () => {

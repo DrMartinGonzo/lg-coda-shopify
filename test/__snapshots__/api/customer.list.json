@@ -2,7 +2,6 @@
   {
     "id": 7493114986752,
     "email": "miloo_de_tours@hotmail.fr",
-    "created_at": "2024-06-05T07:52:32-04:00",
     "first_name": "Martin",
     "last_name": "TEST",
     "orders_count": 0,
@@ -72,7 +71,6 @@
   {
     "id": 7203930865920,
     "email": "test@test.com",
-    "created_at": "2024-02-22T04:12:06-05:00",
     "first_name": "Martin",
     "last_name": "Portevin",
     "orders_count": 5,
@@ -166,7 +164,6 @@
   {
     "id": 7199674794240,
     "email": "egnition_sample_29@egnition.com",
-    "created_at": "2024-02-20T13:23:32-05:00",
     "first_name": "Vitest",
     "last_name": "Customer",
     "orders_count": 0,
@@ -241,7 +238,6 @@
   {
     "id": 7199674761472,
     "email": "egnition_sample_76@egnition.com",
-    "created_at": "2024-02-20T13:23:32-05:00",
     "first_name": "George",
     "last_name": "Gonzalez",
     "orders_count": 0,
@@ -316,7 +312,6 @@
   {
     "id": 7199674728704,
     "email": "egnition_sample_49@egnition.com",
-    "created_at": "2024-02-20T13:23:32-05:00",
     "first_name": "Tyler",
     "last_name": "Marshall",
     "orders_count": 0,
@@ -391,7 +386,6 @@
   {
     "id": 7199674695936,
     "email": "egnition_sample_89@egnition.com",
-    "created_at": "2024-02-20T13:23:31-05:00",
     "first_name": "Fitzgerald",
     "last_name": "Kirk",
     "orders_count": 0,
@@ -466,7 +460,6 @@
   {
     "id": 7199674663168,
     "email": "egnition_sample_94@egnition.com",
-    "created_at": "2024-02-20T13:23:31-05:00",
     "first_name": "Henry",
     "last_name": "Bender",
     "orders_count": 4,
@@ -541,7 +534,6 @@
   {
     "id": 7199674630400,
     "email": "egnition_sample_62@egnition.com",
-    "created_at": "2024-02-20T13:23:31-05:00",
     "first_name": "Raja",
     "last_name": "Woods",
     "orders_count": 2,
@@ -616,7 +608,6 @@
   {
     "id": 7199674597632,
     "email": "egnition_sample_46@egnition.com",
-    "created_at": "2024-02-20T13:23:30-05:00",
     "first_name": "Graiden",
     "last_name": "Mcintyre",
     "orders_count": 3,
@@ -691,7 +682,6 @@
   {
     "id": 7199674499328,
     "email": "egnition_sample_6@egnition.com",
-    "created_at": "2024-02-20T13:23:30-05:00",
     "first_name": "John",
     "last_name": "Mathis",
     "orders_count": 2,
