@@ -33,7 +33,7 @@ export class MetaobjectModel extends AbstractModelGraphQl {
       id: idToGraphQlGid(GraphQlResourceNames.Metaobject, row.id),
       updatedAt: safeToString(row.updated_at),
       // must be set via setCustomFields
-      // fields: metaobjectFields,
+      fields: [],
       type: row.type,
       handle: isNullishOrEmpty(row.handle) ? undefined : row.handle,
       capabilities: isNullishOrEmpty(row.status)
