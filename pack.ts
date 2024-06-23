@@ -73,6 +73,7 @@ import {
   Action_SetMetafield,
   Formula_FormatListMetafield,
   Formula_FormatMetafield,
+  Formula_FormatMetafieldWithAutocomplete,
   Formula_MetaBoolean,
   Formula_MetaCollectionReference,
   Formula_MetaColor,
@@ -304,6 +305,9 @@ pack.formats.push(Format_Redirect);
 // #region Helper formulas
 // Metafields Helpers
 pack.formulas.push(Formula_FormatMetafield);
+if (IS_TEST_RELEASE) {
+  pack.formulas.push(Formula_FormatMetafieldWithAutocomplete);
+}
 pack.formulas.push(Formula_FormatListMetafield);
 pack.formulas.push(Formula_MetafieldKey);
 

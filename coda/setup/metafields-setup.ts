@@ -374,8 +374,8 @@ export const Formula_FormatMetafield = coda.makeFormula({
   execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
 });
 
-export const Formula_FormatMetafieldNew = coda.makeFormula({
-  name: 'FormatMetafieldNew',
+export const Formula_FormatMetafieldWithAutocomplete = coda.makeFormula({
+  name: 'FormatMetafieldWithAutocomplete',
   description: 'Helper function to format value for a non `list` metafield.',
   parameters: [inputs.metafield.ownerType, inputs.metafield.fullKeyAutocomplete, inputs.metafield.value],
   resultType: coda.ValueType.String,

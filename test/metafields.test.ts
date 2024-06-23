@@ -224,4 +224,18 @@ describe.concurrent('Format Metafields Formula', () => {
       })
     );
   });
+  test('FormatListMetafield with conflicting Metafield types', async () => {
+    const varargsParameters = await Promise.all([
+      await executeFormulaFromPackDef(pack, 'MetaSingleLineText', ['bonjour']),
+      await executeFormulaFromPackDef(pack, 'MetaColor', ['#cc0000']),
+      await executeFormulaFromPackDef(pack, 'MetaSingleLineText', ['hello']),
+    ]);
+
+    await expect(() =>
+      executeFormulaFromPackDef(pack, 'FormatListMetafield', [
+        'custom.test_list', // fullKey
+        ...varargsParameters,
+      ])
+    ).rejects.toThrowError('Invalid value. All metafield values must be of the same type.');
+  });
 });
