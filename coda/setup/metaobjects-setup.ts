@@ -172,7 +172,7 @@ export const Action_UpdateMetaObject = coda.makeFormula({
 
     const metaobject = MetaobjectModel.createInstanceFromRow(context, row);
     metaobject.setCustomFields(customFields);
-    metaobject.save();
+    await metaobject.save();
     return metaobject.toCodaRow();
   },
 });
