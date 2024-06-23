@@ -1,9 +1,9 @@
 import { writeFileSync } from 'fs';
 
-const IS_ADMIN_RELEASE = process.env.IS_ADMIN_RELEASE === 'true';
-const CODA_PACK_ID = IS_ADMIN_RELEASE ? 11612 : 11612;
+const IS_TEST_RELEASE = process.env.IS_TEST_RELEASE === 'true';
+const CODA_PACK_ID = IS_TEST_RELEASE ? 32040 : 11612;
 
-writeFileSync('pack-config.json', JSON.stringify({ IS_ADMIN_RELEASE, CODA_PACK_ID }));
+writeFileSync('pack-config.json', JSON.stringify({ IS_TEST_RELEASE, CODA_PACK_ID }));
 
 writeFileSync(
   '.coda-pack.json',

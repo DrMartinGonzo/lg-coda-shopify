@@ -2,7 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import deepmerge from 'deepmerge';
 
-import { IS_ADMIN_RELEASE } from '../pack-config.json';
+import { IS_TEST_RELEASE } from '../pack-config.json';
 
 // #endregion
 
@@ -50,13 +50,13 @@ export function isNullishOrEmpty(value: any) {
 
 // #region Log helpers
 export function logAdmin(msg: any) {
-  if (IS_ADMIN_RELEASE) {
+  if (IS_TEST_RELEASE) {
     console.log(msg);
   }
 }
 
 export function dumpToConsole(data: any) {
-  if (IS_ADMIN_RELEASE) {
+  if (IS_TEST_RELEASE) {
     console.log(JSON.stringify(data, null, 2));
   }
 }

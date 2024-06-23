@@ -2,6 +2,7 @@
 import * as coda from '@codahq/packs-sdk';
 import toPascalCase from 'to-pascal-case';
 
+import { FetchRequestOptions } from '../../Clients/Client.types';
 import { ListMetafieldsArgs, MetafieldClient as MetafieldGraphQlClient } from '../../Clients/GraphQlClients';
 import { MetafieldClient } from '../../Clients/RestClients';
 import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
@@ -303,8 +304,9 @@ export const Formula_Metafield = coda.makeFormula({
   },
 });
 
-export const Formula_Metafields = coda.makeFormula({
-  name: 'Metafields',
+export const Formula_MetafieldsLoop = coda.makeFormula({
+  name: 'MetafieldsLoop',
+  isExperimental: true,
   description: 'Get all metafields from a specific resource.',
   connectionRequirement: coda.ConnectionRequirement.Required,
   parameters: [
@@ -322,43 +324,31 @@ export const Formula_Metafields = coda.makeFormula({
     const isShopQuery = ownerType === MetafieldOwnerType.Shop;
     validateQueryParams({ ownerId, isShopQuery });
 
+    const metafieldOwnerType = ownerType as SupportedMetafieldOwnerType;
+    const fetchRequestOptions: FetchRequestOptions = { cacheTtlSecs: CACHE_DISABLED };
+
     // —————— Using Rest
-    // const response = await Metafield.all({
-    //   owner_id,
-    //   owner_resource: matchOwnerTypeToOwnerResource(ownerType as MetafieldOwnerType),
-    //   context,
-    //   options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
-    // });
-
-    // —————— Using GraphQL
-    // const baseParams = {
-    //   context,
-    //   options: { cacheTtlSecs: CACHE_DISABLED }, // Cache is disabled intentionally
-    // };
-    const listArgs: ListMetafieldsArgs = {
-      options: { cacheTtlSecs: CACHE_DISABLED },
-    };
-    if (isShopQuery) {
-      listArgs.ownerType = ownerType as SupportedMetafieldOwnerType;
-    } else {
-      const graphQlOwnerName = ownerTypeToGraphQlOwnerName(ownerType as SupportedMetafieldOwnerType);
-      listArgs.ownerIds = [idToGraphQlGid(graphQlOwnerName, ownerId)];
+    if (isRestSync(metafieldOwnerType)) {
+      const response = await MetafieldClient.createInstance(context).list({
+        owner_id: ownerId,
+        owner_resource: ownerTypeToRestOwnerName(metafieldOwnerType),
+        options: fetchRequestOptions,
+      });
+      return response.body.map((m) => MetafieldModel.createInstance(context, m).toCodaRow());
     }
+    // —————— Using GraphQL
+    else {
+      const listArgs: ListMetafieldsArgs = { options: fetchRequestOptions };
+      if (isShopQuery) {
+        listArgs.ownerType = ownerType as SupportedMetafieldOwnerType;
+      } else {
+        const graphQlOwnerName = ownerTypeToGraphQlOwnerName(ownerType as SupportedMetafieldOwnerType);
+        listArgs.ownerIds = [idToGraphQlGid(graphQlOwnerName, ownerId)];
+      }
 
-    const response = await MetafieldGraphQlClient.createInstance(context).list(listArgs);
-    return response.body.map((m) => MetafieldGraphQlModel.createInstance(context, m).toCodaRow());
-
-    // const response = isShopQuery
-    //   ? await MetafieldGraphQl.all({
-    //       ...baseParams,
-    //       ownerType: ownerType as MetafieldOwnerType,
-    //     })
-    //   : await MetafieldGraphQl.all({
-    //       ...baseParams,
-    //       ownerIds: [idToGraphQlGid(matchOwnerTypeToResourceName(ownerType as MetafieldOwnerType), owner_id)],
-    //     });
-
-    // return response.data.map((m) => m.formatToRow(false));
+      const response = await MetafieldGraphQlClient.createInstance(context).list(listArgs);
+      return response.body.map((m) => MetafieldGraphQlModel.createInstance(context, m).toCodaRow());
+    }
   },
 });
 // #endregion

@@ -267,10 +267,11 @@ export class TranslationModel extends AbstractModelGraphQl {
 
   public toCodaRow(): TranslationRow {
     const { fullId } = this;
-    const { resourceGid, ...data } = this.data;
+    const { resourceGid, updatedAt, ...data } = this.data;
 
     let obj: Partial<TranslationRow> = {
       ...data,
+      updated_at: safeToString(updatedAt),
     };
 
     if (fullId) {

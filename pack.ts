@@ -1,7 +1,7 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IS_ADMIN_RELEASE } from './pack-config.json';
+import { IS_TEST_RELEASE } from './pack-config.json';
 
 import { ShopClient } from './Clients/RestClients';
 import {
@@ -81,7 +81,6 @@ import {
   Formula_MetaDimension,
   Formula_MetaFileReference,
   Formula_MetaJson,
-  // Formula_MetafieldKeyValueSet,
   Formula_MetaMetaobjectReference,
   Formula_MetaMixedReference,
   Formula_MetaMoney,
@@ -98,7 +97,7 @@ import {
   Formula_MetaWeight,
   Formula_Metafield,
   Formula_MetafieldKey,
-  Formula_Metafields,
+  Formula_MetafieldsLoop,
   Sync_Metafields,
 } from './coda/setup/metafields-setup';
 import {
@@ -109,7 +108,13 @@ import {
 } from './coda/setup/metaobjects-setup';
 import { Sync_OrderLineItems } from './coda/setup/orderLineItems-setup';
 import { Sync_OrderTransactions } from './coda/setup/orderTransactions-setup';
-import { Format_Order, Formula_Order, Formula_OrderJSON, Formula_Orders, Sync_Orders } from './coda/setup/orders-setup';
+import {
+  Format_Order,
+  Formula_Order,
+  Formula_OrderJSON,
+  Formula_OrdersLoop,
+  Sync_Orders,
+} from './coda/setup/orders-setup';
 import {
   Action_CreatePage,
   Action_DeletePage,
@@ -156,11 +161,11 @@ export const pack = coda.newPack();
 
 // #region Auth
 pack.setUserAuthentication({
-  type: coda.AuthenticationType.Custom,
+  type: coda.AuthenticationType.CustomHeaderToken,
+  headerName: 'X-Shopify-Access-Token',
   requiresEndpointUrl: true,
   endpointDomain: 'myshopify.com',
   instructionsUrl: 'https://help.shopify.com/en/manual/apps/app-types/custom-apps#create-and-install-a-custom-app',
-  params: [{ name: 'token', description: 'The account token' }],
   // Determines the display name of the connected account.
   getConnectionName: async (context) => {
     const response = await ShopClient.createInstance(context).current({ fields: 'myshopify_domain' });
@@ -193,7 +198,7 @@ pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
 pack.syncTables.push(Sync_Shops);
 pack.syncTables.push(Sync_Translations);
-if (IS_ADMIN_RELEASE) {
+if (IS_TEST_RELEASE) {
   pack.syncTables.push(Sync_TranslatableContents);
 }
 // #endregion
@@ -207,13 +212,11 @@ pack.formulas.push(Formula_DraftOrder);
 pack.formulas.push(Formula_File);
 pack.formulas.push(Formula_Location);
 pack.formulas.push(Formula_Metafield);
+pack.formulas.push(Formula_MetafieldsLoop);
 pack.formulas.push(Formula_MetafieldDefinition);
 pack.formulas.push(Formula_Order);
 pack.formulas.push(Formula_OrderJSON);
-if (IS_ADMIN_RELEASE) {
-  pack.formulas.push(Formula_Metafields);
-  pack.formulas.push(Formula_Orders);
-}
+pack.formulas.push(Formula_OrdersLoop);
 pack.formulas.push(Formula_Page);
 pack.formulas.push(Formula_Product);
 pack.formulas.push(Formula_ProductVariant);

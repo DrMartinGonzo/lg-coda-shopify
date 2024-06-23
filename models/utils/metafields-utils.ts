@@ -9,6 +9,7 @@ import {
   RequiredParameterMissingVisibleError,
   UnsupportedValueError,
 } from '../../Errors/Errors';
+import * as PROPS from '../../coda/utils/coda-properties';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import {
   METAFIELD_LEGACY_TYPES,
@@ -114,6 +115,13 @@ export async function getMetafieldsDynamicSchema({ codaSyncParams, context }: Ge
   }
 
   if (supportDefinition) {
+    augmentedSchema.properties['definition_id'] = {
+      ...PROPS.ID_NUMBER,
+      fixedId: 'definition_id',
+      fromKey: 'definition_id',
+      description: 'The ID of the metafield definition of the metafield, if it exists.',
+    };
+
     augmentedSchema.properties['definition'] = {
       ...MetafieldDefinitionReference,
       fromKey: 'definition',

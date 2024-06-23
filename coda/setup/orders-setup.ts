@@ -132,7 +132,7 @@ export const Formula_OrderJSON = makeFetchSingleRestResourceAsJsonAction({
   execute: async ([itemId], context) => fetchOrder(context, itemId as number, true),
 });
 
-export const Formula_Orders = coda.makeFormula({
+export const Formula_OrdersLoop = coda.makeFormula({
   name: 'OrdersLoop',
   isExperimental: true,
   description: 'Get orders data.',
