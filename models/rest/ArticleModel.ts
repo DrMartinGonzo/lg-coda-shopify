@@ -17,7 +17,6 @@ import {
   BaseModelDataRestWithRestMetafields,
 } from './AbstractModelRestWithMetafields';
 import { SupportedMetafieldOwnerResource } from './MetafieldModel';
-import { PartialBy } from '../../types/utilities';
 
 // #endregion
 

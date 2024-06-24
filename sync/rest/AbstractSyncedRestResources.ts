@@ -5,9 +5,10 @@ import { AbstractRestClient, REST_SYNC_OWNER_METAFIELDS_LIMIT } from '../../Clie
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
 import { AbstractModelRestWithRestMetafields } from '../../models/rest/AbstractModelRestWithMetafields';
 import { MetafieldModel } from '../../models/rest/MetafieldModel';
+import { separatePrefixedMetafieldsKeysFromKeys } from '../../models/utils/metafields-utils';
 import { BaseRow } from '../../schemas/CodaRows.types';
 import { Stringified } from '../../types/utilities';
-import { logAdmin } from '../../utils/helpers';
+import { excludeObjectKeys, logAdmin } from '../../utils/helpers';
 import {
   AbstractSyncedResources,
   ISyncedResourcesConstructorArgs,
@@ -121,9 +122,10 @@ export abstract class AbstractSyncedRestResources<
   }
 
   protected async createInstanceFromRow(row: BaseRow) {
-    const instance = await super.createInstanceFromRow(row);
+    const { prefixedMetafieldFromKeys } = separatePrefixedMetafieldsKeysFromKeys(Object.keys(row));
+    const instance = await super.createInstanceFromRow(excludeObjectKeys(row, prefixedMetafieldFromKeys) as BaseRow);
 
-    if (this.supportMetafields && this.asStatic().hasMetafieldsInRow(row)) {
+    if (this.supportMetafields && prefixedMetafieldFromKeys.length) {
       // Warm up metafield definitions cache
       const metafieldDefinitions = await this.getMetafieldDefinitions();
       (instance as AbstractModelRestWithRestMetafields).data.metafields =

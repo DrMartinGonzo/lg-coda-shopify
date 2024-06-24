@@ -2,15 +2,17 @@
   {
     "previousValue": {
       "id": 8433407262976,
-      "title": "@testMARTIN22222",
+      "title": "@testMARTIN22222 NEW",
+      "tags": "un, deux",
       "lgs_meta__custom.number_decimal": 145.121,
       "lgs_meta__custom.money": null
     },
     "newValue": {
       "id": 8433407262976,
-      "title": "@testMARTIN22222 NEW",
+      "title": "@testMARTIN22222 REWRITE NEW",
+      "tags": "un, trois",
       "lgs_meta__custom.number_decimal": 0.999,
-      "lgs_meta__custom.money": 994.54
+      "lgs_meta__custom.money": 6120
     },
     "updatedFields": ["title", "lgs_meta__custom.money"]
   }

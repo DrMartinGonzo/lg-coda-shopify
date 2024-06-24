@@ -2,6 +2,7 @@
   {
     "previousValue": {
       "id": 49386356992,
+      "admin_graphql_api_id": "gid://shopify/Metaobject/49386356992",
       "handle": "test",
       "color": "#c44646",
       "product_variant_reference": {
@@ -10,12 +11,13 @@
     },
     "newValue": {
       "id": 49386356992,
-      "handle": "test3",
+      "admin_graphql_api_id": "gid://shopify/Metaobject/49386356992",
+      "handle": "test",
       "color": "#cccccc",
       "product_variant_reference": {
         "id": "gid://shopify/ProductVariant/44365639516416"
       }
     },
-    "updatedFields": ["handle", "product_variant_reference"]
+    "updatedFields": ["handle"]
   }
 ]

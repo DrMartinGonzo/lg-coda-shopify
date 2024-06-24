@@ -1,22 +1,22 @@
 [
   {
     "previousValue": {
-      "id": 26452874526976,
-      "label": "custom.single_line_text_field",
+      "id": 27125919547648,
+      "label": "custom.color",
       "namespace": "custom",
-      "key": "single_line_text_field",
-      "owner_id": 8406091333888,
-      "type": "single_line_text_field",
-      "rawValue": "TEST TEST"
+      "key": "color",
+      "owner_id": 69054005504,
+      "type": "color",
+      "rawValue": "#cccccc"
     },
     "newValue": {
-      "id": 26452874526976,
-      "label": "custom.single_line_text_field",
+      "id": 27125919547648,
+      "label": "custom.color",
       "namespace": "custom",
-      "key": "single_line_text_field",
-      "owner_id": 8406091333888,
-      "type": "single_line_text_field",
-      "rawValue": "FFEEGGE"
+      "key": "color",
+      "owner_id": 69054005504,
+      "type": "color",
+      "rawValue": "#cccc00"
     },
     "updatedFields": ["rawValue"]
   }
