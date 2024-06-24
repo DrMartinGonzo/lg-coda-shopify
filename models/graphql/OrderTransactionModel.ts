@@ -10,8 +10,8 @@ import { orderTransactionFieldsFragment } from '../../graphql/orderTransactions-
 import { OrderTransactionRow } from '../../schemas/CodaRows.types';
 import { formatOrderReference } from '../../schemas/syncTable/OrderSchema';
 import { formatOrderTransactionReference } from '../../schemas/syncTable/OrderTransactionSchema';
+import { safeToFloat, safeToString } from '../../utils/helpers';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { safeToFloat } from '../../utils/helpers';
 
 // #endregion
 
@@ -45,7 +45,18 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
   }
 
   public toCodaRow(): OrderTransactionRow {
-    const { amountSet, parentOrder, parentTransaction, paymentIcon, totalUnsettledSet, ...data } = this.data;
+    const {
+      amountSet,
+      createdAt,
+      errorCode,
+      parentOrder,
+      parentTransaction,
+      paymentIcon,
+      paymentId,
+      processedAt,
+      totalUnsettledSet,
+      ...data
+    } = this.data;
     if (parentOrder === undefined) {
       throw new Error('parentOrder is undefined');
     }
@@ -62,12 +73,16 @@ export class OrderTransactionModel extends AbstractModelGraphQl {
       currency: amountSet?.presentmentMoney?.currencyCode,
       paymentIcon: paymentIcon?.url,
       amount: safeToFloat(amountSet?.shopMoney?.amount),
-      totalUnsettled: safeToFloat(totalUnsettledSet?.shopMoney?.amount),
+      total_unsettled: safeToFloat(totalUnsettledSet?.shopMoney?.amount),
+      error_code: errorCode,
+      created_at: safeToString(createdAt),
+      processed_at: safeToString(processedAt),
+      payment_id: paymentId,
     };
 
     if (parentTransaction?.id) {
       const parentTransactionId = graphQlGidToId(parentTransaction.id);
-      obj.parentTransactionId = parentTransactionId;
+      obj.parent_id = parentTransactionId;
       obj.parentTransaction = formatOrderTransactionReference(parentTransactionId);
     }
 
