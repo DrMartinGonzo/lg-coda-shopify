@@ -996,5 +996,26 @@
       "id": 17684267264,
       "name": "NOT_FOUND"
     }
+  },
+  {
+    "label": "custom.boolean",
+    "admin_graphql_api_id": "gid://shopify/Metafield/27226074906880",
+    "id": 27226074906880,
+    "key": "boolean",
+    "namespace": "custom",
+    "type": "boolean",
+    "rawValue": "false",
+    "owner_type": "PRODUCT",
+    "owner_id": 8406091235584,
+    "owner": {
+      "id": 8406091235584,
+      "title": "NOT_FOUND"
+    },
+    "admin_url": "https://coda-pack-test.myshopify.com/admin/products/8406091235584/metafields",
+    "definition_id": 17683939584,
+    "definition": {
+      "id": 17683939584,
+      "name": "NOT_FOUND"
+    }
   }
 ]

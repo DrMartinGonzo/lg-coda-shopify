@@ -5,7 +5,7 @@
   "originalValue": "Vitest Smart Collection",
   "type": "SINGLE_LINE_TEXT_FIELD",
   "isDeletedFlag": false,
-  "key": "title",
   "translatedValue": "Vitest (FR)",
-  "outdated": false
+  "outdated": false,
+  "key": "title"
 }

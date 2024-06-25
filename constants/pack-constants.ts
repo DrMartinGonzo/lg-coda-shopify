@@ -22,6 +22,7 @@ export const PACK_IDENTITIES = {
   InventoryItem: 'InventoryItem',
   InventoryLevel: 'InventoryLevel',
   Location: 'Location',
+  Market: 'Market',
   Metafield: 'Metafield',
   MetafieldDefinition: 'MetafieldDefinition',
   Metaobject: 'Metaobject',

@@ -61,6 +61,7 @@ import { SyncRedirectsParams } from '../sync/rest/SyncedRedirects';
 import { SyncShopsParams } from '../sync/rest/SyncedShops';
 import * as listData from './__snapshots__/api/list';
 import * as singleData from './__snapshots__/api/single';
+import { SyncMarketsParams } from '../sync/graphql/SyncedMarkets';
 
 // #endregion
 
@@ -131,6 +132,8 @@ const defaultInventoryItemsParams = [
 const defaultLocationsParams = [
   false, // syncMetafields
 ] as SyncLocationsParams;
+
+const defaultMarketsParams = [] as SyncMarketsParams;
 
 const defaultArticleMetafieldsParams = [
   ['custom.test'], // metafieldKeys
@@ -291,7 +294,7 @@ describe('Sync resources', () => {
     context.fetcher.fetch.withArgs(isCheckThrottleStatusRequest).returns(getThrottleStatusMockResponse());
   });
 
-  test.skip('Article', async ({ expect }) => {
+  test.skip('Articles', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Article]: listData.articles }));
 
     const result = await doSync('Articles', defaultArticleParams);
@@ -299,7 +302,7 @@ describe('Sync resources', () => {
   });
 
   // INVESTIGATE: bug when running along with previous 'Article' test, withArgs(isMetafieldDefinitionRequest) is not triggered ?
-  test('Article with metafields', async ({ expect }) => {
+  test('Articles with metafields', async ({ expect }) => {
     context.fetcher.fetch.withArgs(isMetafieldDefinitionRequest).callsFake(function fakeFn() {
       return newGraphqlFetchResponse({
         metafieldDefinitions: { nodes: listData.articleMetafieldDefinitions },
@@ -324,13 +327,13 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'articlesWithMetafields');
   });
 
-  test('Blog', async ({ expect }) => {
+  test('Blogs', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Blog]: listData.blogs }));
     const result = await doSync('Blogs', defaultBlogParams);
     await matchRowsSnapshot(expect, result, 'blogs');
   });
 
-  test('Collection', async ({ expect }) => {
+  test('Collections', async ({ expect }) => {
     context.fetcher.fetch
       .onFirstCall()
       .returns(newJsonFetchResponse({ [RestResourcesPlural.CustomCollection]: listData.customCollections }));
@@ -341,31 +344,31 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'collections');
   });
 
-  test('Collect', async ({ expect }) => {
+  test('Collects', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Collect]: listData.collects }));
     const result = await doSync('Collects', defaultCollectParams);
     await matchRowsSnapshot(expect, result, 'collects');
   });
 
-  test('Customer', async ({ expect }) => {
+  test('Customers', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Customer]: listData.customers }));
     const result = await doSync('Customers', defaultCustomersParams);
     await matchRowsSnapshot(expect, result, 'customers');
   });
 
-  test('DraftOrder', async ({ expect }) => {
+  test('DraftOrders', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.DraftOrder]: listData.draftOrders }));
     const result = await doSync('DraftOrders', defaultDraftOrdersParams);
     await matchRowsSnapshot(expect, result, 'draftOrders');
   });
 
-  test('File', async ({ expect }) => {
+  test('Files', async ({ expect }) => {
     context.fetcher.fetch.returns(newGraphqlFetchResponse({ files: { nodes: listData.files } }));
     const result = await doSync('Files', defaultFilesParams);
     await matchRowsSnapshot(expect, result, 'files');
   });
 
-  test('InventoryLevel', async ({ expect }) => {
+  test('InventoryLevels', async ({ expect }) => {
     context.fetcher.fetch.returns(
       newJsonFetchResponse({ [RestResourcesPlural.InventoryLevel]: listData.inventoryLevels })
     );
@@ -373,20 +376,26 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'inventoryLevels');
   });
 
-  test('InventoryItem', async ({ expect }) => {
+  test('InventoryItems', async ({ expect }) => {
     context.fetcher.fetch.returns(newGraphqlFetchResponse({ inventoryItems: { nodes: listData.inventoryItems } }));
 
     const result = await doSync('InventoryItems', defaultInventoryItemsParams);
     await matchRowsSnapshot(expect, result, 'inventoryItems');
   });
 
-  test('Location', async ({ expect }) => {
+  test('Locations', async ({ expect }) => {
     context.fetcher.fetch.returns(newGraphqlFetchResponse({ locations: { nodes: listData.locations } }));
     const result = await doSync('Locations', defaultLocationsParams);
     await matchRowsSnapshot(expect, result, 'locations');
   });
 
-  test('Sync Article (Rest) Metafields', async ({ expect }) => {
+  test('Markets', async ({ expect }) => {
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ markets: { nodes: listData.markets } }));
+    const result = await doSync('Markets', defaultMarketsParams);
+    await matchRowsSnapshot(expect, result, 'markets');
+  });
+
+  test('Metafields (Rest) (Articles)', async ({ expect }) => {
     const restMetafieldsArticleUrl = `${PACK_TEST_ENDPOINT}/admin/api/${REST_DEFAULT_API_VERSION}/articles.json?fields=id&limit=${REST_SYNC_OWNER_METAFIELDS_LIMIT}`;
     const isRestMetafieldsArticleRequest = sinon.match(
       (fetchRequest: coda.FetchRequest) => fetchRequest?.url === restMetafieldsArticleUrl,
@@ -416,7 +425,7 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'restMetafields');
   });
 
-  test('Sync Product (GraphQL) Metafields', async ({ expect }) => {
+  test('Metafields (GraphQL) (Products)', async ({ expect }) => {
     context.sync.dynamicUrl = MetafieldOwnerType.Product;
     context.fetcher.fetch.returns(
       newGraphqlFetchResponse({
@@ -460,19 +469,19 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'metaobjects');
   });
 
-  test('Order', async ({ expect }) => {
+  test('Orders', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listData.orders }));
     const result = await doSync('Orders', defaultOrdersParams);
     await matchRowsSnapshot(expect, result, 'orders');
   });
 
-  test('OrderLineItem', async ({ expect }) => {
+  test('OrderLineItems', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Order]: listData.orders }));
     const result = await doSync('OrderLineItems', defaultOrderLineItemsParams);
     await matchRowsSnapshot(expect, result, 'orderLineItems');
   });
 
-  test('OrderTransaction', async ({ expect }) => {
+  test('OrderTransactions', async ({ expect }) => {
     context.fetcher.fetch.returns(
       newGraphqlFetchResponse({
         orders: {
@@ -491,31 +500,31 @@ describe('Sync resources', () => {
     await matchRowsSnapshot(expect, result, 'orderTransactions');
   });
 
-  test('Page', async ({ expect }) => {
+  test('Pages', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Page]: listData.pages }));
     const result = await doSync('Pages', defaultPagesParams);
     await matchRowsSnapshot(expect, result, 'pages');
   });
 
-  test('Product', async ({ expect }) => {
+  test('Products', async ({ expect }) => {
     context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listData.products } }));
     const result = await doSync('Products', defaultProductsParams);
     await matchRowsSnapshot(expect, result, 'products');
   });
 
-  test('Redirect', async ({ expect }) => {
+  test('Redirects', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesPlural.Redirect]: listData.redirects }));
     const result = await doSync('Redirects', defaultRedirectsParams);
     await matchRowsSnapshot(expect, result, 'redirects');
   });
 
-  test('Shop', async ({ expect }) => {
+  test('Shops', async ({ expect }) => {
     context.fetcher.fetch.returns(newJsonFetchResponse({ [RestResourcesSingular.Shop]: singleData.shop }));
     const result = await doSync('Shops', defaultShopsParams);
     await matchRowsSnapshot(expect, result, 'shops');
   });
 
-  test('Variant', async ({ expect }) => {
+  test('Variants', async ({ expect }) => {
     context.fetcher.fetch.returns(newGraphqlFetchResponse({ productVariants: { nodes: listData.variants } }));
     const result = await doSync('ProductVariants', defaultVariantsParams);
     await matchRowsSnapshot(expect, result, 'variants');
@@ -537,6 +546,7 @@ describe('Sync resources', () => {
   });
 });
 
+// TODO: pourquoi ça ne choppe pas les metafields quand ce n'est pas runné tout seul ?
 describe.skip('INTEGRATION: Sync resources', () => {
   async function doSync(
     formulaName: string,
@@ -557,7 +567,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   }
 
-  test('Sync Articles with Metafields', async () => {
+  test('Articles with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultArticleParams;
     const result = await doSync('Articles', [
       true, // syncMetafields
@@ -566,7 +576,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'articlesWithMetafields');
   });
 
-  test('Sync Blogs with Metafields', async () => {
+  test('Blogs with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultBlogParams;
     const result = await doSync('Blogs', [
       true, // syncMetafields
@@ -575,7 +585,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'blogsWithMetafields');
   });
 
-  test('Sync Collections with Metafields', async () => {
+  test('Collections with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultSmartCollectionParams;
     const result = await doSync('Collections', [
       true, // syncMetafields
@@ -584,12 +594,12 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'collectionsWithMetafields');
   });
 
-  test('Sync Collects', async () => {
+  test('Collects', async () => {
     const result = await doSync('Collects', defaultCollectParams);
     await matchRowsIntegrationSnapshot(expect, result, 'collects');
   });
 
-  test('Sync DraftOrders with Metafields', async () => {
+  test('DraftOrders with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultDraftOrdersParams;
     const result = await doSync('DraftOrders', [
       true, // syncMetafields
@@ -598,7 +608,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'draftOrdersWithMetafields');
   });
 
-  test('Sync Customers with Metafields', async () => {
+  test('Customers with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultCustomersParams;
     const result = await doSync('Customers', [
       true, // syncMetafields
@@ -607,7 +617,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'customersWithMetafields');
   });
 
-  test('Sync Files', async () => {
+  test('Files', async () => {
     const result = await doSync('Files', defaultFilesParams);
     await matchRowsIntegrationSnapshot(
       expect,
@@ -616,7 +626,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync InventoryLevels', async () => {
+  test('InventoryLevels', async () => {
     const result = await doSync('InventoryLevels', defaultInventoryLevelsParams);
     await matchRowsIntegrationSnapshot(
       expect,
@@ -626,12 +636,12 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync InventoryItems', async () => {
+  test('InventoryItems', async () => {
     const result = await doSync('InventoryItems', defaultInventoryItemsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'inventoryItems');
   });
 
-  test('Sync Locations with Metafields', async () => {
+  test('Locations with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultLocationsParams;
     const result = await doSync('Locations', [
       true, // syncMetafields,
@@ -644,7 +654,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync Article (Rest) Metafields', async () => {
+  test('Metafields (Rest) (Articles)', async () => {
     const result = await doSync(
       'Metafields',
       defaultArticleMetafieldsParams,
@@ -657,7 +667,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync Product (GraphQL) Metafields', async () => {
+  test('Metafields (GraphQL) (Products)', async () => {
     const result = await doSync(
       'Metafields',
       defaultGraphQLMetafieldsParams,
@@ -670,12 +680,17 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync MetafieldDefinitions', async () => {
+  test('Markets', async ({ expect }) => {
+    const result = await doSync('Markets', defaultMarketsParams);
+    await matchRowsIntegrationSnapshot(expect, result, 'markets');
+  });
+
+  test('MetafieldDefinitions', async () => {
     const result = await doSync('MetafieldDefinitions', defaultMetafieldDefinitionsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'metafieldDefinitions');
   });
 
-  test('Sync Metaobjects', async () => {
+  test('Metaobjects', async () => {
     const result = await doSync(
       'Metaobjects',
       defaultMetaobjectsParams,
@@ -688,7 +703,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     );
   });
 
-  test('Sync Orders with Metafields', async () => {
+  test('Orders with Metafields', async () => {
     const [statusDefault, syncMetafieldsDefault, ...params] = defaultOrdersParams;
     const result = await doSync('Orders', [
       statusDefault,
@@ -698,17 +713,17 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'ordersWithMetafields');
   });
 
-  test('Sync OrderLineItems', async () => {
+  test('OrderLineItems', async () => {
     const result = await doSync('OrderLineItems', defaultOrderLineItemsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'orderLineItems');
   });
 
-  test('Sync OrderTransactions', async () => {
+  test('OrderTransactions', async () => {
     const result = await doSync('OrderTransactions', defaultOrderTransactionsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'orderTransactions');
   });
 
-  test('Sync Pages with Metafields', async () => {
+  test('Pages with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultPagesParams;
     const result = await doSync('Pages', [
       true, // syncMetafields
@@ -717,7 +732,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'pages');
   });
 
-  test('Sync Products with Metafields', async () => {
+  test('Products with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultProductsParams;
     console.log('defaultProductsParams', defaultProductsParams);
     const result = await doSync('Products', [
@@ -727,7 +742,7 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'products');
   });
 
-  test('Sync ProductVariants with Metafields', async () => {
+  test('ProductVariants with Metafields', async () => {
     const [syncMetafieldsDefault, ...params] = defaultVariantsParams;
     const result = await doSync('ProductVariants', [
       true, // syncMetafields
@@ -736,17 +751,17 @@ describe.skip('INTEGRATION: Sync resources', () => {
     await matchRowsIntegrationSnapshot(expect, result, 'variants');
   });
 
-  test('Sync Redirects', async () => {
+  test('Redirects', async () => {
     const result = await doSync('Redirects', defaultRedirectsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'redirects');
   });
 
-  test('Sync Shops', async () => {
+  test('Shops', async () => {
     const result = await doSync('Shops', defaultShopsParams);
     await matchRowsIntegrationSnapshot(expect, result, 'shops');
   });
 
-  test('Sync Translations', async () => {
+  test('Translations', async () => {
     const result = await doSync('Translations', defaultTranslationsParams);
     await matchRowsIntegrationSnapshot(
       expect,

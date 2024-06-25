@@ -11,6 +11,7 @@ export { default as productMetafields } from './graphqlMetafield.list.json';
 export { default as inventoryItems } from './inventoryItem.list.json';
 export { default as inventoryLevels } from './inventoryLevel.list.json';
 export { default as locations } from './location.list.json';
+export { default as markets } from './market.list.json';
 export { default as metaobjects } from './metaobject.list.json';
 export { default as orders } from './order.list.json';
 export { default as orderTransactions } from './orderTransaction.list.json';

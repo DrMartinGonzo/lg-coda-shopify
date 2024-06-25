@@ -10,10 +10,7 @@
     "receiptJson": "{\"paid_amount\":\"50.00\"}",
     "settlementCurrency": null,
     "settlementCurrencyRate": null,
-    "errorCode": null,
-    "processedAt": "2024-02-22T09:12:06Z",
     "test": true,
-    "paymentId": "rtYGgDZoR6f3m20ftoswzZ6Mk",
     "paymentDetails": {
       "paymentMethodName": "card",
       "avsResultCode": null,
@@ -36,6 +33,9 @@
     },
     "currency": "EUR",
     "paymentIcon": "https://cdn.shopify.com/shopifycloud/shopify/assets/payment_icons/bogus-13c83bc142b1d1b69905f99e38a897f75581e477a1233254ce01e64b3e3ae2b8.svg.png",
-    "amount": 50
+    "amount": 50,
+    "error_code": null,
+    "processed_at": "2024-02-22T09:12:06Z",
+    "payment_id": "rtYGgDZoR6f3m20ftoswzZ6Mk"
   }
 ]

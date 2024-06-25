@@ -1,0 +1,29 @@
+[
+  {
+    "Handle": "eu",
+    "Name": "European Union",
+    "Primary": false,
+    "Enabled": true,
+    "Id": 17893163264,
+    "GraphqlGid": "gid://shopify/Market/17893163264",
+    "AdminUrl": "https://coda-pack-test.myshopify.com/admin/settings/markets/17893163264"
+  },
+  {
+    "Handle": "fr",
+    "Name": "France",
+    "Primary": true,
+    "Enabled": true,
+    "Id": 17893130496,
+    "GraphqlGid": "gid://shopify/Market/17893130496",
+    "AdminUrl": "https://coda-pack-test.myshopify.com/admin/settings/markets/17893130496"
+  },
+  {
+    "Handle": "international",
+    "Name": "International",
+    "Primary": false,
+    "Enabled": false,
+    "Id": 17893196032,
+    "GraphqlGid": "gid://shopify/Market/17893196032",
+    "AdminUrl": "https://coda-pack-test.myshopify.com/admin/settings/markets/17893196032"
+  }
+]

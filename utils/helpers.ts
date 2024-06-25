@@ -255,6 +255,9 @@ export function safeToString(value?: any): string | undefined {
 export function safeToFloat(value?: any): number | undefined {
   return isNullish(value) ? undefined : parseFloat(value);
 }
+function safeToInt(value?: any): number | undefined {
+  return isNullish(value) ? undefined : parseInt(value, 10);
+}
 
 export function assertAllowedValue(values: any | any[], allowedValues: any[]) {
   if (values) {

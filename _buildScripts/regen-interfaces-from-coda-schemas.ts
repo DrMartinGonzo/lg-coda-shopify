@@ -26,6 +26,7 @@ import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
 import { TranslatableContentSyncTableSchema } from '../schemas/syncTable/TranslatableContentSchema';
 import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
 import { arrayUnique } from '../utils/helpers';
+import { MarketSyncTableSchema } from '../schemas/syncTable/MarketSchema';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -154,6 +155,7 @@ const definitions = [
   [InventoryItemSyncTableSchema, PACK_IDENTITIES.InventoryItem],
   [InventoryLevelSyncTableSchema, PACK_IDENTITIES.InventoryLevel],
   [LocationSyncTableSchema, PACK_IDENTITIES.Location],
+  [MarketSyncTableSchema, PACK_IDENTITIES.Market],
   [MetafieldSyncTableSchema, PACK_IDENTITIES.Metafield],
   [MetafieldDefinitionSyncTableSchema, PACK_IDENTITIES.MetafieldDefinition],
   [MetaObjectSyncTableBaseSchema, PACK_IDENTITIES.Metaobject],

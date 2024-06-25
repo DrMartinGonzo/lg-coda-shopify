@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
+import { MarketReference } from './MarketSchema';
 
 export const TranslationSyncTableSchema = coda.makeObjectSchema({
   properties: {
@@ -21,6 +22,14 @@ export const TranslationSyncTableSchema = coda.makeObjectSchema({
       ...PROPS.STRING,
       fixedId: 'key',
       description: 'On the resource that this translation belongs to, the reference to the value being translated.',
+    },
+    market: { ...MarketReference, fixedId: 'market', description: 'The market this translation is specific to.' },
+    marketId: {
+      ...PROPS.ID_NUMBER,
+      fromKey: 'marketId',
+      fixedId: 'marketId',
+      description:
+        'The market that the translation is specific to. Null value means the translation is available in all markets.',
     },
     originalValue: {
       ...PROPS.STRING,

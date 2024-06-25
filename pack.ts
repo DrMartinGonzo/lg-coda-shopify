@@ -63,6 +63,7 @@ import {
   Formula_Location,
   Sync_Locations,
 } from './coda/setup/locations-setup';
+import { Sync_Markets } from './coda/setup/markets-setup';
 import {
   Format_MetafieldDefinition,
   Formula_MetafieldDefinition,
@@ -199,6 +200,7 @@ pack.syncTables.push(Sync_ProductVariants);
 pack.syncTables.push(Sync_Redirects);
 pack.syncTables.push(Sync_Shops);
 pack.syncTables.push(Sync_Translations);
+pack.syncTables.push(Sync_Markets);
 if (IS_TEST_RELEASE) {
   pack.syncTables.push(Sync_TranslatableContents);
 }

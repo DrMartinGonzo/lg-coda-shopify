@@ -663,5 +663,20 @@
     "parentNode": {
       "id": "gid://shopify/Product/8433407262976"
     }
+  },
+  {
+    "__typename": "Metafield",
+    "id": "gid://shopify/Metafield/27226074906880",
+    "namespace": "custom",
+    "key": "boolean",
+    "type": "boolean",
+    "value": "false",
+    "ownerType": "PRODUCT",
+    "definition": {
+      "id": "gid://shopify/MetafieldDefinition/17683939584"
+    },
+    "parentNode": {
+      "id": "gid://shopify/Product/8433407262976"
+    }
   }
 ]

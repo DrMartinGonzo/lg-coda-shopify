@@ -5,9 +5,9 @@
     "originalValue": "Vitest Smart Collection",
     "type": "SINGLE_LINE_TEXT_FIELD",
     "isDeletedFlag": false,
-    "key": "title",
     "translatedValue": "Vitest (FR)",
     "outdated": false,
+    "key": "title",
     "id": "gid://shopify/Collection/413086843136?key=title&locale=fr",
     "resourceId": 413086843136,
     "resourceType": "COLLECTION"

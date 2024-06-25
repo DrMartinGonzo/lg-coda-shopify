@@ -2,7 +2,12 @@
 import { print as printGql } from '@0no-co/graphql.web';
 import * as coda from '@codahq/packs-sdk';
 import { TadaDocumentNode } from 'gql.tada';
-import { VariablesOf, getKindAndOperationNames, graphQlGidToResourceName } from '../graphql/utils/graphql-utils';
+import {
+  ResultOf,
+  VariablesOf,
+  getKindAndOperationNames,
+  graphQlGidToResourceName,
+} from '../graphql/utils/graphql-utils';
 
 import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
 import { FileApiData, FileModelData } from '../models/graphql/FileModel';
@@ -94,6 +99,8 @@ import {
 } from '../graphql/products-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
 import {
+  LocaleFieldsFragment,
+  getAvailableLocalesQuery,
   getSingleTranslationQuery,
   getTranslatableResourcesQuery,
   getTranslationsQuery,
@@ -120,6 +127,8 @@ import { METAFIELD_TYPES } from '../constants/metafields-constants';
 import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { PREFIX_FAKE } from '../constants/strings-constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
+import { getMarketsQuery } from '../graphql/markets-graphql';
+import { MarketApidata, MarketModelData } from '../models/graphql/MarketModel';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { graphQlOwnerNameToOwnerType } from '../models/utils/metafields-utils';
 import {
@@ -182,7 +191,7 @@ interface GraphQlClientConstructorParams {
   apiVersion?: string;
 }
 
-interface BaseFindArgs {
+export interface BaseFindArgs {
   forceAllFields?: boolean;
   options?: FetchRequestOptions;
 }
@@ -1061,6 +1070,39 @@ export class LocationClient extends AbstractGraphQlClient<LocationModelData> {
 
     // If no input, we have nothing to update.
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
+// #endregion
+
+// #region MarketClient
+interface SingleMarketResponse {
+  market: MarketApidata;
+}
+interface MultipleMarketsResponse {
+  markets: { nodes: MarketApidata[] };
+}
+
+interface SingleMarketArgs extends BaseSingleArgs {}
+
+export interface ListMarketsArgs extends BaseListArgs {}
+
+export class MarketClient extends AbstractGraphQlClient<MarketModelData> {
+  async list({ forceAllFields, cursor, limit, options }: ListMarketsArgs) {
+    const documentNode = getMarketsQuery;
+    const variables = {
+      limit: limit ?? ProductClient.defaultLimit,
+      cursor,
+    } as VariablesOf<typeof getMarketsQuery>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleMarketsResponse) =>
+          response?.markets.nodes as unknown as MarketModelData[],
+      })
+    );
   }
 }
 // #endregion
@@ -2069,6 +2111,11 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
 // #endregion
 
 // #region TranslationClient
+interface AvailableLocaleApiData extends ResultOf<typeof LocaleFieldsFragment> {}
+
+interface AvailableLocalesResponse {
+  availableLocales: AvailableLocaleApiData[];
+}
 interface SingleTranslationResponse {
   translatableResource: TranslatableResourceApiData;
 }
@@ -2079,15 +2126,22 @@ interface RegisterTranslationsResponse {
   translationsRegister: { translations: RegisterTranslationApiData[] };
 }
 
+interface TranslationFieldsArgs {
+  market?: boolean;
+}
 interface SingleTranslationArgs extends BaseSingleArgs {
   locale: string;
+  marketId?: string;
   key: string;
+  fields?: TranslationFieldsArgs;
 }
 export interface ListTranslationsArgs extends BaseListArgs {
   limit?: number;
   cursor?: string;
   locale: string;
+  marketId?: string;
   resourceType: string;
+  fields?: TranslationFieldsArgs;
 }
 
 function translatableResourceToTranslationModelData({
@@ -2108,6 +2162,8 @@ function translatableResourceToTranslationModelData({
     originalValue: translatableContent?.value,
     type: translatableContent?.type as LocalizableContentType,
     isDeletedFlag: true,
+    translatedValue: undefined,
+    outdated: false,
   };
   if (translation) {
     data.key = translation.key;
@@ -2115,17 +2171,35 @@ function translatableResourceToTranslationModelData({
     data.outdated = translation.outdated;
     data.isDeletedFlag = false;
     data.updatedAt = translation?.updatedAt;
+    data.marketId = translation?.market?.id;
   }
 
   return data as TranslationModelData;
 }
 
 export class TranslationClient extends AbstractGraphQlClient<TranslationModelData> {
-  async single({ key, id, locale, options }: SingleTranslationArgs) {
+  async locales({ options }: BaseFindArgs) {
+    const documentNode = getAvailableLocalesQuery;
+    const variables = {} as VariablesOf<typeof documentNode>;
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: function (response: AvailableLocalesResponse) {
+          return response?.availableLocales;
+        },
+      })
+    );
+  }
+
+  async single({ key, fields = {}, forceAllFields, id, locale, marketId, options }: SingleTranslationArgs) {
     const documentNode = getSingleTranslationQuery;
     const variables = {
       id,
       locale,
+      includeMarket: marketId !== undefined ? fields?.market ?? true : false,
+      marketId,
     } as VariablesOf<typeof documentNode>;
     return this.request(
       withCacheDefault({
@@ -2147,13 +2221,24 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
     );
   }
 
-  async list({ locale, resourceType, cursor, limit, options }: ListTranslationsArgs) {
+  async list({
+    locale,
+    fields = {},
+    forceAllFields,
+    marketId,
+    resourceType,
+    cursor,
+    limit,
+    options,
+  }: ListTranslationsArgs) {
     const documentNode = getTranslationsQuery;
     const variables = {
       limit: limit ?? TranslationClient.defaultLimit,
       cursor,
       locale,
       resourceType,
+      includeMarket: marketId !== undefined ? fields?.market ?? true : false,
+      marketId,
     } as VariablesOf<typeof getTranslationsQuery>;
 
     return this.request(
@@ -2195,13 +2280,19 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
     return response?.body?.digest;
   }
 
-  async delete({ key, locale, resourceGid }: Pick<TranslationModelData, 'resourceGid' | 'locale' | 'key'>) {
+  async delete({
+    key,
+    locale,
+    resourceGid,
+    marketId,
+  }: Pick<TranslationModelData, 'resourceGid' | 'locale' | 'key' | 'marketId'>) {
     return this.request({
       documentNode: removeTranslationsMutation,
       variables: {
         resourceId: resourceGid,
         locales: [locale],
         translationKeys: [key],
+        marketIds: marketId ? [marketId] : undefined,
       } as VariablesOf<typeof removeTranslationsMutation>,
     });
   }
@@ -2212,12 +2303,14 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
     const documentNode = registerTranslationMutation;
     const variables = {
       resourceId: modelData.resourceGid,
+      includeMarket: modelData.marketId !== undefined,
       translations: [
         {
           key: modelData.key,
           value: modelData.translatedValue,
           translatableContentDigest: modelData.digest,
           locale: modelData.locale,
+          marketId: modelData.marketId,
         },
       ],
     } as VariablesOf<typeof registerTranslationMutation>;

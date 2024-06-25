@@ -3,12 +3,15 @@ import * as coda from '@codahq/packs-sdk';
 import { graphQlGidToId, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 
 import {
+  BaseFindArgs,
   GRAPHQL_NODES_LIMIT,
   LocationClient,
+  MarketClient,
   MetafieldDefinitionClient,
   MetaobjectClient,
   MetaobjectDefinitionClient,
   ProductClient,
+  TranslationClient,
 } from '../../Clients/GraphQlClients';
 import { BlogClient, ListBlogsArgs, REST_DEFAULT_LIMIT } from '../../Clients/RestClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
@@ -30,6 +33,11 @@ import {
 } from '../../constants/resourceNames-constants';
 import { FULL_SIZE } from '../../constants/strings-constants';
 import { getTemplateSuffixesFor } from '../../models/rest/AssetModel';
+import {
+  dimensionUnitsToLabelMap,
+  volumeUnitsToLabelMap,
+  weightUnitsToLabelMap,
+} from '../../models/utils/measurements-utils';
 import { getMetaFieldFullKey } from '../../models/utils/metafields-utils';
 import {
   getAllSupportDefinitionMetafieldSyncTables,
@@ -37,11 +45,6 @@ import {
 } from '../../sync/SupportedMetafieldSyncTable';
 import { CurrencyCode, MetafieldOwnerType, TranslatableResourceType } from '../../types/admin.types';
 import { compareByDisplayKey, formatOptionNameId } from '../../utils/helpers';
-import {
-  dimensionUnitsToLabelMap,
-  volumeUnitsToLabelMap,
-  weightUnitsToLabelMap,
-} from '../../models/utils/measurements-utils';
 
 // #endregion
 
@@ -68,6 +71,12 @@ async function autocompleteBlogIdParameter(context: coda.ExecutionContext, searc
   return coda.autocompleteSearchObjects(search, response?.body, 'title', 'id');
 }
 
+async function autocompleteLocalesParameter(context: coda.ExecutionContext, search: string, args: any) {
+  const params: BaseFindArgs = {};
+  const response = await TranslationClient.createInstance(context).locales(params);
+  return coda.autocompleteSearchObjects(search, response?.body, 'name', 'isoCode');
+}
+
 export async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
   const params: ListBlogsArgs = {
     limit: REST_DEFAULT_LIMIT,
@@ -75,6 +84,15 @@ export async function autocompleteBlogParameterWithName(context: coda.ExecutionC
   };
   const response = await BlogClient.createInstance(context).list(params);
   const results = response?.body.map((blog) => formatOptionNameId(blog.title, blog.id));
+  return coda.simpleAutocomplete(search, results);
+}
+
+export async function autocompleteMarketsParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
+  const response = await MarketClient.createInstance(context).list({
+    limit: GRAPHQL_NODES_LIMIT,
+    options: {},
+  });
+  const results = response?.body.map((market) => formatOptionNameId(market.name, graphQlGidToId(market.id)));
   return coda.simpleAutocomplete(search, results);
 }
 
@@ -853,6 +871,7 @@ const translationInputs = {
     type: coda.ParameterType.String,
     name: 'locale',
     description: 'The locale. (ex: `en`, `fr`, `es`…)',
+    autocomplete: autocompleteLocalesParameter,
   }),
   resourceId: {
     ...generalInputs.id,
@@ -1050,6 +1069,17 @@ const locationFilters = {
 };
 // #endregion
 
+// #region Market Filters
+const marketFilters = {
+  idOptionName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'marketId',
+    description: 'Filter results by comma-separated list of Market IDs.',
+    autocomplete: autocompleteMarketsParameterWithName,
+  }),
+};
+// #endregion
+
 // #region Metafield Filters
 const metafieldFilters = {
   metafieldKeys: coda.makeParameter({
@@ -1188,7 +1218,7 @@ const productVariantFilters = {
 };
 // #endregion
 
-// #region Inputs: Redirect
+// #region Redirect Filters
 const redirectFilters = {
   path: {
     ...redirectInputs.path,
@@ -1201,7 +1231,7 @@ const redirectFilters = {
 };
 // #endregion
 
-// #region Inputs: Shop
+// #region Shop Filters
 const shopFilters = {
   // shopField: coda.makeParameter({
   //   type: coda.ParameterType.String,
@@ -1211,6 +1241,7 @@ const shopFilters = {
   // }),
 };
 // #endregion
+
 /**====================================================================================================================
  *    Exports
  *===================================================================================================================== */
@@ -1247,6 +1278,7 @@ export const filters = {
   draftOrder: draftOrderFilters,
   file: fileFilters,
   location: locationFilters,
+  market: marketFilters,
   metafield: metafieldFilters,
   order: orderFilters,
   product: productFilters,

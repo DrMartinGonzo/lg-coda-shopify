@@ -5,6 +5,7 @@ import {
   FileClient,
   InventoryItemClient,
   LocationClient,
+  MarketClient,
   MetafieldDefinitionClient,
   MetafieldClient as MetafieldGraphQlClient,
   MetaobjectClient,
@@ -282,6 +283,14 @@ describe('Dump List API Data', () => {
       forceAllFields: true,
     });
     await snapListData(expect, response.body, 'graphqlMetafield');
+  });
+
+  test('Market', async ({ expect }) => {
+    const response = await MarketClient.createInstance(getRealContext()).list({
+      forceAllFields: true,
+      limit: DEFAULT_LIMIT,
+    });
+    await snapListData(expect, response.body, 'market');
   });
 
   test('MetafieldDefinition', async ({ expect }) => {

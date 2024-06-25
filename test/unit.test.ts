@@ -8,6 +8,8 @@ import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors'
 import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
 import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
 import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
+import { GraphQlResourceNames } from '../constants/resourceNames-constants';
+import { idToGraphQlGid } from '../graphql/utils/graphql-utils';
 import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
 import { CustomCollectionModel } from '../models/rest/CustomCollectionModel';
 import { CollectionRow } from '../schemas/CodaRows.types';
@@ -136,6 +138,23 @@ test('calcGraphQlMaxLimit', async () => {
     },
   });
   expect(limit3).toBe(25);
+});
+
+test('idToGraphQlGid', async () => {
+  const resourceName = GraphQlResourceNames.Market;
+  const id = 17893163264;
+  const expectedGid = `gid://shopify/${resourceName}/${id}`;
+
+  expect(idToGraphQlGid(resourceName, id), 'id is number').toEqual(expectedGid);
+  expect(idToGraphQlGid(resourceName, id.toString()), 'id is string').toEqual(expectedGid);
+  expect(idToGraphQlGid(resourceName, expectedGid), 'id is GraphQlGid').toEqual(expectedGid);
+
+  expect(() => idToGraphQlGid(resourceName, 'abcd'), "id can't be parsed to a number").toThrowError(
+    'Unable to format GraphQlGid'
+  );
+  expect(() => idToGraphQlGid(undefined, 17893163264), 'resourceName is undefined').toThrowError(
+    'Unable to format GraphQlGid'
+  );
 });
 
 test('calcGraphQlWaitTime', async () => {

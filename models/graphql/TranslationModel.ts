@@ -8,7 +8,8 @@ import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { TranslationRow } from '../../schemas/CodaRows.types';
-import { LocalizableContentType, TranslatableResourceType } from '../../types/admin.types';
+import { formatMarketReference } from '../../schemas/syncTable/MarketSchema';
+import { TranslatableResourceType } from '../../types/admin.types';
 import { isNullishOrEmpty, safeToString } from '../../utils/helpers';
 import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
@@ -22,6 +23,7 @@ export interface TranslationApiData extends BaseApiDataGraphQl {
   key: string;
   outdated: boolean;
   updatedAt: string;
+  market: { id: string };
 }
 
 export interface RegisterTranslationApiData extends TranslationApiData {
@@ -42,6 +44,7 @@ export interface TranslationModelData
   resourceGid: string;
   originalValue: string;
   translatedValue: string;
+  marketId: string;
 }
 // #endregion
 
@@ -49,21 +52,20 @@ export class TranslationModel extends AbstractModelGraphQl {
   public data: TranslationModelData;
 
   protected readonly primaryKey = 'fullId';
-  public static readonly DELETED_SUFFIX = '&deleted=1';
   public static readonly displayName: Identity = PACK_IDENTITIES.Translation;
   protected static readonly graphQlName = GraphQlResourceNames.Translation;
 
   public static createInstanceFromRow(context: coda.ExecutionContext, { id, resourceType, ...row }: TranslationRow) {
-    const isDeletedFlag = id.includes(TranslationModel.DELETED_SUFFIX);
-    const resourceGid = TranslationModel.extractResourceGidFromFullId(id);
+    const { key, locale, marketId, resourceGid, isDeletedFlag } = TranslationModel.parseFullId(id);
 
     let data: Partial<TranslationModelData> = {
       ...row,
-      key: TranslationModel.extractKeyFromFullId(id),
-      locale: TranslationModel.extractLocaleFromFullId(id),
+      key,
+      locale,
       resourceGid,
       updatedAt: safeToString(row.updated_at),
       isDeletedFlag: isDeletedFlag ?? false,
+      marketId: idToGraphQlGid(GraphQlResourceNames.Market, row.market?.id ?? row.marketId) ?? marketId,
     };
 
     return TranslationModel.createInstance(context, data);
@@ -72,22 +74,24 @@ export class TranslationModel extends AbstractModelGraphQl {
   public static translatableResourceTypeToGid(translatableResourceType: TranslatableResourceType, resourceId: number) {
     return idToGraphQlGid(toPascalCase(translatableResourceType), resourceId);
   }
+  public static parseFullId(fullId: string) {
+    const { key, locale, marketId, deleted } = coda.getQueryParams(fullId) as {
+      key: string;
+      locale: string;
+      marketId: string;
+      deleted: string;
+    };
+    return {
+      key,
+      locale,
+      marketId: idToGraphQlGid(GraphQlResourceNames.Market, marketId),
+      resourceGid: TranslationModel.extractResourceGidFromFullId(fullId),
+      isDeletedFlag: deleted === '1',
+    };
+  }
   private static extractResourceGidFromFullId(fullId: string) {
     return fullId.split('?')[0];
   }
-  private static extractKeyFromFullId(fullId: string) {
-    return fullId.split('key=')[1].split('&')[0];
-  }
-  private static extractLocaleFromFullId(fullId: string) {
-    return fullId.split('locale=')[1].split('&')[0];
-  }
-  // public static parseFullId(fullId: string) {
-  //   return {
-  //     resourceGid: TranslationModel.extractResourceGidFromFullId(fullId),
-  //     key: TranslationModel.extractKeyFromFullId(fullId),
-  //     locale: TranslationModel.extractLocaleFromFullId(fullId),
-  //   };
-  // }
 
   /*
   protected static getOwnerInfo(resourceType: TranslatableResourceType, key: string) {
@@ -227,57 +231,62 @@ export class TranslationModel extends AbstractModelGraphQl {
   }
 
   get fullId() {
-    if (this.data.resourceGid && this.data.key && this.data.locale) {
-      let fullId = `${this.data.resourceGid}?key=${this.data.key}&locale=${this.data.locale}`;
+    const { resourceGid, key, locale, marketId } = this.data;
+    const hasRequiredKeys = resourceGid && key && locale;
+    if (hasRequiredKeys) {
+      const params: { [key: string]: any } = {
+        key,
+        locale,
+        marketId: graphQlGidToId(marketId),
+      };
       if (this.data.isDeletedFlag) {
-        fullId += TranslationModel.DELETED_SUFFIX;
+        params.deleted = '1';
       }
-      return fullId;
+      return coda.withQueryParams(resourceGid, params);
     }
     throw new Error('unable to get fullId');
   }
 
   public async save(): Promise<void> {
-    const isUpdate = !!this.fullId;
-    if (isUpdate) {
-      let newData: Partial<TranslationModelData>;
-
-      if (isNullishOrEmpty(this.data.translatedValue)) {
-        await this.client.delete(this.data);
-        newData = {
-          ...this.data,
-          isDeletedFlag: true,
-          digest: undefined,
-          outdated: undefined,
-          updatedAt: undefined,
-          translatedValue: undefined,
-        };
-      } else {
-        // get up to date digest
-        this.data.digest = await this.client.digest(this.data);
-        const response = await this.client.register(this.data);
-        newData = response.body;
-      }
-
+    if (isNullishOrEmpty(this.data.translatedValue)) {
+      await this.delete();
+    } else {
+      // get up to date digest
+      this.data.digest = await this.client.digest(this.data);
+      const response = await this.client.register(this.data);
+      const newData = response.body;
       if (newData) {
         this.setData(newData);
       }
     }
   }
 
+  public async delete(): Promise<void> {
+    await this.client.delete(TranslationModel.parseFullId(this.fullId));
+    this.data.isDeletedFlag = true;
+    // make sure to nullify theses values
+    this.data.digest = null;
+    this.data.outdated = false;
+    this.data.translatedValue = null;
+    this.data.updatedAt = null;
+  }
+
   public toCodaRow(): TranslationRow {
     const { fullId } = this;
-    const { resourceGid, updatedAt, ...data } = this.data;
+    const { resourceGid, updatedAt, marketId, ...data } = this.data;
+    const marketRestId = graphQlGidToId(marketId);
 
     let obj: Partial<TranslationRow> = {
       ...data,
       updated_at: safeToString(updatedAt),
+      marketId: marketRestId,
+      id: fullId,
+      resourceId: graphQlGidToId(resourceGid),
+      resourceType: toConstantCase(graphQlGidToResourceName(resourceGid)),
     };
 
-    if (fullId) {
-      obj.id = fullId;
-      obj.resourceId = graphQlGidToId(resourceGid);
-      obj.resourceType = toConstantCase(graphQlGidToResourceName(resourceGid));
+    if (marketRestId) {
+      obj.market = formatMarketReference(marketRestId);
     }
 
     // if (data.resourceType) {

@@ -4,7 +4,7 @@ import { FragmentOf, TadaDocumentNode, initGraphQLTada, readFragment } from 'gql
 import { FormattingError, InvalidValueError } from '../../Errors/Errors';
 import { GraphQlResourceName } from '../../constants/resourceNames-constants';
 import { introspection } from '../../types/graphql-env.js';
-import { isNullish } from '../../utils/helpers';
+import { isNullish, isNullishOrEmpty } from '../../utils/helpers';
 
 // #endregion
 
@@ -51,11 +51,11 @@ function isGraphQlGid(gid: string) {
 }
 
 export function idToGraphQlGid(resourceName: GraphQlResourceName, id: number | string): string | undefined {
-  if (isNullish(id)) return undefined;
+  if (isNullishOrEmpty(id)) return undefined;
   if (typeof id === 'string' && isGraphQlGid(id)) {
     return id as string;
   }
-  if (resourceName === undefined || id === undefined || typeof id !== 'number') {
+  if (resourceName === undefined || Number.isNaN(parseInt(id as string))) {
     throw new FormattingError('GraphQlGid', resourceName, id);
   }
   return `gid://shopify/${resourceName}/${id}`;

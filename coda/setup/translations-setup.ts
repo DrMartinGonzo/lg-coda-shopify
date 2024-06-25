@@ -3,12 +3,15 @@ import * as coda from '@codahq/packs-sdk';
 
 import { TranslatableContentClient, TranslationClient } from '../../Clients/GraphQlClients';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { TranslatableContentModel } from '../../models/graphql/TranslatableContentModel';
 import { TranslationModel, TranslationModelData } from '../../models/graphql/TranslationModel';
 import { SyncedTranslatableContents } from '../../sync/graphql/SyncedTranslatableContents';
 import { SyncedTranslations } from '../../sync/graphql/SyncedTranslations';
 import { TranslatableResourceType } from '../../types/admin.types';
-import { inputs } from '../utils/coda-parameters';
+import { parseOptionId } from '../../utils/helpers';
+import { filters, inputs } from '../utils/coda-parameters';
 
 // #endregion
 
@@ -59,7 +62,15 @@ export const Sync_Translations = coda.makeSyncTable({
      *  - getSchema in dynamicOptions
      *  - {@link SyncedTranslations.codaParamsMap}
      */
-    parameters: [inputs.translation.locale, inputs.translation.resourceType],
+    parameters: [
+      inputs.translation.locale,
+      inputs.translation.resourceType,
+      {
+        ...filters.market.idOptionName,
+        optional: true,
+        description: 'The market Id. Use this when you want to retrieve translations specific to a market.',
+      },
+    ],
     execute: async (codaSyncParams, context) => createSyncedTranslations(codaSyncParams, context).executeSync(),
     maxUpdateBatchSize: 10,
     // TODO: implement updating multiple rows in one call
@@ -109,13 +120,18 @@ export const Action_SetTranslation = coda.makeFormula({
       name: 'value',
       description: 'The translated value in the target locale.',
     }),
+    {
+      ...filters.market.idOptionName,
+      optional: true,
+      description: 'The market Id. Use this when you want to set a translation specific to a market.',
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Object,
   //! withIdentity is more trouble than it's worth because it breaks relations when updating
   // schema: coda.withIdentity(TranslationSyncTableSchema, PACK_IDENTITIES.Translation),
   schema: SyncedTranslations.staticSchema,
-  execute: async function ([resourceType, resourceId, locale, key, value], context) {
+  execute: async function ([resourceType, resourceId, locale, key, value, market], context) {
     const resourceGid = TranslationModel.translatableResourceTypeToGid(
       resourceType as TranslatableResourceType,
       resourceId
@@ -125,6 +141,7 @@ export const Action_SetTranslation = coda.makeFormula({
       locale,
       key,
       translatedValue: value,
+      marketId: idToGraphQlGid(GraphQlResourceNames.Market, parseOptionId(market)),
     } as Partial<TranslationModelData>);
 
     await translation.save();
@@ -141,15 +158,25 @@ export const Action_DeleteTranslation = coda.makeFormula({
     inputs.translation.resourceId,
     inputs.translation.locale,
     inputs.translation.key,
+    {
+      ...filters.market.idOptionName,
+      optional: true,
+      description: 'The market Id. Use this when you want to delete a translation specific to a market.',
+    },
   ],
   isAction: true,
   resultType: coda.ValueType.Boolean,
-  execute: async ([resourceType, resourceId, locale, key], context) => {
+  execute: async ([resourceType, resourceId, locale, key, market], context) => {
     const resourceGid = TranslationModel.translatableResourceTypeToGid(
       resourceType as TranslatableResourceType,
       resourceId
     );
-    await TranslationClient.createInstance(context).delete({ resourceGid, key, locale });
+    await TranslationClient.createInstance(context).delete({
+      resourceGid,
+      key,
+      locale,
+      marketId: idToGraphQlGid(GraphQlResourceNames.Market, parseOptionId(market)),
+    });
     return true;
   },
 });

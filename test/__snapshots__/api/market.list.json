@@ -1,0 +1,23 @@
+[
+  {
+    "handle": "eu",
+    "id": "gid://shopify/Market/17893163264",
+    "name": "European Union",
+    "primary": false,
+    "enabled": true
+  },
+  {
+    "handle": "fr",
+    "id": "gid://shopify/Market/17893130496",
+    "name": "France",
+    "primary": true,
+    "enabled": true
+  },
+  {
+    "handle": "international",
+    "id": "gid://shopify/Market/17893196032",
+    "name": "International",
+    "primary": false,
+    "enabled": false
+  }
+]

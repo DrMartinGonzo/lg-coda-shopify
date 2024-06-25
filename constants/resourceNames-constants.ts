@@ -12,6 +12,7 @@ export type SupportedResource =
   | 'InventoryItem'
   | 'InventoryLevel'
   | 'Location'
+  | 'Market'
   | 'Metafield'
   | 'MetafieldDefinition'
   | 'Metaobject'
@@ -91,6 +92,7 @@ export const GraphQlResourceNames = {
   InventoryItem: 'InventoryItem',
   InventoryLevel: 'InventoryLevel',
   Location: 'Location',
+  Market: 'Market',
   MediaImage: 'MediaImage',
   Metaobject: 'Metaobject',
   MetaobjectDefinition: 'MetaobjectDefinition',
