@@ -217,6 +217,7 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         type: coda.ValueType.Array,
         items: PROPS.STRING,
+        mutable: true,
         description: `${baseProperty.description ? '\n' : ''}Valid units are ${Object.values(
           getUnitToLabelMapByMeasurementType(removeMetafieldTypeListPrefix(type) as MetafieldMeasurementType)
         ).join(', ')}.`,

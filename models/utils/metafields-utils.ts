@@ -452,9 +452,11 @@ function formatMeasurementFieldsForApi(
   measurementValue: string | string[],
   metafieldType: MetafieldMeasurementType | MetafieldListMeasurementType
 ): string {
-  return Array.isArray(measurementValue)
-    ? JSON.stringify(measurementValue.map((v) => formatMeasurementFieldsForApi(v, metafieldType)))
-    : JSON.stringify(formatMeasurementField(measurementValue, metafieldType));
+  const maybeSplit = typeof measurementValue === 'string' ? splitAndTrimValues(measurementValue) : measurementValue;
+  const value = maybeSplit.length > 1 ? maybeSplit : maybeSplit[0];
+  return Array.isArray(value)
+    ? JSON.stringify(value.map((v) => formatMeasurementFieldsForApi(v, metafieldType)))
+    : JSON.stringify(formatMeasurementField(value, metafieldType));
 }
 
 /**
