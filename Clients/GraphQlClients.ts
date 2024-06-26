@@ -434,7 +434,7 @@ export class GraphQlFetcher {
   private async handleRetryForThrottledError<T extends any, NodeT extends TadaDocumentNode = TadaDocumentNode>(
     throttledError: GraphQLThrottledError,
     response: GraphQlResponse<T>,
-    params: GraphQlRequestParams<T, NodeT>
+    params: Required<GraphQlRequestParams<T, NodeT>>
   ) {
     const isCachedResponse = isCodaCached(response);
     // const isSyncContext = !!this.context.sync; // pas fiable
@@ -455,7 +455,7 @@ export class GraphQlFetcher {
 
   private async handleRetryForMaxCostExceededError<T extends any, NodeT extends TadaDocumentNode = TadaDocumentNode>(
     maxCosterror: GraphQLMaxCostExceededError,
-    params: GraphQlRequestParams<T, NodeT>
+    params: Required<GraphQlRequestParams<T, NodeT>>
   ): Promise<GraphQlRequestReturn<T>> {
     const adjustedVariables = this.adjustLimitInVariables(maxCosterror, params.variables);
     console.log(
@@ -515,11 +515,21 @@ export class GraphQlFetcher {
       };
     } catch (error) {
       if (error instanceof GraphQLThrottledError) {
-        return this.handleRetryForThrottledError<T, NodeT>(error, response, { documentNode, variables, options });
+        return this.handleRetryForThrottledError<T, NodeT>(error, response, {
+          documentNode,
+          variables,
+          options,
+          transformBodyResponse,
+        });
       }
 
       if (error instanceof GraphQLMaxCostExceededError && variables?.limit) {
-        return this.handleRetryForMaxCostExceededError<T, NodeT>(error, { documentNode, variables, options });
+        return this.handleRetryForMaxCostExceededError<T, NodeT>(error, {
+          documentNode,
+          variables,
+          options,
+          transformBodyResponse,
+        });
       }
 
       throw error;

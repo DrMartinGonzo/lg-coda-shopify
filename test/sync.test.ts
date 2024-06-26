@@ -11,7 +11,7 @@ import {
 } from '@codahq/packs-sdk/dist/development';
 import sinon from 'sinon';
 import UrlParse from 'url-parse';
-import { ExpectStatic, beforeEach, describe, expect, test } from 'vitest';
+import { ExpectStatic, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { REST_SYNC_OWNER_METAFIELDS_LIMIT } from '../Clients/RestClients';
 import { GRAPHQL_RETRIES__MAX, REST_DEFAULT_API_VERSION } from '../config';
@@ -20,7 +20,7 @@ import { RestResourcesPlural, RestResourcesSingular } from '../constants/resourc
 import { getMetafieldDefinitionsQuery } from '../graphql/metafieldDefinitions-graphql';
 import { getSingleMetaObjectDefinitionQuery } from '../graphql/metaobjectDefinition-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
-import { graphQlGidToId } from '../graphql/utils/graphql-utils';
+import { VariablesOf, graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { pack } from '../pack';
 import { MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
 import { formatOptionNameId } from '../utils/helpers';
@@ -29,6 +29,7 @@ import {
   defaultMockSyncExecuteOptions,
   excludeVolatileProperties,
   getCurrentShopCurrencyMockResponse,
+  getMaxCostExceededErrorMockResponse,
   getSyncContextWithDynamicUrl,
   getThrottleStatusMockResponse,
   getThrottledErrorMockResponse,
@@ -38,9 +39,13 @@ import {
   referenceIds,
 } from './utils/test-utils';
 
+import { TadaDocumentNode } from 'gql.tada';
+import { GraphQlFetcher, ProductClient } from '../Clients/GraphQlClients';
+import { GraphQLMaxCostExceededError } from '../Errors/GraphQlErrors';
 import { SyncFilesParams } from '../sync/graphql/SyncedFiles';
 import { SyncInventoryItemsParams } from '../sync/graphql/SyncedInventoryItems';
 import { SyncLocationsParams } from '../sync/graphql/SyncedLocations';
+import { SyncMarketsParams } from '../sync/graphql/SyncedMarkets';
 import { SyncMetafieldDefinitionsParams } from '../sync/graphql/SyncedMetafieldDefinitions';
 import { SyncMetaobjectsParams, SyncedMetaobjects } from '../sync/graphql/SyncedMetaobjects';
 import { SyncOrderTransactionsParams } from '../sync/graphql/SyncedOrderTransactions';
@@ -62,7 +67,6 @@ import { SyncRedirectsParams } from '../sync/rest/SyncedRedirects';
 import { SyncShopsParams } from '../sync/rest/SyncedShops';
 import * as listData from './__snapshots__/api/list';
 import * as singleData from './__snapshots__/api/single';
-import { SyncMarketsParams } from '../sync/graphql/SyncedMarkets';
 
 // #endregion
 
@@ -230,6 +234,7 @@ const defaultShopsParams = [] as SyncShopsParams;
 const defaultTranslationsParams = [
   singleData.translation.locale, // locale
   TranslatableResourceType.Collection, // resourceType
+  undefined, // marketIdOptionName
 ] as SyncTranslationsParams;
 // #endregion
 
@@ -558,6 +563,32 @@ describe('Sync resources', () => {
     );
 
     await expect(result).rejects.toThrowError(`Max retries (${GRAPHQL_RETRIES__MAX}) of GraphQL requests exceeded`);
+  });
+
+  test('MaxCost adjust limit', async () => {
+    context.fetcher.fetch.onCall(0).returns(getMaxCostExceededErrorMockResponse());
+    context.fetcher.fetch.onCall(1).returns(getMaxCostExceededErrorMockResponse());
+    context.fetcher.fetch.onCall(2).returns(newGraphqlFetchResponse({ products: { nodes: listData.products } }));
+
+    const client = new ProductClient({ context });
+    const spy = vi.spyOn(GraphQlFetcher.prototype as any, 'adjustLimitInVariables');
+    const result = await client.list({ limit: 250 });
+
+    type AdjustLimitInVariablesArgsTuple = [GraphQLMaxCostExceededError, VariablesOf<TadaDocumentNode>];
+
+    expect(
+      (spy.mock.results[0].value as VariablesOf<TadaDocumentNode>).limit,
+      'the limit should be diminished'
+    ).toEqual(83);
+
+    expect(
+      (spy.mock.calls[1] as AdjustLimitInVariablesArgsTuple)[1]?.limit,
+      'the previous diminished limit value should be passed to the next try of adjustLimitInVariables'
+    ).toEqual(83);
+    expect(
+      (spy.mock.results[1].value as VariablesOf<TadaDocumentNode>).limit,
+      'the final diminished limit value'
+    ).toEqual(27);
   });
 });
 

@@ -198,6 +198,23 @@ export function getThrottledErrorMockResponse() {
     },
   });
 }
+export function getMaxCostExceededErrorMockResponse() {
+  const queryCost = 2257;
+  const maxCost = 1000;
+  return newJsonFetchResponse({
+    errors: [
+      {
+        message: `Query cost is ${queryCost}, which exceeds the single query max cost limit (${maxCost}).\n\nSee https://shopify.dev/concepts/about-apis/rate-limits for more information on how the\ncost of a query is calculated.\n\nTo query larger amounts of data with fewer limits, bulk operations should be used instead.\nSee https://shopify.dev/api/usage/bulk-operations/queries for usage details.\n`,
+        extensions: {
+          code: 'MAX_COST_EXCEEDED',
+          cost: queryCost,
+          maxCost: maxCost,
+          documentation: 'https://shopify.dev/api/usage/rate-limits',
+        },
+      },
+    ],
+  });
+}
 
 export async function formatMetafieldInput(fullkey: string, input: string): Promise<string> {
   return executeFormulaFromPackDef(
