@@ -9,7 +9,7 @@ import { RequiredParameterMissingVisibleError } from '../../Errors/Errors';
 import { CACHE_DEFAULT, CACHE_DISABLED } from '../../constants/cacheDurations-constants';
 import { METAFIELD_TYPES, MetafieldType } from '../../constants/metafields-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
-import { GraphQlFileTypes, GraphQlFileTypesNames } from '../../constants/resourceNames-constants';
+import { GraphQlFileTypes, GraphQlFileTypesNames, GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { MetafieldGraphQlModel, SupportedMetafieldOwnerType } from '../../models/graphql/MetafieldGraphQlModel';
 import { AbstractModelRest } from '../../models/rest/AbstractModelRest';
@@ -80,13 +80,20 @@ function makeMetafieldReferenceValueFormulaDefinition(type: MetafieldType) {
     parameters: [{ ...inputs.metafield.referenceId, description: `The ID of the referenced ${type.split('_')[0]}.` }],
     resultType: coda.ValueType.String,
     connectionRequirement: coda.ConnectionRequirement.None,
-    execute: async ([value]) => {
-      const graphQlOwnerName = metafieldReferenceTypeToGraphQlOwnerName(type);
-      return new CodaMetafieldValue({
+    execute: async ([value]) =>
+      new CodaMetafieldValue({
         type,
-        value: idToGraphQlGid(graphQlOwnerName, value),
-      }).toJSON();
-    },
+        value: idToGraphQlGid(metafieldReferenceTypeToGraphQlOwnerName(type), value),
+      }).toJSON(),
+    examples: [
+      {
+        params: [123456789],
+        result: new CodaMetafieldValue({
+          type,
+          value: idToGraphQlGid(metafieldReferenceTypeToGraphQlOwnerName(type), 123456789),
+        }).toJSON(),
+      },
+    ],
   });
 }
 
@@ -372,9 +379,27 @@ export const Formula_FormatMetafield = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, value]) => CodaMetafieldSet.createFromFormatMetafieldFormula({ fullKey, value }).toJSON(),
+  examples: [
+    {
+      params: ['custom.boolean', 'MetaBoolean(true)'],
+      result: JSON.stringify({
+        key: 'custom.boolean',
+        type: METAFIELD_TYPES.boolean,
+        value: true,
+      }),
+    },
+    {
+      params: ['mp_custom.skey', 'MetaSingleLineText(`hello !`)'],
+      result: JSON.stringify({
+        key: 'mp_custom.skey',
+        type: METAFIELD_TYPES.single_line_text_field,
+        value: 'hello !',
+      }),
+    },
+  ],
 });
 
-export const Formula_FormatMetafieldWithAutocomplete = coda.makeFormula({
+export const Test_Formula_FormatMetafieldWithAutocomplete = coda.makeFormula({
   name: 'FormatMetafieldWithAutocomplete',
   description: 'Helper function to format value for a non `list` metafield.',
   parameters: [inputs.metafield.ownerType, inputs.metafield.fullKeyAutocomplete, inputs.metafield.value],
@@ -393,6 +418,15 @@ export const Formula_FormatListMetafield = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([fullKey, ...varargs]) =>
     CodaMetafieldSet.createFromFormatListMetafieldFormula({ fullKey, varargs }).toJSON(),
+  examples: [
+    {
+      params: ['custom.colorList', 'MetaColor(`#cccccc`)', 'MetaColor(`#ff00cc`)'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.list_color,
+        value: ['#cccccc', '#cccccc'],
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaBoolean = coda.makeFormula({
@@ -402,6 +436,15 @@ export const Formula_MetaBoolean = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.boolean, value }).toJSON(),
+  examples: [
+    {
+      params: [false],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.boolean,
+        value: false,
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaColor = coda.makeFormula({
@@ -416,6 +459,15 @@ export const Formula_MetaColor = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.color, value }).toJSON(),
+  examples: [
+    {
+      params: ['#cccccc'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.color,
+        value: '#cccccc',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaDate = coda.makeFormula({
@@ -425,6 +477,15 @@ export const Formula_MetaDate = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.date, value }).toJSON(),
+  examples: [
+    {
+      params: [`Date(2024, 6, 10)`],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.date,
+        value: '2024-06-09T22:00:00.000Z',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaDateTime = coda.makeFormula({
@@ -434,6 +495,15 @@ export const Formula_MetaDateTime = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.date_time, value }).toJSON(),
+  examples: [
+    {
+      params: [`DateTime(2024, 6, 10,15,12,32)`],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.date_time,
+        value: '2024-06-10T13:12:32.000Z',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaDimension = coda.makeFormula({
@@ -447,6 +517,18 @@ export const Formula_MetaDimension = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
     new CodaMetafieldValue({ type: METAFIELD_TYPES.dimension, value: { value, unit } }).toJSON(),
+  examples: [
+    {
+      params: [100, 'MILLIMETERS'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.dimension,
+        value: {
+          value: 100,
+          unit: 'MILLIMETERS',
+        },
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaFileReference = coda.makeFormula({
@@ -470,6 +552,15 @@ export const Formula_MetaFileReference = coda.makeFormula({
       value: idToGraphQlGid(fileType as GraphQlFileTypes, value),
     }).toJSON();
   },
+  examples: [
+    {
+      params: [34028708233472, GraphQlResourceNames.MediaImage],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.file_reference,
+        value: idToGraphQlGid(GraphQlResourceNames.MediaImage, 34028708233472),
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaJson = coda.makeFormula({
@@ -479,6 +570,15 @@ export const Formula_MetaJson = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.json, value }).toJSON(),
+  examples: [
+    {
+      params: ['{"compilerOptions": {"skipLibCheck": true}}'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.json,
+        value: '{"compilerOptions": {"skipLibCheck": true}}',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaMetaobjectReference = makeMetafieldReferenceValueFormulaDefinition(
@@ -495,6 +595,15 @@ export const Formula_MetaMoney = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([amount, currency_code]: [number, CurrencyCode], context) =>
     new CodaMetafieldValue({ type: METAFIELD_TYPES.money, value: { amount, currency_code } }).toJSON(),
+  examples: [
+    {
+      params: [50, 'EUR'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.money,
+        value: { amount: 50, currency_code: 'EUR' },
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaMultiLineText = coda.makeFormula({
@@ -504,6 +613,15 @@ export const Formula_MetaMultiLineText = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.multi_line_text_field, value }).toJSON(),
+  examples: [
+    {
+      params: ['multiple\nlines\nof\ntext'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.multi_line_text_field,
+        value: 'multiple\nlines\nof\ntext',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaNumberDecimal = coda.makeFormula({
@@ -513,6 +631,15 @@ export const Formula_MetaNumberDecimal = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.number_decimal, value }).toJSON(),
+  examples: [
+    {
+      params: [1.25],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.number_decimal,
+        value: 1.25,
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaNumberInteger = coda.makeFormula({
@@ -522,6 +649,15 @@ export const Formula_MetaNumberInteger = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.number_integer, value }).toJSON(),
+  examples: [
+    {
+      params: [6],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.number_integer,
+        value: 6,
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaPageReference = makeMetafieldReferenceValueFormulaDefinition(METAFIELD_TYPES.page_reference);
@@ -549,6 +685,15 @@ export const Formula_MetaRating = coda.makeFormula({
         scale_max,
       },
     }).toJSON(),
+  examples: [
+    {
+      params: [6, 1, 10],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.rating,
+        value: { value: 6, scale_min: 1, scale_max: 10 },
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaSingleLineText = coda.makeFormula({
@@ -558,6 +703,15 @@ export const Formula_MetaSingleLineText = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.single_line_text_field, value }).toJSON(),
+  examples: [
+    {
+      params: ['hello !'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.single_line_text_field,
+        value: 'hello !',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaUrl = coda.makeFormula({
@@ -567,6 +721,15 @@ export const Formula_MetaUrl = coda.makeFormula({
   resultType: coda.ValueType.String,
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value]) => new CodaMetafieldValue({ type: METAFIELD_TYPES.url, value }).toJSON(),
+  examples: [
+    {
+      params: ['https://coda.io'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.url,
+        value: 'https://coda.io',
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaVariantReference = makeMetafieldReferenceValueFormulaDefinition(
@@ -581,6 +744,18 @@ export const Formula_MetaVolume = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
     new CodaMetafieldValue({ type: METAFIELD_TYPES.volume, value: { value, unit } }).toJSON(),
+  examples: [
+    {
+      params: [100, 'LITERS'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.volume,
+        value: {
+          value: 100,
+          unit: 'LITERS',
+        },
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaWeight = coda.makeFormula({
@@ -591,6 +766,18 @@ export const Formula_MetaWeight = coda.makeFormula({
   connectionRequirement: coda.ConnectionRequirement.None,
   execute: async ([value, unit]) =>
     new CodaMetafieldValue({ type: METAFIELD_TYPES.weight, value: { value, unit } }).toJSON(),
+  examples: [
+    {
+      params: [100, 'KILOGRAMS'],
+      result: new CodaMetafieldValue({
+        type: METAFIELD_TYPES.weight,
+        value: {
+          value: 100,
+          unit: 'KILOGRAMS',
+        },
+      }).toJSON(),
+    },
+  ],
 });
 
 export const Formula_MetaCollectionReference = makeMetafieldReferenceValueFormulaDefinition(
