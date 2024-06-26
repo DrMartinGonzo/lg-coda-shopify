@@ -431,9 +431,9 @@ function formatRatingFieldsForApi(
   metafieldType: MetafieldRatingType | MetafieldListRatingType
 ): string {
   const value = maybeBackToArray(ratingValue, metafieldType, 'number') as number | number[];
-  return Array.isArray(value)
-    ? JSON.stringify(value.map((v) => formatRatingField(v, validations)))
-    : JSON.stringify(formatRatingField(value, validations));
+  return JSON.stringify(
+    Array.isArray(value) ? value.map((v) => formatRatingField(v, validations)) : formatRatingField(value, validations)
+  );
 }
 
 /**
@@ -479,9 +479,11 @@ function formatMeasurementFieldsForApi(
   metafieldType: MetafieldMeasurementType | MetafieldListMeasurementType
 ): string {
   const value = maybeBackToArray(measurementValue, metafieldType) as string | string[];
-  return Array.isArray(value)
-    ? JSON.stringify(value.map((v) => formatMeasurementField(v, metafieldType)))
-    : JSON.stringify(formatMeasurementField(value, metafieldType));
+  return JSON.stringify(
+    Array.isArray(value)
+      ? value.map((v) => formatMeasurementField(v, metafieldType))
+      : formatMeasurementField(value, metafieldType)
+  );
 }
 
 /**

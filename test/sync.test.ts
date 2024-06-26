@@ -14,7 +14,7 @@ import UrlParse from 'url-parse';
 import { ExpectStatic, beforeEach, describe, expect, test } from 'vitest';
 
 import { REST_SYNC_OWNER_METAFIELDS_LIMIT } from '../Clients/RestClients';
-import { REST_DEFAULT_API_VERSION } from '../config';
+import { GRAPHQL_RETRIES__MAX, REST_DEFAULT_API_VERSION } from '../config';
 import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 import { RestResourcesPlural, RestResourcesSingular } from '../constants/resourceNames-constants';
 import { getMetafieldDefinitionsQuery } from '../graphql/metafieldDefinitions-graphql';
@@ -31,6 +31,7 @@ import {
   getCurrentShopCurrencyMockResponse,
   getSyncContextWithDynamicUrl,
   getThrottleStatusMockResponse,
+  getThrottledErrorMockResponse,
   isSameGraphQlQueryRequest,
   manifestPath,
   newGraphqlFetchResponse,
@@ -543,6 +544,20 @@ describe('Sync resources', () => {
 
     expect(result.result).toEqual([]);
     expect(result.continuation).toEqual({ hasLock: 'false' });
+  });
+
+  test('GraphQl throttled more than max retries', async () => {
+    context.fetcher.fetch.withArgs(isCheckThrottleStatusRequest).returns(getThrottledErrorMockResponse());
+    context.fetcher.fetch.returns(newGraphqlFetchResponse({ products: { nodes: listData.products } }));
+    const result = executeSyncFormulaFromPackDefSingleIteration(
+      pack,
+      'Products',
+      defaultProductsParams,
+      context,
+      defaultMockSyncExecuteOptions
+    );
+
+    await expect(result).rejects.toThrowError(`Max retries (${GRAPHQL_RETRIES__MAX}) of GraphQL requests exceeded`);
   });
 });
 

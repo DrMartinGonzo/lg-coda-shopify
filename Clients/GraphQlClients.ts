@@ -151,6 +151,7 @@ import { getShopifyRequestHeaders, isCodaCached, wait, withCacheDefault, withCac
 // #endregion
 
 export const GRAPHQL_NODES_LIMIT = 250;
+export const GRAPHQL_DEFAULT_RESTORE_RATE = 100;
 const GRAPHQL_MAX_REQUEST_METAFIELDS = 250;
 
 // Synctable doesn't handle retries, only GraphQLClient for simplicity

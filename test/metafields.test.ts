@@ -162,6 +162,12 @@ describe.concurrent('Format Metafields Formula', () => {
       })
     );
   });
+  test('FormatMetafield with wrong arg', async () => {
+    const result = executeFormulaFromPackDef(pack, 'FormatMetafield', ['global.title_tag', 'wrong argument']);
+    await expect(result).rejects.toThrowError(
+      'Invalid value. You must use `FormatMetafield` or `FormatListMetafield` formula'
+    );
+  });
 
   test('FormatListMetafield with empty value', async () => {
     const result = await executeFormulaFromPackDef(pack, 'FormatListMetafield', ['custom.test_list', '']);

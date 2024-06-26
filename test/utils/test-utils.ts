@@ -13,7 +13,7 @@ import { normalizeSchemaKey } from '@codahq/packs-sdk/dist/schema';
 import { TadaDocumentNode } from 'gql.tada';
 import { expect } from 'vitest';
 
-import { GraphQlData } from '../../Clients/GraphQlClients';
+import { GRAPHQL_DEFAULT_RESTORE_RATE, GraphQlData } from '../../Clients/GraphQlClients';
 import { RestResourcesSingular } from '../../constants/resourceNames-constants';
 import { isQueryFromDocumentNode } from '../../graphql/utils/graphql-utils';
 import { pack } from '../../pack';
@@ -159,7 +159,7 @@ export function newGraphqlFetchResponse<T>(data: T, currentlyAvailable = 1999) {
         throttleStatus: {
           maximumAvailable: 2000,
           currentlyAvailable,
-          restoreRate: 50,
+          restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
         },
       },
     },
@@ -172,6 +172,31 @@ export function getCurrentShopCurrencyMockResponse() {
 
 export function getThrottleStatusMockResponse(currentlyAvailable = 1999) {
   return newGraphqlFetchResponse({ shop: { id: undefined } }, currentlyAvailable);
+}
+
+export function getThrottledErrorMockResponse() {
+  return newJsonFetchResponse({
+    errors: [
+      {
+        message: 'Throttled',
+        extensions: {
+          code: 'THROTTLED',
+          documentation: 'https://shopify.dev/api/usage/rate-limits',
+        },
+      },
+    ],
+    extensions: {
+      cost: {
+        requestedQueryCost: 926,
+        actualQueryCost: null,
+        throttleStatus: {
+          maximumAvailable: 2000,
+          currentlyAvailable: 1999,
+          restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
+        },
+      },
+    },
+  });
 }
 
 export async function formatMetafieldInput(fullkey: string, input: string): Promise<string> {

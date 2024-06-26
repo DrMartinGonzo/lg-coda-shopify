@@ -2,7 +2,7 @@
 
 import { MockExecutionContext, newMockExecutionContext } from '@codahq/packs-sdk/dist/development';
 import { describe, expect, test } from 'vitest';
-import { GraphQlFetcher } from '../Clients/GraphQlClients';
+import { GRAPHQL_DEFAULT_RESTORE_RATE, GraphQlFetcher } from '../Clients/GraphQlClients';
 import { calcGraphQlWaitTime } from '../Clients/utils/client-utils';
 import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors';
 import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
@@ -90,11 +90,11 @@ test('Update missing data on row update', async () => {
 
       validateSyncUpdate(prevRow, instance.toCodaRow());
 
-      expect(instance.data.inventoryItem.measurement.weight.unit, 'Should have updated weight unit').toBe(
+      expect(instance.data.inventoryItem.measurement.weight.unit, 'Should have updated weight unit').toEqual(
         missingWeightUnit
       );
-      expect(instance.data.selectedOptions[0].value, 'Should have updated option1').toBe('option1');
-      expect(instance.data.selectedOptions[1].value, 'Should have kept option2 from newRow').toBe('option2 NEW');
+      expect(instance.data.selectedOptions[0].value, 'Should have updated option1').toEqual('option1');
+      expect(instance.data.selectedOptions[1].value, 'Should have kept option2 from newRow').toEqual('option2 NEW');
     } else {
       throw error;
     }
@@ -110,7 +110,7 @@ test('calcGraphQlMaxLimit', async () => {
     throttleStatus: {
       currentlyAvailable: 2000,
       maximumAvailable: 2000,
-      restoreRate: 100,
+      restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
     },
   });
   expect(limit).toBe(250);
@@ -123,10 +123,10 @@ test('calcGraphQlMaxLimit', async () => {
     throttleStatus: {
       currentlyAvailable: 2000,
       maximumAvailable: 2000,
-      restoreRate: 100,
+      restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
     },
   });
-  expect(limit2).toBe(90);
+  expect(limit2).toEqual(90);
 
   const limit3 = GraphQlFetcher.calcGraphQlMaxLimit({
     lastCost: {
@@ -136,10 +136,10 @@ test('calcGraphQlMaxLimit', async () => {
     throttleStatus: {
       currentlyAvailable: 10,
       maximumAvailable: 2000,
-      restoreRate: 100,
+      restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
     },
   });
-  expect(limit3).toBe(25);
+  expect(limit3).toEqual(25);
 });
 
 test('idToGraphQlGid', async () => {
@@ -163,16 +163,16 @@ test('calcGraphQlWaitTime', async () => {
   const waiTime = calcGraphQlWaitTime({
     currentlyAvailable: 10,
     maximumAvailable: 2000,
-    restoreRate: 100,
+    restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
   });
-  expect(waiTime).toBe(3000);
+  expect(waiTime).toEqual(3000);
 
   const waiTime2 = calcGraphQlWaitTime({
     currentlyAvailable: 1999,
     maximumAvailable: 2000,
-    restoreRate: 100,
+    restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
   });
-  expect(waiTime2).toBe(0);
+  expect(waiTime2).toEqual(0);
 });
 
 test('maybeBackToArray', async () => {
@@ -226,7 +226,7 @@ describe.concurrent('RestItemsBatch', () => {
       throttleStatus: {
         currentlyAvailable: 1500,
         maximumAvailable: 2000,
-        restoreRate: 500,
+        restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
       },
     };
     const previousRestItemsBatch = new RestItemsBatch({
@@ -275,7 +275,7 @@ describe.concurrent('RestItemsBatch', () => {
       throttleStatus: {
         currentlyAvailable: 1500,
         maximumAvailable: 2000,
-        restoreRate: 500,
+        restoreRate: GRAPHQL_DEFAULT_RESTORE_RATE,
       },
     };
     const previousRestItemsBatch = new RestItemsBatch({
