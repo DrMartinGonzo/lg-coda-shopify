@@ -120,7 +120,7 @@ export async function augmentSchemaWithMetafields<
     if (property) {
       const name = accents.remove(data.name);
       const propName = `Meta${capitalizeFirstChar(name)}`;
-      property.displayName = `${data.name} [${getMetaFieldFullKey(data)}]`;
+      property.displayName = getMetaFieldFullKey(data);
       schema.properties[propName] = property;
       // always feature metafields properties so that the user know they are synced
       schema.featuredProperties.push(propName);
@@ -251,6 +251,7 @@ export function mapMetaFieldToSchemaProperty(
         ...baseProperty,
         type: coda.ValueType.Array,
         items: PROPS.NUMBER,
+        mutable: true,
       };
 
     // NUMBER

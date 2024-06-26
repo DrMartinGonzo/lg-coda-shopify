@@ -31,24 +31,24 @@ export const METAFIELD_TYPES = {
   weight: 'weight',
 
   // ++ list variants
-  list_collection_reference: 'list.collection_reference',
-  list_color: 'list.color',
-  list_date: 'list.date',
-  list_date_time: 'list.date_time',
-  list_dimension: 'list.dimension',
-  list_file_reference: 'list.file_reference',
-  list_metaobject_reference: 'list.metaobject_reference',
-  list_mixed_reference: 'list.mixed_reference',
-  list_number_integer: 'list.number_integer',
-  list_number_decimal: 'list.number_decimal',
-  list_page_reference: 'list.page_reference',
-  list_product_reference: 'list.product_reference',
-  list_rating: 'list.rating',
-  list_single_line_text_field: 'list.single_line_text_field',
-  list_url: 'list.url',
-  list_variant_reference: 'list.variant_reference',
-  list_volume: 'list.volume',
-  list_weight: 'list.weight',
+  list_collection_reference: `${METAFIELD_LIST_PREFIX}collection_reference`,
+  list_color: `${METAFIELD_LIST_PREFIX}color`,
+  list_date: `${METAFIELD_LIST_PREFIX}date`,
+  list_date_time: `${METAFIELD_LIST_PREFIX}date_time`,
+  list_dimension: `${METAFIELD_LIST_PREFIX}dimension`,
+  list_file_reference: `${METAFIELD_LIST_PREFIX}file_reference`,
+  list_metaobject_reference: `${METAFIELD_LIST_PREFIX}metaobject_reference`,
+  list_mixed_reference: `${METAFIELD_LIST_PREFIX}mixed_reference`,
+  list_number_integer: `${METAFIELD_LIST_PREFIX}number_integer`,
+  list_number_decimal: `${METAFIELD_LIST_PREFIX}number_decimal`,
+  list_page_reference: `${METAFIELD_LIST_PREFIX}page_reference`,
+  list_product_reference: `${METAFIELD_LIST_PREFIX}product_reference`,
+  list_rating: `${METAFIELD_LIST_PREFIX}rating`,
+  list_single_line_text_field: `${METAFIELD_LIST_PREFIX}single_line_text_field`,
+  list_url: `${METAFIELD_LIST_PREFIX}url`,
+  list_variant_reference: `${METAFIELD_LIST_PREFIX}variant_reference`,
+  list_volume: `${METAFIELD_LIST_PREFIX}volume`,
+  list_weight: `${METAFIELD_LIST_PREFIX}weight`,
 } as const;
 
 export const METAFIELD_LEGACY_TYPES = {
@@ -62,6 +62,9 @@ export type MetafieldType = (typeof METAFIELD_TYPES)[keyof typeof METAFIELD_TYPE
 
 /** All supported legacy `metafield.type`s */
 export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof METAFIELD_LEGACY_TYPES];
+
+export type MetafieldRatingType = (typeof METAFIELD_TYPES)['rating'];
+export type MetafieldListRatingType = (typeof METAFIELD_TYPES)['list_rating'];
 
 export type MetafieldMeasurementType =
   | (typeof METAFIELD_TYPES)['dimension']

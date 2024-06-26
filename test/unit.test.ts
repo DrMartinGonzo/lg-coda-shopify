@@ -7,11 +7,13 @@ import { calcGraphQlWaitTime } from '../Clients/utils/client-utils';
 import { SyncUpdateRequiredPropertyMissingVisibleError } from '../Errors/Errors';
 import { ShopifyGraphQlRequestCost } from '../Errors/GraphQlErrors';
 import { validateSyncUpdate } from '../coda/setup/productVariants-setup';
+import { METAFIELD_TYPES } from '../constants/metafields-constants';
 import { PACK_TEST_ENDPOINT } from '../constants/pack-constants';
 import { GraphQlResourceNames } from '../constants/resourceNames-constants';
 import { idToGraphQlGid } from '../graphql/utils/graphql-utils';
 import { VariantApidata, VariantModel } from '../models/graphql/VariantModel';
 import { CustomCollectionModel } from '../models/rest/CustomCollectionModel';
+import { maybeBackToArray } from '../models/utils/metafields-utils';
 import { CollectionRow } from '../schemas/CodaRows.types';
 import { SyncTableMixedContinuation } from '../sync/rest/AbstractSyncedRestResourcesWithGraphQlMetafields';
 import { RestItemsBatch } from '../sync/rest/RestItemsBatch';
@@ -171,6 +173,19 @@ test('calcGraphQlWaitTime', async () => {
     restoreRate: 100,
   });
   expect(waiTime2).toBe(0);
+});
+
+test('maybeBackToArray', async () => {
+  expect(maybeBackToArray([100, 50], METAFIELD_TYPES.list_rating, 'number')).toEqual([100, 50]);
+  expect(maybeBackToArray('100, 50', METAFIELD_TYPES.list_rating, 'number')).toEqual([100, 50]);
+  expect(maybeBackToArray('', METAFIELD_TYPES.list_rating, 'number')).toEqual([]);
+
+  expect(maybeBackToArray('14ml,26m³', METAFIELD_TYPES.list_rating, 'string')).toEqual(['14ml', '26m³']);
+  expect(maybeBackToArray('14ml,26m³', METAFIELD_TYPES.list_rating, 'number')).toEqual([14, 26]);
+  expect(
+    maybeBackToArray('14ml,26m³,,,', METAFIELD_TYPES.list_rating, 'number'),
+    'trailing commas should not impact the result'
+  ).toEqual([14, 26]);
 });
 
 describe.concurrent('RestItemsBatch', () => {

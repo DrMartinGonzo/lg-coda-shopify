@@ -18,7 +18,9 @@ import {
   MeasurementField,
   MetafieldLegacyType,
   MetafieldListMeasurementType,
+  MetafieldListRatingType,
   MetafieldMeasurementType,
+  MetafieldRatingType,
   MetafieldReferenceType,
   MetafieldType,
   MoneyField,
@@ -382,6 +384,28 @@ function requireMatchingMetafieldDefinition(
 
 // #region Format For Api
 /**
+ * Pour les metafields de type list, quand on les édite dans l'interface de
+ * Coda, ils seront temporairement converti comme une comma delimite string
+ * value, du coup on reconverti en array si nécessaire
+ */
+export function maybeBackToArray<T extends any>(
+  measurementValue: T | string,
+  metafieldType: MetafieldType,
+  targetType: 'string' | 'number' = 'string'
+) {
+  if (isListMetaFieldType(metafieldType) && typeof measurementValue === 'string') {
+    const split = splitAndTrimValues(measurementValue).filter((s) => !isNullishOrEmpty(s));
+    if (targetType === 'number') {
+      return split.map(safeToFloat);
+    } else {
+      return split;
+    }
+  }
+
+  return measurementValue as T;
+}
+
+/**
  * Format a Rating cell value for GraphQL Api
  */
 function formatRatingField(
@@ -402,11 +426,13 @@ function formatRatingField(
  * Format a Rating or list of rating cell values for GraphQL Api
  */
 function formatRatingFieldsForApi(
-  value: number | number[],
-  validations: ResultOf<typeof metafieldDefinitionFragment>['validations']
+  ratingValue: number | number[],
+  validations: ResultOf<typeof metafieldDefinitionFragment>['validations'],
+  metafieldType: MetafieldRatingType | MetafieldListRatingType
 ): string {
+  const value = maybeBackToArray(ratingValue, metafieldType, 'number') as number | number[];
   return Array.isArray(value)
-    ? JSON.stringify(value.map((v) => formatRatingFieldsForApi(v, validations)))
+    ? JSON.stringify(value.map((v) => formatRatingField(v, validations)))
     : JSON.stringify(formatRatingField(value, validations));
 }
 
@@ -452,10 +478,9 @@ function formatMeasurementFieldsForApi(
   measurementValue: string | string[],
   metafieldType: MetafieldMeasurementType | MetafieldListMeasurementType
 ): string {
-  const maybeSplit = typeof measurementValue === 'string' ? splitAndTrimValues(measurementValue) : measurementValue;
-  const value = maybeSplit.length > 1 ? maybeSplit : maybeSplit[0];
+  const value = maybeBackToArray(measurementValue, metafieldType) as string | string[];
   return Array.isArray(value)
-    ? JSON.stringify(value.map((v) => formatMeasurementFieldsForApi(v, metafieldType)))
+    ? JSON.stringify(value.map((v) => formatMeasurementField(v, metafieldType)))
     : JSON.stringify(formatMeasurementField(value, metafieldType));
 }
 
@@ -524,7 +549,7 @@ export function formatMetafieldValueForApi(
     // RATING
     case METAFIELD_TYPES.rating:
     case METAFIELD_TYPES.list_rating:
-      return formatRatingFieldsForApi(value, validations);
+      return formatRatingFieldsForApi(value, validations, type);
 
     // MONEY
     case METAFIELD_TYPES.money:
