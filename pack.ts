@@ -1,8 +1,6 @@
 // #region Imports
 import * as coda from '@codahq/packs-sdk';
 
-import { IS_TEST_RELEASE } from './pack-config.json';
-
 import { ShopClient } from './Clients/RestClients';
 import {
   Action_CreateArticle,
@@ -100,7 +98,6 @@ import {
   Formula_MetafieldKey,
   Formula_MetafieldsLoop,
   Sync_Metafields,
-  Test_Formula_FormatMetafieldWithAutocomplete,
 } from './coda/setup/metafields-setup';
 import {
   Action_CreateMetaObject,
@@ -298,9 +295,6 @@ pack.formats.push(Format_Redirect);
 // #region Helper formulas
 // Metafields Helpers
 pack.formulas.push(Formula_FormatMetafield);
-if (IS_TEST_RELEASE) {
-  pack.formulas.push(Test_Formula_FormatMetafieldWithAutocomplete);
-}
 pack.formulas.push(Formula_FormatListMetafield);
 pack.formulas.push(Formula_MetafieldKey);
 
