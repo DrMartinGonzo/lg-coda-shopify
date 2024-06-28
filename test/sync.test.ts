@@ -235,6 +235,8 @@ const defaultTranslationsParams = [
   singleData.translation.locale, // locale
   TranslatableResourceType.Collection, // resourceType
   undefined, // marketIdOptionName
+  undefined, // onlyTranslated
+  undefined, // keys
 ] as SyncTranslationsParams;
 // #endregion
 

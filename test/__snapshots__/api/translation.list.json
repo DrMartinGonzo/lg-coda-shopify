@@ -1,24 +1,246 @@
 [
   {
+    "resourceGid": "gid://shopify/Collection/413086613760",
+    "key": "title",
+    "locale": "fr",
+    "digest": "11d58b08de98e05930a7f73b5f5d75367e4a58ac27335a420d55583cb16ad1ff",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "Home page"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086613760",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "a80e4934a6f77731eb54b4a3030396bdfe91852466f412dbf7d8e63a2b9a7484",
+    "type": "URI",
+    "originalValue": "frontpage"
+  },
+  {
     "resourceGid": "gid://shopify/Collection/413086843136",
+    "key": "title",
     "locale": "fr",
     "digest": "647391c936b2b25d1fb895562fa66120fb8bd4d0396d7d836530d5bef9206a77",
-    "originalValue": "Vitest Smart Collection",
     "type": "SINGLE_LINE_TEXT_FIELD",
-    "isDeletedFlag": false,
+    "originalValue": "Vitest Smart Collection",
     "translatedValue": "Vitest (FR)",
-    "outdated": false,
-    "key": "title"
+    "outdated": false
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086843136",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "81bbb3b540f453a8e88847f53c989e7048abf8dd4f5035fa761b59cc3676c528",
+    "type": "HTML",
+    "originalValue": "<p>Vitest collection</p>"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086843136",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "2772a7d42e6cb44348baa511c284adf697a5a6d7cda84719bc1468dbbb4bf8cc",
+    "type": "URI",
+    "originalValue": "vitest-smart"
   },
   {
     "resourceGid": "gid://shopify/Collection/413086875904",
+    "key": "title",
     "locale": "fr",
     "digest": "2d99a0e0343c6b3f7c17f91d99b256b915a2f27ceb9d50b1764bb6423e02f842",
-    "originalValue": "ADIDAS",
     "type": "SINGLE_LINE_TEXT_FIELD",
-    "isDeletedFlag": false,
+    "originalValue": "ADIDAS",
     "translatedValue": "ADIDAS (FR)",
-    "outdated": false,
-    "key": "title"
+    "outdated": false
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086875904",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "9ed3603c631c1b6559e91aa843ef3ee8308c6382dd1c7d1523dbd04af4e5df8a",
+    "type": "HTML",
+    "originalValue": "Adidas collection TEST"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086875904",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "08bb42a30ca57f3455e11ac74fd30eae1196b25a9e7d634bfc5704d542ab7d20",
+    "type": "URI",
+    "originalValue": "adidas"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086875904",
+    "key": "meta_description",
+    "locale": "fr",
+    "digest": "a6c023d0ad971dff02a2bcf4e762f6e647b1044eb30dea5241e9a8f1bdf6817a",
+    "type": "MULTI_LINE_TEXT_FIELD",
+    "originalValue": "TEST TEST"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086908672",
+    "key": "title",
+    "locale": "fr",
+    "digest": "51b9fc24f523b1939216000a97c6d53e29b6698c4118595cd71463838dada51c",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "NIKE"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086908672",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "ee88abad726c5a4e6d35ce87925355cc7339705234b428b0bd3dd5bf08160af2",
+    "type": "HTML",
+    "originalValue": "Nike collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086908672",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "5dd95c98aff2e783a09348f600def0d5e4e476f71e85e9be91de86aab36544cd",
+    "type": "URI",
+    "originalValue": "nike"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086941440",
+    "key": "title",
+    "locale": "fr",
+    "digest": "6cb2def9f394cb053382ea831a3ecf046e9f0c63a7e7b44d4bdc4281eb454f09",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "CONVERSE"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086941440",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "b9315a8e7e624cc0a61bcbf9f959287aba9162a1cc83f5776ba486cdf673eacb",
+    "type": "HTML",
+    "originalValue": "Converse collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086941440",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "6a930006ef296ea04b81452e54c8ab125d1288f2d45c6a7f631fee46b0872445",
+    "type": "URI",
+    "originalValue": "converse"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086974208",
+    "key": "title",
+    "locale": "fr",
+    "digest": "cd5ad25ed6ac15ea5af2746b33aa327549682e958850c0d1e8ee32653d65853d",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "ASICS TIGER"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086974208",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "a9568bbce12d1c0e40199dee30665c5385940010bd7901b1f6d9a23ab1f20be1",
+    "type": "HTML",
+    "originalValue": "Asics Tiger collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413086974208",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "d9585e7c2c88074a7bebfa4e69100347bd56f2a3064f24b1eba4462b3471711e",
+    "type": "URI",
+    "originalValue": "asics-tiger"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087006976",
+    "key": "title",
+    "locale": "fr",
+    "digest": "c5c770c92833572336fa265887b3bd84b133f296eab09ea5ee356a6454dfbd91",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "PALLADUIM"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087006976",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "6e6a2916706eaeac169fd9f8788cf14e35b2ed655318e43c18d8bea9247b7062",
+    "type": "HTML",
+    "originalValue": "Palladium collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087006976",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "0eb7671134ed8dde2ea18196d3b555987f68234e82cf0fa6371b33ad1958253f",
+    "type": "URI",
+    "originalValue": "palladuim"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087039744",
+    "key": "title",
+    "locale": "fr",
+    "digest": "6f670aee856fccfa460e41d1c42bc1e66a9f4f064c8dc90ca2ffc4f90e68af02",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "PUMA"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087039744",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "58d0c657dab33462925a1ec7362b731de77b3855c4f76fb72bc0fb2fabb8ef1e",
+    "type": "HTML",
+    "originalValue": "Puma collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087039744",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "86505085bb4773d538be62d71cb937cdeedd009e647e3fa5a968edf23b4c72a3",
+    "type": "URI",
+    "originalValue": "puma"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087072512",
+    "key": "title",
+    "locale": "fr",
+    "digest": "5a06a448fd5eeebaa9b0ef5495ad3ac3531e25cff38dda19a3292c788cf4197f",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "SUPRA"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087072512",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "cc1c143cc53f052569d1c3708bbdea3b410f61d82411929e715a847b155e3d83",
+    "type": "HTML",
+    "originalValue": "Supra collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087072512",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "96d47181cad1617bad7edaa4cf410e9901b2c7c6a524cea5b2652877d0f40f8e",
+    "type": "URI",
+    "originalValue": "supra"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087105280",
+    "key": "title",
+    "locale": "fr",
+    "digest": "b590d535ea06ff40d4384d1d9dc526ab176018f9d72643ad787eeb4dc71ce7fb",
+    "type": "SINGLE_LINE_TEXT_FIELD",
+    "originalValue": "TIMBERLAND"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087105280",
+    "key": "body_html",
+    "locale": "fr",
+    "digest": "eb9a501f218e30265f63175089c92b2ae584ccda5efc39104fecacd23516573b",
+    "type": "HTML",
+    "originalValue": "Timberland collection"
+  },
+  {
+    "resourceGid": "gid://shopify/Collection/413087105280",
+    "key": "handle",
+    "locale": "fr",
+    "digest": "0625d19dafc9edbc21e0f967d3e5976855407fab8a69a5357819d7fc0ac60055",
+    "type": "URI",
+    "originalValue": "timberland"
   }
 ]

@@ -79,7 +79,7 @@ export function graphQlGidToResourceName(gid: string): GraphQlResourceName | und
   return gid.split('gid://shopify/').at(1)?.split('/').at(0) as GraphQlResourceName;
 }
 
-export function getOperationDefinitionQueryNames<T extends TadaDocumentNode>(documentNode: T): string[] {
+function getOperationDefinitionQueryNames<T extends TadaDocumentNode>(documentNode: T): string[] {
   return documentNode.definitions
     .map((def) => {
       if ('name' in def && def.kind === 'OperationDefinition') return def.name?.value;

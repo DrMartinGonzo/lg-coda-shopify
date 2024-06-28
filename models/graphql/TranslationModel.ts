@@ -6,25 +6,20 @@ import toPascalCase from 'to-pascal-case';
 import { TranslationClient } from '../../Clients/GraphQlClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
-import { graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
+import { translatableContentFieldsFragment, translationFieldsFragment } from '../../graphql/translations-graphql';
+import { ResultOf, graphQlGidToId, graphQlGidToResourceName, idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { TranslationRow } from '../../schemas/CodaRows.types';
 import { formatMarketReference } from '../../schemas/syncTable/MarketSchema';
 import { TranslatableResourceType } from '../../types/admin.types';
 import { isNullishOrEmpty, safeToString } from '../../utils/helpers';
-import { ModelWithDeletedFlag } from '../AbstractModel';
 import { AbstractModelGraphQl, BaseApiDataGraphQl, BaseModelDataGraphQl } from './AbstractModelGraphQl';
-import { TranslatableContentApiData } from './TranslatableContentModel';
 
 // #endregion
 
 // #region Types
-export interface TranslationApiData extends BaseApiDataGraphQl {
-  value: string;
-  key: string;
-  outdated: boolean;
-  updatedAt: string;
-  market: { id: string };
-}
+export interface TranslatableContentApiData extends ResultOf<typeof translatableContentFieldsFragment> {}
+
+export interface TranslationApiData extends ResultOf<typeof translationFieldsFragment> {}
 
 export interface RegisterTranslationApiData extends TranslationApiData {
   locale: string;
@@ -39,12 +34,11 @@ export interface TranslatableResourceApiData extends BaseApiDataGraphQl {
 export interface TranslationModelData
   extends Pick<TranslationApiData, 'key' | 'outdated' | 'updatedAt'>,
     Pick<TranslatableContentApiData, 'digest' | 'type' | 'locale'>,
-    BaseModelDataGraphQl,
-    ModelWithDeletedFlag {
-  resourceGid: string;
-  originalValue: string;
-  translatedValue: string;
-  marketId: string;
+    BaseModelDataGraphQl {
+  resourceGid: TranslatableResourceApiData['resourceId'];
+  originalValue: TranslatableContentApiData['value'];
+  translatedValue: TranslationApiData['value'];
+  marketId: TranslationApiData['market']['id'];
 }
 // #endregion
 
@@ -55,16 +49,19 @@ export class TranslationModel extends AbstractModelGraphQl {
   public static readonly displayName: Identity = PACK_IDENTITIES.Translation;
   protected static readonly graphQlName = GraphQlResourceNames.Translation;
 
-  public static createInstanceFromRow(context: coda.ExecutionContext, { id, resourceType, ...row }: TranslationRow) {
-    const { key, locale, marketId, resourceGid, isDeletedFlag } = TranslationModel.parseFullId(id);
+  public static createInstanceFromRow(
+    context: coda.ExecutionContext,
+    { id, type, resourceType, ...row }: TranslationRow
+  ) {
+    const { key, locale, marketId, resourceGid } = TranslationModel.parseFullId(id);
 
     let data: Partial<TranslationModelData> = {
       ...row,
       key,
       locale,
       resourceGid,
+      type: type as TranslatableContentApiData['type'],
       updatedAt: safeToString(row.updated_at),
-      isDeletedFlag: isDeletedFlag ?? false,
       marketId: idToGraphQlGid(GraphQlResourceNames.Market, row.market?.id ?? row.marketId) ?? marketId,
     };
 
@@ -75,18 +72,16 @@ export class TranslationModel extends AbstractModelGraphQl {
     return idToGraphQlGid(toPascalCase(translatableResourceType), resourceId);
   }
   public static parseFullId(fullId: string) {
-    const { key, locale, marketId, deleted } = coda.getQueryParams(fullId) as {
+    const { key, locale, marketId } = coda.getQueryParams(fullId) as {
       key: string;
       locale: string;
       marketId: string;
-      deleted: string;
     };
     return {
       key,
       locale,
       marketId: idToGraphQlGid(GraphQlResourceNames.Market, marketId),
       resourceGid: TranslationModel.extractResourceGidFromFullId(fullId),
-      isDeletedFlag: deleted === '1',
     };
   }
   private static extractResourceGidFromFullId(fullId: string) {
@@ -239,9 +234,6 @@ export class TranslationModel extends AbstractModelGraphQl {
         locale,
         marketId: graphQlGidToId(marketId),
       };
-      if (this.data.isDeletedFlag) {
-        params.deleted = '1';
-      }
       return coda.withQueryParams(resourceGid, params);
     }
     throw new Error('unable to get fullId');
@@ -263,7 +255,6 @@ export class TranslationModel extends AbstractModelGraphQl {
 
   public async delete(): Promise<void> {
     await this.client.delete(TranslationModel.parseFullId(this.fullId));
-    this.data.isDeletedFlag = true;
     // make sure to nullify theses values
     this.data.digest = null;
     this.data.outdated = false;

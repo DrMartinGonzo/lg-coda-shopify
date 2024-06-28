@@ -28,9 +28,9 @@ import {
 import { MetaobjectApiData, MetaobjectModelData } from '../models/graphql/MetaobjectModel';
 import { OrderTransactionApiData, OrderTransactionModelData } from '../models/graphql/OrderTransactionModel';
 import { ProductApidata, ProductModelData } from '../models/graphql/ProductModel';
-import { TranslatableContentApiData, TranslatableContentModelData } from '../models/graphql/TranslatableContentModel';
 import {
   RegisterTranslationApiData,
+  TranslatableContentApiData,
   TranslatableResourceApiData,
   TranslationApiData,
   TranslationModelData,
@@ -99,10 +99,10 @@ import {
 } from '../graphql/products-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
 import {
-  LocaleFieldsFragment,
+  shopLocaleFieldsFragment,
   getAvailableLocalesQuery,
   getSingleTranslationQuery,
-  getTranslatableResourcesQuery,
+  getTranslatableContentKeys,
   getTranslationsQuery,
   registerTranslationMutation,
   removeTranslationsMutation,
@@ -132,7 +132,6 @@ import { MarketApidata, MarketModelData } from '../models/graphql/MarketModel';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { graphQlOwnerNameToOwnerType } from '../models/utils/metafields-utils';
 import {
-  LocalizableContentType,
   MetafieldDefinitionValidationStatus,
   MetafieldOwnerType,
   MetafieldsSetInput,
@@ -142,7 +141,6 @@ import {
   PageInfo,
   ProductInput,
   ProductVariantInput,
-  TranslatableResourceType,
 } from '../types/admin.types';
 import { arrayUnique, dumpToConsole, excludeUndefinedObjectKeys, isNullish, logAdmin } from '../utils/helpers';
 import { FetchRequestOptions } from './Client.types';
@@ -2122,10 +2120,10 @@ export class ProductClient extends AbstractGraphQlClient<ProductModelData> {
 // #endregion
 
 // #region TranslationClient
-interface AvailableLocaleApiData extends ResultOf<typeof LocaleFieldsFragment> {}
+interface ShopLocaleApiData extends ResultOf<typeof shopLocaleFieldsFragment> {}
 
-interface AvailableLocalesResponse {
-  availableLocales: AvailableLocaleApiData[];
+interface ShopLocalesResponse {
+  shopLocales: ShopLocaleApiData[];
 }
 interface SingleTranslationResponse {
   translatableResource: TranslatableResourceApiData;
@@ -2153,37 +2151,39 @@ export interface ListTranslationsArgs extends BaseListArgs {
   marketId?: string;
   resourceType: string;
   fields?: TranslationFieldsArgs;
+  onlyTranslated?: Boolean;
+  keys?: string[];
+}
+export interface ListTranslationsKeysArgs extends BaseListArgs {
+  resourceType: string;
 }
 
-function translatableResourceToTranslationModelData({
+function translatableContentToTranslationModelData({
   resourceGid,
   translatableContent,
-  translation,
+  translations,
   locale,
+  marketId,
 }: {
   resourceGid: string;
-  translatableContent: Pick<TranslatableContentApiData, 'digest' | 'type' | 'value'>;
-  translation?: TranslationApiData;
+  translatableContent: Pick<TranslatableContentApiData, 'digest' | 'type' | 'value' | 'key'>;
+  translations: TranslationApiData[];
   locale: string;
+  marketId: string;
 }) {
+  const matchingTranslation = translations.find((t) => t.key === translatableContent.key);
   const data: Partial<TranslationModelData> = {
     resourceGid,
+    key: translatableContent.key,
     locale,
-    digest: translatableContent?.digest,
-    originalValue: translatableContent?.value,
-    type: translatableContent?.type as LocalizableContentType,
-    isDeletedFlag: true,
-    translatedValue: undefined,
-    outdated: false,
+    marketId,
+    digest: translatableContent.digest,
+    type: translatableContent.type,
+    originalValue: translatableContent.value,
+    translatedValue: matchingTranslation?.value,
+    outdated: matchingTranslation?.outdated,
+    updatedAt: matchingTranslation?.updatedAt,
   };
-  if (translation) {
-    data.key = translation.key;
-    data.translatedValue = translation.value;
-    data.outdated = translation.outdated;
-    data.isDeletedFlag = false;
-    data.updatedAt = translation?.updatedAt;
-    data.marketId = translation?.market?.id;
-  }
 
   return data as TranslationModelData;
 }
@@ -2197,8 +2197,8 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
         options,
         documentNode,
         variables,
-        transformBodyResponse: function (response: AvailableLocalesResponse) {
-          return response?.availableLocales;
+        transformBodyResponse: function (response: ShopLocalesResponse) {
+          return response?.shopLocales;
         },
       })
     );
@@ -2220,12 +2220,12 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
         transformBodyResponse: function (response: SingleTranslationResponse) {
           const translatableResource = response?.translatableResource;
           const matchingTranslatableContent = translatableResource?.translatableContent.find((c) => c.key === key);
-          const matchingTranslation = translatableResource?.translations.find((t) => t.key === key);
-          return translatableResourceToTranslationModelData({
-            resourceGid: translatableResource.resourceId,
-            translatableContent: matchingTranslatableContent,
-            translation: matchingTranslation,
+          return translatableContentToTranslationModelData({
+            resourceGid: translatableResource?.resourceId,
             locale,
+            marketId,
+            translatableContent: matchingTranslatableContent,
+            translations: translatableResource?.translations,
           });
         },
       })
@@ -2237,6 +2237,8 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
     fields = {},
     forceAllFields,
     marketId,
+    onlyTranslated,
+    keys = [],
     resourceType,
     cursor,
     limit,
@@ -2262,18 +2264,51 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
 
           if (response?.translatableResources?.nodes) {
             data = response.translatableResources.nodes.flatMap((translatableResource) => {
-              return translatableResource.translations.map((translation) => {
-                return translatableResourceToTranslationModelData({
-                  resourceGid: translatableResource.resourceId,
-                  translatableContent: translatableResource.translatableContent.find((c) => c.key === translation.key),
-                  translation: translation,
+              return translatableResource.translatableContent.map((translatableContent) => {
+                return translatableContentToTranslationModelData({
                   locale,
+                  marketId,
+                  translatableContent,
+                  resourceGid: translatableResource.resourceId,
+                  translations: translatableResource.translations,
                 });
               });
             });
           }
 
-          return data;
+          return data.filter(
+            (translation) =>
+              (onlyTranslated === true ? !isNullish(translation.translatedValue) : true) &&
+              (keys?.length ? keys.includes(translation.key) : true) &&
+              // handle translation is not supported for market translations
+              (marketId ? translation.key !== 'handle' : true)
+          );
+        },
+      })
+    );
+  }
+
+  async listKeys({ resourceType, options }: ListTranslationsKeysArgs) {
+    const documentNode = getTranslatableContentKeys;
+    const variables = { resourceType } as VariablesOf<typeof getTranslatableContentKeys>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: function (response: MultipleTranslationsResponse) {
+          let keys: string[] = [];
+
+          if (response?.translatableResources?.nodes) {
+            keys = arrayUnique(
+              response.translatableResources.nodes.flatMap((translatableResource) => {
+                return translatableResource.translatableContent.map((translatableContent) => translatableContent.key);
+              })
+            );
+          }
+
+          return keys;
         },
       })
     );
@@ -2329,72 +2364,21 @@ export class TranslationClient extends AbstractGraphQlClient<TranslationModelDat
       documentNode,
       variables,
       transformBodyResponse: function (response: RegisterTranslationsResponse) {
-        const matchingTranslation = response?.translationsRegister.translations.find(
-          (t) => t.key === modelData.key && t.locale === modelData.locale
-        );
         // merge with existing data
-        return translatableResourceToTranslationModelData({
+        return translatableContentToTranslationModelData({
           resourceGid: modelData.resourceGid,
+          locale: modelData.locale,
+          marketId: modelData.marketId,
           translatableContent: {
             digest: modelData.digest,
             type: modelData.type,
             value: modelData.originalValue,
+            key: modelData.key,
           },
-          translation: matchingTranslation,
-          locale: modelData.locale,
+          translations: response?.translationsRegister.translations,
         });
       },
     });
-  }
-}
-// #endregion
-
-// #region TranslatableContentClient
-interface MultipleTranslatableContentsResponse {
-  translatableResources: { nodes: Omit<TranslatableResourceApiData, 'translations'>[] };
-}
-
-export interface ListTranslatableContentsArgs extends BaseListArgs {
-  limit?: number;
-  cursor?: string;
-  resourceType: TranslatableResourceType;
-}
-
-export class TranslatableContentClient extends AbstractGraphQlClient<TranslatableContentModelData> {
-  async list({ resourceType, cursor, limit, options }: ListTranslatableContentsArgs) {
-    const documentNode = getTranslatableResourcesQuery;
-    const variables = {
-      limit: limit ?? TranslatableContentClient.defaultLimit,
-      cursor,
-      resourceType,
-    } as VariablesOf<typeof getTranslatableResourcesQuery>;
-
-    return this.request(
-      withCacheDefault({
-        options,
-        documentNode,
-        variables,
-        transformBodyResponse: function (response: MultipleTranslatableContentsResponse) {
-          let data: TranslatableContentModelData[] = [];
-
-          if (response?.translatableResources?.nodes) {
-            return response.translatableResources.nodes.flatMap((translatableResource) => {
-              return translatableResource.translatableContent.map((translatableContent) => {
-                return {
-                  resourceGid: translatableResource.resourceId,
-                  key: translatableContent.key,
-                  value: translatableContent.value,
-                  type: translatableContent?.type,
-                  resourceType,
-                } as TranslatableContentModelData;
-              });
-            });
-          }
-
-          return data;
-        },
-      })
-    );
   }
 }
 // #endregion

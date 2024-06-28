@@ -1,11 +1,10 @@
 {
   "resourceGid": "gid://shopify/Collection/413086843136",
+  "key": "title",
   "locale": "fr",
   "digest": "647391c936b2b25d1fb895562fa66120fb8bd4d0396d7d836530d5bef9206a77",
-  "originalValue": "Vitest Smart Collection",
   "type": "SINGLE_LINE_TEXT_FIELD",
-  "isDeletedFlag": false,
+  "originalValue": "Vitest Smart Collection",
   "translatedValue": "Vitest (FR)",
-  "outdated": false,
-  "key": "title"
+  "outdated": false
 }

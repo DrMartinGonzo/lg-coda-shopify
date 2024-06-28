@@ -1,11 +1,11 @@
 // #region Imports
-import * as coda from '@codahq/packs-sdk';
 
 import { ListTranslationsArgs } from '../../Clients/GraphQlClients';
 import { Sync_Translations } from '../../coda/setup/translations-setup';
 import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { TranslationModel } from '../../models/graphql/TranslationModel';
+import { TranslationRow } from '../../schemas/CodaRows.types';
 import { FieldDependency } from '../../schemas/Schema.types';
 import { TranslationSyncTableSchema } from '../../schemas/syncTable/TranslationSchema';
 import { parseOptionId } from '../../utils/helpers';
@@ -54,16 +54,18 @@ export class SyncedTranslations extends AbstractSyncedGraphQlResources<Translati
   }
 
   public get codaParamsMap() {
-    const [locale, resourceType, marketId] = this.codaParams as SyncTranslationsParams;
+    const [locale, resourceType, marketId, onlyTranslated, keys] = this.codaParams as SyncTranslationsParams;
     return {
       locale,
       resourceType,
       marketId: idToGraphQlGid(GraphQlResourceNames.Market, parseOptionId(marketId)),
+      onlyTranslated,
+      keys,
     };
   }
 
   protected codaParamsToListArgs() {
-    const { locale, resourceType, marketId } = this.codaParamsMap;
+    const { locale, resourceType, marketId, onlyTranslated, keys } = this.codaParamsMap;
     const fields = Object.fromEntries(
       ['market', 'marketId'].map((key) => [key, this.syncedStandardFields.includes(key)])
     );
@@ -72,15 +74,17 @@ export class SyncedTranslations extends AbstractSyncedGraphQlResources<Translati
       resourceType,
       fields,
       marketId,
+      onlyTranslated,
+      keys,
     } as ListTranslationsArgs;
   }
 
-  /**
-   * {@link TranslationModel} has some additional required properties :
-   * - locale
-   */
-  protected getAdditionalRequiredKeysForUpdate(update: coda.SyncUpdate<string, string, any>) {
-    const additionalKeys = ['locale', 'market', 'marketId'];
-    return [...super.getAdditionalRequiredKeysForUpdate(update), ...additionalKeys];
+  protected async createInstanceFromRow(row: TranslationRow) {
+    const { locale, marketId } = this.codaParamsMap;
+    const instance = await super.createInstanceFromRow(row);
+    instance.data.locale = locale;
+    instance.data.marketId = marketId;
+
+    return instance;
   }
 }

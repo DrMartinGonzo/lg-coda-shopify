@@ -12,6 +12,7 @@ import { FileSyncTableSchema } from '../schemas/syncTable/FileSchema';
 import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
+import { MarketSyncTableSchema } from '../schemas/syncTable/MarketSchema';
 import { MetaObjectSyncTableBaseSchema } from '../schemas/syncTable/MetaObjectSchema';
 import { MetafieldDefinitionSyncTableSchema } from '../schemas/syncTable/MetafieldDefinitionSchema';
 import { MetafieldSyncTableSchema } from '../schemas/syncTable/MetafieldSchema';
@@ -23,10 +24,8 @@ import { ProductSyncTableSchema } from '../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../schemas/syncTable/ProductVariantSchema';
 import { RedirectSyncTableSchema } from '../schemas/syncTable/RedirectSchema';
 import { ShopSyncTableSchema } from '../schemas/syncTable/ShopSchema';
-import { TranslatableContentSyncTableSchema } from '../schemas/syncTable/TranslatableContentSchema';
 import { TranslationSyncTableSchema } from '../schemas/syncTable/TranslationSchema';
 import { arrayUnique } from '../utils/helpers';
-import { MarketSyncTableSchema } from '../schemas/syncTable/MarketSchema';
 
 function codaTypeToTypeScript(type: string, codaType: string, wrapArray = false) {
   let ret = 'undefined';
@@ -168,7 +167,6 @@ const definitions = [
   [RedirectSyncTableSchema, PACK_IDENTITIES.Redirect],
   [ShopSyncTableSchema, PACK_IDENTITIES.Shop],
   [TranslationSyncTableSchema, PACK_IDENTITIES.Translation],
-  [TranslatableContentSyncTableSchema, PACK_IDENTITIES.TranslatableContent],
 ];
 
 const blocks = definitions.map((def) => {

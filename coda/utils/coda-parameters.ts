@@ -71,10 +71,32 @@ async function autocompleteBlogIdParameter(context: coda.ExecutionContext, searc
   return coda.autocompleteSearchObjects(search, response?.body, 'title', 'id');
 }
 
-async function autocompleteLocalesParameter(context: coda.ExecutionContext, search: string, args: any) {
+async function autocompleteShopLocalesParameter(context: coda.ExecutionContext, search: string, args: any) {
   const params: BaseFindArgs = {};
   const response = await TranslationClient.createInstance(context).locales(params);
-  return coda.autocompleteSearchObjects(search, response?.body, 'name', 'isoCode');
+  return coda.autocompleteSearchObjects(search, response?.body, 'locale', 'locale');
+}
+
+/**
+ *! Ne fonctionne pas correctement, chaque resource a son propre lot de keys
+ *! selon les données existantes en son sein. Pour un bon autocomplete, il
+ *! faudrait que Shopify rajoute une query spécifique ou alors récolter toutes les
+ *! ressources et ne retourner que les keys uniques. Mais ça fait beaucoup de data
+ *! pour pas grand chose…
+ */
+export async function autocompleteTranslationKeysParameter(
+  context: coda.ExecutionContext,
+  search: string,
+  formulaContext: coda.MetadataContext
+) {
+  const { resourceType } = formulaContext;
+  if (resourceType === undefined) {
+    throw new coda.UserVisibleError('You need to define the type of the resource first for autocomplete to work.');
+  }
+  const response = await TranslationClient.createInstance(context).listKeys({
+    resourceType,
+  });
+  return coda.simpleAutocomplete(search, response?.body);
 }
 
 export async function autocompleteBlogParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
@@ -87,7 +109,7 @@ export async function autocompleteBlogParameterWithName(context: coda.ExecutionC
   return coda.simpleAutocomplete(search, results);
 }
 
-export async function autocompleteMarketsParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
+async function autocompleteMarketsParameterWithName(context: coda.ExecutionContext, search: string, args: any) {
   const response = await MarketClient.createInstance(context).list({
     limit: GRAPHQL_NODES_LIMIT,
     options: {},
@@ -871,7 +893,7 @@ const translationInputs = {
     type: coda.ParameterType.String,
     name: 'locale',
     description: 'The locale. (ex: `en`, `fr`, `es`…)',
-    autocomplete: autocompleteLocalesParameter,
+    autocomplete: autocompleteShopLocalesParameter,
   }),
   resourceId: {
     ...generalInputs.id,
@@ -883,6 +905,16 @@ const translationInputs = {
     name: 'resourceType',
     description: 'The type of the translated resource.',
     autocomplete: Object.values(TranslatableResourceType),
+  }),
+  onlyTranslated: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'onlyTranslated',
+    description: 'Sync only existing translation.',
+  }),
+  keys: coda.makeParameter({
+    type: coda.ParameterType.StringArray,
+    name: 'keys',
+    description: 'Sync only translations for these comma separated list of keys.',
   }),
 };
 // #endregion
@@ -918,6 +950,8 @@ const generalFilters = {
     description: 'Filter results by a single ID.',
   }),
   idArray: coda.makeParameter({
+    // Should be NumberArray but it doesn't seem to work…
+    // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
     type: coda.ParameterType.StringArray,
     name: 'ids',
     description: 'Filter results by comma-separated list of IDs.',
@@ -1059,8 +1093,6 @@ const fileFilters = {
 // #region Location Filters
 const locationFilters = {
   idOptionNameArray: coda.makeParameter({
-    // BUG: Should be NumberArray but it doesn't seem to work…
-    // @see topic: https://community.coda.io/t/ui-and-typescript-bug-with-with-coda-parametertype-numberarray/46455
     type: coda.ParameterType.StringArray,
     name: 'locationIds',
     description: 'Filter results by comma-separated list of Location IDs.',

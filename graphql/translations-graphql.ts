@@ -5,6 +5,24 @@ import { pageInfoFragment } from './sharedFragments-graphql';
 // #endregion
 
 // #region Fragments
+export const shopLocaleFieldsFragment = graphql(`
+  fragment ShopLocaleFields on ShopLocale @_unmask {
+    locale
+    primary
+    published
+  }
+`);
+
+export const translatableContentFieldsFragment = graphql(`
+  fragment TranslatableContentFields on TranslatableContent @_unmask {
+    locale
+    key
+    type
+    value
+    digest
+  }
+`);
+
 export const translationFieldsFragment = graphql(`
   fragment TranslationFields on Translation @_unmask {
     value
@@ -19,6 +37,33 @@ export const translationFieldsFragment = graphql(`
 // #endregion
 
 // #region Queries
+export const getAvailableLocalesQuery = graphql(
+  `
+    query GetAvailableLocales {
+      shopLocales {
+        ...ShopLocaleFields
+      }
+    }
+  `,
+  [shopLocaleFieldsFragment]
+);
+
+export const getTranslatableContentKeys = graphql(
+  `
+    query GetTranslatableContentKeys($resourceType: TranslatableResourceType!) {
+      translatableResources(first: 1, resourceType: $resourceType) {
+        nodes {
+          resourceId
+          translatableContent {
+            ...TranslatableContentFields
+          }
+        }
+      }
+    }
+  `,
+  [translatableContentFieldsFragment]
+);
+
 export const getTranslationsQuery = graphql(
   `
     query GetTranslations(
@@ -33,11 +78,7 @@ export const getTranslationsQuery = graphql(
         nodes {
           resourceId
           translatableContent {
-            locale
-            key
-            type
-            value
-            digest
+            ...TranslatableContentFields
           }
           translations(locale: $locale, marketId: $marketId) {
             ...TranslationFields
@@ -49,24 +90,7 @@ export const getTranslationsQuery = graphql(
       }
     }
   `,
-  [pageInfoFragment, translationFieldsFragment]
-);
-
-export const LocaleFieldsFragment = graphql(`
-  fragment LocaleFields on Locale @_unmask {
-    isoCode
-    name
-  }
-`);
-export const getAvailableLocalesQuery = graphql(
-  `
-    query GetAvailableLocales {
-      availableLocales {
-        ...LocaleFields
-      }
-    }
-  `,
-  [LocaleFieldsFragment]
+  [pageInfoFragment, translatableContentFieldsFragment, translationFieldsFragment]
 );
 
 export const getSingleTranslationQuery = graphql(
@@ -75,11 +99,7 @@ export const getSingleTranslationQuery = graphql(
       translatableResource(resourceId: $id) {
         resourceId
         translatableContent {
-          locale
-          key
-          type
-          value
-          digest
+          ...TranslatableContentFields
         }
         translations(locale: $locale, marketId: $marketId) {
           ...TranslationFields
@@ -87,30 +107,7 @@ export const getSingleTranslationQuery = graphql(
       }
     }
   `,
-  [translationFieldsFragment]
-);
-
-export const getTranslatableResourcesQuery = graphql(
-  `
-    query GetTranslatableResources($limit: Int!, $cursor: String, $resourceType: TranslatableResourceType!) {
-      translatableResources(first: $limit, after: $cursor, resourceType: $resourceType) {
-        nodes {
-          resourceId
-          translatableContent {
-            locale
-            key
-            type
-            value
-            digest
-          }
-        }
-        pageInfo {
-          ...PageInfoFields
-        }
-      }
-    }
-  `,
-  [pageInfoFragment]
+  [translatableContentFieldsFragment, translationFieldsFragment]
 );
 // #endregion
 
