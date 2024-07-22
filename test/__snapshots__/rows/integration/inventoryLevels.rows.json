@@ -6,9 +6,6 @@
     "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091655936",
     "UniqueId": "46469091655936,74534912256",
     "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091655936/inventory_history?location_id=74534912256",
-    "InventoryItem": {
-      "Id": 46469091655936
-    },
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
@@ -21,9 +18,6 @@
     "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091688704",
     "UniqueId": "46469091688704,74534912256",
     "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091688704/inventory_history?location_id=74534912256",
-    "InventoryItem": {
-      "Id": 46469091688704
-    },
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
@@ -36,9 +30,6 @@
     "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091721472",
     "UniqueId": "46469091721472,74534912256",
     "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091721472/inventory_history?location_id=74534912256",
-    "InventoryItem": {
-      "Id": 46469091721472
-    },
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
@@ -51,9 +42,6 @@
     "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091983616",
     "UniqueId": "46469091983616,74534912256",
     "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091983616/inventory_history?location_id=74534912256",
-    "InventoryItem": {
-      "Id": 46469091983616
-    },
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
@@ -66,9 +54,6 @@
     "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092016384",
     "UniqueId": "46469092016384,74534912256",
     "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092016384/inventory_history?location_id=74534912256",
-    "InventoryItem": {
-      "Id": 46469092016384
-    },
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"

@@ -57,7 +57,6 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
             id: idToGraphQlGid(GraphQlResourceNames.Product, row.product?.id),
           }
         : undefined,
-      sku: row.sku,
       taxCode: row.tax_code,
       taxable: row.taxable,
       title: row.title,
@@ -86,23 +85,47 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       }
     }
 
-    if (row.inventory_item_id || row.weight || row.weight_unit) {
-      (data.inventoryItem as Partial<typeof data.inventoryItem>) = {};
-      if (row.inventory_item_id) {
-        data.inventoryItem.id = idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.inventory_item_id);
-      }
-      if (row.weight || row.weight_unit) {
-        (data.inventoryItem.measurement as Partial<typeof data.inventoryItem.measurement>) = {};
-        (data.inventoryItem.measurement.weight as Partial<typeof data.inventoryItem.measurement.weight>) = {
+    if (
+      [
+        'inventory_item_id',
+        'cost',
+        'country_code_of_origin',
+        'harmonized_system_code',
+        'inventory_history_url',
+        'province_code_of_origin',
+        'requires_shipping',
+        'sku',
+        'tracked',
+        'weight',
+        'weight_unit',
+      ].some((key) => key in row)
+    ) {
+      data.inventoryItem = {
+        id: idToGraphQlGid(GraphQlResourceNames.InventoryItem, row.inventory_item_id),
+        unitCost: 'cost' in row ? { amount: row.cost, currencyCode: undefined } : undefined,
+        countryCodeOfOrigin: row.country_code_of_origin as typeof data.inventoryItem.countryCodeOfOrigin,
+        harmonizedSystemCode: row.harmonized_system_code,
+        inventoryHistoryUrl: row.inventory_history_url,
+        provinceCodeOfOrigin: row.province_code_of_origin,
+        requiresShipping: row.requires_shipping,
+        sku: row.sku,
+        tracked: row.tracked,
+      };
+      if ('weight' in row || 'weight_unit' in row) {
+        const weightProp: Partial<VariantModelData['inventoryItem']['measurement']['weight']> = {
           value: row.weight,
         };
         /** Only add weight_unit if it's not undefined.
          * If needed by an update, {@link AbstractResource.addMissingData} will fill in the rest */
-        if (row.weight_unit) {
-          data.inventoryItem.measurement.weight.unit = Object.entries(weightUnitsToLabelMap).find(([key, value]) => {
+        if ('weight_unit' in row) {
+          weightProp.unit = Object.entries(weightUnitsToLabelMap).find(([key, value]) => {
             return value === row.weight_unit;
           })[0] as any;
         }
+
+        data.inventoryItem.measurement = {
+          weight: weightProp as VariantModelData['inventoryItem']['measurement']['weight'],
+        };
       }
     }
 
@@ -134,6 +157,14 @@ export class VariantModel extends AbstractModelGraphQlWithMetafields {
       inventory_policy: data.inventoryPolicy,
       inventory_quantity: data.inventoryQuantity,
       price: safeToFloat(data.price),
+      sku: inventoryItem?.sku,
+      cost: safeToFloat(inventoryItem?.unitCost?.amount) ?? null,
+      country_code_of_origin: inventoryItem?.countryCodeOfOrigin,
+      harmonized_system_code: inventoryItem?.harmonizedSystemCode,
+      province_code_of_origin: inventoryItem?.provinceCodeOfOrigin,
+      requires_shipping: inventoryItem?.requiresShipping,
+      tracked: inventoryItem?.tracked,
+      inventory_history_url: inventoryItem?.inventoryHistoryUrl,
       tax_code: data.taxCode,
       updated_at: data.updatedAt,
       inventory_item_id: inventoryItemId,

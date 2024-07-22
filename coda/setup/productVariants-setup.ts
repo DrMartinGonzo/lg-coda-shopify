@@ -165,6 +165,11 @@ export const Action_CreateProductVariant = coda.makeFormula({
     { ...inputs.productVariant.taxable, optional: true },
     { ...inputs.productVariant.weight, optional: true },
     { ...inputs.productVariant.weightUnit, optional: true },
+    { ...inputs.productVariant.cost, optional: true },
+    { ...inputs.productVariant.countryCodeOfOrigin, optional: true },
+    { ...inputs.productVariant.harmonizedSystemCode, optional: true },
+    { ...inputs.productVariant.provinceCode, optional: true },
+    { ...inputs.productVariant.tracked, optional: true },
     {
       ...inputs.general.metafields,
       optional: true,
@@ -187,6 +192,11 @@ export const Action_CreateProductVariant = coda.makeFormula({
       taxable,
       weight,
       weight_unit,
+      cost,
+      country_code_of_origin,
+      harmonized_system_code,
+      province_code_of_origin,
+      tracked,
       metafields,
     ],
     context
@@ -206,6 +216,11 @@ export const Action_CreateProductVariant = coda.makeFormula({
       taxable,
       weight,
       weight_unit,
+      cost,
+      country_code_of_origin,
+      harmonized_system_code,
+      province_code_of_origin,
+      tracked,
     };
     validateSyncUpdate({} as ProductVariantRow, row);
 
@@ -240,6 +255,11 @@ export const Action_UpdateProductVariant = coda.makeFormula({
     { ...inputs.productVariant.taxable, optional: true },
     { ...inputs.productVariant.weight, optional: true },
     { ...inputs.productVariant.weightUnit, optional: true },
+    { ...inputs.productVariant.cost, optional: true },
+    { ...inputs.productVariant.countryCodeOfOrigin, optional: true },
+    { ...inputs.productVariant.harmonizedSystemCode, optional: true },
+    { ...inputs.productVariant.provinceCode, optional: true },
+    { ...inputs.productVariant.tracked, optional: true },
     {
       ...inputs.general.metafields,
       optional: true,
@@ -265,6 +285,11 @@ export const Action_UpdateProductVariant = coda.makeFormula({
       taxable,
       weight,
       weight_unit,
+      cost,
+      country_code_of_origin,
+      harmonized_system_code,
+      province_code_of_origin,
+      tracked,
       metafields,
     ],
     context
@@ -283,6 +308,11 @@ export const Action_UpdateProductVariant = coda.makeFormula({
       taxable,
       weight,
       weight_unit,
+      cost,
+      country_code_of_origin,
+      harmonized_system_code,
+      province_code_of_origin,
+      tracked,
     };
     validateSyncUpdate({} as ProductVariantRow, row);
 

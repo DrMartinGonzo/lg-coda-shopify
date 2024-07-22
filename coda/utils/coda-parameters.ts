@@ -479,26 +479,11 @@ const fileInputs = {
 
 // #region InventoryItem Inputs
 const inventoryItemInputs = {
-  cost: coda.makeParameter({
-    type: coda.ParameterType.Number,
-    name: 'cost',
-    description: "Unit cost associated with the inventory item, the currency is the shop's default currency.",
-  }),
   id: {
     ...generalInputs.id,
     name: 'inventoryItemId',
     description: 'The ID of the Inventory Item.',
   },
-  harmonizedSystemCode: coda.makeParameter({
-    type: coda.ParameterType.String,
-    name: 'harmonizedSystemCode',
-    description: 'The harmonized system code of the inventory item. This must be a number between 6 and 13 digits.',
-  }),
-  tracked: coda.makeParameter({
-    type: coda.ParameterType.Boolean,
-    name: 'tracked',
-    description: "Whether the inventory item is tracked. The value must be true to adjust the item's inventory levels.",
-  }),
 };
 // #endregion
 
@@ -799,6 +784,21 @@ const productVariantInputs = {
     name: 'compareAtPrice',
     description: 'The original price of the item before an adjustment or a sale.',
   }),
+  cost: coda.makeParameter({
+    type: coda.ParameterType.Number,
+    name: 'cost',
+    description: "Unit cost associated with the inventory item, the currency is the shop's default currency.",
+  }),
+  countryCodeOfOrigin: {
+    ...locationInputs.countryCode,
+    name: 'countryCodeOfOrigin',
+    description: 'The ISO 3166-1 alpha-2 country code of where the item originated from.',
+  },
+  harmonizedSystemCode: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'harmonizedSystemCode',
+    description: 'The harmonized system code of the inventory item. This must be a number between 6 and 13 digits.',
+  }),
   id: {
     ...generalInputs.id,
     name: 'productVariantId',
@@ -824,6 +824,10 @@ const productVariantInputs = {
     name: 'price',
     description: 'The product variant price.',
   }),
+  provinceCode: {
+    ...locationInputs.provinceCode,
+    description: 'The province/state code of where the item originated from (ISO 3166-2 alpha-2 format).',
+  },
   position: coda.makeParameter({
     type: coda.ParameterType.Number,
     name: 'position',
@@ -838,6 +842,11 @@ const productVariantInputs = {
     type: coda.ParameterType.Boolean,
     name: 'taxable',
     description: 'Whether a tax is charged when the product variant is sold.',
+  }),
+  tracked: coda.makeParameter({
+    type: coda.ParameterType.Boolean,
+    name: 'tracked',
+    description: "Whether the inventory item is tracked. The value must be true to adjust the item's inventory levels.",
   }),
   weight: coda.makeParameter({
     type: coda.ParameterType.Number,

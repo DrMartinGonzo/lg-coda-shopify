@@ -8,18 +8,28 @@
     "inventoryQuantity": 12,
     "position": 1,
     "price": "50.00",
-    "sku": "vitest",
     "taxable": true,
     "taxCode": "",
     "title": "Vitest / ProductVariant",
     "image": null,
     "inventoryItem": {
       "id": "gid://shopify/InventoryItem/46469099815168",
+      "countryCodeOfOrigin": "ZA",
+      "harmonizedSystemCode": "551221",
+      "inventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469099815168/inventory_history",
       "measurement": {
         "weight": {
           "unit": "GRAMS",
           "value": 850
         }
+      },
+      "provinceCodeOfOrigin": null,
+      "requiresShipping": true,
+      "sku": "vitest",
+      "tracked": true,
+      "unitCost": {
+        "amount": "50.0",
+        "currencyCode": "EUR"
       }
     },
     "metafields": {
@@ -40,6 +50,15 @@
           "key": "test",
           "type": "single_line_text_field",
           "value": "vitest",
+          "ownerType": "PRODUCTVARIANT"
+        },
+        {
+          "__typename": "Metafield",
+          "id": "gid://shopify/Metafield/27545047073024",
+          "namespace": "global",
+          "key": "harmonized_system_code",
+          "type": "string",
+          "value": "551221",
           "ownerType": "PRODUCTVARIANT"
         }
       ]

@@ -43,7 +43,6 @@ import { TadaDocumentNode } from 'gql.tada';
 import { GraphQlFetcher, ProductClient } from '../Clients/GraphQlClients';
 import { GraphQLMaxCostExceededError } from '../Errors/GraphQlErrors';
 import { SyncFilesParams } from '../sync/graphql/SyncedFiles';
-import { SyncInventoryItemsParams } from '../sync/graphql/SyncedInventoryItems';
 import { SyncLocationsParams } from '../sync/graphql/SyncedLocations';
 import { SyncMarketsParams } from '../sync/graphql/SyncedMarkets';
 import { SyncMetafieldDefinitionsParams } from '../sync/graphql/SyncedMetafieldDefinitions';
@@ -127,12 +126,6 @@ const defaultInventoryLevelsParams = [
   [`Vitest Location (${graphQlGidToId(singleData.location.id)})`], // locationIds
   undefined, // updatedAtMin
 ] as SyncInventoryLevelsParams;
-
-const defaultInventoryItemsParams = [
-  undefined, // createdAtRange
-  undefined, // updatedAtRange
-  listData.inventoryItems.map((i) => i.sku), // skuArray
-] as SyncInventoryItemsParams;
 
 const defaultLocationsParams = [
   false, // syncMetafields
@@ -382,13 +375,6 @@ describe('Sync resources', () => {
     );
     const result = await doSync('InventoryLevels', defaultInventoryLevelsParams);
     await matchRowsSnapshot(expect, result, 'inventoryLevels');
-  });
-
-  test('InventoryItems', async ({ expect }) => {
-    context.fetcher.fetch.returns(newGraphqlFetchResponse({ inventoryItems: { nodes: listData.inventoryItems } }));
-
-    const result = await doSync('InventoryItems', defaultInventoryItemsParams);
-    await matchRowsSnapshot(expect, result, 'inventoryItems');
   });
 
   test('Locations', async ({ expect }) => {
@@ -682,11 +668,6 @@ describe.skip('INTEGRATION: Sync resources', () => {
       result.slice(0, 5),
       'inventoryLevels'
     );
-  });
-
-  test('InventoryItems', async () => {
-    const result = await doSync('InventoryItems', defaultInventoryItemsParams);
-    await matchRowsIntegrationSnapshot(expect, result, 'inventoryItems');
   });
 
   test('Locations with Metafields', async () => {

@@ -3,7 +3,6 @@ import { ExpectStatic, describe, test } from 'vitest';
 
 import {
   FileClient,
-  InventoryItemClient,
   LocationClient,
   MarketClient,
   MetafieldDefinitionClient,
@@ -251,14 +250,6 @@ describe('Dump List API Data', () => {
       limit: DEFAULT_LIMIT,
     });
     await snapListData(expect, response.body, 'inventoryLevel');
-  });
-
-  test('InventoryItems', async ({ expect }) => {
-    const response = await InventoryItemClient.createInstance(getRealContext()).list({
-      skus: ['vitest'],
-      limit: DEFAULT_LIMIT,
-    });
-    await snapListData(expect, response.body, 'inventoryItem');
   });
 
   test('Location', async ({ expect }) => {

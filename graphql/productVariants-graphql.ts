@@ -97,6 +97,35 @@ export function buildProductVariantsSearchQuery({
 // #endregion
 
 // #region Fragments
+const inventoryItemFieldsFragment = graphql(`
+  fragment InventoryItemFields on InventoryItem @_unmask {
+    id
+    # createdAt
+    # updatedAt
+    countryCodeOfOrigin
+    harmonizedSystemCode
+    inventoryHistoryUrl
+    measurement @include(if: $includeWeight) {
+      weight {
+        unit
+        value
+      }
+    }
+    provinceCodeOfOrigin
+    requiresShipping
+    sku
+    tracked
+    # trackedEditable {
+    #   locked
+    #   reason
+    # }
+    unitCost @include(if: $includeCost) {
+      amount
+      currencyCode
+    }
+  }
+`);
+
 export const productVariantFieldsFragment = graphql(
   `
     fragment ProductVariantFields on ProductVariant @_unmask {
@@ -109,7 +138,6 @@ export const productVariantFieldsFragment = graphql(
       inventoryQuantity
       position
       price
-      sku
       taxable
       taxCode
       title
@@ -119,13 +147,7 @@ export const productVariantFieldsFragment = graphql(
         url
       }
       inventoryItem @include(if: $includeInventoryItem) {
-        id
-        measurement @include(if: $includeWeight) {
-          weight {
-            unit
-            value
-          }
-        }
+        ...InventoryItemFields
       }
       metafields(keys: $metafieldKeys, first: $countMetafields) @include(if: $includeMetafields) {
         nodes {
@@ -141,7 +163,7 @@ export const productVariantFieldsFragment = graphql(
       }
     }
   `,
-  [metafieldFieldsFragment]
+  [inventoryItemFieldsFragment, metafieldFieldsFragment]
 );
 // #endregion
 
@@ -154,6 +176,7 @@ export const getProductVariantsQuery = graphql(
       $metafieldKeys: [String!]
       $countMetafields: Int
       $searchQuery: String
+      $includeCost: Boolean!
       $includeImage: Boolean!
       $includeInventoryItem: Boolean!
       $includeMetafields: Boolean!
@@ -180,6 +203,7 @@ export const getSingleProductVariantQuery = graphql(
       $id: ID!
       $metafieldKeys: [String!]
       $countMetafields: Int
+      $includeCost: Boolean!
       $includeImage: Boolean!
       $includeInventoryItem: Boolean!
       $includeMetafields: Boolean!
@@ -201,6 +225,7 @@ export const createProductVariantMutation = graphql(
   `
     mutation CreateProductVariant(
       $input: ProductVariantInput!
+      $includeCost: Boolean!
       $includeImage: Boolean!
       $includeInventoryItem: Boolean!
       $includeMetafields: Boolean!
@@ -228,6 +253,7 @@ export const updateProductVariantMutation = graphql(
   `
     mutation UpdateProductVariant(
       $input: ProductVariantInput!
+      $includeCost: Boolean!
       $includeImage: Boolean!
       $includeInventoryItem: Boolean!
       $includeMetafields: Boolean!

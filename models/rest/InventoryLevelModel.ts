@@ -4,7 +4,6 @@ import * as coda from '@codahq/packs-sdk';
 import { InventoryLevelClient } from '../../Clients/RestClients';
 import { Identity, PACK_IDENTITIES } from '../../constants/pack-constants';
 import { InventoryLevelRow } from '../../schemas/CodaRows.types';
-import { formatInventoryItemReference } from '../../schemas/syncTable/InventoryItemSchema';
 import { formatLocationReference } from '../../schemas/syncTable/LocationSchema';
 import { safeToString } from '../../utils/helpers';
 import { AbstractModelRest, BaseApiDataRest } from './AbstractModelRest';
@@ -71,9 +70,6 @@ export class InventoryLevelModel extends AbstractModelRest {
       id: [data.inventory_item_id, data.location_id].join(','),
       inventory_history_url: `${this.context.endpoint}/admin/products/inventory/${data.inventory_item_id}/inventory_history?location_id=${data.location_id}`,
     };
-    if (data.inventory_item_id) {
-      obj.inventory_item = formatInventoryItemReference(data.inventory_item_id);
-    }
     if (data.location_id) {
       obj.location = formatLocationReference(data.location_id);
     }

@@ -9,7 +9,6 @@ import { CollectionSyncTableSchema } from '../schemas/syncTable/CollectionSchema
 import { CustomerSyncTableSchema } from '../schemas/syncTable/CustomerSchema';
 import { DraftOrderSyncTableSchema } from '../schemas/syncTable/DraftOrderSchema';
 import { FileSyncTableSchema } from '../schemas/syncTable/FileSchema';
-import { InventoryItemSyncTableSchema } from '../schemas/syncTable/InventoryItemSchema';
 import { InventoryLevelSyncTableSchema } from '../schemas/syncTable/InventoryLevelSchema';
 import { LocationSyncTableSchema } from '../schemas/syncTable/LocationSchema';
 import { MarketSyncTableSchema } from '../schemas/syncTable/MarketSchema';
@@ -151,7 +150,6 @@ const definitions = [
   [DraftOrderSyncTableSchema, PACK_IDENTITIES.DraftOrder],
   [CustomerSyncTableSchema, PACK_IDENTITIES.Customer],
   [FileSyncTableSchema, PACK_IDENTITIES.File],
-  [InventoryItemSyncTableSchema, PACK_IDENTITIES.InventoryItem],
   [InventoryLevelSyncTableSchema, PACK_IDENTITIES.InventoryLevel],
   [LocationSyncTableSchema, PACK_IDENTITIES.Location],
   [MarketSyncTableSchema, PACK_IDENTITIES.Market],

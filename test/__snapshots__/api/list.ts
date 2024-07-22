@@ -8,7 +8,6 @@ export { default as customers } from './customer.list.json';
 export { default as draftOrders } from './draftOrder.list.json';
 export { default as files } from './file.list.json';
 export { default as productMetafields } from './graphqlMetafield.list.json';
-export { default as inventoryItems } from './inventoryItem.list.json';
 export { default as inventoryLevels } from './inventoryLevel.list.json';
 export { default as locations } from './location.list.json';
 export { default as markets } from './market.list.json';

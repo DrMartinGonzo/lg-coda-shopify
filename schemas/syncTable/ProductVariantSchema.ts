@@ -1,5 +1,6 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
+import { OPTIONS_COUNTRY_NAMES } from '../../constants/options-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
 import { NOT_FOUND } from '../../constants/strings-constants';
 import { weightUnitsToLabelMap } from '../../models/utils/measurements-utils';
@@ -7,6 +8,12 @@ import { FormatRowReferenceFn } from '../CodaRows.types';
 import { ProductReference } from './ProductSchema';
 
 const titleProp = PROPS.makeTitleProp('product variant');
+export const inventoryItemRequiresShippingProp = {
+  ...PROPS.BOOLEAN,
+  fixedId: 'requires_shipping',
+  fromKey: 'requires_shipping',
+  description: 'Whether the item requires shipping.',
+};
 export const itemGramsProp = {
   ...PROPS.NUMBER,
   fixedId: 'grams',
@@ -176,6 +183,50 @@ export const ProductVariantSyncTableSchema = coda.makeObjectSchema({
       description:
         "The unit of measurement that applies to the product variant's weight. If you don't specify a value for weight_unit, then the shop's default unit of measurement is applied. Valid values: g, kg, oz, and lb.",
     },
+
+    inventory_history_url: {
+      ...PROPS.LINK,
+      fixedId: 'inventory_history_url',
+    },
+    cost: {
+      ...PROPS.CURRENCY,
+      fixedId: 'cost',
+      fromKey: 'cost',
+      mutable: true,
+      description: "The unit cost of the inventory item. The shop's default currency is used.",
+    },
+    country_code_of_origin: {
+      ...PROPS.SELECT_LIST,
+      options: OPTIONS_COUNTRY_NAMES,
+      fixedId: 'country_code_of_origin',
+      fromKey: 'country_code_of_origin',
+      mutable: true,
+      requireForUpdates: false,
+      description: 'The ISO 3166-1 alpha-2 country code of where the item originated from.',
+    },
+    harmonized_system_code: {
+      type: coda.ValueType.String,
+      fixedId: 'harmonized_system_code',
+      fromKey: 'harmonized_system_code',
+      mutable: true,
+      description: 'The harmonized system code of the item.',
+    },
+    province_code_of_origin: {
+      type: coda.ValueType.String,
+      fixedId: 'province_code_of_origin',
+      fromKey: 'province_code_of_origin',
+      mutable: true,
+      description: 'The ISO 3166-2 alpha-2 province code of where the item originated from.',
+    },
+    tracked: {
+      type: coda.ValueType.Boolean,
+      fixedId: 'tracked',
+      fromKey: 'tracked',
+      mutable: true,
+      description:
+        'Whether inventory levels are tracked for the item. If true, then the inventory quantity changes are tracked by Shopify.',
+    },
+    requires_shipping: { ...inventoryItemRequiresShippingProp, mutable: true },
   },
   displayProperty: 'title',
   idProperty: 'id',

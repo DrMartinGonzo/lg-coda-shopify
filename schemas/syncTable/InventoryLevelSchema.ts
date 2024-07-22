@@ -1,6 +1,5 @@
 import * as coda from '@codahq/packs-sdk';
 import * as PROPS from '../../coda/utils/coda-properties';
-import { InventoryItemReference } from './InventoryItemSchema';
 import { LocationReference } from './LocationSchema';
 
 export const InventoryLevelSyncTableSchema = coda.makeObjectSchema({
@@ -19,12 +18,6 @@ export const InventoryLevelSyncTableSchema = coda.makeObjectSchema({
       fromKey: 'inventory_item_id',
       fixedId: 'inventory_item_id',
       description: 'The ID of the inventory item associated with the inventory level.',
-    },
-    inventory_item: {
-      ...InventoryItemReference,
-      fromKey: 'inventory_item',
-      fixedId: 'inventory_item',
-      description: 'The inventory item associated with the inventory level.',
     },
     location_id: {
       ...PROPS.ID_NUMBER,

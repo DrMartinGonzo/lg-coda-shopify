@@ -99,8 +99,11 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
     if (['image'].some(hasEffectiveKey)) {
       fields.image = true;
     }
-    if (VARIANT_WEIGHT_KEYS.concat(['inventory_item_id']).some(hasEffectiveKey)) {
+    if (VARIANT_WEIGHT_KEYS.concat(['inventory_item_id', 'cost', 'sku']).some(hasEffectiveKey)) {
       fields.inventoryItem = true;
+      if (hasEffectiveKey('cost')) {
+        fields.cost = true;
+      }
       if (VARIANT_WEIGHT_KEYS.some(hasEffectiveKey)) {
         fields.weight = true;
       }

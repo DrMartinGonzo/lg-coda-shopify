@@ -11,7 +11,6 @@ import {
 
 import { BaseModelDataGraphQl } from '../models/graphql/AbstractModelGraphQl';
 import { FileApiData, FileModelData } from '../models/graphql/FileModel';
-import { InventoryItemApiData, InventoryItemModelData } from '../models/graphql/InventoryItemModel';
 import { LocationApiData, LocationModelData } from '../models/graphql/LocationModel';
 import { MetafieldDefinitionApiData, MetafieldDefinitionModelData } from '../models/graphql/MetafieldDefinitionModel';
 import {
@@ -38,11 +37,6 @@ import {
 import { VariantApidata, VariantModelData } from '../models/graphql/VariantModel';
 
 import { deleteFilesMutation, getFilesQuery, getSingleFileQuery, updateFilesMutation } from '../graphql/files-graphql';
-import {
-  buildInventoryItemsSearchQuery,
-  getInventoryItemsQuery,
-  updateInventoryItemMutation,
-} from '../graphql/inventoryItems-graphql';
 import {
   activateLocationMutation,
   deactivateLocationMutation,
@@ -99,13 +93,13 @@ import {
 } from '../graphql/products-graphql';
 import { throttleStatusQuery } from '../graphql/shop-graphql';
 import {
-  shopLocaleFieldsFragment,
   getAvailableLocalesQuery,
   getSingleTranslationQuery,
   getTranslatableContentKeys,
   getTranslationsQuery,
   registerTranslationMutation,
   removeTranslationsMutation,
+  shopLocaleFieldsFragment,
 } from '../graphql/translations-graphql';
 
 import { InvalidValueError, UnsupportedClientOperation } from '../Errors/Errors';
@@ -829,107 +823,6 @@ export class FileClient extends AbstractGraphQlClient<FileModelData> {
       filename: modelData.filename,
       alt: modelData.alt ?? '',
     };
-    const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
-
-    // If no input, we have nothing to update.
-    return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
-  }
-}
-// #endregion
-
-// #region InventoryItemClient
-interface MultipleInventoryItemsResponse {
-  inventoryItems: { nodes: InventoryItemApiData[] };
-}
-interface InventoryItemUpdateResponse {
-  inventoryItemUpdate: {
-    inventoryItem: InventoryItemApiData;
-  };
-}
-export interface ListInventoryItemsArgs extends BaseListArgs {
-  cursor?: string;
-  limit?: number;
-  createdAtMin?: Date;
-  createdAtMax?: Date;
-  updatedAtMin?: Date;
-  updatedAtMax?: Date;
-  skus?: string[];
-}
-
-export class InventoryItemClient extends AbstractGraphQlClient<InventoryItemModelData> {
-  async list({
-    createdAtMin,
-    createdAtMax,
-    updatedAtMin,
-    updatedAtMax,
-    skus,
-    cursor,
-    limit,
-    options,
-  }: ListInventoryItemsArgs) {
-    const queryFilters = {
-      created_at_min: createdAtMin,
-      created_at_max: createdAtMax,
-      updated_at_min: updatedAtMin,
-      updated_at_max: updatedAtMax,
-      skus,
-    };
-    // Remove any undefined filters
-    Object.keys(queryFilters).forEach((key) => {
-      if (queryFilters[key] === undefined) delete queryFilters[key];
-    });
-    const searchQuery = buildInventoryItemsSearchQuery(queryFilters);
-
-    const documentNode = getInventoryItemsQuery;
-    const variables = {
-      limit: limit ?? InventoryItemClient.defaultLimit,
-      cursor,
-      searchQuery,
-    } as VariablesOf<typeof getInventoryItemsQuery>;
-
-    return this.request(
-      withCacheDefault({
-        options,
-        documentNode,
-        variables,
-        transformBodyResponse: (response: MultipleInventoryItemsResponse) =>
-          response?.inventoryItems.nodes as InventoryItemModelData[],
-      })
-    );
-  }
-
-  async update(modelData: InventoryItemModelData) {
-    const input = this.formatUpdateInput(modelData);
-    if (input) {
-      const documentNode = updateInventoryItemMutation;
-      const variables = {
-        id: modelData.id,
-        input,
-      } as VariablesOf<typeof updateInventoryItemMutation>;
-      return this.request({
-        documentNode,
-        variables,
-        transformBodyResponse: (response: InventoryItemUpdateResponse) =>
-          response?.inventoryItemUpdate?.inventoryItem as InventoryItemModelData,
-      });
-    }
-  }
-
-  private formatUpdateInput(modelData: InventoryItemModelData) {
-    const input: VariablesOf<typeof updateInventoryItemMutation>['input'] = {
-      cost: modelData.unitCost?.amount,
-      countryCodeOfOrigin: modelData.countryCodeOfOrigin,
-      harmonizedSystemCode: modelData.harmonizedSystemCode,
-      provinceCodeOfOrigin: modelData.provinceCodeOfOrigin,
-      tracked: modelData.tracked,
-      // countryHarmonizedSystemCodes
-    };
-
-    // /* Edge case for cost. Setting it to 0 should delete the value. */
-    // if (input.cost === 0) {
-    //   input.cost = null;
-    // }
-
     const filteredInput = excludeUndefinedObjectKeys(input) as typeof input;
 
     // If no input, we have nothing to update.
@@ -2408,6 +2301,7 @@ export interface VariantFieldsArgs {
   options?: boolean;
   product?: boolean;
   weight?: boolean;
+  cost?: boolean;
 }
 interface SingleVariantArgs extends BaseSingleArgs {
   fields?: VariantFieldsArgs;
@@ -2427,6 +2321,7 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
       countMetafields: 0,
       metafieldKeys: [],
+      includeCost: forceAllFields ?? fields?.cost ?? true,
       includeInventoryItem: forceAllFields ?? fields?.inventoryItem ?? true,
       includeProduct: forceAllFields ?? fields?.product ?? true,
       includeImage: forceAllFields ?? fields?.image ?? true,
@@ -2494,6 +2389,7 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       includeImage: forceAllFields ?? fields?.image ?? false,
       includeInventoryItem: forceAllFields ?? fields?.inventoryItem ?? false,
       includeMetafields: forceAllFields ?? fields?.metafields ?? false,
+      includeCost: forceAllFields ?? fields?.cost ?? false,
       includeOptions: forceAllFields ?? fields?.options ?? false,
       includeProduct: forceAllFields ?? fields?.product ?? false,
       includeWeight: forceAllFields ?? fields?.weight ?? false,
@@ -2510,12 +2406,14 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       })
     );
   }
+
   async create(modelData: VariantModelData) {
     const input = this.formatCreateInput(modelData);
     if (input) {
       const documentNode = createProductVariantMutation;
       const variables = {
         input: input ?? {},
+        includeCost: true,
         includeImage: true,
         includeInventoryItem: true,
         includeMetafields: true,
@@ -2533,12 +2431,14 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       });
     }
   }
+
   async update(modelData: VariantModelData) {
     const input = this.formatUpdateInput(modelData);
     if (input) {
       const documentNode = updateProductVariantMutation;
       const variables = {
         input: input ?? {},
+        includeCost: true,
         includeImage: true,
         includeInventoryItem: true,
         includeMetafields: true,
@@ -2563,6 +2463,7 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       variables: { id: data.id } as VariablesOf<typeof deleteProductVariantMutation>,
     });
   }
+
   private formatBaseInput(modelData: VariantModelData): ProductVariantInput | undefined {
     let input: ProductVariantInput = {
       barcode: modelData.barcode,
@@ -2570,20 +2471,20 @@ export class VariantClient extends AbstractGraphQlClient<VariantModelData> {
       inventoryPolicy: modelData.inventoryPolicy as any,
       position: modelData.position,
       price: modelData.price,
-      // TODO: Shopify doc tells us to use inventoryItem.sku instead. But InventoryItemInput doesn't seem to support it ??
-      // TODO: Should be available in next api version : 2024-07
-      // @ts-expect-error
-      sku: modelData.sku,
       taxable: modelData.taxable,
       taxCode: modelData.taxCode,
     };
     if (modelData.selectedOptions && modelData.selectedOptions.length) {
       input.options = modelData.selectedOptions.map((option) => option.value);
     }
-    if (modelData.inventoryItem?.measurement) {
-      input.inventoryItem = {
-        measurement: modelData.inventoryItem?.measurement as ProductVariantInput['inventoryItem']['measurement'],
-      };
+    if (modelData.inventoryItem) {
+      const { measurement, countryCodeOfOrigin, unitCost, ...inventoryItem } = modelData.inventoryItem;
+      input.inventoryItem = excludeUndefinedObjectKeys({
+        ...inventoryItem,
+        countryCodeOfOrigin: countryCodeOfOrigin as ProductVariantInput['inventoryItem']['countryCodeOfOrigin'],
+        measurement: measurement as ProductVariantInput['inventoryItem']['measurement'],
+        cost: unitCost?.amount,
+      });
     }
 
     const filteredInput = excludeUndefinedObjectKeys(input);

@@ -47,7 +47,6 @@ import {
 } from './coda/setup/draftOrders-setup';
 import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './coda/setup/files-setup';
 import { Formula_ProductStatus, Formula_ProductType } from './coda/setup/helper-formulas-setup';
-import { Action_UpdateInventoryItem, Sync_InventoryItems } from './coda/setup/inventoryItems-setup';
 import {
   Action_AdjustInventoryLevel,
   Action_SetInventoryLevel,
@@ -176,7 +175,6 @@ pack.syncTables.push(Sync_Collects);
 pack.syncTables.push(Sync_Collections);
 pack.syncTables.push(Sync_Customers);
 pack.syncTables.push(Sync_DraftOrders);
-pack.syncTables.push(Sync_InventoryItems);
 pack.syncTables.push(Sync_InventoryLevels);
 pack.syncTables.push(Sync_Files);
 pack.syncTables.push(Sync_Locations);
@@ -240,8 +238,6 @@ pack.formulas.push(Action_UpdateDraftOrder);
 pack.formulas.push(Action_DeleteDraftOrder);
 
 pack.formulas.push(Action_DeleteFile);
-
-pack.formulas.push(Action_UpdateInventoryItem);
 
 pack.formulas.push(Action_SetInventoryLevel);
 pack.formulas.push(Action_AdjustInventoryLevel);
