@@ -12,11 +12,14 @@ import {
 import * as PROPS from '../../coda/utils/coda-properties';
 import { DEFAULT_CURRENCY_CODE } from '../../config';
 import {
+  LinkField,
   METAFIELD_LEGACY_TYPES,
   METAFIELD_LIST_PREFIX,
   METAFIELD_TYPES,
   MeasurementField,
   MetafieldLegacyType,
+  MetafieldLinkType,
+  MetafieldListLinkType,
   MetafieldListMeasurementType,
   MetafieldListRatingType,
   MetafieldMeasurementType,
@@ -385,7 +388,7 @@ function requireMatchingMetafieldDefinition(
 // #region Format For Api
 /**
  * Pour les metafields de type list, quand on les édite dans l'interface de
- * Coda, ils seront temporairement converti comme une comma delimite string
+ * Coda, ils seront temporairement converti comme une comma delimited string
  * value, du coup on reconverti en array si nécessaire
  */
 export function maybeBackToArray<T extends any>(
@@ -403,6 +406,29 @@ export function maybeBackToArray<T extends any>(
   }
 
   return measurementValue as T;
+}
+
+function parseMarkdownLink(link: string) {
+  /* Match full links and relative paths */
+  const regex = /^\[([\w\s\d]*)\]\(((?:\/|https?:\/\/)[\w\d./?=#]+)\)$/;
+  const match = link.match(regex);
+  if (!match) {
+    throw new Error('Link is not a valid markdown link');
+  }
+  const [full, text, url] = match;
+  return { url, text };
+}
+function formatLinkField(value: string): LinkField {
+  const parsed = parseMarkdownLink(value);
+  return {
+    url: parsed.url,
+    text: parsed.text === parsed.url ? '' : parsed.text,
+  };
+}
+function formatLinkFieldForApi(linkValue: string | string[]): string {
+  return JSON.stringify(
+    Array.isArray(linkValue) ? linkValue.map((v) => formatLinkField(v)) : formatLinkField(linkValue)
+  );
 }
 
 /**
@@ -548,6 +574,12 @@ export function formatMetafieldValueForApi(
     case METAFIELD_TYPES.rich_text_field:
       break;
 
+    // LINKS
+    case METAFIELD_TYPES.link:
+      return formatLinkFieldForApi(value);
+    case METAFIELD_TYPES.list_link:
+      return formatLinkFieldForApi(splitAndTrimValues(value));
+
     // RATING
     case METAFIELD_TYPES.rating:
     case METAFIELD_TYPES.list_rating:
@@ -636,6 +668,14 @@ function formatDecimalFieldsForSchema(parsedValue: string | string[]) {
     ? parsedValue.map((v) => formatDecimalFieldsForSchema(v))
     : safeToFloat(parsedValue);
 }
+
+function formatLinkFieldsForSchema(parsedValue: LinkField | LinkField[]): string | string[] {
+  return Array.isArray(parsedValue)
+    ? parsedValue.map((v) => formatLinkFieldsForSchema(v) as string).join(', ')
+    : isNullishOrEmpty(parsedValue.text)
+    ? parsedValue.url
+    : `[${parsedValue.text}](${parsedValue.url})`;
+}
 function formatMeasurementFieldsForSchema(
   parsedValue: { value: string; unit: string } | { value: string; unit: string }[]
 ) {
@@ -691,6 +731,10 @@ export function formatMetaFieldValueForSchema({ value, type }: { value: string; 
     case METAFIELD_TYPES.json:
     case METAFIELD_LEGACY_TYPES.json_string:
       return JSON.stringify(parsedValue);
+
+    case METAFIELD_TYPES.link:
+    case METAFIELD_TYPES.list_link:
+      return formatLinkFieldsForSchema(parsedValue);
 
     // RATING
     case METAFIELD_TYPES.rating:

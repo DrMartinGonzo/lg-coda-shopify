@@ -14,6 +14,7 @@ export const METAFIELD_TYPES = {
   dimension: 'dimension',
   file_reference: 'file_reference',
   json: 'json',
+  link: 'link',
   metaobject_reference: 'metaobject_reference',
   mixed_reference: 'mixed_reference',
   money: 'money',
@@ -38,6 +39,7 @@ export const METAFIELD_TYPES = {
   list_dimension: `${METAFIELD_LIST_PREFIX}dimension`,
   list_file_reference: `${METAFIELD_LIST_PREFIX}file_reference`,
   list_metaobject_reference: `${METAFIELD_LIST_PREFIX}metaobject_reference`,
+  list_link: `${METAFIELD_LIST_PREFIX}link`,
   list_mixed_reference: `${METAFIELD_LIST_PREFIX}mixed_reference`,
   list_number_integer: `${METAFIELD_LIST_PREFIX}number_integer`,
   list_number_decimal: `${METAFIELD_LIST_PREFIX}number_decimal`,
@@ -66,6 +68,9 @@ export type MetafieldLegacyType = (typeof METAFIELD_LEGACY_TYPES)[keyof typeof M
 export type MetafieldRatingType = (typeof METAFIELD_TYPES)['rating'];
 export type MetafieldListRatingType = (typeof METAFIELD_TYPES)['list_rating'];
 
+export type MetafieldLinkType = (typeof METAFIELD_TYPES)['link'];
+export type MetafieldListLinkType = (typeof METAFIELD_TYPES)['list_link'];
+
 export type MetafieldMeasurementType =
   | (typeof METAFIELD_TYPES)['dimension']
   | (typeof METAFIELD_TYPES)['volume']
@@ -90,6 +95,8 @@ type MetafieldListReferenceType =
   | (typeof METAFIELD_TYPES)['list_page_reference']
   | (typeof METAFIELD_TYPES)['list_product_reference']
   | (typeof METAFIELD_TYPES)['list_variant_reference'];
+
+export type LinkField = { url: string; text?: string };
 
 export interface MoneyField {
   currency_code: CurrencyCode;

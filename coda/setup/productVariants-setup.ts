@@ -3,22 +3,21 @@ import * as coda from '@codahq/packs-sdk';
 
 import { VariantClient } from '../../Clients/GraphQlClients';
 import { InvalidValueVisibleError, SyncUpdateRequiredPropertyMissingVisibleError } from '../../Errors/Errors';
-import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
 import { CACHE_DEFAULT } from '../../constants/cacheDurations-constants';
-import { optionValues } from '../utils/coda-utils';
 import { OPTIONS_PRODUCT_STATUS_GRAPHQL, OPTIONS_PUBLISHED_STATUS } from '../../constants/options-constants';
 import { PACK_IDENTITIES } from '../../constants/pack-constants';
+import { GraphQlResourceNames } from '../../constants/resourceNames-constants';
+import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { VARIANT_OPTION_KEYS, VariantModel } from '../../models/graphql/VariantModel';
 import { ProductVariantRow } from '../../schemas/CodaRows.types';
 import { formatProductReference } from '../../schemas/syncTable/ProductSchema';
 import { ProductVariantSyncTableSchema } from '../../schemas/syncTable/ProductVariantSchema';
 import { SyncedVariants } from '../../sync/graphql/SyncedVariants';
 import { MetafieldOwnerType } from '../../types/admin.types';
-import { makeDeleteGraphQlResourceAction } from '../utils/coda-utils';
-import { idToGraphQlGid } from '../../graphql/utils/graphql-utils';
 import { assertAllowedValue, isNullishOrEmpty } from '../../utils/helpers';
 import { CodaMetafieldSet } from '../CodaMetafieldSet';
 import { createOrUpdateMetafieldDescription, filters, inputs } from '../utils/coda-parameters';
+import { makeDeleteGraphQlResourceAction, optionValues } from '../utils/coda-utils';
 
 // #endregion
 

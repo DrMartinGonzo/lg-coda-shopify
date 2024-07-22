@@ -223,6 +223,15 @@ export function mapMetaFieldToSchemaProperty(
         ).join(', ')}.`,
       };
 
+    // LINK
+    case METAFIELD_TYPES.link:
+    case METAFIELD_TYPES.list_link:
+      return {
+        ...baseProperty,
+        ...PROPS.MARKDOWN,
+        mutable: true,
+      };
+
     // URL
     case METAFIELD_TYPES.url:
       return {
