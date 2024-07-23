@@ -61,7 +61,7 @@ export class MetaobjectModel extends AbstractModelGraphQl {
       fields.push({
         key,
         // value should always be a string
-        value: isString(value) ? value : JSON.stringify(value),
+        value: isNullishOrEmpty(value) ? '' : isString(value) ? value : JSON.stringify(value),
         /**
          * We don't care about the type since
          * parseMetaobjectFieldInputsFromVarArgs is only used for

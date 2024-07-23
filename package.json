@@ -1,6 +1,6 @@
 {
   "name": "coda-shopify-plus",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Coda pack for Shopify",
   "scripts": {
     "set_release:test": "IS_TEST_RELEASE=true ts-node ./_buildScripts/set-pack-config.ts",
