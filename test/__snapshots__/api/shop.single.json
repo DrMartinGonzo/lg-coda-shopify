@@ -51,6 +51,6 @@
   "enabled_presentment_currencies": [
     "EUR"
   ],
-  "transactional_sms_disabled": false,
-  "marketing_sms_consent_enabled_at_checkout": false
+  "marketing_sms_consent_enabled_at_checkout": false,
+  "transactional_sms_disabled": false
 }

@@ -3,6 +3,7 @@ import { ExpectStatic, describe, test } from 'vitest';
 
 import {
   FileClient,
+  InventoryLevelClient as InventoryLevelGraphQlClient,
   LocationClient,
   MarketClient,
   MetafieldDefinitionClient,
@@ -21,7 +22,6 @@ import {
   CustomCollectionClient,
   CustomerClient,
   DraftOrderClient,
-  InventoryLevelClient,
   MetafieldClient,
   OrderClient,
   PageClient,
@@ -29,6 +29,7 @@ import {
   ShopClient,
   SmartCollectionClient,
 } from '../Clients/RestClients';
+import { POSSIBLE_QUANTITY_NAMES } from '../constants/inventoryLevels-constants';
 import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { graphQlGidToId } from '../graphql/utils/graphql-utils';
 import { MetafieldOwnerType, TranslatableResourceType } from '../types/admin.types';
@@ -245,9 +246,11 @@ describe('Dump List API Data', () => {
   });
 
   test('InventoryLevels', async ({ expect }) => {
-    const response = await InventoryLevelClient.createInstance(getRealContext()).list({
-      location_ids: graphQlGidToId(referenceIds.sync.location).toString(),
+    const response = await InventoryLevelGraphQlClient.createInstance(getRealContext()).list({
+      locationId: referenceIds.sync.location,
       limit: DEFAULT_LIMIT,
+      forceAllFields: true,
+      quantitiesNames: POSSIBLE_QUANTITY_NAMES,
     });
     await snapListData(expect, response.body, 'inventoryLevel');
   });

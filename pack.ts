@@ -48,7 +48,8 @@ import {
 import { Action_DeleteFile, Format_File, Formula_File, Sync_Files } from './coda/setup/files-setup';
 import { Formula_ProductStatus, Formula_ProductType } from './coda/setup/helper-formulas-setup';
 import {
-  Action_AdjustInventoryLevel,
+  Action_AdjustInventory,
+  Action_MoveInventoryBetweenStates,
   Action_SetInventoryLevel,
   Sync_InventoryLevels,
 } from './coda/setup/inventoryLevels-setup';
@@ -240,7 +241,8 @@ pack.formulas.push(Action_DeleteDraftOrder);
 pack.formulas.push(Action_DeleteFile);
 
 pack.formulas.push(Action_SetInventoryLevel);
-pack.formulas.push(Action_AdjustInventoryLevel);
+pack.formulas.push(Action_AdjustInventory);
+pack.formulas.push(Action_MoveInventoryBetweenStates);
 
 pack.formulas.push(Action_UpdateLocation);
 pack.formulas.push(Action_ActivateLocation);

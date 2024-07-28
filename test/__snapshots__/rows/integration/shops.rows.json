@@ -46,8 +46,8 @@
     "EnabledPresentmentCurrencies": [
       "EUR"
     ],
-    "TransactionalSmsDisabled": false,
     "MarketingSmsConsentEnabledAtCheckout": false,
+    "TransactionalSmsDisabled": false,
     "AdminUrl": "https://coda-pack-test.myshopify.com/admin"
   }
 ]

@@ -117,11 +117,27 @@ import {
 } from '../Errors/GraphQlErrors';
 import { GRAPHQL_BUDGET__MAX, GRAPHQL_DEFAULT_API_VERSION, GRAPHQL_RETRIES__MAX } from '../config';
 import { CACHE_DISABLED } from '../constants/cacheDurations-constants';
+import {
+  DEFAULT_LEDGER_DOC_URI,
+  DEFAULT_REFERENCE_DOC_URI,
+  MoveReasonType,
+  POSSIBLE_QUANTITY_NAMES,
+  QuantityNameType,
+} from '../constants/inventoryLevels-constants';
 import { METAFIELD_TYPES } from '../constants/metafields-constants';
 import { RestResourcesSingular } from '../constants/resourceNames-constants';
 import { PREFIX_FAKE } from '../constants/strings-constants';
 import { collectionTypeQuery, collectionTypesQuery } from '../graphql/collections-graphql';
+import {
+  adjustInventoryLevelQuantities,
+  getInventoryLevelsAtLocation,
+  getSingleInventoryLevelByInventoryItemQuery,
+  getSingleInventoryLevelQuery,
+  moveInventoryLevelQuantities,
+  setInventoryLevelQuantities,
+} from '../graphql/inventoryLevels-graphql';
 import { getMarketsQuery } from '../graphql/markets-graphql';
+import { InventoryLevelGraphQlApiData, InventoryLevelGraphQlModelData } from '../models/graphql/InventoryLevelModel';
 import { MarketApidata, MarketModelData } from '../models/graphql/MarketModel';
 import { SupportedMetafieldOwnerType } from '../models/graphql/MetafieldGraphQlModel';
 import { graphQlOwnerNameToOwnerType } from '../models/utils/metafields-utils';
@@ -827,6 +843,370 @@ export class FileClient extends AbstractGraphQlClient<FileModelData> {
 
     // If no input, we have nothing to update.
     return Object.keys(filteredInput).length === 0 ? undefined : filteredInput;
+  }
+}
+// #endregion
+
+// #region InventoryLevelClient
+interface SingleInventoryLevelResponse extends ResultOf<typeof getSingleInventoryLevelQuery> {}
+interface SingleInventoryLevelByInventoryItemResponse
+  extends ResultOf<typeof getSingleInventoryLevelByInventoryItemQuery> {}
+
+interface MultipleInventoryLevelsResponse {
+  location: { inventoryLevels: { nodes: InventoryLevelGraphQlApiData[] } };
+}
+
+interface InventorySetQuantitiesResponse extends ResultOf<typeof setInventoryLevelQuantities> {}
+interface InventoryAdjustQuantitiesResponse extends ResultOf<typeof adjustInventoryLevelQuantities> {}
+interface InventoryMoveQuantitiesResponse extends ResultOf<typeof moveInventoryLevelQuantities> {}
+
+export interface InventoryLevelFieldsArgs {
+  inventory_item?: boolean;
+  variant?: boolean;
+}
+interface SingleInventoryLevelArgs extends Omit<BaseSingleArgs, 'id'> {
+  id?: string;
+  quantitiesNames?: QuantityNameType[];
+  inventoryItemId?: string;
+  locationId?: string;
+}
+
+export interface ListInventoryLevelsArgs extends BaseListArgs {
+  limit?: number;
+  cursor?: string;
+  locationId: string;
+  fields?: InventoryLevelFieldsArgs;
+  quantitiesNames?: QuantityNameType[];
+}
+
+interface MoveInventoryLevelsFromTo {
+  locationId: string;
+  name: QuantityNameType;
+  ledgerDocumentUri?: string;
+}
+export interface SetInventoryLevelsArgs {
+  id?: string;
+  inventoryItemId?: string;
+  locationId?: string;
+  reason: MoveReasonType;
+  quantities: InventoryLevelGraphQlModelData['quantities'];
+  referenceDocumentUri: string;
+}
+export interface AdjustInventoryLevelsArgs {
+  id?: string;
+  inventoryItemId?: string;
+  locationId?: string;
+  reason: MoveReasonType;
+  delta: number;
+  quantityName: QuantityNameType;
+  referenceDocumentUri: string;
+  ledgerDocumentUri: string;
+}
+export interface MoveInventoryLevelsArgs {
+  inventoryItemId: string;
+  reason: MoveReasonType;
+  quantity: number;
+  referenceDocumentUri: string;
+  from: MoveInventoryLevelsFromTo;
+  to: MoveInventoryLevelsFromTo;
+}
+
+export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGraphQlModelData> {
+  async single({ id, inventoryItemId, locationId, quantitiesNames = [], options }: SingleInventoryLevelArgs) {
+    if (id) {
+      const documentNode = getSingleInventoryLevelQuery;
+      const variables = {
+        id,
+        quantitiesNames,
+        includeInventoryItem: true,
+        includeLocation: true,
+        includeVariant: true,
+      } as VariablesOf<typeof documentNode>;
+      return this.request(
+        withCacheDefault({
+          options,
+          documentNode,
+          variables,
+          transformBodyResponse: (response: SingleInventoryLevelResponse) => {
+            const { location, ...node } = response?.inventoryLevel;
+            return {
+              locationId: location?.id,
+              ...node,
+            } as InventoryLevelGraphQlModelData;
+          },
+        })
+      );
+    } else if (inventoryItemId && locationId) {
+      const documentNode = getSingleInventoryLevelByInventoryItemQuery;
+      const variables = {
+        inventoryItemId,
+        locationId,
+        quantitiesNames,
+        includeInventoryItem: true,
+        includeLocation: true,
+        includeVariant: true,
+      } as VariablesOf<typeof documentNode>;
+      return this.request(
+        withCacheDefault({
+          options,
+          documentNode,
+          variables,
+          transformBodyResponse: (response: SingleInventoryLevelByInventoryItemResponse) => {
+            const { location, ...node } = response?.inventoryItem?.inventoryLevel;
+            return {
+              locationId: location?.id,
+              ...node,
+            } as InventoryLevelGraphQlModelData;
+          },
+        })
+      );
+    }
+
+    throw new Error('id or inventoryItemId and locationId must be provided');
+  }
+  async singleLatestData({
+    id,
+    inventoryItemId,
+    locationId,
+  }: Pick<SingleInventoryLevelArgs, 'id' | 'inventoryItemId' | 'locationId'>) {
+    return this.single({
+      id,
+      inventoryItemId,
+      locationId,
+      quantitiesNames: POSSIBLE_QUANTITY_NAMES,
+      options: { cacheTtlSecs: CACHE_DISABLED },
+    });
+  }
+
+  async list({
+    fields = {},
+    locationId,
+    quantitiesNames = [],
+    forceAllFields,
+    cursor,
+    limit,
+    options,
+  }: ListInventoryLevelsArgs) {
+    let searchQuery = '';
+
+    const documentNode = getInventoryLevelsAtLocation;
+    const variables = {
+      limit: limit ?? InventoryLevelClient.defaultLimit,
+      cursor,
+      quantitiesNames,
+      includeInventoryItem: forceAllFields ?? fields?.inventory_item ?? false,
+      includeVariant: forceAllFields ?? fields?.variant ?? true,
+      includeLocation: false,
+      locationId,
+    } as VariablesOf<typeof getInventoryLevelsAtLocation>;
+
+    return this.request(
+      withCacheDefault({
+        options,
+        documentNode,
+        variables,
+        transformBodyResponse: (response: MultipleInventoryLevelsResponse) => {
+          return response?.location?.inventoryLevels?.nodes.map((n) => {
+            return {
+              locationId,
+              ...n,
+            } as InventoryLevelGraphQlModelData;
+          });
+        },
+      })
+    );
+  }
+
+  async set({
+    reason = 'correction',
+    id,
+    inventoryItemId,
+    locationId,
+    quantities,
+    referenceDocumentUri,
+  }: SetInventoryLevelsArgs) {
+    if (quantities.length > 1) {
+      throw new coda.UserVisibleError('Can only set one inventory level quantity at a time');
+    }
+
+    const latestData = (
+      await this.singleLatestData({
+        id,
+        inventoryItemId,
+        locationId,
+      })
+    ).body;
+    const latestQuantities = latestData.quantities;
+    const updatedQuantity = quantities[0];
+
+    // FIXME
+    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
+    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
+
+    const documentNode = setInventoryLevelQuantities;
+    const variables = {
+      input: {
+        name: updatedQuantity.name,
+        reason,
+        referenceDocumentUri: referenceDocumentUri ?? DEFAULT_REFERENCE_DOC_URI,
+        quantities: [
+          {
+            inventoryItemId: latestData.item.id,
+            locationId: latestData.locationId,
+            quantity: updatedQuantity.quantity,
+            compareQuantity: latestQuantities.find((q) => q.name === updatedQuantity.name).quantity,
+          },
+        ],
+      },
+    } as VariablesOf<typeof documentNode>;
+
+    return this.request({
+      documentNode,
+      variables,
+      transformBodyResponse: (response: InventorySetQuantitiesResponse) => {
+        const data = { ...latestData };
+        const changes = response?.inventorySetQuantities?.inventoryAdjustmentGroup?.changes ?? [];
+
+        // no changes
+        if (changes.length === 0) return data;
+
+        data.quantities = changes.map((c) => {
+          return {
+            name: c.name,
+            quantity: latestQuantities.find((q) => q.name === c.name).quantity + c.delta,
+          };
+        });
+        return data;
+      },
+    });
+  }
+
+  async adjust({
+    reason = 'correction',
+    id,
+    inventoryItemId,
+    locationId,
+    delta,
+    quantityName,
+    referenceDocumentUri,
+    ledgerDocumentUri,
+  }: AdjustInventoryLevelsArgs) {
+    const latestData = (
+      await this.singleLatestData({
+        id,
+        inventoryItemId,
+        locationId,
+      })
+    ).body;
+    const latestQuantities = latestData.quantities;
+
+    const documentNode = adjustInventoryLevelQuantities;
+    const variables = {
+      input: {
+        name: quantityName,
+        reason,
+        referenceDocumentUri: referenceDocumentUri ?? DEFAULT_REFERENCE_DOC_URI,
+        changes: [
+          {
+            delta,
+            inventoryItemId,
+            locationId,
+            ledgerDocumentUri: ledgerDocumentUri ?? DEFAULT_LEDGER_DOC_URI,
+          },
+        ],
+      },
+    } as VariablesOf<typeof documentNode>;
+
+    if (quantityName === 'available') {
+      delete variables.input.changes[0].ledgerDocumentUri;
+    }
+
+    // FIXME
+    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
+    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
+
+    return this.request({
+      documentNode,
+      variables,
+      transformBodyResponse: (response: InventoryAdjustQuantitiesResponse) => {
+        const data = { ...latestData };
+        const changes = response?.inventoryAdjustQuantities?.inventoryAdjustmentGroup?.changes ?? [];
+
+        // no changes
+        if (changes.length === 0) return data;
+
+        data.quantities = changes.map((c) => {
+          return {
+            name: c.name,
+            quantity: latestQuantities.find((q) => q.name === c.name).quantity + c.delta,
+          };
+        });
+        return data;
+      },
+    });
+  }
+
+  async move({
+    inventoryItemId,
+    reason = 'correction',
+    quantity,
+    from,
+    to,
+    referenceDocumentUri,
+  }: MoveInventoryLevelsArgs) {
+    const latestData = (await this.singleLatestData({ inventoryItemId, locationId: from.locationId })).body;
+
+    // FIXME
+    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
+    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
+
+    function processFromToArgs(fromToArg: MoveInventoryLevelsFromTo) {
+      const { ledgerDocumentUri, ...rest } = fromToArg;
+      let processed: MoveInventoryLevelsFromTo = rest;
+      if (fromToArg.name !== 'available') {
+        processed.ledgerDocumentUri = fromToArg.ledgerDocumentUri ?? DEFAULT_LEDGER_DOC_URI;
+      }
+      return processed;
+    }
+
+    const fromArgs = processFromToArgs(from);
+    const toArgs = processFromToArgs(to);
+
+    const documentNode = moveInventoryLevelQuantities;
+    const variables = {
+      input: {
+        reason,
+        referenceDocumentUri: referenceDocumentUri ?? DEFAULT_REFERENCE_DOC_URI,
+        changes: [
+          {
+            inventoryItemId,
+            quantity,
+            from: fromArgs,
+            to: toArgs,
+          },
+        ],
+      },
+    } as VariablesOf<typeof documentNode>;
+
+    return this.request({
+      documentNode,
+      variables,
+      transformBodyResponse: (response: InventoryMoveQuantitiesResponse) => {
+        const data = { ...latestData };
+        const changes = response?.inventoryMoveQuantities?.inventoryAdjustmentGroup?.changes ?? [];
+
+        // no changes
+        if (changes.length === 0) return data;
+
+        data.quantities = changes.map((c) => {
+          return {
+            name: c.name,
+            quantity: latestData.quantities.find((q) => q.name === c.name).quantity + c.delta,
+          };
+        });
+        return data;
+      },
+    });
   }
 }
 // #endregion

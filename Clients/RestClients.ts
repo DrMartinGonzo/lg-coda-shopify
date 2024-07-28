@@ -11,7 +11,7 @@ import { CollectApiData, CollectModelData } from '../models/rest/CollectModel';
 import { CustomCollectionApiData, CustomCollectionModelData } from '../models/rest/CustomCollectionModel';
 import { CustomerApiData, CustomerModelData } from '../models/rest/CustomerModel';
 import { DraftOrderApiData, DraftOrderModelData } from '../models/rest/DraftOrderModel';
-import { InventoryLevelApiData, InventoryLevelModelData } from '../models/rest/InventoryLevelModel';
+import { InventoryLevelApiData, InventoryLevelModelData } from '../models/rest/InventoryLevelRestModel';
 import { MetafieldApiData, MetafieldModelData, SupportedMetafieldOwnerResource } from '../models/rest/MetafieldModel';
 import { OrderLineItemApiData, OrderLineItemModelData } from '../models/rest/OrderLineItemModel';
 import { OrderApiData, OrderModelData } from '../models/rest/OrderModel';

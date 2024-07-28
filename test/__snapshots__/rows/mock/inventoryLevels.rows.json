@@ -1,122 +1,232 @@
 [
   {
+    "UniqueId": "110915846400,46469091655936",
     "InventoryItemId": 46469091655936,
     "LocationId": 74534912256,
-    "Available": 80,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091655936",
-    "UniqueId": "46469091655936,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091655936/inventory_history?location_id=74534912256",
+    "VariantId": 44365631553792,
+    "Available": 95,
+    "Committed": 0,
+    "Damaged": 63,
+    "Incoming": 0,
+    "OnHand": 183,
+    "QualityControl": -10,
+    "Reserved": 35,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091655936/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631553792,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469091688704",
     "InventoryItemId": 46469091688704,
     "LocationId": 74534912256,
+    "VariantId": 44365631586560,
     "Available": 3,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091688704",
-    "UniqueId": "46469091688704,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091688704/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 3,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091688704/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631586560,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469091721472",
     "InventoryItemId": 46469091721472,
     "LocationId": 74534912256,
+    "VariantId": 44365631619328,
     "Available": 15,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091721472",
-    "UniqueId": "46469091721472,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091721472/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 15,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091721472/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631619328,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469091983616",
     "InventoryItemId": 46469091983616,
     "LocationId": 74534912256,
+    "VariantId": 44365631881472,
     "Available": 20,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091983616",
-    "UniqueId": "46469091983616,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091983616/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 20,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469091983616/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631881472,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092016384",
     "InventoryItemId": 46469092016384,
     "LocationId": 74534912256,
+    "VariantId": 44365631914240,
     "Available": 17,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092016384",
-    "UniqueId": "46469092016384,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092016384/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 17,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092016384/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631914240,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092049152",
     "InventoryItemId": 46469092049152,
     "LocationId": 74534912256,
+    "VariantId": 44365631947008,
     "Available": 6,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092049152",
-    "UniqueId": "46469092049152,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092049152/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 6,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092049152/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631947008,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092081920",
     "InventoryItemId": 46469092081920,
     "LocationId": 74534912256,
+    "VariantId": 44365631979776,
     "Available": 3,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092081920",
-    "UniqueId": "46469092081920,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092081920/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 3,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092081920/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365631979776,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092114688",
     "InventoryItemId": 46469092114688,
     "LocationId": 74534912256,
+    "VariantId": 44365632012544,
     "Available": 17,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092114688",
-    "UniqueId": "46469092114688,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092114688/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 17,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092114688/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365632012544,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092212992",
     "InventoryItemId": 46469092212992,
     "LocationId": 74534912256,
+    "VariantId": 44365632110848,
     "Available": 7,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092212992",
-    "UniqueId": "46469092212992,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092212992/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 7,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092212992/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365632110848,
+      "Title": "NOT_FOUND"
     }
   },
   {
+    "UniqueId": "110915846400,46469092245760",
     "InventoryItemId": 46469092245760,
     "LocationId": 74534912256,
+    "VariantId": 44365632143616,
     "Available": 9,
-    "GraphqlGid": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469092245760",
-    "UniqueId": "46469092245760,74534912256",
-    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092245760/inventory_history?location_id=74534912256",
+    "Committed": 0,
+    "Damaged": 0,
+    "Incoming": 0,
+    "OnHand": 9,
+    "QualityControl": 0,
+    "Reserved": 0,
+    "SafetyStock": 0,
     "Location": {
       "Id": 74534912256,
       "Name": "NOT_FOUND"
+    },
+    "InventoryHistoryUrl": "https://coda-pack-test.myshopify.com/admin/products/inventory/46469092245760/inventory_history?location_id=74534912256",
+    "Variant": {
+      "Id": 44365632143616,
+      "Title": "NOT_FOUND"
     }
   }
 ]

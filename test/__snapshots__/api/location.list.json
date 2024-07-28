@@ -47,7 +47,7 @@
     "name": "Shop location",
     "isActive": true,
     "fulfillsOnlineOrders": true,
-    "hasActiveInventory": false,
+    "hasActiveInventory": true,
     "shipsInventory": false,
     "address": {
       "address1": "51 Rue Montorgueil",

@@ -1,6 +1,6 @@
 {
   "name": "coda-shopify-plus",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Coda pack for Shopify",
   "scripts": {
     "set_release:test": "IS_TEST_RELEASE=true ts-node ./_buildScripts/set-pack-config.ts",
@@ -32,6 +32,7 @@
     "test:update:article": "yarn set_release:test && coda execute ./pack.ts Articles:update \"$(cat ./test/rowUpdateData/update-article.json | tr '\n' ' ')\"",
     "test:update:file": "yarn set_release:test && coda execute ./pack.ts Files:update '' '32' \"$(cat ./test/rowUpdateData/update-file.json | tr '\n' ' ')\"",
     "test:update:location": "yarn set_release:test && coda execute ./pack.ts Locations:update \"$(cat ./test/rowUpdateData/update-location.json | tr '\n' ' ')\"",
+    "test:update:inventoryLevel": "yarn set_release:test && coda execute ./pack.ts InventoryLevels:update \"74534912256\" \"$(cat ./test/rowUpdateData/update-inventoryLevel.json | tr '\n' ' ')\"",
     "test:update:metafield": "yarn set_release:test && coda execute ./pack.ts Metafields:update --dynamicUrl=PRODUCT \"$(cat ./test/rowUpdateData/update-metafield.json | tr '\n' ' ')\"",
     "test:update:metaobject": "yarn set_release:test && coda execute ./pack.ts Metaobjects:update --dynamicUrl=967475456 \"$(cat ./test/rowUpdateData/update-metaobject.json | tr '\n' ' ')\"",
     "test:update:product": "yarn set_release:test && coda execute ./pack.ts Products:update \"$(cat ./test/rowUpdateData/update-product.json | tr '\n' ' ')\"",

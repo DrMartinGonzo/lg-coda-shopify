@@ -16,6 +16,13 @@ import {
 import { BlogClient, ListBlogsArgs, REST_DEFAULT_LIMIT } from '../../Clients/RestClients';
 import { DEFAULT_THUMBNAIL_SIZE } from '../../config';
 import {
+  DEFAULT_LEDGER_DOC_URI,
+  POSSIBLE_ADJUST_QUANTITY_NAMES,
+  POSSIBLE_MOVE_QUANTITY_NAMES,
+  POSSIBLE_MOVE_REASONS,
+  POSSIBLE_SET_QUANTITY_NAMES,
+} from '../../constants/inventoryLevels-constants';
+import {
   OPTIONS_COMMENTABLE,
   OPTIONS_COUNTRY_NAMES,
   OPTIONS_DRAFT_ORDER_STATUS,
@@ -500,6 +507,38 @@ const InventoryLevelInputs = {
     description:
       'The amount to adjust the available inventory quantity. Send negative values to subtract from the current available quantity.',
   }),
+  adjustQuantityName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'state',
+    description: 'The inventory state that will receive the adjustment.',
+    autocomplete: POSSIBLE_ADJUST_QUANTITY_NAMES,
+    suggestedValue: 'available',
+  }),
+  setQuantityName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'quantityName',
+    description: 'The quantity name.',
+    autocomplete: POSSIBLE_SET_QUANTITY_NAMES,
+    suggestedValue: 'available',
+  }),
+  moveQuantityName: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'quantityName',
+    description: 'The quantity name.',
+    autocomplete: POSSIBLE_MOVE_QUANTITY_NAMES,
+  }),
+  reason: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'reason',
+    description: 'The reason for the quantity change.',
+    autocomplete: POSSIBLE_MOVE_REASONS,
+    suggestedValue: 'correction',
+  }),
+  referenceDocumentUri: coda.makeParameter({
+    type: coda.ParameterType.String,
+    name: 'referenceDocumentUri',
+    description: `A freeform URI that represents why the inventory change happened.. Will default to \`${DEFAULT_LEDGER_DOC_URI}\` if not set.`,
+  }),
 };
 // #endregion
 
@@ -539,7 +578,7 @@ const locationInputs = {
   },
   idOptionName: coda.makeParameter({
     type: coda.ParameterType.String,
-    name: 'locationId',
+    name: 'location',
     description: 'The ID of the location.',
     autocomplete: autocompleteLocationsWithName,
   }),

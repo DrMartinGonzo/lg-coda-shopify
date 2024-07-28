@@ -22,15 +22,15 @@ export interface InventoryLevelApiData extends BaseApiDataRest {
 export interface InventoryLevelModelData extends InventoryLevelApiData {}
 // #endregion
 
-export class InventoryLevelModel extends AbstractModelRest {
+export class InventoryLevelRestModel extends AbstractModelRest {
   public data: InventoryLevelModelData;
   public static readonly displayName: Identity = PACK_IDENTITIES.InventoryLevel;
 
   public static createInstanceFromRow(
     context: coda.ExecutionContext,
-    { id, inventory_history_url, inventory_item, location, ...row }: InventoryLevelRow
+    { unique_id, inventory_history_url, inventory_item, location, ...row }: InventoryLevelRow
   ) {
-    const splitIds = id.split(',');
+    const splitIds = unique_id.split(',');
     const inventoryItemId = parseInt(splitIds[0], 10);
     const locationId = parseInt(splitIds[1], 10);
     const data: Partial<InventoryLevelModelData> = {
@@ -67,7 +67,7 @@ export class InventoryLevelModel extends AbstractModelRest {
     const { data } = this;
     const obj: InventoryLevelRow = {
       ...data,
-      id: [data.inventory_item_id, data.location_id].join(','),
+      unique_id: [data.inventory_item_id, data.location_id].join(','),
       inventory_history_url: `${this.context.endpoint}/admin/products/inventory/${data.inventory_item_id}/inventory_history?location_id=${data.location_id}`,
     };
     if (data.location_id) {

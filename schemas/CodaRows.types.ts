@@ -3,7 +3,7 @@
  * You should't need to manually edit.
  *
  * Identities: Article, Blog, Collect, Collection, Customer, DraftOrder, File, InventoryLevel, Location, Market, Metafield, MetafieldDefinition, Metaobject, Order, OrderLineItem, OrderTransaction, Page, Product, ProductVariant, Redirect, Shop, Translation
- * Last generated: 2024-07-22T22:00:09.946Z
+ * Last generated: 2024-07-28T09:12:18.557Z
  *
  */
 
@@ -395,17 +395,29 @@ export interface FileRow extends BaseRow {
  * Coda Row Interface for InventoryLevels Sync Table
  */
 export interface InventoryLevelRow extends BaseRow {
-  admin_graphql_api_id?: string;
+  unique_id: string;
   available?: number;
+  committed?: number;
+  damaged?: number;
+  incoming?: number;
+  on_hand?: number;
+  quality_control?: number;
+  reserved?: number;
+  safety_stock?: number;
   inventory_item_id?: number;
+  inventory_history_url?: string;
   location_id?: number;
   location?: {
     id: number;
     name: string;
   };
-  id: string;
   updated_at?: string | number | Date;
-  inventory_history_url?: string;
+  created_at?: string | number | Date;
+  variant_id?: number;
+  variant?: {
+    id: number;
+    title: string;
+  };
 }
 
 /**
@@ -1100,7 +1112,6 @@ export interface ProductVariantRow extends BaseRow {
   updated_at?: string | number | Date;
   weight?: number;
   weight_unit?: string;
-  inventory_history_url?: string;
   cost?: number;
   country_code_of_origin?: string;
   harmonized_system_code?: string;

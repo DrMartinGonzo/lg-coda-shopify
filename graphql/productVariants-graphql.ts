@@ -104,7 +104,6 @@ const inventoryItemFieldsFragment = graphql(`
     # updatedAt
     countryCodeOfOrigin
     harmonizedSystemCode
-    inventoryHistoryUrl
     measurement @include(if: $includeWeight) {
       weight {
         unit

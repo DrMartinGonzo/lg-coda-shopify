@@ -1,0 +1,15 @@
+[
+  {
+    "previousValue": {
+      "id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091655936",
+      "location_id": 74534912256,
+      "available": 999
+    },
+    "newValue": {
+      "id": "gid://shopify/InventoryLevel/110915846400?inventory_item_id=46469091655936",
+      "location_id": 74534912256,
+      "available": 21
+    },
+    "updatedFields": ["available"]
+  }
+]

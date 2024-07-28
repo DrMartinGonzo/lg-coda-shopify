@@ -32,7 +32,7 @@
     "admin_url": "https://coda-pack-test.myshopify.com/admin/settings/locations/75501109504",
     "stock_url": "https://coda-pack-test.myshopify.com/admin/products/inventory?location_id=75501109504",
     "fulfills_online_orders": true,
-    "has_active_inventory": false,
+    "has_active_inventory": true,
     "local_pickup_settings": null,
     "ships_inventory": false,
     "address1": "51 Rue Montorgueil",

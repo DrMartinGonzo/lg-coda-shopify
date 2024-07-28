@@ -123,7 +123,7 @@ const defaultFilesParams = [
 ] as SyncFilesParams;
 
 const defaultInventoryLevelsParams = [
-  [`Vitest Location (${graphQlGidToId(singleData.location.id)})`], // locationIds
+  `Vitest Location (${graphQlGidToId(singleData.location.id)})`, // locationId
   undefined, // updatedAtMin
 ] as SyncInventoryLevelsParams;
 
@@ -371,7 +371,7 @@ describe('Sync resources', () => {
 
   test('InventoryLevels', async ({ expect }) => {
     context.fetcher.fetch.returns(
-      newJsonFetchResponse({ [RestResourcesPlural.InventoryLevel]: listData.inventoryLevels })
+      newGraphqlFetchResponse({ location: { inventoryLevels: { nodes: listData.inventoryLevels } } })
     );
     const result = await doSync('InventoryLevels', defaultInventoryLevelsParams);
     await matchRowsSnapshot(expect, result, 'inventoryLevels');
