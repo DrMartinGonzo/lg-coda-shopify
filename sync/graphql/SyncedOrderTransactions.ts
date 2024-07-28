@@ -57,7 +57,7 @@ export class SyncedOrderTransactions extends AbstractSyncedGraphQlResources<Orde
       orderStatus,
       gateways,
     } = this.codaParamsMap;
-    const effectiveKeys = this.effectiveStandardFromKeys;
+    const effectiveKeys = this.syncedStandardFields;
 
     return {
       fields: {

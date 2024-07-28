@@ -1039,10 +1039,6 @@ export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGr
     const latestQuantities = latestData.quantities;
     const updatedQuantity = quantities[0];
 
-    // FIXME
-    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
-    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
-
     const documentNode = setInventoryLevelQuantities;
     const variables = {
       input: {
@@ -1060,6 +1056,7 @@ export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGr
       },
     } as VariablesOf<typeof documentNode>;
 
+    // No race condition here, since we have compareQuantity set, we can be confident in the delta result
     return this.request({
       documentNode,
       variables,
@@ -1124,7 +1121,6 @@ export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGr
     // FIXME
     // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
     // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
-
     return this.request({
       documentNode,
       variables,
@@ -1156,10 +1152,6 @@ export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGr
   }: MoveInventoryLevelsArgs) {
     const latestData = (await this.singleLatestData({ inventoryItemId, locationId: from.locationId })).body;
 
-    // FIXME
-    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
-    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
-
     function processFromToArgs(fromToArg: MoveInventoryLevelsFromTo) {
       const { ledgerDocumentUri, ...rest } = fromToArg;
       let processed: MoveInventoryLevelsFromTo = rest;
@@ -1188,6 +1180,9 @@ export class InventoryLevelClient extends AbstractGraphQlClient<InventoryLevelGr
       },
     } as VariablesOf<typeof documentNode>;
 
+    // FIXME
+    // TODO: Beware race condition ! There could be a mutation after the query and before the mutation !!
+    // we could query inventoryAdjustmentGroup node after the mutation but there is an unknown delay before the inventory adjustment is taken into account.
     return this.request({
       documentNode,
       variables,
@@ -1690,7 +1685,11 @@ function wrapFakeMetafieldDefinition(
   fake: FakeMetafieldDefinition,
   ownerType: MetafieldOwnerType
 ): MetafieldDefinitionModelData {
-  return { ...fake, ownerType };
+  return {
+    ...fake,
+    // @ts-expect-error
+    ownerType,
+  };
 }
 
 const FAKE_METADEFINITION__SEO_DESCRIPTION: FakeMetafieldDefinition = {

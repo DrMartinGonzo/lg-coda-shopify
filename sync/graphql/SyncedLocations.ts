@@ -46,7 +46,7 @@ export class SyncedLocations extends AbstractSyncedGraphQlResources<LocationMode
   protected codaParamsToListArgs() {
     const fields: LocationFieldsArgs = { metafields: this.shouldSyncMetafields };
     ['fulfillment_service', 'local_pickup_settings'].forEach((key) => {
-      fields[key] = this.effectiveStandardFromKeys.includes(key);
+      fields[key] = this.syncedStandardFields.includes(key);
     });
 
     return {

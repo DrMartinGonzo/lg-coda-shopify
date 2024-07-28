@@ -88,7 +88,7 @@ export class SyncedProducts extends AbstractSyncedGraphQlResources<ProductModel>
     };
 
     ['options', 'featuredImage', 'images'].forEach((key) => {
-      fields[key] = this.effectiveStandardFromKeys.includes(key);
+      fields[key] = this.syncedStandardFields.includes(key);
     });
 
     return {

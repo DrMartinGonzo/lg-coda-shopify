@@ -93,7 +93,7 @@ export class SyncedVariants extends AbstractSyncedGraphQlResources<VariantModel>
       productIds,
     } = this.codaParamsMap;
 
-    const hasEffectiveKey = (key: string) => this.effectiveStandardFromKeys.includes(key);
+    const hasEffectiveKey = (key: string) => this.syncedStandardFields.includes(key);
 
     const fields: VariantFieldsArgs = { metafields: this.shouldSyncMetafields };
     if (['image'].some(hasEffectiveKey)) {

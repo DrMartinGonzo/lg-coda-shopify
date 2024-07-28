@@ -236,7 +236,6 @@ export abstract class AbstractSyncedResources<T extends AbstractModel> {
   }
 
   protected get syncedStandardFields(): string[] {
-    // TODO: detect when all fields are required for Rest resources to avoid having a really long url
     return this.handleFieldDependencies();
   }
 

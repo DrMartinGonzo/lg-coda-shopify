@@ -186,7 +186,7 @@ export class SyncedMetaobjects extends AbstractSyncedGraphQlResources<Metaobject
   protected codaParamsToListArgs() {
     const type = this.currentType;
     const fields: MetaobjectFieldsArgs = {
-      capabilities: this.effectiveStandardFromKeys.includes('status'),
+      capabilities: this.syncedStandardFields.includes('status'),
       definition: false,
       fieldDefinitions: false,
     };

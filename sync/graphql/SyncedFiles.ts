@@ -29,7 +29,7 @@ export class SyncedFiles extends AbstractSyncedGraphQlResources<FileModel> {
     const { type } = this.codaParamsMap;
     const fields = Object.fromEntries(
       ['alt', 'createdAt', 'duration', 'fileSize', 'height', 'mimeType', 'preview', 'updatedAt', 'url', 'width'].map(
-        (key) => [key, this.effectiveStandardFromKeys.includes(key)]
+        (key) => [key, this.syncedStandardFields.includes(key)]
       )
     );
     return { fields, type } as ListFilesArgs;
